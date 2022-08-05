@@ -1,6 +1,7 @@
 package merkletree
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
@@ -8,6 +9,7 @@ import (
 )
 
 const (
+	// default hash result length, using SHA256
 	defaultHashLen = 32
 )
 
@@ -24,7 +26,7 @@ type Config struct {
 
 type MerkleTree struct {
 	*Config
-	Root   *Node
+	Root   []byte
 	Leaves []*Node
 	Proves []*Proof
 }
@@ -38,17 +40,17 @@ type Proof struct {
 	Neighbors [][]byte
 }
 
-func (m *MerkleTree) NewMerkleTree(config Config) *MerkleTree {
+func NewMerkleTree(config *Config) *MerkleTree {
 	if config.HashFunc == nil {
 		config.HashFunc = defaultHashFunc
 	}
 	return &MerkleTree{
-		Config: &config,
+		Config: config,
 	}
 }
 
 func (m *MerkleTree) Build(blocks []DataBlock) (err error) {
-	if len(blocks) == 0 {
+	if len(blocks) <= 1 {
 		return nil
 	}
 	if m.RunInParallel {
@@ -67,7 +69,7 @@ func (m *MerkleTree) Build(blocks []DataBlock) (err error) {
 	return err
 }
 
-func (m *MerkleTree) buildTree() (root *Node, err error) {
+func (m *MerkleTree) buildTree() (root []byte, err error) {
 	numLeaves := len(m.Leaves)
 	m.Proves = make([]*Proof, numLeaves)
 	for i := 0; i < numLeaves; i++ {
@@ -102,7 +104,7 @@ func (m *MerkleTree) buildTree() (root *Node, err error) {
 		m.assignProves(buf, prevLen, step)
 		step++
 	}
-	root = buf[0]
+	root = buf[0].Hash
 	m.Root = root
 	for _, p := range m.Proves {
 		fmt.Print(p.PathWay)
@@ -167,7 +169,7 @@ func (m *MerkleTree) assignProves(buf []*Node, bufLen, step int) {
 	}
 }
 
-func (m *MerkleTree) buildTreeParallel() (*Node, error) {
+func (m *MerkleTree) buildTreeParallel() ([]byte, error) {
 	panic("not implemented")
 }
 
@@ -208,4 +210,33 @@ func generateLeaves(blocks []DataBlock, hashFunc func([]byte) ([]byte, error)) (
 
 func generateLeavesParallel(blocks []DataBlock, hashFunc func([]byte) ([]byte, error)) ([]*Node, error) {
 	panic("not implemented")
+}
+
+func (m *MerkleTree) Verify(dataBlock DataBlock, proof *Proof) (bool, error) {
+	var (
+		data, err = dataBlock.Serialize()
+		hash      []byte
+	)
+	if err != nil {
+		return false, err
+	}
+	hash, err = m.HashFunc(data)
+	if err != nil {
+		return false, err
+	}
+	fmt.Println(hex.EncodeToString(hash))
+	for _, n := range proof.Neighbors {
+		dir := proof.PathWay & 1
+		if dir == 1 {
+			hash, err = m.HashFunc(append(hash, n...))
+		} else {
+			hash, err = m.HashFunc(append(n, hash...))
+		}
+		if err != nil {
+			return false, err
+		}
+		proof.PathWay >>= 1
+		fmt.Println(hex.EncodeToString(hash))
+	}
+	return bytes.Equal(hash, m.Root), nil
 }
