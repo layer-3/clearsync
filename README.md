@@ -1,2 +1,3 @@
 # Go Merkle Tree
-Simple Merkle Tree Implementation in Golang.
+
+High performance Merkle Tree Computation in Go.
