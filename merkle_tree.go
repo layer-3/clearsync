@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
-	"encoding/hex"
-	"fmt"
 )
 
 const (
@@ -86,36 +84,30 @@ func (m *MerkleTree) buildTree() (root []byte, err error) {
 		return nil, err
 	}
 	m.assignProves(buf, numLeaves, 0)
-	for prevLen > 1 {
+	for {
 		buf, prevLen, err = m.fixOdd(buf, prevLen)
 		if err != nil {
 			return nil, err
 		}
-		for idx := 0; idx < prevLen; idx++ {
-			fmt.Println(hex.EncodeToString(buf[idx].Hash[:]))
-		}
-		fmt.Println()
 		for idx := 0; idx < prevLen; idx += 2 {
 			var appendHash []byte
 			appendHash = append(buf[idx].Hash, buf[idx+1].Hash...)
 			buf[idx/2].Hash, err = m.HashFunc(appendHash)
 		}
 		prevLen /= 2
+		if prevLen == 1 {
+			break
+		} else {
+			buf, prevLen, err = m.fixOdd(buf, prevLen)
+			if err != nil {
+				return nil, err
+			}
+		}
 		m.assignProves(buf, prevLen, step)
 		step++
 	}
 	root = buf[0].Hash
 	m.Root = root
-	for _, p := range m.Proves {
-		fmt.Print(p.PathWay)
-		fmt.Print(" ")
-		for _, n := range p.Neighbors {
-			fmt.Print(hex.EncodeToString(n))
-			fmt.Print(" ")
-		}
-		fmt.Println()
-	}
-	fmt.Println(m.Root)
 	return
 }
 
@@ -224,7 +216,6 @@ func (m *MerkleTree) Verify(dataBlock DataBlock, proof *Proof) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	fmt.Println(hex.EncodeToString(hash))
 	for _, n := range proof.Neighbors {
 		dir := proof.PathWay & 1
 		if dir == 1 {
@@ -236,7 +227,6 @@ func (m *MerkleTree) Verify(dataBlock DataBlock, proof *Proof) (bool, error) {
 			return false, err
 		}
 		proof.PathWay >>= 1
-		fmt.Println(hex.EncodeToString(hash))
 	}
 	return bytes.Equal(hash, m.Root), nil
 }

@@ -136,71 +136,54 @@ func verifySetup(size int) (*MerkleTree, []DataBlock, error) {
 }
 
 func TestMerkleTree_Verify(t *testing.T) {
-	type fields struct {
-		Config *Config
-		Root   []byte
-		Leaves []*Node
-		Proves []*Proof
-	}
-	type args struct {
-		dataBlock DataBlock
-		proof     *Proof
-	}
 	tests := []struct {
-		name       string
-		setupFunc  func(int) (*MerkleTree, []DataBlock, error)
-		blockSize  int
-		blockIndex int
-		want       bool
-		wantErr    bool
+		name      string
+		setupFunc func(int) (*MerkleTree, []DataBlock, error)
+		blockSize int
+		want      bool
+		wantErr   bool
 	}{
 		{
-			name:       "test_2",
-			setupFunc:  verifySetup,
-			blockSize:  2,
-			blockIndex: 0,
-			want:       true,
-			wantErr:    false,
+			name:      "test_2",
+			setupFunc: verifySetup,
+			blockSize: 2,
+			want:      true,
+			wantErr:   false,
 		},
 		{
-			name:       "test_3",
-			setupFunc:  verifySetup,
-			blockSize:  3,
-			blockIndex: 2,
-			want:       true,
-			wantErr:    false,
+			name:      "test_3",
+			setupFunc: verifySetup,
+			blockSize: 3,
+			want:      true,
+			wantErr:   false,
 		},
 		{
-			name:       "test_pseudo_random_4",
-			setupFunc:  verifySetup,
-			blockSize:  4,
-			blockIndex: 3,
-			want:       true,
-			wantErr:    false,
+			name:      "test_pseudo_random_4",
+			setupFunc: verifySetup,
+			blockSize: 4,
+			want:      true,
+			wantErr:   false,
 		},
 		{
-			name:       "test_pseudo_random_5",
-			setupFunc:  verifySetup,
-			blockSize:  5,
-			blockIndex: 4,
-			want:       true,
-			wantErr:    false,
+			name:      "test_pseudo_random_5",
+			setupFunc: verifySetup,
+			blockSize: 5,
+			want:      true,
+			wantErr:   false,
 		},
 		{
-			name:       "test_pseudo_random_6",
-			setupFunc:  verifySetup,
-			blockSize:  6,
-			blockIndex: 5,
-			want:       true,
-			wantErr:    false,
+			name:      "test_pseudo_random_6",
+			setupFunc: verifySetup,
+			blockSize: 6,
+			want:      true,
+			wantErr:   false,
 		},
 		{
-			name:       "test_pseudo_random_8",
-			setupFunc:  verifySetup,
-			blockSize:  8,
-			blockIndex: 7,
-			want:       true,
-			wantErr:    false,
+			name:      "test_pseudo_random_8",
+			setupFunc: verifySetup,
+			blockSize: 8,
+			want:      true,
+			wantErr:   false,
 		},
 	}
 	for _, tt := range tests {
@@ -210,13 +193,15 @@ func TestMerkleTree_Verify(t *testing.T) {
 				t.Errorf("setupFunc() error = %v", err)
 				return
 			}
-			got, err := m.Verify(blocks[tt.blockIndex], m.Proves[tt.blockIndex])
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Verify() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("Verify() got = %v, want %v", got, tt.want)
+			for i := 0; i < tt.blockSize; i++ {
+				got, err := m.Verify(blocks[i], m.Proves[i])
+				if (err != nil) != tt.wantErr {
+					t.Errorf("Verify() error = %v, wantErr %v", err, tt.wantErr)
+					return
+				}
+				if got != tt.want {
+					t.Errorf("Verify() got = %v, want %v", got, tt.want)
+				}
 			}
 		})
 	}
