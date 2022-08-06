@@ -185,6 +185,27 @@ func TestMerkleTree_Verify(t *testing.T) {
 			want:      true,
 			wantErr:   false,
 		},
+		{
+			name:      "test_pseudo_random_9",
+			setupFunc: verifySetup,
+			blockSize: 9,
+			want:      true,
+			wantErr:   false,
+		},
+		{
+			name:      "test_pseudo_random_10",
+			setupFunc: verifySetup,
+			blockSize: 10,
+			want:      true,
+			wantErr:   false,
+		},
+		{
+			name:      "test_pseudo_random_1001",
+			setupFunc: verifySetup,
+			blockSize: 1001,
+			want:      true,
+			wantErr:   false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

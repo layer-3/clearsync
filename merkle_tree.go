@@ -52,7 +52,7 @@ func (m *MerkleTree) Build(blocks []DataBlock) (err error) {
 		return nil
 	}
 	if m.RunInParallel {
-		m.Leaves, err = generateLeavesParallel(blocks, m.HashFunc)
+		m.Leaves, err = generateLeavesParallel()
 		if err != nil {
 			return err
 		}
@@ -165,6 +165,7 @@ func (m *MerkleTree) buildTreeParallel() ([]byte, error) {
 	panic("not implemented")
 }
 
+// generate a dummy
 func getDummyHash() ([]byte, error) {
 	dummyBytes := make([]byte, defaultHashLen)
 	_, err := rand.Read(dummyBytes)
@@ -200,7 +201,7 @@ func generateLeaves(blocks []DataBlock, hashFunc func([]byte) ([]byte, error)) (
 	return leaves, nil
 }
 
-func generateLeavesParallel(blocks []DataBlock, hashFunc func([]byte) ([]byte, error)) ([]*Node, error) {
+func generateLeavesParallel() ([]*Node, error) {
 	panic("not implemented")
 }
 
