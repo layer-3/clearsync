@@ -205,10 +205,14 @@ func generateLeavesParallel() ([]*Node, error) {
 }
 
 func (m *MerkleTree) Verify(dataBlock DataBlock, proof *Proof) (bool, error) {
-	return Verify(dataBlock, proof, m.Root)
+	return Verify(dataBlock, proof, m.Root, m.HashFunc)
 }
 
-func Verify(dataBlock DataBlock, proof *Proof, root []byte) (bool, error) {
+func Verify(dataBlock DataBlock, proof *Proof, root []byte,
+	hashFunc func([]byte) ([]byte, error)) (bool, error) {
+	if hashFunc == nil {
+		hashFunc = defaultHashFunc
+	}
 	var (
 		data, err = dataBlock.Serialize()
 		hash      []byte
