@@ -11,33 +11,44 @@ const (
 	defaultHashLen = 32
 )
 
+// DataBlock is the interface of input data blocks to generate the Merkle Tree
 type DataBlock interface {
 	Serialize() ([]byte, error)
 }
 
+// Config is the configuration of Merkle Tree
 type Config struct {
-	HashFunc        func([]byte) ([]byte, error)
-	RunInParallel   bool
-	NumRoutines     int
+	// customizable hash function used for tree generation
+	HashFunc func([]byte) ([]byte, error)
+	// if true, the generation runs in parallel
+	RunInParallel bool
+	// number of goroutines run in parallel
+	NumRoutines int
+	// if true, then the odd node situation is handled by duplicating the previous node
+	// otherwise, generate a dummy node with random hash value
 	AllowDuplicates bool
 }
 
+// MerkleTree implements the Merkle Tree structure
 type MerkleTree struct {
-	*Config
-	Root   []byte
-	Leaves []*Node
-	Proves []*Proof
+	*Config          // Merkle Tree configuration
+	Root    []byte   // Merkle root hash
+	Leaves  []*Node  // Merkle Tree leaves, i.e. the hashes of the data blocks for tree generation
+	Proves  []*Proof // proves to the data blocks generated during the tree building process
 }
 
+// Node implements the Merkle Tree node
 type Node struct {
 	Hash []byte
 }
 
+// Proof implements the Merkle Tree proof
 type Proof struct {
-	PathWay   uint16
-	Neighbors [][]byte
+	Path      uint16   // path variable indicating whether the neighbor is on the left or right
+	Neighbors [][]byte // neighbor nodes near the path
 }
 
+// NewMerkleTree generates a new Merkle Tree with specified configuration
 func NewMerkleTree(config *Config) *MerkleTree {
 	if config.HashFunc == nil {
 		config.HashFunc = defaultHashFunc
@@ -47,6 +58,7 @@ func NewMerkleTree(config *Config) *MerkleTree {
 	}
 }
 
+// Build builds up the Merkle Tree and generates the proves
 func (m *MerkleTree) Build(blocks []DataBlock) (err error) {
 	if len(blocks) <= 1 {
 		return nil
@@ -56,7 +68,8 @@ func (m *MerkleTree) Build(blocks []DataBlock) (err error) {
 		if err != nil {
 			return err
 		}
-		m.Root, err = m.buildTreeParallel()
+		// m.Root, err = m.buildTreeParallel()
+		panic("not implemented")
 	} else {
 		m.Leaves, err = generateLeaves(blocks, m.HashFunc)
 		if err != nil {
@@ -110,6 +123,9 @@ func (m *MerkleTree) buildTree() (root []byte, err error) {
 	return
 }
 
+// if the length of the buffer calculating the Merkle Tree is odd, then append a node to the buffer
+// if AllowDuplicates is true, append a node by duplicating the previous node
+// otherwise, append a node by random
 func (m *MerkleTree) fixOdd(buf []*Node, prevLen int) ([]*Node, int, error) {
 	if prevLen%2 == 1 {
 		var appendNode *Node
@@ -146,7 +162,7 @@ func (m *MerkleTree) assignProves(buf []*Node, bufLen, step int) {
 			end = len(m.Proves)
 		}
 		for j := start; j < end; j++ {
-			m.Proves[j].PathWay += 1 << step
+			m.Proves[j].Path += 1 << step
 			m.Proves[j].Neighbors = append(m.Proves[j].Neighbors, buf[i+1].Hash)
 		}
 		start = (i + 1) * batch
@@ -160,9 +176,9 @@ func (m *MerkleTree) assignProves(buf []*Node, bufLen, step int) {
 	}
 }
 
-func (m *MerkleTree) buildTreeParallel() ([]byte, error) {
-	panic("not implemented")
-}
+// func (m *MerkleTree) buildTreeParallel() ([]byte, error) {
+// 	panic("not implemented")
+// }
 
 // generate a dummy
 func getDummyHash() ([]byte, error) {
@@ -204,10 +220,19 @@ func generateLeavesParallel() ([]*Node, error) {
 	panic("not implemented")
 }
 
+// Reset resets the Merkle Tree
+func (m *MerkleTree) Reset() {
+	m.Leaves = nil
+	m.Root = nil
+	m.Proves = nil
+}
+
+// Verify verifies the data block with the Merkle Tree proof
 func (m *MerkleTree) Verify(dataBlock DataBlock, proof *Proof) (bool, error) {
 	return Verify(dataBlock, proof, m.Root, m.HashFunc)
 }
 
+// Verify verifies the data block with the Merkle Tree proof and Merkle root hash
 func Verify(dataBlock DataBlock, proof *Proof, root []byte,
 	hashFunc func([]byte) ([]byte, error)) (bool, error) {
 	if hashFunc == nil {
@@ -225,7 +250,7 @@ func Verify(dataBlock DataBlock, proof *Proof, root []byte,
 		return false, err
 	}
 	for _, n := range proof.Neighbors {
-		dir := proof.PathWay & 1
+		dir := proof.Path & 1
 		if dir == 1 {
 			hash, err = defaultHashFunc(append(hash, n...))
 		} else {
@@ -234,7 +259,7 @@ func Verify(dataBlock DataBlock, proof *Proof, root []byte,
 		if err != nil {
 			return false, err
 		}
-		proof.PathWay >>= 1
+		proof.Path >>= 1
 	}
 	return bytes.Equal(hash, root), nil
 }
