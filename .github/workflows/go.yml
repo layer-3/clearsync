@@ -19,10 +19,10 @@ jobs:
         go-version: 1.18
 
     - name: Build
-      run: go build -v ./...
+      run: go build -v .
 
     - name: Test
-      run: go test -v ./...
+      run: go test -v .
       
     - name: Run golangci-lint
       # You may pin to the exact commit or the version.
