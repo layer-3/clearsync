@@ -90,8 +90,7 @@ func (m *MerkleTree) buildTree() (root []byte, err error) {
 			return nil, err
 		}
 		for idx := 0; idx < prevLen; idx += 2 {
-			var appendHash []byte
-			appendHash = append(buf[idx].Hash, buf[idx+1].Hash...)
+			appendHash := append(buf[idx].Hash, buf[idx+1].Hash...)
 			buf[idx/2].Hash, err = m.HashFunc(appendHash)
 		}
 		prevLen /= 2
@@ -206,6 +205,10 @@ func generateLeavesParallel() ([]*Node, error) {
 }
 
 func (m *MerkleTree) Verify(dataBlock DataBlock, proof *Proof) (bool, error) {
+	return Verify(dataBlock, proof, m.Root)
+}
+
+func Verify(dataBlock DataBlock, proof *Proof, root []byte) (bool, error) {
 	var (
 		data, err = dataBlock.Serialize()
 		hash      []byte
@@ -213,21 +216,21 @@ func (m *MerkleTree) Verify(dataBlock DataBlock, proof *Proof) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	hash, err = m.HashFunc(data)
+	hash, err = defaultHashFunc(data)
 	if err != nil {
 		return false, err
 	}
 	for _, n := range proof.Neighbors {
 		dir := proof.PathWay & 1
 		if dir == 1 {
-			hash, err = m.HashFunc(append(hash, n...))
+			hash, err = defaultHashFunc(append(hash, n...))
 		} else {
-			hash, err = m.HashFunc(append(n, hash...))
+			hash, err = defaultHashFunc(append(n, hash...))
 		}
 		if err != nil {
 			return false, err
 		}
 		proof.PathWay >>= 1
 	}
-	return bytes.Equal(hash, m.Root), nil
+	return bytes.Equal(hash, root), nil
 }
