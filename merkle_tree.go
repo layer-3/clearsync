@@ -37,7 +37,7 @@ type MerkleTree struct {
 	*Config          // Merkle Tree configuration
 	Root    []byte   // Merkle root hash
 	Leaves  []*Node  // Merkle Tree leaves, i.e. the hashes of the data blocks for tree generation
-	Proves  []*Proof // proves to the data blocks generated during the tree building process
+	Proofs  []*Proof // proofs to the data blocks generated during the tree building process
 }
 
 // Node implements the Merkle Tree node
@@ -61,7 +61,7 @@ func NewMerkleTree(config *Config) *MerkleTree {
 	}
 }
 
-// Build builds up the Merkle Tree and generates the proves
+// Build builds up the Merkle Tree and generates the proofs
 func (m *MerkleTree) Build(blocks []DataBlock) (err error) {
 	if len(blocks) <= 1 {
 		return nil
@@ -84,9 +84,9 @@ func (m *MerkleTree) Build(blocks []DataBlock) (err error) {
 
 func (m *MerkleTree) buildTree() (root []byte, err error) {
 	numLeaves := len(m.Leaves)
-	m.Proves = make([]*Proof, numLeaves)
+	m.Proofs = make([]*Proof, numLeaves)
 	for i := 0; i < numLeaves; i++ {
-		m.Proves[i] = new(Proof)
+		m.Proofs[i] = new(Proof)
 	}
 	var (
 		step    = 1
@@ -189,29 +189,29 @@ func (m *MerkleTree) assignPairProof(buf []*Node, bufLen, idx, batch, step int) 
 	}
 	start := idx * batch
 	end := start + batch
-	if end > len(m.Proves) {
-		end = len(m.Proves)
+	if end > len(m.Proofs) {
+		end = len(m.Proofs)
 	}
 	for j := start; j < end; j++ {
-		m.Proves[j].Path += 1 << step
-		m.Proves[j].Neighbors = append(m.Proves[j].Neighbors, buf[idx+1].Hash)
+		m.Proofs[j].Path += 1 << step
+		m.Proofs[j].Neighbors = append(m.Proofs[j].Neighbors, buf[idx+1].Hash)
 	}
 	start = (idx + 1) * batch
 	end = start + batch
-	if end > len(m.Proves) {
-		end = len(m.Proves)
+	if end > len(m.Proofs) {
+		end = len(m.Proofs)
 	}
 	for j := start; j < end; j++ {
-		m.Proves[j].Neighbors = append(m.Proves[j].Neighbors, buf[idx].Hash)
+		m.Proofs[j].Neighbors = append(m.Proofs[j].Neighbors, buf[idx].Hash)
 	}
 }
 
 func (m *MerkleTree) buildTreeParallel() (root []byte, err error) {
 	numRoutines := m.NumRoutines
 	numLeaves := len(m.Leaves)
-	m.Proves = make([]*Proof, numLeaves)
+	m.Proofs = make([]*Proof, numLeaves)
 	for i := 0; i < numLeaves; i++ {
-		m.Proves[i] = new(Proof)
+		m.Proofs[i] = new(Proof)
 	}
 	var (
 		step    = 1
@@ -338,7 +338,7 @@ func generateLeavesParallel(blocks []DataBlock,
 func (m *MerkleTree) Reset() {
 	m.Leaves = nil
 	m.Root = nil
-	m.Proves = nil
+	m.Proofs = nil
 }
 
 // Verify verifies the data block with the Merkle Tree proof

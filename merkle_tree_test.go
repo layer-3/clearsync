@@ -36,7 +36,7 @@ func TestMerkleTree_Build(t *testing.T) {
 		Config *Config
 		Root   []byte
 		Leaves []*Node
-		Proves []*Proof
+		Proofs []*Proof
 	}
 	type args struct {
 		blocks []DataBlock
@@ -55,7 +55,7 @@ func TestMerkleTree_Build(t *testing.T) {
 				},
 				Root:   nil,
 				Leaves: nil,
-				Proves: nil,
+				Proofs: nil,
 			},
 			args: args{
 				blocks: genTestDataBlocks(0),
@@ -70,7 +70,7 @@ func TestMerkleTree_Build(t *testing.T) {
 				},
 				Root:   nil,
 				Leaves: nil,
-				Proves: nil,
+				Proofs: nil,
 			},
 			args: args{
 				blocks: genTestDataBlocks(4),
@@ -86,7 +86,7 @@ func TestMerkleTree_Build(t *testing.T) {
 				},
 				Root:   nil,
 				Leaves: nil,
-				Proves: nil,
+				Proofs: nil,
 			},
 			args: args{
 				blocks: genTestDataBlocks(8),
@@ -102,7 +102,7 @@ func TestMerkleTree_Build(t *testing.T) {
 				},
 				Root:   nil,
 				Leaves: nil,
-				Proves: nil,
+				Proofs: nil,
 			},
 			args: args{
 				blocks: genTestDataBlocks(5),
@@ -120,7 +120,7 @@ func TestMerkleTree_Build(t *testing.T) {
 				},
 				Root:   nil,
 				Leaves: nil,
-				Proves: nil,
+				Proofs: nil,
 			},
 			args: args{
 				blocks: genTestDataBlocks(100),
@@ -134,7 +134,7 @@ func TestMerkleTree_Build(t *testing.T) {
 				Config: tt.fields.Config,
 				Root:   tt.fields.Root,
 				Leaves: tt.fields.Leaves,
-				Proves: tt.fields.Proves,
+				Proofs: tt.fields.Proofs,
 			}
 			if err := m.Build(tt.args.blocks); (err != nil) != tt.wantErr {
 				t.Errorf("Build() error = %v, wantErr %v", err, tt.wantErr)
@@ -258,7 +258,7 @@ func TestMerkleTree_Verify(t *testing.T) {
 				return
 			}
 			for i := 0; i < tt.blockSize; i++ {
-				got, err := m.Verify(blocks[i], m.Proves[i])
+				got, err := m.Verify(blocks[i], m.Proofs[i])
 				if (err != nil) != tt.wantErr {
 					t.Errorf("Verify() error = %v, wantErr %v", err, tt.wantErr)
 					return
