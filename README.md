@@ -154,5 +154,5 @@ Benchmark_cbergoonMerkleTreeVerify-8   	       1	30393054541 ns/op
 PASS
 ```
 
-In conclusion, with large sets of data blocks, our implementation is faster at both tree & proof generation and data block verification.
+In conclusion, with large sets of data blocks, our implementation is much faster than cbergoon/merkletree at both tree & proof generation and data block verification.
 

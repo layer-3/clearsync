@@ -180,7 +180,6 @@ func (m *MerkleTree) assignProvesParallel(buf []*Node, bufLen, step int) {
 		}()
 	}
 	wg.Wait()
-	return
 }
 
 func (m *MerkleTree) assignPairProof(buf []*Node, bufLen, idx, batch, step int) {
@@ -359,7 +358,7 @@ func Verify(dataBlock DataBlock, proof *Proof, root []byte,
 	if err != nil {
 		return false, err
 	}
-	hash, err = defaultHashFunc(data)
+	hash, err = hashFunc(data)
 	if err != nil {
 		return false, err
 	}
