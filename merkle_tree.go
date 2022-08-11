@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
+	"golang.org/x/sync/errgroup"
+	"sync"
 )
 
 const (
@@ -20,7 +22,8 @@ type DataBlock interface {
 type Config struct {
 	// customizable hash function used for tree generation
 	HashFunc func([]byte) ([]byte, error)
-	// if true, the generation runs in parallel
+	// if true, the generation runs in parallel,
+	// this increase the performance for the calculation of large number of data blocks, e.g. over 10,000 blocks
 	RunInParallel bool
 	// number of goroutines run in parallel
 	NumRoutines int
@@ -64,12 +67,11 @@ func (m *MerkleTree) Build(blocks []DataBlock) (err error) {
 		return nil
 	}
 	if m.RunInParallel {
-		m.Leaves, err = generateLeavesParallel()
+		m.Leaves, err = generateLeavesParallel(blocks, m.HashFunc, m.Config.NumRoutines)
 		if err != nil {
 			return err
 		}
-		// m.Root, err = m.buildTreeParallel()
-		panic("not implemented")
+		m.Root, err = m.buildTreeParallel()
 	} else {
 		m.Leaves, err = generateLeaves(blocks, m.HashFunc)
 		if err != nil {
@@ -156,29 +158,114 @@ func (m *MerkleTree) assignProves(buf []*Node, bufLen, step int) {
 	}
 	batch := 1 << step
 	for i := 0; i < bufLen; i += 2 {
-		start := i * batch
-		end := start + batch
-		if end > len(m.Proves) {
-			end = len(m.Proves)
-		}
-		for j := start; j < end; j++ {
-			m.Proves[j].Path += 1 << step
-			m.Proves[j].Neighbors = append(m.Proves[j].Neighbors, buf[i+1].Hash)
-		}
-		start = (i + 1) * batch
-		end = start + batch
-		if end > len(m.Proves) {
-			end = len(m.Proves)
-		}
-		for j := start; j < end; j++ {
-			m.Proves[j].Neighbors = append(m.Proves[j].Neighbors, buf[i].Hash)
-		}
+		m.assignPairProof(buf, bufLen, i, batch, step)
 	}
 }
 
-// func (m *MerkleTree) buildTreeParallel() ([]byte, error) {
-// 	panic("not implemented")
-// }
+func (m *MerkleTree) assignProvesParallel(buf []*Node, bufLen, step int) {
+	numRoutines := m.NumRoutines
+	if bufLen < 2 {
+		return
+	}
+	batch := 1 << step
+	wg := new(sync.WaitGroup)
+	for i := 0; i < numRoutines; i++ {
+		idx := 2 * i
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := idx; j < bufLen; j += 2 * numRoutines {
+				m.assignPairProof(buf, bufLen, j, batch, step)
+			}
+		}()
+	}
+	wg.Wait()
+	return
+}
+
+func (m *MerkleTree) assignPairProof(buf []*Node, bufLen, idx, batch, step int) {
+	if bufLen < 2 {
+		return
+	}
+	start := idx * batch
+	end := start + batch
+	if end > len(m.Proves) {
+		end = len(m.Proves)
+	}
+	for j := start; j < end; j++ {
+		m.Proves[j].Path += 1 << step
+		m.Proves[j].Neighbors = append(m.Proves[j].Neighbors, buf[idx+1].Hash)
+	}
+	start = (idx + 1) * batch
+	end = start + batch
+	if end > len(m.Proves) {
+		end = len(m.Proves)
+	}
+	for j := start; j < end; j++ {
+		m.Proves[j].Neighbors = append(m.Proves[j].Neighbors, buf[idx].Hash)
+	}
+}
+
+func (m *MerkleTree) buildTreeParallel() (root []byte, err error) {
+	numRoutines := m.NumRoutines
+	numLeaves := len(m.Leaves)
+	m.Proves = make([]*Proof, numLeaves)
+	for i := 0; i < numLeaves; i++ {
+		m.Proves[i] = new(Proof)
+	}
+	var (
+		step    = 1
+		prevLen int
+	)
+	buf1 := make([]*Node, numLeaves)
+	copy(buf1, m.Leaves)
+	buf1, prevLen, err = m.fixOdd(buf1, numLeaves)
+	if err != nil {
+		return nil, err
+	}
+	buf2 := make([]*Node, prevLen/2)
+	m.assignProvesParallel(buf1, numLeaves, 0)
+	for {
+		buf1, prevLen, err = m.fixOdd(buf1, prevLen)
+		if err != nil {
+			return nil, err
+		}
+		g := new(errgroup.Group)
+		for i := 0; i < numRoutines && i < prevLen; i++ {
+			idx := 2 * i
+			g.Go(func() error {
+				for j := idx; j < prevLen; j += 2 * numRoutines {
+					newHash, err := m.HashFunc(append(buf1[j].Hash, buf1[j+1].Hash...))
+					if err != nil {
+						return err
+					}
+					buf2[j/2] = &Node{
+						Hash: newHash,
+					}
+				}
+				return nil
+			})
+		}
+		if err := g.Wait(); err != nil {
+			return nil, err
+		}
+		buf1, buf2 = buf2, buf1
+		prevLen /= 2
+		if prevLen == 1 {
+			break
+		} else {
+			buf1, prevLen, err = m.fixOdd(buf1, prevLen)
+			if err != nil {
+				return nil, err
+			}
+		}
+		m.assignProvesParallel(buf1, prevLen, step)
+		step++
+	}
+	root = buf1[0].Hash
+	m.Root = root
+	return
+}
 
 // generate a dummy
 func getDummyHash() ([]byte, error) {
@@ -216,8 +303,35 @@ func generateLeaves(blocks []DataBlock, hashFunc func([]byte) ([]byte, error)) (
 	return leaves, nil
 }
 
-func generateLeavesParallel() ([]*Node, error) {
-	panic("not implemented")
+func generateLeavesParallel(blocks []DataBlock,
+	hashFunc func([]byte) ([]byte, error), numRoutines int) ([]*Node, error) {
+	var (
+		lenLeaves = len(blocks)
+		leaves    = make([]*Node, lenLeaves)
+	)
+	g := new(errgroup.Group)
+	for i := 0; i < numRoutines; i++ {
+		idx := i
+		g.Go(func() error {
+			for j := idx; j < lenLeaves; j += numRoutines {
+				data, err := blocks[j].Serialize()
+				if err != nil {
+					return err
+				}
+				var hash []byte
+				hash, err = hashFunc(data)
+				if err != nil {
+					return err
+				}
+				leaves[j] = &Node{Hash: hash}
+			}
+			return nil
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+	return leaves, nil
 }
 
 // Reset resets the Merkle Tree

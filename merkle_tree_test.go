@@ -2,8 +2,11 @@ package merkletree
 
 import (
 	"math/rand"
+	"runtime"
 	"testing"
 )
+
+const benchSize = 5000000
 
 type mockDataBlock struct {
 	data []byte
@@ -106,6 +109,24 @@ func TestMerkleTree_Build(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "test_100_parallel",
+			fields: fields{
+				Config: &Config{
+					HashFunc:        defaultHashFunc,
+					AllowDuplicates: true,
+					RunInParallel:   true,
+					NumRoutines:     4,
+				},
+				Root:   nil,
+				Leaves: nil,
+				Proves: nil,
+			},
+			args: args{
+				blocks: genTestDataBlocks(100),
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -127,6 +148,21 @@ func verifySetup(size int) (*MerkleTree, []DataBlock, error) {
 	m := NewMerkleTree(&Config{
 		HashFunc:        defaultHashFunc,
 		AllowDuplicates: true,
+	})
+	err := m.Build(blocks)
+	if err != nil {
+		return nil, nil, err
+	}
+	return m, blocks, nil
+}
+
+func verifySetupParallel(size int) (*MerkleTree, []DataBlock, error) {
+	blocks := genTestDataBlocks(size)
+	m := NewMerkleTree(&Config{
+		HashFunc:        defaultHashFunc,
+		AllowDuplicates: true,
+		RunInParallel:   true,
+		NumRoutines:     4,
 	})
 	err := m.Build(blocks)
 	if err != nil {
@@ -206,6 +242,13 @@ func TestMerkleTree_Verify(t *testing.T) {
 			want:      true,
 			wantErr:   false,
 		},
+		{
+			name:      "test_pseudo_random_1001_parallel",
+			setupFunc: verifySetupParallel,
+			blockSize: 1001,
+			want:      true,
+			wantErr:   false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -225,5 +268,33 @@ func TestMerkleTree_Verify(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func BenchmarkMerkleTreeBuild(b *testing.B) {
+	m := NewMerkleTree(&Config{
+		HashFunc:        defaultHashFunc,
+		AllowDuplicates: true,
+	})
+	for i := 0; i < b.N; i++ {
+		err := m.Build(genTestDataBlocks(benchSize))
+		if err != nil {
+			b.Errorf("Build() error = %v", err)
+		}
+	}
+}
+
+func BenchmarkMerkleTreeBuildParallel(b *testing.B) {
+	m := NewMerkleTree(&Config{
+		HashFunc:        defaultHashFunc,
+		AllowDuplicates: true,
+		RunInParallel:   true,
+		NumRoutines:     runtime.NumCPU(),
+	})
+	for i := 0; i < b.N; i++ {
+		err := m.Build(genTestDataBlocks(benchSize))
+		if err != nil {
+			b.Errorf("Build() error = %v", err)
+		}
 	}
 }
