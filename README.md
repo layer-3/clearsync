@@ -90,3 +90,69 @@ func handleError(err error) {
 	}
 }
 ```
+
+## Benchmark
+
+Benchmark with [cbergoon/merkletree](https://github.com/cbergoon/merkletree) (in [bench branch](https://github.com/cbergoon/merkletree)).
+
+In our implementation, ```tree.Build()``` performs tree generation and the proof generation at the same time (time complexity: O(nlogn)), cbergoon/merkletree's ```tree.NewTree()``` only generates the tree. So we benchmark our tree building process with cbergoon/merkletree's tree build + get merkle path ```tree.GetMerklePath()``` for each data block.
+
+1000 test blocks:
+
+```bash
+goos: darwin
+goarch: arm64
+pkg: github.com/tommytim0515/go-merkletree
+BenchmarkMerkleTreeBuild
+BenchmarkMerkleTreeBuild-8             	    1926	    621450 ns/op
+BenchmarkMerkleTreeBuildParallel
+BenchmarkMerkleTreeBuildParallel-8     	    1980	    597595 ns/op
+Benchmark_cbergoonMerkleTreeBuild
+Benchmark_cbergoonMerkleTreeBuild-8    	     416	   2873425 ns/op
+BenchmarkMerkleTreeVerify
+BenchmarkMerkleTreeVerify-8            	    1024	   1162340 ns/op
+Benchmark_cbergoonMerkleTreeVerify
+Benchmark_cbergoonMerkleTreeVerify-8   	     198	   6064883 ns/op
+PASS
+```
+
+10,000 test blocks:
+
+```bash
+goos: darwin
+goarch: arm64
+pkg: github.com/tommytim0515/go-merkletree
+BenchmarkMerkleTreeBuild
+BenchmarkMerkleTreeBuild-8             	     150	   7583059 ns/op
+BenchmarkMerkleTreeBuildParallel
+BenchmarkMerkleTreeBuildParallel-8     	     193	   6213593 ns/op
+Benchmark_cbergoonMerkleTreeBuild
+Benchmark_cbergoonMerkleTreeBuild-8    	       5	 231274467 ns/op
+BenchmarkMerkleTreeVerify
+BenchmarkMerkleTreeVerify-8            	      72	  16243839 ns/op
+Benchmark_cbergoonMerkleTreeVerify
+Benchmark_cbergoonMerkleTreeVerify-8   	       4	 282454323 ns/op
+PASS
+```
+
+100,000 test blocks
+
+```bash
+goos: darwin
+goarch: arm64
+pkg: github.com/tommytim0515/go-merkletree
+BenchmarkMerkleTreeBuild
+BenchmarkMerkleTreeBuild-8             	      12	  99413837 ns/op
+BenchmarkMerkleTreeBuildParallel
+BenchmarkMerkleTreeBuildParallel-8     	      14	  77042113 ns/op
+Benchmark_cbergoonMerkleTreeBuild
+Benchmark_cbergoonMerkleTreeBuild-8    	       1	29609023292 ns/op
+BenchmarkMerkleTreeVerify
+BenchmarkMerkleTreeVerify-8            	       6	 193811917 ns/op
+Benchmark_cbergoonMerkleTreeVerify
+Benchmark_cbergoonMerkleTreeVerify-8   	       1	30393054541 ns/op
+PASS
+```
+
+In conclusion, with large sets of data blocks, our implementation is faster at both tree & proof generation and data block verification.
+
