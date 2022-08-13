@@ -1,3 +1,5 @@
+*.prof
+
 # Binaries for programs and plugins
 *.exe
 *.exe~
@@ -10,6 +12,7 @@
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
+*.html
 
 # Dependency directories (remove the comment below to include it)
 vendor/

@@ -233,6 +233,19 @@ func TestMerkleTree_Verify(t *testing.T) {
 	}
 }
 
+func TestVerify(t *testing.T) {
+	m, blocks, _ := verifySetup(2)
+	// hashFunc is nil
+	got, err := Verify(blocks[0], m.Proofs[0], []byte{}, nil)
+	if err != nil {
+		t.Errorf("Verify() error = %v, wantErr %v", err, nil)
+		return
+	}
+	if got {
+		t.Errorf("Verify() got = %v, want %v", got, false)
+	}
+}
+
 func BenchmarkMerkleTreeNew(b *testing.B) {
 	config := &Config{
 		HashFunc:        defaultHashFunc,
