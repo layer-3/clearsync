@@ -23,7 +23,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 
-	mt "github.com/tommytim0515/go-merkletree"
+	mt "github.com/txaty/go-merkletree"
 )
 
 // first define a data structure with Serialize method to be used as data block
@@ -43,14 +43,6 @@ func hashFunc(data []byte) ([]byte, error) {
 }
 
 func main() {
-	// create a simple configuration for Merkle Tree generation
-	config := &mt.Config{
-		HashFunc: hashFunc, // if nil, use SHA256 by default
-		// if true, handle odd-number-node situation by duplicating the last node
-		AllowDuplicates: true,
-	}
-	tree := mt.NewMerkleTree(config)
-
 	// generate dummy data blocks
 	var blocks []mt.DataBlock
 	for i := 0; i < 1000; i++ {
@@ -62,8 +54,14 @@ func main() {
 		blocks = append(blocks, block)
 	}
 
-	// build the Merkle Tree
-	err := tree.Build(blocks)
+	// create a simple configuration for Merkle Tree generation
+	config := &mt.Config{
+		HashFunc: hashFunc, // if nil, use SHA256 by default
+		// if true, handle odd-number-node situation by duplicating the last node
+		AllowDuplicates: true,
+	}
+	// build a new Merkle Tree
+	tree, err := mt.New(blocks, config)
 	handleError(err)
 	// get the root hash of the Merkle Tree
 	rootHash := tree.Root

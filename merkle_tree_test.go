@@ -31,112 +31,71 @@ func genTestDataBlocks(num int) []DataBlock {
 	return blocks
 }
 
-func TestMerkleTree_Build(t *testing.T) {
-	type fields struct {
-		Config *Config
-		Root   []byte
-		Leaves []*Node
-		Proofs []*Proof
-	}
+func TestMerkleTreeNew(t *testing.T) {
 	type args struct {
 		blocks []DataBlock
+		config *Config
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		wantErr bool
 	}{
 		{
 			name: "test_0",
-			fields: fields{
-				Config: &Config{
-					HashFunc: defaultHashFunc,
-				},
-				Root:   nil,
-				Leaves: nil,
-				Proofs: nil,
-			},
 			args: args{
 				blocks: genTestDataBlocks(0),
+				config: nil,
 			},
 			wantErr: false,
 		},
 		{
 			name: "test_4",
-			fields: fields{
-				Config: &Config{
-					HashFunc: defaultHashFunc,
-				},
-				Root:   nil,
-				Leaves: nil,
-				Proofs: nil,
-			},
 			args: args{
 				blocks: genTestDataBlocks(4),
+				config: nil,
 			},
 			wantErr: false,
 		},
 		{
 			name: "test_8",
-			fields: fields{
-				Config: &Config{
+			args: args{
+				blocks: genTestDataBlocks(8),
+				config: &Config{
 					HashFunc:        defaultHashFunc,
 					AllowDuplicates: true,
 				},
-				Root:   nil,
-				Leaves: nil,
-				Proofs: nil,
-			},
-			args: args{
-				blocks: genTestDataBlocks(8),
 			},
 			wantErr: false,
 		},
 		{
 			name: "test_5",
-			fields: fields{
-				Config: &Config{
+			args: args{
+				blocks: genTestDataBlocks(5),
+				config: &Config{
 					HashFunc:        defaultHashFunc,
 					AllowDuplicates: true,
 				},
-				Root:   nil,
-				Leaves: nil,
-				Proofs: nil,
-			},
-			args: args{
-				blocks: genTestDataBlocks(5),
 			},
 			wantErr: false,
 		},
 		{
 			name: "test_100_parallel",
-			fields: fields{
-				Config: &Config{
+			args: args{
+				blocks: genTestDataBlocks(100),
+				config: &Config{
 					HashFunc:        defaultHashFunc,
 					AllowDuplicates: true,
 					RunInParallel:   true,
 					NumRoutines:     4,
 				},
-				Root:   nil,
-				Leaves: nil,
-				Proofs: nil,
-			},
-			args: args{
-				blocks: genTestDataBlocks(100),
 			},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := &MerkleTree{
-				Config: tt.fields.Config,
-				Root:   tt.fields.Root,
-				Leaves: tt.fields.Leaves,
-				Proofs: tt.fields.Proofs,
-			}
-			if err := m.Build(tt.args.blocks); (err != nil) != tt.wantErr {
+			if _, err := New(tt.args.blocks, tt.args.config); (err != nil) != tt.wantErr {
 				t.Errorf("Build() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -145,11 +104,10 @@ func TestMerkleTree_Build(t *testing.T) {
 
 func verifySetup(size int) (*MerkleTree, []DataBlock, error) {
 	blocks := genTestDataBlocks(size)
-	m := NewMerkleTree(&Config{
+	m, err := New(blocks, &Config{
 		HashFunc:        defaultHashFunc,
 		AllowDuplicates: true,
 	})
-	err := m.Build(blocks)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -158,13 +116,12 @@ func verifySetup(size int) (*MerkleTree, []DataBlock, error) {
 
 func verifySetupParallel(size int) (*MerkleTree, []DataBlock, error) {
 	blocks := genTestDataBlocks(size)
-	m := NewMerkleTree(&Config{
+	m, err := New(blocks, &Config{
 		HashFunc:        defaultHashFunc,
 		AllowDuplicates: true,
 		RunInParallel:   true,
 		NumRoutines:     4,
 	})
-	err := m.Build(blocks)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -271,13 +228,15 @@ func TestMerkleTree_Verify(t *testing.T) {
 	}
 }
 
-func BenchmarkMerkleTreeBuild(b *testing.B) {
-	m := NewMerkleTree(&Config{
+func BenchmarkMerkleTreeNew(b *testing.B) {
+	config := &Config{
 		HashFunc:        defaultHashFunc,
 		AllowDuplicates: true,
-	})
+		RunInParallel:   true,
+		NumRoutines:     4,
+	}
 	for i := 0; i < b.N; i++ {
-		err := m.Build(genTestDataBlocks(benchSize))
+		_, err := New(genTestDataBlocks(benchSize), config)
 		if err != nil {
 			b.Errorf("Build() error = %v", err)
 		}
@@ -285,14 +244,14 @@ func BenchmarkMerkleTreeBuild(b *testing.B) {
 }
 
 func BenchmarkMerkleTreeBuildParallel(b *testing.B) {
-	m := NewMerkleTree(&Config{
+	config := &Config{
 		HashFunc:        defaultHashFunc,
 		AllowDuplicates: true,
 		RunInParallel:   true,
 		NumRoutines:     runtime.NumCPU(),
-	})
+	}
 	for i := 0; i < b.N; i++ {
-		err := m.Build(genTestDataBlocks(benchSize))
+		_, err := New(genTestDataBlocks(benchSize), config)
 		if err != nil {
 			b.Errorf("Build() error = %v", err)
 		}

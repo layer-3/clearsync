@@ -37,12 +37,12 @@ type Config struct {
 type MerkleTree struct {
 	*Config          // Merkle Tree configuration
 	Root    []byte   // Merkle root hash
-	Leaves  []*Node  // Merkle Tree leaves, i.e. the hashes of the data blocks for tree generation
+	Leaves  []*node  // Merkle Tree leaves, i.e. the hashes of the data blocks for tree generation
 	Proofs  []*Proof // proofs to the data blocks generated during the tree building process
 }
 
-// Node implements the Merkle Tree node
-type Node struct {
+// node implements the Merkle Tree node
+type node struct {
 	Hash []byte
 }
 
@@ -52,35 +52,34 @@ type Proof struct {
 	Neighbors [][]byte // neighbor nodes near the path
 }
 
-// NewMerkleTree generates a new Merkle Tree with specified configuration
-func NewMerkleTree(config *Config) *MerkleTree {
+// New generates a new Merkle Tree with specified configuration
+func New(blocks []DataBlock, config *Config) (m *MerkleTree, err error) {
+	if config == nil {
+		config = &Config{}
+	}
 	if config.HashFunc == nil {
 		config.HashFunc = defaultHashFunc
 	}
-	return &MerkleTree{
+	m = &MerkleTree{
 		Config: config,
 	}
-}
-
-// Build builds up the Merkle Tree and generates the proofs
-func (m *MerkleTree) Build(blocks []DataBlock) (err error) {
 	if len(blocks) <= 1 {
-		return nil
+		return nil, nil
 	}
 	if m.RunInParallel {
 		m.Leaves, err = generateLeavesParallel(blocks, m.HashFunc, m.Config.NumRoutines)
 		if err != nil {
-			return err
+			return
 		}
 		m.Root, err = m.buildTreeParallel()
 	} else {
 		m.Leaves, err = generateLeaves(blocks, m.HashFunc)
 		if err != nil {
-			return err
+			return
 		}
 		m.Root, err = m.buildTree()
 	}
-	return err
+	return
 }
 
 func (m *MerkleTree) buildTree() (root []byte, err error) {
@@ -93,7 +92,7 @@ func (m *MerkleTree) buildTree() (root []byte, err error) {
 		step    = 1
 		prevLen int
 	)
-	buf := make([]*Node, numLeaves)
+	buf := make([]*node, numLeaves)
 	copy(buf, m.Leaves)
 	buf, prevLen, err = m.fixOdd(buf, numLeaves)
 	if err != nil {
@@ -129,9 +128,9 @@ func (m *MerkleTree) buildTree() (root []byte, err error) {
 // if the length of the buffer calculating the Merkle Tree is odd, then append a node to the buffer
 // if AllowDuplicates is true, append a node by duplicating the previous node
 // otherwise, append a node by random
-func (m *MerkleTree) fixOdd(buf []*Node, prevLen int) ([]*Node, int, error) {
+func (m *MerkleTree) fixOdd(buf []*node, prevLen int) ([]*node, int, error) {
 	if prevLen%2 == 1 {
-		var appendNode *Node
+		var appendNode *node
 		if m.AllowDuplicates {
 			appendNode = buf[prevLen-1]
 		} else {
@@ -139,7 +138,7 @@ func (m *MerkleTree) fixOdd(buf []*Node, prevLen int) ([]*Node, int, error) {
 			if err != nil {
 				return nil, 0, err
 			}
-			appendNode = &Node{
+			appendNode = &node{
 				Hash: dummyHash,
 			}
 		}
@@ -153,7 +152,7 @@ func (m *MerkleTree) fixOdd(buf []*Node, prevLen int) ([]*Node, int, error) {
 	return buf, prevLen, nil
 }
 
-func (m *MerkleTree) assignProves(buf []*Node, bufLen, step int) {
+func (m *MerkleTree) assignProves(buf []*node, bufLen, step int) {
 	if bufLen < 2 {
 		return
 	}
@@ -163,7 +162,7 @@ func (m *MerkleTree) assignProves(buf []*Node, bufLen, step int) {
 	}
 }
 
-func (m *MerkleTree) assignProvesParallel(buf []*Node, bufLen, step int) {
+func (m *MerkleTree) assignProvesParallel(buf []*node, bufLen, step int) {
 	numRoutines := m.NumRoutines
 	if bufLen < 2 {
 		return
@@ -183,7 +182,7 @@ func (m *MerkleTree) assignProvesParallel(buf []*Node, bufLen, step int) {
 	wg.Wait()
 }
 
-func (m *MerkleTree) assignPairProof(buf []*Node, bufLen, idx, batch, step int) {
+func (m *MerkleTree) assignPairProof(buf []*node, bufLen, idx, batch, step int) {
 	if bufLen < 2 {
 		return
 	}
@@ -217,13 +216,13 @@ func (m *MerkleTree) buildTreeParallel() (root []byte, err error) {
 		step    = 1
 		prevLen int
 	)
-	buf1 := make([]*Node, numLeaves)
+	buf1 := make([]*node, numLeaves)
 	copy(buf1, m.Leaves)
 	buf1, prevLen, err = m.fixOdd(buf1, numLeaves)
 	if err != nil {
 		return nil, err
 	}
-	buf2 := make([]*Node, prevLen/2)
+	buf2 := make([]*node, prevLen/2)
 	m.assignProvesParallel(buf1, numLeaves, 0)
 	for {
 		buf1, prevLen, err = m.fixOdd(buf1, prevLen)
@@ -239,7 +238,7 @@ func (m *MerkleTree) buildTreeParallel() (root []byte, err error) {
 					if err != nil {
 						return err
 					}
-					buf2[j/2] = &Node{
+					buf2[j/2] = &node{
 						Hash: newHash,
 					}
 				}
@@ -284,10 +283,10 @@ func defaultHashFunc(data []byte) ([]byte, error) {
 	return sha256Func.Sum(nil), nil
 }
 
-func generateLeaves(blocks []DataBlock, hashFunc func([]byte) ([]byte, error)) ([]*Node, error) {
+func generateLeaves(blocks []DataBlock, hashFunc func([]byte) ([]byte, error)) ([]*node, error) {
 	var (
 		lenLeaves = len(blocks)
-		leaves    = make([]*Node, lenLeaves)
+		leaves    = make([]*node, lenLeaves)
 	)
 	for i := 0; i < lenLeaves; i++ {
 		data, err := blocks[i].Serialize()
@@ -298,16 +297,16 @@ func generateLeaves(blocks []DataBlock, hashFunc func([]byte) ([]byte, error)) (
 		if err != nil {
 			return nil, err
 		}
-		leaves[i] = &Node{Hash: hash}
+		leaves[i] = &node{Hash: hash}
 	}
 	return leaves, nil
 }
 
 func generateLeavesParallel(blocks []DataBlock,
-	hashFunc func([]byte) ([]byte, error), numRoutines int) ([]*Node, error) {
+	hashFunc func([]byte) ([]byte, error), numRoutines int) ([]*node, error) {
 	var (
 		lenLeaves = len(blocks)
-		leaves    = make([]*Node, lenLeaves)
+		leaves    = make([]*node, lenLeaves)
 	)
 	g := new(errgroup.Group)
 	for i := 0; i < numRoutines; i++ {
@@ -323,7 +322,7 @@ func generateLeavesParallel(blocks []DataBlock,
 				if err != nil {
 					return err
 				}
-				leaves[j] = &Node{Hash: hash}
+				leaves[j] = &node{Hash: hash}
 			}
 			return nil
 		})
@@ -332,13 +331,6 @@ func generateLeavesParallel(blocks []DataBlock,
 		return nil, err
 	}
 	return leaves, nil
-}
-
-// Reset resets the Merkle Tree
-func (m *MerkleTree) Reset() {
-	m.Leaves = nil
-	m.Root = nil
-	m.Proofs = nil
 }
 
 // Verify verifies the data block with the Merkle Tree proof
