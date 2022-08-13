@@ -9,7 +9,7 @@ High performance Merkle Tree Computation in Go (supports parallelization).
 ## Installation
 
 ```bash
-go get -u github.com/tommytim0515/go-merkletree
+go get -u github.com/txaty/go-merkletree
 ```
 
 

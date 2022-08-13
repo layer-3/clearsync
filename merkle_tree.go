@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
-	"golang.org/x/sync/errgroup"
 	"sync"
+
+	"golang.org/x/sync/errgroup"
 )
 
 const (

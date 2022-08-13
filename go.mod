@@ -1,4 +1,4 @@
-module github.com/tommytim0515/go-merkletree
+module github.com/txaty/go-merkletree
 
 go 1.19
 
