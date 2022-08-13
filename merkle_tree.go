@@ -24,8 +24,6 @@ type DataBlock interface {
 type Config struct {
 	// customizable hash function used for tree generation
 	HashFunc func([]byte) ([]byte, error)
-	// default length of hash function output, e.g. 32 bytes for SHA256
-	HashResultLen int
 	// if true, the generation runs in parallel,
 	// this increase the performance for the calculation of large number of data blocks, e.g. over 10,000 blocks
 	RunInParallel bool
@@ -61,10 +59,6 @@ func New(config *Config, blocks []DataBlock) (m *MerkleTree, err error) {
 	}
 	if config.HashFunc == nil {
 		config.HashFunc = defaultHashFunc
-		config.HashResultLen = defaultHashLen
-	}
-	if config.HashResultLen == 0 {
-		config.HashResultLen = defaultHashLen
 	}
 	m = &MerkleTree{
 		Config: config,
