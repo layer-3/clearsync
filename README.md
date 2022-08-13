@@ -92,9 +92,9 @@ func handleError(err error) {
 
 Benchmark with [cbergoon/merkletree](https://github.com/cbergoon/merkletree) (in [bench branch](https://github.com/cbergoon/merkletree)).
 
-In our implementation, ```tree.Build()``` performs tree generation and the proof generation at the same time (time complexity: O(nlogn)), cbergoon/merkletree's ```tree.NewTree()``` only generates the tree. So we benchmark our tree building process with cbergoon/merkletree's tree build + get merkle path ```tree.GetMerklePath()``` for each data block.
+In our implementation, ```tree.Build()``` performs tree generation and the proof generation at the same time (time complexity: O(nlogn)), cbergoon/merkletree's ```tree.NewTree()``` only generates the tree. So we benchmark our tree building process with cbergoon/merkletree's tree build + get merkle path ```tree.GetMerklePath()``` for each data block as the proof generation test.
 
-1000 blocks:
+1,000 blocks:
 
 <table>
 <thead><tr><th>Linux (i7-9750H)</th><th>M1 Macbook Air</th></tr></thead>
@@ -106,16 +106,16 @@ goos: linux
 goarch: amd64
 pkg: github.com/txaty/go-merkletree
 cpu: Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz
-BenchmarkMerkleTreeBuild
-BenchmarkMerkleTreeBuild-12                       523       2221038 ns/op
-BenchmarkMerkleTreeBuildParallel
-BenchmarkMerkleTreeBuildParallel-12               678       1758174 ns/op
-Benchmark_cbergoonMerkleTreeBuild
-Benchmark_cbergoonMerkleTreeBuild-12              164       7193082 ns/op
+BenchmarkMerkleTreeProofGen
+BenchmarkMerkleTreeProofGen-12             	     685	   1761708 ns/op
+BenchmarkMerkleTreeProofGenParallel
+BenchmarkMerkleTreeProofGenParallel-12     	     694	   1737775 ns/op
+Benchmark_cbergoonMerkleTreeProofGen
+Benchmark_cbergoonMerkleTreeProofGen-12    	     684	   1750200 ns/op
 BenchmarkMerkleTreeVerify
-BenchmarkMerkleTreeVerify-12                      176       6787151 ns/op
+BenchmarkMerkleTreeVerify-12               	     174	   6866456 ns/op
 Benchmark_cbergoonMerkleTreeVerify
-Benchmark_cbergoonMerkleTreeVerify-12              48      24503759 ns/op
+Benchmark_cbergoonMerkleTreeVerify-12      	      46	  24669106 ns/op
 PASS
 ```
 
@@ -125,16 +125,16 @@ PASS
 goos: darwin
 goarch: arm64
 pkg: github.com/txaty/go-merkletree
-BenchmarkMerkleTreeBuild
-BenchmarkMerkleTreeBuild-8                     1926        621450 ns/op
-BenchmarkMerkleTreeBuildParallel
-BenchmarkMerkleTreeBuildParallel-8             1980        597595 ns/op
-Benchmark_cbergoonMerkleTreeBuild
-Benchmark_cbergoonMerkleTreeBuild-8             416       2873425 ns/op
+BenchmarkMerkleTreeProofGen
+BenchmarkMerkleTreeProofGen-8            	    2581	    445515 ns/op
+BenchmarkMerkleTreeProofGenParallel
+BenchmarkMerkleTreeProofGenParallel-8    	    2080	    561253 ns/op
+Benchmark_cbergoonMerkleTreeProofGen
+Benchmark_cbergoonMerkleTreeProofGen-8   	    2588	    464377 ns/op
 BenchmarkMerkleTreeVerify
-BenchmarkMerkleTreeVerify-8                    1024       1162340 ns/op
+BenchmarkMerkleTreeVerify-8              	    1026	   1169075 ns/op
 Benchmark_cbergoonMerkleTreeVerify
-Benchmark_cbergoonMerkleTreeVerify-8            198       6064883 ns/op
+Benchmark_cbergoonMerkleTreeVerify-8     	     200	   6017512 ns/op
 PASS
 ```
 
@@ -153,16 +153,16 @@ goos: linux
 goarch: amd64
 pkg: github.com/txaty/go-merkletree
 cpu: Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz
-BenchmarkMerkleTreeBuild
-BenchmarkMerkleTreeBuild-12                        44      26247088 ns/op
-BenchmarkMerkleTreeBuildParallel
-BenchmarkMerkleTreeBuildParallel-12                88      13200423 ns/op
-Benchmark_cbergoonMerkleTreeBuild
-Benchmark_cbergoonMerkleTreeBuild-12                2     522912836 ns/op
+BenchmarkMerkleTreeProofGen
+BenchmarkMerkleTreeProofGen-12             	      40	  25252643 ns/op
+BenchmarkMerkleTreeProofGenParallel
+BenchmarkMerkleTreeProofGenParallel-12     	      96	  13112520 ns/op
+Benchmark_cbergoonMerkleTreeProofGen
+Benchmark_cbergoonMerkleTreeProofGen-12    	      44	  25051554 ns/op
 BenchmarkMerkleTreeVerify
-BenchmarkMerkleTreeVerify-12                       12      92832728 ns/op
+BenchmarkMerkleTreeVerify-12               	      12	  93765796 ns/op
 Benchmark_cbergoonMerkleTreeVerify
-Benchmark_cbergoonMerkleTreeVerify-12               2     775982655 ns/op
+Benchmark_cbergoonMerkleTreeVerify-12      	       2	 774985957 ns/op
 PASS
 ```
 
@@ -172,16 +172,16 @@ PASS
 goos: darwin
 goarch: arm64
 pkg: github.com/txaty/go-merkletree
-BenchmarkMerkleTreeBuild
-BenchmarkMerkleTreeBuild-8                      150       7583059 ns/op
-BenchmarkMerkleTreeBuildParallel
-BenchmarkMerkleTreeBuildParallel-8              193       6213593 ns/op
-Benchmark_cbergoonMerkleTreeBuild
-Benchmark_cbergoonMerkleTreeBuild-8               5     231274467 ns/op
+BenchmarkMerkleTreeProofGen
+BenchmarkMerkleTreeProofGen-8            	     160	   6930908 ns/op
+BenchmarkMerkleTreeProofGenParallel
+BenchmarkMerkleTreeProofGenParallel-8    	     205	   5795240 ns/op
+Benchmark_cbergoonMerkleTreeProofGen
+Benchmark_cbergoonMerkleTreeProofGen-8   	     168	   6999481 ns/op
 BenchmarkMerkleTreeVerify
-BenchmarkMerkleTreeVerify-8                      72      16243839 ns/op
+BenchmarkMerkleTreeVerify-8              	      70	  15945774 ns/op
 Benchmark_cbergoonMerkleTreeVerify
-Benchmark_cbergoonMerkleTreeVerify-8              4     282454323 ns/op
+Benchmark_cbergoonMerkleTreeVerify-8     	       4	 280509167 ns/op
 PASS
 ```
 
@@ -200,16 +200,16 @@ goos: linux
 goarch: amd64
 pkg: github.com/txaty/go-merkletree
 cpu: Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz
-BenchmarkMerkleTreeBuild
-BenchmarkMerkleTreeBuild-12                         4     314272598 ns/op
-BenchmarkMerkleTreeBuildParallel
-BenchmarkMerkleTreeBuildParallel-12                 7     144025900 ns/op
-Benchmark_cbergoonMerkleTreeBuild
-Benchmark_cbergoonMerkleTreeBuild-12                1    59839840747 ns/op
+BenchmarkMerkleTreeProofGen
+BenchmarkMerkleTreeProofGen-12             	       5	 209020151 ns/op
+BenchmarkMerkleTreeProofGenParallel
+BenchmarkMerkleTreeProofGenParallel-12     	       7	 143142651 ns/op
+Benchmark_cbergoonMerkleTreeProofGen
+Benchmark_cbergoonMerkleTreeProofGen-12    	       5	 217958259 ns/op
 BenchmarkMerkleTreeVerify
-BenchmarkMerkleTreeVerify-12                        1    1128593176 ns/op
+BenchmarkMerkleTreeVerify-12               	       1	1152525580 ns/op
 Benchmark_cbergoonMerkleTreeVerify
-Benchmark_cbergoonMerkleTreeVerify-12               1    63145758422 ns/op
+Benchmark_cbergoonMerkleTreeVerify-12      	       1	47569698074 ns/op
 PASS
 ```
 
@@ -219,16 +219,16 @@ PASS
 goos: darwin
 goarch: arm64
 pkg: github.com/txaty/go-merkletree
-BenchmarkMerkleTreeBuild
-BenchmarkMerkleTreeBuild-8                       12      99413837 ns/op
-BenchmarkMerkleTreeBuildParallel
-BenchmarkMerkleTreeBuildParallel-8               14      77042113 ns/op
-Benchmark_cbergoonMerkleTreeBuild
-Benchmark_cbergoonMerkleTreeBuild-8               1    29609023292 ns/op
+BenchmarkMerkleTreeProofGen
+BenchmarkMerkleTreeProofGen-8            	      16	  71094940 ns/op
+BenchmarkMerkleTreeProofGenParallel
+BenchmarkMerkleTreeProofGenParallel-8    	      15	  70876911 ns/op
+Benchmark_cbergoonMerkleTreeProofGen
+Benchmark_cbergoonMerkleTreeProofGen-8   	      15	  71411361 ns/op
 BenchmarkMerkleTreeVerify
-BenchmarkMerkleTreeVerify-8                       6     193811917 ns/op
+BenchmarkMerkleTreeVerify-8              	       6	 192947236 ns/op
 Benchmark_cbergoonMerkleTreeVerify
-Benchmark_cbergoonMerkleTreeVerify-8              1    30393054541 ns/op
+Benchmark_cbergoonMerkleTreeVerify-8     	       1	29294817917 ns/op
 PASS
 ```
 
