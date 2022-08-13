@@ -216,7 +216,6 @@ func (m *MerkleTree) buildTreeParallel() (root []byte, err error) {
 	m.Proofs = make([]*Proof, numLeaves)
 	for i := 0; i < numLeaves; i++ {
 		m.Proofs[i] = new(Proof)
-		m.Proofs[i].Neighbors = make([][]byte, 0, m.treeDepth)
 	}
 	var (
 		step    = 1
