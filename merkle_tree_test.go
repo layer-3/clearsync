@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-const benchSize = 1000
+const benchSize = 10000
 
 type mockDataBlock struct {
 	data []byte
@@ -259,7 +259,7 @@ func BenchmarkMerkleTreeNew(b *testing.B) {
 	}
 }
 
-func BenchmarkMerkleTreeBuildParallel(b *testing.B) {
+func BenchmarkMerkleTreeNewParallel(b *testing.B) {
 	config := &Config{
 		HashFunc:        defaultHashFunc,
 		AllowDuplicates: true,
