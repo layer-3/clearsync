@@ -53,7 +53,7 @@ jobs:
 
       - name: Run Test
         run: |
-          make tests_race
+          make tests
 
       - name: Go Coverage Badge  # Pass the `coverage.out` output to this action
         uses: tj-actions/coverage-badge-go@v1.2
