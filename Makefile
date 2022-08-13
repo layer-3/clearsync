@@ -18,3 +18,6 @@ cpu_report:
 
 mem_report:
 	go tool pprof mem.prof
+
+build:
+	go build -v ./...
