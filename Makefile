@@ -1,8 +1,8 @@
 tests:
-	go test -v -covermode count -coverprofile coverage.out && go tool cover -html coverage.out -o coverage.html
+	go test -v -covermode count -coverprofile coverage.out && go tool cover -html coverage.out -o coverage.html && go tool cover -func coverage.out -o coverage.out
 
 tests_race:
-	go test -v -race -covermode atomic -coverprofile coverage.out && go tool cover -html coverage.out -o coverage.html
+	go test -v -race -covermode atomic -coverprofile coverage.out && go tool cover -html coverage.out -o coverage.html && go tool cover -func coverage.out -o coverage.out
 
 format:
 	go fmt .
