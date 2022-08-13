@@ -359,9 +359,9 @@ func Verify(dataBlock DataBlock, proof *Proof, root []byte,
 	for _, n := range proof.Neighbors {
 		dir := path & 1
 		if dir == 1 {
-			hash, err = defaultHashFunc(append(hash, n...))
+			hash, err = hashFunc(append(hash, n...))
 		} else {
-			hash, err = defaultHashFunc(append(n, hash...))
+			hash, err = hashFunc(append(n, hash...))
 		}
 		if err != nil {
 			return false, err
