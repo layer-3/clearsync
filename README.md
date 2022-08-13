@@ -60,7 +60,7 @@ func main() {
         AllowDuplicates: true,
     }
     // build a new Merkle Tree
-    tree, err := mt.New(blocks, config)
+    tree, err := mt.New(config, blocks)
     handleError(err)
     // get the root hash of the Merkle Tree
     rootHash := tree.Root
