@@ -2,7 +2,7 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/txaty/go-merkletree.svg)](https://pkg.go.dev/github.com/txaty/go-merkletree)
 [![Go Report Card](https://goreportcard.com/badge/github.com/txaty/go-merkletree)](https://goreportcard.com/report/github.com/txaty/go-merkletree)
-![Coverage](https://img.shields.io/badge/Coverage-0-red)
+![Coverage](https://img.shields.io/badge/Coverage-87.8%25-brightgreen)
 
 High performance Merkle Tree Computation in Go (supports parallelization).
 
