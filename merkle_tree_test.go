@@ -45,7 +45,6 @@ func TestMerkleTreeNew(t *testing.T) {
 			name: "test_0",
 			args: args{
 				blocks: genTestDataBlocks(0),
-				config: nil,
 			},
 			wantErr: false,
 		},
@@ -53,7 +52,6 @@ func TestMerkleTreeNew(t *testing.T) {
 			name: "test_4",
 			args: args{
 				blocks: genTestDataBlocks(4),
-				config: nil,
 			},
 			wantErr: false,
 		},
@@ -76,6 +74,13 @@ func TestMerkleTreeNew(t *testing.T) {
 					HashFunc:        defaultHashFunc,
 					AllowDuplicates: true,
 				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test_1000",
+			args: args{
+				blocks: genTestDataBlocks(1000),
 			},
 			wantErr: false,
 		},

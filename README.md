@@ -105,7 +105,7 @@ In our implementation, ```tree.Build()``` performs tree generation and the proof
 ```bash
 goos: linux
 goarch: amd64
-pkg: github.com/tommytim0515/go-merkletree
+pkg: github.com/txaty/go-merkletree
 cpu: Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz
 BenchmarkMerkleTreeBuild
 BenchmarkMerkleTreeBuild-12              	     523	   2221038 ns/op
@@ -125,7 +125,7 @@ PASS
 ```bash
 goos: darwin
 goarch: arm64
-pkg: github.com/tommytim0515/go-merkletree
+pkg: github.com/txaty/go-merkletree
 BenchmarkMerkleTreeBuild
 BenchmarkMerkleTreeBuild-8             	    1926	    621450 ns/op
 BenchmarkMerkleTreeBuildParallel
@@ -152,7 +152,7 @@ PASS
 ```bash
 goos: linux
 goarch: amd64
-pkg: github.com/tommytim0515/go-merkletree
+pkg: github.com/txaty/go-merkletree
 cpu: Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz
 BenchmarkMerkleTreeBuild
 BenchmarkMerkleTreeBuild-12              	      44	  26247088 ns/op
@@ -172,7 +172,7 @@ PASS
 ```bash
 goos: darwin
 goarch: arm64
-pkg: github.com/tommytim0515/go-merkletree
+pkg: github.com/txaty/go-merkletree
 BenchmarkMerkleTreeBuild
 BenchmarkMerkleTreeBuild-8             	     150	   7583059 ns/op
 BenchmarkMerkleTreeBuildParallel
@@ -199,7 +199,7 @@ PASS
 ```bash
 goos: linux
 goarch: amd64
-pkg: github.com/tommytim0515/go-merkletree
+pkg: github.com/txaty/go-merkletree
 cpu: Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz
 BenchmarkMerkleTreeBuild
 BenchmarkMerkleTreeBuild-12              	       4	 314272598 ns/op
@@ -219,7 +219,7 @@ PASS
 ```bash
 goos: darwin
 goarch: arm64
-pkg: github.com/tommytim0515/go-merkletree
+pkg: github.com/txaty/go-merkletree
 BenchmarkMerkleTreeBuild
 BenchmarkMerkleTreeBuild-8             	      12	  99413837 ns/op
 BenchmarkMerkleTreeBuildParallel

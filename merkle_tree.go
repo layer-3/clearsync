@@ -355,8 +355,9 @@ func Verify(dataBlock DataBlock, proof *Proof, root []byte,
 	if err != nil {
 		return false, err
 	}
+	path := proof.Path
 	for _, n := range proof.Neighbors {
-		dir := proof.Path & 1
+		dir := path & 1
 		if dir == 1 {
 			hash, err = defaultHashFunc(append(hash, n...))
 		} else {
@@ -365,7 +366,7 @@ func Verify(dataBlock DataBlock, proof *Proof, root []byte,
 		if err != nil {
 			return false, err
 		}
-		proof.Path >>= 1
+		path >>= 1
 	}
 	return bytes.Equal(hash, root), nil
 }
