@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-const benchSize = 5000000
+const benchSize = 10000
 
 type mockDataBlock struct {
 	data []byte
@@ -100,7 +100,7 @@ func TestMerkleTreeNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if _, err := New(tt.args.blocks, tt.args.config); (err != nil) != tt.wantErr {
+			if _, err := New(tt.args.config, tt.args.blocks); (err != nil) != tt.wantErr {
 				t.Errorf("Build() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -109,10 +109,10 @@ func TestMerkleTreeNew(t *testing.T) {
 
 func verifySetup(size int) (*MerkleTree, []DataBlock, error) {
 	blocks := genTestDataBlocks(size)
-	m, err := New(blocks, &Config{
+	m, err := New(&Config{
 		HashFunc:        defaultHashFunc,
 		AllowDuplicates: true,
-	})
+	}, blocks)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -121,12 +121,12 @@ func verifySetup(size int) (*MerkleTree, []DataBlock, error) {
 
 func verifySetupParallel(size int) (*MerkleTree, []DataBlock, error) {
 	blocks := genTestDataBlocks(size)
-	m, err := New(blocks, &Config{
+	m, err := New(&Config{
 		HashFunc:        defaultHashFunc,
 		AllowDuplicates: true,
 		RunInParallel:   true,
 		NumRoutines:     4,
-	})
+	}, blocks)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -250,18 +250,16 @@ func BenchmarkMerkleTreeNew(b *testing.B) {
 	config := &Config{
 		HashFunc:        defaultHashFunc,
 		AllowDuplicates: true,
-		RunInParallel:   true,
-		NumRoutines:     4,
 	}
 	for i := 0; i < b.N; i++ {
-		_, err := New(genTestDataBlocks(benchSize), config)
+		_, err := New(config, genTestDataBlocks(benchSize))
 		if err != nil {
 			b.Errorf("Build() error = %v", err)
 		}
 	}
 }
 
-func BenchmarkMerkleTreeBuildParallel(b *testing.B) {
+func BenchmarkMerkleTreeNewParallel(b *testing.B) {
 	config := &Config{
 		HashFunc:        defaultHashFunc,
 		AllowDuplicates: true,
@@ -269,7 +267,7 @@ func BenchmarkMerkleTreeBuildParallel(b *testing.B) {
 		NumRoutines:     runtime.NumCPU(),
 	}
 	for i := 0; i < b.N; i++ {
-		_, err := New(genTestDataBlocks(benchSize), config)
+		_, err := New(config, genTestDataBlocks(benchSize))
 		if err != nil {
 			b.Errorf("Build() error = %v", err)
 		}
