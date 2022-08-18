@@ -1,6 +1,7 @@
 package merkletree
 
 import (
+	"bytes"
 	"math/rand"
 	"runtime"
 	"testing"
@@ -31,7 +32,7 @@ func genTestDataBlocks(num int) []DataBlock {
 	return blocks
 }
 
-func TestMerkleTreeNew(t *testing.T) {
+func TestMerkleTreeNew_proofGen(t *testing.T) {
 	type args struct {
 		blocks []DataBlock
 		config *Config
@@ -47,6 +48,20 @@ func TestMerkleTreeNew(t *testing.T) {
 				blocks: genTestDataBlocks(0),
 			},
 			wantErr: true,
+		},
+		{
+			name: "test_1",
+			args: args{
+				blocks: genTestDataBlocks(1),
+			},
+			wantErr: true,
+		},
+		{
+			name: "test_2",
+			args: args{
+				blocks: genTestDataBlocks(2),
+			},
+			wantErr: false,
 		},
 		{
 			name: "test_4",
@@ -102,6 +117,85 @@ func TestMerkleTreeNew(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if _, err := New(tt.args.config, tt.args.blocks); (err != nil) != tt.wantErr {
 				t.Errorf("Build() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestMerkleTreeNew_buildTree(t *testing.T) {
+	type args struct {
+		blocks []DataBlock
+		config *Config
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "test_build_tree_2",
+			args: args{
+				blocks: genTestDataBlocks(2),
+				config: &Config{
+					HashFunc:        defaultHashFunc,
+					AllowDuplicates: true,
+					Mode:            ModeBuildTree,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test_build_tree_4",
+			args: args{
+				blocks: genTestDataBlocks(4),
+				config: &Config{
+					HashFunc:        defaultHashFunc,
+					AllowDuplicates: true,
+					Mode:            ModeBuildTree,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test_build_tree_8",
+			args: args{
+				blocks: genTestDataBlocks(8),
+				config: &Config{
+					HashFunc:        defaultHashFunc,
+					AllowDuplicates: true,
+					Mode:            ModeBuildTree,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test_build_tree_1000",
+			args: args{
+				blocks: genTestDataBlocks(1000),
+				config: &Config{
+					HashFunc:        defaultHashFunc,
+					AllowDuplicates: true,
+					Mode:            ModeBuildTree,
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m, err := New(tt.args.config, tt.args.blocks)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Build() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			m1, err := New(nil, tt.args.blocks)
+			if err != nil {
+				t.Errorf("test setup error %v", err)
+				return
+			}
+			if bytes.Equal(m.Root, m1.Root) {
+				t.Errorf("tree generated is wrong")
+				return
 			}
 		})
 	}
@@ -201,6 +295,13 @@ func TestMerkleTree_Verify(t *testing.T) {
 			name:      "test_pseudo_random_1001",
 			setupFunc: verifySetup,
 			blockSize: 1001,
+			want:      true,
+			wantErr:   false,
+		},
+		{
+			name:      "test_pseudo_random_64_parallel",
+			setupFunc: verifySetupParallel,
+			blockSize: 64,
 			want:      true,
 			wantErr:   false,
 		},
