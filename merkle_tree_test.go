@@ -46,7 +46,7 @@ func TestMerkleTreeNew(t *testing.T) {
 			args: args{
 				blocks: genTestDataBlocks(0),
 			},
-			wantErr: false,
+			wantErr: true,
 		},
 		{
 			name: "test_4",
