@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"math"
+	"runtime"
 	"sync"
 
 	"golang.org/x/sync/errgroup"
@@ -13,10 +14,13 @@ import (
 
 const (
 	// Default hash result length using SHA256.
-	defaultHashLen          = 32
-	ModeProofGen   ModeType = iota
-	ModeBuildTree
-	ModeProofGenAndBuildTree
+	defaultHashLen = 32
+	// ModeProofGen is the proof generation configuration mode.
+	ModeProofGen ModeType = iota
+	// ModeTreeBuild is the tree building configuration mode.
+	ModeTreeBuild
+	// ModeProofGenAndTreeBuild is the proof generation and tree building configuration mode.
+	ModeProofGenAndTreeBuild
 )
 
 // ModeType is the type in the Merkle Tree configuration indicating what operations are performed.
@@ -39,22 +43,30 @@ type Config struct {
 	RunInParallel bool
 	// Number of goroutines run in parallel.
 	NumRoutines int
-	// If true, then the odd node situation is handled by duplicating the previous node.
-	// Otherwise, generate a dummy node with random hash value.
-	AllowDuplicates bool
+	// If true, generate a dummy node with random hash value.
+	// Otherwise, then the odd node situation is handled by duplicating the previous node.
+	NoDuplicates bool
 	// Mode of the Merkle Tree generation.
 	Mode ModeType
 }
 
 // MerkleTree implements the Merkle Tree structure
 type MerkleTree struct {
-	*Config                // Merkle Tree configuration
-	Root    []byte         // Merkle root hash
-	Leaves  [][]byte       // Merkle Tree leaves, i.e. the hashes of the data blocks for tree generation
-	Proofs  []*Proof       // proofs to the data blocks generated during the tree building process
-	Depth   uint32         // the Merkle Tree depth
-	Tree    [][][]byte     // the Merkle Tree, only available when config mode is ModeBuildTree or ModeProofGenAndBuildTree
-	leafMap map[string]int // map of the leaf hash to the index in the Tree slice, only available when config mode is ModeBuildTree or ModeProofGenAndBuildTree
+	// Config is the Merkle Tree configuration
+	*Config
+	// Root is the Merkle root hash
+	Root []byte
+	// Leaves are Merkle Tree leaves, i.e. the hashes of the data blocks for tree generation
+	Leaves [][]byte
+	// Proofs are proofs to the data blocks generated during the tree building process
+	Proofs []*Proof
+	// Depth is the Merkle Tree depth
+	Depth uint32
+	// tree is the Merkle Tree structure, only available when config mode is ModeTreeBuild or ModeProofGenAndTreeBuild
+	tree [][][]byte
+	// leafMap is the map of the leaf hash to the index in the Tree slice,
+	// only available when config mode is ModeTreeBuild or ModeProofGenAndTreeBuild
+	leafMap sync.Map
 }
 
 // Proof implements the Merkle Tree proof.
@@ -74,38 +86,47 @@ func New(config *Config, blocks []DataBlock) (m *MerkleTree, err error) {
 	if config.HashFunc == nil {
 		config.HashFunc = defaultHashFunc
 	}
+	// if the configuration mode is not set, then set it to ModeProofGen by default
+	if config.Mode == 0 {
+		config.Mode = ModeProofGen
+	}
+	if config.RunInParallel && config.NumRoutines == 0 {
+		config.NumRoutines = runtime.NumCPU()
+	}
 	m = &MerkleTree{
 		Config: config,
 	}
 	m.Depth = calTreeDepth(len(blocks))
-	if m.Mode == ModeBuildTree {
+	if m.Mode == ModeProofGen {
+		if m.RunInParallel {
+			m.Leaves, err = leafGenParal(blocks, m.HashFunc, m.NumRoutines)
+			if err != nil {
+				return
+			}
+			err = m.proofGenParal()
+			return
+		}
+		m.Leaves, err = leafGen(blocks, m.HashFunc)
+		if err != nil {
+			return
+		}
+		err = m.proofGen()
+		return
+	}
+	if m.Mode == ModeTreeBuild {
 		if m.RunInParallel {
 			panic("not implemented")
 		}
-		m.Leaves, err = leafGenParal(blocks, m.HashFunc, m.NumRoutines)
+		m.Leaves, err = leafGen(blocks, m.HashFunc)
 		if err != nil {
 			return
 		}
 		err = m.buildTree()
 		return
 	}
-	if m.Mode == ModeProofGenAndBuildTree {
+	if m.Mode == ModeProofGenAndTreeBuild {
 		panic("not implemented")
 	}
-	// ModeProofGen by default
-	if m.RunInParallel {
-		m.Leaves, err = leafGenParal(blocks, m.HashFunc, m.NumRoutines)
-		if err != nil {
-			return
-		}
-		err = m.proofGenParal()
-		return
-	}
-	m.Leaves, err = leafGen(blocks, m.HashFunc)
-	if err != nil {
-		return
-	}
-	err = m.proofGen()
 	return
 }
 
@@ -139,12 +160,12 @@ func (m *MerkleTree) proofGen() (err error) {
 	m.updateProofs(buf, numLeaves, 0)
 	for {
 		for idx := 0; idx < prevLen; idx += 2 {
-			buf[idx/2], err = m.HashFunc(append(buf[idx], buf[idx+1]...))
+			buf[idx>>1], err = m.HashFunc(append(buf[idx], buf[idx+1]...))
 			if err != nil {
 				return
 			}
 		}
-		prevLen /= 2
+		prevLen >>= 1
 		if prevLen == 1 {
 			break
 		}
@@ -175,7 +196,7 @@ func (m *MerkleTree) proofGenParal() (err error) {
 	if err != nil {
 		return
 	}
-	buf2 := make([][]byte, prevLen/2)
+	buf2 := make([][]byte, prevLen>>1)
 	m.updateProofsParal(buf1, numLeaves, 0)
 	for {
 		if err != nil {
@@ -183,14 +204,14 @@ func (m *MerkleTree) proofGenParal() (err error) {
 		}
 		g := new(errgroup.Group)
 		for i := 0; i < numRoutines && i < prevLen; i++ {
-			idx := 2 * i
+			idx := i << 1
 			g.Go(func() error {
-				for j := idx; j < prevLen; j += 2 * numRoutines {
+				for j := idx; j < prevLen; j += numRoutines << 1 {
 					newHash, err := m.HashFunc(append(buf1[j], buf1[j+1]...))
 					if err != nil {
 						return err
 					}
-					buf2[j/2] = newHash
+					buf2[j>>1] = newHash
 				}
 				return nil
 			})
@@ -199,7 +220,7 @@ func (m *MerkleTree) proofGenParal() (err error) {
 			return
 		}
 		buf1, buf2 = buf2, buf1
-		prevLen /= 2
+		prevLen >>= 1
 		if prevLen == 1 {
 			break
 		}
@@ -220,14 +241,14 @@ func (m *MerkleTree) proofGenParal() (err error) {
 func (m *MerkleTree) fixOdd(buf [][]byte, prevLen int) ([][]byte, int, error) {
 	if prevLen%2 == 1 {
 		var appendNode []byte
-		if m.AllowDuplicates {
-			appendNode = buf[prevLen-1]
-		} else {
+		if m.NoDuplicates {
 			var err error
 			appendNode, err = getDummyHash()
 			if err != nil {
 				return nil, 0, err
 			}
+		} else {
+			appendNode = buf[prevLen-1]
 		}
 		if len(buf) <= prevLen+1 {
 			buf = append(buf, appendNode)
@@ -257,11 +278,11 @@ func (m *MerkleTree) updateProofsParal(buf [][]byte, bufLen, step int) {
 	batch := 1 << step
 	wg := new(sync.WaitGroup)
 	for i := 0; i < numRoutines; i++ {
-		idx := 2 * i
+		idx := i << 1
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for j := idx; j < bufLen; j += 2 * numRoutines {
+			for j := idx; j < bufLen; j += numRoutines << 1 {
 				m.updatePairProof(buf, bufLen, j, batch, step)
 			}
 		}()
@@ -361,31 +382,35 @@ func leafGenParal(blocks []DataBlock, hashFunc HashFuncType, numRoutines int) ([
 
 func (m *MerkleTree) buildTree() (err error) {
 	numLeaves := len(m.Leaves)
-	m.leafMap = make(map[string]int)
-	for i := 0; i < numLeaves; i++ {
-		m.leafMap[string(m.Leaves[i])] = i
-	}
-	m.Tree = make([][][]byte, m.Depth+1)
-	m.Tree[m.Depth] = make([][]byte, numLeaves)
-	copy(m.Tree[m.Depth], m.Leaves)
+	m.leafMap = sync.Map{}
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < numLeaves; i++ {
+			m.leafMap.Store(string(m.Leaves[i]), i)
+		}
+	}()
+	m.tree = make([][][]byte, m.Depth+1)
+	m.tree[0] = make([][]byte, numLeaves)
+	copy(m.tree[0], m.Leaves)
 	var prevLen int
-	m.Tree[m.Depth], prevLen, err = m.fixOdd(m.Tree[m.Depth], numLeaves)
-	for i := m.Depth; i > 0; i-- {
-		m.Tree[i-1] = make([][]byte, prevLen/2)
+	m.tree[0], prevLen, err = m.fixOdd(m.tree[0], numLeaves)
+	for i := uint32(0); i < m.Depth; i++ {
+		m.tree[i+1] = make([][]byte, prevLen>>1)
 		if err != nil {
 			return
 		}
 		for j := 0; j < prevLen; j += 2 {
-			appendHash := append(m.Tree[i][j], m.Tree[i][j+1]...)
-			m.Tree[i-1][j/2], err = m.HashFunc(appendHash)
+			m.tree[i+1][j>>1], err = m.HashFunc(append(m.tree[i][j], m.tree[i][j+1]...))
 			if err != nil {
 				return
 			}
 		}
-		prevLen /= 2
-		m.Tree[i-1], prevLen, err = m.fixOdd(m.Tree[i-1], prevLen)
+		m.tree[i+1], prevLen, err = m.fixOdd(m.tree[i+1], len(m.tree[i+1]))
 	}
-	m.Root = m.Tree[0][0]
+	m.Root = m.tree[m.Depth][0]
+	wg.Wait()
 	return
 }
 
@@ -426,4 +451,43 @@ func Verify(dataBlock DataBlock, proof *Proof, root []byte, hashFunc HashFuncTyp
 		path >>= 1
 	}
 	return bytes.Equal(hash, root), nil
+}
+
+// GenerateProof generates the Merkle proof for a data block with the Merkle Tree structure generated beforehand.
+// The method is only available when the configuration mode is ModeTreeBuild or ModeProofGenAndTreeBuild.
+// In ModeProofGen, proofs for all the data blocks are already generated, and the Merkle Tree structure is not cached.
+func (m *MerkleTree) GenerateProof(dataBlock DataBlock) (*Proof, error) {
+	if m.Mode != ModeTreeBuild && m.Mode != ModeProofGenAndTreeBuild {
+		return nil, errors.New("merkle Tree is not in built, could not generate proof by this method")
+	}
+	blockByte, err := dataBlock.Serialize()
+	if err != nil {
+		return nil, err
+	}
+	blockHash, err := m.HashFunc(blockByte)
+	if err != nil {
+		return nil, err
+	}
+	val, ok := m.leafMap.Load(string(blockHash))
+	if !ok {
+		return nil, errors.New("data block is not a member of the Merkle Tree")
+	}
+	var (
+		idx      = val.(int)
+		path     uint32
+		siblings = make([][]byte, m.Depth)
+	)
+	for i := uint32(0); i < m.Depth; i++ {
+		if idx%2 == 1 {
+			siblings[i] = m.tree[i][idx-1]
+		} else {
+			path += 1 << i
+			siblings[i] = m.tree[i][idx+1]
+		}
+		idx >>= 1
+	}
+	return &Proof{
+		Path:     path,
+		Siblings: siblings,
+	}, nil
 }
