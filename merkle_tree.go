@@ -42,6 +42,7 @@ type Config struct {
 	// This increase the performance for the calculation of large number of data blocks, e.g. over 10,000 blocks.
 	RunInParallel bool
 	// Number of goroutines run in parallel.
+	// If RunInParallel is true and NumRoutine is set to 0, use number of CPU as the number of goroutines.
 	NumRoutines int
 	// If true, generate a dummy node with random hash value.
 	// Otherwise, then the odd node situation is handled by duplicating the previous node.

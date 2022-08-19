@@ -26,9 +26,39 @@ previous one to determine whether the block is contained in the data block set.
 go get -u github.com/txaty/go-merkletree
 ```
 
+## Configuration
+
+```go
+type Config struct {
+    // Customizable hash function used for tree generation.
+    HashFunc HashFuncType
+    // If true, the generation runs in parallel, otherwise runs without parallelization.
+    // This increase the performance for the calculation of large number of data blocks, e.g. over 10,000 blocks.
+    RunInParallel bool
+    // Number of goroutines run in parallel.
+    // If RunInParallel is true and NumRoutine is set to 0, use number of CPU as the number of goroutines.
+    NumRoutines int
+    // If true, generate a dummy node with random hash value.
+    // Otherwise, then the odd node situation is handled by duplicating the previous node.
+    NoDuplicates bool
+    // Mode of the Merkle Tree generation.
+    Mode ModeType // ModeProofGen, ModeTreeBuild, and ModeProofGenAndTreeBuild (not implemented yet)
+}
+```
+
+To define a new Hash function:
+
+```go
+func NewHashFunc(data []byte) ([]byte, error) {
+    sha256Func := sha256.New()
+    sha256Func.Write(data)
+    return sha256Func.Sum(nil), nil
+}
+```
+
 ## Example
 
-### A quick run of proof generation and verification
+### Proof generation and verification of all blocks
 
 ```go
 package main
@@ -93,10 +123,44 @@ func handleError(err error) {
 }
 ```
 
+### Build tree and generate proofs for a few blocks
+
+```go
+blocks := generateRandBlocks(10)
+
+// create a Merkle Tree config and set mode to tree building
+config := &mt.Config{
+    Mode: ModeTreeBuild,
+}
+tree, err := mt.New(config, blocks)
+handleError(err)
+// get the proof for a specific data block
+// method GenerateProof is only available when ModeTreeBuild or ModeProofGenAndTreeBuild
+proof0, err := tree.GenerateProof(blocks[0])
+handleError(err)
+proof3, err := tree.GenerateProof(blocks[3])
+handleError(err)
+```
+
+### Parallel run
+
+```go
+blocks := generateRandBlocks(10)
+
+// create a Merkle Tree config and set parallel run parameters
+config := &mt.Config{
+    RunInParallel: true,
+    NumRoutines: 4,
+}
+tree, err := mt.New(config, blocks)
+handleError(err)
+```
+
 ## Benchmark
 
 Benchmark with [cbergoon/merkletree](https://github.com/cbergoon/merkletree) (
-in [bench branch](https://github.com/cbergoon/merkletree), the benchmark version is v0.1.7).
+in [bench branch](https://github.com/cbergoon/merkletree), the benchmark version
+is [v0.1.7](https://github.com/txaty/go-merkletree/tree/v0.1.7)).
 
 In our implementation, ```tree.Build()``` performs tree generation and the proof generation at the same time (time
 complexity: O(nlogn)), cbergoon/merkletree's ```tree.NewTree()``` only generates the tree. So we benchmark our tree
