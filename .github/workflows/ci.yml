@@ -23,8 +23,12 @@ jobs:
 
     - name: Test
       run: make tests_race
-      
+
     - name: Run golangci-lint
-      # You may pin to the exact commit or the version.
-      # uses: golangci/golangci-lint-action@537aa1903e5d359d0b27dbc19ddd22c5087f3fbc
       uses: golangci/golangci-lint-action@v3.2.0
+
+    - name: Run coverage
+      run: go test -race -coverprofile=coverage.txt -covermode=atomic
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
