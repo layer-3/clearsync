@@ -28,3 +28,8 @@ jobs:
       # You may pin to the exact commit or the version.
       # uses: golangci/golangci-lint-action@537aa1903e5d359d0b27dbc19ddd22c5087f3fbc
       uses: golangci/golangci-lint-action@v3.2.0
+    
+    - name: Codecov
+      # You may pin to the exact commit or the version.
+      # uses: codecov/codecov-action@81cd2dc8148241f03f5839d295e000b8f761e378
+      uses: codecov/codecov-action@v3.1.0
