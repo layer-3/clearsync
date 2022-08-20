@@ -42,7 +42,7 @@ type Config struct {
     // Otherwise, then the odd node situation is handled by duplicating the previous node.
     NoDuplicates bool
     // Mode of the Merkle Tree generation.
-    Mode ModeType // ModeProofGen, ModeTreeBuild, and ModeProofGenAndTreeBuild (not implemented yet)
+    Mode ModeType // ModeProofGen, ModeTreeBuild, and ModeProofGenAndTreeBuild
 }
 ```
 

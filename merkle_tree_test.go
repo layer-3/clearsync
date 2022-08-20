@@ -98,7 +98,6 @@ func TestMerkleTreeNew_proofGen(t *testing.T) {
 			args: args{
 				blocks: genTestDataBlocks(100),
 				config: &Config{
-					HashFunc:      defaultHashFunc,
 					RunInParallel: true,
 					NumRoutines:   4,
 				},
@@ -130,8 +129,7 @@ func TestMerkleTreeNew_buildTree(t *testing.T) {
 			args: args{
 				blocks: genTestDataBlocks(2),
 				config: &Config{
-					HashFunc: defaultHashFunc,
-					Mode:     ModeTreeBuild,
+					Mode: ModeTreeBuild,
 				},
 			},
 			wantErr: false,
@@ -141,8 +139,7 @@ func TestMerkleTreeNew_buildTree(t *testing.T) {
 			args: args{
 				blocks: genTestDataBlocks(4),
 				config: &Config{
-					HashFunc: defaultHashFunc,
-					Mode:     ModeTreeBuild,
+					Mode: ModeTreeBuild,
 				},
 			},
 			wantErr: false,
@@ -152,8 +149,7 @@ func TestMerkleTreeNew_buildTree(t *testing.T) {
 			args: args{
 				blocks: genTestDataBlocks(5),
 				config: &Config{
-					HashFunc: defaultHashFunc,
-					Mode:     ModeTreeBuild,
+					Mode: ModeTreeBuild,
 				},
 			},
 			wantErr: false,
@@ -163,8 +159,7 @@ func TestMerkleTreeNew_buildTree(t *testing.T) {
 			args: args{
 				blocks: genTestDataBlocks(8),
 				config: &Config{
-					HashFunc: defaultHashFunc,
-					Mode:     ModeTreeBuild,
+					Mode: ModeTreeBuild,
 				},
 			},
 			wantErr: false,
@@ -174,8 +169,7 @@ func TestMerkleTreeNew_buildTree(t *testing.T) {
 			args: args{
 				blocks: genTestDataBlocks(1000),
 				config: &Config{
-					HashFunc: defaultHashFunc,
-					Mode:     ModeTreeBuild,
+					Mode: ModeTreeBuild,
 				},
 			},
 			wantErr: false,
@@ -203,11 +197,254 @@ func TestMerkleTreeNew_buildTree(t *testing.T) {
 	}
 }
 
+func TestMerkleTreeNew_treeBuildParallel(t *testing.T) {
+	type args struct {
+		blocks []DataBlock
+		config *Config
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "test_build_tree_parallel_2",
+			args: args{
+				blocks: genTestDataBlocks(2),
+				config: &Config{
+					RunInParallel: true,
+					NumRoutines:   4,
+					Mode:          ModeTreeBuild,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test_build_tree_parallel_4",
+			args: args{
+				blocks: genTestDataBlocks(4),
+				config: &Config{
+					RunInParallel: true,
+					NumRoutines:   4,
+					Mode:          ModeTreeBuild,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test_build_tree_parallel_5",
+			args: args{
+				blocks: genTestDataBlocks(5),
+				config: &Config{
+					RunInParallel: true,
+					NumRoutines:   4,
+					Mode:          ModeTreeBuild,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test_build_tree_parallel_8",
+			args: args{
+				blocks: genTestDataBlocks(8),
+				config: &Config{
+					RunInParallel: true,
+					NumRoutines:   4,
+					Mode:          ModeTreeBuild,
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m, err := New(tt.args.config, tt.args.blocks)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Build() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			m1, err := New(nil, tt.args.blocks)
+			if err != nil {
+				t.Errorf("test setup error %v", err)
+				return
+			}
+			if !bytes.Equal(m.Root, m1.Root) {
+				fmt.Println("m", m.Root)
+				fmt.Println("m1", m1.Root)
+				t.Errorf("tree generated is wrong")
+				return
+			}
+		})
+	}
+}
+
+func TestMerkleTreeNew_proofGenAndTreeBuild(t *testing.T) {
+	type args struct {
+		blocks []DataBlock
+		config *Config
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "test_build_tree_proof_2",
+			args: args{
+				blocks: genTestDataBlocks(2),
+				config: &Config{
+					Mode: ModeProofGenAndTreeBuild,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test_build_tree_proof_4",
+			args: args{
+				blocks: genTestDataBlocks(4),
+				config: &Config{
+					Mode: ModeProofGenAndTreeBuild,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test_build_tree_proof_5",
+			args: args{
+				blocks: genTestDataBlocks(5),
+				config: &Config{
+					Mode: ModeProofGenAndTreeBuild,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test_build_tree_proof_8",
+			args: args{
+				blocks: genTestDataBlocks(8),
+				config: &Config{
+					Mode: ModeProofGenAndTreeBuild,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test_build_tree_proof_9",
+			args: args{
+				blocks: genTestDataBlocks(9),
+				config: &Config{
+					Mode: ModeProofGenAndTreeBuild,
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m, err := New(tt.args.config, tt.args.blocks)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Build() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			m1, err := New(nil, tt.args.blocks)
+			if err != nil {
+				t.Errorf("test setup error %v", err)
+				return
+			}
+			for i := 0; i < len(tt.args.blocks); i++ {
+				if !reflect.DeepEqual(m.Proofs[i], m1.Proofs[i]) {
+					t.Errorf("proofs generated are wrong for block %d", i)
+					return
+				}
+			}
+		})
+	}
+}
+
+func TestMerkleTreeNew_proofGenAndTreeBuildParallel(t *testing.T) {
+	type args struct {
+		blocks []DataBlock
+		config *Config
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "test_build_tree_proof_parallel_2",
+			args: args{
+				blocks: genTestDataBlocks(2),
+				config: &Config{
+					RunInParallel: true,
+					NumRoutines:   4,
+					Mode:          ModeProofGenAndTreeBuild,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test_build_tree_proof_parallel_4",
+			args: args{
+				blocks: genTestDataBlocks(4),
+				config: &Config{
+					RunInParallel: true,
+					NumRoutines:   4,
+					Mode:          ModeProofGenAndTreeBuild,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test_build_tree_proof_parallel_5",
+			args: args{
+				blocks: genTestDataBlocks(5),
+				config: &Config{
+					RunInParallel: true,
+					NumRoutines:   4,
+					Mode:          ModeProofGenAndTreeBuild,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test_build_tree_proof_parallel_8",
+			args: args{
+				blocks: genTestDataBlocks(8),
+				config: &Config{
+					RunInParallel: true,
+					NumRoutines:   4,
+					Mode:          ModeProofGenAndTreeBuild,
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m, err := New(tt.args.config, tt.args.blocks)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Build() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			m1, err := New(nil, tt.args.blocks)
+			if err != nil {
+				t.Errorf("test setup error %v", err)
+				return
+			}
+			for i := 0; i < len(tt.args.blocks); i++ {
+				if !reflect.DeepEqual(m.Proofs[i], m1.Proofs[i]) {
+					t.Errorf("proofs generated are wrong for block %d", i)
+					return
+				}
+			}
+		})
+	}
+}
+
 func verifySetup(size int) (*MerkleTree, []DataBlock, error) {
 	blocks := genTestDataBlocks(size)
-	m, err := New(&Config{
-		HashFunc: defaultHashFunc,
-	}, blocks)
+	m, err := New(nil, blocks)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -217,7 +454,6 @@ func verifySetup(size int) (*MerkleTree, []DataBlock, error) {
 func verifySetupParallel(size int) (*MerkleTree, []DataBlock, error) {
 	blocks := genTestDataBlocks(size)
 	m, err := New(&Config{
-		HashFunc:      defaultHashFunc,
 		RunInParallel: true,
 		NumRoutines:   4,
 	}, blocks)
@@ -348,11 +584,8 @@ func TestVerify(t *testing.T) {
 }
 
 func BenchmarkMerkleTreeNew(b *testing.B) {
-	config := &Config{
-		HashFunc: defaultHashFunc,
-	}
 	for i := 0; i < b.N; i++ {
-		_, err := New(config, genTestDataBlocks(benchSize))
+		_, err := New(nil, genTestDataBlocks(benchSize))
 		if err != nil {
 			b.Errorf("Build() error = %v", err)
 		}
@@ -361,7 +594,6 @@ func BenchmarkMerkleTreeNew(b *testing.B) {
 
 func BenchmarkMerkleTreeNewParallel(b *testing.B) {
 	config := &Config{
-		HashFunc:      defaultHashFunc,
 		RunInParallel: true,
 		NumRoutines:   runtime.NumCPU(),
 	}

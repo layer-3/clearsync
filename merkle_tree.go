@@ -116,17 +116,57 @@ func New(config *Config, blocks []DataBlock) (m *MerkleTree, err error) {
 	}
 	if m.Mode == ModeTreeBuild {
 		if m.RunInParallel {
-			panic("not implemented")
+			m.Leaves, err = leafGenParal(blocks, m.HashFunc, m.NumRoutines)
+			if err != nil {
+				return
+			}
+			err = m.treeBuildParal()
+			return
 		}
 		m.Leaves, err = leafGen(blocks, m.HashFunc)
 		if err != nil {
 			return
 		}
-		err = m.buildTree()
+		err = m.treeBuild()
 		return
 	}
 	if m.Mode == ModeProofGenAndTreeBuild {
-		panic("not implemented")
+		if m.RunInParallel {
+			m.Leaves, err = leafGenParal(blocks, m.HashFunc, m.NumRoutines)
+			if err != nil {
+				return
+			}
+			err = m.treeBuildParal()
+			if err != nil {
+				return
+			}
+			numLeaves := len(m.Leaves)
+			m.Proofs = make([]*Proof, numLeaves)
+			for i := 0; i < numLeaves; i++ {
+				m.Proofs[i] = new(Proof)
+			}
+			for i := 0; i < len(m.tree); i++ {
+				m.updateProofsParal(m.tree[i], len(m.tree[i]), i)
+			}
+		}
+		m.Leaves, err = leafGen(blocks, m.HashFunc)
+		if err != nil {
+			return
+		}
+		err = m.treeBuild()
+		if err != nil {
+			return
+		}
+		numLeaves := len(m.Leaves)
+		m.Proofs = make([]*Proof, numLeaves)
+		for i := 0; i < numLeaves; i++ {
+			m.Proofs[i] = new(Proof)
+			m.Proofs[i].Siblings = make([][]byte, 0, m.Depth)
+		}
+		for i := 0; i < len(m.tree); i++ {
+			m.updateProofs(m.tree[i], len(m.tree[i]), i)
+		}
+		return
 	}
 	return
 }
@@ -240,7 +280,7 @@ func (m *MerkleTree) proofGenParal() (err error) {
 // if AllowDuplicates is true, append a node by duplicating the previous node
 // otherwise, append a node by random
 func (m *MerkleTree) fixOdd(buf [][]byte, prevLen int) ([][]byte, int, error) {
-	if prevLen%2 == 1 {
+	if prevLen&1 == 1 {
 		var appendNode []byte
 		if m.NoDuplicates {
 			var err error
@@ -381,7 +421,7 @@ func leafGenParal(blocks []DataBlock, hashFunc HashFuncType, numRoutines int) ([
 	return leaves, nil
 }
 
-func (m *MerkleTree) buildTree() (err error) {
+func (m *MerkleTree) treeBuild() (err error) {
 	numLeaves := len(m.Leaves)
 	m.leafMap = sync.Map{}
 	wg := sync.WaitGroup{}
@@ -392,12 +432,12 @@ func (m *MerkleTree) buildTree() (err error) {
 			m.leafMap.Store(string(m.Leaves[i]), i)
 		}
 	}()
-	m.tree = make([][][]byte, m.Depth+1)
+	m.tree = make([][][]byte, m.Depth)
 	m.tree[0] = make([][]byte, numLeaves)
 	copy(m.tree[0], m.Leaves)
 	var prevLen int
 	m.tree[0], prevLen, err = m.fixOdd(m.tree[0], numLeaves)
-	for i := uint32(0); i < m.Depth; i++ {
+	for i := uint32(0); i < m.Depth-1; i++ {
 		m.tree[i+1] = make([][]byte, prevLen>>1)
 		if err != nil {
 			return
@@ -410,7 +450,58 @@ func (m *MerkleTree) buildTree() (err error) {
 		}
 		m.tree[i+1], prevLen, err = m.fixOdd(m.tree[i+1], len(m.tree[i+1]))
 	}
-	m.Root = m.tree[m.Depth][0]
+	m.Root, err = m.HashFunc(append(m.tree[m.Depth-1][0], m.tree[m.Depth-1][1]...))
+	if err != nil {
+		return
+	}
+	wg.Wait()
+	return
+}
+
+func (m *MerkleTree) treeBuildParal() (err error) {
+	numRoutines := m.NumRoutines
+	numLeaves := len(m.Leaves)
+	m.leafMap = sync.Map{}
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < numLeaves; i++ {
+			m.leafMap.Store(string(m.Leaves[i]), i)
+		}
+	}()
+	m.tree = make([][][]byte, m.Depth)
+	m.tree[0] = make([][]byte, numLeaves)
+	copy(m.tree[0], m.Leaves)
+	var prevLen int
+	m.tree[0], prevLen, err = m.fixOdd(m.tree[0], numLeaves)
+	for i := uint32(0); i < m.Depth-1; i++ {
+		m.tree[i+1] = make([][]byte, prevLen>>1)
+		if err != nil {
+			return
+		}
+		g := new(errgroup.Group)
+		for j := 0; j < numRoutines && j < prevLen; j++ {
+			idx := j << 1
+			g.Go(func() error {
+				for k := idx; k < prevLen; k += numRoutines << 1 {
+					m.tree[i+1][k>>1], err = m.HashFunc(append(m.tree[i][k], m.tree[i][k+1]...))
+					if err != nil {
+						return err
+					}
+				}
+				return nil
+			})
+		}
+		if err = g.Wait(); err != nil {
+			return
+		}
+		m.tree[i+1], prevLen, err = m.fixOdd(m.tree[i+1], len(m.tree[i+1]))
+	}
+	m.Root, err = m.HashFunc(append(m.tree[m.Depth-1][0], m.tree[m.Depth-1][1]...))
+	if err != nil {
+		return
+	}
 	wg.Wait()
 	return
 }
@@ -479,7 +570,7 @@ func (m *MerkleTree) GenerateProof(dataBlock DataBlock) (*Proof, error) {
 		siblings = make([][]byte, m.Depth)
 	)
 	for i := uint32(0); i < m.Depth; i++ {
-		if idx%2 == 1 {
+		if idx&1 == 1 {
 			siblings[i] = m.tree[i][idx-1]
 		} else {
 			path += 1 << i
