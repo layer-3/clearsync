@@ -485,10 +485,11 @@ func (m *MerkleTree) treeBuildParal() (err error) {
 			idx := j << 1
 			g.Go(func() error {
 				for k := idx; k < prevLen; k += numRoutines << 1 {
-					m.tree[i+1][k>>1], err = m.HashFunc(append(m.tree[i][k], m.tree[i][k+1]...))
+					newHash, err := m.HashFunc(append(m.tree[i][k], m.tree[i][k+1]...))
 					if err != nil {
 						return err
 					}
+					m.tree[i+1][k>>1] = newHash
 				}
 				return nil
 			})
