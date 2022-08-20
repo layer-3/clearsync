@@ -34,7 +34,7 @@ jobs:
       # uses: codecov/codecov-action@81cd2dc8148241f03f5839d295e000b8f761e378
       uses: codecov/codecov-action@v3.1.0
       with:
-        file: ./coverage.out
+        file: coverage.out
         flags: unittests
         verbose: true
-        name: codecov-ants
+        name: codecov-go-merkletree
