@@ -462,6 +462,9 @@ func (m *MerkleTree) treeBuild() (err error) {
 			}
 		}
 		m.tree[i+1], prevLen, err = m.fixOdd(m.tree[i+1], len(m.tree[i+1]))
+		if err != nil {
+			return
+		}
 	}
 	m.Root, err = m.HashFunc(append(m.tree[m.Depth-1][0], m.tree[m.Depth-1][1]...))
 	if err != nil {
@@ -511,6 +514,9 @@ func (m *MerkleTree) treeBuildParal() (err error) {
 			return
 		}
 		m.tree[i+1], prevLen, err = m.fixOdd(m.tree[i+1], len(m.tree[i+1]))
+		if err != nil {
+			return
+		}
 	}
 	m.Root, err = m.HashFunc(append(m.tree[m.Depth-1][0], m.tree[m.Depth-1][1]...))
 	if err != nil {
