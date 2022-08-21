@@ -434,12 +434,28 @@ func TestMerkleTreeNew_proofGenAndTreeBuild(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "test_hash_func_error",
+			args: args{
+				blocks: genTestDataBlocks(100),
+				config: &Config{
+					HashFunc: func([]byte) ([]byte, error) {
+						return nil, fmt.Errorf("hash func error")
+					},
+					Mode: ModeProofGenAndTreeBuild,
+				},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m, err := New(tt.args.config, tt.args.blocks)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Build() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr {
 				return
 			}
 			m1, err := New(nil, tt.args.blocks)
@@ -515,12 +531,29 @@ func TestMerkleTreeNew_proofGenAndTreeBuildParallel(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "test_hash_func_error",
+			args: args{
+				blocks: genTestDataBlocks(100),
+				config: &Config{
+					HashFunc: func([]byte) ([]byte, error) {
+						return nil, fmt.Errorf("hash func error")
+					},
+					Mode:          ModeProofGenAndTreeBuild,
+					RunInParallel: true,
+				},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m, err := New(tt.args.config, tt.args.blocks)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Build() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr {
 				return
 			}
 			m1, err := New(nil, tt.args.blocks)
