@@ -190,7 +190,7 @@ func New(config *Config, blocks []DataBlock) (m *MerkleTree, err error) {
 		}
 		return
 	}
-	return
+	return nil, errors.New("invalid configuration mode")
 }
 
 // calTreeDepth calculates the tree depth,
@@ -324,20 +324,14 @@ func (m *MerkleTree) fixOdd(buf [][]byte, prevLen int) ([][]byte, int, error) {
 }
 
 func (m *MerkleTree) updateProofs(buf [][]byte, bufLen, step int) {
-	if bufLen < 2 {
-		return
-	}
 	batch := 1 << step
 	for i := 0; i < bufLen; i += 2 {
-		m.updatePairProof(buf, bufLen, i, batch, step)
+		m.updatePairProof(buf, i, batch, step)
 	}
 }
 
 func (m *MerkleTree) updateProofsParal(buf [][]byte, bufLen, step int) {
 	numRoutines := m.NumRoutines
-	if bufLen < 2 {
-		return
-	}
 	batch := 1 << step
 	wg := new(sync.WaitGroup)
 	for i := 0; i < numRoutines; i++ {
@@ -346,17 +340,14 @@ func (m *MerkleTree) updateProofsParal(buf [][]byte, bufLen, step int) {
 		go func() {
 			defer wg.Done()
 			for j := idx; j < bufLen; j += numRoutines << 1 {
-				m.updatePairProof(buf, bufLen, j, batch, step)
+				m.updatePairProof(buf, j, batch, step)
 			}
 		}()
 	}
 	wg.Wait()
 }
 
-func (m *MerkleTree) updatePairProof(buf [][]byte, bufLen, idx, batch, step int) {
-	if bufLen < 2 {
-		return
-	}
+func (m *MerkleTree) updatePairProof(buf [][]byte, idx, batch, step int) {
 	start := idx * batch
 	end := start + batch
 	if end > len(m.Proofs) {
@@ -459,11 +450,11 @@ func (m *MerkleTree) treeBuild() (err error) {
 	copy(m.tree[0], m.Leaves)
 	var prevLen int
 	m.tree[0], prevLen, err = m.fixOdd(m.tree[0], numLeaves)
+	if err != nil {
+		return
+	}
 	for i := uint32(0); i < m.Depth-1; i++ {
 		m.tree[i+1] = make([][]byte, prevLen>>1)
-		if err != nil {
-			return
-		}
 		for j := 0; j < prevLen; j += 2 {
 			m.tree[i+1][j>>1], err = m.HashFunc(append(m.tree[i][j], m.tree[i][j+1]...))
 			if err != nil {
@@ -497,11 +488,11 @@ func (m *MerkleTree) treeBuildParal() (err error) {
 	copy(m.tree[0], m.Leaves)
 	var prevLen int
 	m.tree[0], prevLen, err = m.fixOdd(m.tree[0], numLeaves)
+	if err != nil {
+		return
+	}
 	for i := uint32(0); i < m.Depth-1; i++ {
 		m.tree[i+1] = make([][]byte, prevLen>>1)
-		if err != nil {
-			return
-		}
 		g := new(errgroup.Group)
 		for j := 0; j < numRoutines && j < prevLen; j++ {
 			idx := j << 1

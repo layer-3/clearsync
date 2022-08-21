@@ -24,6 +24,7 @@ package merkletree
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"fmt"
 	"math/rand"
 	"reflect"
@@ -84,13 +85,6 @@ func TestMerkleTreeNew_proofGen(t *testing.T) {
 			name: "test_2",
 			args: args{
 				blocks: genTestDataBlocks(2),
-			},
-			wantErr: false,
-		},
-		{
-			name: "test_4",
-			args: args{
-				blocks: genTestDataBlocks(4),
 			},
 			wantErr: false,
 		},
@@ -173,6 +167,16 @@ func TestMerkleTreeNew_proofGen(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "bad_mode",
+			args: args{
+				blocks: genTestDataBlocks(100),
+				config: &Config{
+					Mode: 5,
+				},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -197,16 +201,6 @@ func TestMerkleTreeNew_buildTree(t *testing.T) {
 			name: "test_build_tree_2",
 			args: args{
 				blocks: genTestDataBlocks(2),
-				config: &Config{
-					Mode: ModeTreeBuild,
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name: "test_build_tree_4",
-			args: args{
-				blocks: genTestDataBlocks(4),
 				config: &Config{
 					Mode: ModeTreeBuild,
 				},
@@ -545,6 +539,25 @@ func TestMerkleTreeNew_proofGenAndTreeBuildParallel(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "test_tree_build_hash_func_error",
+			args: args{
+				blocks: genTestDataBlocks(100),
+				config: &Config{
+					HashFunc: func(block []byte) ([]byte, error) {
+						if len(block) == 64 {
+							return nil, fmt.Errorf("hash func error")
+						}
+						sha256Func := sha256.New()
+						sha256Func.Write(block)
+						return sha256Func.Sum(nil), nil
+					},
+					Mode:          ModeProofGenAndTreeBuild,
+					RunInParallel: true,
+				},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -736,10 +749,11 @@ func BenchmarkMerkleTreeNewParallel(b *testing.B) {
 
 func TestMerkleTree_GenerateProof(t *testing.T) {
 	tests := []struct {
-		name    string
-		config  *Config
-		blocks  []DataBlock
-		wantErr bool
+		name        string
+		config      *Config
+		blocks      []DataBlock
+		proofBlocks []DataBlock
+		wantErr     bool
 	}{
 		{
 			name:   "test_2",
@@ -767,6 +781,17 @@ func TestMerkleTree_GenerateProof(t *testing.T) {
 			blocks:  genTestDataBlocks(5),
 			wantErr: true,
 		},
+		{
+			name:   "test_wrong_blocks",
+			config: &Config{Mode: ModeTreeBuild},
+			blocks: genTestDataBlocks(5),
+			proofBlocks: []DataBlock{
+				&mockDataBlock{
+					[]byte("test_wrong_blocks"),
+				},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -780,10 +805,16 @@ func TestMerkleTree_GenerateProof(t *testing.T) {
 				t.Errorf("m2 New() error = %v", err)
 				return
 			}
-			for idx, block := range tt.blocks {
+			if tt.proofBlocks == nil {
+				tt.proofBlocks = tt.blocks
+			}
+			for idx, block := range tt.proofBlocks {
 				got, err := m2.GenerateProof(block)
 				if (err != nil) != tt.wantErr {
 					t.Errorf("GenerateProof() error = %v, wantErr %v", err, tt.wantErr)
+					return
+				}
+				if tt.wantErr {
 					return
 				}
 				if !reflect.DeepEqual(got, m1.Proofs[idx]) && !tt.wantErr {
