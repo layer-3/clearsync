@@ -104,6 +104,53 @@ func TestMerkleTreeNew_proofGen(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "test_100_parallel_no_specify_num_of_routines",
+			args: args{
+				blocks: genTestDataBlocks(100),
+				config: &Config{
+					RunInParallel: true,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test_100_parallel_random",
+			args: args{
+				blocks: genTestDataBlocks(100),
+				config: &Config{
+					NoDuplicates:  true,
+					RunInParallel: true,
+					NumRoutines:   4,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test_hash_func_error",
+			args: args{
+				blocks: genTestDataBlocks(100),
+				config: &Config{
+					HashFunc: func([]byte) ([]byte, error) {
+						return nil, fmt.Errorf("hash func error")
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "test_hash_func_error_parallel",
+			args: args{
+				blocks: genTestDataBlocks(100),
+				config: &Config{
+					HashFunc: func([]byte) ([]byte, error) {
+						return nil, fmt.Errorf("hash func error")
+					},
+					RunInParallel: true,
+				},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -174,6 +221,19 @@ func TestMerkleTreeNew_buildTree(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "test_hash_func_error",
+			args: args{
+				blocks: genTestDataBlocks(100),
+				config: &Config{
+					HashFunc: func([]byte) ([]byte, error) {
+						return nil, fmt.Errorf("hash func error")
+					},
+					Mode: ModeTreeBuild,
+				},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -187,7 +247,7 @@ func TestMerkleTreeNew_buildTree(t *testing.T) {
 				t.Errorf("test setup error %v", err)
 				return
 			}
-			if !bytes.Equal(m.Root, m1.Root) {
+			if !bytes.Equal(m.Root, m1.Root) && !tt.wantErr {
 				fmt.Println("m", m.Root)
 				fmt.Println("m1", m1.Root)
 				t.Errorf("tree generated is wrong")
@@ -255,6 +315,20 @@ func TestMerkleTreeNew_treeBuildParallel(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "test_hash_func_error_parallel",
+			args: args{
+				blocks: genTestDataBlocks(100),
+				config: &Config{
+					HashFunc: func([]byte) ([]byte, error) {
+						return nil, fmt.Errorf("hash func error")
+					},
+					RunInParallel: true,
+					Mode:          ModeTreeBuild,
+				},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -268,7 +342,7 @@ func TestMerkleTreeNew_treeBuildParallel(t *testing.T) {
 				t.Errorf("test setup error %v", err)
 				return
 			}
-			if !bytes.Equal(m.Root, m1.Root) {
+			if !bytes.Equal(m.Root, m1.Root) && !tt.wantErr {
 				fmt.Println("m", m.Root)
 				fmt.Println("m1", m1.Root)
 				t.Errorf("tree generated is wrong")
@@ -608,24 +682,35 @@ func BenchmarkMerkleTreeNewParallel(b *testing.B) {
 func TestMerkleTree_GenerateProof(t *testing.T) {
 	tests := []struct {
 		name    string
+		config  *Config
 		blocks  []DataBlock
 		wantErr bool
 	}{
 		{
 			name:   "test_2",
+			config: &Config{Mode: ModeTreeBuild},
 			blocks: genTestDataBlocks(2),
 		},
 		{
 			name:   "test_3",
+			config: &Config{Mode: ModeTreeBuild},
 			blocks: genTestDataBlocks(3),
 		},
 		{
 			name:   "test_4",
+			config: &Config{Mode: ModeTreeBuild},
 			blocks: genTestDataBlocks(4),
 		},
 		{
 			name:   "test_5",
+			config: &Config{Mode: ModeTreeBuild},
 			blocks: genTestDataBlocks(5),
+		},
+		{
+			name:    "test_wrong_mode",
+			config:  &Config{Mode: ModeProofGen},
+			blocks:  genTestDataBlocks(5),
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
@@ -635,9 +720,7 @@ func TestMerkleTree_GenerateProof(t *testing.T) {
 				t.Errorf("m1 New() error = %v", err)
 				return
 			}
-			m2, err := New(&Config{
-				Mode: ModeTreeBuild,
-			}, tt.blocks)
+			m2, err := New(tt.config, tt.blocks)
 			if err != nil {
 				t.Errorf("m2 New() error = %v", err)
 				return
@@ -648,7 +731,7 @@ func TestMerkleTree_GenerateProof(t *testing.T) {
 					t.Errorf("GenerateProof() error = %v, wantErr %v", err, tt.wantErr)
 					return
 				}
-				if !reflect.DeepEqual(got, m1.Proofs[idx]) {
+				if !reflect.DeepEqual(got, m1.Proofs[idx]) && !tt.wantErr {
 					t.Errorf("GenerateProof() %d got = %v, want %v", idx, got, m1.Proofs[idx])
 					return
 				}
