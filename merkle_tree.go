@@ -109,10 +109,11 @@ func New(config *Config, blocks []DataBlock) (m *MerkleTree, err error) {
 	if config.HashFunc == nil {
 		config.HashFunc = defaultHashFunc
 	}
-	// if the configuration mode is not set, then set it to ModeProofGen by default
+	// If the configuration mode is not set, then set it to ModeProofGen by default.
 	if config.Mode == 0 {
 		config.Mode = ModeProofGen
 	}
+	// If RunInParallel is true and NumRoutines is unset, then set NumRoutines to the number of CPU.
 	if config.RunInParallel && config.NumRoutines == 0 {
 		config.NumRoutines = runtime.NumCPU()
 	}
@@ -211,17 +212,15 @@ func (m *MerkleTree) proofGen() (err error) {
 		m.Proofs[i] = new(Proof)
 		m.Proofs[i].Siblings = make([][]byte, 0, m.Depth)
 	}
-	var (
-		step, prevLen int
-	)
 	buf := make([][]byte, numLeaves)
 	copy(buf, m.Leaves)
+	var prevLen int
 	buf, prevLen, err = m.fixOdd(buf, numLeaves)
 	if err != nil {
 		return
 	}
 	m.updateProofs(buf, numLeaves, 0)
-	for {
+	for step := 1; step < int(m.Depth); step++ {
 		for idx := 0; idx < prevLen; idx += 2 {
 			buf[idx>>1], err = m.HashFunc(append(buf[idx], buf[idx+1]...))
 			if err != nil {
@@ -229,17 +228,13 @@ func (m *MerkleTree) proofGen() (err error) {
 			}
 		}
 		prevLen >>= 1
-		if prevLen == 1 {
-			break
-		}
 		buf, prevLen, err = m.fixOdd(buf, prevLen)
 		if err != nil {
 			return
 		}
-		step++
 		m.updateProofs(buf, prevLen, step)
 	}
-	m.Root = buf[0]
+	m.Root, err = m.HashFunc(append(buf[0], buf[1]...))
 	return
 }
 
@@ -250,18 +245,16 @@ func (m *MerkleTree) proofGenParal() (err error) {
 	for i := 0; i < numLeaves; i++ {
 		m.Proofs[i] = new(Proof)
 	}
-	var (
-		step, prevLen int
-	)
 	buf1 := make([][]byte, numLeaves)
 	copy(buf1, m.Leaves)
+	var prevLen int
 	buf1, prevLen, err = m.fixOdd(buf1, numLeaves)
 	if err != nil {
 		return
 	}
 	buf2 := make([][]byte, prevLen>>1)
 	m.updateProofsParal(buf1, numLeaves, 0)
-	for {
+	for step := 1; step < int(m.Depth); step++ {
 		if err != nil {
 			return
 		}
@@ -284,17 +277,13 @@ func (m *MerkleTree) proofGenParal() (err error) {
 		}
 		buf1, buf2 = buf2, buf1
 		prevLen >>= 1
-		if prevLen == 1 {
-			break
-		}
 		buf1, prevLen, err = m.fixOdd(buf1, prevLen)
 		if err != nil {
 			return
 		}
-		step++
 		m.updateProofsParal(buf1, prevLen, step)
 	}
-	m.Root = buf1[0]
+	m.Root, err = m.HashFunc(append(buf1[0], buf1[1]...))
 	return
 }
 
@@ -302,23 +291,24 @@ func (m *MerkleTree) proofGenParal() (err error) {
 // if AllowDuplicates is true, append a node by duplicating the previous node
 // otherwise, append a node by random
 func (m *MerkleTree) fixOdd(buf [][]byte, prevLen int) ([][]byte, int, error) {
-	if prevLen&1 == 1 {
-		var appendNode []byte
-		if m.NoDuplicates {
-			var err error
-			appendNode, err = getDummyHash()
-			if err != nil {
-				return nil, 0, err
-			}
-		} else {
-			appendNode = buf[prevLen-1]
+	if prevLen&1 == 0 {
+		return buf, prevLen, nil
+	}
+	var appendNode []byte
+	if m.NoDuplicates {
+		var err error
+		appendNode, err = getDummyHash()
+		if err != nil {
+			return nil, 0, err
 		}
-		if len(buf) <= prevLen+1 {
-			buf = append(buf, appendNode)
-		} else {
-			buf[prevLen] = appendNode
-		}
-		prevLen++
+	} else {
+		appendNode = buf[prevLen-1]
+	}
+	prevLen++
+	if len(buf) < prevLen {
+		buf = append(buf, appendNode)
+	} else {
+		buf[prevLen-1] = appendNode
 	}
 	return buf, prevLen, nil
 }
