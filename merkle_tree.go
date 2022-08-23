@@ -469,7 +469,6 @@ func (m *MerkleTree) leafGenParal(blocks []DataBlock, wp *gool.Pool) ([][]byte, 
 
 func (m *MerkleTree) treeBuild() (err error) {
 	numLeaves := len(m.Leaves)
-	m.leafMap = sync.Map{}
 	finishMap := make(chan struct{})
 	go func() {
 		for i := 0; i < numLeaves; i++ {
@@ -517,7 +516,7 @@ type treeBuildArgs struct {
 func treeBuildHandler(argInterface interface{}) interface{} {
 	args := argInterface.(treeBuildArgs)
 	mt := args.m
-	for i := args.start; i < args.prevLen; i += args.numRoutines {
+	for i := args.start; i < args.prevLen; i += args.numRoutines << 1 {
 		newHash, err := mt.HashFunc(append(mt.tree[args.depth][i], mt.tree[args.depth][i+1]...))
 		if err != nil {
 			return err
@@ -530,7 +529,6 @@ func treeBuildHandler(argInterface interface{}) interface{} {
 func (m *MerkleTree) treeBuildParal(wp *gool.Pool) (err error) {
 	numRoutines := m.NumRoutines
 	numLeaves := len(m.Leaves)
-	m.leafMap = sync.Map{}
 	finishMap := make(chan struct{})
 	go func() {
 		for i := 0; i < numLeaves; i++ {
