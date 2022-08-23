@@ -523,6 +523,9 @@ func (m *MerkleTree) Verify(dataBlock DataBlock, proof *Proof) (bool, error) {
 
 // Verify verifies the data block with the Merkle Tree proof and Merkle root hash
 func Verify(dataBlock DataBlock, proof *Proof, root []byte, hashFunc HashFuncType) (bool, error) {
+	if dataBlock == nil {
+		return false, errors.New("data block is nil")
+	}
 	if proof == nil {
 		return false, errors.New("proof is nil")
 	}
