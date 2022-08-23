@@ -25,7 +25,9 @@ package merkletree
 import (
 	"bytes"
 	"crypto/sha256"
+	"errors"
 	"fmt"
+	"github.com/agiledragon/gomonkey/v2"
 	"math/rand"
 	"reflect"
 	"runtime"
@@ -441,6 +443,24 @@ func TestMerkleTreeNew_proofGenAndTreeBuild(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "test_tree_build_hash_func_error",
+			args: args{
+				blocks: genTestDataBlocks(100),
+				config: &Config{
+					HashFunc: func(block []byte) ([]byte, error) {
+						if len(block) == 64 {
+							return nil, fmt.Errorf("hash func error")
+						}
+						sha256Func := sha256.New()
+						sha256Func.Write(block)
+						return sha256Func.Sum(nil), nil
+					},
+					Mode: ModeProofGenAndTreeBuild,
+				},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -821,6 +841,52 @@ func TestMerkleTree_GenerateProof(t *testing.T) {
 					t.Errorf("GenerateProof() %d got = %v, want %v", idx, got, m1.Proofs[idx])
 					return
 				}
+			}
+		})
+	}
+}
+
+func TestMerkleTree_proofGen(t *testing.T) {
+	type args struct {
+		config *Config
+		blocks []DataBlock
+	}
+	tests := []struct {
+		name    string
+		args    args
+		mock    func()
+		wantErr bool
+	}{
+		{
+			name: "test_fix_odd_err",
+			args: args{
+				config: &Config{
+					NoDuplicates: true,
+				},
+				blocks: genTestDataBlocks(5),
+			},
+			mock: func() {
+				patches := gomonkey.ApplyFunc(rand.Read,
+					func(b []byte) (n int, err error) {
+						return 0, errors.New("test_rand_read_err")
+					})
+				defer patches.Reset()
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.mock != nil {
+				tt.mock()
+			}
+			m, err := New(tt.args.config, tt.args.blocks)
+			if err != nil {
+				t.Errorf("New() error = %v", err)
+				return
+			}
+			if err := m.proofGen(); (err != nil) != tt.wantErr {
+				t.Errorf("proofGen() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
