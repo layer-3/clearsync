@@ -1,8 +1,14 @@
-tests:
+test:
 	go test -v -covermode count -coverprofile coverage.out && go tool cover -html coverage.out -o coverage.html && go tool cover -func coverage.out -o coverage.out
 
-tests_race:
+test_race:
 	go test -v -race -covermode atomic -coverprofile coverage.out && go tool cover -html coverage.out -o coverage.html && go tool cover -func coverage.out -o coverage.out
+
+test_with_mock:
+	go test -v -race -gcflags=all=-l -covermode atomic -coverprofile coverage.out && go tool cover -html coverage.out -o coverage.html && go tool cover -func coverage.out -o coverage.out
+
+test_ci_coverage:
+	go test -race -gcflags=all=-l -coverprofile=coverage.txt -covermode=atomic
 
 format:
 	go fmt .

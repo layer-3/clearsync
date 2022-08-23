@@ -22,13 +22,13 @@ jobs:
       run: make build
 
     - name: Test
-      run: make tests_race
+      run: make test_race
 
     - name: Run golangci-lint
       uses: golangci/golangci-lint-action@v3.2.0
 
     - name: Run coverage
-      run: go test -race -coverprofile=coverage.txt -covermode=atomic
+      run: make test_ci_coverage
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
