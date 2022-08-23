@@ -22,7 +22,7 @@ jobs:
       run: make build
 
     - name: Test
-      run: make tests_race
+      run: make test_race
 
     - name: Run golangci-lint
       uses: golangci/golangci-lint-action@v3.2.0
