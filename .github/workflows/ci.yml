@@ -28,7 +28,7 @@ jobs:
       uses: golangci/golangci-lint-action@v3.2.0
 
     - name: Run coverage
-      run: go test -race go test -gcflags=all=-l -coverprofile=coverage.txt -covermode=atomic
+      run: make test_ci_coverage
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
