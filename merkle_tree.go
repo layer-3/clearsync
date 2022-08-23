@@ -31,18 +31,20 @@ import (
 	"runtime"
 	"sync"
 
-	"golang.org/x/sync/errgroup"
+	"github.com/txaty/gool"
 )
 
 const (
-	// Default hash result length using SHA256.
-	defaultHashLen = 32
 	// ModeProofGen is the proof generation configuration mode.
 	ModeProofGen ModeType = iota
 	// ModeTreeBuild is the tree building configuration mode.
 	ModeTreeBuild
 	// ModeProofGenAndTreeBuild is the proof generation and tree building configuration mode.
 	ModeProofGenAndTreeBuild
+	// Default hash result length using SHA256.
+	defaultHashLen = 32
+	// Default job queue size of the goroutine pool for parallel executions.
+	jobQueueSize = 100
 )
 
 // ModeType is the type in the Merkle Tree configuration indicating what operations are performed.
@@ -90,6 +92,8 @@ type MerkleTree struct {
 	// leafMap is the map of the leaf hash to the index in the Tree slice,
 	// only available when config mode is ModeTreeBuild or ModeProofGenAndTreeBuild
 	leafMap sync.Map
+	// goroutine worker pool for parallel executions.
+	workerPool *gool.Pool
 }
 
 // Proof implements the Merkle Tree proof.
@@ -123,14 +127,15 @@ func New(config *Config, blocks []DataBlock) (m *MerkleTree, err error) {
 	m.Depth = calTreeDepth(len(blocks))
 	if m.Mode == ModeProofGen {
 		if m.RunInParallel {
-			m.Leaves, err = leafGenParal(blocks, m.HashFunc, m.NumRoutines)
+			m.workerPool = gool.NewPool(config.NumRoutines, jobQueueSize)
+			m.Leaves, err = m.leafGenParal(blocks, m.NumRoutines)
 			if err != nil {
 				return
 			}
 			err = m.proofGenParal()
 			return
 		}
-		m.Leaves, err = leafGen(blocks, m.HashFunc)
+		m.Leaves, err = m.leafGen(blocks)
 		if err != nil {
 			return
 		}
@@ -139,14 +144,15 @@ func New(config *Config, blocks []DataBlock) (m *MerkleTree, err error) {
 	}
 	if m.Mode == ModeTreeBuild {
 		if m.RunInParallel {
-			m.Leaves, err = leafGenParal(blocks, m.HashFunc, m.NumRoutines)
+			m.workerPool = gool.NewPool(config.NumRoutines, jobQueueSize)
+			m.Leaves, err = m.leafGenParal(blocks, m.NumRoutines)
 			if err != nil {
 				return
 			}
 			err = m.treeBuildParal()
 			return
 		}
-		m.Leaves, err = leafGen(blocks, m.HashFunc)
+		m.Leaves, err = m.leafGen(blocks)
 		if err != nil {
 			return
 		}
@@ -155,7 +161,8 @@ func New(config *Config, blocks []DataBlock) (m *MerkleTree, err error) {
 	}
 	if m.Mode == ModeProofGenAndTreeBuild {
 		if m.RunInParallel {
-			m.Leaves, err = leafGenParal(blocks, m.HashFunc, m.NumRoutines)
+			m.workerPool = gool.NewPool(config.NumRoutines, jobQueueSize)
+			m.Leaves, err = m.leafGenParal(blocks, m.NumRoutines)
 			if err != nil {
 				return
 			}
@@ -172,7 +179,7 @@ func New(config *Config, blocks []DataBlock) (m *MerkleTree, err error) {
 				m.updateProofsParal(m.tree[i], len(m.tree[i]), i)
 			}
 		}
-		m.Leaves, err = leafGen(blocks, m.HashFunc)
+		m.Leaves, err = m.leafGen(blocks)
 		if err != nil {
 			return
 		}
@@ -238,6 +245,27 @@ func (m *MerkleTree) proofGen() (err error) {
 	return
 }
 
+type proofGenArgs struct {
+	hashFunc    HashFuncType
+	buf1        [][]byte
+	buf2        [][]byte
+	start       int
+	prevLen     int
+	numRoutines int
+}
+
+func proofGenHandler(argInterface interface{}) interface{} {
+	args := argInterface.(*proofGenArgs)
+	for i := args.start; i < args.prevLen; i += args.numRoutines << 1 {
+		newHash, err := args.hashFunc(append(args.buf1[i], args.buf1[i+1]...))
+		if err != nil {
+			return err
+		}
+		args.buf2[i>>1] = newHash
+	}
+	return nil
+}
+
 func (m *MerkleTree) proofGenParal() (err error) {
 	numRoutines := m.NumRoutines
 	numLeaves := len(m.Leaves)
@@ -255,25 +283,22 @@ func (m *MerkleTree) proofGenParal() (err error) {
 	buf2 := make([][]byte, prevLen>>1)
 	m.updateProofsParal(buf1, numLeaves, 0)
 	for step := 1; step < int(m.Depth); step++ {
-		if err != nil {
-			return
+		argList := make([]interface{}, numRoutines)
+		for i := 0; i < numRoutines; i++ {
+			argList[i] = &proofGenArgs{
+				hashFunc:    m.HashFunc,
+				buf1:        buf1,
+				buf2:        buf2,
+				start:       i << 1,
+				prevLen:     prevLen,
+				numRoutines: numRoutines,
+			}
 		}
-		g := new(errgroup.Group)
-		for i := 0; i < numRoutines && i < prevLen; i++ {
-			idx := i << 1
-			g.Go(func() error {
-				for j := idx; j < prevLen; j += numRoutines << 1 {
-					newHash, err := m.HashFunc(append(buf1[j], buf1[j+1]...))
-					if err != nil {
-						return err
-					}
-					buf2[j>>1] = newHash
-				}
-				return nil
-			})
-		}
-		if err = g.Wait(); err != nil {
-			return
+		errList := m.workerPool.Map(proofGenHandler, argList)
+		for _, err := range errList {
+			if err != nil {
+				return err.(error)
+			}
 		}
 		buf1, buf2 = buf2, buf1
 		prevLen >>= 1
@@ -375,7 +400,7 @@ func defaultHashFunc(data []byte) ([]byte, error) {
 	return sha256Func.Sum(nil), nil
 }
 
-func leafGen(blocks []DataBlock, hashFunc HashFuncType) ([][]byte, error) {
+func (m *MerkleTree) leafGen(blocks []DataBlock) ([][]byte, error) {
 	var (
 		lenLeaves = len(blocks)
 		leaves    = make([][]byte, lenLeaves)
@@ -385,7 +410,7 @@ func leafGen(blocks []DataBlock, hashFunc HashFuncType) ([][]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		hash, err := hashFunc(data)
+		hash, err := m.HashFunc(data)
 		if err != nil {
 			return nil, err
 		}
@@ -394,32 +419,52 @@ func leafGen(blocks []DataBlock, hashFunc HashFuncType) ([][]byte, error) {
 	return leaves, nil
 }
 
-func leafGenParal(blocks []DataBlock, hashFunc HashFuncType, numRoutines int) ([][]byte, error) {
+type leafGenArgs struct {
+	blocks      []DataBlock
+	leaves      [][]byte
+	hashFunc    HashFuncType
+	start       int
+	lenLeaves   int
+	numRoutines int
+}
+
+func leafGenHandler(argInterface interface{}) interface{} {
+	args := argInterface.(leafGenArgs)
+	for i := args.start; i < args.lenLeaves; i += args.numRoutines {
+		data, err := args.blocks[i].Serialize()
+		if err != nil {
+			return err
+		}
+		hash, err := args.hashFunc(data)
+		if err != nil {
+			return err
+		}
+		args.leaves[i] = hash
+	}
+	return nil
+}
+
+func (m *MerkleTree) leafGenParal(blocks []DataBlock, numRoutines int) ([][]byte, error) {
 	var (
 		lenLeaves = len(blocks)
 		leaves    = make([][]byte, lenLeaves)
 	)
-	g := new(errgroup.Group)
+	argList := make([]interface{}, numRoutines)
 	for i := 0; i < numRoutines; i++ {
-		idx := i
-		g.Go(func() error {
-			for j := idx; j < lenLeaves; j += numRoutines {
-				data, err := blocks[j].Serialize()
-				if err != nil {
-					return err
-				}
-				var hash []byte
-				hash, err = hashFunc(data)
-				if err != nil {
-					return err
-				}
-				leaves[j] = hash
-			}
-			return nil
-		})
+		argList[i] = leafGenArgs{
+			blocks:      blocks,
+			leaves:      leaves,
+			hashFunc:    m.HashFunc,
+			start:       i,
+			lenLeaves:   lenLeaves,
+			numRoutines: numRoutines,
+		}
 	}
-	if err := g.Wait(); err != nil {
-		return nil, err
+	errList := m.workerPool.Map(leafGenHandler, argList)
+	for _, err := range errList {
+		if err != nil {
+			return nil, err.(error)
+		}
 	}
 	return leaves, nil
 }
@@ -427,13 +472,12 @@ func leafGenParal(blocks []DataBlock, hashFunc HashFuncType, numRoutines int) ([
 func (m *MerkleTree) treeBuild() (err error) {
 	numLeaves := len(m.Leaves)
 	m.leafMap = sync.Map{}
-	wg := sync.WaitGroup{}
-	wg.Add(1)
+	finishMap := make(chan struct{})
 	go func() {
-		defer wg.Done()
 		for i := 0; i < numLeaves; i++ {
 			m.leafMap.Store(string(m.Leaves[i]), i)
 		}
+		finishMap <- struct{}{}
 	}()
 	m.tree = make([][][]byte, m.Depth)
 	m.tree[0] = make([][]byte, numLeaves)
@@ -460,21 +504,41 @@ func (m *MerkleTree) treeBuild() (err error) {
 	if err != nil {
 		return
 	}
-	wg.Wait()
+	<-finishMap
 	return
+}
+
+type treeBuildArgs struct {
+	m           *MerkleTree
+	depth       uint32
+	start       int
+	prevLen     int
+	numRoutines int
+}
+
+func treeBuildHandler(argInterface interface{}) interface{} {
+	args := argInterface.(treeBuildArgs)
+	mt := args.m
+	for i := args.start; i < args.prevLen; i += args.numRoutines {
+		newHash, err := mt.HashFunc(append(mt.tree[args.depth][i], mt.tree[args.depth][i+1]...))
+		if err != nil {
+			return err
+		}
+		mt.tree[args.depth+1][i>>1] = newHash
+	}
+	return nil
 }
 
 func (m *MerkleTree) treeBuildParal() (err error) {
 	numRoutines := m.NumRoutines
 	numLeaves := len(m.Leaves)
 	m.leafMap = sync.Map{}
-	wg := sync.WaitGroup{}
-	wg.Add(1)
+	finishMap := make(chan struct{})
 	go func() {
-		defer wg.Done()
 		for i := 0; i < numLeaves; i++ {
 			m.leafMap.Store(string(m.Leaves[i]), i)
 		}
+		finishMap <- struct{}{}
 	}()
 	m.tree = make([][][]byte, m.Depth)
 	m.tree[0] = make([][]byte, numLeaves)
@@ -486,22 +550,21 @@ func (m *MerkleTree) treeBuildParal() (err error) {
 	}
 	for i := uint32(0); i < m.Depth-1; i++ {
 		m.tree[i+1] = make([][]byte, prevLen>>1)
-		g := new(errgroup.Group)
-		for j := 0; j < numRoutines && j < prevLen; j++ {
-			idx := j << 1
-			g.Go(func() error {
-				for k := idx; k < prevLen; k += numRoutines << 1 {
-					newHash, err := m.HashFunc(append(m.tree[i][k], m.tree[i][k+1]...))
-					if err != nil {
-						return err
-					}
-					m.tree[i+1][k>>1] = newHash
-				}
-				return nil
-			})
+		argList := make([]interface{}, numRoutines)
+		for j := 0; j < numRoutines; j++ {
+			argList[j] = treeBuildArgs{
+				m:           m,
+				depth:       i,
+				start:       j << 1,
+				prevLen:     prevLen,
+				numRoutines: numRoutines,
+			}
 		}
-		if err = g.Wait(); err != nil {
-			return
+		errList := m.workerPool.Map(treeBuildHandler, argList)
+		for _, err := range errList {
+			if err != nil {
+				return err.(error)
+			}
 		}
 		m.tree[i+1], prevLen, err = m.fixOdd(m.tree[i+1], len(m.tree[i+1]))
 		if err != nil {
@@ -512,7 +575,7 @@ func (m *MerkleTree) treeBuildParal() (err error) {
 	if err != nil {
 		return
 	}
-	wg.Wait()
+	<-finishMap
 	return
 }
 
