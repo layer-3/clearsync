@@ -35,7 +35,7 @@ import (
 	"github.com/agiledragon/gomonkey/v2"
 )
 
-const benchSize = 10000
+const benchSize = 100000
 
 type mockDataBlock struct {
 	data []byte
@@ -733,28 +733,6 @@ func TestMerkleTree_Verify(t *testing.T) {
 	}
 }
 
-func BenchmarkMerkleTreeNew(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		_, err := New(nil, genTestDataBlocks(benchSize))
-		if err != nil {
-			b.Errorf("Build() error = %v", err)
-		}
-	}
-}
-
-func BenchmarkMerkleTreeNewParallel(b *testing.B) {
-	config := &Config{
-		RunInParallel: true,
-		NumRoutines:   runtime.NumCPU(),
-	}
-	for i := 0; i < b.N; i++ {
-		_, err := New(config, genTestDataBlocks(benchSize))
-		if err != nil {
-			b.Errorf("Build() error = %v", err)
-		}
-	}
-}
-
 func TestMerkleTree_GenerateProof(t *testing.T) {
 	patches := gomonkey.NewPatches()
 	defer patches.Reset()
@@ -1003,5 +981,31 @@ func TestVerify(t *testing.T) {
 				t.Errorf("Verify() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func BenchmarkMerkleTreeNew(b *testing.B) {
+	testCases := genTestDataBlocks(benchSize)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := New(nil, testCases)
+		if err != nil {
+			b.Errorf("Build() error = %v", err)
+		}
+	}
+}
+
+func BenchmarkMerkleTreeNewParallel(b *testing.B) {
+	config := &Config{
+		RunInParallel: true,
+		NumRoutines:   runtime.NumCPU(),
+	}
+	testCases := genTestDataBlocks(benchSize)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := New(config, testCases)
+		if err != nil {
+			b.Errorf("Build() error = %v", err)
+		}
 	}
 }
