@@ -92,8 +92,6 @@ type MerkleTree struct {
 	// leafMap is the map of the leaf hash to the index in the Tree slice,
 	// only available when config mode is ModeTreeBuild or ModeProofGenAndTreeBuild
 	leafMap sync.Map
-	// goroutine worker pool for parallel executions.
-	workerPool *gool.Pool
 }
 
 // Proof implements the Merkle Tree proof.
@@ -125,18 +123,23 @@ func New(config *Config, blocks []DataBlock) (m *MerkleTree, err error) {
 		Config: config,
 	}
 	m.Depth = calTreeDepth(len(blocks))
-	if m.Mode == ModeProofGen {
-		if m.RunInParallel {
-			m.workerPool = gool.NewPool(config.NumRoutines, jobQueueSize)
-			m.Leaves, err = m.leafGenParal(blocks, m.NumRoutines)
-			if err != nil {
-				return
-			}
-			err = m.proofGenParal()
+	var wp *gool.Pool
+	if m.RunInParallel {
+		wp = gool.NewPool(config.NumRoutines, jobQueueSize)
+		defer wp.Close()
+		m.Leaves, err = m.leafGenParal(blocks, wp)
+		if err != nil {
 			return
 		}
+	} else {
 		m.Leaves, err = m.leafGen(blocks)
 		if err != nil {
+			return
+		}
+	}
+	if m.Mode == ModeProofGen {
+		if m.RunInParallel {
+			err = m.proofGenParal(wp)
 			return
 		}
 		err = m.proofGen()
@@ -144,16 +147,7 @@ func New(config *Config, blocks []DataBlock) (m *MerkleTree, err error) {
 	}
 	if m.Mode == ModeTreeBuild {
 		if m.RunInParallel {
-			m.workerPool = gool.NewPool(config.NumRoutines, jobQueueSize)
-			m.Leaves, err = m.leafGenParal(blocks, m.NumRoutines)
-			if err != nil {
-				return
-			}
-			err = m.treeBuildParal()
-			return
-		}
-		m.Leaves, err = m.leafGen(blocks)
-		if err != nil {
+			err = m.treeBuildParal(wp)
 			return
 		}
 		err = m.treeBuild()
@@ -161,38 +155,20 @@ func New(config *Config, blocks []DataBlock) (m *MerkleTree, err error) {
 	}
 	if m.Mode == ModeProofGenAndTreeBuild {
 		if m.RunInParallel {
-			m.workerPool = gool.NewPool(config.NumRoutines, jobQueueSize)
-			m.Leaves, err = m.leafGenParal(blocks, m.NumRoutines)
+			err = m.treeBuildParal(wp)
 			if err != nil {
 				return
 			}
-			err = m.treeBuildParal()
-			if err != nil {
-				return
-			}
-			numLeaves := len(m.Leaves)
-			m.Proofs = make([]*Proof, numLeaves)
-			for i := 0; i < numLeaves; i++ {
-				m.Proofs[i] = new(Proof)
-			}
+			m.initProofs()
 			for i := 0; i < len(m.tree); i++ {
-				m.updateProofsParal(m.tree[i], len(m.tree[i]), i)
+				m.updateProofsParal(m.tree[i], len(m.tree[i]), i, wp)
 			}
-		}
-		m.Leaves, err = m.leafGen(blocks)
-		if err != nil {
-			return
 		}
 		err = m.treeBuild()
 		if err != nil {
 			return
 		}
-		numLeaves := len(m.Leaves)
-		m.Proofs = make([]*Proof, numLeaves)
-		for i := 0; i < numLeaves; i++ {
-			m.Proofs[i] = new(Proof)
-			m.Proofs[i].Siblings = make([][]byte, 0, m.Depth)
-		}
+		m.initProofs()
 		for i := 0; i < len(m.tree); i++ {
 			m.updateProofs(m.tree[i], len(m.tree[i]), i)
 		}
@@ -212,13 +188,18 @@ func calTreeDepth(blockLen int) uint32 {
 	return uint32(log2BlockLen)
 }
 
-func (m *MerkleTree) proofGen() (err error) {
+func (m *MerkleTree) initProofs() {
 	numLeaves := len(m.Leaves)
 	m.Proofs = make([]*Proof, numLeaves)
 	for i := 0; i < numLeaves; i++ {
 		m.Proofs[i] = new(Proof)
 		m.Proofs[i].Siblings = make([][]byte, 0, m.Depth)
 	}
+}
+
+func (m *MerkleTree) proofGen() (err error) {
+	numLeaves := len(m.Leaves)
+	m.initProofs()
 	buf := make([][]byte, numLeaves)
 	copy(buf, m.Leaves)
 	var prevLen int
@@ -266,13 +247,10 @@ func proofGenHandler(argInterface interface{}) interface{} {
 	return nil
 }
 
-func (m *MerkleTree) proofGenParal() (err error) {
+func (m *MerkleTree) proofGenParal(wp *gool.Pool) (err error) {
 	numRoutines := m.NumRoutines
 	numLeaves := len(m.Leaves)
-	m.Proofs = make([]*Proof, numLeaves)
-	for i := 0; i < numLeaves; i++ {
-		m.Proofs[i] = new(Proof)
-	}
+	m.initProofs()
 	buf1 := make([][]byte, numLeaves)
 	copy(buf1, m.Leaves)
 	var prevLen int
@@ -281,7 +259,7 @@ func (m *MerkleTree) proofGenParal() (err error) {
 		return
 	}
 	buf2 := make([][]byte, prevLen>>1)
-	m.updateProofsParal(buf1, numLeaves, 0)
+	m.updateProofsParal(buf1, numLeaves, 0, wp)
 	for step := 1; step < int(m.Depth); step++ {
 		argList := make([]interface{}, numRoutines)
 		for i := 0; i < numRoutines; i++ {
@@ -294,7 +272,7 @@ func (m *MerkleTree) proofGenParal() (err error) {
 				numRoutines: numRoutines,
 			}
 		}
-		errList := m.workerPool.Map(proofGenHandler, argList)
+		errList := wp.Map(proofGenHandler, argList)
 		for _, err := range errList {
 			if err != nil {
 				return err.(error)
@@ -306,7 +284,7 @@ func (m *MerkleTree) proofGenParal() (err error) {
 		if err != nil {
 			return
 		}
-		m.updateProofsParal(buf1, prevLen, step)
+		m.updateProofsParal(buf1, prevLen, step, wp)
 	}
 	m.Root, err = m.HashFunc(append(buf1[0], buf1[1]...))
 	return
@@ -345,21 +323,40 @@ func (m *MerkleTree) updateProofs(buf [][]byte, bufLen, step int) {
 	}
 }
 
-func (m *MerkleTree) updateProofsParal(buf [][]byte, bufLen, step int) {
+type updateProofArgs struct {
+	m           *MerkleTree
+	buf         [][]byte
+	start       int
+	batch       int
+	step        int
+	bufLen      int
+	numRoutines int
+}
+
+func updateProofHandler(argInterface interface{}) interface{} {
+	args := argInterface.(*updateProofArgs)
+	for i := args.start; i < args.bufLen; i += args.numRoutines << 1 {
+		args.m.updatePairProof(args.buf, i, args.batch, args.step)
+	}
+	return nil
+}
+
+func (m *MerkleTree) updateProofsParal(buf [][]byte, bufLen, step int, wp *gool.Pool) {
 	numRoutines := m.NumRoutines
 	batch := 1 << step
-	wg := new(sync.WaitGroup)
+	argList := make([]interface{}, numRoutines)
 	for i := 0; i < numRoutines; i++ {
-		idx := i << 1
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for j := idx; j < bufLen; j += numRoutines << 1 {
-				m.updatePairProof(buf, j, batch, step)
-			}
-		}()
+		argList[i] = &updateProofArgs{
+			m:           m,
+			buf:         buf,
+			start:       i << 1,
+			batch:       batch,
+			step:        step,
+			bufLen:      bufLen,
+			numRoutines: numRoutines,
+		}
 	}
-	wg.Wait()
+	wp.Map(updateProofHandler, argList)
 }
 
 func (m *MerkleTree) updatePairProof(buf [][]byte, idx, batch, step int) {
@@ -444,10 +441,11 @@ func leafGenHandler(argInterface interface{}) interface{} {
 	return nil
 }
 
-func (m *MerkleTree) leafGenParal(blocks []DataBlock, numRoutines int) ([][]byte, error) {
+func (m *MerkleTree) leafGenParal(blocks []DataBlock, wp *gool.Pool) ([][]byte, error) {
 	var (
-		lenLeaves = len(blocks)
-		leaves    = make([][]byte, lenLeaves)
+		lenLeaves   = len(blocks)
+		leaves      = make([][]byte, lenLeaves)
+		numRoutines = m.NumRoutines
 	)
 	argList := make([]interface{}, numRoutines)
 	for i := 0; i < numRoutines; i++ {
@@ -460,7 +458,7 @@ func (m *MerkleTree) leafGenParal(blocks []DataBlock, numRoutines int) ([][]byte
 			numRoutines: numRoutines,
 		}
 	}
-	errList := m.workerPool.Map(leafGenHandler, argList)
+	errList := wp.Map(leafGenHandler, argList)
 	for _, err := range errList {
 		if err != nil {
 			return nil, err.(error)
@@ -529,7 +527,7 @@ func treeBuildHandler(argInterface interface{}) interface{} {
 	return nil
 }
 
-func (m *MerkleTree) treeBuildParal() (err error) {
+func (m *MerkleTree) treeBuildParal(wp *gool.Pool) (err error) {
 	numRoutines := m.NumRoutines
 	numLeaves := len(m.Leaves)
 	m.leafMap = sync.Map{}
@@ -560,7 +558,7 @@ func (m *MerkleTree) treeBuildParal() (err error) {
 				numRoutines: numRoutines,
 			}
 		}
-		errList := m.workerPool.Map(treeBuildHandler, argList)
+		errList := wp.Map(treeBuildHandler, argList)
 		for _, err := range errList {
 			if err != nil {
 				return err.(error)
