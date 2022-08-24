@@ -119,9 +119,7 @@ func New(config *Config, blocks []DataBlock) (m *MerkleTree, err error) {
 	if config.RunInParallel && config.NumRoutines == 0 {
 		config.NumRoutines = runtime.NumCPU()
 	}
-	m = &MerkleTree{
-		Config: config,
-	}
+	m = &MerkleTree{Config: config}
 	m.Depth = calTreeDepth(len(blocks))
 	var wp *gool.Pool
 	if m.RunInParallel {
@@ -236,7 +234,7 @@ type proofGenArgs struct {
 	numRoutines int
 }
 
-func proofGenHandler(argInterface interface{}) interface{} {
+func proofGenHandler(argInterface any) any {
 	args := argInterface.(*proofGenArgs)
 	for i := args.start; i < args.prevLen; i += args.numRoutines << 1 {
 		newHash, err := args.hashFunc(append(args.buf1[i], args.buf1[i+1]...))
@@ -249,9 +247,8 @@ func proofGenHandler(argInterface interface{}) interface{} {
 }
 
 func (m *MerkleTree) proofGenParal(wp *gool.Pool) (err error) {
-	numRoutines := m.NumRoutines
-	numLeaves := len(m.Leaves)
 	m.initProofs()
+	numLeaves := len(m.Leaves)
 	buf1 := make([][]byte, numLeaves)
 	copy(buf1, m.Leaves)
 	var prevLen int
@@ -261,8 +258,12 @@ func (m *MerkleTree) proofGenParal(wp *gool.Pool) (err error) {
 	}
 	buf2 := make([][]byte, prevLen>>1)
 	m.updateProofsParal(buf1, numLeaves, 0, wp)
+	numRoutines := m.NumRoutines
 	for step := 1; step < int(m.Depth); step++ {
-		argList := make([]interface{}, numRoutines)
+		if numRoutines > prevLen {
+			numRoutines = prevLen
+		}
+		argList := make([]any, numRoutines)
 		for i := 0; i < numRoutines; i++ {
 			argList[i] = &proofGenArgs{
 				hashFunc:    m.HashFunc,
@@ -334,7 +335,7 @@ type updateProofArgs struct {
 	numRoutines int
 }
 
-func updateProofHandler(argInterface interface{}) interface{} {
+func updateProofHandler(argInterface any) any {
 	args := argInterface.(*updateProofArgs)
 	for i := args.start; i < args.bufLen; i += args.numRoutines << 1 {
 		args.m.updatePairProof(args.buf, i, args.batch, args.step)
@@ -342,10 +343,14 @@ func updateProofHandler(argInterface interface{}) interface{} {
 	return nil
 }
 
-func (m *MerkleTree) updateProofsParal(buf [][]byte, bufLen, step int, wp *gool.Pool) {
-	numRoutines := m.NumRoutines
+func (m *MerkleTree) updateProofsParal(buf [][]byte, bufLen, step int,
+	wp *gool.Pool) {
 	batch := 1 << step
-	argList := make([]interface{}, numRoutines)
+	numRoutines := m.NumRoutines
+	if numRoutines > bufLen {
+		numRoutines = bufLen
+	}
+	argList := make([]any, numRoutines)
 	for i := 0; i < numRoutines; i++ {
 		argList[i] = &updateProofArgs{
 			m:           m,
@@ -362,21 +367,15 @@ func (m *MerkleTree) updateProofsParal(buf [][]byte, bufLen, step int, wp *gool.
 
 func (m *MerkleTree) updatePairProof(buf [][]byte, idx, batch, step int) {
 	start := idx * batch
-	end := start + batch
-	if end > len(m.Proofs) {
-		end = len(m.Proofs)
+	end := min(start+batch, len(m.Proofs))
+	for i := start; i < end; i++ {
+		m.Proofs[i].Path += 1 << step
+		m.Proofs[i].Siblings = append(m.Proofs[i].Siblings, buf[idx+1])
 	}
-	for j := start; j < end; j++ {
-		m.Proofs[j].Path += 1 << step
-		m.Proofs[j].Siblings = append(m.Proofs[j].Siblings, buf[idx+1])
-	}
-	start = (idx + 1) * batch
-	end = start + batch
-	if end > len(m.Proofs) {
-		end = len(m.Proofs)
-	}
-	for j := start; j < end; j++ {
-		m.Proofs[j].Siblings = append(m.Proofs[j].Siblings, buf[idx])
+	start += batch
+	end = min(start+batch, len(m.Proofs))
+	for i := start; i < end; i++ {
+		m.Proofs[i].Siblings = append(m.Proofs[i].Siblings, buf[idx])
 	}
 }
 
@@ -426,8 +425,8 @@ type leafGenArgs struct {
 	numRoutines int
 }
 
-func leafGenHandler(argInterface interface{}) interface{} {
-	args := argInterface.(leafGenArgs)
+func leafGenHandler(argInterface any) any {
+	args := argInterface.(*leafGenArgs)
 	for i := args.start; i < args.lenLeaves; i += args.numRoutines {
 		data, err := args.blocks[i].Serialize()
 		if err != nil {
@@ -442,15 +441,19 @@ func leafGenHandler(argInterface interface{}) interface{} {
 	return nil
 }
 
-func (m *MerkleTree) leafGenParal(blocks []DataBlock, wp *gool.Pool) ([][]byte, error) {
+func (m *MerkleTree) leafGenParal(blocks []DataBlock,
+	wp *gool.Pool) ([][]byte, error) {
 	var (
 		lenLeaves   = len(blocks)
 		leaves      = make([][]byte, lenLeaves)
 		numRoutines = m.NumRoutines
 	)
-	argList := make([]interface{}, numRoutines)
+	if numRoutines > lenLeaves {
+		numRoutines = lenLeaves
+	}
+	argList := make([]any, numRoutines)
 	for i := 0; i < numRoutines; i++ {
-		argList[i] = leafGenArgs{
+		argList[i] = &leafGenArgs{
 			blocks:      blocks,
 			leaves:      leaves,
 			hashFunc:    m.HashFunc,
@@ -488,9 +491,13 @@ func (m *MerkleTree) treeBuild(wp *gool.Pool) (err error) {
 	for i := uint32(0); i < m.Depth-1; i++ {
 		m.tree[i+1] = make([][]byte, prevLen>>1)
 		if m.RunInParallel {
-			argList := make([]interface{}, m.NumRoutines)
-			for j := 0; j < m.NumRoutines; j++ {
-				argList[j] = treeBuildArgs{
+			numRoutines := m.NumRoutines
+			if numRoutines > prevLen {
+				numRoutines = prevLen
+			}
+			argList := make([]any, numRoutines)
+			for j := 0; j < numRoutines; j++ {
+				argList[j] = &treeBuildArgs{
 					m:           m,
 					depth:       i,
 					start:       j << 1,
@@ -533,8 +540,8 @@ type treeBuildArgs struct {
 	numRoutines int
 }
 
-func treeBuildHandler(argInterface interface{}) interface{} {
-	args := argInterface.(treeBuildArgs)
+func treeBuildHandler(argInterface any) any {
+	args := argInterface.(*treeBuildArgs)
 	mt := args.m
 	for i := args.start; i < args.prevLen; i += args.numRoutines << 1 {
 		newHash, err := mt.HashFunc(append(mt.tree[args.depth][i], mt.tree[args.depth][i+1]...))
@@ -625,4 +632,11 @@ func (m *MerkleTree) GenerateProof(dataBlock DataBlock) (*Proof, error) {
 		Path:     path,
 		Siblings: siblings,
 	}, nil
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
