@@ -684,13 +684,6 @@ func TestMerkleTree_Verify(t *testing.T) {
 			wantErr:   false,
 		},
 		{
-			name:      "test_pseudo_random_10",
-			setupFunc: verifySetup,
-			blockSize: 10,
-			want:      true,
-			wantErr:   false,
-		},
-		{
 			name:      "test_pseudo_random_1001",
 			setupFunc: verifySetup,
 			blockSize: 1001,
@@ -826,6 +819,12 @@ func TestMerkleTree_GenerateProof(t *testing.T) {
 	}
 }
 
+func testHashFunc(data []byte) ([]byte, error) {
+	sha256Func := sha256.New()
+	sha256Func.Write(data)
+	return sha256Func.Sum(nil), nil
+}
+
 func TestMerkleTree_proofGen(t *testing.T) {
 	patches := gomonkey.NewPatches()
 	defer patches.Reset()
@@ -851,6 +850,22 @@ func TestMerkleTree_proofGen(t *testing.T) {
 				patches.ApplyFunc(getDummyHash,
 					func() ([]byte, error) {
 						return nil, errors.New("test_get_dummy_hash_err")
+					})
+			},
+			wantErr: true,
+		},
+		{
+			name: "test_hash_func_err",
+			args: args{
+				config: &Config{
+					HashFunc: testHashFunc,
+				},
+				blocks: genTestDataBlocks(5),
+			},
+			mock: func() {
+				patches.ApplyFunc(testHashFunc,
+					func([]byte) ([]byte, error) {
+						return nil, errors.New("test_hash_func_err")
 					})
 			},
 			wantErr: true,
@@ -949,6 +964,30 @@ func TestVerify(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "test_hash_func_nil",
+			args: args{
+				dataBlock: blocks[0],
+				proof:     m.Proofs[0],
+				root:      m.Root,
+				hashFunc:  nil,
+			},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name: "test_hash_func_err",
+			args: args{
+				dataBlock: blocks[0],
+				proof:     m.Proofs[0],
+				root:      m.Root,
+				hashFunc: func([]byte) ([]byte, error) {
+					return nil, errors.New("test_hash_func_err")
+				},
+			},
+			want:    false,
+			wantErr: true,
+		},
+		{
 			name: "data_block_serialize_err",
 			args: args{
 				dataBlock: blocks[0],
@@ -979,6 +1018,47 @@ func TestVerify(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("Verify() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_proofGenHandler(t *testing.T) {
+	patches := gomonkey.NewPatches()
+	defer patches.Reset()
+	type args struct {
+		argInterface interface{}
+	}
+	tests := []struct {
+		name    string
+		args    args
+		mock    func()
+		wantErr bool
+	}{
+		{
+			name: "test_hash_func_err",
+			args: args{
+				argInterface: &proofGenArgs{
+					hashFunc: func([]byte) ([]byte, error) {
+						return nil, errors.New("test_hash_func_err")
+					},
+					buf1:        [][]byte{[]byte("test_buf1"), []byte("test_buf1")},
+					buf2:        [][]byte{[]byte("test_buf2")},
+					prevLen:     2,
+					numRoutines: 2,
+				},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.mock != nil {
+				tt.mock()
+			}
+			defer patches.Reset()
+			if err := proofGenHandler(tt.args.argInterface); (err != nil) != tt.wantErr {
+				t.Errorf("proofGenHandler() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

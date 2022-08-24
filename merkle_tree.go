@@ -44,7 +44,7 @@ const (
 	// Default hash result length using SHA256.
 	defaultHashLen = 32
 	// Default job queue size of the goroutine pool for parallel executions.
-	jobQueueSize = 100
+	jobQueueSize = 64
 )
 
 // ModeType is the type in the Merkle Tree configuration indicating what operations are performed.
@@ -147,15 +147,15 @@ func New(config *Config, blocks []DataBlock) (m *MerkleTree, err error) {
 	}
 	if m.Mode == ModeTreeBuild {
 		if m.RunInParallel {
-			err = m.treeBuildParal(wp)
+			err = m.treeBuild(wp)
 			return
 		}
-		err = m.treeBuild()
+		err = m.treeBuild(nil)
 		return
 	}
 	if m.Mode == ModeProofGenAndTreeBuild {
 		if m.RunInParallel {
-			err = m.treeBuildParal(wp)
+			err = m.treeBuild(wp)
 			if err != nil {
 				return
 			}
@@ -163,8 +163,9 @@ func New(config *Config, blocks []DataBlock) (m *MerkleTree, err error) {
 			for i := 0; i < len(m.tree); i++ {
 				m.updateProofsParal(m.tree[i], len(m.tree[i]), i, wp)
 			}
+			return
 		}
-		err = m.treeBuild()
+		err = m.treeBuild(nil)
 		if err != nil {
 			return
 		}
@@ -467,7 +468,7 @@ func (m *MerkleTree) leafGenParal(blocks []DataBlock, wp *gool.Pool) ([][]byte, 
 	return leaves, nil
 }
 
-func (m *MerkleTree) treeBuild() (err error) {
+func (m *MerkleTree) treeBuild(wp *gool.Pool) (err error) {
 	numLeaves := len(m.Leaves)
 	finishMap := make(chan struct{})
 	go func() {
@@ -486,10 +487,29 @@ func (m *MerkleTree) treeBuild() (err error) {
 	}
 	for i := uint32(0); i < m.Depth-1; i++ {
 		m.tree[i+1] = make([][]byte, prevLen>>1)
-		for j := 0; j < prevLen; j += 2 {
-			m.tree[i+1][j>>1], err = m.HashFunc(append(m.tree[i][j], m.tree[i][j+1]...))
-			if err != nil {
-				return
+		if m.RunInParallel {
+			argList := make([]interface{}, m.NumRoutines)
+			for j := 0; j < m.NumRoutines; j++ {
+				argList[j] = treeBuildArgs{
+					m:           m,
+					depth:       i,
+					start:       j << 1,
+					prevLen:     prevLen,
+					numRoutines: m.NumRoutines,
+				}
+			}
+			errList := wp.Map(treeBuildHandler, argList)
+			for _, err := range errList {
+				if err != nil {
+					return err.(error)
+				}
+			}
+		} else {
+			for j := 0; j < prevLen; j += 2 {
+				m.tree[i+1][j>>1], err = m.HashFunc(append(m.tree[i][j], m.tree[i][j+1]...))
+				if err != nil {
+					return
+				}
 			}
 		}
 		m.tree[i+1], prevLen, err = m.fixOdd(m.tree[i+1], len(m.tree[i+1]))
@@ -524,55 +544,6 @@ func treeBuildHandler(argInterface interface{}) interface{} {
 		mt.tree[args.depth+1][i>>1] = newHash
 	}
 	return nil
-}
-
-func (m *MerkleTree) treeBuildParal(wp *gool.Pool) (err error) {
-	numRoutines := m.NumRoutines
-	numLeaves := len(m.Leaves)
-	finishMap := make(chan struct{})
-	go func() {
-		for i := 0; i < numLeaves; i++ {
-			m.leafMap.Store(string(m.Leaves[i]), i)
-		}
-		finishMap <- struct{}{}
-	}()
-	m.tree = make([][][]byte, m.Depth)
-	m.tree[0] = make([][]byte, numLeaves)
-	copy(m.tree[0], m.Leaves)
-	var prevLen int
-	m.tree[0], prevLen, err = m.fixOdd(m.tree[0], numLeaves)
-	if err != nil {
-		return
-	}
-	for i := uint32(0); i < m.Depth-1; i++ {
-		m.tree[i+1] = make([][]byte, prevLen>>1)
-		argList := make([]interface{}, numRoutines)
-		for j := 0; j < numRoutines; j++ {
-			argList[j] = treeBuildArgs{
-				m:           m,
-				depth:       i,
-				start:       j << 1,
-				prevLen:     prevLen,
-				numRoutines: numRoutines,
-			}
-		}
-		errList := wp.Map(treeBuildHandler, argList)
-		for _, err := range errList {
-			if err != nil {
-				return err.(error)
-			}
-		}
-		m.tree[i+1], prevLen, err = m.fixOdd(m.tree[i+1], len(m.tree[i+1]))
-		if err != nil {
-			return
-		}
-	}
-	m.Root, err = m.HashFunc(append(m.tree[m.Depth-1][0], m.tree[m.Depth-1][1]...))
-	if err != nil {
-		return
-	}
-	<-finishMap
-	return
 }
 
 // Verify verifies the data block with the Merkle Tree proof
