@@ -56,6 +56,8 @@ func NewHashFunc(data []byte) ([]byte, error) {
 }
 ```
 
+*Important Notice*: please make sure the hash function used by paralleled algorithms is concurrent-safe.
+
 ## Example
 
 ### Proof generation and verification of all blocks

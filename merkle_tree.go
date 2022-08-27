@@ -25,7 +25,6 @@ package merkletree
 import (
 	"bytes"
 	"crypto/rand"
-	"crypto/sha256"
 	"errors"
 	"math"
 	"runtime"
@@ -109,7 +108,11 @@ func New(config *Config, blocks []DataBlock) (m *MerkleTree, err error) {
 		config = new(Config)
 	}
 	if config.HashFunc == nil {
-		config.HashFunc = defaultHashFunc
+		if config.RunInParallel {
+			config.HashFunc = defaultHashFuncParal
+		} else {
+			config.HashFunc = defaultHashFunc
+		}
 	}
 	// If the configuration mode is not set, then set it to ModeProofGen by default.
 	if config.Mode == 0 {
@@ -387,14 +390,6 @@ func getDummyHash() ([]byte, error) {
 		return nil, err
 	}
 	return dummyBytes, nil
-}
-
-// defaultHashFunc is used when no user hash function is specified.
-// It implements SHA256 hash function.
-func defaultHashFunc(data []byte) ([]byte, error) {
-	sha256Func := sha256.New()
-	sha256Func.Write(data)
-	return sha256Func.Sum(nil), nil
 }
 
 func (m *MerkleTree) leafGen(blocks []DataBlock) ([][]byte, error) {

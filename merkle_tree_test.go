@@ -34,7 +34,7 @@ import (
 	"github.com/agiledragon/gomonkey/v2"
 )
 
-const benchSize = 100000
+const benchSize = 10000
 
 type mockDataBlock struct {
 	data []byte
