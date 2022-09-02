@@ -22,10 +22,9 @@
 
 package merkletree
 
-import (
-	"crypto/sha256"
-)
+import "crypto/sha256"
 
+// sha256Digest is the reusable digest for defaultHashFunc.
 var sha256Digest = sha256.New()
 
 // defaultHashFunc is used when no user hash function is specified.
@@ -34,7 +33,6 @@ func defaultHashFunc(data []byte) ([]byte, error) {
 	defer sha256Digest.Reset()
 	sha256Digest.Write(data)
 	return sha256Digest.Sum(nil), nil
-
 }
 
 // defaultHashFuncParal is used by parallel algorithms when no user hash function is specified.

@@ -4,5 +4,5 @@ go 1.19
 
 require (
 	github.com/agiledragon/gomonkey/v2 v2.8.0
-	github.com/txaty/gool v0.1.1
+	github.com/txaty/gool v0.1.3
 )

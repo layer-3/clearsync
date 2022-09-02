@@ -42,8 +42,6 @@ const (
 	ModeProofGenAndTreeBuild
 	// Default hash result length using SHA256.
 	defaultHashLen = 32
-	// Default job queue size of the goroutine pool for parallel executions.
-	jobQueueSize = 64
 )
 
 // ModeType is the type in the Merkle Tree configuration indicating what operations are performed.
@@ -124,9 +122,10 @@ func New(config *Config, blocks []DataBlock) (m *MerkleTree, err error) {
 	}
 	m = &MerkleTree{Config: config}
 	m.Depth = calTreeDepth(len(blocks))
-	var wp *gool.Pool
+	var wp *gool.Pool[any, any]
 	if m.RunInParallel {
-		wp = gool.NewPool(config.NumRoutines, jobQueueSize)
+		// task channel capacity is passed as 0, so use the default value: 2 * numWorkers
+		wp = gool.NewPool[any, any](config.NumRoutines, 0)
 		defer wp.Close()
 		m.Leaves, err = m.leafGenParal(blocks, wp)
 		if err != nil {
@@ -249,7 +248,7 @@ func proofGenHandler(argInterface any) any {
 	return nil
 }
 
-func (m *MerkleTree) proofGenParal(wp *gool.Pool) (err error) {
+func (m *MerkleTree) proofGenParal(wp *gool.Pool[any, any]) (err error) {
 	m.initProofs()
 	numLeaves := len(m.Leaves)
 	buf1 := make([][]byte, numLeaves)
@@ -346,8 +345,7 @@ func updateProofHandler(argInterface any) any {
 	return nil
 }
 
-func (m *MerkleTree) updateProofsParal(buf [][]byte, bufLen, step int,
-	wp *gool.Pool) {
+func (m *MerkleTree) updateProofsParal(buf [][]byte, bufLen, step int, wp *gool.Pool[any, any]) {
 	batch := 1 << step
 	numRoutines := m.NumRoutines
 	if numRoutines > bufLen {
@@ -436,8 +434,7 @@ func leafGenHandler(argInterface any) any {
 	return nil
 }
 
-func (m *MerkleTree) leafGenParal(blocks []DataBlock,
-	wp *gool.Pool) ([][]byte, error) {
+func (m *MerkleTree) leafGenParal(blocks []DataBlock, wp *gool.Pool[any, any]) ([][]byte, error) {
 	var (
 		lenLeaves   = len(blocks)
 		leaves      = make([][]byte, lenLeaves)
@@ -466,7 +463,7 @@ func (m *MerkleTree) leafGenParal(blocks []DataBlock,
 	return leaves, nil
 }
 
-func (m *MerkleTree) treeBuild(wp *gool.Pool) (err error) {
+func (m *MerkleTree) treeBuild(wp *gool.Pool[any, any]) (err error) {
 	numLeaves := len(m.Leaves)
 	finishMap := make(chan struct{})
 	go func() {
