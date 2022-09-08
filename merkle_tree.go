@@ -59,23 +59,27 @@ type HashFuncType func([]byte) ([]byte, error)
 type Config struct {
 	// Customizable hash function used for tree generation.
 	HashFunc HashFuncType
-	// If true, the generation runs in parallel, otherwise runs without parallelization.
-	// This increase the performance for the calculation of large number of data blocks, e.g. over 10,000 blocks.
-	RunInParallel bool
 	// Number of goroutines run in parallel.
 	// If RunInParallel is true and NumRoutine is set to 0, use number of CPU as the number of goroutines.
 	NumRoutines int
+	// Mode of the Merkle Tree generation.
+	Mode ModeType
+	// If RunInParallel is true, the generation runs in parallel, otherwise runs without parallelization.
+	// This increase the performance for the calculation of large number of data blocks, e.g. over 10,000 blocks.
+	RunInParallel bool
 	// If true, generate a dummy node with random hash value.
 	// Otherwise, then the odd node situation is handled by duplicating the previous node.
 	NoDuplicates bool
-	// Mode of the Merkle Tree generation.
-	Mode ModeType
 }
 
 // MerkleTree implements the Merkle Tree structure
 type MerkleTree struct {
-	// Config is the Merkle Tree configuration
 	*Config
+	// leafMap is the map of the leaf hash to the index in the Tree slice,
+	// only available when config mode is ModeTreeBuild or ModeProofGenAndTreeBuild
+	leafMap sync.Map
+	// tree is the Merkle Tree structure, only available when config mode is ModeTreeBuild or ModeProofGenAndTreeBuild
+	tree [][][]byte
 	// Root is the Merkle root hash
 	Root []byte
 	// Leaves are Merkle Tree leaves, i.e. the hashes of the data blocks for tree generation
@@ -84,17 +88,29 @@ type MerkleTree struct {
 	Proofs []*Proof
 	// Depth is the Merkle Tree depth
 	Depth uint32
-	// tree is the Merkle Tree structure, only available when config mode is ModeTreeBuild or ModeProofGenAndTreeBuild
-	tree [][][]byte
-	// leafMap is the map of the leaf hash to the index in the Tree slice,
-	// only available when config mode is ModeTreeBuild or ModeProofGenAndTreeBuild
-	leafMap sync.Map
 }
 
 // Proof implements the Merkle Tree proof.
 type Proof struct {
-	Path     uint32   // path variable indicating whether the neighbor is on the left or right
 	Siblings [][]byte // sibling nodes to the Merkle Tree path of the data block
+	Path     uint32   // path variable indicating whether the neighbor is on the left or right
+}
+
+// argType is used as the arguments for the handler functions when performing parallel computations.
+// All the handler functions use this universal argument struct to eliminate interface conversion overhead.
+// Each field in the struct may be used for different purpose in different handler functions,
+// please refer to the comments at each handler function for details.
+type argType struct {
+	mt             *MerkleTree
+	byteField1     [][]byte
+	byteField2     [][]byte
+	dataBlockField []DataBlock
+	intField1      int
+	intField2      int
+	intField3      int
+	intField4      int
+	intField5      int
+	uint32Field    uint32
 }
 
 // New generates a new Merkle Tree with specified configuration.
@@ -122,10 +138,10 @@ func New(config *Config, blocks []DataBlock) (m *MerkleTree, err error) {
 	}
 	m = &MerkleTree{Config: config}
 	m.Depth = calTreeDepth(len(blocks))
-	var wp *gool.Pool[any, any]
+	var wp *gool.Pool[argType, error]
 	if m.RunInParallel {
 		// task channel capacity is passed as 0, so use the default value: 2 * numWorkers
-		wp = gool.NewPool[any, any](config.NumRoutines, 0)
+		wp = gool.NewPool[argType, error](config.NumRoutines, 0)
 		defer wp.Close()
 		m.Leaves, err = m.leafGenParal(blocks, wp)
 		if err != nil {
@@ -227,28 +243,39 @@ func (m *MerkleTree) proofGen() (err error) {
 	return
 }
 
-type proofGenArgs struct {
-	hashFunc    HashFuncType
-	buf1        [][]byte
-	buf2        [][]byte
-	start       int
-	prevLen     int
-	numRoutines int
-}
-
-func proofGenHandler(argInterface any) any {
-	args := argInterface.(*proofGenArgs)
-	for i := args.start; i < args.prevLen; i += args.numRoutines << 1 {
-		newHash, err := args.hashFunc(append(args.buf1[i], args.buf1[i+1]...))
+// proofGenHandler generates the proofs in parallel.
+// arg fields:
+//
+//	mt: the Merkle Tree instance
+//	byteField1: buf1
+//	byteField2: buf2
+//	intField1: start
+//	intField2: prevLen
+//	intField3: numRoutines
+//
+// return:
+//
+//	error
+func proofGenHandler(arg argType) error {
+	var (
+		hashFunc    = arg.mt.HashFunc
+		buf1        = arg.byteField1
+		buf2        = arg.byteField2
+		start       = arg.intField1
+		prevLen     = arg.intField2
+		numRoutines = arg.intField3
+	)
+	for i := start; i < prevLen; i += numRoutines << 1 {
+		newHash, err := hashFunc(append(buf1[i], buf1[i+1]...))
 		if err != nil {
 			return err
 		}
-		args.buf2[i>>1] = newHash
+		buf2[i>>1] = newHash
 	}
 	return nil
 }
 
-func (m *MerkleTree) proofGenParal(wp *gool.Pool[any, any]) (err error) {
+func (m *MerkleTree) proofGenParal(wp *gool.Pool[argType, error]) (err error) {
 	m.initProofs()
 	numLeaves := len(m.Leaves)
 	buf1 := make([][]byte, numLeaves)
@@ -265,21 +292,21 @@ func (m *MerkleTree) proofGenParal(wp *gool.Pool[any, any]) (err error) {
 		if numRoutines > prevLen {
 			numRoutines = prevLen
 		}
-		argList := make([]any, numRoutines)
+		argList := make([]argType, numRoutines)
 		for i := 0; i < numRoutines; i++ {
-			argList[i] = &proofGenArgs{
-				hashFunc:    m.HashFunc,
-				buf1:        buf1,
-				buf2:        buf2,
-				start:       i << 1,
-				prevLen:     prevLen,
-				numRoutines: numRoutines,
+			argList[i] = argType{
+				mt:         m,
+				byteField1: buf1,
+				byteField2: buf2,
+				intField1:  i << 1, // starting index
+				intField2:  prevLen,
+				intField3:  numRoutines,
 			}
 		}
 		errList := wp.Map(proofGenHandler, argList)
-		for _, err := range errList {
+		for _, err = range errList {
 			if err != nil {
-				return err.(error)
+				return err
 			}
 		}
 		buf1, buf2 = buf2, buf1
@@ -327,40 +354,53 @@ func (m *MerkleTree) updateProofs(buf [][]byte, bufLen, step int) {
 	}
 }
 
-type updateProofArgs struct {
-	m           *MerkleTree
-	buf         [][]byte
-	start       int
-	batch       int
-	step        int
-	bufLen      int
-	numRoutines int
-}
-
-func updateProofHandler(argInterface any) any {
-	args := argInterface.(*updateProofArgs)
-	for i := args.start; i < args.bufLen; i += args.numRoutines << 1 {
-		args.m.updatePairProof(args.buf, i, args.batch, args.step)
+// updateProofHandler updates the proofs in parallel.
+// arg fields:
+//
+//	mt: the Merkle Tree instance
+//	byteField1: buf
+//	intField1: start
+//	intField2: batch
+//	intField3: step
+//	intField4: bufLen
+//	intField5: numRoutines
+//
+// return:
+//
+//	nothing (nil)
+func updateProofHandler(arg argType) error {
+	var (
+		mt          = arg.mt
+		buf         = arg.byteField1
+		start       = arg.intField1
+		batch       = arg.intField2
+		step        = arg.intField3
+		bufLen      = arg.intField4
+		numRoutines = arg.intField5
+	)
+	for i := start; i < bufLen; i += numRoutines << 1 {
+		mt.updatePairProof(buf, i, batch, step)
 	}
+	// return the nil error to be compatible with the handler type
 	return nil
 }
 
-func (m *MerkleTree) updateProofsParal(buf [][]byte, bufLen, step int, wp *gool.Pool[any, any]) {
+func (m *MerkleTree) updateProofsParal(buf [][]byte, bufLen, step int, wp *gool.Pool[argType, error]) {
 	batch := 1 << step
 	numRoutines := m.NumRoutines
 	if numRoutines > bufLen {
 		numRoutines = bufLen
 	}
-	argList := make([]any, numRoutines)
+	argList := make([]argType, numRoutines)
 	for i := 0; i < numRoutines; i++ {
-		argList[i] = &updateProofArgs{
-			m:           m,
-			buf:         buf,
-			start:       i << 1,
-			batch:       batch,
-			step:        step,
-			bufLen:      bufLen,
-			numRoutines: numRoutines,
+		argList[i] = argType{
+			mt:         m,
+			byteField1: buf,
+			intField1:  i << 1, // starting index
+			intField2:  batch,
+			intField3:  step,
+			intField4:  bufLen,
+			intField5:  numRoutines,
 		}
 	}
 	wp.Map(updateProofHandler, argList)
@@ -378,6 +418,13 @@ func (m *MerkleTree) updatePairProof(buf [][]byte, idx, batch, step int) {
 	for i := start; i < end; i++ {
 		m.Proofs[i].Siblings = append(m.Proofs[i].Siblings, buf[idx])
 	}
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 // generate a dummy hash to make odd-length buffer even
@@ -400,8 +447,8 @@ func (m *MerkleTree) leafGen(blocks []DataBlock) ([][]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		hash, err := m.HashFunc(data)
-		if err != nil {
+		var hash []byte
+		if hash, err = m.HashFunc(data); err != nil {
 			return nil, err
 		}
 		leaves[i] = hash
@@ -409,32 +456,43 @@ func (m *MerkleTree) leafGen(blocks []DataBlock) ([][]byte, error) {
 	return leaves, nil
 }
 
-type leafGenArgs struct {
-	blocks      []DataBlock
-	leaves      [][]byte
-	hashFunc    HashFuncType
-	start       int
-	lenLeaves   int
-	numRoutines int
-}
-
-func leafGenHandler(argInterface any) any {
-	args := argInterface.(*leafGenArgs)
-	for i := args.start; i < args.lenLeaves; i += args.numRoutines {
-		data, err := args.blocks[i].Serialize()
+// leafGenHandler generates the leaves in parallel.
+// arg fields:
+//
+//	mt: the Merkle Tree instance
+//	byteField1: leaves
+//	dataBlockField: blocks
+//	intField1: start
+//	intField2: lenLeaves
+//	intField3: numRoutines
+//
+// return:
+//
+//	error
+func leafGenHandler(arg argType) error {
+	var (
+		hashFunc    = arg.mt.HashFunc
+		blocks      = arg.dataBlockField
+		leaves      = arg.byteField1
+		start       = arg.intField1
+		lenLeaves   = arg.intField2
+		numRoutines = arg.intField3
+	)
+	for i := start; i < lenLeaves; i += numRoutines {
+		data, err := blocks[i].Serialize()
 		if err != nil {
 			return err
 		}
-		hash, err := args.hashFunc(data)
-		if err != nil {
+		var hash []byte
+		if hash, err = hashFunc(data); err != nil {
 			return err
 		}
-		args.leaves[i] = hash
+		leaves[i] = hash
 	}
 	return nil
 }
 
-func (m *MerkleTree) leafGenParal(blocks []DataBlock, wp *gool.Pool[any, any]) ([][]byte, error) {
+func (m *MerkleTree) leafGenParal(blocks []DataBlock, wp *gool.Pool[argType, error]) ([][]byte, error) {
 	var (
 		lenLeaves   = len(blocks)
 		leaves      = make([][]byte, lenLeaves)
@@ -443,27 +501,27 @@ func (m *MerkleTree) leafGenParal(blocks []DataBlock, wp *gool.Pool[any, any]) (
 	if numRoutines > lenLeaves {
 		numRoutines = lenLeaves
 	}
-	argList := make([]any, numRoutines)
+	argList := make([]argType, numRoutines)
 	for i := 0; i < numRoutines; i++ {
-		argList[i] = &leafGenArgs{
-			blocks:      blocks,
-			leaves:      leaves,
-			hashFunc:    m.HashFunc,
-			start:       i,
-			lenLeaves:   lenLeaves,
-			numRoutines: numRoutines,
+		argList[i] = argType{
+			mt:             m,
+			dataBlockField: blocks,
+			byteField1:     leaves,
+			intField1:      i, // starting index
+			intField2:      lenLeaves,
+			intField3:      numRoutines,
 		}
 	}
 	errList := wp.Map(leafGenHandler, argList)
 	for _, err := range errList {
 		if err != nil {
-			return nil, err.(error)
+			return nil, err
 		}
 	}
 	return leaves, nil
 }
 
-func (m *MerkleTree) treeBuild(wp *gool.Pool[any, any]) (err error) {
+func (m *MerkleTree) treeBuild(wp *gool.Pool[argType, error]) (err error) {
 	numLeaves := len(m.Leaves)
 	finishMap := make(chan struct{})
 	go func() {
@@ -487,20 +545,20 @@ func (m *MerkleTree) treeBuild(wp *gool.Pool[any, any]) (err error) {
 			if numRoutines > prevLen {
 				numRoutines = prevLen
 			}
-			argList := make([]any, numRoutines)
+			argList := make([]argType, numRoutines)
 			for j := 0; j < numRoutines; j++ {
-				argList[j] = &treeBuildArgs{
-					m:           m,
-					depth:       i,
-					start:       j << 1,
-					prevLen:     prevLen,
-					numRoutines: m.NumRoutines,
+				argList[j] = argType{
+					mt:          m,
+					intField1:   j << 1, // starting index
+					intField2:   prevLen,
+					intField3:   m.NumRoutines,
+					uint32Field: i, // tree depth
 				}
 			}
 			errList := wp.Map(treeBuildHandler, argList)
-			for _, err := range errList {
+			for _, err = range errList {
 				if err != nil {
-					return err.(error)
+					return
 				}
 			}
 		} else {
@@ -524,23 +582,32 @@ func (m *MerkleTree) treeBuild(wp *gool.Pool[any, any]) (err error) {
 	return
 }
 
-type treeBuildArgs struct {
-	m           *MerkleTree
-	depth       uint32
-	start       int
-	prevLen     int
-	numRoutines int
-}
-
-func treeBuildHandler(argInterface any) any {
-	args := argInterface.(*treeBuildArgs)
-	mt := args.m
-	for i := args.start; i < args.prevLen; i += args.numRoutines << 1 {
-		newHash, err := mt.HashFunc(append(mt.tree[args.depth][i], mt.tree[args.depth][i+1]...))
+// treeBuildHandler builds the tree in parallel.
+// arg fields:
+//
+//	mt: the Merkle Tree instance
+//	intField1: start
+//	intField2: prevLen
+//	intField3: numRoutines
+//	uint32Field: depth
+//
+// return:
+//
+//	error
+func treeBuildHandler(arg argType) error {
+	var (
+		mt          = arg.mt
+		start       = arg.intField1
+		prevLen     = arg.intField2
+		numRoutines = arg.intField3
+		depth       = arg.uint32Field
+	)
+	for i := start; i < prevLen; i += numRoutines << 1 {
+		newHash, err := mt.HashFunc(append(mt.tree[depth][i], mt.tree[depth][i+1]...))
 		if err != nil {
 			return err
 		}
-		mt.tree[args.depth+1][i>>1] = newHash
+		mt.tree[depth+1][i>>1] = newHash
 	}
 	return nil
 }
@@ -598,8 +665,8 @@ func (m *MerkleTree) GenerateProof(dataBlock DataBlock) (*Proof, error) {
 	if err != nil {
 		return nil, err
 	}
-	blockHash, err := m.HashFunc(blockByte)
-	if err != nil {
+	var blockHash []byte
+	if blockHash, err = m.HashFunc(blockByte); err != nil {
 		return nil, err
 	}
 	val, ok := m.leafMap.Load(string(blockHash))
@@ -624,11 +691,4 @@ func (m *MerkleTree) GenerateProof(dataBlock DataBlock) (*Proof, error) {
 		Path:     path,
 		Siblings: siblings,
 	}, nil
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }

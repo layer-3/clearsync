@@ -1049,25 +1049,31 @@ func Test_proofGenHandler(t *testing.T) {
 	patches := gomonkey.NewPatches()
 	defer patches.Reset()
 	type args struct {
-		argInterface interface{}
+		arg argType
+	}
+	mt, err := New(nil, genTestDataBlocks(5))
+	if err != nil {
+		t.Errorf("New() error = %v", err)
+		return
+	}
+	mt.HashFunc = func([]byte) ([]byte, error) {
+		return nil, errors.New("test_hash_func_err")
 	}
 	tests := []struct {
+		mock    func()
 		name    string
 		args    args
-		mock    func()
 		wantErr bool
 	}{
 		{
 			name: "test_hash_func_err",
 			args: args{
-				argInterface: &proofGenArgs{
-					hashFunc: func([]byte) ([]byte, error) {
-						return nil, errors.New("test_hash_func_err")
-					},
-					buf1:        [][]byte{[]byte("test_buf1"), []byte("test_buf1")},
-					buf2:        [][]byte{[]byte("test_buf2")},
-					prevLen:     2,
-					numRoutines: 2,
+				arg: argType{
+					mt:         mt,
+					byteField1: [][]byte{[]byte("test_buf1"), []byte("test_buf1")},
+					byteField2: [][]byte{[]byte("test_buf2")},
+					intField2:  2,
+					intField3:  2,
 				},
 			},
 			wantErr: true,
@@ -1079,7 +1085,7 @@ func Test_proofGenHandler(t *testing.T) {
 				tt.mock()
 			}
 			defer patches.Reset()
-			if err := proofGenHandler(tt.args.argInterface); (err != nil) != tt.wantErr {
+			if err := proofGenHandler(tt.args.arg); (err != nil) != tt.wantErr {
 				t.Errorf("proofGenHandler() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
