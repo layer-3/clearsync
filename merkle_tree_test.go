@@ -156,6 +156,16 @@ func TestMerkleTreeNew_proofGen(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "test_8_sorted",
+			args: args{
+				blocks: genTestDataBlocks(8),
+				config: &Config{
+					SortSiblingPairs: true,
+				},
+			},
+			wantErr: false,
+		},
+		{
 			name: "test_hash_func_error",
 			args: args{
 				blocks: genTestDataBlocks(100),
@@ -924,7 +934,7 @@ func TestVerify(t *testing.T) {
 		dataBlock DataBlock
 		proof     *Proof
 		root      []byte
-		hashFunc  HashFuncType
+		config    *Config
 	}
 	tests := []struct {
 		name    string
@@ -939,7 +949,21 @@ func TestVerify(t *testing.T) {
 				dataBlock: blocks[0],
 				proof:     m.Proofs[0],
 				root:      m.Root,
-				hashFunc:  m.HashFunc,
+				config: &Config{
+					HashFunc: m.HashFunc,
+					concatHashFunc: func(left, right []byte) []byte {
+						return append(left, right...)
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "test_config_nil",
+			args: args{
+				dataBlock: blocks[0],
+				proof:     m.Proofs[0],
+				root:      m.Root,
 			},
 			want: true,
 		},
@@ -949,7 +973,12 @@ func TestVerify(t *testing.T) {
 				dataBlock: blocks[0],
 				proof:     m.Proofs[0],
 				root:      []byte("test_wrong_root"),
-				hashFunc:  m.HashFunc,
+				config: &Config{
+					HashFunc: m.HashFunc,
+					concatHashFunc: func(left, right []byte) []byte {
+						return append(left, right...)
+					},
+				},
 			},
 			want: false,
 		},
@@ -959,7 +988,12 @@ func TestVerify(t *testing.T) {
 				dataBlock: blocks[0],
 				proof:     m.Proofs[0],
 				root:      m.Root,
-				hashFunc:  func([]byte) ([]byte, error) { return []byte("test_wrong_hash_hash"), nil },
+				config: &Config{
+					HashFunc: func([]byte) ([]byte, error) { return []byte("test_wrong_hash_hash"), nil },
+					concatHashFunc: func(left, right []byte) []byte {
+						return append(left, right...)
+					},
+				},
 			},
 			want: false,
 		},
@@ -969,7 +1003,12 @@ func TestVerify(t *testing.T) {
 				dataBlock: blocks[0],
 				proof:     nil,
 				root:      m.Root,
-				hashFunc:  m.HashFunc,
+				config: &Config{
+					HashFunc: m.HashFunc,
+					concatHashFunc: func(left, right []byte) []byte {
+						return append(left, right...)
+					},
+				},
 			},
 			want:    false,
 			wantErr: true,
@@ -980,7 +1019,12 @@ func TestVerify(t *testing.T) {
 				dataBlock: nil,
 				proof:     m.Proofs[0],
 				root:      m.Root,
-				hashFunc:  m.HashFunc,
+				config: &Config{
+					HashFunc: m.HashFunc,
+					concatHashFunc: func(left, right []byte) []byte {
+						return append(left, right...)
+					},
+				},
 			},
 			want:    false,
 			wantErr: true,
@@ -991,7 +1035,12 @@ func TestVerify(t *testing.T) {
 				dataBlock: blocks[0],
 				proof:     m.Proofs[0],
 				root:      m.Root,
-				hashFunc:  nil,
+				config: &Config{
+					HashFunc: nil,
+					concatHashFunc: func(left, right []byte) []byte {
+						return append(left, right...)
+					},
+				},
 			},
 			want:    true,
 			wantErr: false,
@@ -1002,8 +1051,13 @@ func TestVerify(t *testing.T) {
 				dataBlock: blocks[0],
 				proof:     m.Proofs[0],
 				root:      m.Root,
-				hashFunc: func([]byte) ([]byte, error) {
-					return nil, errors.New("test_hash_func_err")
+				config: &Config{
+					HashFunc: func([]byte) ([]byte, error) {
+						return nil, errors.New("test_hash_func_err")
+					},
+					concatHashFunc: func(left, right []byte) []byte {
+						return append(left, right...)
+					},
 				},
 			},
 			want:    false,
@@ -1015,7 +1069,12 @@ func TestVerify(t *testing.T) {
 				dataBlock: blocks[0],
 				proof:     m.Proofs[0],
 				root:      m.Root,
-				hashFunc:  m.HashFunc,
+				config: &Config{
+					HashFunc: m.HashFunc,
+					concatHashFunc: func(left, right []byte) []byte {
+						return append(left, right...)
+					},
+				},
 			},
 			mock: func() {
 				patches.ApplyMethod(reflect.TypeOf(&mockDataBlock{}), "Serialize",
@@ -1033,7 +1092,7 @@ func TestVerify(t *testing.T) {
 				tt.mock()
 			}
 			defer patches.Reset()
-			got, err := Verify(tt.args.dataBlock, tt.args.proof, tt.args.root, tt.args.hashFunc)
+			got, err := Verify(tt.args.dataBlock, tt.args.proof, tt.args.root, tt.args.config)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Verify() error = %v, wantErr %v", err, tt.wantErr)
 				return

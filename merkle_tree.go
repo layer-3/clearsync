@@ -52,11 +52,16 @@ type DataBlock interface {
 	Serialize() ([]byte, error)
 }
 
+type concatHashFuncType func([]byte, []byte) []byte
+
 // HashFuncType is the signature of the hash functions used for Merkle Tree generation.
 type HashFuncType func([]byte) ([]byte, error)
 
 // Config is the configuration of Merkle Tree.
 type Config struct {
+	// appendFunc is the function for concatenating two hashes.
+	// If SortSiblingPairs in Config is true, then the sibling pairs are first sorted and then concatenated.
+	concatHashFunc concatHashFuncType
 	// Customizable hash function used for tree generation.
 	HashFunc HashFuncType
 	// Number of goroutines run in parallel.
@@ -70,6 +75,9 @@ type Config struct {
 	// If true, generate a dummy node with random hash value.
 	// Otherwise, then the odd node situation is handled by duplicating the previous node.
 	NoDuplicates bool
+	// SortSiblingPairs is the parameter for OpenZeppelin compatibility.
+	// If set to `true`, the hashing sibling pairs are sorted.
+	SortSiblingPairs bool
 }
 
 // MerkleTree implements the Merkle Tree structure
@@ -121,27 +129,35 @@ func New(config *Config, blocks []DataBlock) (m *MerkleTree, err error) {
 	if config == nil {
 		config = new(Config)
 	}
-	if config.HashFunc == nil {
-		if config.RunInParallel {
-			config.HashFunc = defaultHashFuncParal
+	m = &MerkleTree{Config: config}
+	// hash function initialization
+	if m.HashFunc == nil {
+		if m.RunInParallel {
+			m.HashFunc = defaultHashFuncParal // parallelized hash function must be concurrent safe
 		} else {
-			config.HashFunc = defaultHashFunc
+			m.HashFunc = defaultHashFunc
 		}
 	}
 	// If the configuration mode is not set, then set it to ModeProofGen by default.
-	if config.Mode == 0 {
-		config.Mode = ModeProofGen
+	if m.Mode == 0 {
+		m.Mode = ModeProofGen
 	}
 	// If RunInParallel is true and NumRoutines is unset, then set NumRoutines to the number of CPU.
-	if config.RunInParallel && config.NumRoutines == 0 {
-		config.NumRoutines = runtime.NumCPU()
+	if m.RunInParallel && m.NumRoutines == 0 {
+		m.NumRoutines = runtime.NumCPU()
 	}
-	m = &MerkleTree{Config: config}
+	// hash concatenation function initialization
+	if m.SortSiblingPairs {
+		m.concatHashFunc = concatSortHash
+	} else {
+		m.concatHashFunc = concatHash
+	}
 	m.Depth = calTreeDepth(len(blocks))
+	// generic wait group initialization (for parallelized computation) and leaf generation
 	var wp *gool.Pool[argType, error]
 	if m.RunInParallel {
 		// task channel capacity is passed as 0, so use the default value: 2 * numWorkers
-		wp = gool.NewPool[argType, error](config.NumRoutines, 0)
+		wp = gool.NewPool[argType, error](m.NumRoutines, 0)
 		defer wp.Close()
 		m.Leaves, err = m.leafGenParal(blocks, wp)
 		if err != nil {
@@ -153,6 +169,7 @@ func New(config *Config, blocks []DataBlock) (m *MerkleTree, err error) {
 			return
 		}
 	}
+
 	if m.Mode == ModeProofGen {
 		if m.RunInParallel {
 			err = m.proofGenParal(wp)
@@ -191,7 +208,19 @@ func New(config *Config, blocks []DataBlock) (m *MerkleTree, err error) {
 		}
 		return
 	}
+
 	return nil, errors.New("invalid configuration mode")
+}
+
+func concatHash(b1 []byte, b2 []byte) []byte {
+	return append(b1, b2...)
+}
+
+func concatSortHash(b1 []byte, b2 []byte) []byte {
+	if bytes.Compare(b1, b2) < 0 {
+		return append(b1, b2...)
+	}
+	return append(b2, b1...)
 }
 
 // calTreeDepth calculates the tree depth,
@@ -227,7 +256,8 @@ func (m *MerkleTree) proofGen() (err error) {
 	m.updateProofs(buf, numLeaves, 0)
 	for step := 1; step < int(m.Depth); step++ {
 		for idx := 0; idx < prevLen; idx += 2 {
-			buf[idx>>1], err = m.HashFunc(append(buf[idx], buf[idx+1]...))
+
+			buf[idx>>1], err = m.HashFunc(m.Config.concatHashFunc(buf[idx], buf[idx+1]))
 			if err != nil {
 				return
 			}
@@ -239,7 +269,8 @@ func (m *MerkleTree) proofGen() (err error) {
 		}
 		m.updateProofs(buf, prevLen, step)
 	}
-	m.Root, err = m.HashFunc(append(buf[0], buf[1]...))
+
+	m.Root, err = m.HashFunc(m.Config.concatHashFunc(buf[0], buf[1]))
 	return
 }
 
@@ -317,7 +348,8 @@ func (m *MerkleTree) proofGenParal(wp *gool.Pool[argType, error]) (err error) {
 		}
 		m.updateProofsParal(buf1, prevLen, step, wp)
 	}
-	m.Root, err = m.HashFunc(append(buf1[0], buf1[1]...))
+
+	m.Root, err = m.HashFunc(m.Config.concatHashFunc(buf1[0], buf1[1]))
 	return
 }
 
@@ -563,7 +595,9 @@ func (m *MerkleTree) treeBuild(wp *gool.Pool[argType, error]) (err error) {
 			}
 		} else {
 			for j := 0; j < prevLen; j += 2 {
-				m.tree[i+1][j>>1], err = m.HashFunc(append(m.tree[i][j], m.tree[i][j+1]...))
+				m.tree[i+1][j>>1], err = m.HashFunc(
+					m.Config.concatHashFunc(m.tree[i][j], m.tree[i][j+1]),
+				)
 				if err != nil {
 					return
 				}
@@ -574,7 +608,8 @@ func (m *MerkleTree) treeBuild(wp *gool.Pool[argType, error]) (err error) {
 			return
 		}
 	}
-	m.Root, err = m.HashFunc(append(m.tree[m.Depth-1][0], m.tree[m.Depth-1][1]...))
+
+	m.Root, err = m.HashFunc(m.Config.concatHashFunc(m.tree[m.Depth-1][0], m.tree[m.Depth-1][1]))
 	if err != nil {
 		return
 	}
@@ -614,37 +649,48 @@ func treeBuildHandler(arg argType) error {
 
 // Verify verifies the data block with the Merkle Tree proof
 func (m *MerkleTree) Verify(dataBlock DataBlock, proof *Proof) (bool, error) {
-	return Verify(dataBlock, proof, m.Root, m.HashFunc)
+	return Verify(dataBlock, proof, m.Root, m.Config)
 }
 
 // Verify verifies the data block with the Merkle Tree proof and Merkle root hash
-func Verify(dataBlock DataBlock, proof *Proof, root []byte, hashFunc HashFuncType) (bool, error) {
+func Verify(dataBlock DataBlock, proof *Proof, root []byte, config *Config) (bool, error) {
 	if dataBlock == nil {
 		return false, errors.New("data block is nil")
 	}
 	if proof == nil {
 		return false, errors.New("proof is nil")
 	}
-	if hashFunc == nil {
-		hashFunc = defaultHashFunc
+
+	if config == nil {
+		config = new(Config)
 	}
+
+	if config.HashFunc == nil {
+		config.HashFunc = defaultHashFunc
+	}
+
+	if config.concatHashFunc == nil {
+		config.concatHashFunc = concatHash
+	}
+
 	var (
 		data, err = dataBlock.Serialize()
 		hash      []byte
 	)
+
 	if err != nil {
 		return false, err
 	}
-	hash, err = hashFunc(data)
+	hash, err = config.HashFunc(data)
 	if err != nil {
 		return false, err
 	}
 	path := proof.Path
 	for _, n := range proof.Siblings {
 		if path&1 == 1 {
-			hash, err = hashFunc(append(hash, n...))
+			hash, err = config.HashFunc(config.concatHashFunc(hash, n))
 		} else {
-			hash, err = hashFunc(append(n, hash...))
+			hash, err = config.HashFunc(config.concatHashFunc(n, hash))
 		}
 		if err != nil {
 			return false, err
