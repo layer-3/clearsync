@@ -210,6 +210,89 @@ func TestMerkleTreeNew_proofGen(t *testing.T) {
 	}
 }
 
+func Test_doNotHashLeaves(t *testing.T) {
+	// Generate some random blocks
+	blocks := genTestDataBlocks(100)
+
+	// Manually hash the blocks
+	hashedBlocks := make([]DataBlock, 0)
+	for _, block := range blocks {
+		ser, _ := block.Serialize()
+		hashedBlock, _ := testHashFunc(ser)
+		hashedBlocks = append(hashedBlocks, &mockDataBlock{
+			data: hashedBlock,
+		})
+	}
+
+	// Create a tree that does not hash the leaves, using the already
+	// hashed blocks
+	mtNoHash, err := New(&Config{
+		DoNotHashLeaves: true,
+		Mode:            ModeProofGenAndTreeBuild,
+	}, hashedBlocks)
+	if err != nil {
+		t.Errorf("error creating tree: %v", err)
+		return
+	}
+
+	// Create a tree that hashes the leaves, but provide unhashed blocks
+	mtHash, err := New(&Config{
+		Mode: ModeProofGenAndTreeBuild,
+	}, blocks)
+
+	// Assert that both trees are identical
+
+	if err != nil {
+		t.Errorf("error creating tree: %v", err)
+		return
+	}
+
+	if !bytes.Equal(mtNoHash.Root, mtHash.Root) {
+		fmt.Println("root1", mtNoHash.Root)
+		fmt.Println("root2", mtHash.Root)
+		t.Errorf("merkle root mismatch")
+		return
+	}
+
+	if !reflect.DeepEqual(mtNoHash.Leaves, mtHash.Leaves) {
+		fmt.Println("leaves1", mtNoHash.Leaves)
+		fmt.Println("leaves2", mtHash.Leaves)
+		t.Errorf("leaves mismatch")
+		return
+	}
+	if !reflect.DeepEqual(mtNoHash.Proofs, mtHash.Proofs) {
+		fmt.Println("proof1", mtNoHash.Proofs)
+		fmt.Println("proof2", mtHash.Proofs)
+		t.Errorf("proofs mismatch")
+		return
+	}
+	if mtNoHash.Depth != mtHash.Depth {
+		fmt.Println("depth1", mtNoHash.Depth)
+		fmt.Println("depth2", mtHash.Depth)
+		t.Errorf("merkle tree depth mismatch")
+		return
+	}
+
+	if len(mtNoHash.Proofs) != len(mtHash.Proofs) {
+		fmt.Println("len proofs 1", len(mtNoHash.Proofs))
+		fmt.Println("len proofs 2", len(mtHash.Proofs))
+		t.Errorf("proofs length mismatch")
+		return
+	}
+
+	for i := 0; i < len(blocks); i++ {
+		proofHash, _ := mtHash.GenerateProof(blocks[i])
+		proofNoHash, _ := mtNoHash.GenerateProof(hashedBlocks[i])
+
+		if !reflect.DeepEqual(proofHash, proofNoHash) {
+			fmt.Println("proof1", proofHash)
+			fmt.Println("proof2", proofNoHash)
+			t.Errorf("proof value mismatch")
+			return
+		}
+	}
+}
+
 func TestMerkleTreeNew_buildTree(t *testing.T) {
 	type args struct {
 		blocks []DataBlock

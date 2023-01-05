@@ -78,6 +78,8 @@ type Config struct {
 	// SortSiblingPairs is the parameter for OpenZeppelin compatibility.
 	// If set to `true`, the hashing sibling pairs are sorted.
 	SortSiblingPairs bool
+	// If true, the leaf nodes are NOT hashed before being added to the Merkle Tree.
+	DoNotHashLeaves bool
 }
 
 // MerkleTree implements the Merkle Tree structure
@@ -479,6 +481,10 @@ func (m *MerkleTree) leafGen(blocks []DataBlock) ([][]byte, error) {
 		if err != nil {
 			return nil, err
 		}
+		if m.DoNotHashLeaves {
+			leaves[i] = data
+			continue
+		}
 		var hash []byte
 		if hash, err = m.HashFunc(data); err != nil {
 			return nil, err
@@ -712,8 +718,13 @@ func (m *MerkleTree) GenerateProof(dataBlock DataBlock) (*Proof, error) {
 		return nil, err
 	}
 	var blockHash []byte
-	if blockHash, err = m.HashFunc(blockByte); err != nil {
-		return nil, err
+
+	if m.DoNotHashLeaves {
+		blockHash = blockByte
+	} else {
+		if blockHash, err = m.HashFunc(blockByte); err != nil {
+			return nil, err
+		}
 	}
 	val, ok := m.leafMap.Load(string(blockHash))
 	if !ok {
