@@ -1,6 +1,6 @@
 // MIT License
 //
-// Copyright (c) 2022 Tommy TIAN
+// Copyright (c) 2023 Tommy TIAN
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -35,10 +35,10 @@ func defaultHashFunc(data []byte) ([]byte, error) {
 	return sha256Digest.Sum(nil), nil
 }
 
-// defaultHashFuncParal is used by parallel algorithms when no user hash function is specified.
+// defaultHashFuncParallel is used by parallel algorithms when no user hash function is specified.
 // It implements SHA256 hash function.
 // When implementing hash functions for paralleled algorithms, please make sure it is concurrent safe.
-func defaultHashFuncParal(data []byte) ([]byte, error) {
+func defaultHashFuncParallel(data []byte) ([]byte, error) {
 	digest := sha256.New()
 	digest.Write(data)
 	return digest.Sum(nil), nil
