@@ -1,5 +1,6 @@
 import 'dotenv/config';
 
+import '@openzeppelin/hardhat-upgrades';
 import '@nomicfoundation/hardhat-toolbox';
 import '@nomiclabs/hardhat-ethers';
 import 'solidity-docgen';
