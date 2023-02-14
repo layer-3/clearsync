@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "Tweaked Node 18 + ESM + Strictest",
+  "extends": "@tsconfig/node18-strictest-esm/tsconfig.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "exactOptionalPropertyTypes": false,
+    "noPropertyAccessFromIndexSignature": false,
+    "noUncheckedIndexedAccess": false,
+    "resolveJsonModule": true
+  },
+  "include": ["./contracts", "./scripts", "./src", "./test"],
+  "files": ["./hardhat.config.ts"]
+}

@@ -1,0 +1,7 @@
+{
+  "dep": "dev,optional,peer,prod,bundle",
+  "deep": true,
+  "peer": true,
+  "removeRange": true,
+  "interactive": true
+}

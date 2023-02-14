@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json.schemastore.org/eslintrc",
+
+  "env": {
+    "node": true,
+    "es2021": true
+  },
+
+  "extends": [
+    "eslint:recommended",
+
+    "plugin:@typescript-eslint/recommended",
+    "plugin:@typescript-eslint/recommended-requiring-type-checking",
+    "plugin:@typescript-eslint/strict",
+
+    "plugin:sonarjs/recommended",
+    "plugin:unicorn/recommended",
+
+    "plugin:import/recommended",
+
+    "plugin:array-func/recommended",
+    "plugin:eslint-comments/recommended",
+    "plugin:optimize-regex/recommended",
+    "plugin:promise/recommended"
+  ],
+
+  "parser": "@typescript-eslint/parser",
+
+  "parserOptions": {
+    "ecmaVersion": 2022,
+    "project": ["./tsconfig.json"]
+  },
+
+  "plugins": ["unused-imports", "no-constructor-bind"],
+
+  "rules": {
+    "no-useless-rename": "error",
+    "sort-imports": ["error", { "ignoreDeclarationSort": true }],
+    "no-self-compare": "error",
+
+    "@typescript-eslint/no-unsafe-call": "off",
+    "@typescript-eslint/no-unsafe-member-access": "off",
+    "@typescript-eslint/explicit-function-return-type": [
+      "error",
+      {
+        "allowExpressions": true
+      }
+    ],
+
+    "array-func/prefer-array-from": "off",
+
+    "import/named": "off",
+    "import/no-self-import": "error",
+    "import/no-useless-path-segments": "error",
+    "import/no-relative-packages": "error",
+    "import/no-extraneous-dependencies": ["error"],
+    "import/no-mutable-exports": ["error"],
+    "import/first": ["error"],
+    "import/no-duplicates": ["error"],
+    "import/order": [
+      "error",
+      {
+        "groups": [
+          "builtin",
+          "external",
+          "internal",
+          "parent",
+          "sibling",
+          "index",
+          "object",
+          "type"
+        ],
+        "newlines-between": "always"
+      }
+    ],
+    "import/newline-after-import": ["error"],
+
+    "no-constructor-bind/no-constructor-bind": "error",
+    "no-constructor-bind/no-constructor-state": "error",
+
+    "sonarjs/no-duplicate-string": 0,
+
+    "unicorn/filename-case": 0,
+    "unicorn/prefer-module": 0,
+    "unicorn/prefer-ternary": 0,
+    "unicorn/prefer-top-level-await": 0,
+    "unicorn/prevent-abbreviations": 0,
+
+    "unused-imports/no-unused-imports": "error",
+    "unused-imports/no-unused-vars": [
+      "error",
+      {
+        "vars": "all",
+        "varsIgnorePattern": "^__",
+        "args": "after-used",
+        "argsIgnorePattern": "^__"
+      }
+    ]
+  },
+
+  "overrides": [
+    {
+      "files": ["*"],
+
+      "extends": ["prettier"],
+
+      "env": {
+        "es2022": true
+      },
+
+      "parserOptions": {
+        "ecmaVersion": "latest"
+      }
+    },
+
+    // tweaking for more convenient tests
+    {
+      "files": ["./test/**/*.ts"],
+
+      "rules": {
+        "unicorn/consistent-function-scoping": 0
+      }
+    },
+
+    {
+      "files": ["./test/**/src/*.ts", "./src/**/*.ts"],
+
+      "rules": {
+        "unicorn/no-await-expression-member": 0
+      }
+    }
+  ],
+
+  "settings": {
+    "import/resolver": {
+      "node": {
+        "extensions": [".js", ".ts"]
+      }
+    }
+  }
+}

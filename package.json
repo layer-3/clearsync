@@ -1,0 +1,40 @@
+{
+  "name": "hardhat-project",
+  "scripts": {
+    "lint": "npx eslint \"./\" && prettier '**/*.{json,sol,md}' -c && solhint 'contracts/**/*.sol'",
+    "lint:fix": "eslint '**/*.{js,ts}' --fix && prettier '**/*.{json,sol,md}' --write && solhint 'contracts/**/*.sol' --fix"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-chai-matchers": "^1.0.5",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.7",
+    "@nomicfoundation/hardhat-toolbox": "^2.0.0",
+    "@nomiclabs/hardhat-ethers": "^2.2.1",
+    "@openzeppelin/contracts": "^4.8.0",
+    "@statechannels/nitro-protocol": "^2.0.0-alpha.2",
+    "@tsconfig/node18-strictest-esm": "^1.0.1",
+    "@typescript-eslint/eslint-plugin": "^5.47.0",
+    "@typescript-eslint/parser": "^5.47.0",
+    "chai": "^4.3.7",
+    "dotenv": "^16.0.3",
+    "eslint": "^8.30.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-array-func": "^3.1.7",
+    "eslint-plugin-eslint-comments": "^3.2.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-no-constructor-bind": "^2.0.4",
+    "eslint-plugin-optimize-regex": "^1.2.1",
+    "eslint-plugin-promise": "^6.1.1",
+    "eslint-plugin-sonarjs": "^0.17.0",
+    "eslint-plugin-unicorn": "^45.0.2",
+    "eslint-plugin-unused-imports": "^2.0.0",
+    "ethers": "^5.7.2",
+    "hardhat": "^2.12.4",
+    "npm-check-updates": "^16.6.2",
+    "prettier": "^2.8.1",
+    "prettier-plugin-solidity": "^1.1.0",
+    "solhint": "^3.3.7",
+    "solhint-plugin-prettier": "^0.0.5",
+    "solidity-docgen": "^0.6.0-beta.32",
+    "tsx": "^3.12.1"
+  }
+}
