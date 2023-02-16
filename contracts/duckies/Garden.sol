@@ -49,7 +49,7 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 
 	address private _issuer;
 
-	mapping(bytes32 => mapping(uint32 => bool)) private _claimedBounties;
+	mapping(bytes32 => bool) private _claimedBounties;
 
 	// Affiliate is invited by referrer. Referrer receives a tiny part of their affiliate's bounty.
 	event AffiliateRegistered(address affiliate, address referrer);
@@ -184,7 +184,7 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 	function _claimBounty(Bounty memory bounty) internal {
 		_requireValidBounty(bounty);
 
-		_claimedBounties[bounty.bountyCodeHash][bounty.chainId] = true;
+		_claimedBounties[bounty.bountyCodeHash] = true;
 
 		ERC20Upgradeable bountyToken = ERC20Upgradeable(bounty.tokenAddress);
 
@@ -224,7 +224,7 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 	}
 
 	function _requireValidBounty(Bounty memory bounty) internal view {
-		if (_claimedBounties[bounty.bountyCodeHash][bounty.chainId])
+		if (_claimedBounties[bounty.bountyCodeHash])
 			revert BountyAlreadyClaimed(bounty.bountyCodeHash);
 
 		if (
