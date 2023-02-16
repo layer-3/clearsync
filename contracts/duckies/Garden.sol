@@ -10,244 +10,251 @@ import '@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20CappedUp
 import '@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol';
 
 contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
-    using ECDSAUpgradeable for bytes32;
+	using ECDSAUpgradeable for bytes32;
 
-    error CircularReferrers(address target, address base);
-    error BountyAlreadyClaimed(bytes32 bountyUID);
-    error InvalidBounty(Bounty bounty);
-    error InsufficientTokenBalance(address token, uint256 expected, uint256 actual);
-    error IncorrectSigner(address expected, address actual);
+	error CircularReferrers(address target, address base);
+	error BountyAlreadyClaimed(bytes32 bountyCodeHash);
+	error InvalidBounty(Bounty bounty);
+	error InsufficientTokenBalance(address token, uint256 expected, uint256 actual);
+	error IncorrectSigner(address expected, address actual);
 
-    // Roles
-    bytes32 public constant UPGRADER_ROLE = keccak256('UPGRADER_ROLE');
+	// Roles
+	bytes32 public constant UPGRADER_ROLE = keccak256('UPGRADER_ROLE');
 
-    // Constants
-    uint8 public constant REFERRAL_MAX_DEPTH = 5;
-    uint256 private _DUCKIES_SUPPLY_CAP;
-    uint8 private constant _MAX_HALVING_STEP = 5;
-    uint8 internal constant _REFERRAL_PAYOUT_DIVIDER = 100;
+	// Constants
+	uint8 public constant REFERRAL_MAX_DEPTH = 5;
+	uint256 private _DUCKIES_SUPPLY_CAP;
+	uint8 private constant _MAX_HALVING_STEP = 5;
+	uint8 internal constant _REFERRAL_PAYOUT_DIVIDER = 100;
 
-    // Bounty Message for signature verification
-    struct Bounty {
-        uint256 amount;
-        address tokenAddress;
-        address beneficiary; // beneficiary of bounty
-        bool isPaidToReferrers; // whether bounty is payed to referrers
-        address referrer; // address of the parent
-        uint64 expire; // expiration time in seconds UTC
-        uint32 chainId;
-        bytes32 bountyUID;
-    }
+	// Bounty Message for signature verification
+	struct Bounty {
+		uint256 amount;
+		address tokenAddress;
+		address beneficiary; // beneficiary of bounty
+		bool isPaidToReferrers; // whether bounty is payed to referrers
+		address referrer; // address of the parent
+		uint64 expire; // expiration time in seconds UTC
+		uint32 chainId;
+		bytes32 bountyCodeHash;
+	}
 
-    // child => parent
-    mapping(address => address) private _referrerOf;
+	// child => parent
+	mapping(address => address) private _referrerOf;
 
-    uint8[REFERRAL_MAX_DEPTH] internal _baseReferralPayouts;
+	uint16[REFERRAL_MAX_DEPTH] internal _baseReferralPayouts;
 
-    ERC20CappedUpgradeable internal _duckies;
+	ERC20CappedUpgradeable internal _duckies;
 
-    address private _issuer;
+	address private _issuer;
 
-    mapping(bytes32 => mapping(uint32 => bool)) private _claimedBounties;
+	mapping(bytes32 => mapping(uint32 => bool)) private _claimedBounties;
 
-    // Affiliate is invited by referrer. Referrer receives a tiny part of their affiliate's bounty.
-    event AffiliateRegistered(address affiliate, address referrer);
-    event BountyClaimed(address wallet, bytes32 bountyUID, uint32 chainId, address tokenAddress);
+	// Affiliate is invited by referrer. Referrer receives a tiny part of their affiliate's bounty.
+	event AffiliateRegistered(address affiliate, address referrer);
+	event BountyClaimed(
+		address wallet,
+		bytes32 bountyCodeHash,
+		uint32 chainId,
+		address tokenAddress
+	);
 
-    // disallow calling implementation directly (not via proxy)
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {
-        _disableInitializers();
-    }
+	// disallow calling implementation directly (not via proxy)
+	/// @custom:oz-upgrades-unsafe-allow constructor
+	constructor() {
+		_disableInitializers();
+	}
 
-    function initialize(address duckies) public initializer {
-        __AccessControl_init();
-        __UUPSUpgradeable_init();
+	function initialize(address duckies) public initializer {
+		__AccessControl_init();
+		__UUPSUpgradeable_init();
 
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _grantRole(UPGRADER_ROLE, msg.sender);
+		_grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+		_grantRole(UPGRADER_ROLE, msg.sender);
 
-        _duckies = ERC20CappedUpgradeable(duckies);
-        _DUCKIES_SUPPLY_CAP = _duckies.cap();
-    }
+		_baseReferralPayouts = [500, 125, 80, 50, 20];
 
-    // -------- Issuer --------
+		_duckies = ERC20CappedUpgradeable(duckies);
+		_DUCKIES_SUPPLY_CAP = _duckies.cap();
+	}
 
-    function setIssuer(address account) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _issuer = account;
-    }
+	// -------- Issuer --------
 
-    function getIssuer() external view returns (address) {
-        return _issuer;
-    }
+	function setIssuer(address account) external onlyRole(DEFAULT_ADMIN_ROLE) {
+		_issuer = account;
+	}
 
-    // -------- Partner --------
+	function getIssuer() external view returns (address) {
+		return _issuer;
+	}
 
-    function transferTokenBalanceToPartner(
-        address tokenAddress,
-        address partner
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        ERC20Upgradeable token = ERC20Upgradeable(tokenAddress);
+	// -------- Partner --------
 
-        uint256 contractTokenBalance = token.balanceOf(address(this));
+	function transferTokenBalanceToPartner(
+		address tokenAddress,
+		address partner
+	) public onlyRole(DEFAULT_ADMIN_ROLE) {
+		ERC20Upgradeable token = ERC20Upgradeable(tokenAddress);
 
-        if (contractTokenBalance > 0) {
-            token.transfer(partner, contractTokenBalance);
-        }
-    }
+		uint256 contractTokenBalance = token.balanceOf(address(this));
 
-    // -------- Referrers --------
+		if (contractTokenBalance > 0) {
+			token.transfer(partner, contractTokenBalance);
+		}
+	}
 
-    function _registerReferrer(address child, address parent) internal {
-        _referrerOf[child] = parent;
-        emit AffiliateRegistered(child, parent);
-    }
+	// -------- Referrers --------
 
-    function _requireNotReferrerOf(address target, address base) internal view {
-        address curAccount = base;
+	function _registerReferrer(address child, address parent) internal {
+		_referrerOf[child] = parent;
+		emit AffiliateRegistered(child, parent);
+	}
 
-        for (uint8 i = 0; i < REFERRAL_MAX_DEPTH; i++) {
-            if (_referrerOf[curAccount] == target) revert CircularReferrers(target, base);
-            curAccount = _referrerOf[curAccount];
-        }
-    }
+	function _requireNotReferrerOf(address target, address base) internal view {
+		address curAccount = base;
 
-    // -------- Payouts --------
+		for (uint8 i = 0; i < REFERRAL_MAX_DEPTH; i++) {
+			if (_referrerOf[curAccount] == target) revert CircularReferrers(target, base);
+			curAccount = _referrerOf[curAccount];
+		}
+	}
 
-    function getReferralPayouts() external view returns (uint8[REFERRAL_MAX_DEPTH] memory) {
-        return _getReferralPayouts();
-    }
+	// -------- Payouts --------
 
-    function setBaseReferralPayouts(
-        uint8[REFERRAL_MAX_DEPTH] memory referralPayouts
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        _baseReferralPayouts = referralPayouts;
-    }
+	function getReferralPayouts() external view returns (uint16[REFERRAL_MAX_DEPTH] memory) {
+		return _getReferralPayouts();
+	}
 
-    function _getReferralPayouts() internal view returns (uint8[REFERRAL_MAX_DEPTH] memory) {
-        uint8[REFERRAL_MAX_DEPTH] memory referralPayouts = _baseReferralPayouts;
-        uint8 halvingDivider = halving();
+	function setBaseReferralPayouts(
+		uint8[REFERRAL_MAX_DEPTH] memory referralPayouts
+	) public onlyRole(DEFAULT_ADMIN_ROLE) {
+		_baseReferralPayouts = referralPayouts;
+	}
 
-        if (halvingDivider >= 2 ** _MAX_HALVING_STEP) {
-            // return constant literal to save gas. Array length depends on REFERRAL_MAX_DEPTH value.
-            return [5, 4, 3, 2, 1];
-        }
+	function _getReferralPayouts() internal view returns (uint16[REFERRAL_MAX_DEPTH] memory) {
+		uint16[REFERRAL_MAX_DEPTH] memory referralPayouts = _baseReferralPayouts;
+		uint8 halvingDivider = halving();
 
-        for (uint i = 0; i < referralPayouts.length; i++) {
-            referralPayouts[i] /= halvingDivider;
-        }
-        return referralPayouts;
-    }
+		if (halvingDivider >= 2 ** _MAX_HALVING_STEP) {
+			// return constant literal to save gas. Array length depends on REFERRAL_MAX_DEPTH value.
+			return [uint16(5), 4, 3, 2, 1];
+		}
 
-    // -------- Halving --------
+		for (uint i = 0; i < referralPayouts.length; i++) {
+			referralPayouts[i] /= halvingDivider;
+		}
+		return referralPayouts;
+	}
 
-    function halving() public view returns (uint8) {
-        uint16 nextHalvingStep = 1;
+	// -------- Halving --------
 
-        while (
-            nextHalvingStep < _MAX_HALVING_STEP &&
-            _duckies.totalSupply() >= _halvingThreshold(nextHalvingStep)
-        ) {
-            nextHalvingStep++;
-        }
+	function halving() public view returns (uint8) {
+		uint16 nextHalvingStep = 1;
 
-        return uint8(2 ** (nextHalvingStep - 1));
-    }
+		while (
+			nextHalvingStep < _MAX_HALVING_STEP &&
+			_duckies.totalSupply() >= _halvingThreshold(nextHalvingStep)
+		) {
+			nextHalvingStep++;
+		}
 
-    function _halvingThreshold(uint16 halvingNum) internal view returns (uint256) {
-        return _DUCKIES_SUPPLY_CAP - (_DUCKIES_SUPPLY_CAP / 2 ** halvingNum);
-    }
+		return uint8(2 ** (nextHalvingStep - 1));
+	}
 
-    // -------- Bounties --------
+	function _halvingThreshold(uint16 halvingNum) internal view returns (uint256) {
+		return _DUCKIES_SUPPLY_CAP - (_DUCKIES_SUPPLY_CAP / 2 ** halvingNum);
+	}
 
-    function claimBounties(Bounty[] calldata bounties, bytes calldata signature) external {
-        _requireCorrectSigner(abi.encode(bounties), signature, _issuer);
-        for (uint8 i = 0; i < bounties.length; i++) {
-            _claimBounty(bounties[i]);
-        }
-    }
+	// -------- Bounties --------
 
-    function claimBounty(Bounty calldata bounty, bytes calldata signature) external {
-        _requireCorrectSigner(abi.encode(bounty), signature, _issuer);
-        _claimBounty(bounty);
-    }
+	function claimBounties(Bounty[] calldata bounties, bytes calldata signature) external {
+		_requireCorrectSigner(abi.encode(bounties), signature, _issuer);
+		for (uint8 i = 0; i < bounties.length; i++) {
+			_claimBounty(bounties[i]);
+		}
+	}
 
-    function _claimBounty(Bounty memory bounty) internal {
-        _requireValidBounty(bounty);
+	function claimBounty(Bounty calldata bounty, bytes calldata signature) external {
+		_requireCorrectSigner(abi.encode(bounty), signature, _issuer);
+		_claimBounty(bounty);
+	}
 
-        _claimedBounties[bounty.bountyUID][bounty.chainId] = true;
+	function _claimBounty(Bounty memory bounty) internal {
+		_requireValidBounty(bounty);
 
-        ERC20Upgradeable bountyToken = ERC20Upgradeable(bounty.tokenAddress);
+		_claimedBounties[bounty.bountyCodeHash][bounty.chainId] = true;
 
-        _requireSufficientContractBalance(bountyToken, bounty.amount);
-        bountyToken.transfer(bounty.beneficiary, bounty.amount);
+		ERC20Upgradeable bountyToken = ERC20Upgradeable(bounty.tokenAddress);
 
-        // provided beneficiary has a referrer
-        if (bounty.referrer != address(0)) {
-            if (bounty.referrer == msg.sender) revert InvalidBounty(bounty);
+		_requireSufficientContractBalance(bountyToken, bounty.amount);
+		bountyToken.transfer(bounty.beneficiary, bounty.amount);
 
-            // check if beneficiary is not a referrer of supplied referrer
-            _requireNotReferrerOf(msg.sender, bounty.referrer);
-            _registerReferrer(bounty.beneficiary, bounty.referrer);
-        }
+		// provided beneficiary has a referrer
+		if (bounty.referrer != address(0)) {
+			if (bounty.referrer == msg.sender) revert InvalidBounty(bounty);
 
-        if (bounty.isPaidToReferrers) {
-            uint8[REFERRAL_MAX_DEPTH] memory referralRates = _getReferralPayouts();
-            address currReferrer = _referrerOf[bounty.beneficiary];
+			// check if beneficiary is not a referrer of supplied referrer
+			_requireNotReferrerOf(msg.sender, bounty.referrer);
+			_registerReferrer(bounty.beneficiary, bounty.referrer);
+		}
 
-            for (uint8 i = 0; i < REFERRAL_MAX_DEPTH && currReferrer != address(0); i++) {
-                uint256 referralAmount = (bounty.amount * referralRates[i]) /
-                    _REFERRAL_PAYOUT_DIVIDER;
+		if (bounty.isPaidToReferrers) {
+			uint16[REFERRAL_MAX_DEPTH] memory referralRates = _getReferralPayouts();
+			address currReferrer = _referrerOf[bounty.beneficiary];
 
-                _requireSufficientContractBalance(bountyToken, referralAmount);
-                bountyToken.transfer(currReferrer, referralAmount);
+			for (uint8 i = 0; i < REFERRAL_MAX_DEPTH && currReferrer != address(0); i++) {
+				uint256 referralAmount = (bounty.amount * referralRates[i]) /
+					_REFERRAL_PAYOUT_DIVIDER;
 
-                currReferrer = _referrerOf[currReferrer];
-            }
-        }
+				_requireSufficientContractBalance(bountyToken, referralAmount);
+				bountyToken.transfer(currReferrer, referralAmount);
 
-        emit BountyClaimed(
-            bounty.beneficiary,
-            bounty.bountyUID,
-            bounty.chainId,
-            bounty.tokenAddress
-        );
-    }
+				currReferrer = _referrerOf[currReferrer];
+			}
+		}
 
-    function _requireValidBounty(Bounty memory bounty) internal view {
-        if (_claimedBounties[bounty.bountyUID][bounty.chainId])
-            revert BountyAlreadyClaimed(bounty.bountyUID);
+		emit BountyClaimed(
+			bounty.beneficiary,
+			bounty.bountyCodeHash,
+			bounty.chainId,
+			bounty.tokenAddress
+		);
+	}
 
-        if (
-            bounty.amount == 0 ||
-            bounty.beneficiary != msg.sender ||
-            block.timestamp > bounty.expire ||
-            bounty.chainId != block.chainid
-        ) revert InvalidBounty(bounty);
-    }
+	function _requireValidBounty(Bounty memory bounty) internal view {
+		if (_claimedBounties[bounty.bountyCodeHash][bounty.chainId])
+			revert BountyAlreadyClaimed(bounty.bountyCodeHash);
 
-    // -------- Internal --------
+		if (
+			bounty.amount == 0 ||
+			bounty.beneficiary != msg.sender ||
+			block.timestamp > bounty.expire ||
+			bounty.chainId != block.chainid
+		) revert InvalidBounty(bounty);
+	}
 
-    function _requireSufficientContractBalance(
-        ERC20Upgradeable token,
-        uint256 expected
-    ) internal view {
-        uint256 actual = token.balanceOf(address(this));
-        if (actual < expected) revert InsufficientTokenBalance(address(token), expected, actual);
-    }
+	// -------- Internal --------
 
-    function _requireCorrectSigner(
-        bytes memory encodedData,
-        bytes memory signature,
-        address signer
-    ) internal pure {
-        address actualSigner = keccak256(encodedData).toEthSignedMessageHash().recover(signature);
-        if (actualSigner != signer) revert IncorrectSigner(signer, actualSigner);
-    }
+	function _requireSufficientContractBalance(
+		ERC20Upgradeable token,
+		uint256 expected
+	) internal view {
+		uint256 actual = token.balanceOf(address(this));
+		if (actual < expected) revert InsufficientTokenBalance(address(token), expected, actual);
+	}
 
-    // -------- Upgrading --------
+	function _requireCorrectSigner(
+		bytes memory encodedData,
+		bytes memory signature,
+		address signer
+	) internal pure {
+		address actualSigner = keccak256(encodedData).toEthSignedMessageHash().recover(signature);
+		if (actualSigner != signer) revert IncorrectSigner(signer, actualSigner);
+	}
 
-    function _authorizeUpgrade(
-        address newImplementation
-    ) internal override(UUPSUpgradeable) onlyRole(UPGRADER_ROLE) {}
+	// -------- Upgrading --------
+
+	function _authorizeUpgrade(
+		address newImplementation
+	) internal override(UUPSUpgradeable) onlyRole(UPGRADER_ROLE) {}
 }
