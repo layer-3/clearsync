@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { ethers, upgrades } from 'hardhat';
-import { constants } from 'ethers';
+import { constants, utils } from 'ethers';
 
 import { connectGroup } from '../connectContract';
 import { randomBytes32 } from '../helpers/payload';
@@ -15,6 +15,9 @@ const TOKEN_CAP = 100_000_000_000;
 const GARDEN_DEPOSITED_DUCKIES = 10_000_000_000;
 const GARDEN_DEPOSITED_PARTNER_TOKEN = 10_000_000_000;
 const AMOUNT = 100;
+
+const ADMIN_ROLE = constants.HashZero;
+const UPGRADER_ROLE = utils.id('UPGRADER_ROLE');
 
 describe('Garden', () => {
   let Duckies: TestERC20;
@@ -93,15 +96,33 @@ describe('Garden', () => {
     };
   });
 
-  describe('initialize');
+  describe.only('initialize', () => {
+    it('deployer is admin', async () => {
+      expect(await Garden.hasRole(ADMIN_ROLE, GardenAdmin.address)).to.be.true;
+    });
 
-  describe('issuer');
+    it('deployer is upgrader', async () => {
+      expect(await Garden.hasRole(UPGRADER_ROLE, GardenAdmin.address)).to.be.true;
+    });
 
-  describe('transferTokenBalanceToPartner');
+    it('issuer not set', async () => {
+      const GardenFactory = await ethers.getContractFactory('Garden', GardenAdmin);
+      Garden = (await upgrades.deployProxy(GardenFactory, [Duckies.address], {
+        kind: 'uups',
+      })) as unknown as Garden;
+      await Garden.deployed();
 
-  describe('payouts');
+      expect(await Garden.getIssuer()).to.equal(constants.AddressZero);
+    });
+  });
 
-  describe('halving');
+  describe('issuer', () => {});
+
+  describe('transferTokenBalanceToPartner', () => {});
+
+  describe('payouts', () => {});
+
+  describe('halving', () => {});
 
   describe('claim bounty', () => {
     it('successfuly claim bounty in Duckies', async () => {
@@ -121,5 +142,5 @@ describe('Garden', () => {
     });
   });
 
-  describe('claim bounties');
+  describe('claim bounties', () => {});
 });
