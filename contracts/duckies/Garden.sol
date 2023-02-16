@@ -13,7 +13,7 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 	using ECDSAUpgradeable for bytes32;
 
 	error CircularReferrers(address target, address base);
-	error BountyAlreadyClaimed(bytes32 bountyUID);
+	error BountyAlreadyClaimed(bytes32 bountyCodeHash);
 	error InvalidBounty(Bounty bounty);
 	error InsufficientTokenBalance(address token, uint256 expected, uint256 actual);
 	error IncorrectSigner(address expected, address actual);
@@ -36,7 +36,7 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 		address referrer; // address of the parent
 		uint64 expire; // expiration time in seconds UTC
 		uint32 chainId;
-		bytes32 bountyUID;
+		bytes32 bountyCodeHash;
 	}
 
 	// child => parent
@@ -52,7 +52,12 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 
 	// Affiliate is invited by referrer. Referrer receives a tiny part of their affiliate's bounty.
 	event AffiliateRegistered(address affiliate, address referrer);
-	event BountyClaimed(address wallet, bytes32 bountyUID, uint32 chainId, address tokenAddress);
+	event BountyClaimed(
+		address wallet,
+		bytes32 bountyCodeHash,
+		uint32 chainId,
+		address tokenAddress
+	);
 
 	// disallow calling implementation directly (not via proxy)
 	/// @custom:oz-upgrades-unsafe-allow constructor
@@ -177,7 +182,7 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 	function _claimBounty(Bounty memory bounty) internal {
 		_requireValidBounty(bounty);
 
-		_claimedBounties[bounty.bountyUID][bounty.chainId] = true;
+		_claimedBounties[bounty.bountyCodeHash][bounty.chainId] = true;
 
 		ERC20Upgradeable bountyToken = ERC20Upgradeable(bounty.tokenAddress);
 
@@ -210,15 +215,15 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 
 		emit BountyClaimed(
 			bounty.beneficiary,
-			bounty.bountyUID,
+			bounty.bountyCodeHash,
 			bounty.chainId,
 			bounty.tokenAddress
 		);
 	}
 
 	function _requireValidBounty(Bounty memory bounty) internal view {
-		if (_claimedBounties[bounty.bountyUID][bounty.chainId])
-			revert BountyAlreadyClaimed(bounty.bountyUID);
+		if (_claimedBounties[bounty.bountyCodeHash][bounty.chainId])
+			revert BountyAlreadyClaimed(bounty.bountyCodeHash);
 
 		if (
 			bounty.amount == 0 ||
