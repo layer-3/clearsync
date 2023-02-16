@@ -40,6 +40,7 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 	}
 
 	// child => parent
+	// TODO: make internal
 	mapping(address => address) private _referrerOf;
 
 	uint16[REFERRAL_MAX_DEPTH] internal _baseReferralPayouts;
@@ -98,9 +99,9 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 
 		uint256 contractTokenBalance = token.balanceOf(address(this));
 
-		if (contractTokenBalance > 0) {
-			token.transfer(partner, contractTokenBalance);
-		}
+		if (contractTokenBalance == 0) revert InsufficientTokenBalance(tokenAddress, 1, 0);
+
+		token.transfer(partner, contractTokenBalance);
 	}
 
 	// -------- Referrers --------
@@ -110,6 +111,7 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 		emit AffiliateRegistered(child, parent);
 	}
 
+	// TODO: think if there can be damage if circular referrers more than in REFERRAL_MAX_DEPTH levels
 	function _requireNotReferrerOf(address target, address base) internal view {
 		address curAccount = base;
 
