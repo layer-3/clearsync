@@ -32,6 +32,7 @@ describe('Garden', () => {
   let DuckiesAdmin: SignerWithAddress;
   let Someone: SignerWithAddress;
   let Someother: SignerWithAddress;
+  let Referrer: SignerWithAddress;
 
   let GardenAsAdmin: Garden;
   let GardenAsSomeone: Garden;
@@ -51,7 +52,7 @@ describe('Garden', () => {
   let SomeonePartnerTokenBounty: Bounty;
 
   before(async () => {
-    [GardenAdmin, Issuer, DuckiesAdmin, Someone, Someother] = await ethers.getSigners();
+    [GardenAdmin, Issuer, DuckiesAdmin, Someone, Someother, Referrer] = await ethers.getSigners();
   });
 
   beforeEach(async () => {
@@ -179,9 +180,35 @@ describe('Garden', () => {
       );
       expect(await PartnerToken.balanceOf(Someone.address)).to.equal(AMOUNT);
     });
+
+    it('emit bounty claimed event', async () => {
+      expect(
+        await GardenAsSomeone.claimBounty(
+          SomeoneDuckiesBounty,
+          signBounty(SomeoneDuckiesBounty, Issuer),
+        ),
+      )
+        .to.emit(Garden, 'BountyClaimed')
+        .withArgs(
+          SomeoneDuckiesBounty.beneficiary,
+          SomeoneDuckiesBounty.bountyCodeHash,
+          SomeoneDuckiesBounty.chainId,
+          SomeoneDuckiesBounty.tokenAddress,
+        );
+    });
+
+    it('emit affiliate registered event on specific bounty', async () => {
+      SomeoneDuckiesBounty.referrer = Referrer.address;
+      expect(
+        await GardenAsSomeone.claimBounty(
+          SomeonePartnerTokenBounty,
+          signBounty(SomeonePartnerTokenBounty, Issuer),
+        ),
+      )
+        .to.emit(Garden, 'AffiliateRegistered')
+        .withArgs(Someone.address, Referrer.address);
+    });
   });
 
   describe('claim bounties', () => {});
-
-  // TODO: add events
 });
