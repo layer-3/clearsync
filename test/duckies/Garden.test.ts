@@ -10,6 +10,9 @@ import { signBounty } from './signatures';
 import type { Garden, TestERC20 } from '../../typechain-types';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import type { Bounty } from './bounty';
+import { ACCOUNT_MISSING_ROLE } from '../helpers/common';
+
+const INSUF_TOKEN_BALANCE = 'InsufficientTokenBalance';
 
 const TOKEN_CAP = 100_000_000_000;
 const GARDEN_DEPOSITED_DUCKIES = 10_000_000_000;
@@ -96,7 +99,7 @@ describe('Garden', () => {
     };
   });
 
-  describe.only('initialize', () => {
+  describe('initialize', () => {
     it('deployer is admin', async () => {
       expect(await Garden.hasRole(ADMIN_ROLE, GardenAdmin.address)).to.be.true;
     });
@@ -116,9 +119,45 @@ describe('Garden', () => {
     });
   });
 
-  describe('issuer', () => {});
+  describe('issuer', () => {
+    it('admin can set issuer', async () => {
+      await GardenAsAdmin.setIssuer(Someone.address);
+      expect(await Garden.getIssuer()).to.equal(Someone.address);
+    });
 
-  describe('transferTokenBalanceToPartner', () => {});
+    it('revert on someone set issuer', async () => {
+      await expect(GardenAsSomeone.setIssuer(Someother.address)).to.be.revertedWith(
+        ACCOUNT_MISSING_ROLE(Someone.address, ADMIN_ROLE),
+      );
+    });
+  });
+
+  describe('transferTokenBalanceToPartner', () => {
+    it('admin can transfer token balance to partner', async () => {
+      await GardenAsAdmin.transferTokenBalanceToPartner(PartnerToken.address, Someone.address);
+      expect(await PartnerToken.balanceOf(Someone.address)).to.equal(
+        GARDEN_DEPOSITED_PARTNER_TOKEN,
+      );
+      expect(await PartnerToken.balanceOf(Garden.address)).to.equal(0);
+    });
+
+    it('revert on someone transfer token balance to partner', async () => {
+      await expect(
+        GardenAsSomeone.transferTokenBalanceToPartner(PartnerToken.address, Someone.address),
+      ).to.be.revertedWith(ACCOUNT_MISSING_ROLE(Someone.address, ADMIN_ROLE));
+    });
+
+    it('revert on admin transfer partner token if partner token balance is 0', async () => {
+      // withdraw PartnerToken
+      await GardenAsAdmin.transferTokenBalanceToPartner(PartnerToken.address, Someone.address);
+
+      await expect(
+        GardenAsAdmin.transferTokenBalanceToPartner(PartnerToken.address, Someone.address),
+      )
+        .to.revertedWithCustomError(Garden, INSUF_TOKEN_BALANCE)
+        .withArgs(PartnerToken.address, 1, 0);
+    });
+  });
 
   describe('payouts', () => {});
 
@@ -143,4 +182,6 @@ describe('Garden', () => {
   });
 
   describe('claim bounties', () => {});
+
+  // TODO: add events
 });
