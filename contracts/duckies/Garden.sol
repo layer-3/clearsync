@@ -23,8 +23,8 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 
 	// Constants
 	uint8 public constant REFERRAL_MAX_DEPTH = 5;
-	uint256 private _DUCKIES_SUPPLY_CAP;
-	uint8 private constant _MAX_HALVING_STEP = 5;
+	uint256 internal _DUCKIES_SUPPLY_CAP;
+	uint8 internal constant _MAX_HALVING_STEP = 5;
 	uint8 internal constant _REFERRAL_PAYOUT_DIVIDER = 100;
 
 	// Bounty Message for signature verification
@@ -41,15 +41,15 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 
 	// child => parent
 	// TODO: make internal
-	mapping(address => address) private _referrerOf;
+	mapping(address => address) internal _referrerOf;
 
 	uint16[REFERRAL_MAX_DEPTH] internal _baseReferralPayouts;
 
 	ERC20CappedUpgradeable internal _duckies;
 
-	address private _issuer;
+	address internal _issuer;
 
-	mapping(bytes32 => bool) private _claimedBounties;
+	mapping(bytes32 => bool) internal _claimedBounties;
 
 	// Affiliate is invited by referrer. Referrer receives a tiny part of their affiliate's bounty.
 	event AffiliateRegistered(address affiliate, address referrer);
