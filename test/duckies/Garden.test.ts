@@ -93,6 +93,16 @@ describe('Garden', () => {
     };
   });
 
+  describe('initialize');
+
+  describe('issuer');
+
+  describe('transferTokenBalanceToPartner');
+
+  describe('payouts');
+
+  describe('halving');
+
   describe('claim bounty', () => {
     it('successfuly claim bounty in Duckies', async () => {
       await GardenAsSomeone.claimBounty(
@@ -110,4 +120,6 @@ describe('Garden', () => {
       expect(await PartnerToken.balanceOf(Someone.address)).to.equal(AMOUNT);
     });
   });
+
+  describe('claim bounties');
 });
