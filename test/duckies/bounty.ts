@@ -12,7 +12,7 @@ export interface Bounty {
   referrer: string;
   expire: number;
   chainId: number;
-  bountyUID: string;
+  bountyCodeHash: string;
 }
 
 export const BountyTy = {
@@ -48,7 +48,7 @@ export const BountyTy = {
       type: 'uint32',
     },
     {
-      name: 'bountyUID',
+      name: 'bountyCodeHash',
       type: 'bytes32',
     },
   ],
@@ -69,6 +69,6 @@ export function setBountyField<BountyKey extends keyof Bounty>(
   };
 }
 
-export function setRandomBountyUID(bounty: Bounty): Bounty {
-  return { ...bounty, bountyUID: randomBytes32() };
+export function setRandomBountyCodeHash(bounty: Bounty): Bounty {
+  return { ...bounty, bountyCodeHash: randomBytes32() };
 }

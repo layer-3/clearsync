@@ -44,7 +44,7 @@ describe('Garden', () => {
     referrer: constants.AddressZero,
     expire: 0,
     chainId: 31_337,
-    bountyUID: '',
+    bountyCodeHash: '',
   };
 
   let SomeoneDuckiesBounty: Bounty;
@@ -84,7 +84,7 @@ describe('Garden', () => {
     await PartnerToken.mint(Garden.address, GARDEN_DEPOSITED_PARTNER_TOKEN);
 
     BountyBase.expire = Math.round(Date.now() / 1000) + 600; // 10 mins from now
-    BountyBase.bountyUID = randomBytes32();
+    BountyBase.bountyCodeHash = randomBytes32();
 
     SomeoneDuckiesBounty = {
       ...BountyBase,
