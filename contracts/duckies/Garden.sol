@@ -27,12 +27,16 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 	uint8 public constant REFERRAL_MAX_DEPTH = 5;
 	uint8 internal constant _REFERRAL_PAYOUT_DIVIDER = 100;
 
+	enum BountyType {
+		TransferBountyToken, // encodedData: abi.encode(address, uint256, uint8[5]) - encoded token address, amount to pay, referrer payouts
+		MintDucklingsNFT // encodedData: 0x (empty). May be extended in the future.
+	}
+
 	// Bounty Message for signature verification
 	struct Bounty {
-		uint256 amount;
-		address tokenAddress;
+		BountyType type_;
+		bytes encodedData; // specific to BountyType
 		address beneficiary; // beneficiary of bounty
-		uint8[5] referrersPayouts;
 		address referrer; // address of the parent
 		uint64 expire; // expiration time in seconds UTC
 		uint32 chainId;
@@ -45,8 +49,6 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 	mapping(bytes32 => bool) internal _claimedBounties;
 
 	address public _issuer;
-
-	ERC20CappedUpgradeable public _duckies;
 
 	DuckiesNFT public _ducklingsNFT;
 
@@ -71,18 +73,12 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 
 		_grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
 		_grantRole(UPGRADER_ROLE, msg.sender);
-
-		_duckies = ERC20CappedUpgradeable(duckies);
 	}
 
-	// -------- Issuer, Duckies, DucklingsNFT --------
+	// -------- Issuer, DucklingsNFT --------
 
 	function setIssuer(address account) external onlyRole(DEFAULT_ADMIN_ROLE) {
 		_issuer = account;
-	}
-
-	function setDuckiesAddress(address duckiesAddress) external onlyRole(DEFAULT_ADMIN_ROLE) {
-		_duckies = ERC20CappedUpgradeable(duckiesAddress);
 	}
 
 	function setDucklingsNFTAddress(
@@ -142,34 +138,12 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 
 		_claimedBounties[bounty.bountyCodeHash] = true;
 
-		// check Garden has enough tokens and pay bounty to beneficiary
-		ERC20Upgradeable bountyToken = ERC20Upgradeable(bounty.tokenAddress);
-		_requireSufficientContractBalance(bountyToken, bounty.amount);
-		bountyToken.transfer(bounty.beneficiary, bounty.amount);
-
-		// register referrer is it is not a circular one
-		// provided beneficiary has a referrer
-		if (bounty.referrer != address(0)) {
-			if (bounty.referrer == msg.sender) revert InvalidBounty(bounty);
-
-			// check if beneficiary is not a referrer of supplied referrer
-			_requireNotReferrerOf(msg.sender, bounty.referrer);
-			_registerReferrer(bounty.beneficiary, bounty.referrer);
-		}
-
-		// pay referrers if specified
-		address currReferrer = _referrerOf[bounty.beneficiary];
-
-		for (uint8 i = 0; i < REFERRAL_MAX_DEPTH && currReferrer != address(0); i++) {
-			if (bounty.referrersPayouts[i] != 0) {
-				uint256 referralAmount = (bounty.amount * bounty.referrersPayouts[i]) /
-					_REFERRAL_PAYOUT_DIVIDER;
-
-				_requireSufficientContractBalance(bountyToken, referralAmount);
-				bountyToken.transfer(currReferrer, referralAmount);
-			}
-
-			currReferrer = _referrerOf[currReferrer];
+		if (bounty.type_ == BountyType.TransferBountyToken) {
+			_claimTransferBountyToken();
+		} else if (bounty.type_ == BountyType.MintDucklingsNFT) {
+			_claimMintDucklingsNFT();
+		} else {
+			revert InvalidBounty(bounty);
 		}
 
 		// event
@@ -181,12 +155,38 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 		);
 	}
 
+	function _claimTransferBountyToken() internal {
+		// // check Garden has enough tokens and pay bounty to beneficiary
+		// ERC20Upgradeable bountyToken = ERC20Upgradeable(tokenAddress);
+		// _requireSufficientContractBalance(bountyToken, amount);
+		// bountyToken.transfer(beneficiary, amount);
+		// // register referrer is it is not a circular one
+		// // provided beneficiary has a referrer
+		// if (bounty.referrer != address(0)) {
+		// 	if (bounty.referrer == msg.sender) revert InvalidBounty(bounty);
+		// 	// check if beneficiary is not a referrer of supplied referrer
+		// 	_requireNotReferrerOf(msg.sender, bounty.referrer);
+		// 	_registerReferrer(beneficiary, bounty.referrer);
+		// }
+		// // pay referrers if specified
+		// address currReferrer = _referrerOf[beneficiary];
+		// for (uint8 i = 0; i < REFERRAL_MAX_DEPTH && currReferrer != address(0); i++) {
+		// 	if (referrersPayouts[i] != 0) {
+		// 		uint256 referralAmount = (amount * referrersPayouts[i]) / _REFERRAL_PAYOUT_DIVIDER;
+		// 		_requireSufficientContractBalance(bountyToken, referralAmount);
+		// 		bountyToken.transfer(currReferrer, referralAmount);
+		// 	}
+		// 	currReferrer = _referrerOf[currReferrer];
+		// }
+	}
+
+	function _claimMintDucklingsNFT() internal {}
+
 	function _requireValidBounty(Bounty memory bounty) internal view {
 		if (_claimedBounties[bounty.bountyCodeHash])
 			revert BountyAlreadyClaimed(bounty.bountyCodeHash);
 
 		if (
-			bounty.amount == 0 ||
 			bounty.beneficiary != msg.sender ||
 			block.timestamp > bounty.expire ||
 			bounty.chainId != block.chainid
