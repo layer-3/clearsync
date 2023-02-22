@@ -9,6 +9,8 @@ import '@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20CappedUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol';
 
+import './DuckiesNFT.sol';
+
 contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 	using ECDSAUpgradeable for bytes32;
 
@@ -40,11 +42,13 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 	// child => parent
 	mapping(address => address) internal _referrerOf;
 
-	ERC20CappedUpgradeable internal _duckies;
-
-	address internal _issuer;
-
 	mapping(bytes32 => bool) internal _claimedBounties;
+
+	address public _issuer;
+
+	ERC20CappedUpgradeable public _duckies;
+
+	DuckiesNFT public _ducklingsNFT;
 
 	// Affiliate is invited by referrer. Referrer receives a tiny part of their affiliate's bounty.
 	event AffiliateRegistered(address affiliate, address referrer);
@@ -71,14 +75,20 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 		_duckies = ERC20CappedUpgradeable(duckies);
 	}
 
-	// -------- Issuer --------
+	// -------- Issuer, Duckies, DucklingsNFT --------
 
 	function setIssuer(address account) external onlyRole(DEFAULT_ADMIN_ROLE) {
 		_issuer = account;
 	}
 
-	function getIssuer() external view returns (address) {
-		return _issuer;
+	function setDuckiesAddress(address duckiesAddress) external onlyRole(DEFAULT_ADMIN_ROLE) {
+		_duckies = ERC20CappedUpgradeable(duckiesAddress);
+	}
+
+	function setDucklingsNFTAddress(
+		address ducklingsNFTAddress
+	) external onlyRole(DEFAULT_ADMIN_ROLE) {
+		_ducklingsNFT = DuckiesNFT(ducklingsNFTAddress);
 	}
 
 	// -------- Partner --------
