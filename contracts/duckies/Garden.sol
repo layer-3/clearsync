@@ -23,8 +23,8 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 
 	// Constants
 	uint8 public constant REFERRAL_MAX_DEPTH = 5;
-	uint256 private _DUCKIES_SUPPLY_CAP;
-	uint8 private constant _MAX_HALVING_STEP = 5;
+	uint256 internal _DUCKIES_SUPPLY_CAP;
+	uint8 internal constant _MAX_HALVING_STEP = 5;
 	uint8 internal constant _REFERRAL_PAYOUT_DIVIDER = 100;
 
 	// Bounty Message for signature verification
@@ -40,15 +40,16 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 	}
 
 	// child => parent
-	mapping(address => address) private _referrerOf;
+	// TODO: make internal
+	mapping(address => address) internal _referrerOf;
 
 	uint16[REFERRAL_MAX_DEPTH] internal _baseReferralPayouts;
 
 	ERC20CappedUpgradeable internal _duckies;
 
-	address private _issuer;
+	address internal _issuer;
 
-	mapping(bytes32 => mapping(uint32 => bool)) private _claimedBounties;
+	mapping(bytes32 => bool) internal _claimedBounties;
 
 	// Affiliate is invited by referrer. Referrer receives a tiny part of their affiliate's bounty.
 	event AffiliateRegistered(address affiliate, address referrer);
@@ -98,9 +99,9 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 
 		uint256 contractTokenBalance = token.balanceOf(address(this));
 
-		if (contractTokenBalance > 0) {
-			token.transfer(partner, contractTokenBalance);
-		}
+		if (contractTokenBalance == 0) revert InsufficientTokenBalance(tokenAddress, 1, 0);
+
+		token.transfer(partner, contractTokenBalance);
 	}
 
 	// -------- Referrers --------
@@ -110,6 +111,7 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 		emit AffiliateRegistered(child, parent);
 	}
 
+	// TODO: think if there can be damage if circular referrers more than in REFERRAL_MAX_DEPTH levels
 	function _requireNotReferrerOf(address target, address base) internal view {
 		address curAccount = base;
 
@@ -182,7 +184,7 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 	function _claimBounty(Bounty memory bounty) internal {
 		_requireValidBounty(bounty);
 
-		_claimedBounties[bounty.bountyCodeHash][bounty.chainId] = true;
+		_claimedBounties[bounty.bountyCodeHash] = true;
 
 		ERC20Upgradeable bountyToken = ERC20Upgradeable(bounty.tokenAddress);
 
@@ -222,7 +224,7 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 	}
 
 	function _requireValidBounty(Bounty memory bounty) internal view {
-		if (_claimedBounties[bounty.bountyCodeHash][bounty.chainId])
+		if (_claimedBounties[bounty.bountyCodeHash])
 			revert BountyAlreadyClaimed(bounty.bountyCodeHash);
 
 		if (
