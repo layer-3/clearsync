@@ -16,6 +16,9 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 	error CircularReferrers(address target, address base);
 	error VoucherAlreadyClaimed(bytes32 voucherCodeHash);
 	error InvalidVoucher(Voucher voucher);
+	error InvalidPayoutParams(PayoutParams payoutParams);
+	error InvalidMintNFTsParams(MintNFTsParams mintNFTsParams);
+	error InvalidMeldNFTsParams(MeldNFTsParams meldNFTsParams);
 	error InsufficientTokenBalance(address token, uint256 expected, uint256 actual);
 	error IncorrectSigner(address expected, address actual);
 
@@ -33,34 +36,33 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 	}
 
 	struct PayoutParams {
-		address token;
-		uint256 amount;
-		uint8[REFERRAL_MAX_DEPTH] referrersPayouts;
+		address token; // address of token to pay out
+		uint256 amount; // amount of token to pay out
+		uint8[REFERRAL_MAX_DEPTH] referrersPayouts; // what percentage of bounty will referrer of the level specified get
 	}
 
 	struct MintNFTsParams {
-		uint8 collection; // Collection index
-		uint256 quantity; // Card pack size
-		uint256 baseGene; // Preset gene values (if any)
+		uint8 collection; // collection index
+		uint256 quantity; // card pack size
+		uint256 baseGene; // preset gene values (if any)
 	}
 
 	struct MeldNFTsParams {
-		uint256[5] IdsToMeld; // TokenIds to meld
+		uint256[5] IdsToMeld; // tokenIds to meld
 	}
 
 	// Voucher Message for signature verification
 	struct Voucher {
-		VoucherType type_;
-		bytes encodedData;
+		VoucherType type_; // voucher type
+		bytes encodedData; // voucher type specific encoded data
 		address beneficiary; // beneficiary of voucher
 		address referrer; // address of the parent
 		uint64 expire; // expiration time in seconds UTC
-		uint32 chainId;
-		bytes32 voucherCodeHash;
+		uint32 chainId; // chain id of the voucher
+		bytes32 voucherCodeHash; // hash of voucherCode
 	}
 
 	// child => parent
-	// TODO: make internal
 	mapping(address => address) internal _referrerOf;
 
 	mapping(bytes32 => bool) internal _claimedVouchers;
@@ -73,9 +75,9 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 	event AffiliateRegistered(address affiliate, address referrer);
 	event VoucherClaimed(
 		address wallet,
+		VoucherType voucherType,
 		bytes32 voucherCodeHash,
-		uint32 chainId,
-		address tokenAddress
+		uint32 chainId
 	);
 
 	// disallow calling implementation directly (not via proxy)
@@ -155,14 +157,47 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 
 		_claimedVouchers[voucher.voucherCodeHash] = true;
 
-		// check sufficient Garden token balance and pay beneficiary
-		ERC20Upgradeable voucherToken = ERC20Upgradeable(voucher.tokenAddress);
-		_requireSufficientContractBalance(voucherToken, voucher.amount);
-		voucherToken.transfer(voucher.beneficiary, voucher.amount);
+		if (voucher.type_ == VoucherType.Payout) {
+			PayoutParams memory payoutParams = abi.decode(voucher.encodedData, (PayoutParams));
+
+			// payoutParams checks
+			if (payoutParams.token == address(0) || payoutParams.amount == 0)
+				revert InvalidPayoutParams(payoutParams);
+
+			_performPayout(
+				voucher.beneficiary,
+				payoutParams.token,
+				payoutParams.amount,
+				payoutParams.referrersPayouts
+			);
+		} else if (voucher.type_ == VoucherType.MintNFTs) {
+			MintNFTsParams memory mintNFTsParams = abi.decode(
+				voucher.encodedData,
+				(MintNFTsParams)
+			);
+
+			// mintNFTsParams checks
+			if (mintNFTsParams.quantity == 0) revert InvalidMintNFTsParams(mintNFTsParams);
+
+			// ducklingsNFT.freeMintPack(voucher.beneficiary, mintNFTsParams);
+		} else if (voucher.type_ == VoucherType.MeldNFTs) {
+			MeldNFTsParams memory meldNFTsParams = abi.decode(
+				voucher.encodedData,
+				(MeldNFTsParams)
+			);
+
+			// meldNFTsParams checks
+			if (!_areIdsUnique(meldNFTsParams.IdsToMeld))
+				revert InvalidMeldNFTsParams(meldNFTsParams);
+
+			// ducklingsNFT.freeMeldNFTs(voucher.beneficiary, meldNFTsParams);
+		} else {
+			revert InvalidVoucher(voucher);
+		}
 
 		// check for circular reference and register referrer
-		// provided beneficiary has a referrer
 		if (voucher.referrer != address(0)) {
+			// provided beneficiary has a referrer
 			if (voucher.referrer == msg.sender) revert InvalidVoucher(voucher);
 
 			// check if beneficiary is not a referrer of supplied referrer
@@ -170,26 +205,11 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 			_registerReferrer(voucher.beneficiary, voucher.referrer);
 		}
 
-		// pay referrers
-		address currReferrer = _referrerOf[voucher.beneficiary];
-
-		for (uint8 i = 0; i < REFERRAL_MAX_DEPTH && currReferrer != address(0); i++) {
-			if (voucher.referrersPayouts[i] != 0) {
-				uint256 referralAmount = (voucher.amount * voucher.referrersPayouts[i]) /
-					_REFERRAL_PAYOUT_DIVIDER;
-
-				_requireSufficientContractBalance(voucherToken, referralAmount);
-				voucherToken.transfer(currReferrer, referralAmount);
-			}
-
-			currReferrer = _referrerOf[currReferrer];
-		}
-
 		emit VoucherClaimed(
 			voucher.beneficiary,
+			voucher.type_,
 			voucher.voucherCodeHash,
-			voucher.chainId,
-			voucher.tokenAddress
+			voucher.chainId
 		);
 	}
 
@@ -198,11 +218,36 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 			revert VoucherAlreadyClaimed(voucher.voucherCodeHash);
 
 		if (
-			voucher.amount == 0 ||
 			voucher.beneficiary != msg.sender ||
 			block.timestamp > voucher.expire ||
 			voucher.chainId != block.chainid
 		) revert InvalidVoucher(voucher);
+	}
+
+	function _performPayout(
+		address beneficiary,
+		address tokenAddress,
+		uint256 amount,
+		uint8[REFERRAL_MAX_DEPTH] memory referrersPayouts
+	) internal {
+		// check sufficient Garden token balance and pay beneficiary
+		ERC20Upgradeable voucherToken = ERC20Upgradeable(tokenAddress);
+		_requireSufficientContractBalance(voucherToken, amount);
+		voucherToken.transfer(beneficiary, amount);
+
+		// pay referrers
+		address currReferrer = _referrerOf[beneficiary];
+
+		for (uint8 i = 0; i < REFERRAL_MAX_DEPTH && currReferrer != address(0); i++) {
+			if (referrersPayouts[i] != 0) {
+				uint256 referralAmount = (amount * referrersPayouts[i]) / _REFERRAL_PAYOUT_DIVIDER;
+
+				_requireSufficientContractBalance(voucherToken, referralAmount);
+				voucherToken.transfer(currReferrer, referralAmount);
+			}
+
+			currReferrer = _referrerOf[currReferrer];
+		}
 	}
 
 	// -------- Internal --------
@@ -222,6 +267,18 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 	) internal pure {
 		address actualSigner = keccak256(encodedData).toEthSignedMessageHash().recover(signature);
 		if (actualSigner != signer) revert IncorrectSigner(signer, actualSigner);
+	}
+
+	function _areIdsUnique(uint256[5] memory ids) internal pure returns (bool) {
+		for (uint8 i = 0; i < ids.length; i++) {
+			for (uint8 j = i + 1; j < ids.length; j++) {
+				if (ids[i] == ids[j]) {
+					return false;
+				}
+			}
+		}
+
+		return true;
 	}
 
 	// -------- Upgrading --------
