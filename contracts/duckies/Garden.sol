@@ -24,13 +24,33 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 	uint8 public constant REFERRAL_MAX_DEPTH = 5;
 	uint8 internal constant _REFERRAL_PAYOUT_DIVIDER = 100;
 
+	enum VoucherType {
+		Payout,
+		MintNFTs,
+		MeldNFTs
+	}
+
+	struct PayoutParams {
+		address token;
+		uint256 amount;
+		uint8[REFERRAL_MAX_DEPTH] referrersPayouts;
+	}
+
+	struct MintNFTsParams {
+		uint8 collection; // Collection index
+		uint256 quantity; // Card pack size
+		uint256 baseGene; // Preset gene values (if any)
+	}
+
+	struct MeldNFTsParams {
+		uint256[5] IdsToMeld; // TokenIds to meld
+	}
+
 	// Voucher Message for signature verification
 	struct Voucher {
-		uint256 amount;
-		address tokenAddress;
+		VoucherType type_;
+		bytes encodedData;
 		address beneficiary; // beneficiary of voucher
-		bool isPaidToReferrers; // whether voucher is payed to referrers
-		uint8[REFERRAL_MAX_DEPTH] referrersPayouts; // what percentage of voucher will referrer of the level specified get
 		address referrer; // address of the parent
 		uint64 expire; // expiration time in seconds UTC
 		uint32 chainId;
