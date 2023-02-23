@@ -12,19 +12,19 @@ async function main() {
   console.log('Deploying contracts with the account:', deployer.address);
   console.log('Account balance:', (await deployer.getBalance()).toString());
 
-  const DuckiesNFTFactory = await ethers.getContractFactory('DuckiesNFT');
-  const DuckiesNFT = await upgrades.deployProxy(
-    DuckiesNFTFactory,
+  const DucklingsNFTFactory = await ethers.getContractFactory('DucklingsNFT');
+  const DucklingsNFT = await upgrades.deployProxy(
+    DucklingsNFTFactory,
     [process.env.DEPLOYED_SMART_CONTRACT],
     {
       kind: 'uups',
     },
   );
 
-  await DuckiesNFT.deployed();
+  await DucklingsNFT.deployed();
 
-  console.log('DUCKIES NFT smart-contract is deployed to:', DuckiesNFT.address);
-  await DuckiesNFT.setAPIBaseURL(
+  console.log('DUCKLINGS NFT smart-contract is deployed to:', DucklingsNFT.address);
+  await DucklingsNFT.setAPIBaseURL(
     'https://www.ynet-cat.uat.opendax.app/api/v3/public/nft/metadata/',
   );
 }
