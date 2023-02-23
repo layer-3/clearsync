@@ -12,8 +12,8 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 	using ECDSAUpgradeable for bytes32;
 
 	error CircularReferrers(address target, address base);
-	error BountyAlreadyClaimed(bytes32 bountyCodeHash);
-	error InvalidBounty(Bounty bounty);
+	error VoucherAlreadyClaimed(bytes32 voucherCodeHash);
+	error InvalidVoucher(Voucher voucher);
 	error InsufficientTokenBalance(address token, uint256 expected, uint256 actual);
 	error IncorrectSigner(address expected, address actual);
 
@@ -24,17 +24,17 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 	uint8 public constant REFERRAL_MAX_DEPTH = 5;
 	uint8 internal constant _REFERRAL_PAYOUT_DIVIDER = 100;
 
-	// Bounty Message for signature verification
-	struct Bounty {
+	// Voucher Message for signature verification
+	struct Voucher {
 		uint256 amount;
 		address tokenAddress;
-		address beneficiary; // beneficiary of bounty
-		bool isPaidToReferrers; // whether bounty is payed to referrers
-		uint8[REFERRAL_MAX_DEPTH] referrersPayouts; // what percentage of bounty will referrer of the level specified get
+		address beneficiary; // beneficiary of voucher
+		bool isPaidToReferrers; // whether voucher is payed to referrers
+		uint8[REFERRAL_MAX_DEPTH] referrersPayouts; // what percentage of voucher will referrer of the level specified get
 		address referrer; // address of the parent
 		uint64 expire; // expiration time in seconds UTC
 		uint32 chainId;
-		bytes32 bountyCodeHash;
+		bytes32 voucherCodeHash;
 	}
 
 	// child => parent
@@ -43,13 +43,13 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 
 	address internal _issuer;
 
-	mapping(bytes32 => bool) internal _claimedBounties;
+	mapping(bytes32 => bool) internal _claimedVouchers;
 
-	// Affiliate is invited by referrer. Referrer receives a tiny part of their affiliate's bounty.
+	// Affiliate is invited by referrer. Referrer receives a tiny part of their affiliate's voucher.
 	event AffiliateRegistered(address affiliate, address referrer);
-	event BountyClaimed(
+	event VoucherClaimed(
 		address wallet,
-		bytes32 bountyCodeHash,
+		bytes32 voucherCodeHash,
 		uint32 chainId,
 		address tokenAddress
 	);
@@ -110,73 +110,73 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 		}
 	}
 
-	// -------- Bounties --------
+	// -------- Vouchers --------
 
-	function claimBounties(Bounty[] calldata bounties, bytes calldata signature) external {
-		_requireCorrectSigner(abi.encode(bounties), signature, _issuer);
-		for (uint8 i = 0; i < bounties.length; i++) {
-			_claimBounty(bounties[i]);
+	function claimVouchers(Voucher[] calldata vouchers, bytes calldata signature) external {
+		_requireCorrectSigner(abi.encode(vouchers), signature, _issuer);
+		for (uint8 i = 0; i < vouchers.length; i++) {
+			_claimVoucher(vouchers[i]);
 		}
 	}
 
-	function claimBounty(Bounty calldata bounty, bytes calldata signature) external {
-		_requireCorrectSigner(abi.encode(bounty), signature, _issuer);
-		_claimBounty(bounty);
+	function claimVoucher(Voucher calldata voucher, bytes calldata signature) external {
+		_requireCorrectSigner(abi.encode(voucher), signature, _issuer);
+		_claimVoucher(voucher);
 	}
 
-	function _claimBounty(Bounty memory bounty) internal {
-		_requireValidBounty(bounty);
+	function _claimVoucher(Voucher memory voucher) internal {
+		_requireValidVoucher(voucher);
 
-		_claimedBounties[bounty.bountyCodeHash] = true;
+		_claimedVouchers[voucher.voucherCodeHash] = true;
 
 		// check sufficient Garden token balance and pay beneficiary
-		ERC20Upgradeable bountyToken = ERC20Upgradeable(bounty.tokenAddress);
-		_requireSufficientContractBalance(bountyToken, bounty.amount);
-		bountyToken.transfer(bounty.beneficiary, bounty.amount);
+		ERC20Upgradeable voucherToken = ERC20Upgradeable(voucher.tokenAddress);
+		_requireSufficientContractBalance(voucherToken, voucher.amount);
+		voucherToken.transfer(voucher.beneficiary, voucher.amount);
 
 		// check for circular reference and register referrer
 		// provided beneficiary has a referrer
-		if (bounty.referrer != address(0)) {
-			if (bounty.referrer == msg.sender) revert InvalidBounty(bounty);
+		if (voucher.referrer != address(0)) {
+			if (voucher.referrer == msg.sender) revert InvalidVoucher(voucher);
 
 			// check if beneficiary is not a referrer of supplied referrer
-			_requireNotReferrerOf(msg.sender, bounty.referrer);
-			_registerReferrer(bounty.beneficiary, bounty.referrer);
+			_requireNotReferrerOf(msg.sender, voucher.referrer);
+			_registerReferrer(voucher.beneficiary, voucher.referrer);
 		}
 
 		// pay referrers
-		address currReferrer = _referrerOf[bounty.beneficiary];
+		address currReferrer = _referrerOf[voucher.beneficiary];
 
 		for (uint8 i = 0; i < REFERRAL_MAX_DEPTH && currReferrer != address(0); i++) {
-			if (bounty.referrersPayouts[i] != 0) {
-				uint256 referralAmount = (bounty.amount * bounty.referrersPayouts[i]) /
+			if (voucher.referrersPayouts[i] != 0) {
+				uint256 referralAmount = (voucher.amount * voucher.referrersPayouts[i]) /
 					_REFERRAL_PAYOUT_DIVIDER;
 
-				_requireSufficientContractBalance(bountyToken, referralAmount);
-				bountyToken.transfer(currReferrer, referralAmount);
+				_requireSufficientContractBalance(voucherToken, referralAmount);
+				voucherToken.transfer(currReferrer, referralAmount);
 			}
 
 			currReferrer = _referrerOf[currReferrer];
 		}
 
-		emit BountyClaimed(
-			bounty.beneficiary,
-			bounty.bountyCodeHash,
-			bounty.chainId,
-			bounty.tokenAddress
+		emit VoucherClaimed(
+			voucher.beneficiary,
+			voucher.voucherCodeHash,
+			voucher.chainId,
+			voucher.tokenAddress
 		);
 	}
 
-	function _requireValidBounty(Bounty memory bounty) internal view {
-		if (_claimedBounties[bounty.bountyCodeHash])
-			revert BountyAlreadyClaimed(bounty.bountyCodeHash);
+	function _requireValidVoucher(Voucher memory voucher) internal view {
+		if (_claimedVouchers[voucher.voucherCodeHash])
+			revert VoucherAlreadyClaimed(voucher.voucherCodeHash);
 
 		if (
-			bounty.amount == 0 ||
-			bounty.beneficiary != msg.sender ||
-			block.timestamp > bounty.expire ||
-			bounty.chainId != block.chainid
-		) revert InvalidBounty(bounty);
+			voucher.amount == 0 ||
+			voucher.beneficiary != msg.sender ||
+			block.timestamp > voucher.expire ||
+			voucher.chainId != block.chainid
+		) revert InvalidVoucher(voucher);
 	}
 
 	// -------- Internal --------
