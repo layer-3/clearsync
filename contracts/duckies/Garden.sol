@@ -8,6 +8,8 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol';
 
+import '../ducklings/DucklingsNFT.sol';
+
 contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 	using ECDSAUpgradeable for bytes32;
 
@@ -61,9 +63,11 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 	// TODO: make internal
 	mapping(address => address) internal _referrerOf;
 
-	address internal _issuer;
-
 	mapping(bytes32 => bool) internal _claimedVouchers;
+
+	address public issuer;
+
+	DucklingsNFT public ducklingsNFT;
 
 	// Affiliate is invited by referrer. Referrer receives a tiny part of their affiliate's voucher.
 	event AffiliateRegistered(address affiliate, address referrer);
@@ -80,22 +84,24 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 		_disableInitializers();
 	}
 
-	function initialize() public initializer {
+	function initialize(address ducklingsNFTAddress) public initializer {
 		__AccessControl_init();
 		__UUPSUpgradeable_init();
 
 		_grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
 		_grantRole(UPGRADER_ROLE, msg.sender);
+
+		ducklingsNFT = DucklingsNFT(ducklingsNFTAddress);
 	}
 
-	// -------- Issuer --------
+	// -------- Issuer, DucklingsNFT --------
 
 	function setIssuer(address account) external onlyRole(DEFAULT_ADMIN_ROLE) {
-		_issuer = account;
+		issuer = account;
 	}
 
-	function getIssuer() external view returns (address) {
-		return _issuer;
+	function setDucklingsNFT(address ducklingsNFTAddress) external onlyRole(DEFAULT_ADMIN_ROLE) {
+		ducklingsNFT = DucklingsNFT(ducklingsNFTAddress);
 	}
 
 	// -------- Partner --------
@@ -133,14 +139,14 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 	// -------- Vouchers --------
 
 	function claimVouchers(Voucher[] calldata vouchers, bytes calldata signature) external {
-		_requireCorrectSigner(abi.encode(vouchers), signature, _issuer);
+		_requireCorrectSigner(abi.encode(vouchers), signature, issuer);
 		for (uint8 i = 0; i < vouchers.length; i++) {
 			_claimVoucher(vouchers[i]);
 		}
 	}
 
 	function claimVoucher(Voucher calldata voucher, bytes calldata signature) external {
-		_requireCorrectSigner(abi.encode(voucher), signature, _issuer);
+		_requireCorrectSigner(abi.encode(voucher), signature, issuer);
 		_claimVoucher(voucher);
 	}
 
