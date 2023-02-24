@@ -43,12 +43,12 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 
 	struct MintNFTsParams {
 		uint8 collection; // collection index
-		uint256 quantity; // card pack size
+		uint8 amount; // card pack size
 		uint256 baseGene; // preset gene values (if any)
 	}
 
 	struct MeldNFTsParams {
-		uint256[5] IdsToMeld; // tokenIds to meld
+		uint256[5] meldingTokenIds; // token Ids to meld
 	}
 
 	// Voucher Message for signature verification
@@ -177,9 +177,9 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 			);
 
 			// mintNFTsParams checks
-			if (mintNFTsParams.quantity == 0) revert InvalidMintNFTsParams(mintNFTsParams);
+			if (mintNFTsParams.amount == 0) revert InvalidMintNFTsParams(mintNFTsParams);
 
-			// ducklingsNFT.freeMintPack(voucher.beneficiary, mintNFTsParams);
+			ducklingsNFT.freeMintPackTo(voucher.beneficiary, mintNFTsParams.amount);
 		} else if (voucher.type_ == VoucherType.MeldNFTs) {
 			MeldNFTsParams memory meldNFTsParams = abi.decode(
 				voucher.encodedData,
@@ -187,10 +187,10 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 			);
 
 			// meldNFTsParams checks
-			if (!_areIdsUnique(meldNFTsParams.IdsToMeld))
+			if (!_areIdsUnique(meldNFTsParams.meldingTokenIds))
 				revert InvalidMeldNFTsParams(meldNFTsParams);
 
-			// ducklingsNFT.freeMeldNFTs(voucher.beneficiary, meldNFTsParams);
+			ducklingsNFT.freeMeldOf(voucher.beneficiary, meldNFTsParams.meldingTokenIds);
 		} else {
 			revert InvalidVoucher(voucher);
 		}
