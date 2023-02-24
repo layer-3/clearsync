@@ -465,6 +465,7 @@ contract Ducklings is
 		return sum;
 	}
 
+	// TODO: change to block.chainId
 	function _getChainId() internal view returns (uint256 id) {
 		assembly {
 			id := chainid()

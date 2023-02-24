@@ -41,6 +41,8 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 		uint8[REFERRAL_MAX_DEPTH] referrersPayouts; // what percentage of bounty will referrer of the level specified get
 	}
 
+	// TODO: add collection support
+	// TODO: add baseGenes support
 	struct MintNFTsParams {
 		uint8 collection; // collection index
 		uint8 amount; // card pack size
