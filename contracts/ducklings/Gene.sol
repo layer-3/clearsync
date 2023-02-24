@@ -2,7 +2,7 @@
 pragma solidity ^0.8.17;
 
 /*
- * Gene is a number with a special structure that defines Duckie NFT traits.
+ * Gene is a number with a special structure that defines Duckling traits.
  * All traits are packed consequently in the reversed order in the Gene, meaning the first trait being stored in the last Gene bits.
  * Each trait takes up the block of 8 bits in gene, thus having 256 possible values.
  *
@@ -15,71 +15,71 @@ pragma solidity ^0.8.17;
  * Traits have the following values: Body = 1, Head = 2, Class = 3.
  */
 library Gene {
-    uint8 public constant BYTES_PER_TRAIT = 8;
+	uint8 public constant BYTES_PER_TRAIT = 8;
 
-    enum Classes {
-        Common,
-        Rare,
-        Epic,
-        Legendary,
-        SuperLegendary,
-        Zombie
-    }
+	enum Classes {
+		Common,
+		Rare,
+		Epic,
+		Legendary,
+		SuperLegendary,
+		Zombie
+	}
 
-    // order is important, see _generateGene()
-    enum Traits {
-        Class,
-        Body,
-        Head,
-        Background,
-        Element,
-        Eyes,
-        Beak,
-        Wings,
-        Firstname,
-        Lastname,
-        Temper,
-        Peculiarity
-    }
+	// order is important, see _generateGene()
+	enum Traits {
+		Class,
+		Body,
+		Head,
+		Background,
+		Element,
+		Eyes,
+		Beak,
+		Wings,
+		Firstname,
+		Lastname,
+		Temper,
+		Peculiarity
+	}
 
-    function setTrait(
-        uint256 gene,
-        Traits trait,
-        // by specifying uint8 we set maxCap for trait values, which is 256
-        uint8 value
-    ) internal pure returns (uint256) {
-        // number of bytes from gene's rightmost and traitBlock's rightmost
-        // NOTE: maximum index of a trait is actually uint5
-        uint8 shiftingBy = uint8(trait) * BYTES_PER_TRAIT;
+	function setTrait(
+		uint256 gene,
+		Traits trait,
+		// by specifying uint8 we set maxCap for trait values, which is 256
+		uint8 value
+	) internal pure returns (uint256) {
+		// number of bytes from gene's rightmost and traitBlock's rightmost
+		// NOTE: maximum index of a trait is actually uint5
+		uint8 shiftingBy = uint8(trait) * BYTES_PER_TRAIT;
 
-        // remember traits we will shift off
-        uint256 shiftedPart = gene % 10 ** shiftingBy;
+		// remember traits we will shift off
+		uint256 shiftedPart = gene % 10 ** shiftingBy;
 
-        // shift right so that gene's rightmost bit is the traitBlock's rightmost
-        gene >>= shiftingBy;
+		// shift right so that gene's rightmost bit is the traitBlock's rightmost
+		gene >>= shiftingBy;
 
-        // clear previous trait value by shifting it off
-        gene >>= BYTES_PER_TRAIT;
-        gene <<= BYTES_PER_TRAIT;
+		// clear previous trait value by shifting it off
+		gene >>= BYTES_PER_TRAIT;
+		gene <<= BYTES_PER_TRAIT;
 
-        // update trait's value
-        gene += value;
+		// update trait's value
+		gene += value;
 
-        // reserve space for restoring previously shifted off values
-        gene <<= shiftingBy;
+		// reserve space for restoring previously shifted off values
+		gene <<= shiftingBy;
 
-        // restore previously shifted off values
-        gene += shiftedPart;
+		// restore previously shifted off values
+		gene += shiftedPart;
 
-        return gene;
-    }
+		return gene;
+	}
 
-    function getTrait(uint256 gene, Traits trait) internal pure returns (uint8) {
-        // number of bytes from gene's rightmost and traitBlock's rightmost
-        // NOTE: maximum index of a trait is actually uint5
-        uint8 shiftingBy = uint8(trait) * BYTES_PER_TRAIT;
+	function getTrait(uint256 gene, Traits trait) internal pure returns (uint8) {
+		// number of bytes from gene's rightmost and traitBlock's rightmost
+		// NOTE: maximum index of a trait is actually uint5
+		uint8 shiftingBy = uint8(trait) * BYTES_PER_TRAIT;
 
-        uint256 temp = gene >> shiftingBy;
-        return uint8(temp % 10 ** shiftingBy);
-    }
+		uint256 temp = gene >> shiftingBy;
+		return uint8(temp % 10 ** shiftingBy);
+	}
 }

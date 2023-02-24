@@ -17,7 +17,7 @@ import './Gene.sol';
 
 // TODO:  1. Add trait struct for each collection
 //        2. Dynamic price per mint
-contract DucklingsNFT is
+contract Ducklings is
 	Initializable,
 	ERC721Upgradeable,
 	ERC721BurnableUpgradeable,
