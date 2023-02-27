@@ -71,7 +71,7 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 
 	address public issuer;
 
-	DucklingsNFT public ducklingsNFT;
+	Ducklings public ducklings;
 
 	// Affiliate is invited by referrer. Referrer receives a tiny part of their affiliate's voucher.
 	event AffiliateRegistered(address affiliate, address referrer);
@@ -88,24 +88,24 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 		_disableInitializers();
 	}
 
-	function initialize(address ducklingsNFTAddress) public initializer {
+	function initialize(address ducklingsAddress) public initializer {
 		__AccessControl_init();
 		__UUPSUpgradeable_init();
 
 		_grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
 		_grantRole(UPGRADER_ROLE, msg.sender);
 
-		ducklingsNFT = DucklingsNFT(ducklingsNFTAddress);
+		ducklings = Ducklings(ducklingsAddress);
 	}
 
-	// -------- Issuer, DucklingsNFT --------
+	// -------- Issuer, Ducklings --------
 
 	function setIssuer(address account) external onlyRole(DEFAULT_ADMIN_ROLE) {
 		issuer = account;
 	}
 
-	function setDucklingsNFT(address ducklingsNFTAddress) external onlyRole(DEFAULT_ADMIN_ROLE) {
-		ducklingsNFT = DucklingsNFT(ducklingsNFTAddress);
+	function setDucklings(address ducklingsAddress) external onlyRole(DEFAULT_ADMIN_ROLE) {
+		ducklings = Ducklings(ducklingsAddress);
 	}
 
 	// -------- Partner --------
@@ -181,7 +181,7 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 			// mintNFTsParams checks
 			if (mintNFTsParams.amount == 0) revert InvalidMintNFTsParams(mintNFTsParams);
 
-			ducklingsNFT.freeMintPackTo(voucher.beneficiary, mintNFTsParams.amount);
+			ducklings.freeMintPackTo(voucher.beneficiary, mintNFTsParams.amount);
 		} else if (voucher.type_ == VoucherType.MeldNFTs) {
 			MeldNFTsParams memory meldNFTsParams = abi.decode(
 				voucher.encodedData,
@@ -192,7 +192,7 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 			if (!_areIdsUnique(meldNFTsParams.meldingTokenIds))
 				revert InvalidMeldNFTsParams(meldNFTsParams);
 
-			ducklingsNFT.freeMeldOf(voucher.beneficiary, meldNFTsParams.meldingTokenIds);
+			ducklings.freeMeldOf(voucher.beneficiary, meldNFTsParams.meldingTokenIds);
 		} else {
 			revert InvalidVoucher(voucher);
 		}
