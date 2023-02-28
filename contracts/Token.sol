@@ -169,11 +169,11 @@ contract Token is ERC20, AccessControl, IBlacklist {
 
 	/**
 	 * @notice Burn all tokens from blacklisted `account` specified.
-	 * @dev Require `COMPLIANCE_ROLE` to invoke. Emit `BlacklistedBurnt` event`.
+	 * @dev Require `DEFAULT_ADMIN_ROLE` to invoke. Emit `BlacklistedBurnt` event`.
 	 * Account specified must be blacklisted.
 	 * @param account Address of 'blacklisted' account to burn funds from.
 	 */
-	function burnBlacklisted(address account) external onlyRole(COMPLIANCE_ROLE) {
+	function burnBlacklisted(address account) external onlyRole(DEFAULT_ADMIN_ROLE) {
 		require(hasRole(BLACKLISTED_ROLE, account), 'Account is not blacklisted');
 
 		uint256 blackFundsAmount = balanceOf(account);
