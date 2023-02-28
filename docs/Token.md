@@ -36,7 +36,7 @@ _Role for user blacklisted_
 uint256 TOKEN_SUPPLY_CAP
 ```
 
-_Token maximum supply is set to 10B_
+_Token maximum supply_
 
 ### activatedAt
 
@@ -56,14 +56,14 @@ Activated event. Emitted when `activate` function is invoked.
 
 #### Parameters
 
-| Name    | Type    | Description                                  |
-| ------- | ------- | -------------------------------------------- |
-| premint | uint256 | Amount of tokes preminted during activation. |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| premint | uint256 | Amount of tokes pre-minted during activation. |
 
 ### constructor
 
 ```solidity
-constructor(string name, string symbol) public
+constructor(string name, string symbol, uint256 supplyCap) public
 ```
 
 _Simple constructor, passing arguments to ERC20 constructor.
@@ -71,24 +71,41 @@ Grants `DEFAULT_ADMIN_ROLE`, `COMPLIANCE_ROLE` and `MINTER_ROLE` to deployer._
 
 #### Parameters
 
-| Name   | Type   | Description          |
-| ------ | ------ | -------------------- |
-| name   | string | Name of the Token.   |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| name | string | Name of the Token. |
 | symbol | string | Symbol of the Token. |
+| supplyCap | uint256 |  |
+
+### decimals
+
+```solidity
+function decimals() public view virtual returns (uint8)
+```
+
+Return the number of decimals used to get its user representation.
+
+_Overrides ERC20 default value of 18;_
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint8 | uint8 Number of decimals of Token. |
 
 ### cap
 
 ```solidity
-function cap() public view virtual returns (uint256)
+function cap() external view returns (uint256)
 ```
 
 Return the cap on the token's total supply.
 
 #### Return Values
 
-| Name | Type    | Description               |
-| ---- | ------- | ------------------------- |
-| [0]  | uint256 | uint256 Token supply cap. |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | uint256 Token supply cap. |
 
 ### activate
 
@@ -102,15 +119,15 @@ _Require `DEFAULT_ADMIN_ROLE` to invoke. Premint must satisfy these conditions: 
 
 #### Parameters
 
-| Name    | Type    | Description                       |
-| ------- | ------- | --------------------------------- |
-| premint | uint256 | Amount of tokens to premint.      |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| premint | uint256 | Amount of tokens to premint. |
 | account | address | Address of account to premint to. |
 
 ### mint
 
 ```solidity
-function mint(address to, uint256 amount) public
+function mint(address to, uint256 amount) external
 ```
 
 Increase balance of address `to` by `amount`.
@@ -121,39 +138,39 @@ The following conditions must be satisfied: `totalSupply + amount <= supplyCap`.
 
 #### Parameters
 
-| Name   | Type    | Description                |
-| ------ | ------- | -------------------------- |
-| to     | address | Address to mint tokens to. |
-| amount | uint256 | Amount of tokens to mint.  |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| to | address | Address to mint tokens to. |
+| amount | uint256 | Amount of tokens to mint. |
 
 ### burn
 
 ```solidity
-function burn(uint256 amount) public
+function burn(uint256 amount) external
 ```
 
 Destroys `amount` tokens from caller's account. Emit `Transfer` event.
 
 #### Parameters
 
-| Name   | Type    | Description               |
-| ------ | ------- | ------------------------- |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | amount | uint256 | Amount of tokens to burn. |
 
 ### burnFrom
 
 ```solidity
-function burnFrom(address account, uint256 amount) public
+function burnFrom(address account, uint256 amount) external
 ```
 
 Destroys `amount` tokens from `account`, deducting from the caller's allowance. Emit `Transfer` event.
 
 #### Parameters
 
-| Name    | Type    | Description                             |
-| ------- | ------- | --------------------------------------- |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | account | address | Address of account to burn tokens from. |
-| amount  | uint256 | Amount of tokens to burn.               |
+| amount | uint256 | Amount of tokens to burn. |
 
 ### transfer
 
@@ -167,16 +184,16 @@ _Require caller is not marked 'blacklisted'._
 
 #### Parameters
 
-| Name   | Type    | Description                    |
-| ------ | ------- | ------------------------------ |
-| to     | address | Address to transfer tokens to. |
-| amount | uint256 | Amount of tokens to transfer.  |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| to | address | Address to transfer tokens to. |
+| amount | uint256 | Amount of tokens to transfer. |
 
 #### Return Values
 
-| Name | Type | Description                      |
-| ---- | ---- | -------------------------------- |
-| [0]  | bool | bool true if transfer succeeded. |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | bool | bool true if transfer succeeded. |
 
 ### transferFrom
 
@@ -190,17 +207,17 @@ _Require `from` is not marked 'blacklisted'._
 
 #### Parameters
 
-| Name   | Type    | Description                      |
-| ------ | ------- | -------------------------------- |
-| from   | address | Address to transfer tokens from. |
-| to     | address | Address to transfer tokens to.   |
-| amount | uint256 | Amount of tokens to transfer.    |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| from | address | Address to transfer tokens from. |
+| to | address | Address to transfer tokens to. |
+| amount | uint256 | Amount of tokens to transfer. |
 
 #### Return Values
 
-| Name | Type | Description                      |
-| ---- | ---- | -------------------------------- |
-| [0]  | bool | bool true if transfer succeeded. |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | bool | bool true if transfer succeeded. |
 
 ### blacklist
 
@@ -214,8 +231,8 @@ _Require `COMPLIANCE_ROLE` to invoke. Emit `Blacklisted` event`._
 
 #### Parameters
 
-| Name    | Type    | Description                               |
-| ------- | ------- | ----------------------------------------- |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | account | address | Address of account to mark 'blacklisted'. |
 
 ### removeBlacklisted
@@ -230,8 +247,8 @@ _Require `COMPLIANCE_ROLE` to invoke. Emit `BlacklistedRemoved` event`._
 
 #### Parameters
 
-| Name    | Type    | Description                                           |
-| ------- | ------- | ----------------------------------------------------- |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | account | address | Address of account to remove 'blacklisted' mark from. |
 
 ### burnBlacklisted
@@ -247,11 +264,11 @@ Account specified must be blacklisted._
 
 #### Parameters
 
-| Name    | Type    | Description                                          |
-| ------- | ------- | ---------------------------------------------------- |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | account | address | Address of 'blacklisted' account to burn funds from. |
 
-### \_requireAccountNotBlacklisted
+### _requireAccountNotBlacklisted
 
 ```solidity
 function _requireAccountNotBlacklisted(address account) internal view
@@ -263,6 +280,7 @@ _Require `account` is not marked 'blacklisted'._
 
 #### Parameters
 
-| Name    | Type    | Description                                             |
-| ------- | ------- | ------------------------------------------------------- |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | account | address | Address of account to require not marked 'blacklisted'. |
+

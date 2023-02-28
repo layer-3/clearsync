@@ -16,8 +16,8 @@ _Require `COMPLIANCE_ROLE` to invoke. Emit `Blacklisted` event`._
 
 #### Parameters
 
-| Name    | Type    | Description                               |
-| ------- | ------- | ----------------------------------------- |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | account | address | Address of account to mark 'blacklisted'. |
 
 ### removeBlacklisted
@@ -32,8 +32,8 @@ _Require `COMPLIANCE_ROLE` to invoke. Emit `BlacklistedRemoved` event`._
 
 #### Parameters
 
-| Name    | Type    | Description                                           |
-| ------- | ------- | ----------------------------------------------------- |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | account | address | Address of account to remove 'blacklisted' mark from. |
 
 ### burnBlacklisted
@@ -48,8 +48,8 @@ _Require `COMPLIANCE_ROLE` to invoke. Emit `BlacklistedBurnt` event`. Account sp
 
 #### Parameters
 
-| Name    | Type    | Description                                          |
-| ------- | ------- | ---------------------------------------------------- |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | account | address | Address of 'blacklisted' account to burn funds from. |
 
 ### Blacklisted
@@ -62,8 +62,8 @@ event Blacklisted(address account)
 
 #### Parameters
 
-| Name    | Type    | Description                                           |
-| ------- | ------- | ----------------------------------------------------- |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | account | address | Address of account to have been marked 'blacklisted'. |
 
 ### BlacklistedRemoved
@@ -76,8 +76,8 @@ Mark 'blacklisted' from `account` was removed.
 
 #### Parameters
 
-| Name    | Type    | Description                                             |
-| ------- | ------- | ------------------------------------------------------- |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | account | address | Address of account 'blacklisted' mark was removed from. |
 
 ### BlacklistedBurnt
@@ -90,7 +90,8 @@ All tokens from blacklisted `account` specified were burnt.
 
 #### Parameters
 
-| Name    | Type    | Description                                             |
-| ------- | ------- | ------------------------------------------------------- |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | account | address | Address of 'blacklisted' account funds were burnt from. |
-| amount  | uint256 |                                                         |
+| amount | uint256 |  |
+
