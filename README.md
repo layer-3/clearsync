@@ -1,11 +1,11 @@
 
 # Yellow Clearing Network
 
-This repository contains the smart contracts of the [Yellow Network](https://www.yellow.org).
+This repository contains the smart contracts of [Yellow Network](https://www.yellow.org).
 
 Yellow Network is a Layer-3 peer-to-peer network that uses [State Channels](https://statechannels.org/) technology to scale and facilitate trading, clearing and settlement. The core technology is called ClearSync.
 
-In this system, participants of ClearSync can create and fund a state channel, which is a private communication channel between two parties that allows for off-chain transactions to occur. This means that transactions are not recorded on the main Ethereum blockchain until the channel is closed, which helps to reduce congestion and increase transaction speed for High-frequency trading.
+In this system, participants of ClearSync can create and fund a state channel, which is a private communication channel between two parties that allows for off-chain transactions to occur. This means that transactions are not recorded on the main Ethereum blockchain until the channel is closed, which helps reduce congestion and increase transaction speed for high-frequency trading.
 
 ## License
 
@@ -31,9 +31,9 @@ In traditional finance, clearing denotes all activities from the time a commitme
 
 #### Inter-Exchange trading
 
-Yellow Network has been initially created to facilitate medium sized crypto-currency exchange to access a global liquidity network. Similarly to [ECN](https://en.wikipedia.org/wiki/Electronic_communication_network) in traditional finance but as a decentralized [mesh network](https://en.wikipedia.org/wiki/Mesh_networking).
+Yellow Network has been initially created to facilitate medium-sized crypto-currency exchange to access a global liquidity network. Similarly to [ECN](https://en.wikipedia.org/wiki/Electronic_communication_network) in traditional finance but as a decentralized [mesh network](https://en.wikipedia.org/wiki/Mesh_networking).
 
-At present, small and medium-sized brokers face difficulty in obtaining liquidity due to the lack of clearing systems or prime brokers. As a result, these businesses often have to depend on their own market-making trading bots, which can be a costly undertaking in terms of capital pre-funding. Furthermore, moving customer deposits on third-party exchanges also carries a non-trivial settlement counter-party risk.
+At present, small- and medium-sized brokers face difficulty in obtaining liquidity due to the lack of clearing systems or prime brokers. As a result, these businesses often have to depend on their own market-making trading bots, that can be a costly undertaking in terms of capital pre-funding. Furthermore, moving customer deposits on third-party exchanges also carries a non-trivial settlement counter-party risk.
 
 #### Algo-Trading Firms and Market Makers
 
@@ -43,15 +43,15 @@ Furthermore, since Yellow Network doesn't require pre-funding of traded assets, 
 
 #### Day Traders
 
-For day traders, it is possible to open a few channels at the start of the trading day and execute all their trades in bulk until they are ready to settle on-chain. This approach helps day traders to optimize their capital usage by keeping their funds available for the most critical trading opportunities.
+For day traders, it is possible to open a few channels at the start of the trading day and execute all their trades in bulk until they are ready to settle on-chain. This approach helps day traders optimize their capital usage by keeping their funds available for the most critical trading opportunities.
 
 ### Performance requirements
 
-In ClearSync all transactions occur off-chain, the decentralized clearing using state-channels is able to achieve high throughput and low latency, making it a scalable and efficient solution for centralized (CeFi) and decentralized finance (DeFi) applications on the Ethereum network but not limited to.
+In ClearSync, all transactions occur off-chain; the decentralized clearing using state channels is able to achieve high throughput and low latency, making it a scalable and efficient solution for centralized (CeFi) and decentralized finance (DeFi) applications on the Ethereum network, but not limited by it.
 
 ClearSync MUST be able to fund and defund channels under few minutes, it's expected that those direct channels (on-chain funded) lifespan is several weeks.
 
-When parties are off-chains communication must be low latency and capable of high-frequency, Margin-Request may occur several times per minutes, while proprietary trading protocol might be under 100 ms scale and capable of thousands of requests per seconds.
+When parties are off-chains communication must be low latency and capable of high-frequency, margin request may occur several times per minutes, while proprietary trading protocol might be under 100 ms scale and capable of thousands of requests per seconds.
 
 ## Features
 
@@ -65,8 +65,8 @@ When parties are off-chains communication must be low latency and capable of hig
     - Using our provided JointCustody
     - Using other HTLC and escrow smart-contracts
     - Using third party custodian
-- Ability to challenge a Margin state to unlock the collateral
-- Canary test network using DUCKIES for Fees
+- Ability to challenge a margin state to unlock the collateral
+- Canary test network using DUCKIES for fees
 
 
 ## Usage
@@ -82,23 +82,23 @@ npx hardhat run scripts/deploy.ts
 
 ### Test Network
 
-Goerli and Mumbai are used for development and test environment. The community of early adopter from Duckies may be invited for Gorilla test sessions through [testnet.yellow.org](testnet.yellow.org)
+Goerli and Mumbai are used for development and test environment. The community of early adopters from Duckies platform and early supporters of Yellow Network may be invited for gorilla test sessions through [testnet.yellow.org](testnet.yellow.org)
 
 ### Canary Network
 
-Duckies is the **canary network for Yellow**, for testing ClearSync technology in a live environment prior to deployment on mainnet. New network participant must deploy first on the Canary Network before rolling out to the mainnet.
+Duckies is the **canary network for Yellow**, for testing ClearSync technology in a live environment prior to deployment on mainnet. New network participant must deploy first on Canary Network before rolling out to the mainnet.
 
-Duckies ERC20 token and ClearSync is deployed on Polygon mainnet.
+DUCKIES ERC20 token and ClearSync is deployed on Polygon mainnet.
 
 ### Main Networks
 
-The first network for YELLOW ERC20 and ClearSync system will be on Ethereum mainnet, but the system can be extended later to Layer-2, Solana, or using a Polkadot parachain.
+The first network for YELLOW ERC20 and ClearSync system will be on Ethereum mainnet, but the system can be extended later to Layer-2, ex. Solana, or be connected using a Polkadot parachain.
 
 ## Smart Contracts
 
 ### contracts/Token.sol
 
-This smart contract is the ERC20 used by both YELLOW and DUCKIES tokens. The YELLOW token is collateral to open a state channel with another network entity. Additionally, it is used to pay the settlement fees on the network.
+This smart contract is ERC20 used by both YELLOW and DUCKIES tokens. The YELLOW token is collateral to open a state channel with another network entity. Additionally, it is used to pay the settlement fees on the network.
 
 ### contracts/duckies/
 
