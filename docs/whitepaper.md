@@ -68,7 +68,7 @@ To understand Yellow Network and its moving parts, it is important to get a high
 
 3.  Trading protocol: This protocol is not specific to Yellow Network and is proprietary software. It can be FIX, Rest-JSON, Binance API, Bitfinex API, or any banking protocol for that matter.
 
-![](./media/image1.png){width="3.908047900262467in" height="3.849621609798775in"}
+![Stack Overview](./media/image5.png)
 
 *Yellow Network's different layers visualized.*
 
@@ -146,7 +146,7 @@ Instead, any Web2 company can easily integrate with blockchains and use them in 
 
 ## 5. Yellow Network's Solution explained and Architecture deep dive
 
-![](./media/image3.png){width="4.921875546806649in" height="3.18041447944007in"}
+![Virtual State Channels](./media/image4.png)
 
 *Yellow Network's overlay mesh network of Yellow network nodes.*
 
@@ -166,7 +166,7 @@ This is accomplished by utilizing LibP2P to create a peer-to-peer network among 
 
 This information can be used as a routing table to decide the optimal connections among nodes. Upon connecting to the network, each node subscribes to the quotes it wishes to track, for example, WBTC/USDT. It then receives price updates from all nodes in the global network and can compute a routing table based on the state channels it has already established. A Yellow network node may then decide to create additional direct or virtual channels to access interesting prices or spreads.
 
-![](./media/image2.png){width="5.225517279090114in" height="3.8225568678915134in"}
+![Topic PubSub](./media/image1.png)
 
 *Yellow Network provides a world map of liquidity participants can tap into.*
 
@@ -180,7 +180,7 @@ It is this state channels protocol that allows Yellow Network participants to mi
 
 The distribution ratio within the state channels operated by participants is updated on an ongoing basis (preferably every second). This way, both participants can always monitor the most current state within their channel, thereby preventing either participant from being defrauded. Should counterparty settlement risk become imbalanced, the trading party carrying the risk can ask the other party to provide more collateral using a margin call.
 
-![](./media/image5.png){width="5.549901574803149in" height="3.1990299650043745in"}
+![](./media/image3.png)
 
 *Brokers can trade with one another, while Yellow Network is acting as the clearing house between them.*
 
@@ -190,7 +190,7 @@ Should either party not agree to rebalance or settle the liabilities altogether,
 
 One has to keep in mind that the actual trading, clearing, and settlement of assets between Yellow Network participants are not directly initiated by the state channels protocol. It is done by either broker, exchange, or trading firm, thereby moving owed funds between one another. This means that technically, liabilities are not written into state channels, but kept in the database of the respective parties. They use a system of gossip-to-gossip communication to determine the amount of collateral required to continue their business activities and ensure that both parties and any potential risks are protected.
 
-![](./media/image4.png){width="5.598958880139983in" height="2.4832589676290464in"}
+![](./media/image2.png)
 
 *Three crucial components making up Yellow Network: Trading and Clearing (off-chain) as well as settlement (on-chain).*
 
@@ -222,102 +222,102 @@ Thus, Yellow Network offers a survival solution to them by letting them team up 
 
 ## 8. Technology Partners
 
-### 8.1. Openware with OpenDAX^TM^
+### 8.1. Openware with OpenDAX
 
 [Openware](https://www.openware.com/)[^43], Inc. is a United States multinational blockchain infrastructure development company headquartered in South San Francisco, California, that designs, develops, and sells computer software, and online services. Their focus is on building secure and scalable solutions for Web3 and the internet of finance.
 
-[OpenDAX](https://www.openware.com/product/opendax)^TM^ [^44] is Openware's flagship product and stands for \'Open-Source Digital Assets Exchange\'. It is a hybrid software consisting of public and private libraries, designed to build a fully-featured exchange service to facilitate the trading of digital assets, cryptocurrencies, and security tokens. OpenDAX^TM^ is cloud-based and while it comes as a plug-and-play solution that can easily be deployed, there is the possibility to customize the solution in accordance with one's needs.
+[OpenDAX](https://www.openware.com/product/opendax)[^44] is Openware's flagship product and stands for \'Open-Source Digital Assets Exchange\'. It is a hybrid software consisting of public and private libraries, designed to build a fully-featured exchange service to facilitate the trading of digital assets, cryptocurrencies, and security tokens. OpenDAX^TM^ is cloud-based and while it comes as a plug-and-play solution that can easily be deployed, there is the possibility to customize the solution in accordance with one's needs.
 
 Through operating and selling OpenDAX^TM^, the need for Yellow Network has become apparent. The idea for starting Yellow Network came from Openware's clients that have been starting their own exchange using OpenDAX^TM^, they have always been facing the issue of raising and obtaining sufficient liquidity.
 
 Building out Yellow Network as a built-in solution and natively supported platform for OpenDAX^TM^ users would help brokers and clients efficiently source deep pockets of liquidity, thereby solving their bootstrapping problem that has so far hampered the adoption of OpenDAX^TM^ and thus the creation of more brokers and exchanges within the crypto trading space. While the need for some basic market-making will persist, the creation of Yellow Network will simplify things and cut costs for brokers and smaller exchanges that want to do business in the crypto trading space.
 
-[^1]: Nakamoto Satoshi, "Bitcoin: A Peer-to-Peer Electronic Cash System." [[www.bitcoin.org]{.underline}](http://www.bitcoin.org), October 2008: [[https://bitcoin.org/bitcoin.pdf]{.underline}](https://bitcoin.org/bitcoin.pdf)
+[^1]: Nakamoto Satoshi, "Bitcoin: A Peer-to-Peer Electronic Cash System." [www.bitcoin.org](http://www.bitcoin.org), October 2008: <https://bitcoin.org/bitcoin.pdf>
 
-[^2]: Buterin Vitalik, "Ethereum White paper." [[www.ethereum.org]{.underline}](http://www.ethereum.org), November 2014: [[https://ethereum.org/en/whitepaper/]{.underline}](https://ethereum.org/en/whitepaper/)
+[^2]: Buterin Vitalik, "Ethereum White paper." [www.ethereum.org](http://www.ethereum.org), November 2014: <https://ethereum.org/en/whitepaper/>
 
-[^3]: Antonopouos Andreas, Wood Gavin, "Mastering Ethereum." O\'Reilly Media, Inc., November 2018: [[https://www.oreilly.com/library/view/mastering-ethereum/9781491971932/]{.underline}](https://www.oreilly.com/library/view/mastering-ethereum/9781491971932/)
+[^3]: Antonopouos Andreas, Wood Gavin, "Mastering Ethereum." O\'Reilly Media, Inc., November 2018: <https://www.oreilly.com/library/view/mastering-ethereum/9781491971932/>
 
-[^4]: Buterin Vitalik, "Why sharding is great: demystifying the technical properties." [[www.vitalik.ca]{.underline}](http://www.vitalik.ca), April 2021: [[https://vitalik.ca/general/2021/04/07/sharding.html]{.underline}](https://vitalik.ca/general/2021/04/07/sharding.html)
+[^4]: Buterin Vitalik, "Why sharding is great: demystifying the technical properties." [www.vitalik.ca](http://www.vitalik.ca), April 2021: <https://vitalik.ca/general/2021/04/07/sharding.html>
 
-[^5]: Blockchain Comparison: [[https://blockchain-comparison.com/blockchain-protocols/]{.underline}](https://blockchain-comparison.com/blockchain-protocols/)
+[^5]: Blockchain Comparison: <https://blockchain-comparison.com/blockchain-protocols/>
 
-[^6]: L2beat: [[https://l2beat.com/scaling/tvl/]{.underline}](https://l2beat.com/scaling/tvl/)
+[^6]: L2beat: <https://l2beat.com/scaling/tvl/>
 
-[^7]: Chainalysis Team, "Vulnerabilities in Cross-chain Bridge Protocols Emerge as Top Security Risk." Chainalysis Blog, August 2022: [[https://blog.chainalysis.com/reports/cross-chain-bridge-hacks-2022/]{.underline}](https://blog.chainalysis.com/reports/cross-chain-bridge-hacks-2022/)
+[^7]: Chainalysis Team, "Vulnerabilities in Cross-chain Bridge Protocols Emerge as Top Security Risk." Chainalysis Blog, August 2022: <https://blog.chainalysis.com/reports/cross-chain-bridge-hacks-2022/>
 
-[^8]: Token Terminal, "Bridge exploits account for \~50% of all DeFi exploits, totaling \~\$2.5B in lost assets." Token Terminal Twitter, October 2022: [[https://twitter.com/tokenterminal/status/1582376876143968256]{.underline}](https://twitter.com/tokenterminal/status/1582376876143968256)
+[^8]: Token Terminal, "Bridge exploits account for \~50% of all DeFi exploits, totaling \~\$2.5B in lost assets." Token Terminal Twitter, October 2022: <https://twitter.com/tokenterminal/status/1582376876143968256>
 
-[^9]: Coinmarketcap, "Top Cryptocurrency Spot Exchanges." Coinmarketcap Website: [[https://coinmarketcap.com/rankings/exchanges/]{.underline}](https://coinmarketcap.com/rankings/exchanges/)
+[^9]: Coinmarketcap, "Top Cryptocurrency Spot Exchanges." Coinmarketcap Website: <https://coinmarketcap.com/rankings/exchanges/>
 
-[^10]: Weisberger David, "The Ultimate Irony of Crypto Trading." Coindesk, September 2021: [[https://www.coindesk.com/markets/2019/03/30/the-ultimate-irony-of-crypto-trading/]{.underline}](https://www.coindesk.com/markets/2019/03/30/the-ultimate-irony-of-crypto-trading/)
+[^10]: Weisberger David, "The Ultimate Irony of Crypto Trading." Coindesk, September 2021: <https://www.coindesk.com/markets/2019/03/30/the-ultimate-irony-of-crypto-trading/>
 
-[^11]: Chainalysis Team, "DeFi-Driven Speculation Pushes Decentralized Exchanges' On-Chain Transaction Volumes Past Centralized Platforms." Chainalysis Blog, June 2022: [[https://blog.chainalysis.com/reports/defi-dexs-web3/]{.underline}](https://blog.chainalysis.com/reports/defi-dexs-web3/)
+[^11]: Chainalysis Team, "DeFi-Driven Speculation Pushes Decentralized Exchanges' On-Chain Transaction Volumes Past Centralized Platforms." Chainalysis Blog, June 2022: <https://blog.chainalysis.com/reports/defi-dexs-web3/>
 
-[^12]: Barbon Andrea , Ranaldo Angelo, " On The Quality Of Cryptocurrency Markets: Centralized Versus Decentralized Exchanges." SNP Paper, April 2022: [[https://www.snb.ch/n/mmr/reference/sem_2022_06_03_barbon/source/sem_2022_06_03_barbon.n.pdf]{.underline}](https://www.snb.ch/n/mmr/reference/sem_2022_06_03_barbon/source/sem_2022_06_03_barbon.n.pdf)
+[^12]: Barbon Andrea , Ranaldo Angelo, " On The Quality Of Cryptocurrency Markets: Centralized Versus Decentralized Exchanges." SNP Paper, April 2022: <https://www.snb.ch/n/mmr/reference/sem_2022_06_03_barbon/source/sem_2022_06_03_barbon.n.pdf>
 
 [^13]: Eskandari, S., Moosavi, S., Clark, J.: SoK: Transparent Dishonesty: Front-Running
 
-    Attacks on Blockchain. In: Financial Cryptography. pp. 170--189. Springer International Publishing, Cham (2020): [[https://link.springer.com/chapter/10.1007/978-3-030-43725-1_13]{.underline}](https://link.springer.com/chapter/10.1007/978-3-030-43725-1_13)
+    Attacks on Blockchain. In: Financial Cryptography. pp. 170--189. Springer International Publishing, Cham (2020): <https://link.springer.com/chapter/10.1007/978-3-030-43725-1_13>
 
-[^14]: Wu, Eva, "The Art and Science of Native Token Liquidity" Mechanism Capital, August 2021: [[https://www.mechanism.capital/native-token-liquidity/]{.underline}](https://www.mechanism.capital/native-token-liquidity/)
+[^14]: Wu, Eva, "The Art and Science of Native Token Liquidity" Mechanism Capital, August 2021: <https://www.mechanism.capital/native-token-liquidity/>
 
-[^15]: Bitfinex, "Hodlers Put Faith in Centralised Exchanges as Platforms Flex High-Tech Security." Bitfinex Blog, October 2022: [[https://blog.bitfinex.com/media-releases/hodlers-put-faith-in-centralised-exchanges-as-platforms-flex-high-tech-security/]{.underline}](https://blog.bitfinex.com/media-releases/hodlers-put-faith-in-centralised-exchanges-as-platforms-flex-high-tech-security/)
+[^15]: Bitfinex, "Hodlers Put Faith in Centralised Exchanges as Platforms Flex High-Tech Security." Bitfinex Blog, October 2022: <https://blog.bitfinex.com/media-releases/hodlers-put-faith-in-centralised-exchanges-as-platforms-flex-high-tech-security/>
 
-[^16]: Reiff Nathan, "The Collapse of FTX: What Went Wrong with the Crypto Exchange?" Investopedia, December 2022: [[https://www.investopedia.com/what-went-wrong-with-ftx-6828447]{.underline}](https://www.investopedia.com/what-went-wrong-with-ftx-6828447)
+[^16]: Reiff Nathan, "The Collapse of FTX: What Went Wrong with the Crypto Exchange?" Investopedia, December 2022: <https://www.investopedia.com/what-went-wrong-with-ftx-6828447>
 
-[^17]: Carter Nic, "Nic's PoR: Wall of Fame" Nic Carter Website: [[https://niccarter.info/proof-of-reserves/]{.underline}](https://niccarter.info/proof-of-reserves/)
+[^17]: Carter Nic, "Nic's PoR: Wall of Fame" Nic Carter Website: <https://niccarter.info/proof-of-reserves/>
 
-[^18]: Hafid, Abdelatif, Senhaji Hafid Abdelhakim, Samih Mustapha, "Scaling Blockchains: A Comprehensive Survey." IEEE Access, July 2020: [[https://www.researchgate.net/publication/342639281_Scaling_Blockchains_A\_Comprehensive_Survey]{.underline}](https://www.researchgate.net/publication/342639281_Scaling_Blockchains_A_Comprehensive_Survey)
+[^18]: Hafid, Abdelatif, Senhaji Hafid Abdelhakim, Samih Mustapha, "Scaling Blockchains: A Comprehensive Survey." IEEE Access, July 2020: <https://www.researchgate.net/publication/342639281_Scaling_Blockchains_A_Comprehensive_Survey>
 
-[^19]: Schär Fabian, "DeFi's Promise and Pitfalls." IMF, September 2022: [[https://www.imf.org/en/Publications/fandd/issues/2022/09/Defi-promise-and-pitfalls-Fabian-Schar]{.underline}](https://www.imf.org/en/Publications/fandd/issues/2022/09/Defi-promise-and-pitfalls-Fabian-Schar)
+[^19]: Schär Fabian, "DeFi's Promise and Pitfalls." IMF, September 2022: <https://www.imf.org/en/Publications/fandd/issues/2022/09/Defi-promise-and-pitfalls-Fabian-Schar>
 
-[^20]: CFI Team, "What is Shadow Banking in the Cryptocurrency World?", Corporate Finance Institute, February 2023: [[https://corporatefinanceinstitute.com/resources/cryptocurrency/shadow-banking-and-cryptocurrencies/]{.underline}](https://corporatefinanceinstitute.com/resources/cryptocurrency/shadow-banking-and-cryptocurrencies/)
+[^20]: CFI Team, "What is Shadow Banking in the Cryptocurrency World?", Corporate Finance Institute, February 2023: <https://corporatefinanceinstitute.com/resources/cryptocurrency/shadow-banking-and-cryptocurrencies/>
 
-[^21]: Yellow Network: [[https://www.yellow.org/]{.underline}](https://www.yellow.org/)
+[^21]: Yellow Network: <https://www.yellow.org/>
 
-[^22]: Discover Swift: [[https://www.swift.com/about-us/discover-swift/messaging-and-standards]{.underline}](https://www.swift.com/about-us/discover-swift/messaging-and-standards)
+[^22]: Discover Swift: <https://www.swift.com/about-us/discover-swift/messaging-and-standards>
 
-[^23]: What is ECN: [[https://www.angelone.in/knowledge-center/share-market/ecn-electronic-communication-network]{.underline}](https://www.angelone.in/knowledge-center/share-market/ecn-electronic-communication-network)
+[^23]: What is ECN: <https://www.angelone.in/knowledge-center/share-market/ecn-electronic-communication-network>
 
-[^24]: Kiss Design Principle: [[https://www.interaction-design.org/literature/article/kiss-keep-it-simple-stupid-a-design-principle]{.underline}](https://www.interaction-design.org/literature/article/kiss-keep-it-simple-stupid-a-design-principle)
+[^24]: Kiss Design Principle: <https://www.interaction-design.org/literature/article/kiss-keep-it-simple-stupid-a-design-principle>
 
-[^25]: Charbonneau, Jon, "The Hitchhiker\'s Guide to Ethereum." Delphi Digital, May 2022: [[https://members.delphidigital.io/reports/the-hitchhikers-guide-to-ethereum]{.underline}](https://members.delphidigital.io/reports/the-hitchhikers-guide-to-ethereum)
+[^25]: Charbonneau, Jon, "The Hitchhiker\'s Guide to Ethereum." Delphi Digital, May 2022: <https://members.delphidigital.io/reports/the-hitchhikers-guide-to-ethereum>
 
-[^26]: The Block: "Value Locked in Ethereum Scaling Solutions by Type." [[https://www.theblock.co/data/scaling-solutions/scaling-overview/value-locked-of-ethereum-scaling-solutions]{.underline}](https://www.theblock.co/data/scaling-solutions/scaling-overview/value-locked-of-ethereum-scaling-solutions)
+[^26]: The Block: "Value Locked in Ethereum Scaling Solutions by Type." <https://www.theblock.co/data/scaling-solutions/scaling-overview/value-locked-of-ethereum-scaling-solutions>
 
-[^27]: Thibault Louis Tremblay, Sarry Tom, Hafid Abdelhakim Senhaji, "Blockchain Scaling Using Rollups: A Comprehensive Survey" IEEE Access, August 2022: [[https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=9862815]{.underline}](https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=9862815)
+[^27]: Thibault Louis Tremblay, Sarry Tom, Hafid Abdelhakim Senhaji, "Blockchain Scaling Using Rollups: A Comprehensive Survey" IEEE Access, August 2022: <https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=9862815>
 
-[^28]: Isthedoom, "Optimistic Rollups." [[www.ethereum.org]{.underline}](http://www.ethereum.org), November 2022: [[https://ethereum.org/en/developers/docs/scaling/optimistic-rollups/]{.underline}](https://ethereum.org/en/developers/docs/scaling/optimistic-rollups/)
+[^28]: Isthedoom, "Optimistic Rollups." [www.ethereum.org](http://www.ethereum.org), November 2022: <https://ethereum.org/en/developers/docs/scaling/optimistic-rollups/>
 
-[^29]: Negka Lydia, Spathoulas Georgios, "Blockchain State Channels: A State of the Art." IEEE Access, November 2021: [[https://ieeexplore.ieee.org/document/9627997]{.underline}](https://ieeexplore.ieee.org/document/9627997)
+[^29]: Negka Lydia, Spathoulas Georgios, "Blockchain State Channels: A State of the Art." IEEE Access, November 2021: <https://ieeexplore.ieee.org/document/9627997>
 
-[^30]: Lightning Network: [[https://lightning.network/]{.underline}](https://lightning.network/)
+[^30]: Lightning Network: <https://lightning.network/>
 
-[^31]: Poon Joseph, Dryja Thaddeus, "The Bitcoin Lightning Network: Scalable Off-Chain Instant Payments." January 2016: [[https://lightning.network/lightning-network-paper.pdf]{.underline}](https://lightning.network/lightning-network-paper.pdf)
+[^31]: Poon Joseph, Dryja Thaddeus, "The Bitcoin Lightning Network: Scalable Off-Chain Instant Payments." January 2016: <https://lightning.network/lightning-network-paper.pdf>
 
-[^32]: Van Der Merwe Johann, Dawoud, McDonald Stephen, "A Fully Distributed Proactively Secure Threshold-Multisignature Scheme." IEEE Access, March 2007: [[https://ieeexplore.ieee.org/document/4118696]{.underline}](https://ieeexplore.ieee.org/document/4118696)
+[^32]: Van Der Merwe Johann, Dawoud, McDonald Stephen, "A Fully Distributed Proactively Secure Threshold-Multisignature Scheme." IEEE Access, March 2007: <https://ieeexplore.ieee.org/document/4118696>
 
-[^33]: Gangwal Ankit, Gangavalli Haripriya, Thirupathi Apoorva, "A Survey of Layer-Two Blockchain Protocols." Elsevier Journal of Network and Computer Applications, April 2022: [[https://arxiv.org/pdf/2204.08032.pdf]{.underline}](https://arxiv.org/pdf/2204.08032.pdf)
+[^33]: Gangwal Ankit, Gangavalli Haripriya, Thirupathi Apoorva, "A Survey of Layer-Two Blockchain Protocols." Elsevier Journal of Network and Computer Applications, April 2022: <https://arxiv.org/pdf/2204.08032.pdf>
 
-[^34]: "State Channels." Docs EthHub: [[https://docs.ethhub.io/ethereum-roadmap/layer-2-scaling/state-channels/]{.underline}](https://docs.ethhub.io/ethereum-roadmap/layer-2-scaling/state-channels/)
+[^34]: "State Channels." Docs EthHub: <https://docs.ethhub.io/ethereum-roadmap/layer-2-scaling/state-channels/>
 
-[^35]: Internet Live Stats: [[https://www.internetlivestats.com/]{.underline}](https://www.internetlivestats.com/)
+[^35]: Internet Live Stats: <https://www.internetlivestats.com/>
 
-[^36]: The Internet -- Every Second: [[https://everysecond.io/the-internet]{.underline}](https://everysecond.io/the-internet)
+[^36]: The Internet -- Every Second: <https://everysecond.io/the-internet>
 
-[^37]: Docs.libp2p - What is Publish/Subscribe: [[https://docs.libp2p.io/concepts/pubsub/overview/]{.underline}](https://docs.libp2p.io/concepts/pubsub/overview/)
+[^37]: Docs.libp2p - What is Publish/Subscribe: <https://docs.libp2p.io/concepts/pubsub/overview/>
 
-[^38]: Johnsen Jahn, Karlsen Lars, Birkeland Sebjørn, "Peer-to-peer networking with BitTorrent." Department of Telematics, December 2005: [[https://web.cs.ucla.edu/classes/cs217/05BitTorrent.pdf]{.underline}](https://web.cs.ucla.edu/classes/cs217/05BitTorrent.pdf)
+[^38]: Johnsen Jahn, Karlsen Lars, Birkeland Sebjørn, "Peer-to-peer networking with BitTorrent." Department of Telematics, December 2005: <https://web.cs.ucla.edu/classes/cs217/05BitTorrent.pdf>
 
-[^39]: R3, "Atomic settlement: if you have Amazon Prime, you already understand the process", February 2022: [[https://r3.com/everyday-blockchain/atomic-settlement-if-you-have-amazon-prime-you-already-understand-the-process/]{.underline}](https://r3.com/everyday-blockchain/atomic-settlement-if-you-have-amazon-prime-you-already-understand-the-process/)
+[^39]: R3, "Atomic settlement: if you have Amazon Prime, you already understand the process", February 2022: <https://r3.com/everyday-blockchain/atomic-settlement-if-you-have-amazon-prime-you-already-understand-the-process/>
 
-[^40]: Vohra Arnav, "What Are Hashed Timelock Contracts (HTLCs)? Application In Lightning Network & Payment Channels." [[www.hackernoon.com]{.underline}](http://www.hackernoon.com), May 2018: [[https://medium.com/hackernoon/what-are-hashed-timelock-contracts-htlcs-application-in-lightning-network-payment-channels-14437eeb9345]{.underline}](https://medium.com/hackernoon/what-are-hashed-timelock-contracts-htlcs-application-in-lightning-network-payment-channels-14437eeb9345)
+[^40]: Vohra Arnav, "What Are Hashed Timelock Contracts (HTLCs)? Application In Lightning Network & Payment Channels." [www.hackernoon.com](http://www.hackernoon.com), May 2018: <https://medium.com/hackernoon/what-are-hashed-timelock-contracts-htlcs-application-in-lightning-network-payment-channels-14437eeb9345>
 
-[^41]: Krishnasuri Narayanam, Ramakrishna Venkatraman, Dhinakaran Vinayagamurthy, Sandeep Nishad, "Generalized HTLC for Cross-Chain Swapping of Multiple Assets with Co-Ownerships." February 2022: [[https://www.researchgate.net/publication/358898825_Generalized_HTLC_for_Cross-Chain_Swapping_of_Multiple_Assets_with_Co-Ownerships]{.underline}](https://www.researchgate.net/publication/358898825_Generalized_HTLC_for_Cross-Chain_Swapping_of_Multiple_Assets_with_Co-Ownerships)
+[^41]: Krishnasuri Narayanam, Ramakrishna Venkatraman, Dhinakaran Vinayagamurthy, Sandeep Nishad, "Generalized HTLC for Cross-Chain Swapping of Multiple Assets with Co-Ownerships." February 2022: <https://www.researchgate.net/publication/358898825_Generalized_HTLC_for_Cross-Chain_Swapping_of_Multiple_Assets_with_Co-Ownerships>
 
-[^42]: Close Tim, "Nitro Protocol" February 2019: [[https://eprint.iacr.org/2019/219]{.underline}](https://eprint.iacr.org/2019/219)
+[^42]: Close Tim, "Nitro Protocol" February 2019: <https://eprint.iacr.org/2019/219>
 
-[^43]: Openware: [[https://www.openware.com/]{.underline}](https://www.openware.com/)
+[^43]: Openware: <https://www.openware.com/>
 
-[^44]: OpenDAX^TM^: [[https://www.openware.com/product/opendax]{.underline}](https://www.openware.com/product/opendax)
+[^44]: OpenDAX: <https://www.openware.com/product/opendax>
