@@ -3,6 +3,9 @@
 ## IBlacklist
 
 Interface describing functionality of blocking accounts from transferring tokens.
+Only an account with specific role should be able to blacklist other accounts, meanwhile only account with another role will be able to burn those funds.
+By separating those responsibilities to two different accounts, we guarantee that no single person is able to manipulate funds of users.
+This also mitigates risks of exploiting single account controlling both blacklisting and burning vector of attack.
 
 ### blacklist
 
