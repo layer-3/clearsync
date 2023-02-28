@@ -109,7 +109,6 @@ describe('Token', function () {
     it('Deployer granted roles', async () => {
       expect(await Token.hasRole(ADMIN_ROLE, TokenAdmin.address)).to.be.true;
       expect(await Token.hasRole(MINTER_ROLE, TokenAdmin.address)).to.be.true;
-      expect(await Token.hasRole(COMPLIANCE_ROLE, TokenAdmin.address)).to.be.true;
     });
   });
 

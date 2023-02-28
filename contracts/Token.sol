@@ -40,7 +40,6 @@ contract Token is ERC20, AccessControl, IBlacklist {
 	 */
 	constructor(string memory name, string memory symbol, uint256 supplyCap) ERC20(name, symbol) {
 		_grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-		_grantRole(COMPLIANCE_ROLE, msg.sender);
 		_grantRole(MINTER_ROLE, msg.sender);
 		TOKEN_SUPPLY_CAP = supplyCap;
 	}
