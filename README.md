@@ -17,11 +17,11 @@ ClearSync is licensed under the GNU General Public License v3.0
 
 [Project Wiki](https://docs.yellow.org)
 
-[Technical Paper](docs/clearsync-paper.md)
+[Technical Paper](docs/whitepaper.md)
 
 ### ClearSync Architecture
 
-![contract architecture](docs/architecture.png)
+![contract architecture](docs/media/architecture.png)
 
 ### Project purpose
 
