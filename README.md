@@ -3,7 +3,7 @@
 
 This repository contains the smart contracts of [Yellow Network](https://www.yellow.org).
 
-Yellow Network is a Layer-3 peer-to-peer network that uses [State Channels](https://statechannels.org/) technology to scale and facilitate trading, clearing and settlement. The core technology is called ClearSync.
+Yellow Network is a Layer-3 peer-to-peer network that uses [state channels](https://statechannels.org/) technology to scale and facilitate trading, clearing and settlement. The core technology is called ClearSync.
 
 In this system, participants of ClearSync can create and fund a state channel, which is a private communication channel between two parties that allows for off-chain transactions to occur. This means that transactions are not recorded on the main Ethereum blockchain until the channel is closed, which helps reduce congestion and increase transaction speed for high-frequency trading.
 
@@ -55,12 +55,12 @@ When parties are off-chains communication must be low latency and capable of hig
 
 ## Features
 
-- Open and Closing Trading channels
+- Open and close trading channels
     - Deposit fee using YELLOW / DUCKIES
     - Deposit Collateral in USDT, USDC, DAI, WETH, WBTC
 - Example Price feed from major providers
 - Example Risk Management module
-- Sending High-frequency Margin Request off-chain
+- Sending high-frequency Margin request off-chain
 - Ability to request a settlement
     - Using our provided JointCustody
     - Using other HTLC and escrow smart-contracts
@@ -92,13 +92,13 @@ DUCKIES ERC20 token and ClearSync is deployed on Polygon mainnet.
 
 ### Main Networks
 
-The first network for YELLOW ERC20 and ClearSync system will be on Ethereum mainnet, but the system can be extended later to Layer-2, ex. Solana, or be connected using a Polkadot parachain.
+The first network for YELLOW ERC20 and ClearSync system will be on Ethereum mainnet, but the system can be extended later to Layer-2, Solana, or a Polkadot parachain.
 
 ## Smart Contracts
 
 ### contracts/Token.sol
 
-This smart contract is ERC20 used by both YELLOW and DUCKIES tokens. The YELLOW token is collateral to open a state channel with another network entity. Additionally, it is used to pay the settlement fees on the network.
+This smart contract is an ERC20 used by both YELLOW and DUCKIES tokens. The YELLOW token is collateral to open a state channel with another network entity. Additionally, it is used to pay the settlement fees on the network.
 
 ### contracts/duckies/
 
