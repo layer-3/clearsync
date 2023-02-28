@@ -1,24 +1,45 @@
-# Yellow Network Smart Contracts
+
+# Yellow Clearing Network
 
 This repository contains the smart contracts of the [Yellow Network](https://www.yellow.org).
 
-## What is Yellow Network?
+Yellow Network is a Layer-3 peer-to-peer network that uses [State Channels](https://statechannels.org/) technology to scale and facilitate trading, clearing and settlement.
+## License
 
-Yellow Network is a Layer-3 peer-to-peer network that uses state channel technology to securely exchange liquidity & facilitate trading, clearing, settlement, and compliance.
+[GPL-3.0](https://spdx.org/licenses/GPL-3.0-or-later.html)
 
-## DUCKIES as a canary network of YELLOW
+ClearSync is licensed under the GNU General Public License v3.0
 
-### What is a canary network?
+## Documentation
 
-Canary networks inherited their name after the historical usage of canaries in the coal mines. Like brave little birds being great early detectors, Duckies network acts as a pioneering development playground where Yellow experiments with technologies and gathers real users‘ feedback in fast-paced, dynamic conditions.
-Duckies network is a living platform that tests next-gen tech and functionality under the most realistic conditions before they are integrated into Yellow Network.
+ - [Project Wiki](https://docs.yellow.org)
+ - [Technical Paper](docs/clearsync-paper.md)
 
-## Smart Contracts
+### Architecture overview
+### Project purpose
+### Business use cases
+### Performance requirements
+## Features
 
-### contracts/Token.sol
+- Open and Closing Trading channels
+    - Deposit fee using YELLOW / DUCKIES
+    - Deposit Collateral in USDT, USDC, DAI, WETH, WBTC
+- Example Price feed from major providers
+- Example Risk Management module
+- Sending High-frequency Margin Request off-chain
+- Ability to request a settlement
+    - Using our provided JointCustody
+    - Using other HTLC and escrow smart-contracts
+    - Using third party custodian
+- Ability to challenge a Margin state to unlock the collateral
 
-This smart contract is the ERC20 used by both YELLOW and DUCKIES tokens. The YELLOW token is collateral to open a state channel with another network entity. Additionally, it is used to pay the settlement fees on the network.
 
-### contracts/duckies/
+## Usage
 
-This directory contains DUCKIES-specific smart contracts. It includes specific features included in the Duckies project only. Specific features are related to the Duckies game, designed to stimulate the YELLOW community while the Yellow network is under development.
+```bash
+npx hardhat help
+npx hardhat test
+npx hardhat node
+npx hardhat run scripts/deploy.ts
+```
+
