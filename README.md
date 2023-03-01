@@ -67,6 +67,7 @@ When parties are off-chains communication must be low latency and capable of hig
     - Using third party custodian
 - Ability to challenge a margin state to unlock the collateral
 - Canary test network using DUCKIES for fees
+- Ability to blacklist stolen funds using [IBlacklist](docs/interfaces/IBlacklist.md)
 
 
 ## Usage
