@@ -15,8 +15,7 @@ import '@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.
 import './RandomUpgradeable.sol';
 import './Gene.sol';
 
-// TODO:  1. Add trait struct for each collection
-//        2. Dynamic price per mint
+// TODO:  1. Benchmark and optimize if necessary
 contract Ducklings is
 	Initializable,
 	ERC721Upgradeable,
@@ -31,35 +30,60 @@ contract Ducklings is
 	using {StringsUpgradeable.toString} for uint256;
 	using ECDSAUpgradeable for bytes32;
 
+	error InvalidCollection(Collection collection);
+	error CollectionNotAvailable(uint8 collectionId);
+	error MintingRulesViolated(uint8 collectionId, uint8 amount);
+	error MeldingRulesViolated(uint256[5] tokenIdsToMeld);
+	error IncorrectGenesForMelding(uint256[5] genes);
+
+	struct Collection {
+		uint64 availableBefore;
+		bool isMeldable;
+		uint8[][] traitWeights;
+	}
+
 	struct Duckling {
 		uint256 gene;
 		uint64 birthdate;
+		uint8 collectionId;
 	}
 
+	// TODO: review roles
 	bytes32 public constant UPGRADER_ROLE = keccak256('UPGRADER_ROLE');
 	bytes32 public constant API_SETTER_ROLE = keccak256('API_SETTER_ROLE');
+	bytes32 public constant PRICE_SETTER_ROLE = keccak256('PRICE_SETTER_ROLE');
+	bytes32 public constant COLLECTION_HANDLER_ROLE = keccak256('COLLECTION_HANDLER_ROLE');
 	bytes32 public constant GARDEN_ROLE = keccak256('GARDEN_ROLE');
 
 	uint32 private constant ROYALTY_FEE = 1000; // 10%
 
+	uint8 public constant ZOMBEAK_COLLECTION = 0;
+
 	uint8 public constant MAX_MINT_PACK_SIZE = 10;
-	uint256 public duckiesPerMint;
-	uint256 public duckiesPerMeld;
+	uint8 public constant MELD_TOKENS_AMOUNT = 5;
+
+	uint256 public mintPrice;
+	uint256 public meldPrice;
 
 	address private _royaltiesCollector;
 
 	string public apiBaseURL;
-	// TODO: remove
-	bytes32 private salt;
 
 	CountersUpgradeable.Counter nextNewTokenId;
 
+	CountersUpgradeable.Counter nextCollectionId;
+
 	mapping(uint256 => Duckling) public tokenIdToDuckling;
+
+	mapping(uint8 => Collection) public collectionOfId;
 
 	/*
 	 * Traits can have even and uneven probabilities, which are represented in a different ways.
 	 *
 	 * Even probabilities are stored just as a number of trait values.
+	 *
+	 * weights = [15] means there are 15 possible trait values that have equal chance of being generated.
+	 *
 	 * A random number V is generated in the bounds [0, N), where N is number of trait values. V is set to be the value of the trait.
 	 *
 	 * Uneven traits generation uses weighted random, which means specifying the probability for each trait value.
@@ -81,7 +105,7 @@ contract Ducklings is
 	 *
 	 * Moreover, trait weights must be stored in ascending order, so that common trait values are preceding the rare ones.
 	 */
-	uint8[][] public traitWeights;
+
 	uint8[] public meldWeights;
 	uint8[][3] meldingZombeakWeights;
 
@@ -90,7 +114,7 @@ contract Ducklings is
 	// events
 	event Minted(uint256 mintedTokenId, uint256 mintedGene, address owner, uint256 chainId);
 	event Melded(
-		uint256[5] meldingTokenIds,
+		uint256[MELD_TOKENS_AMOUNT] meldingTokenIds,
 		uint256 meldedTokenId,
 		uint256 meldedGene,
 		address owner,
@@ -110,45 +134,58 @@ contract Ducklings is
 		_grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
 		_grantRole(UPGRADER_ROLE, msg.sender);
 		_grantRole(API_SETTER_ROLE, msg.sender);
+		_grantRole(PRICE_SETTER_ROLE, msg.sender);
 
 		_setDefaultRoyalty(msg.sender, ROYALTY_FEE);
 		setRoyaltyCollector(msg.sender);
 
+		// TODO: add Zombeak collection
+
+		// TODO: add Normal collection in script?
+		collectionOfId[uint8(nextCollectionId.current())].availableBefore = type(uint64).max;
+
+		nextCollectionId.increment();
+
 		// Arrays are pushed due to difference in size. Solidity is bad in converting fixed-size memory array into dynamic one.
 		// Class
-		traitWeights.push([74, 20, 5, 1]);
+		collectionOfId[0].traitWeights.push([74, 20, 5, 1]);
 		// Body
-		traitWeights.push([0, 17, 16, 14, 14, 12, 10, 9, 8]);
+		collectionOfId[0].traitWeights.push([0, 17, 16, 14, 14, 12, 10, 9, 8]);
 		// Head
-		traitWeights.push([0, 9, 9, 7, 6, 6, 5, 5, 5, 5, 5, 5, 5, 5, 5, 4, 4, 4, 3, 3]);
+		collectionOfId[0].traitWeights.push(
+			[0, 9, 9, 7, 6, 6, 5, 5, 5, 5, 5, 5, 5, 5, 5, 4, 4, 4, 3, 3]
+		);
 		// Background
-		traitWeights.push([4]);
+		collectionOfId[0].traitWeights.push([4]);
 		// Element
-		traitWeights.push([5]);
+		collectionOfId[0].traitWeights.push([5]);
 		// Eyes
-		traitWeights.push([8, 7, 6, 6, 6, 5, 5, 5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 3, 3, 3, 2, 2]);
+		collectionOfId[0].traitWeights.push(
+			[8, 7, 6, 6, 6, 5, 5, 5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 3, 3, 3, 2, 2]
+		);
 		// Beak
-		traitWeights.push([15, 14, 14, 11, 10, 9, 8, 7, 7, 6]);
+		collectionOfId[0].traitWeights.push([15, 14, 14, 11, 10, 9, 8, 7, 7, 6]);
 		// Wings
-		traitWeights.push([20, 19, 15, 13, 12, 11, 10]);
+		collectionOfId[0].traitWeights.push([20, 19, 15, 13, 12, 11, 10]);
 		// First name
-		traitWeights.push([32]);
+		collectionOfId[0].traitWeights.push([32]);
 		// Last name
-		traitWeights.push([17]);
+		collectionOfId[0].traitWeights.push([17]);
 		// Temper
 		// TODO: define probabilities
-		traitWeights.push([16]);
+		collectionOfId[0].traitWeights.push([16]);
 		// Peculiarity - for SuperLegendary
 		// TODO: how many?
-		traitWeights.push([100]);
+		collectionOfId[0].traitWeights.push([100]);
 
 		meldWeights = [6, 5, 4, 3, 2, 1];
 		meldingZombeakWeights = [[10, 90], [5, 90], [2, 90]];
 
-		duckiesContract = ERC20BurnableUpgradeable(ducklingsAddress);
 		// TODO: define price
-		duckiesPerMint = 10_000 * 10 ** duckiesContract.decimals();
-		duckiesPerMeld = 10_000 * 10 ** duckiesContract.decimals();
+		mintPrice = 10_000 * 10 ** duckiesContract.decimals();
+		meldPrice = 10_000 * 10 ** duckiesContract.decimals();
+
+		duckiesContract = ERC20BurnableUpgradeable(ducklingsAddress);
 	}
 
 	// upgrades
@@ -166,14 +203,18 @@ contract Ducklings is
 	function tokenURI(
 		uint256 tokenId
 	) public view override(ERC721Upgradeable) returns (string memory) {
+		Duckling memory duckling = tokenIdToDuckling[tokenId];
+
 		return
 			bytes(apiBaseURL).length > 0
 				? string(
 					abi.encodePacked(
 						apiBaseURL,
-						tokenIdToDuckling[tokenId].gene.toString(),
+						duckling.gene.toString(),
 						'-',
-						uint256(tokenIdToDuckling[tokenId].birthdate).toString()
+						uint256(duckling.birthdate).toString(),
+						'-',
+						uint256(duckling.collectionId).toString()
 					)
 				)
 				: '';
@@ -207,52 +248,92 @@ contract Ducklings is
 		apiBaseURL = apiBaseURL_;
 	}
 
-	function mintPack(uint8 amount) external UseRandom {
-		duckiesContract.burnFrom(msg.sender, duckiesPerMint * amount);
-		_mintPackTo(msg.sender, amount);
+	function setMintPrice(uint256 price) external onlyRole(PRICE_SETTER_ROLE) {
+		mintPrice = price;
 	}
 
-	function freeMintPackTo(address to, uint8 amount) external UseRandom onlyRole(GARDEN_ROLE) {
-		_mintPackTo(to, amount);
+	function setMeldPrice(uint256 price) external onlyRole(PRICE_SETTER_ROLE) {
+		meldPrice = price;
 	}
 
-	function meld(uint256[5] calldata meldingTokenIds) external UseRandom {
-		duckiesContract.burnFrom(msg.sender, duckiesPerMeld);
+	// collections
+
+	function addCollection(
+		Collection calldata collection
+	) external onlyRole(COLLECTION_HANDLER_ROLE) {
+		if (
+			collection.availableBefore <= block.timestamp ||
+			collection.traitWeights.length != uint8(type(Gene.Traits).max) + 1
+		) revert InvalidCollection(collection);
+
+		collectionOfId[uint8(nextCollectionId.current())] = collection;
+
+		nextCollectionId.increment();
+	}
+
+	function obsoleteCollection(uint8 collectionId) external onlyRole(COLLECTION_HANDLER_ROLE) {
+		_requireValidCollection(collectionId);
+
+		collectionOfId[collectionId].availableBefore = uint64(block.timestamp);
+	}
+
+	// mint, meld
+
+	function mintPack(uint8 collectionId, uint8 amount) external UseRandom {
+		duckiesContract.burnFrom(msg.sender, mintPrice * amount);
+		_mintPackTo(msg.sender, collectionId, amount);
+	}
+
+	function freeMintPackTo(
+		address to,
+		uint8 collectionId,
+		uint8 amount
+	) external UseRandom onlyRole(GARDEN_ROLE) {
+		_mintPackTo(to, collectionId, amount);
+	}
+
+	function meld(uint256[MELD_TOKENS_AMOUNT] calldata meldingTokenIds) external UseRandom {
+		duckiesContract.burnFrom(msg.sender, meldPrice);
 		_meldOf(msg.sender, meldingTokenIds);
 	}
 
 	function freeMeldOf(
 		address owner,
-		uint256[5] calldata meldingTokenIds
+		uint256[MELD_TOKENS_AMOUNT] calldata meldingTokenIds
 	) external UseRandom onlyRole(GARDEN_ROLE) {
 		_meldOf(owner, meldingTokenIds);
 	}
 
 	// internal minting
 
-	function _mintPackTo(address to, uint8 amount) internal {
-		require(amount <= MAX_MINT_PACK_SIZE, 'pack size exceeded');
+	function _mintPackTo(address to, uint8 collectionId, uint8 amount) internal {
+		_requireValidCollection(collectionId);
+
+		if (amount > MAX_MINT_PACK_SIZE) revert MintingRulesViolated(collectionId, amount);
 
 		for (uint256 i = 0; i < amount; i++) {
-			(uint256 tokenId, uint256 gene) = _mintTo(to);
-			emit Minted(tokenId, gene, msg.sender, _getChainId());
+			(uint256 tokenId, uint256 gene) = _mintTo(to, collectionId);
+			emit Minted(tokenId, gene, msg.sender, block.chainid);
 		}
 	}
 
-	function _mintTo(address to) internal returns (uint256 tokenId, uint256 gene) {
-		gene = _generateGene();
+	function _mintTo(
+		address to,
+		uint8 collectionId
+	) internal returns (uint256 tokenId, uint256 gene) {
+		gene = _generateGeneFromCollection(collectionId);
 
 		tokenId = nextNewTokenId.current();
-		tokenIdToDuckling[tokenId] = Duckling(gene, uint64(block.timestamp));
+		tokenIdToDuckling[tokenId] = Duckling(gene, uint64(block.timestamp), collectionId);
 		_safeMint(to, tokenId);
 		nextNewTokenId.increment();
 	}
 
-	function _generateGene() internal returns (uint256) {
+	function _generateGeneFromCollection(uint8 collectionId) internal returns (uint256) {
 		uint256 gene = 0;
 
 		// generate class
-		uint8 class = _generateTrait(Gene.Traits.Class);
+		uint8 class = _generateTraitFromCollection(Gene.Traits.Class, collectionId);
 		gene = gene.setTrait(Gene.Traits.Class, class);
 
 		uint8 traitIdx = uint8(Gene.Traits.Class) + 1;
@@ -268,9 +349,8 @@ contract Ducklings is
 		}
 
 		// generate and write to gene other traits starting at 'traitIdx'
-		for (; traitIdx < traitWeights.length; traitIdx++) {
-			uint8 trait = _generateTrait(Gene.Traits(traitIdx));
-			// FIX: inconsistency where Traits.UniquenessIdx != traitWeights.length
+		for (; traitIdx < uint8(type(Gene.Traits).max); traitIdx++) {
+			uint8 trait = _generateTraitFromCollection(Gene.Traits(traitIdx), collectionId);
 			gene = gene.setTrait(Gene.Traits(traitIdx), trait);
 		}
 
@@ -278,125 +358,145 @@ contract Ducklings is
 	}
 
 	// seed must be different for each invocation
-	function _generateTrait(Gene.Traits trait) internal returns (uint8) {
+	function _generateTraitFromCollection(
+		Gene.Traits trait,
+		uint8 collectionId
+	) internal returns (uint8) {
+		uint8[] memory traitWeights = collectionOfId[collectionId].traitWeights[uint8(trait)];
+
 		// check whether trait values has the same probabilities
-		if (traitWeights[uint8(trait)].length == 1) {
+		if (traitWeights.length == 1) {
 			// the same probabilities, just get random of the values
-			return uint8(_randomMaxNumber(traitWeights[uint8(trait)][0]));
+			return uint8(_randomMaxNumber(traitWeights[0]));
 		} else {
 			// uneven probabilities, generate weighted number
-			return _randomWeightedNumber(traitWeights[uint8(trait)]);
+			return _randomWeightedNumber(traitWeights);
 		}
 	}
 
 	// internal melding
 
-	function _meldOf(address owner, uint256[5] memory meldingTokenIds) internal {
+	function _meldOf(address owner, uint256[MELD_TOKENS_AMOUNT] memory meldingTokenIds) internal {
+		uint8 collectionId = tokenIdToDuckling[meldingTokenIds[0]].collectionId;
+
 		_requireIsOwnerOf(owner, meldingTokenIds);
+		if (!collectionOfId[collectionId].isMeldable) revert MeldingRulesViolated(meldingTokenIds);
+		_requireEqualCollection(meldingTokenIds);
 
-		uint256[5] memory genesToMeld = _burnTokensAndGetGenes(meldingTokenIds);
+		uint256[MELD_TOKENS_AMOUNT] memory genesToMeld = _burnDucklingsAndGetGenes(meldingTokenIds);
 
-		uint256 meldedGene = _meldGenes(genesToMeld);
+		_requireGenesSatisfyMelding(genesToMeld);
+
+		uint256 meldedGene;
+
+		if (_checkZombeak(genesToMeld[0])) {
+			meldedGene = _generateGeneFromCollection(ZOMBEAK_COLLECTION);
+			collectionId = ZOMBEAK_COLLECTION;
+		} else {
+			meldedGene = _meldGenes(genesToMeld, collectionId);
+		}
 
 		uint256 meldedTokenId = nextNewTokenId.current();
-		tokenIdToDuckling[meldedTokenId] = Duckling(meldedGene, uint64(block.timestamp));
+		tokenIdToDuckling[meldedTokenId] = Duckling(
+			meldedGene,
+			uint64(block.timestamp),
+			collectionId
+		);
 		_safeMint(msg.sender, meldedTokenId);
 		nextNewTokenId.increment();
 
-		emit Melded(meldingTokenIds, meldedTokenId, meldedGene, msg.sender, _getChainId());
+		emit Melded(meldingTokenIds, meldedTokenId, meldedGene, msg.sender, block.chainid);
 	}
 
-	function _meldGenes(uint256[5] memory genes) internal returns (uint256) {
+	function _requireGenesSatisfyMelding(uint256[MELD_TOKENS_AMOUNT] memory genes) internal pure {
 		// Classes should be the same
-		// Classes should not be Legendary or SuperLegendary
+		// Classes should not be SuperLegendary
 		_requireCorrectMeldingClasses(genes);
 		Gene.Classes meldingClass = Gene.Classes(genes[0].getTrait(Gene.Traits.Class));
 
-		uint256 gene = 0;
-
 		if (meldingClass == Gene.Classes.Legendary) {
-			// cards mush have the same Background
+			// Legendary
+
+			// cards must have the same Background
 			// cards must be of each Element
-			_requireCorrectMeldingTraits(genes);
+			if (
+				!_traitValuesAreEqual(genes, Gene.Traits.Background) ||
+				!_traitValuesAreUnique(genes, Gene.Traits.Element)
+			) revert IncorrectGenesForMelding(genes);
 		} else {
 			// Common, Rare, Epic
-			if (_checkZombeak(meldingClass)) {
-				gene = gene.setTrait(Gene.Traits.Class, uint8(Gene.Classes.Zombie));
-				return gene;
-			}
+
+			// cards must have the same Background or the same Element
+			if (
+				!_traitValuesAreEqual(genes, Gene.Traits.Background) &&
+				!_traitValuesAreEqual(genes, Gene.Traits.Element)
+			) revert IncorrectGenesForMelding(genes);
 		}
+	}
+
+	function _meldGenes(
+		uint256[MELD_TOKENS_AMOUNT] memory genes,
+		uint8 collectionId
+	) internal returns (uint256) {
+		Gene.Classes meldingClass = Gene.Classes(genes[0].getTrait(Gene.Traits.Class));
+
+		uint256 gene = 0;
 
 		// increment class
 		gene = gene.setTrait(Gene.Traits.Class, uint8(meldingClass) + 1);
 
 		// if melded SuperLegendary, set only Peculiarity trait
 		if (meldingClass == Gene.Classes.Legendary) {
-			return gene.setTrait(Gene.Traits.Peculiarity, _generateTrait(Gene.Traits.Peculiarity));
+			return
+				gene.setTrait(
+					Gene.Traits.Peculiarity,
+					_generateTraitFromCollection(Gene.Traits.Peculiarity, collectionId)
+				);
 		}
 
-		for (uint256 traitIdx = 1; traitIdx < traitWeights.length; traitIdx++) {
-			uint8 meldedTrait = _meldTraits(genes, Gene.Traits(traitIdx));
+		// optimization: read only once from the storage is much more efficient than reading in every iteration
+		uint8[][] memory traitWeights = collectionOfId[collectionId].traitWeights;
+
+		for (uint8 traitIdx = 1; traitIdx < uint8(type(Gene.Traits).max); traitIdx++) {
+			uint8 maxTraitValue = uint8(traitWeights[traitIdx].length) - 1;
+			uint8 meldedTrait = _meldTraits(genes, Gene.Traits(traitIdx), maxTraitValue);
 			gene = gene.setTrait(Gene.Traits(traitIdx), meldedTrait);
 		}
 
 		return gene;
 	}
 
-	function _meldTraits(uint256[5] memory genes, Gene.Traits trait) internal returns (uint8) {
+	function _meldTraits(
+		uint256[MELD_TOKENS_AMOUNT] memory genes,
+		Gene.Traits trait,
+		uint8 maxTraitValue
+	) internal returns (uint8) {
 		uint8 meldedTraitIdx = _randomWeightedNumber(meldWeights);
 
 		// mutation, return upgraded best trait value
-		if (meldedTraitIdx == 5) {
+		if (meldedTraitIdx == MELD_TOKENS_AMOUNT) {
 			uint8 bestTraitValue = _maxTrait(genes, trait);
-			return
-				bestTraitValue == traitWeights[uint8(trait)].length - 1
-					? bestTraitValue
-					: bestTraitValue + 1;
+			return bestTraitValue == maxTraitValue ? bestTraitValue : bestTraitValue + 1;
 		}
 
 		// no mutation, return selected trait value
 		return genes[meldedTraitIdx].getTrait(trait);
 	}
 
-	function _requireCorrectMeldingClasses(uint256[5] memory genes) internal pure {
+	function _requireCorrectMeldingClasses(uint256[MELD_TOKENS_AMOUNT] memory genes) internal pure {
 		Gene.Classes class = Gene.Classes(genes[0].getTrait(Gene.Traits.Class));
 
 		for (uint256 i = 1; i < genes.length; i++) {
-			require(
-				genes[i].getTrait(Gene.Traits.Class) == uint8(class),
-				'melding Classes must be equal'
-			);
+			if (genes[i].getTrait(Gene.Traits.Class) != uint8(class))
+				revert IncorrectGenesForMelding(genes);
 		}
 
-		require(
-			class != Gene.Classes.SuperLegendary && class != Gene.Classes.Zombie,
-			'wrong Class to meld'
-		);
+		if (class == Gene.Classes.SuperLegendary) revert IncorrectGenesForMelding(genes);
 	}
 
-	// applies only to melding Legendary into SuperLegendary
-	// cards mush have the same Background
-	// cards must be of each Element
-	function _requireCorrectMeldingTraits(uint256[5] memory genes) internal pure {
-		uint8 color = genes[0].getTrait(Gene.Traits.Background);
-		uint256 elementsPresentBitfield = 0;
+	function _checkZombeak(uint256 gene) internal returns (bool) {
+		Gene.Classes class = Gene.Classes(gene.getTrait(Gene.Traits.Class));
 
-		for (uint256 i = 1; i < genes.length; i++) {
-			require(
-				genes[i].getTrait(Gene.Traits.Background) == color,
-				'melding legendary Backgrounds must be equal'
-			);
-			elementsPresentBitfield += 2 ** genes[i].getTrait(Gene.Traits.Element);
-		}
-
-		uint256 allElementsBitfield = 2 ** 5 - 1; // in bin representation there is a '1' set at indexes for each Element value
-		require(
-			elementsPresentBitfield == allElementsBitfield,
-			'mending legendary requires all Elements'
-		);
-	}
-
-	function _checkZombeak(Gene.Classes class) internal returns (bool) {
 		if (uint8(class) <= uint8(Gene.Classes.Epic)) {
 			return _randomWeightedNumber(meldingZombeakWeights[uint8(class)]) == 0;
 		} else {
@@ -406,16 +506,35 @@ contract Ducklings is
 
 	// other internal
 
-	function _requireIsOwnerOf(address owner, uint256[5] memory tokenIds) internal view {
+	function _requireValidCollection(uint8 collectionId) internal view {
+		if (
+			collectionId >= nextCollectionId.current() ||
+			collectionOfId[collectionId].availableBefore < block.timestamp
+		) revert CollectionNotAvailable(collectionId);
+	}
+
+	function _requireIsOwnerOf(
+		address owner,
+		uint256[MELD_TOKENS_AMOUNT] memory tokenIds
+	) internal view {
 		for (uint256 i = 0; i < tokenIds.length; i++) {
-			require(owner == ownerOf(tokenIds[i]), 'caller is not token owner');
+			if (owner != ownerOf(tokenIds[i])) revert MeldingRulesViolated(tokenIds);
 		}
 	}
 
-	function _burnTokensAndGetGenes(
-		uint256[5] memory tokenIds
-	) internal returns (uint256[5] memory) {
-		uint256[5] memory genes;
+	function _requireEqualCollection(uint256[MELD_TOKENS_AMOUNT] memory tokenIds) internal view {
+		uint8 collection = tokenIdToDuckling[tokenIds[0]].collectionId;
+
+		for (uint256 i = 1; i < tokenIds.length; i++) {
+			if (collection != tokenIdToDuckling[tokenIds[i]].collectionId)
+				revert MeldingRulesViolated(tokenIds);
+		}
+	}
+
+	function _burnDucklingsAndGetGenes(
+		uint256[MELD_TOKENS_AMOUNT] memory tokenIds
+	) internal returns (uint256[MELD_TOKENS_AMOUNT] memory) {
+		uint256[MELD_TOKENS_AMOUNT] memory genes;
 
 		for (uint256 i = 0; i < tokenIds.length; i++) {
 			genes[i] = tokenIdToDuckling[tokenIds[i]].gene;
@@ -425,7 +544,10 @@ contract Ducklings is
 		return genes;
 	}
 
-	function _maxTrait(uint256[5] memory genes, Gene.Traits trait) internal pure returns (uint8) {
+	function _maxTrait(
+		uint256[MELD_TOKENS_AMOUNT] memory genes,
+		Gene.Traits trait
+	) internal pure returns (uint8) {
 		uint8 maxValue = 0;
 
 		for (uint256 i = 0; i < genes.length; i++) {
@@ -465,10 +587,34 @@ contract Ducklings is
 		return sum;
 	}
 
-	// TODO: change to block.chainId
-	function _getChainId() internal view returns (uint256 id) {
-		assembly {
-			id := chainid()
+	function _traitValuesAreEqual(
+		uint256[MELD_TOKENS_AMOUNT] memory genes,
+		Gene.Traits trait
+	) internal pure returns (bool) {
+		uint8 traitValue = genes[0].getTrait(trait);
+
+		for (uint256 i = 1; i < genes.length; i++) {
+			if (genes[i].getTrait(trait) != traitValue) {
+				return false;
+			}
 		}
+
+		return true;
+	}
+
+	function _traitValuesAreUnique(
+		uint256[MELD_TOKENS_AMOUNT] memory genes,
+		Gene.Traits trait
+	) internal pure returns (bool) {
+		uint256 valuesPresentBitfield = 0;
+
+		for (uint256 i = 1; i < genes.length; i++) {
+			if (valuesPresentBitfield % 2 ** genes[i].getTrait(trait) == 1) {
+				return false;
+			}
+			valuesPresentBitfield += 2 ** genes[i].getTrait(trait);
+		}
+
+		return true;
 	}
 }
