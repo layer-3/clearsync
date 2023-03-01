@@ -354,6 +354,7 @@ contract Ducklings is
 
 		uint256 meldedGene;
 
+		// TODO: can Zombeak appear in each collection?
 		if (_checkZombeak(genesToMeld[0])) {
 			meldedGene = _generateGeneFromCollection(ZOMBEAK_COLLECTION);
 			collectionId = ZOMBEAK_COLLECTION;
@@ -374,10 +375,16 @@ contract Ducklings is
 	}
 
 	function _requireGenesSatisfyMelding(uint256[MELD_TOKENS_AMOUNT] memory genes) internal pure {
+		Gene.Classes meldingClass = Gene.Classes(genes[0].getTrait(Gene.Traits.Class));
+
 		// Classes should be the same
 		// Classes should not be SuperLegendary
-		_requireCorrectMeldingClasses(genes);
-		Gene.Classes meldingClass = Gene.Classes(genes[0].getTrait(Gene.Traits.Class));
+		if (
+			!_traitValuesAreEqual(genes, Gene.Traits.Class) ||
+			meldingClass == Gene.Classes.SuperLegendary
+		) {
+			revert IncorrectGenesForMelding(genes);
+		}
 
 		if (meldingClass == Gene.Classes.Legendary) {
 			// Legendary
@@ -396,6 +403,16 @@ contract Ducklings is
 				!_traitValuesAreEqual(genes, Gene.Traits.Background) &&
 				!_traitValuesAreEqual(genes, Gene.Traits.Element)
 			) revert IncorrectGenesForMelding(genes);
+		}
+	}
+
+	function _checkZombeak(uint256 gene) internal returns (bool) {
+		Gene.Classes class = Gene.Classes(gene.getTrait(Gene.Traits.Class));
+
+		if (uint8(class) <= uint8(Gene.Classes.Epic)) {
+			return _randomWeightedNumber(meldingZombeakWeights[uint8(class)]) == 0;
+		} else {
+			return false;
 		}
 	}
 
@@ -446,27 +463,6 @@ contract Ducklings is
 
 		// no mutation, return selected trait value
 		return genes[meldedTraitIdx].getTrait(trait);
-	}
-
-	function _requireCorrectMeldingClasses(uint256[MELD_TOKENS_AMOUNT] memory genes) internal pure {
-		Gene.Classes class = Gene.Classes(genes[0].getTrait(Gene.Traits.Class));
-
-		for (uint256 i = 1; i < genes.length; i++) {
-			if (genes[i].getTrait(Gene.Traits.Class) != uint8(class))
-				revert IncorrectGenesForMelding(genes);
-		}
-
-		if (class == Gene.Classes.SuperLegendary) revert IncorrectGenesForMelding(genes);
-	}
-
-	function _checkZombeak(uint256 gene) internal returns (bool) {
-		Gene.Classes class = Gene.Classes(gene.getTrait(Gene.Traits.Class));
-
-		if (uint8(class) <= uint8(Gene.Classes.Epic)) {
-			return _randomWeightedNumber(meldingZombeakWeights[uint8(class)]) == 0;
-		} else {
-			return false;
-		}
 	}
 
 	// other internal
@@ -542,14 +538,8 @@ contract Ducklings is
 		return uint8(weights.length - 1);
 	}
 
-	function _sum(uint8[] memory numbers) internal pure returns (uint256) {
-		uint8 sum = 0;
-
-		for (uint256 i = 0; i < numbers.length; i++) {
-			sum += numbers[i];
-		}
-
-		return sum;
+	function _sum(uint8[] memory numbers) internal pure returns (uint256 sum) {
+		for (uint256 i = 0; i < numbers.length; i++) sum += numbers[i];
 	}
 
 	function _traitValuesAreEqual(
