@@ -50,10 +50,8 @@ contract Ducklings is
 
 	// TODO: review roles
 	bytes32 public constant UPGRADER_ROLE = keccak256('UPGRADER_ROLE');
-	bytes32 public constant API_SETTER_ROLE = keccak256('API_SETTER_ROLE');
-	bytes32 public constant PRICE_SETTER_ROLE = keccak256('PRICE_SETTER_ROLE');
-	bytes32 public constant COLLECTION_HANDLER_ROLE = keccak256('COLLECTION_HANDLER_ROLE');
-	bytes32 public constant GARDEN_ROLE = keccak256('GARDEN_ROLE');
+	bytes32 public constant MAINTAINER_ROLE = keccak256('MAINTAINER_ROLE');
+	bytes32 public constant VOUCHER_ISSUER_ROLE = keccak256('VOUCHER_ISSUER_ROLE');
 
 	uint32 private constant ROYALTY_FEE = 1000; // 10%
 
@@ -133,8 +131,7 @@ contract Ducklings is
 
 		_grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
 		_grantRole(UPGRADER_ROLE, msg.sender);
-		_grantRole(API_SETTER_ROLE, msg.sender);
-		_grantRole(PRICE_SETTER_ROLE, msg.sender);
+		_grantRole(MAINTAINER_ROLE, msg.sender);
 
 		_setDefaultRoyalty(msg.sender, ROYALTY_FEE);
 		setRoyaltyCollector(msg.sender);
@@ -205,23 +202,21 @@ contract Ducklings is
 
 	// public
 
-	function setAPIBaseURL(string calldata apiBaseURL_) external onlyRole(API_SETTER_ROLE) {
+	function setAPIBaseURL(string calldata apiBaseURL_) external onlyRole(MAINTAINER_ROLE) {
 		apiBaseURL = apiBaseURL_;
 	}
 
-	function setMintPrice(uint256 price) external onlyRole(PRICE_SETTER_ROLE) {
+	function setMintPrice(uint256 price) external onlyRole(MAINTAINER_ROLE) {
 		mintPrice = price;
 	}
 
-	function setMeldPrice(uint256 price) external onlyRole(PRICE_SETTER_ROLE) {
+	function setMeldPrice(uint256 price) external onlyRole(MAINTAINER_ROLE) {
 		meldPrice = price;
 	}
 
 	// collections
 
-	function addCollection(
-		Collection calldata collection
-	) external onlyRole(COLLECTION_HANDLER_ROLE) {
+	function addCollection(Collection calldata collection) external onlyRole(MAINTAINER_ROLE) {
 		if (
 			collection.availableBefore <= block.timestamp ||
 			collection.traitWeights.length != uint8(type(Gene.Traits).max) + 1
@@ -232,7 +227,7 @@ contract Ducklings is
 		nextCollectionId.increment();
 	}
 
-	function obsoleteCollection(uint8 collectionId) external onlyRole(COLLECTION_HANDLER_ROLE) {
+	function obsoleteCollection(uint8 collectionId) external onlyRole(MAINTAINER_ROLE) {
 		_requireValidCollection(collectionId);
 
 		collectionOfId[collectionId].availableBefore = uint64(block.timestamp);
@@ -249,7 +244,7 @@ contract Ducklings is
 		address to,
 		uint8 collectionId,
 		uint8 amount
-	) external UseRandom onlyRole(GARDEN_ROLE) {
+	) external UseRandom onlyRole(VOUCHER_ISSUER_ROLE) {
 		_mintPackTo(to, collectionId, amount);
 	}
 
@@ -263,7 +258,7 @@ contract Ducklings is
 	function meldByVoucher(
 		address owner,
 		uint256[MELD_TOKENS_AMOUNT] calldata meldingTokenIds
-	) external UseRandom onlyRole(GARDEN_ROLE) {
+	) external UseRandom onlyRole(VOUCHER_ISSUER_ROLE) {
 		_meldOf(owner, meldingTokenIds);
 	}
 
