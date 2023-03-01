@@ -109,7 +109,6 @@ describe('Token', function () {
     it('Deployer granted roles', async () => {
       expect(await Token.hasRole(ADMIN_ROLE, TokenAdmin.address)).to.be.true;
       expect(await Token.hasRole(MINTER_ROLE, TokenAdmin.address)).to.be.true;
-      expect(await Token.hasRole(COMPLIANCE_ROLE, TokenAdmin.address)).to.be.true;
     });
   });
 
@@ -263,17 +262,17 @@ describe('Token', function () {
       ).to.be.revertedWith(IS_BLACKLISTED);
     });
 
-    it('Blacklisted funds can be burnt by compliance', async () => {
+    it('Blacklisted funds can be burnt by Admin', async () => {
       await TokenAsAdmin.mint(Blacklisted.address, amount);
       expect(await Token.balanceOf(Blacklisted.address)).to.equal(amount);
 
-      await TokenAsCompliance.burnBlacklisted(Blacklisted.address);
+      await TokenAsAdmin.burnBlacklisted(Blacklisted.address);
       expect(await Token.balanceOf(Blacklisted.address)).to.equal(0);
     });
 
-    it('Revert on blacklisted funds burnt by not compliance', async () => {
+    it('Revert on blacklisted funds burnt by not Admin', async () => {
       await expect(TokenAsUser.burnBlacklisted(Blacklisted.address)).to.be.revertedWith(
-        ACCOUNT_MISSING_ROLE(User.address, COMPLIANCE_ROLE),
+        ACCOUNT_MISSING_ROLE(User.address, ADMIN_ROLE),
       );
     });
 
@@ -292,7 +291,7 @@ describe('Token', function () {
     it('Burn blacklisted emit event', async () => {
       await TokenAsAdmin.mint(Blacklisted.address, amount);
 
-      await expect(TokenAsCompliance.burnBlacklisted(Blacklisted.address))
+      await expect(TokenAsAdmin.burnBlacklisted(Blacklisted.address))
         .to.emit(Token, BLACKLISTED_BURNT_EVENT)
         .withArgs(Blacklisted.address, amount);
     });

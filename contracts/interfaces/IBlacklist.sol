@@ -3,6 +3,12 @@ pragma solidity 0.8.17;
 
 /**
  * @notice Interface describing functionality of blocking accounts from transferring tokens.
+ * This limitation is going to be applied only to hackers and malicious users, who was confirmed to had stolen funds from any exchanges.
+ *
+ * In order to ensure that no individual can manipulate user funds, it is necessary to assign specific roles to different accounts.
+ * One account with a particular role should be authorized to blacklist other accounts, while another account with a different role should be authorized to burn funds.
+ * This separation of responsibilities between two different accounts mitigate the risk of misuse of this functionality.
+ *
  */
 interface IBlacklist {
 	/**
