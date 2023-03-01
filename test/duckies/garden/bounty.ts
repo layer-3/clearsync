@@ -1,6 +1,6 @@
 import { utils } from 'ethers';
 
-import { randomBytes32 } from '../helpers/payload';
+import { randomBytes32 } from '../../helpers/payload';
 
 import type { ParamType } from 'ethers/lib/utils';
 

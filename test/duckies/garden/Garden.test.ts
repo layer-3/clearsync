@@ -2,15 +2,15 @@ import { expect } from 'chai';
 import { ethers, upgrades } from 'hardhat';
 import { constants, utils } from 'ethers';
 
-import { connectGroup } from '../connectContract';
-import { randomBytes32 } from '../helpers/payload';
+import { connectGroup } from '../../connectContract';
+import { randomBytes32 } from '../../helpers/payload';
 
 import { signBounty } from './signatures';
 
-import type { Garden, TestERC20 } from '../../typechain-types';
+import type { Garden, TestERC20 } from '../../../typechain-types';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import type { Bounty } from './bounty';
-import { ACCOUNT_MISSING_ROLE } from '../helpers/common';
+import { ACCOUNT_MISSING_ROLE } from '../../helpers/common';
 
 const INSUF_TOKEN_BALANCE = 'InsufficientTokenBalance';
 
