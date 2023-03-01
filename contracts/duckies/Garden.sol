@@ -8,12 +8,17 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol';
 
+import '../ducklings/Ducklings.sol';
+
 contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 	using ECDSAUpgradeable for bytes32;
 
 	error CircularReferrers(address target, address base);
-	error BountyAlreadyClaimed(bytes32 bountyCodeHash);
-	error InvalidBounty(Bounty bounty);
+	error VoucherAlreadyClaimed(bytes32 voucherCodeHash);
+	error InvalidVoucher(Voucher voucher);
+	error InvalidPayoutParams(PayoutParams payoutParams);
+	error InvalidMintNFTsParams(MintNFTsParams mintNFTsParams);
+	error InvalidMeldNFTsParams(MeldNFTsParams meldNFTsParams);
 	error InsufficientTokenBalance(address token, uint256 expected, uint256 actual);
 	error IncorrectSigner(address expected, address actual);
 
@@ -24,34 +29,57 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 	uint8 public constant REFERRAL_MAX_DEPTH = 5;
 	uint8 internal constant _REFERRAL_PAYOUT_DIVIDER = 100;
 
-	// Bounty Message for signature verification
-	struct Bounty {
-		uint256 amount;
-		address tokenAddress;
-		address beneficiary; // beneficiary of bounty
-		bool isPaidToReferrers; // whether bounty is payed to referrers
+	enum VoucherType {
+		Payout,
+		MintNFTs,
+		MeldNFTs
+	}
+
+	struct PayoutParams {
+		address token; // address of token to pay out
+		uint256 amount; // amount of token to pay out
 		uint8[REFERRAL_MAX_DEPTH] referrersPayouts; // what percentage of bounty will referrer of the level specified get
+	}
+
+	// TODO: add collection support
+	// TODO: add baseGenes support
+	struct MintNFTsParams {
+		uint8 collection; // collection index
+		uint8 amount; // card pack size
+		uint256 baseGene; // preset gene values (if any)
+	}
+
+	struct MeldNFTsParams {
+		uint256[5] meldingTokenIds; // token Ids to meld
+	}
+
+	// Voucher Message for signature verification
+	struct Voucher {
+		VoucherType type_; // voucher type
+		bytes encodedData; // voucher type specific encoded data
+		address beneficiary; // beneficiary of voucher
 		address referrer; // address of the parent
 		uint64 expire; // expiration time in seconds UTC
-		uint32 chainId;
-		bytes32 bountyCodeHash;
+		uint32 chainId; // chain id of the voucher
+		bytes32 voucherCodeHash; // hash of voucherCode
 	}
 
 	// child => parent
-	// TODO: make internal
 	mapping(address => address) internal _referrerOf;
 
-	address internal _issuer;
+	mapping(bytes32 => bool) internal _claimedVouchers;
 
-	mapping(bytes32 => bool) internal _claimedBounties;
+	address public issuer;
 
-	// Affiliate is invited by referrer. Referrer receives a tiny part of their affiliate's bounty.
+	Ducklings public ducklings;
+
+	// Affiliate is invited by referrer. Referrer receives a tiny part of their affiliate's voucher.
 	event AffiliateRegistered(address affiliate, address referrer);
-	event BountyClaimed(
+	event VoucherClaimed(
 		address wallet,
-		bytes32 bountyCodeHash,
-		uint32 chainId,
-		address tokenAddress
+		VoucherType voucherType,
+		bytes32 voucherCodeHash,
+		uint32 chainId
 	);
 
 	// disallow calling implementation directly (not via proxy)
@@ -60,22 +88,24 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 		_disableInitializers();
 	}
 
-	function initialize() public initializer {
+	function initialize(address ducklingsAddress) public initializer {
 		__AccessControl_init();
 		__UUPSUpgradeable_init();
 
 		_grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
 		_grantRole(UPGRADER_ROLE, msg.sender);
+
+		ducklings = Ducklings(ducklingsAddress);
 	}
 
-	// -------- Issuer --------
+	// -------- Issuer, Ducklings --------
 
 	function setIssuer(address account) external onlyRole(DEFAULT_ADMIN_ROLE) {
-		_issuer = account;
+		issuer = account;
 	}
 
-	function getIssuer() external view returns (address) {
-		return _issuer;
+	function setDucklings(address ducklingsAddress) external onlyRole(DEFAULT_ADMIN_ROLE) {
+		ducklings = Ducklings(ducklingsAddress);
 	}
 
 	// -------- Partner --------
@@ -110,73 +140,116 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 		}
 	}
 
-	// -------- Bounties --------
+	// -------- Vouchers --------
 
-	function claimBounties(Bounty[] calldata bounties, bytes calldata signature) external {
-		_requireCorrectSigner(abi.encode(bounties), signature, _issuer);
-		for (uint8 i = 0; i < bounties.length; i++) {
-			_claimBounty(bounties[i]);
+	function claimVouchers(Voucher[] calldata vouchers, bytes calldata signature) external {
+		_requireCorrectSigner(abi.encode(vouchers), signature, issuer);
+		for (uint8 i = 0; i < vouchers.length; i++) {
+			_claimVoucher(vouchers[i]);
 		}
 	}
 
-	function claimBounty(Bounty calldata bounty, bytes calldata signature) external {
-		_requireCorrectSigner(abi.encode(bounty), signature, _issuer);
-		_claimBounty(bounty);
+	function claimVoucher(Voucher calldata voucher, bytes calldata signature) external {
+		_requireCorrectSigner(abi.encode(voucher), signature, issuer);
+		_claimVoucher(voucher);
 	}
 
-	function _claimBounty(Bounty memory bounty) internal {
-		_requireValidBounty(bounty);
+	function _claimVoucher(Voucher memory voucher) internal {
+		_requireValidVoucher(voucher);
 
-		_claimedBounties[bounty.bountyCodeHash] = true;
+		_claimedVouchers[voucher.voucherCodeHash] = true;
 
-		// check sufficient Garden token balance and pay beneficiary
-		ERC20Upgradeable bountyToken = ERC20Upgradeable(bounty.tokenAddress);
-		_requireSufficientContractBalance(bountyToken, bounty.amount);
-		bountyToken.transfer(bounty.beneficiary, bounty.amount);
+		if (voucher.type_ == VoucherType.Payout) {
+			PayoutParams memory payoutParams = abi.decode(voucher.encodedData, (PayoutParams));
+
+			// payoutParams checks
+			if (payoutParams.token == address(0) || payoutParams.amount == 0)
+				revert InvalidPayoutParams(payoutParams);
+
+			_performPayout(
+				voucher.beneficiary,
+				payoutParams.token,
+				payoutParams.amount,
+				payoutParams.referrersPayouts
+			);
+		} else if (voucher.type_ == VoucherType.MintNFTs) {
+			MintNFTsParams memory mintNFTsParams = abi.decode(
+				voucher.encodedData,
+				(MintNFTsParams)
+			);
+
+			// mintNFTsParams checks
+			if (mintNFTsParams.amount == 0) revert InvalidMintNFTsParams(mintNFTsParams);
+
+			ducklings.freeMintPackTo(voucher.beneficiary, mintNFTsParams.amount);
+		} else if (voucher.type_ == VoucherType.MeldNFTs) {
+			MeldNFTsParams memory meldNFTsParams = abi.decode(
+				voucher.encodedData,
+				(MeldNFTsParams)
+			);
+
+			// meldNFTsParams checks
+			if (!_areIdsUnique(meldNFTsParams.meldingTokenIds))
+				revert InvalidMeldNFTsParams(meldNFTsParams);
+
+			ducklings.freeMeldOf(voucher.beneficiary, meldNFTsParams.meldingTokenIds);
+		} else {
+			revert InvalidVoucher(voucher);
+		}
 
 		// check for circular reference and register referrer
-		// provided beneficiary has a referrer
-		if (bounty.referrer != address(0)) {
-			if (bounty.referrer == msg.sender) revert InvalidBounty(bounty);
+		if (voucher.referrer != address(0)) {
+			// provided beneficiary has a referrer
+			if (voucher.referrer == msg.sender) revert InvalidVoucher(voucher);
 
 			// check if beneficiary is not a referrer of supplied referrer
-			_requireNotReferrerOf(msg.sender, bounty.referrer);
-			_registerReferrer(bounty.beneficiary, bounty.referrer);
+			_requireNotReferrerOf(msg.sender, voucher.referrer);
+			_registerReferrer(voucher.beneficiary, voucher.referrer);
 		}
 
+		emit VoucherClaimed(
+			voucher.beneficiary,
+			voucher.type_,
+			voucher.voucherCodeHash,
+			voucher.chainId
+		);
+	}
+
+	function _requireValidVoucher(Voucher memory voucher) internal view {
+		if (_claimedVouchers[voucher.voucherCodeHash])
+			revert VoucherAlreadyClaimed(voucher.voucherCodeHash);
+
+		if (
+			voucher.beneficiary != msg.sender ||
+			block.timestamp > voucher.expire ||
+			voucher.chainId != block.chainid
+		) revert InvalidVoucher(voucher);
+	}
+
+	function _performPayout(
+		address beneficiary,
+		address tokenAddress,
+		uint256 amount,
+		uint8[REFERRAL_MAX_DEPTH] memory referrersPayouts
+	) internal {
+		// check sufficient Garden token balance and pay beneficiary
+		ERC20Upgradeable voucherToken = ERC20Upgradeable(tokenAddress);
+		_requireSufficientContractBalance(voucherToken, amount);
+		voucherToken.transfer(beneficiary, amount);
+
 		// pay referrers
-		address currReferrer = _referrerOf[bounty.beneficiary];
+		address currReferrer = _referrerOf[beneficiary];
 
 		for (uint8 i = 0; i < REFERRAL_MAX_DEPTH && currReferrer != address(0); i++) {
-			if (bounty.referrersPayouts[i] != 0) {
-				uint256 referralAmount = (bounty.amount * bounty.referrersPayouts[i]) /
-					_REFERRAL_PAYOUT_DIVIDER;
+			if (referrersPayouts[i] != 0) {
+				uint256 referralAmount = (amount * referrersPayouts[i]) / _REFERRAL_PAYOUT_DIVIDER;
 
-				_requireSufficientContractBalance(bountyToken, referralAmount);
-				bountyToken.transfer(currReferrer, referralAmount);
+				_requireSufficientContractBalance(voucherToken, referralAmount);
+				voucherToken.transfer(currReferrer, referralAmount);
 			}
 
 			currReferrer = _referrerOf[currReferrer];
 		}
-
-		emit BountyClaimed(
-			bounty.beneficiary,
-			bounty.bountyCodeHash,
-			bounty.chainId,
-			bounty.tokenAddress
-		);
-	}
-
-	function _requireValidBounty(Bounty memory bounty) internal view {
-		if (_claimedBounties[bounty.bountyCodeHash])
-			revert BountyAlreadyClaimed(bounty.bountyCodeHash);
-
-		if (
-			bounty.amount == 0 ||
-			bounty.beneficiary != msg.sender ||
-			block.timestamp > bounty.expire ||
-			bounty.chainId != block.chainid
-		) revert InvalidBounty(bounty);
 	}
 
 	// -------- Internal --------
@@ -196,6 +269,18 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 	) internal pure {
 		address actualSigner = keccak256(encodedData).toEthSignedMessageHash().recover(signature);
 		if (actualSigner != signer) revert IncorrectSigner(signer, actualSigner);
+	}
+
+	function _areIdsUnique(uint256[5] memory ids) internal pure returns (bool) {
+		for (uint8 i = 0; i < ids.length; i++) {
+			for (uint8 j = i + 1; j < ids.length; j++) {
+				if (ids[i] == ids[j]) {
+					return false;
+				}
+			}
+		}
+
+		return true;
 	}
 
 	// -------- Upgrading --------

@@ -38,12 +38,13 @@ contract Ducklings is
 
 	bytes32 public constant UPGRADER_ROLE = keccak256('UPGRADER_ROLE');
 	bytes32 public constant API_SETTER_ROLE = keccak256('API_SETTER_ROLE');
-	bytes32 public constant ROYALTIES_COLLECTOR_ROLE = keccak256('ROYALTIES_COLLECTOR_ROLE');
+	bytes32 public constant GARDEN_ROLE = keccak256('GARDEN_ROLE');
 
 	uint32 private constant ROYALTY_FEE = 1000; // 10%
 
 	uint8 public constant MAX_MINT_PACK_SIZE = 10;
-	uint256 public BASE_DUCKIES_PER_MINT;
+	uint256 public duckiesPerMint;
+	uint256 public duckiesPerMeld;
 
 	address private _royaltiesCollector;
 
@@ -109,7 +110,6 @@ contract Ducklings is
 		_grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
 		_grantRole(UPGRADER_ROLE, msg.sender);
 		_grantRole(API_SETTER_ROLE, msg.sender);
-		_grantRole(ROYALTIES_COLLECTOR_ROLE, msg.sender);
 
 		_setDefaultRoyalty(msg.sender, ROYALTY_FEE);
 		setRoyaltyCollector(msg.sender);
@@ -146,7 +146,9 @@ contract Ducklings is
 		meldingZombeakWeights = [[10, 90], [5, 90], [2, 90]];
 
 		duckiesContract = ERC20BurnableUpgradeable(ducklingsAddress);
-		BASE_DUCKIES_PER_MINT = 10_000 * 10 ** duckiesContract.decimals();
+		// TODO: define price
+		duckiesPerMint = 10_000 * 10 ** duckiesContract.decimals();
+		duckiesPerMeld = 10_000 * 10 ** duckiesContract.decimals();
 	}
 
 	// upgrades
@@ -193,7 +195,6 @@ contract Ducklings is
 
 	function setRoyaltyCollector(address account) public onlyRole(DEFAULT_ADMIN_ROLE) {
 		_royaltiesCollector = account;
-		_grantRole(ROYALTIES_COLLECTOR_ROLE, account);
 	}
 
 	function getRoyaltyCollector() public view returns (address) {
@@ -206,44 +207,44 @@ contract Ducklings is
 		apiBaseURL = apiBaseURL_;
 	}
 
-	function ducklingsPerMint() external view returns (uint256) {
-		return _ducklingsPerMint();
+	function mintPack(uint8 amount) external UseRandom {
+		duckiesContract.burnFrom(msg.sender, duckiesPerMint * amount);
+		_mintPackTo(msg.sender, amount);
 	}
 
-	function mintPack(uint8 amount) external UseRandom {
-		require(amount <= MAX_MINT_PACK_SIZE, 'pack size exceeded');
-
-		duckiesContract.burnFrom(msg.sender, _ducklingsPerMint() * amount);
-
-		for (uint256 i = 0; i < amount; i++) {
-			(uint256 tokenId, uint256 gene) = _mint();
-			emit Minted(tokenId, gene, msg.sender, _getChainId());
-		}
+	function freeMintPackTo(address to, uint8 amount) external UseRandom onlyRole(GARDEN_ROLE) {
+		_mintPackTo(to, amount);
 	}
 
 	function meld(uint256[5] calldata meldingTokenIds) external UseRandom {
-		_requireCallerIsOwner(meldingTokenIds);
+		duckiesContract.burnFrom(msg.sender, duckiesPerMeld);
+		_meldOf(msg.sender, meldingTokenIds);
+	}
 
-		uint256[5] memory genesToMeld = _burnTokensAndGetGenes(meldingTokenIds);
-
-		uint256 meldedGene = _meldGenes(genesToMeld);
-
-		uint256 meldedTokenId = nextNewTokenId.current();
-		tokenIdToDuckling[meldedTokenId] = Duckling(meldedGene, uint64(block.timestamp));
-		_safeMint(msg.sender, meldedTokenId);
-		nextNewTokenId.increment();
-
-		emit Melded(meldingTokenIds, meldedTokenId, meldedGene, msg.sender, _getChainId());
+	function freeMeldOf(
+		address owner,
+		uint256[5] calldata meldingTokenIds
+	) external UseRandom onlyRole(GARDEN_ROLE) {
+		_meldOf(owner, meldingTokenIds);
 	}
 
 	// internal minting
 
-	function _mint() internal returns (uint256 tokenId, uint256 gene) {
+	function _mintPackTo(address to, uint8 amount) internal {
+		require(amount <= MAX_MINT_PACK_SIZE, 'pack size exceeded');
+
+		for (uint256 i = 0; i < amount; i++) {
+			(uint256 tokenId, uint256 gene) = _mintTo(to);
+			emit Minted(tokenId, gene, msg.sender, _getChainId());
+		}
+	}
+
+	function _mintTo(address to) internal returns (uint256 tokenId, uint256 gene) {
 		gene = _generateGene();
 
 		tokenId = nextNewTokenId.current();
 		tokenIdToDuckling[tokenId] = Duckling(gene, uint64(block.timestamp));
-		_safeMint(msg.sender, tokenId);
+		_safeMint(to, tokenId);
 		nextNewTokenId.increment();
 	}
 
@@ -289,6 +290,21 @@ contract Ducklings is
 	}
 
 	// internal melding
+
+	function _meldOf(address owner, uint256[5] memory meldingTokenIds) internal {
+		_requireIsOwnerOf(owner, meldingTokenIds);
+
+		uint256[5] memory genesToMeld = _burnTokensAndGetGenes(meldingTokenIds);
+
+		uint256 meldedGene = _meldGenes(genesToMeld);
+
+		uint256 meldedTokenId = nextNewTokenId.current();
+		tokenIdToDuckling[meldedTokenId] = Duckling(meldedGene, uint64(block.timestamp));
+		_safeMint(msg.sender, meldedTokenId);
+		nextNewTokenId.increment();
+
+		emit Melded(meldingTokenIds, meldedTokenId, meldedGene, msg.sender, _getChainId());
+	}
 
 	function _meldGenes(uint256[5] memory genes) internal returns (uint256) {
 		// Classes should be the same
@@ -390,15 +406,9 @@ contract Ducklings is
 
 	// other internal
 
-	function _ducklingsPerMint() internal view returns (uint256) {
-		return BASE_DUCKIES_PER_MINT;
-	}
-
-	function _requireCallerIsOwner(uint256[5] memory tokenIds) internal view {
-		address account = msg.sender;
-
+	function _requireIsOwnerOf(address owner, uint256[5] memory tokenIds) internal view {
 		for (uint256 i = 0; i < tokenIds.length; i++) {
-			require(account == ownerOf(tokenIds[i]), 'caller is not token owner');
+			require(owner == ownerOf(tokenIds[i]), 'caller is not token owner');
 		}
 	}
 
@@ -455,6 +465,7 @@ contract Ducklings is
 		return sum;
 	}
 
+	// TODO: change to block.chainId
 	function _getChainId() internal view returns (uint256 id) {
 		assembly {
 			id := chainid()
