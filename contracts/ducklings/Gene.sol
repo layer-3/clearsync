@@ -22,8 +22,7 @@ library Gene {
 		Rare,
 		Epic,
 		Legendary,
-		SuperLegendary,
-		Zombie
+		SuperLegendary
 	}
 
 	// order is important, see _generateGene()
