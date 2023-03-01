@@ -139,45 +139,6 @@ contract Ducklings is
 		_setDefaultRoyalty(msg.sender, ROYALTY_FEE);
 		setRoyaltyCollector(msg.sender);
 
-		// TODO: add Zombeak collection
-
-		// TODO: add Normal collection in script?
-		collectionOfId[uint8(nextCollectionId.current())].availableBefore = type(uint64).max;
-
-		nextCollectionId.increment();
-
-		// Arrays are pushed due to difference in size. Solidity is bad in converting fixed-size memory array into dynamic one.
-		// Class
-		collectionOfId[0].traitWeights.push([74, 20, 5, 1]);
-		// Body
-		collectionOfId[0].traitWeights.push([0, 17, 16, 14, 14, 12, 10, 9, 8]);
-		// Head
-		collectionOfId[0].traitWeights.push(
-			[0, 9, 9, 7, 6, 6, 5, 5, 5, 5, 5, 5, 5, 5, 5, 4, 4, 4, 3, 3]
-		);
-		// Background
-		collectionOfId[0].traitWeights.push([4]);
-		// Element
-		collectionOfId[0].traitWeights.push([5]);
-		// Eyes
-		collectionOfId[0].traitWeights.push(
-			[8, 7, 6, 6, 6, 5, 5, 5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 3, 3, 3, 2, 2]
-		);
-		// Beak
-		collectionOfId[0].traitWeights.push([15, 14, 14, 11, 10, 9, 8, 7, 7, 6]);
-		// Wings
-		collectionOfId[0].traitWeights.push([20, 19, 15, 13, 12, 11, 10]);
-		// First name
-		collectionOfId[0].traitWeights.push([32]);
-		// Last name
-		collectionOfId[0].traitWeights.push([17]);
-		// Temper
-		// TODO: define probabilities
-		collectionOfId[0].traitWeights.push([16]);
-		// Peculiarity - for SuperLegendary
-		// TODO: how many?
-		collectionOfId[0].traitWeights.push([100]);
-
 		meldWeights = [6, 5, 4, 3, 2, 1];
 		meldingZombeakWeights = [[10, 90], [5, 90], [2, 90]];
 
