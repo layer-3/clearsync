@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { ethers, upgrades } from 'hardhat';
 
-import type { Ducklings } from '../typechain-types';
+import type { Ducklings } from '../../../typechain-types';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 const API_BASE_URL = 'https://www.ynet-cat.uat.opendax.app/api/v3/public/nft/metadata/';
