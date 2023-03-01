@@ -127,7 +127,6 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 		emit AffiliateRegistered(child, parent);
 	}
 
-	// TODO: think if there can be damage if circular referrers more than in REFERRAL_MAX_DEPTH levels
 	function _requireNotReferrerOf(address target, address base) internal view {
 		address curAccount = base;
 
@@ -178,7 +177,7 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 			// mintNFTsParams checks
 			if (mintNFTsParams.amount == 0) revert InvalidMintNFTsParams(mintNFTsParams);
 
-			ducklings.freeMintPackTo(
+			ducklings.mintByVoucher(
 				voucher.beneficiary,
 				mintNFTsParams.collection,
 				mintNFTsParams.amount
@@ -193,7 +192,7 @@ contract Garden is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 			if (!_areIdsUnique(meldNFTsParams.meldingTokenIds))
 				revert InvalidMeldNFTsParams(meldNFTsParams);
 
-			ducklings.freeMeldOf(voucher.beneficiary, meldNFTsParams.meldingTokenIds);
+			ducklings.meldByVoucher(voucher.beneficiary, meldNFTsParams.meldingTokenIds);
 		} else {
 			revert InvalidVoucher(voucher);
 		}

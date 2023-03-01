@@ -279,12 +279,12 @@ contract Ducklings is
 
 	// mint, meld
 
-	function mintPack(uint8 collectionId, uint8 amount) external UseRandom {
+	function mintByPayment(uint8 collectionId, uint8 amount) external UseRandom {
 		duckiesContract.burnFrom(msg.sender, mintPrice * amount);
 		_mintPackTo(msg.sender, collectionId, amount);
 	}
 
-	function freeMintPackTo(
+	function mintByVoucher(
 		address to,
 		uint8 collectionId,
 		uint8 amount
@@ -292,12 +292,14 @@ contract Ducklings is
 		_mintPackTo(to, collectionId, amount);
 	}
 
-	function meld(uint256[MELD_TOKENS_AMOUNT] calldata meldingTokenIds) external UseRandom {
+	function meldByPayment(
+		uint256[MELD_TOKENS_AMOUNT] calldata meldingTokenIds
+	) external UseRandom {
 		duckiesContract.burnFrom(msg.sender, meldPrice);
 		_meldOf(msg.sender, meldingTokenIds);
 	}
 
-	function freeMeldOf(
+	function meldByVoucher(
 		address owner,
 		uint256[MELD_TOKENS_AMOUNT] calldata meldingTokenIds
 	) external UseRandom onlyRole(GARDEN_ROLE) {
