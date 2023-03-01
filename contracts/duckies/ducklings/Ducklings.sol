@@ -217,14 +217,21 @@ contract Ducklings is
 	// collections
 
 	function addCollection(Collection calldata collection) external onlyRole(MAINTAINER_ROLE) {
+		setCollection(collection, uint8(nextCollectionId.current()));
+
+		nextCollectionId.increment();
+	}
+
+	function setCollection(
+		Collection calldata collection,
+		uint8 collectionId
+	) public onlyRole(MAINTAINER_ROLE) {
 		if (
 			collection.availableBefore <= block.timestamp ||
 			collection.traitWeights.length != uint8(type(Gene.Traits).max) + 1
 		) revert InvalidCollection(collection);
 
-		collectionOfId[uint8(nextCollectionId.current())] = collection;
-
-		nextCollectionId.increment();
+		collectionOfId[collectionId] = collection;
 	}
 
 	function obsoleteCollection(uint8 collectionId) external onlyRole(MAINTAINER_ROLE) {
