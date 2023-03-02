@@ -380,7 +380,7 @@ contract Ducklings is
 		// Classes should be the same
 		// Classes should not be SuperLegendary
 		if (
-			!_traitValuesAreEqual(genes, Gene.Traits.Class) ||
+			!Gene._traitValuesAreEqual(_fixedToDynamic(genes), Gene.Traits.Class) ||
 			meldingClass == Gene.Classes.SuperLegendary
 		) {
 			revert IncorrectGenesForMelding(genes);
@@ -392,16 +392,16 @@ contract Ducklings is
 			// cards must have the same Background
 			// cards must be of each Element
 			if (
-				!_traitValuesAreEqual(genes, Gene.Traits.Background) ||
-				!_traitValuesAreUnique(genes, Gene.Traits.Element)
+				!Gene._traitValuesAreEqual(_fixedToDynamic(genes), Gene.Traits.Background) ||
+				!Gene._traitValuesAreUnique(_fixedToDynamic(genes), Gene.Traits.Element)
 			) revert IncorrectGenesForMelding(genes);
 		} else {
 			// Common, Rare, Epic
 
 			// cards must have the same Background or the same Element
 			if (
-				!_traitValuesAreEqual(genes, Gene.Traits.Background) &&
-				!_traitValuesAreEqual(genes, Gene.Traits.Element)
+				!Gene._traitValuesAreEqual(_fixedToDynamic(genes), Gene.Traits.Background) &&
+				!Gene._traitValuesAreEqual(_fixedToDynamic(genes), Gene.Traits.Element)
 			) revert IncorrectGenesForMelding(genes);
 		}
 	}
@@ -457,7 +457,7 @@ contract Ducklings is
 
 		// mutation, return upgraded best trait value
 		if (meldedTraitIdx == MELD_TOKENS_AMOUNT) {
-			uint8 bestTraitValue = _maxTrait(genes, trait);
+			uint8 bestTraitValue = Gene._maxTrait(_fixedToDynamic(genes), trait);
 			return bestTraitValue == maxTraitValue ? bestTraitValue : bestTraitValue + 1;
 		}
 
@@ -505,50 +505,9 @@ contract Ducklings is
 		return genes;
 	}
 
-	function _maxTrait(
-		uint256[MELD_TOKENS_AMOUNT] memory genes,
-		Gene.Traits trait
-	) internal pure returns (uint8) {
-		uint8 maxValue = 0;
-
-		for (uint256 i = 0; i < genes.length; i++) {
-			uint8 traitValue = genes[i].getTrait(trait);
-			if (maxValue < traitValue) {
-				maxValue = traitValue;
-			}
-		}
-
-		return maxValue;
-	}
-
-	function _traitValuesAreEqual(
-		uint256[MELD_TOKENS_AMOUNT] memory genes,
-		Gene.Traits trait
-	) internal pure returns (bool) {
-		uint8 traitValue = genes[0].getTrait(trait);
-
-		for (uint256 i = 1; i < genes.length; i++) {
-			if (genes[i].getTrait(trait) != traitValue) {
-				return false;
-			}
-		}
-
-		return true;
-	}
-
-	function _traitValuesAreUnique(
-		uint256[MELD_TOKENS_AMOUNT] memory genes,
-		Gene.Traits trait
-	) internal pure returns (bool) {
-		uint256 valuesPresentBitfield = 0;
-
-		for (uint256 i = 1; i < genes.length; i++) {
-			if (valuesPresentBitfield % 2 ** genes[i].getTrait(trait) == 1) {
-				return false;
-			}
-			valuesPresentBitfield += 2 ** genes[i].getTrait(trait);
-		}
-
-		return true;
+	function _fixedToDynamic(
+		uint256[MELD_TOKENS_AMOUNT] memory fixedArr
+	) internal pure returns (uint256[] memory dynamicArr) {
+		for (uint256 i = 0; i < fixedArr.length; i++) dynamicArr[i] = fixedArr[i];
 	}
 }

@@ -81,4 +81,48 @@ library Gene {
 		uint256 temp = gene >> shiftingBy;
 		return uint8(temp % 10 ** shiftingBy);
 	}
+
+	function _maxTrait(uint256[] memory genes, Gene.Traits trait) internal pure returns (uint8) {
+		uint8 maxValue = 0;
+
+		for (uint256 i = 0; i < genes.length; i++) {
+			uint8 traitValue = getTrait(genes[i], trait);
+			if (maxValue < traitValue) {
+				maxValue = traitValue;
+			}
+		}
+
+		return maxValue;
+	}
+
+	function _traitValuesAreEqual(
+		uint256[] memory genes,
+		Gene.Traits trait
+	) internal pure returns (bool) {
+		uint8 traitValue = getTrait(genes[0], trait);
+
+		for (uint256 i = 1; i < genes.length; i++) {
+			if (getTrait(genes[i], trait) != traitValue) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	function _traitValuesAreUnique(
+		uint256[] memory genes,
+		Gene.Traits trait
+	) internal pure returns (bool) {
+		uint256 valuesPresentBitfield = 0;
+
+		for (uint256 i = 1; i < genes.length; i++) {
+			if (valuesPresentBitfield % 2 ** getTrait(genes[i], trait) == 1) {
+				return false;
+			}
+			valuesPresentBitfield += 2 ** getTrait(genes[i], trait);
+		}
+
+		return true;
+	}
 }
