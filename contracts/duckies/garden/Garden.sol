@@ -14,7 +14,7 @@ contract Garden is IVoucher, Initializable, AccessControlUpgradeable, UUPSUpgrad
 	using ECDSAUpgradeable for bytes32;
 
 	error CircularReferrers(address target, address base);
-	error VoucherAlreadyClaimed(bytes32 voucherCodeHash);
+	error VoucherAlreadyUsed(bytes32 voucherCodeHash);
 	error InvalidVoucher(Voucher voucher);
 	error InvalidRewardParams(RewardParams rewardParams);
 	error InsufficientTokenBalance(address token, uint256 expected, uint256 actual);
@@ -27,7 +27,7 @@ contract Garden is IVoucher, Initializable, AccessControlUpgradeable, UUPSUpgrad
 	uint8 public constant REFERRAL_MAX_DEPTH = 5;
 	uint8 internal constant _REFERRAL_PAYOUT_DIVIDER = 100;
 
-	enum VoucherType {
+	enum VoucherAction {
 		Reward
 	}
 
@@ -40,18 +40,13 @@ contract Garden is IVoucher, Initializable, AccessControlUpgradeable, UUPSUpgrad
 	// child => parent
 	mapping(address => address) internal _referrerOf;
 
-	mapping(bytes32 => bool) internal _claimedVouchers;
+	mapping(bytes32 => bool) internal _usedVouchers;
 
 	address public issuer;
 
 	// Affiliate is invited by referrer. Referrer receives a tiny part of their affiliate's voucher.
 	event AffiliateRegistered(address affiliate, address referrer);
-	event VoucherClaimed(
-		address wallet,
-		uint8 voucherType,
-		bytes32 voucherCodeHash,
-		uint32 chainId
-	);
+	event VoucherUsed(address wallet, uint8 VoucherAction, bytes32 voucherCodeHash, uint32 chainId);
 
 	// disallow calling implementation directly (not via proxy)
 	/// @custom:oz-upgrades-unsafe-allow constructor
@@ -121,9 +116,21 @@ contract Garden is IVoucher, Initializable, AccessControlUpgradeable, UUPSUpgrad
 	function _useVoucher(Voucher memory voucher) internal {
 		_requireValidVoucher(voucher);
 
-		_claimedVouchers[voucher.voucherCodeHash] = true;
+		_usedVouchers[voucher.voucherCodeHash] = true;
 
-		if (voucher.action == uint8(VoucherType.Reward)) {
+		// check for circular reference and register referrer
+		if (voucher.referrer != address(0)) {
+			// provided beneficiary has a referrer
+			if (voucher.referrer == msg.sender)
+				revert CircularReferrers(msg.sender, voucher.referrer);
+
+			// check if beneficiary is not a referrer of supplied referrer
+			_requireNotReferrerOf(msg.sender, voucher.referrer);
+			_registerReferrer(voucher.beneficiary, voucher.referrer);
+		}
+
+		// parse & process Voucher
+		if (voucher.action == uint8(VoucherAction.Reward)) {
 			RewardParams memory rewardParams = abi.decode(voucher.encodedParams, (RewardParams));
 
 			// rewardParams checks
@@ -140,17 +147,7 @@ contract Garden is IVoucher, Initializable, AccessControlUpgradeable, UUPSUpgrad
 			revert InvalidVoucher(voucher);
 		}
 
-		// check for circular reference and register referrer
-		if (voucher.referrer != address(0)) {
-			// provided beneficiary has a referrer
-			if (voucher.referrer == msg.sender) revert InvalidVoucher(voucher);
-
-			// check if beneficiary is not a referrer of supplied referrer
-			_requireNotReferrerOf(msg.sender, voucher.referrer);
-			_registerReferrer(voucher.beneficiary, voucher.referrer);
-		}
-
-		emit VoucherClaimed(
+		emit VoucherUsed(
 			voucher.beneficiary,
 			voucher.action,
 			voucher.voucherCodeHash,
@@ -159,10 +156,11 @@ contract Garden is IVoucher, Initializable, AccessControlUpgradeable, UUPSUpgrad
 	}
 
 	function _requireValidVoucher(Voucher memory voucher) internal view {
-		if (_claimedVouchers[voucher.voucherCodeHash])
-			revert VoucherAlreadyClaimed(voucher.voucherCodeHash);
+		if (_usedVouchers[voucher.voucherCodeHash])
+			revert VoucherAlreadyUsed(voucher.voucherCodeHash);
 
 		if (
+			voucher.target != address(this) ||
 			voucher.beneficiary != msg.sender ||
 			block.timestamp > voucher.expire ||
 			voucher.chainId != block.chainid
