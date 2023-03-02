@@ -48,31 +48,25 @@ contract Ducklings is
 		uint8 collectionId;
 	}
 
-	// TODO: review roles
 	bytes32 public constant UPGRADER_ROLE = keccak256('UPGRADER_ROLE');
 	bytes32 public constant MAINTAINER_ROLE = keccak256('MAINTAINER_ROLE');
 	bytes32 public constant VOUCHER_ISSUER_ROLE = keccak256('VOUCHER_ISSUER_ROLE');
 
+	address private _royaltiesCollector;
 	uint32 private constant ROYALTY_FEE = 1000; // 10%
 
-	uint8 public constant ZOMBEAK_COLLECTION = 0;
-
-	uint8 public constant MAX_MINT_PACK_SIZE = 10;
-	uint8 public constant MELD_TOKENS_AMOUNT = 5;
-
+	string public apiBaseURL;
 	uint256 public mintPrice;
 	uint256 public meldPrice;
 
-	address private _royaltiesCollector;
+	uint8 public constant MAX_MINT_PACK_SIZE = 10;
+	uint8 public constant MELD_TOKENS_AMOUNT = 5;
+	uint8 public constant ZOMBEAK_COLLECTION_ID = 0;
 
-	string public apiBaseURL;
-
-	CountersUpgradeable.Counter nextNewTokenId;
-
-	CountersUpgradeable.Counter nextCollectionId;
+	CountersUpgradeable.Counter public nextNewTokenId;
+	CountersUpgradeable.Counter public nextCollectionId;
 
 	mapping(uint256 => Duckling) public tokenIdToDuckling;
-
 	mapping(uint8 => Collection) public collectionOfId;
 
 	/*
@@ -133,15 +127,15 @@ contract Ducklings is
 		_grantRole(UPGRADER_ROLE, msg.sender);
 		_grantRole(MAINTAINER_ROLE, msg.sender);
 
-		_setDefaultRoyalty(msg.sender, ROYALTY_FEE);
 		setRoyaltyCollector(msg.sender);
-
-		meldWeights = [6, 5, 4, 3, 2, 1];
-		meldingZombeakWeights = [[10, 90], [5, 90], [2, 90]];
+		_setDefaultRoyalty(msg.sender, ROYALTY_FEE);
 
 		// TODO: define price
 		mintPrice = 10_000 * 10 ** duckiesContract.decimals();
 		meldPrice = 10_000 * 10 ** duckiesContract.decimals();
+
+		meldWeights = [6, 5, 4, 3, 2, 1];
+		meldingZombeakWeights = [[10, 90], [5, 90], [2, 90]];
 
 		duckiesContract = ERC20BurnableUpgradeable(ducklingsAddress);
 	}
@@ -218,7 +212,6 @@ contract Ducklings is
 
 	function addCollection(Collection calldata collection) external onlyRole(MAINTAINER_ROLE) {
 		setCollection(collection, uint8(nextCollectionId.current()));
-
 		nextCollectionId.increment();
 	}
 
@@ -236,7 +229,6 @@ contract Ducklings is
 
 	function obsoleteCollection(uint8 collectionId) external onlyRole(MAINTAINER_ROLE) {
 		_requireValidCollection(collectionId);
-
 		collectionOfId[collectionId].availableBefore = uint64(block.timestamp);
 	}
 
@@ -273,7 +265,6 @@ contract Ducklings is
 
 	function _mintPackTo(address to, uint8 collectionId, uint8 amount) internal {
 		_requireValidCollection(collectionId);
-
 		if (amount > MAX_MINT_PACK_SIZE) revert MintingRulesViolated(collectionId, amount);
 
 		for (uint256 i = 0; i < amount; i++) {
@@ -356,8 +347,8 @@ contract Ducklings is
 
 		// TODO: can Zombeak appear in each collection?
 		if (_checkZombeak(genesToMeld[0])) {
-			meldedGene = _generateGeneFromCollection(ZOMBEAK_COLLECTION);
-			collectionId = ZOMBEAK_COLLECTION;
+			meldedGene = _generateGeneFromCollection(ZOMBEAK_COLLECTION_ID);
+			collectionId = ZOMBEAK_COLLECTION_ID;
 		} else {
 			meldedGene = _meldGenes(genesToMeld, collectionId);
 		}
