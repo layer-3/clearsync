@@ -103,7 +103,8 @@ contract Ducklings is
 
 	ERC20BurnableUpgradeable public duckiesContract;
 
-	// events
+	// -------- Events --------
+
 	event Minted(uint256 mintedTokenId, uint256 mintedGene, address owner, uint256 chainId);
 	event Melded(
 		uint256[MELD_TOKENS_AMOUNT] meldingTokenIds,
@@ -113,7 +114,7 @@ contract Ducklings is
 		uint256 chainId
 	);
 
-	// constructor
+	// -------- Constructor --------
 
 	function initialize(address ducklingsAddress) public initializer {
 		__ERC721_init('Yellow Ducklings NFT Collection', 'YDNC');
@@ -140,13 +141,13 @@ contract Ducklings is
 		duckiesContract = ERC20BurnableUpgradeable(ducklingsAddress);
 	}
 
-	// upgrades
+	// -------- Upgrades --------
 
 	function _authorizeUpgrade(
 		address newImplementation
 	) internal override onlyRole(UPGRADER_ROLE) {}
 
-	// ERC721
+	// -------- ERC721 --------
 
 	function _burn(uint256 tokenId) internal override(ERC721RoyaltyUpgradeable, ERC721Upgradeable) {
 		super._burn(tokenId);
@@ -184,7 +185,7 @@ contract Ducklings is
 		return super.supportsInterface(interfaceId);
 	}
 
-	// ERC2981 Royalties
+	// -------- ERC2981 Royalties --------
 
 	function setRoyaltyCollector(address account) public onlyRole(DEFAULT_ADMIN_ROLE) {
 		_royaltiesCollector = account;
@@ -194,7 +195,7 @@ contract Ducklings is
 		return _royaltiesCollector;
 	}
 
-	// public
+	// -------- API URL, Price --------
 
 	function setAPIBaseURL(string calldata apiBaseURL_) external onlyRole(MAINTAINER_ROLE) {
 		apiBaseURL = apiBaseURL_;
@@ -208,7 +209,7 @@ contract Ducklings is
 		meldPrice = price;
 	}
 
-	// collections
+	// -------- Collections --------
 
 	function addCollection(Collection calldata collection) external onlyRole(MAINTAINER_ROLE) {
 		setCollection(collection, uint8(nextCollectionId.current()));
@@ -232,7 +233,7 @@ contract Ducklings is
 		collectionOfId[collectionId].availableBefore = uint64(block.timestamp);
 	}
 
-	// mint, meld
+	// -------- Mint, Meld --------
 
 	function mintByPayment(uint8 collectionId, uint8 amount) external UseRandom {
 		duckiesContract.burnFrom(msg.sender, mintPrice * amount);
@@ -261,7 +262,7 @@ contract Ducklings is
 		_meldOf(owner, meldingTokenIds);
 	}
 
-	// internal minting
+	// -------- Internal minting --------
 
 	function _mintPackTo(address to, uint8 collectionId, uint8 amount) internal {
 		_requireValidCollection(collectionId);
@@ -330,7 +331,7 @@ contract Ducklings is
 		}
 	}
 
-	// internal melding
+	// -------- Internal melding --------
 
 	function _meldOf(address owner, uint256[MELD_TOKENS_AMOUNT] memory meldingTokenIds) internal {
 		uint8 collectionId = tokenIdToDuckling[meldingTokenIds[0]].collectionId;
@@ -456,7 +457,7 @@ contract Ducklings is
 		return genes[meldedTraitIdx].getTrait(trait);
 	}
 
-	// other internal
+	// -------- Other internal --------
 
 	function _requireValidCollection(uint8 collectionId) internal view {
 		if (
