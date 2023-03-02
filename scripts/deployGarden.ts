@@ -3,12 +3,10 @@ import { ethers, upgrades } from 'hardhat';
 import type { Garden } from '../typechain-types';
 
 async function main(): Promise<void> {
-  const duckiesAddress = process.env.DUCKIES_ADDRESS ?? '';
   const issuerAddress = process.env.ISSUER_ADDRESS ?? '';
 
   const GardenFactory = await ethers.getContractFactory('Garden');
-  console.log('Deploying Garden with Duckies address:', duckiesAddress);
-  const Garden = (await upgrades.deployProxy(GardenFactory, [duckiesAddress], {
+  const Garden = (await upgrades.deployProxy(GardenFactory, [], {
     kind: 'uups',
   })) as Garden;
 
