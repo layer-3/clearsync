@@ -28,6 +28,7 @@ contract TreasureVault is IVoucher, Initializable, AccessControlUpgradeable, UUP
 	error IncorrectSigner(address expected, address actual);
 
 	bytes32 public constant UPGRADER_ROLE = keccak256('UPGRADER_ROLE');
+	// TREASURY_ROLE will be granted to a Quorum address, which mitigates vector of attack that one person is responsible for all token balance of this contract.
 	bytes32 public constant TREASURY_ROLE = keccak256('TREASURY_ROLE');
 
 	uint8 public constant REFERRAL_MAX_DEPTH = 5;
@@ -83,7 +84,8 @@ contract TreasureVault is IVoucher, Initializable, AccessControlUpgradeable, UUP
 	// -------- Withdraw --------
 
 	/**
-	 * @notice Withdraw the specified token from the vault.
+	 * @notice Withdraw the specified token from the vault. The risk of single account withdrawing all balances of this contract
+	 * is mitigated by requiring `TREASURY_ROLE` to invoke, which is granted to a Quorum account.
 	 * @dev Require `TREASURY_ROLE` to invoke.
 	 * @param tokenAddress The address of the token being withdrawn.
 	 * @param beneficiary The address of the account receiving the amount.
