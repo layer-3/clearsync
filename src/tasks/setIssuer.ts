@@ -13,7 +13,7 @@ task('setIssuer', 'Set TokenContract Reward Issuer')
   .addParam('account', "The issuer account's address")
   .setAction(async (taskArgs: TaskArgs, hre) => {
     const [deployer] = await hre.ethers.getSigners();
-    const Vault = (await hre.ethers.getContractAt(
+    const TreasureVault = (await hre.ethers.getContractAt(
       'TreasureVault',
       taskArgs.contract,
       deployer,
@@ -22,10 +22,10 @@ task('setIssuer', 'Set TokenContract Reward Issuer')
     console.log('Setting issuer with the account:', deployer.address);
     console.log('Account balance:', (await deployer.getBalance()).toString());
 
-    const prevIssuer = Vault.issuer;
+    const prevIssuer = await TreasureVault.issuer();
     console.log(`Previous issuer was ${prevIssuer}, Updating...`);
 
-    await Vault.setIssuer(taskArgs.account);
-    const newIssuer = await Vault.issuer;
+    await TreasureVault.setIssuer(taskArgs.account);
+    const newIssuer = await TreasureVault.issuer();
     console.log(`New issuer is ${newIssuer}`);
   });
