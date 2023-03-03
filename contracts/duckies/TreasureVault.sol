@@ -29,7 +29,7 @@ contract TreasureVault is IVoucher, Initializable, AccessControlUpgradeable, UUP
 
 	// Roles
 	bytes32 public constant UPGRADER_ROLE = keccak256('UPGRADER_ROLE');
-	bytes32 public constant TREASURY_ROLE = keccak256('TREASURY_ROLE');
+	bytes32 public constant MAINTAINER_ROLE = keccak256('MAINTAINER_ROLE');
 
 	// Constants
 	uint8 public constant REFERRAL_MAX_DEPTH = 5;
@@ -71,6 +71,8 @@ contract TreasureVault is IVoucher, Initializable, AccessControlUpgradeable, UUP
 		_grantRole(UPGRADER_ROLE, msg.sender);
 	}
 
+	// -------- Issuer --------
+
 	/**
 	 * @dev Sets the issuer address. This function can only be called by accounts with the DEFAULT_ADMIN_ROLE.
 	 * @param account The address of the new issuer.
@@ -79,22 +81,27 @@ contract TreasureVault is IVoucher, Initializable, AccessControlUpgradeable, UUP
 		issuer = account;
 	}
 
+	// -------- Withdraw --------
+
 	/**
 	 * @dev Withdraws the specified token from the vault.
 	 * @param tokenAddress The address of the token being withdrawn.
-	 * @param beneficiary The address of the account receiving the amount
+	 * @param beneficiary The address of the account receiving the amount.
 	 * @param amount The amount of the token to be withdrawn.
 	 */
 	function withdraw(
 		address tokenAddress,
 		address beneficiary,
 		uint256 amount
-	) public onlyRole(TREASURY_ROLE) {
-		require(amount > 0, 'You must withdraw a non-zero amount.');
+	) public onlyRole(MAINTAINER_ROLE) {
+		if (amount == 0) revert InsufficientTokenBalance(tokenAddress, 1, 0);
+
 		IERC20Upgradeable token = IERC20Upgradeable(tokenAddress);
 		uint256 tokenBalance = token.balanceOf(address(this));
+
 		if (amount > tokenBalance)
 			revert InsufficientTokenBalance(tokenAddress, amount, tokenBalance);
+
 		token.transfer(beneficiary, amount);
 	}
 
