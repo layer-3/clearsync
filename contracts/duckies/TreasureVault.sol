@@ -18,15 +18,10 @@ import '../interfaces/IVoucher.sol';
  * to referrers of up to 5 levels deep. This contract also allows the issuer to set an authorized address for signing
  * vouchers and upgrading the contract.
  */
-contract TreasureVault is
-	IVault,
-	IVoucher,
-	Initializable,
-	AccessControlUpgradeable,
-	UUPSUpgradeable
-{
+contract TreasureVault is IVoucher, Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 	using ECDSAUpgradeable for bytes32;
 
+	error InvalidPartner(address partner);
 	error CircularReferrers(address target, address base);
 	error VoucherAlreadyUsed(bytes32 voucherCodeHash);
 	error InvalidVoucher(Voucher voucher);
@@ -36,6 +31,7 @@ contract TreasureVault is
 
 	// Roles
 	bytes32 public constant UPGRADER_ROLE = keccak256('UPGRADER_ROLE');
+	bytes32 public constant PARTNER_MAINTAINER_ROLE = keccak256('PARTNER_MAINTAINER_ROLE');
 
 	// Constants
 	uint8 public constant REFERRAL_MAX_DEPTH = 5;
@@ -57,8 +53,8 @@ contract TreasureVault is
 	// Store the vouchers to avoid replay attacks
 	mapping(bytes32 => bool) internal _usedVouchers;
 
-	// Reward contributors balances
-	mapping(address => mapping(address => uint256)) private _balances;
+	// Partner token => depositor address
+	mapping(address => address) private _partners;
 
 	// Address signing vouchers
 	address public issuer;
@@ -89,48 +85,25 @@ contract TreasureVault is
 		issuer = account;
 	}
 
-	/**
-	 * @dev Deposits the specified token into the vault.
-	 * @param token The address of the token being deposited.
-	 * @param amount The amount of the token being deposited.
-	 */
-	function deposit(address token, uint256 amount) public payable {
-		if (token == address(0)) {
-			require(msg.value > 0, 'You must deposit a non-zero amount of Ether.');
-			_balances[token][msg.sender] += msg.value;
-		} else {
-			require(amount > 0, 'You must deposit a non-zero amount of tokens.');
-			IERC20Upgradeable(token).transferFrom(msg.sender, address(this), amount);
-			_balances[token][msg.sender] += amount;
-		}
+	// -------- Partner --------
+
+	function registerPartner(
+		address token,
+		address depositor
+	) external onlyRole(PARTNER_MAINTAINER_ROLE) {
+		if (_partners[token] != address(0)) revert InvalidPartner(depositor);
+		_partners[token] = depositor;
 	}
 
 	/**
 	 * @dev Withdraws the specified token from the vault.
 	 * @param token The address of the token being withdrawn.
-	 * @param amount The amount of the token to be withdrawn.
 	 */
-	function withdraw(address token, uint256 amount) public {
-		require(amount > 0, 'You must withdraw a non-zero amount.');
-		if (_balances[token][msg.sender] < amount) {
-			revert InsufficientTokenBalance(token, amount, _balances[token][msg.sender]);
-		}
+	function withdraw(IERC20Upgradeable token) public {
+		if (msg.sender != _partners[address(token)]) revert InvalidPartner(msg.sender);
 
-		_balances[token][msg.sender] -= amount;
-		if (token == address(0)) {
-			payable(msg.sender).transfer(amount);
-		} else {
-			IERC20Upgradeable(token).transfer(msg.sender, amount);
-		}
-	}
-
-	/**
-	 * @dev Returns the balance of the specified token for the caller.
-	 * @param token The address of the token being queried.
-	 * @return The balance of the token held by the caller.
-	 */
-	function getBalance(address token) public view returns (uint256) {
-		return _balances[token][msg.sender];
+		uint256 currentBalance = token.balanceOf(address(this));
+		token.transfer(_partners[address(token)], currentBalance);
 	}
 
 	// -------- Referrers --------
