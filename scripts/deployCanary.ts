@@ -2,7 +2,7 @@ import { ethers } from 'hardhat';
 
 async function main(): Promise<void> {
   const TokenFactory = await ethers.getContractFactory('Token');
-  const Token = await TokenFactory.deploy('Canary', 'CANARY', 1_000_000_000);
+  const Token = await TokenFactory.deploy('Canary', 'CANARY', 1_000_000_000n * 10n ** 8n);
 
   await Token.deployed();
 
