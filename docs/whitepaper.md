@@ -12,11 +12,11 @@ While blockchain technology has reliably enabled decentralized computation, curr
 
 Although we are convinced that much innovation will spring from this vibrant competition, the current blockchain environment still suffers from three main problems as a result of this. These are:
 
--   Market and liquidity fragmentation
+- Market and liquidity fragmentation
 
--   Lack of decentralization
+- Lack of decentralization
 
--   Lack of regulatory frameworks
+- Lack of regulatory frameworks
 
 ### 1.2 Market and liquidity fragmentation
 
@@ -70,7 +70,7 @@ To understand Yellow Network and its moving parts, it is important to get a high
 
 ![Stack Overview](./media/image5.png)
 
-*Yellow Network's different layers visualized.*
+_Yellow Network's different layers visualized._
 
 As we can see, Yellow Network is bringing a smart clearing protocol based on state channels, which is combined with an off-chain RPC protocol that is connected to proprietary trading software. At its core, Yellow Network is simply a protocol based on smart contract technology to track trading liabilities between Yellow Network trading parties. It is designed to be flexible, simple, and agnostic--- all in accordance with the [KISS design principle](https://www.interaction-design.org/literature/article/kiss-keep-it-simple-stupid-a-design-principle)[^24]. This way, existing institutions don't need to change their systems and can use their proprietary trading, settlement, and custody protocols to adopt Yellow Network.
 
@@ -118,7 +118,7 @@ Furthermore, the performance of rollups is nowhere near what state channels offe
 
 The high performance, the absence of third parties, the suitability for a wider variety of use cases as well as the cross-chain aspect, are all attributes Yellow Network is maximizing for, which is why state channel technology is used as the preferred scaling solution type.
 
-### 4.2 What are state channels? 
+### 4.2 What are state channels?
 
 The concept of state channels was [introduced](https://ieeexplore.ieee.org/document/9627997)[^29] in 2015. It is an off-chain scaling mechanism that enables transacting parties to interact without touching the blockchain. Only the final state between them is broadcasted and settled on-chain. The most prominent peer-to-peer state channel network in action is the [Bitcoin Lightning Network](https://lightning.network/)[^30], a second-layer protocol that was [introduced](https://lightning.network/lightning-network-paper.pdf)[^31] in 2016. It is based on payment channels, which are payment-specific state channel applications. Nonetheless, the Bitcoin Lightning Network is an excellent demo of how state channels work.
 
@@ -130,13 +130,13 @@ In the context of trading for example, traders can make x-number of off-chain tr
 
 As a blockchain scaling solution, state channels [offer](https://docs.ethhub.io/ethereum-roadmap/layer-2-scaling/state-channels/)[^34] various benefits. Among them are:
 
--   State channels are ultra-fast and massively scalable
+- State channels are ultra-fast and massively scalable
 
--   State channels are blockchain agnostic
+- State channels are blockchain agnostic
 
--   State channels offer confidentiality
+- State channels offer confidentiality
 
--   State channels are Web2 compatible
+- State channels are Web2 compatible
 
 Yellow Network has identified that state channels, thanks to their advantages, provide the necessary solution to address the current challenges Web2 companies are facing when wanting to interact with blockchain technology. Because of path dependency, it is unlikely that today\'s [highly developed internet infrastructure](https://www.internetlivestats.com/)[^35], [with its](https://everysecond.io/the-internet)[^36] billions of websites, millions of servers, and thousands of Web2 companies, will go through a complete overhaul to become blockchain-compatible. It is much more likely that state channels will act as a middleware solution between blockchains and legacy information systems.
 
@@ -148,7 +148,7 @@ Instead, any Web2 company can easily integrate with blockchains and use them in 
 
 ![Virtual State Channels](./media/image4.png)
 
-*Yellow Network's overlay mesh network of Yellow network nodes.*
+_Yellow Network's overlay mesh network of Yellow network nodes._
 
 ### 5.1 Running a Yellow Network Node
 
@@ -168,7 +168,7 @@ This information can be used as a routing table to decide the optimal connection
 
 ![Topic PubSub](./media/image1.png)
 
-*Yellow Network provides a world map of liquidity participants can tap into.*
+_Yellow Network provides a world map of liquidity participants can tap into._
 
 So, by joining Yellow Network, every participant is provided with a world map of liquidity, showing where it is, what prices there are and how this liquidity can be accessed most efficiently. This is similar to how [BitTorrent](https://web.cs.ucla.edu/classes/cs217/05BitTorrent.pdf)[^38] maps all files. Yellow Network does the same, not for files, but for trading data. Joining Yellow Network gives you access to this map, making it easier to find and access liquidity.
 
@@ -182,7 +182,7 @@ The distribution ratio within the state channels operated by participants is upd
 
 ![](./media/image3.png)
 
-*Brokers can trade with one another, while Yellow Network is acting as the clearing house between them.*
+_Brokers can trade with one another, while Yellow Network is acting as the clearing house between them._
 
 Thus, Yellow Network also provides the option for unilateral collateral settlement, whereby if a broker's balance sheet is \$5,000 higher than that of his trading partner, inequalities can be rebalanced by having the trading partner with the lower balance sheet provide the necessary collateral to settle the difference and re-equalize the trading liabilities. This process would result in a partial settlement, enabling both brokers to readjust the margin of collateral and continue trading.
 
@@ -192,15 +192,15 @@ One has to keep in mind that the actual trading, clearing, and settlement of ass
 
 ![](./media/image2.png)
 
-*Three crucial components making up Yellow Network: Trading and Clearing (off-chain) as well as settlement (on-chain).*
+_Three crucial components making up Yellow Network: Trading and Clearing (off-chain) as well as settlement (on-chain)._
 
 It is only the collateral that resides within state channels. Therefore, state channels do neither know about the liabilities that are being traded nor do they know about their prices. They just know the distribution ratio of the collateral provided and signed by the different state channel participants. Liabilities will be exchanged off-chain using Yellow Network's protocol, not on-chain transaction. However, the state channels smart clearing protocol Clear Sync helps accurately monitor and thus rebalance collateral positions atomically between trading partners.
 
 To perform actual settlement of on-chain assets, brokers will have different ways to proceed:
 
--   Using proper off-chain database and API infrastructure
+- Using proper off-chain database and API infrastructure
 
--   Using on-chain escrow smart contract or HTLC
+- Using on-chain escrow smart contract or HTLC
 
 Given two trading partners within Yellow Network have the same custodians, the assets don\'t need to be moved on-chain, but can just be cleared by updating the mutual custodian's accounting database. This is similar to how money is moved between people, who have the same bank and transfer money amongst each other. While the owner changes and accounting states are adjusted, no money is actually moved around.
 
@@ -233,91 +233,49 @@ Through operating and selling OpenDAX^TM^, the need for Yellow Network has becom
 Building out Yellow Network as a built-in solution and natively supported platform for OpenDAX^TM^ users would help brokers and clients efficiently source deep pockets of liquidity, thereby solving their bootstrapping problem that has so far hampered the adoption of OpenDAX^TM^ and thus the creation of more brokers and exchanges within the crypto trading space. While the need for some basic market-making will persist, the creation of Yellow Network will simplify things and cut costs for brokers and smaller exchanges that want to do business in the crypto trading space.
 
 [^1]: Nakamoto Satoshi, "Bitcoin: A Peer-to-Peer Electronic Cash System." [www.bitcoin.org](http://www.bitcoin.org), October 2008: <https://bitcoin.org/bitcoin.pdf>
-
 [^2]: Buterin Vitalik, "Ethereum White paper." [www.ethereum.org](http://www.ethereum.org), November 2014: <https://ethereum.org/en/whitepaper/>
-
 [^3]: Antonopouos Andreas, Wood Gavin, "Mastering Ethereum." O\'Reilly Media, Inc., November 2018: <https://www.oreilly.com/library/view/mastering-ethereum/9781491971932/>
-
 [^4]: Buterin Vitalik, "Why sharding is great: demystifying the technical properties." [www.vitalik.ca](http://www.vitalik.ca), April 2021: <https://vitalik.ca/general/2021/04/07/sharding.html>
-
 [^5]: Blockchain Comparison: <https://blockchain-comparison.com/blockchain-protocols/>
-
 [^6]: L2beat: <https://l2beat.com/scaling/tvl/>
-
 [^7]: Chainalysis Team, "Vulnerabilities in Cross-chain Bridge Protocols Emerge as Top Security Risk." Chainalysis Blog, August 2022: <https://blog.chainalysis.com/reports/cross-chain-bridge-hacks-2022/>
-
 [^8]: Token Terminal, "Bridge exploits account for \~50% of all DeFi exploits, totaling \~\$2.5B in lost assets." Token Terminal Twitter, October 2022: <https://twitter.com/tokenterminal/status/1582376876143968256>
-
 [^9]: Coinmarketcap, "Top Cryptocurrency Spot Exchanges." Coinmarketcap Website: <https://coinmarketcap.com/rankings/exchanges/>
-
 [^10]: Weisberger David, "The Ultimate Irony of Crypto Trading." Coindesk, September 2021: <https://www.coindesk.com/markets/2019/03/30/the-ultimate-irony-of-crypto-trading/>
-
 [^11]: Chainalysis Team, "DeFi-Driven Speculation Pushes Decentralized Exchanges' On-Chain Transaction Volumes Past Centralized Platforms." Chainalysis Blog, June 2022: <https://blog.chainalysis.com/reports/defi-dexs-web3/>
-
 [^12]: Barbon Andrea , Ranaldo Angelo, " On The Quality Of Cryptocurrency Markets: Centralized Versus Decentralized Exchanges." SNP Paper, April 2022: <https://www.snb.ch/n/mmr/reference/sem_2022_06_03_barbon/source/sem_2022_06_03_barbon.n.pdf>
-
 [^13]: Eskandari, S., Moosavi, S., Clark, J.: SoK: Transparent Dishonesty: Front-Running
 
     Attacks on Blockchain. In: Financial Cryptography. pp. 170--189. Springer International Publishing, Cham (2020): <https://link.springer.com/chapter/10.1007/978-3-030-43725-1_13>
 
 [^14]: Wu, Eva, "The Art and Science of Native Token Liquidity" Mechanism Capital, August 2021: <https://www.mechanism.capital/native-token-liquidity/>
-
 [^15]: Bitfinex, "Hodlers Put Faith in Centralised Exchanges as Platforms Flex High-Tech Security." Bitfinex Blog, October 2022: <https://blog.bitfinex.com/media-releases/hodlers-put-faith-in-centralised-exchanges-as-platforms-flex-high-tech-security/>
-
 [^16]: Reiff Nathan, "The Collapse of FTX: What Went Wrong with the Crypto Exchange?" Investopedia, December 2022: <https://www.investopedia.com/what-went-wrong-with-ftx-6828447>
-
 [^17]: Carter Nic, "Nic's PoR: Wall of Fame" Nic Carter Website: <https://niccarter.info/proof-of-reserves/>
-
 [^18]: Hafid, Abdelatif, Senhaji Hafid Abdelhakim, Samih Mustapha, "Scaling Blockchains: A Comprehensive Survey." IEEE Access, July 2020: <https://www.researchgate.net/publication/342639281_Scaling_Blockchains_A_Comprehensive_Survey>
-
 [^19]: Schär Fabian, "DeFi's Promise and Pitfalls." IMF, September 2022: <https://www.imf.org/en/Publications/fandd/issues/2022/09/Defi-promise-and-pitfalls-Fabian-Schar>
-
 [^20]: CFI Team, "What is Shadow Banking in the Cryptocurrency World?", Corporate Finance Institute, February 2023: <https://corporatefinanceinstitute.com/resources/cryptocurrency/shadow-banking-and-cryptocurrencies/>
-
 [^21]: Yellow Network: <https://www.yellow.org/>
-
 [^22]: Discover Swift: <https://www.swift.com/about-us/discover-swift/messaging-and-standards>
-
 [^23]: What is ECN: <https://www.angelone.in/knowledge-center/share-market/ecn-electronic-communication-network>
-
 [^24]: Kiss Design Principle: <https://www.interaction-design.org/literature/article/kiss-keep-it-simple-stupid-a-design-principle>
-
 [^25]: Charbonneau, Jon, "The Hitchhiker\'s Guide to Ethereum." Delphi Digital, May 2022: <https://members.delphidigital.io/reports/the-hitchhikers-guide-to-ethereum>
-
 [^26]: The Block: "Value Locked in Ethereum Scaling Solutions by Type." <https://www.theblock.co/data/scaling-solutions/scaling-overview/value-locked-of-ethereum-scaling-solutions>
-
 [^27]: Thibault Louis Tremblay, Sarry Tom, Hafid Abdelhakim Senhaji, "Blockchain Scaling Using Rollups: A Comprehensive Survey" IEEE Access, August 2022: <https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=9862815>
-
 [^28]: Isthedoom, "Optimistic Rollups." [www.ethereum.org](http://www.ethereum.org), November 2022: <https://ethereum.org/en/developers/docs/scaling/optimistic-rollups/>
-
 [^29]: Negka Lydia, Spathoulas Georgios, "Blockchain State Channels: A State of the Art." IEEE Access, November 2021: <https://ieeexplore.ieee.org/document/9627997>
-
 [^30]: Lightning Network: <https://lightning.network/>
-
 [^31]: Poon Joseph, Dryja Thaddeus, "The Bitcoin Lightning Network: Scalable Off-Chain Instant Payments." January 2016: <https://lightning.network/lightning-network-paper.pdf>
-
 [^32]: Van Der Merwe Johann, Dawoud, McDonald Stephen, "A Fully Distributed Proactively Secure Threshold-Multisignature Scheme." IEEE Access, March 2007: <https://ieeexplore.ieee.org/document/4118696>
-
 [^33]: Gangwal Ankit, Gangavalli Haripriya, Thirupathi Apoorva, "A Survey of Layer-Two Blockchain Protocols." Elsevier Journal of Network and Computer Applications, April 2022: <https://arxiv.org/pdf/2204.08032.pdf>
-
 [^34]: "State Channels." Docs EthHub: <https://docs.ethhub.io/ethereum-roadmap/layer-2-scaling/state-channels/>
-
 [^35]: Internet Live Stats: <https://www.internetlivestats.com/>
-
 [^36]: The Internet -- Every Second: <https://everysecond.io/the-internet>
-
 [^37]: Docs.libp2p - What is Publish/Subscribe: <https://docs.libp2p.io/concepts/pubsub/overview/>
-
 [^38]: Johnsen Jahn, Karlsen Lars, Birkeland Sebjørn, "Peer-to-peer networking with BitTorrent." Department of Telematics, December 2005: <https://web.cs.ucla.edu/classes/cs217/05BitTorrent.pdf>
-
 [^39]: R3, "Atomic settlement: if you have Amazon Prime, you already understand the process", February 2022: <https://r3.com/everyday-blockchain/atomic-settlement-if-you-have-amazon-prime-you-already-understand-the-process/>
-
 [^40]: Vohra Arnav, "What Are Hashed Timelock Contracts (HTLCs)? Application In Lightning Network & Payment Channels." [www.hackernoon.com](http://www.hackernoon.com), May 2018: <https://medium.com/hackernoon/what-are-hashed-timelock-contracts-htlcs-application-in-lightning-network-payment-channels-14437eeb9345>
-
 [^41]: Krishnasuri Narayanam, Ramakrishna Venkatraman, Dhinakaran Vinayagamurthy, Sandeep Nishad, "Generalized HTLC for Cross-Chain Swapping of Multiple Assets with Co-Ownerships." February 2022: <https://www.researchgate.net/publication/358898825_Generalized_HTLC_for_Cross-Chain_Swapping_of_Multiple_Assets_with_Co-Ownerships>
-
 [^42]: Close Tim, "Nitro Protocol" February 2019: <https://eprint.iacr.org/2019/219>
-
 [^43]: Openware: <https://www.openware.com/>
-
 [^44]: OpenDAX: <https://www.openware.com/product/opendax>

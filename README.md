@@ -1,4 +1,3 @@
-
 # Yellow Clearing Network
 
 This repository contains the smart contracts of [Yellow Network](https://www.yellow.org).
@@ -56,19 +55,18 @@ When parties are off-chains communication must be low latency and capable of hig
 ## Features
 
 - Open and close trading channels
-    - Deposit fee using YELLOW / DUCKIES
-    - Deposit Collateral in USDT, USDC, DAI, WETH, WBTC
+  - Deposit fee using YELLOW / DUCKIES
+  - Deposit Collateral in USDT, USDC, DAI, WETH, WBTC
 - Example Price feed from major providers
 - Example Risk Management module
 - Sending high-frequency Margin request off-chain
 - Ability to request a settlement
-    - Using our provided JointCustody
-    - Using other HTLC and escrow smart-contracts
-    - Using third party custodian
+  - Using our provided JointCustody
+  - Using other HTLC and escrow smart-contracts
+  - Using third party custodian
 - Ability to challenge a margin state to unlock the collateral
 - Canary test network using DUCKIES for fees
 - Ability to blacklist stolen funds using [IBlacklist](docs/interfaces/IBlacklist.md)
-
 
 ## Usage
 

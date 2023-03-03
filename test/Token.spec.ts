@@ -3,7 +3,7 @@ import { loadFixture, time } from '@nomicfoundation/hardhat-network-helpers';
 import { ethers } from 'hardhat';
 import { utils } from 'ethers';
 
-import { connectGroup } from './helpers/connectContract';
+import { connectGroup } from './helpers/connect';
 import { ACCOUNT_MISSING_ROLE } from './helpers/common';
 
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';

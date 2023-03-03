@@ -6,24 +6,20 @@ import '@nomiclabs/hardhat-ethers';
 import 'solidity-docgen';
 import type { HardhatUserConfig } from 'hardhat/config';
 
-const ACCOUNTS = process.env.PRIVATE_KEY === undefined ? [] : [process.env.PRIVATE_KEY];
-const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY ?? '';
-const POLYGONSCAN_API_KEY = process.env.POLYGONSCAN_API_KEY ?? '';
+import './src/tasks/activate';
+import './src/tasks/accounts';
+
+const accounts = {
+  mnemonic:
+    process.env.SIGNER_MNEMONIC ??
+    'clown border solid resource camp medal angle success achieve impulse beach inherit busy track hazard',
+};
 
 const config: HardhatUserConfig = {
   solidity: {
     compilers: [
       {
-        version: '0.8.16',
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 200,
-          },
-        },
-      },
-      {
-        version: '0.8.17',
+        version: '0.8.18',
         settings: {
           optimizer: {
             enabled: true,
@@ -35,29 +31,18 @@ const config: HardhatUserConfig = {
     ],
   },
   networks: {
-    ethereum: {
-      url: process.env.ETHEREUM_URL ?? '',
-      accounts: ACCOUNTS,
-    },
-    goerli: {
-      url: process.env.GOERLI_URL ?? '',
-      accounts: ACCOUNTS,
-    },
-    polygon: {
-      url: process.env.POLYGON_URL ?? '',
-      accounts: ACCOUNTS,
+    hardhat: {
+      accounts: {
+        count: 10,
+      },
     },
     mumbai: {
-      url: process.env.MUMBAI_URL ?? '',
-      accounts: ACCOUNTS,
+      url: 'https://wandering-aged-tree.matic-testnet.quiknode.pro/a1e69e9f8661279922044553d45860b09aa4765e/',
+      accounts,
     },
-    generic: {
-      url: process.env.GENERIC_URL ?? '',
-      chainId: Number.parseInt(process.env.GENERIC_CHAIN_ID ?? '0'),
-      gasPrice: process.env.GENERIC_GAS_PRICE
-        ? Number.parseInt(process.env.GENERIC_GAS_PRICE)
-        : 'auto',
-      accounts: ACCOUNTS,
+    matic: {
+      url: 'https://polygon-mainnet.g.alchemy.com/v2/6hf_T5dXftK5fs3KBq_QKuJIk4hSN3wM',
+      accounts,
     },
   },
   docgen: {
@@ -70,10 +55,7 @@ const config: HardhatUserConfig = {
   },
   etherscan: {
     apiKey: {
-      mainnet: ETHERSCAN_API_KEY,
-      goerli: ETHERSCAN_API_KEY,
-      polygon: POLYGONSCAN_API_KEY,
-      polygonMumbai: POLYGONSCAN_API_KEY,
+      polygon: process.env.POLYGONSCAN_API_KEY,
     },
   },
 };
