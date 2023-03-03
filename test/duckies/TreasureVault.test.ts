@@ -2,16 +2,16 @@ import { expect } from 'chai';
 import { ethers, upgrades } from 'hardhat';
 import { constants, utils } from 'ethers';
 
-import { connectGroup } from '../../helpers/connect';
-import { ACCOUNT_MISSING_ROLE, randomBytes32 } from '../../helpers/common';
+import { connectGroup } from '../helpers/connect';
+import { ACCOUNT_MISSING_ROLE, randomBytes32 } from '../helpers/common';
 import {
   RewardParams,
   VoucherAction,
   encodeRewardParams,
-} from '../../../src/contracts/garden/garden';
-import { Voucher, signVoucher, signVouchers } from '../../../src/contracts/garden/voucher';
+} from '../helpers/TreasureVault';
+import { Voucher, signVoucher, signVouchers } from '../helpers/voucher';
 
-import type { Garden, TestERC20 } from '../../../typechain-types';
+import type { TreasureVault, TestERC20 } from '../../typechain-types';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 const CIRCULAR_REFS = 'CircularReferrers';
@@ -22,7 +22,7 @@ const INSUF_TOKEN_BALANCE = 'InsufficientTokenBalance';
 const INCORRECT_SIGNER = 'IncorrectSigner';
 
 const TOKEN_CAP = 100_000_000_000;
-const TOKEN_DEPOSITED_TO_GARDEN = 10_000_000_000;
+const TOKEN_DEPOSITED_TO_VAULT = 10_000_000_000;
 const AMOUNT = 100;
 
 const REFERRAL_PAYOUT_DIVIDER = 100;
@@ -31,18 +31,18 @@ const COMMISSIONS = [50, 40, 30, 20, 10];
 const ADMIN_ROLE = constants.HashZero;
 const UPGRADER_ROLE = utils.id('UPGRADER_ROLE');
 
-describe('Garden', () => {
+describe('TreasureVault', () => {
   let Token: TestERC20;
-  let Garden: Garden;
+  let TreasureVault: TreasureVault;
 
-  let GardenAdmin: SignerWithAddress;
+  let TreasureVaultAdmin: SignerWithAddress;
   let Issuer: SignerWithAddress;
   let Someone: SignerWithAddress;
   let Someother: SignerWithAddress;
   let Referrer: SignerWithAddress;
 
-  let GardenAsAdmin: Garden;
-  let GardenAsSomeone: Garden;
+  let TreasureVaultAsAdmin: TreasureVault;
+  let TreasureVaultAsSomeone: TreasureVault;
 
   const VoucherBase: Voucher = {
     target: '',
@@ -58,7 +58,7 @@ describe('Garden', () => {
   let someoneVoucher: Voucher;
 
   before(async () => {
-    [GardenAdmin, Issuer, Someone, Someother, Referrer] = await ethers.getSigners();
+    [TreasureVaultAdmin, Issuer, Someone, Someother, Referrer] = await ethers.getSigners();
   });
 
   beforeEach(async () => {
@@ -70,19 +70,21 @@ describe('Garden', () => {
     )) as unknown as TestERC20;
     await Token.deployed();
 
-    const GardenFactory = await ethers.getContractFactory('Garden', GardenAdmin);
-    Garden = (await upgrades.deployProxy(GardenFactory, [], {
+    const TreasureVaultFactory = await ethers.getContractFactory('TreasureVault', TreasureVaultAdmin);
+    TreasureVault = (await upgrades.deployProxy(TreasureVaultFactory, [], {
       kind: 'uups',
-    })) as unknown as Garden;
-    await Garden.deployed();
+    })) as unknown as TreasureVault;
+    await TreasureVault.deployed();
 
-    [GardenAsAdmin, GardenAsSomeone] = connectGroup(Garden, [GardenAdmin, Someone]);
+    [TreasureVaultAsAdmin, TreasureVaultAsSomeone] = connectGroup(TreasureVault, [TreasureVaultAdmin, Someone]);
 
-    await GardenAsAdmin.setIssuer(Issuer.address);
+    await TreasureVaultAsAdmin.setIssuer(Issuer.address);
 
-    await Token.mint(Garden.address, TOKEN_DEPOSITED_TO_GARDEN);
+    await Token.mint(TreasureVaultAdmin.address, TOKEN_DEPOSITED_TO_VAULT);
+    await Token.connect(TreasureVaultAdmin).approve(TreasureVault.address, TOKEN_DEPOSITED_TO_VAULT);
+    await TreasureVault.deposit(Token.address, TOKEN_DEPOSITED_TO_VAULT);
 
-    VoucherBase.target = Garden.address;
+    VoucherBase.target = TreasureVault.address;
     VoucherBase.expire = Math.round(Date.now() / 1000) + 600; // 10 mins from now
 
     someoneVoucher = {
@@ -93,57 +95,57 @@ describe('Garden', () => {
 
   describe('initialize', () => {
     it('deployer is admin', async () => {
-      expect(await Garden.hasRole(ADMIN_ROLE, GardenAdmin.address)).to.be.true;
+      expect(await TreasureVault.hasRole(ADMIN_ROLE, TreasureVaultAdmin.address)).to.be.true;
     });
 
     it('deployer is upgrader', async () => {
-      expect(await Garden.hasRole(UPGRADER_ROLE, GardenAdmin.address)).to.be.true;
+      expect(await TreasureVault.hasRole(UPGRADER_ROLE, TreasureVaultAdmin.address)).to.be.true;
     });
 
     it('issuer not set', async () => {
-      const GardenFactory = await ethers.getContractFactory('Garden', GardenAdmin);
-      Garden = (await upgrades.deployProxy(GardenFactory, [], {
+      const TreasureVaultFactory = await ethers.getContractFactory('TreasureVault', TreasureVaultAdmin);
+      TreasureVault = (await upgrades.deployProxy(TreasureVaultFactory, [], {
         kind: 'uups',
-      })) as unknown as Garden;
-      await Garden.deployed();
+      })) as unknown as TreasureVault;
+      await TreasureVault.deployed();
 
-      expect(await Garden.issuer()).to.equal(constants.AddressZero);
+      expect(await TreasureVault.issuer()).to.equal(constants.AddressZero);
     });
   });
 
   describe('issuer', () => {
     it('admin can set issuer', async () => {
-      await GardenAsAdmin.setIssuer(Someone.address);
-      expect(await Garden.issuer()).to.equal(Someone.address);
+      await TreasureVaultAsAdmin.setIssuer(Someone.address);
+      expect(await TreasureVault.issuer()).to.equal(Someone.address);
     });
 
     it('revert on someone set issuer', async () => {
-      await expect(GardenAsSomeone.setIssuer(Someother.address)).to.be.revertedWith(
+      await expect(TreasureVaultAsSomeone.setIssuer(Someother.address)).to.be.revertedWith(
         ACCOUNT_MISSING_ROLE(Someone.address, ADMIN_ROLE),
       );
     });
   });
 
-  describe('transferTokenBalanceToPartner', () => {
+  describe('withdraw', () => {
     it('admin can transfer token balance to partner', async () => {
-      await GardenAsAdmin.transferTokenBalanceToPartner(Token.address, Someone.address);
-      expect(await Token.balanceOf(Someone.address)).to.equal(TOKEN_DEPOSITED_TO_GARDEN);
-      expect(await Token.balanceOf(Garden.address)).to.equal(0);
+      await TreasureVaultAsAdmin.withdraw(Token.address, 100);
+      expect(await Token.balanceOf(TreasureVault.address)).to.equal(TOKEN_DEPOSITED_TO_VAULT - 100);
+      expect(await Token.balanceOf(TreasureVaultAdmin.address)).to.equal(100);
     });
 
     it('revert on someone transfer token balance to partner', async () => {
-      await expect(
-        GardenAsSomeone.transferTokenBalanceToPartner(Token.address, Someone.address),
-      ).to.be.revertedWith(ACCOUNT_MISSING_ROLE(Someone.address, ADMIN_ROLE));
+      await expect(TreasureVaultAsSomeone.withdraw(Token.address, 42))
+        .to.revertedWithCustomError(TreasureVault, INSUF_TOKEN_BALANCE)
+        .withArgs(Token.address, 42, 0);
     });
 
-    it('revert on admin transfer partner token if partner token balance is 0', async () => {
+    it('revert on admin transfer partner token if partner token balance is insufficient', async () => {
       // withdraw Token
-      await GardenAsAdmin.transferTokenBalanceToPartner(Token.address, Someone.address);
+      await TreasureVaultAsAdmin.withdraw(Token.address, TOKEN_DEPOSITED_TO_VAULT - 42);
 
-      await expect(GardenAsAdmin.transferTokenBalanceToPartner(Token.address, Someone.address))
-        .to.revertedWithCustomError(Garden, INSUF_TOKEN_BALANCE)
-        .withArgs(Token.address, 1, 0);
+      await expect(TreasureVaultAsAdmin.withdraw(Token.address, 100))
+        .to.revertedWithCustomError(TreasureVault, INSUF_TOKEN_BALANCE)
+        .withArgs(Token.address, 100, 42);
     });
   });
 
@@ -177,7 +179,7 @@ describe('Garden', () => {
       describe('success', () => {
         it('successfully transfer token', async () => {
           expect(await Token.balanceOf(Someone.address)).to.equal(0);
-          await GardenAsSomeone.useVoucher(someoneTokenRewardVoucher, voucherSig);
+          await TreasureVaultAsSomeone.useVoucher(someoneTokenRewardVoucher, voucherSig);
           expect(await Token.balanceOf(Someone.address)).to.equal(AMOUNT);
         });
 
@@ -185,7 +187,7 @@ describe('Garden', () => {
           someoneTokenRewardVoucher.referrer = Referrer.address;
           voucherSig = await signVoucher(someoneTokenRewardVoucher, Issuer);
 
-          await GardenAsSomeone.useVoucher(someoneTokenRewardVoucher, voucherSig);
+          await TreasureVaultAsSomeone.useVoucher(someoneTokenRewardVoucher, voucherSig);
           expect(await Token.balanceOf(Referrer.address)).to.equal(
             (AMOUNT * COMMISSIONS[0]) / REFERRAL_PAYOUT_DIVIDER,
           );
@@ -195,16 +197,16 @@ describe('Garden', () => {
           someoneTokenRewardVoucher.referrer = Referrer.address;
           voucherSig = await signVoucher(someoneTokenRewardVoucher, Issuer);
 
-          await GardenAsSomeone.useVoucher(someoneTokenRewardVoucher, voucherSig);
+          await TreasureVaultAsSomeone.useVoucher(someoneTokenRewardVoucher, voucherSig);
 
           // payed = to SOMEONE + to REFERRER
           const payed = AMOUNT + (AMOUNT * COMMISSIONS[0]) / REFERRAL_PAYOUT_DIVIDER;
-          expect(await Token.balanceOf(Garden.address)).to.equal(TOKEN_DEPOSITED_TO_GARDEN - payed);
+          expect(await Token.balanceOf(TreasureVault.address)).to.equal(TOKEN_DEPOSITED_TO_VAULT - payed);
         });
 
         it('event emitted on successfully used voucher', async () => {
-          await expect(GardenAsSomeone.useVoucher(someoneTokenRewardVoucher, voucherSig))
-            .to.emit(Garden, 'VoucherUsed')
+          await expect(TreasureVaultAsSomeone.useVoucher(someoneTokenRewardVoucher, voucherSig))
+            .to.emit(TreasureVault, 'VoucherUsed')
             .withArgs(
               Someone.address,
               VoucherAction.Reward,
@@ -217,8 +219,8 @@ describe('Garden', () => {
           someoneTokenRewardVoucher.referrer = Referrer.address;
           voucherSig = await signVoucher(someoneTokenRewardVoucher, Issuer);
 
-          await expect(GardenAsSomeone.useVoucher(someoneTokenRewardVoucher, voucherSig))
-            .to.emit(Garden, 'AffiliateRegistered')
+          await expect(TreasureVaultAsSomeone.useVoucher(someoneTokenRewardVoucher, voucherSig))
+            .to.emit(TreasureVault, 'AffiliateRegistered')
             .withArgs(Someone.address, Referrer.address);
         });
       });
@@ -226,10 +228,10 @@ describe('Garden', () => {
       describe('revert', () => {
         it('insufficient reward token balance', async () => {
           // withdraw Token balance
-          await GardenAsAdmin.transferTokenBalanceToPartner(Token.address, Someone.address);
+          await TreasureVaultAsAdmin.withdraw(Token.address, TOKEN_DEPOSITED_TO_VAULT);
 
-          await expect(GardenAsSomeone.useVoucher(someoneTokenRewardVoucher, voucherSig))
-            .to.be.revertedWithCustomError(Garden, INSUF_TOKEN_BALANCE)
+          await expect(TreasureVaultAsSomeone.useVoucher(someoneTokenRewardVoucher, voucherSig))
+            .to.be.revertedWithCustomError(TreasureVault, INSUF_TOKEN_BALANCE)
             .withArgs(Token.address, AMOUNT, 0);
         });
 
@@ -237,18 +239,18 @@ describe('Garden', () => {
           it('revert on signed by not issuer', async () => {
             voucherSig = await signVoucher(someoneTokenRewardVoucher, Someone);
 
-            await expect(GardenAsSomeone.useVoucher(someoneTokenRewardVoucher, voucherSig))
-              .to.be.revertedWithCustomError(Garden, INCORRECT_SIGNER)
+            await expect(TreasureVaultAsSomeone.useVoucher(someoneTokenRewardVoucher, voucherSig))
+              .to.be.revertedWithCustomError(TreasureVault, INCORRECT_SIGNER)
               .withArgs(Issuer.address, Someone.address);
           });
 
-          it('revert on target not Garden address', async () => {
+          it('revert on target not TreasureVault address', async () => {
             someoneTokenRewardVoucher.target = Someone.address;
             voucherSig = await signVoucher(someoneTokenRewardVoucher, Issuer);
 
             await expect(
-              GardenAsSomeone.useVoucher(someoneTokenRewardVoucher, voucherSig),
-            ).to.be.revertedWithCustomError(Garden, INVALID_VOUCHER);
+              TreasureVaultAsSomeone.useVoucher(someoneTokenRewardVoucher, voucherSig),
+            ).to.be.revertedWithCustomError(TreasureVault, INVALID_VOUCHER);
             //   .withArgs(someoneTokenRewardVoucher); <- seems like ethers can not parse JS Voucher properly
           });
 
@@ -256,8 +258,8 @@ describe('Garden', () => {
             someoneTokenRewardVoucher.action = 42;
             voucherSig = await signVoucher(someoneTokenRewardVoucher, Issuer);
             await expect(
-              GardenAsSomeone.useVoucher(someoneTokenRewardVoucher, voucherSig),
-            ).to.be.revertedWithCustomError(Garden, INVALID_VOUCHER);
+              TreasureVaultAsSomeone.useVoucher(someoneTokenRewardVoucher, voucherSig),
+            ).to.be.revertedWithCustomError(TreasureVault, INVALID_VOUCHER);
           });
 
           it('revert on beneficiary not caller', async () => {
@@ -265,16 +267,16 @@ describe('Garden', () => {
             voucherSig = await signVoucher(someoneTokenRewardVoucher, Issuer);
 
             await expect(
-              GardenAsSomeone.useVoucher(someoneTokenRewardVoucher, voucherSig),
-            ).to.be.revertedWithCustomError(Garden, INVALID_VOUCHER);
+              TreasureVaultAsSomeone.useVoucher(someoneTokenRewardVoucher, voucherSig),
+            ).to.be.revertedWithCustomError(TreasureVault, INVALID_VOUCHER);
           });
 
           it('revert on 1st level circular referrer', async () => {
             someoneTokenRewardVoucher.referrer = Someone.address;
             voucherSig = await signVoucher(someoneTokenRewardVoucher, Issuer);
 
-            await expect(GardenAsSomeone.useVoucher(someoneTokenRewardVoucher, voucherSig))
-              .to.be.revertedWithCustomError(Garden, CIRCULAR_REFS)
+            await expect(TreasureVaultAsSomeone.useVoucher(someoneTokenRewardVoucher, voucherSig))
+              .to.be.revertedWithCustomError(TreasureVault, CIRCULAR_REFS)
               .withArgs(Someone.address, Someone.address);
           });
 
@@ -286,63 +288,63 @@ describe('Garden', () => {
             tokenRewardVoucher.beneficiary = Someother.address;
             tokenRewardVoucher.referrer = Referrer.address;
             voucherSig = await signVoucher(tokenRewardVoucher, Issuer);
-            await Garden.connect(Someother).useVoucher(tokenRewardVoucher, voucherSig);
+            await TreasureVault.connect(Someother).useVoucher(tokenRewardVoucher, voucherSig);
 
             // 2
             tokenRewardVoucher.beneficiary = Referrer.address;
             tokenRewardVoucher.referrer = Someone.address;
             tokenRewardVoucher.voucherCodeHash = randomBytes32();
             voucherSig = await signVoucher(tokenRewardVoucher, Issuer);
-            await Garden.connect(Referrer).useVoucher(tokenRewardVoucher, voucherSig);
+            await TreasureVault.connect(Referrer).useVoucher(tokenRewardVoucher, voucherSig);
 
             // 3
             tokenRewardVoucher.beneficiary = Someone.address;
             tokenRewardVoucher.referrer = Someother.address;
             tokenRewardVoucher.voucherCodeHash = randomBytes32();
             voucherSig = await signVoucher(tokenRewardVoucher, Issuer);
-            await expect(GardenAsSomeone.useVoucher(tokenRewardVoucher, voucherSig))
-              .to.be.revertedWithCustomError(Garden, CIRCULAR_REFS)
+            await expect(TreasureVaultAsSomeone.useVoucher(tokenRewardVoucher, voucherSig))
+              .to.be.revertedWithCustomError(TreasureVault, CIRCULAR_REFS)
               .withArgs(Someone.address, Someother.address);
           });
 
           it('revert on 5st level circular referrer', async () => {
             //         5            1              2         3           4
-            // Someone -> Someother -> GardenAdmin -> Issuer -> Referrer -> Someone
+            // Someone -> Someother -> TreasureVaultAdmin -> Issuer -> Referrer -> Someone
 
             // 1
             tokenRewardVoucher.beneficiary = Someother.address;
-            tokenRewardVoucher.referrer = GardenAdmin.address;
+            tokenRewardVoucher.referrer = TreasureVaultAdmin.address;
             voucherSig = await signVoucher(tokenRewardVoucher, Issuer);
-            await Garden.connect(Someother).useVoucher(tokenRewardVoucher, voucherSig);
+            await TreasureVault.connect(Someother).useVoucher(tokenRewardVoucher, voucherSig);
 
             // 2
-            tokenRewardVoucher.beneficiary = GardenAdmin.address;
+            tokenRewardVoucher.beneficiary = TreasureVaultAdmin.address;
             tokenRewardVoucher.referrer = Issuer.address;
             tokenRewardVoucher.voucherCodeHash = randomBytes32();
             voucherSig = await signVoucher(tokenRewardVoucher, Issuer);
-            await Garden.connect(GardenAdmin).useVoucher(tokenRewardVoucher, voucherSig);
+            await TreasureVault.connect(TreasureVaultAdmin).useVoucher(tokenRewardVoucher, voucherSig);
 
             // 3
             tokenRewardVoucher.beneficiary = Issuer.address;
             tokenRewardVoucher.referrer = Referrer.address;
             tokenRewardVoucher.voucherCodeHash = randomBytes32();
             voucherSig = await signVoucher(tokenRewardVoucher, Issuer);
-            await Garden.connect(Issuer).useVoucher(tokenRewardVoucher, voucherSig);
+            await TreasureVault.connect(Issuer).useVoucher(tokenRewardVoucher, voucherSig);
 
             // 4
             tokenRewardVoucher.beneficiary = Referrer.address;
             tokenRewardVoucher.referrer = Someone.address;
             tokenRewardVoucher.voucherCodeHash = randomBytes32();
             voucherSig = await signVoucher(tokenRewardVoucher, Issuer);
-            await Garden.connect(Referrer).useVoucher(tokenRewardVoucher, voucherSig);
+            await TreasureVault.connect(Referrer).useVoucher(tokenRewardVoucher, voucherSig);
 
             // 5
             tokenRewardVoucher.beneficiary = Someone.address;
             tokenRewardVoucher.referrer = Someother.address;
             tokenRewardVoucher.voucherCodeHash = randomBytes32();
             voucherSig = await signVoucher(tokenRewardVoucher, Issuer);
-            await expect(GardenAsSomeone.useVoucher(tokenRewardVoucher, voucherSig))
-              .to.be.revertedWithCustomError(Garden, CIRCULAR_REFS)
+            await expect(TreasureVaultAsSomeone.useVoucher(tokenRewardVoucher, voucherSig))
+              .to.be.revertedWithCustomError(TreasureVault, CIRCULAR_REFS)
               .withArgs(Someone.address, Someother.address);
           });
 
@@ -351,8 +353,8 @@ describe('Garden', () => {
             voucherSig = await signVoucher(someoneTokenRewardVoucher, Issuer);
 
             await expect(
-              GardenAsSomeone.useVoucher(someoneTokenRewardVoucher, voucherSig),
-            ).to.be.revertedWithCustomError(Garden, INVALID_VOUCHER);
+              TreasureVaultAsSomeone.useVoucher(someoneTokenRewardVoucher, voucherSig),
+            ).to.be.revertedWithCustomError(TreasureVault, INVALID_VOUCHER);
           });
 
           it('revert on incorrect chainId', async () => {
@@ -360,16 +362,16 @@ describe('Garden', () => {
             voucherSig = await signVoucher(someoneTokenRewardVoucher, Issuer);
 
             await expect(
-              GardenAsSomeone.useVoucher(someoneTokenRewardVoucher, voucherSig),
-            ).to.be.revertedWithCustomError(Garden, INVALID_VOUCHER);
+              TreasureVaultAsSomeone.useVoucher(someoneTokenRewardVoucher, voucherSig),
+            ).to.be.revertedWithCustomError(TreasureVault, INVALID_VOUCHER);
           });
 
           it('revert on already used voucherCodeHash', async () => {
-            await GardenAsSomeone.useVoucher(someoneTokenRewardVoucher, voucherSig);
+            await TreasureVaultAsSomeone.useVoucher(someoneTokenRewardVoucher, voucherSig);
 
             await expect(
-              GardenAsSomeone.useVoucher(someoneTokenRewardVoucher, voucherSig),
-            ).to.be.revertedWithCustomError(Garden, VOUCHER_USED);
+              TreasureVaultAsSomeone.useVoucher(someoneTokenRewardVoucher, voucherSig),
+            ).to.be.revertedWithCustomError(TreasureVault, VOUCHER_USED);
           });
         });
 
@@ -380,8 +382,8 @@ describe('Garden', () => {
             voucherSig = await signVoucher(someoneTokenRewardVoucher, Issuer);
 
             await expect(
-              GardenAsSomeone.useVoucher(someoneTokenRewardVoucher, voucherSig),
-            ).to.be.revertedWithCustomError(Garden, INVALID_REWARD);
+              TreasureVaultAsSomeone.useVoucher(someoneTokenRewardVoucher, voucherSig),
+            ).to.be.revertedWithCustomError(TreasureVault, INVALID_REWARD);
           });
 
           it('revert on zero amount reward token', async () => {
@@ -390,8 +392,8 @@ describe('Garden', () => {
             voucherSig = await signVoucher(someoneTokenRewardVoucher, Issuer);
 
             await expect(
-              GardenAsSomeone.useVoucher(someoneTokenRewardVoucher, voucherSig),
-            ).to.be.revertedWithCustomError(Garden, INVALID_REWARD);
+              TreasureVaultAsSomeone.useVoucher(someoneTokenRewardVoucher, voucherSig),
+            ).to.be.revertedWithCustomError(TreasureVault, INVALID_REWARD);
           });
         });
       });
@@ -417,7 +419,7 @@ describe('Garden', () => {
       )) as unknown as TestERC20;
       await Token2.deployed();
 
-      await Token2.mint(Garden.address, TOKEN_DEPOSITED_TO_GARDEN);
+      await Token2.mint(TreasureVault.address, TOKEN_DEPOSITED_TO_VAULT);
 
       rewardParams = {
         token: Token.address,
@@ -447,7 +449,7 @@ describe('Garden', () => {
     });
 
     it('successfully transfer token', async () => {
-      await GardenAsSomeone.useVouchers(
+      await TreasureVaultAsSomeone.useVouchers(
         [someoneTokenRewardVoucher, someoneToken2RewardVoucher],
         vouchersSig,
       );
@@ -458,19 +460,19 @@ describe('Garden', () => {
 
     it('emit event for each voucher', async () => {
       await expect(
-        GardenAsSomeone.useVouchers(
+        TreasureVaultAsSomeone.useVouchers(
           [someoneTokenRewardVoucher, someoneToken2RewardVoucher],
           vouchersSig,
         ),
       )
-        .to.emit(Garden, 'VoucherUsed')
+        .to.emit(TreasureVault, 'VoucherUsed')
         .withArgs(
           Someone.address,
           VoucherAction.Reward,
           someoneTokenRewardVoucher.voucherCodeHash,
           someoneTokenRewardVoucher.chainId,
         )
-        .to.emit(Garden, 'VoucherUsed')
+        .to.emit(TreasureVault, 'VoucherUsed')
         .withArgs(
           Someone.address,
           VoucherAction.Reward,

@@ -1,6 +1,6 @@
 import { Signer, utils } from 'ethers';
 
-import { signEncoded } from '../sign';
+import { signEncoded } from './sign';
 
 import type { ParamType } from 'ethers/lib/utils';
 

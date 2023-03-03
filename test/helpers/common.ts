@@ -1,4 +1,13 @@
-import { utils } from 'ethers';
+import { Signer, utils } from 'ethers';
+import type { ParamType } from 'ethers/lib/utils';
+
+export function ABIEncode(ABIType: ParamType, data: unknown): string {
+  return utils.defaultAbiCoder.encode([ABIType], [data]);
+}
+
+export async function signEncoded(encodedData: string, signer: Signer): Promise<string> {
+  return await signer.signMessage(utils.arrayify(utils.keccak256(encodedData)));
+}
 
 export function ACCOUNT_MISSING_ROLE(account: string, role: string): string {
   return `AccessControl: account ${utils.hexlify(account)} is missing role ${role}`;
