@@ -4,11 +4,7 @@ import { constants, utils } from 'ethers';
 
 import { connectGroup } from '../helpers/connect';
 import { ACCOUNT_MISSING_ROLE, randomBytes32 } from '../helpers/common';
-import {
-  RewardParams,
-  VoucherAction,
-  encodeRewardParams,
-} from '../helpers/TreasureVault';
+import { RewardParams, VoucherAction, encodeRewardParams } from '../helpers/TreasureVault';
 import { Voucher, signVoucher, signVouchers } from '../helpers/voucher';
 
 import type { TreasureVault, TestERC20 } from '../../typechain-types';
@@ -70,18 +66,27 @@ describe('TreasureVault', () => {
     )) as unknown as TestERC20;
     await Token.deployed();
 
-    const TreasureVaultFactory = await ethers.getContractFactory('TreasureVault', TreasureVaultAdmin);
+    const TreasureVaultFactory = await ethers.getContractFactory(
+      'TreasureVault',
+      TreasureVaultAdmin,
+    );
     TreasureVault = (await upgrades.deployProxy(TreasureVaultFactory, [], {
       kind: 'uups',
     })) as unknown as TreasureVault;
     await TreasureVault.deployed();
 
-    [TreasureVaultAsAdmin, TreasureVaultAsSomeone] = connectGroup(TreasureVault, [TreasureVaultAdmin, Someone]);
+    [TreasureVaultAsAdmin, TreasureVaultAsSomeone] = connectGroup(TreasureVault, [
+      TreasureVaultAdmin,
+      Someone,
+    ]);
 
     await TreasureVaultAsAdmin.setIssuer(Issuer.address);
 
     await Token.mint(TreasureVaultAdmin.address, TOKEN_DEPOSITED_TO_VAULT);
-    await Token.connect(TreasureVaultAdmin).approve(TreasureVault.address, TOKEN_DEPOSITED_TO_VAULT);
+    await Token.connect(TreasureVaultAdmin).approve(
+      TreasureVault.address,
+      TOKEN_DEPOSITED_TO_VAULT,
+    );
     await TreasureVault.deposit(Token.address, TOKEN_DEPOSITED_TO_VAULT);
 
     VoucherBase.target = TreasureVault.address;
@@ -103,7 +108,10 @@ describe('TreasureVault', () => {
     });
 
     it('issuer not set', async () => {
-      const TreasureVaultFactory = await ethers.getContractFactory('TreasureVault', TreasureVaultAdmin);
+      const TreasureVaultFactory = await ethers.getContractFactory(
+        'TreasureVault',
+        TreasureVaultAdmin,
+      );
       TreasureVault = (await upgrades.deployProxy(TreasureVaultFactory, [], {
         kind: 'uups',
       })) as unknown as TreasureVault;
@@ -201,7 +209,9 @@ describe('TreasureVault', () => {
 
           // payed = to SOMEONE + to REFERRER
           const payed = AMOUNT + (AMOUNT * COMMISSIONS[0]) / REFERRAL_PAYOUT_DIVIDER;
-          expect(await Token.balanceOf(TreasureVault.address)).to.equal(TOKEN_DEPOSITED_TO_VAULT - payed);
+          expect(await Token.balanceOf(TreasureVault.address)).to.equal(
+            TOKEN_DEPOSITED_TO_VAULT - payed,
+          );
         });
 
         it('event emitted on successfully used voucher', async () => {
@@ -322,7 +332,10 @@ describe('TreasureVault', () => {
             tokenRewardVoucher.referrer = Issuer.address;
             tokenRewardVoucher.voucherCodeHash = randomBytes32();
             voucherSig = await signVoucher(tokenRewardVoucher, Issuer);
-            await TreasureVault.connect(TreasureVaultAdmin).useVoucher(tokenRewardVoucher, voucherSig);
+            await TreasureVault.connect(TreasureVaultAdmin).useVoucher(
+              tokenRewardVoucher,
+              voucherSig,
+            );
 
             // 3
             tokenRewardVoucher.beneficiary = Issuer.address;
