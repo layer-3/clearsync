@@ -26,7 +26,7 @@ const COMMISSIONS = [50, 40, 30, 20, 10];
 
 const ADMIN_ROLE = constants.HashZero;
 const UPGRADER_ROLE = utils.id('UPGRADER_ROLE');
-const MAINTAINER_ROLE = utils.id('MAINTAINER_ROLE');
+const TREASURY_ROLE = utils.id('TREASURY_ROLE');
 
 describe('TreasureVault', () => {
   let Token: TestERC20;
@@ -37,10 +37,10 @@ describe('TreasureVault', () => {
   let Someone: SignerWithAddress;
   let Someother: SignerWithAddress;
   let Referrer: SignerWithAddress;
-  let Maintainer: SignerWithAddress;
+  let TreasuryGuy: SignerWithAddress;
 
   let TreasureVaultAsAdmin: TreasureVault;
-  let TreasureVaultAsMaintainer: TreasureVault;
+  let TreasureVaultAsTreasuryGuy: TreasureVault;
   let TreasureVaultAsSomeone: TreasureVault;
 
   const VoucherBase: Voucher = {
@@ -57,7 +57,7 @@ describe('TreasureVault', () => {
   let someoneVoucher: Voucher;
 
   before(async () => {
-    [TreasureVaultAdmin, Issuer, Someone, Someother, Referrer, Maintainer] =
+    [TreasureVaultAdmin, Issuer, Someone, Someother, Referrer, TreasuryGuy] =
       await ethers.getSigners();
   });
 
@@ -79,13 +79,13 @@ describe('TreasureVault', () => {
     })) as unknown as TreasureVault;
     await TreasureVault.deployed();
 
-    [TreasureVaultAsAdmin, TreasureVaultAsMaintainer, TreasureVaultAsSomeone] = connectGroup(
+    [TreasureVaultAsAdmin, TreasureVaultAsTreasuryGuy, TreasureVaultAsSomeone] = connectGroup(
       TreasureVault,
-      [TreasureVaultAdmin, Maintainer, Someone],
+      [TreasureVaultAdmin, TreasuryGuy, Someone],
     );
 
     await TreasureVaultAsAdmin.setIssuer(Issuer.address);
-    await TreasureVaultAsAdmin.grantRole(MAINTAINER_ROLE, Maintainer.address);
+    await TreasureVaultAsAdmin.grantRole(TREASURY_ROLE, TreasuryGuy.address);
 
     await Token.mint(TreasureVault.address, TOKEN_DEPOSITED_TO_VAULT);
 
@@ -135,8 +135,8 @@ describe('TreasureVault', () => {
   });
 
   describe('withdraw', () => {
-    it('maintainer can transfer token balance to partner', async () => {
-      await TreasureVaultAsMaintainer.withdraw(Token.address, Someone.address, AMOUNT);
+    it('TreasuryGuy can transfer token balance to partner', async () => {
+      await TreasureVaultAsTreasuryGuy.withdraw(Token.address, Someone.address, AMOUNT);
       expect(await Token.balanceOf(TreasureVault.address)).to.equal(
         TOKEN_DEPOSITED_TO_VAULT - AMOUNT,
       );
@@ -144,7 +144,7 @@ describe('TreasureVault', () => {
     });
 
     it('revert on transer 0 token amount', async () => {
-      await expect(TreasureVaultAsMaintainer.withdraw(Token.address, Someother.address, 0))
+      await expect(TreasureVaultAsTreasuryGuy.withdraw(Token.address, Someother.address, 0))
         .to.revertedWithCustomError(TreasureVault, INSUF_TOKEN_BALANCE)
         .withArgs(Token.address, 1, 0);
     });
@@ -152,19 +152,19 @@ describe('TreasureVault', () => {
     it('revert on someone transfer token balance to partner', async () => {
       await expect(
         TreasureVaultAsSomeone.withdraw(Token.address, Someother.address, AMOUNT),
-      ).to.revertedWith(ACCOUNT_MISSING_ROLE(Someone.address, MAINTAINER_ROLE));
+      ).to.revertedWith(ACCOUNT_MISSING_ROLE(Someone.address, TREASURY_ROLE));
     });
 
     it('revert on admin transfer partner token if partner token balance is insufficient', async () => {
       // withdraw Token
-      await TreasureVaultAsMaintainer.withdraw(
+      await TreasureVaultAsTreasuryGuy.withdraw(
         Token.address,
         Someone.address,
         TOKEN_DEPOSITED_TO_VAULT - AMOUNT,
       );
 
       await expect(
-        TreasureVaultAsMaintainer.withdraw(
+        TreasureVaultAsTreasuryGuy.withdraw(
           Token.address,
           Someone.address,
           TOKEN_DEPOSITED_TO_VAULT,
@@ -256,7 +256,7 @@ describe('TreasureVault', () => {
       describe('revert', () => {
         it('insufficient reward token balance', async () => {
           // withdraw Token balance
-          await TreasureVaultAsMaintainer.withdraw(
+          await TreasureVaultAsTreasuryGuy.withdraw(
             Token.address,
             Someone.address,
             TOKEN_DEPOSITED_TO_VAULT,

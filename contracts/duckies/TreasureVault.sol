@@ -29,7 +29,7 @@ contract TreasureVault is IVoucher, Initializable, AccessControlUpgradeable, UUP
 
 	// Roles
 	bytes32 public constant UPGRADER_ROLE = keccak256('UPGRADER_ROLE');
-	bytes32 public constant MAINTAINER_ROLE = keccak256('MAINTAINER_ROLE');
+	bytes32 public constant TREASURY_ROLE = keccak256('TREASURY_ROLE');
 
 	// Constants
 	uint8 public constant REFERRAL_MAX_DEPTH = 5;
@@ -93,7 +93,7 @@ contract TreasureVault is IVoucher, Initializable, AccessControlUpgradeable, UUP
 		address tokenAddress,
 		address beneficiary,
 		uint256 amount
-	) public onlyRole(MAINTAINER_ROLE) {
+	) public onlyRole(TREASURY_ROLE) {
 		if (amount == 0) revert InsufficientTokenBalance(tokenAddress, 1, 0);
 
 		IERC20Upgradeable token = IERC20Upgradeable(tokenAddress);
