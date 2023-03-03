@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
-// TODO: change version to 0.8.19
-pragma solidity 0.8.17;
+pragma solidity 0.8.18;
 
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';

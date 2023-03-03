@@ -3,6 +3,7 @@ import { ethers, upgrades } from 'hardhat';
 import type { TreasureVault } from '../typechain-types';
 
 async function main(): Promise<void> {
+  //FIXME: automate probably address management and params
   const issuerAddress = process.env.ISSUER_ADDRESS ?? '';
 
   const TreasureVaultFactory = await ethers.getContractFactory('TreasureVault');

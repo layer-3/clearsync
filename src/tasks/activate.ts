@@ -9,7 +9,7 @@ interface ActivateTokenArgs {
   premintTo: string;
 }
 
-task('activateToken', 'Activates Token (Canary and Yellow)')
+task('activate', 'Activates Token (Canary and Yellow)')
   .addParam('tokenAddress', 'The address of Token')
   .addParam('premint', 'Amount of Tokens to premint')
   .addParam('premintTo', 'Address of an account to premint Tokens to')
