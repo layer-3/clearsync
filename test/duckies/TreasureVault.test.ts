@@ -7,7 +7,7 @@ import { ACCOUNT_MISSING_ROLE, randomBytes32 } from '../helpers/common';
 import { RewardParams, VoucherAction, encodeRewardParams } from '../helpers/TreasureVault';
 import { Voucher, signVoucher, signVouchers } from '../helpers/voucher';
 
-import type { TreasureVault, TestERC20 } from '../../typechain-types';
+import type { TestERC20, TreasureVault } from '../../typechain-types';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 const CIRCULAR_REFS = 'CircularReferrers';
@@ -26,6 +26,7 @@ const COMMISSIONS = [50, 40, 30, 20, 10];
 
 const ADMIN_ROLE = constants.HashZero;
 const UPGRADER_ROLE = utils.id('UPGRADER_ROLE');
+const TREASURY_ROLE = utils.id('TREASURY_ROLE');
 
 describe('TreasureVault', () => {
   let Token: TestERC20;
@@ -36,8 +37,10 @@ describe('TreasureVault', () => {
   let Someone: SignerWithAddress;
   let Someother: SignerWithAddress;
   let Referrer: SignerWithAddress;
+  let TreasuryGuy: SignerWithAddress;
 
   let TreasureVaultAsAdmin: TreasureVault;
+  let TreasureVaultAsTreasury: TreasureVault;
   let TreasureVaultAsSomeone: TreasureVault;
 
   const VoucherBase: Voucher = {
@@ -54,7 +57,8 @@ describe('TreasureVault', () => {
   let someoneVoucher: Voucher;
 
   before(async () => {
-    [TreasureVaultAdmin, Issuer, Someone, Someother, Referrer] = await ethers.getSigners();
+    [TreasureVaultAdmin, Issuer, Someone, Someother, Referrer, TreasuryGuy] =
+      await ethers.getSigners();
   });
 
   beforeEach(async () => {
@@ -75,19 +79,15 @@ describe('TreasureVault', () => {
     })) as unknown as TreasureVault;
     await TreasureVault.deployed();
 
-    [TreasureVaultAsAdmin, TreasureVaultAsSomeone] = connectGroup(TreasureVault, [
-      TreasureVaultAdmin,
-      Someone,
-    ]);
+    [TreasureVaultAsAdmin, TreasureVaultAsTreasury, TreasureVaultAsSomeone] = connectGroup(
+      TreasureVault,
+      [TreasureVaultAdmin, TreasuryGuy, Someone],
+    );
 
     await TreasureVaultAsAdmin.setIssuer(Issuer.address);
+    await TreasureVaultAsAdmin.grantRole(TREASURY_ROLE, TreasuryGuy.address);
 
-    await Token.mint(TreasureVaultAdmin.address, TOKEN_DEPOSITED_TO_VAULT);
-    await Token.connect(TreasureVaultAdmin).approve(
-      TreasureVault.address,
-      TOKEN_DEPOSITED_TO_VAULT,
-    );
-    await TreasureVault.deposit(Token.address, TOKEN_DEPOSITED_TO_VAULT);
+    await Token.mint(TreasureVault.address, TOKEN_DEPOSITED_TO_VAULT);
 
     VoucherBase.target = TreasureVault.address;
     VoucherBase.expire = Math.round(Date.now() / 1000) + 600; // 10 mins from now
@@ -136,22 +136,26 @@ describe('TreasureVault', () => {
 
   describe('withdraw', () => {
     it('admin can transfer token balance to partner', async () => {
-      await TreasureVaultAsAdmin.withdraw(Token.address, 100);
+      await TreasureVaultAsTreasury.withdraw(Token.address, Someone.address, 100);
       expect(await Token.balanceOf(TreasureVault.address)).to.equal(TOKEN_DEPOSITED_TO_VAULT - 100);
-      expect(await Token.balanceOf(TreasureVaultAdmin.address)).to.equal(100);
+      expect(await Token.balanceOf(Someone.address)).to.equal(100);
     });
 
     it('revert on someone transfer token balance to partner', async () => {
-      await expect(TreasureVaultAsSomeone.withdraw(Token.address, 42))
+      await expect(TreasureVaultAsTreasury.withdraw(Token.address, Someother.address, 42))
         .to.revertedWithCustomError(TreasureVault, INSUF_TOKEN_BALANCE)
         .withArgs(Token.address, 42, 0);
     });
 
     it('revert on admin transfer partner token if partner token balance is insufficient', async () => {
       // withdraw Token
-      await TreasureVaultAsAdmin.withdraw(Token.address, TOKEN_DEPOSITED_TO_VAULT - 42);
+      await TreasureVaultAsTreasury.withdraw(
+        Token.address,
+        Someone.address,
+        TOKEN_DEPOSITED_TO_VAULT - 42,
+      );
 
-      await expect(TreasureVaultAsAdmin.withdraw(Token.address, 100))
+      await expect(TreasureVaultAsTreasury.withdraw(Token.address, Someone.address, 100))
         .to.revertedWithCustomError(TreasureVault, INSUF_TOKEN_BALANCE)
         .withArgs(Token.address, 100, 42);
     });
@@ -238,7 +242,11 @@ describe('TreasureVault', () => {
       describe('revert', () => {
         it('insufficient reward token balance', async () => {
           // withdraw Token balance
-          await TreasureVaultAsAdmin.withdraw(Token.address, TOKEN_DEPOSITED_TO_VAULT);
+          await TreasureVaultAsTreasury.withdraw(
+            Token.address,
+            Someone.address,
+            TOKEN_DEPOSITED_TO_VAULT,
+          );
 
           await expect(TreasureVaultAsSomeone.useVoucher(someoneTokenRewardVoucher, voucherSig))
             .to.be.revertedWithCustomError(TreasureVault, INSUF_TOKEN_BALANCE)

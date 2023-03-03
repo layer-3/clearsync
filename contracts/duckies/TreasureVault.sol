@@ -7,7 +7,6 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol';
 
-import '../interfaces/IVault.sol';
 import '../interfaces/IVoucher.sol';
 
 /**
@@ -18,13 +17,7 @@ import '../interfaces/IVoucher.sol';
  * to referrers of up to 5 levels deep. This contract also allows the issuer to set an authorized address for signing
  * vouchers and upgrading the contract.
  */
-contract TreasureVault is
-	IVault,
-	IVoucher,
-	Initializable,
-	AccessControlUpgradeable,
-	UUPSUpgradeable
-{
+contract TreasureVault is IVoucher, Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 	using ECDSAUpgradeable for bytes32;
 
 	error CircularReferrers(address target, address base);
@@ -36,6 +29,7 @@ contract TreasureVault is
 
 	// Roles
 	bytes32 public constant UPGRADER_ROLE = keccak256('UPGRADER_ROLE');
+	bytes32 public constant TREASURY_ROLE = keccak256('TREASURY_ROLE');
 
 	// Constants
 	uint8 public constant REFERRAL_MAX_DEPTH = 5;
@@ -57,15 +51,11 @@ contract TreasureVault is
 	// Store the vouchers to avoid replay attacks
 	mapping(bytes32 => bool) internal _usedVouchers;
 
-	// Reward contributors balances
-	mapping(address => mapping(address => uint256)) private _balances;
-
 	// Address signing vouchers
 	address public issuer;
 
 	// Affiliate is invited by referrer. Referrer receives a tiny part of their affiliate's voucher.
 	event AffiliateRegistered(address affiliate, address referrer);
-	event VoucherUsed(address wallet, uint8 VoucherAction, bytes32 voucherCodeHash, uint32 chainId);
 
 	// disallow calling implementation directly (not via proxy)
 	/// @custom:oz-upgrades-unsafe-allow constructor
@@ -90,47 +80,22 @@ contract TreasureVault is
 	}
 
 	/**
-	 * @dev Deposits the specified token into the vault.
-	 * @param token The address of the token being deposited.
-	 * @param amount The amount of the token being deposited.
-	 */
-	function deposit(address token, uint256 amount) public payable {
-		if (token == address(0)) {
-			require(msg.value > 0, 'You must deposit a non-zero amount of Ether.');
-			_balances[token][msg.sender] += msg.value;
-		} else {
-			require(amount > 0, 'You must deposit a non-zero amount of tokens.');
-			IERC20Upgradeable(token).transferFrom(msg.sender, address(this), amount);
-			_balances[token][msg.sender] += amount;
-		}
-	}
-
-	/**
 	 * @dev Withdraws the specified token from the vault.
-	 * @param token The address of the token being withdrawn.
+	 * @param tokenAddress The address of the token being withdrawn.
+	 * @param beneficiary The address of the account receiving the amount
 	 * @param amount The amount of the token to be withdrawn.
 	 */
-	function withdraw(address token, uint256 amount) public {
+	function withdraw(
+		address tokenAddress,
+		address beneficiary,
+		uint256 amount
+	) public onlyRole(TREASURY_ROLE) {
 		require(amount > 0, 'You must withdraw a non-zero amount.');
-		if (_balances[token][msg.sender] < amount) {
-			revert InsufficientTokenBalance(token, amount, _balances[token][msg.sender]);
-		}
-
-		_balances[token][msg.sender] -= amount;
-		if (token == address(0)) {
-			payable(msg.sender).transfer(amount);
-		} else {
-			IERC20Upgradeable(token).transfer(msg.sender, amount);
-		}
-	}
-
-	/**
-	 * @dev Returns the balance of the specified token for the caller.
-	 * @param token The address of the token being queried.
-	 * @return The balance of the token held by the caller.
-	 */
-	function getBalance(address token) public view returns (uint256) {
-		return _balances[token][msg.sender];
+		IERC20Upgradeable token = IERC20Upgradeable(tokenAddress);
+		uint256 tokenBalance = token.balanceOf(address(this));
+		if (amount > tokenBalance)
+			revert InsufficientTokenBalance(tokenAddress, amount, tokenBalance);
+		token.transfer(beneficiary, amount);
 	}
 
 	// -------- Referrers --------

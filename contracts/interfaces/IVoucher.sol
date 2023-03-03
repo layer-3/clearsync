@@ -42,4 +42,13 @@ interface IVoucher {
 	 * @param signature Voucher signed by the Back-end.
 	 */
 	function useVoucher(Voucher calldata voucher, bytes calldata signature) external;
+
+	/**
+	 * @notice Event specifying that a voucher has been used.
+	 * @param wallet Wallet that used a voucher.
+	 * @param action The action of the voucher used.
+	 * @param voucherCodeHash The code hash of the voucher used.
+	 * @param chainId Id of the chain the voucher was used on.
+	 */
+	event VoucherUsed(address wallet, uint8 action, bytes32 voucherCodeHash, uint32 chainId);
 }
