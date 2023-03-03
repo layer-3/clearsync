@@ -11,7 +11,7 @@ import '../interfaces/IVoucher.sol';
 
 /**
  * @title TreasureVault
- * @dev This contract allows users to deposit tokens into a vault and redeem vouchers for rewards.
+ * @notice This contract allows users to deposit tokens into a vault and redeem vouchers for rewards.
  *
  * The vouchers can then be used to redeem rewards or to refer others to the platform. Referral commissions are paid out
  * to referrers of up to 5 levels deep. This contract also allows the issuer to set an authorized address for signing
@@ -27,11 +27,9 @@ contract TreasureVault is IVoucher, Initializable, AccessControlUpgradeable, UUP
 	error InsufficientTokenBalance(address token, uint256 expected, uint256 actual);
 	error IncorrectSigner(address expected, address actual);
 
-	// Roles
 	bytes32 public constant UPGRADER_ROLE = keccak256('UPGRADER_ROLE');
 	bytes32 public constant TREASURY_ROLE = keccak256('TREASURY_ROLE');
 
-	// Constants
 	uint8 public constant REFERRAL_MAX_DEPTH = 5;
 	uint8 internal constant _REFERRAL_PAYOUT_DIVIDER = 100;
 
@@ -40,9 +38,9 @@ contract TreasureVault is IVoucher, Initializable, AccessControlUpgradeable, UUP
 	}
 
 	struct RewardParams {
-		address token; // address of the ERC20 token to pay out
-		uint256 amount; // amount of token to be paid
-		uint8[REFERRAL_MAX_DEPTH] commissions; // what percentage of the reward will referrer of the level specified get
+		address token; // Address of the ERC20 token to pay out
+		uint256 amount; // Amount of token to be paid
+		uint8[REFERRAL_MAX_DEPTH] commissions; // What percentage of the reward will referrer of the level specified get
 	}
 
 	// Referral tree child => parent
@@ -54,10 +52,10 @@ contract TreasureVault is IVoucher, Initializable, AccessControlUpgradeable, UUP
 	// Address signing vouchers
 	address public issuer;
 
-	// Affiliate is invited by referrer. Referrer receives a tiny part of their affiliate's voucher.
+	// Affiliate is invited by referrer. Referrer receives a tiny part of their affiliate's voucher
 	event AffiliateRegistered(address affiliate, address referrer);
 
-	// disallow calling implementation directly (not via proxy)
+	// Disallow calling implementation directly (not via proxy)
 	/// @custom:oz-upgrades-unsafe-allow constructor
 	constructor() {
 		_disableInitializers();
@@ -74,7 +72,8 @@ contract TreasureVault is IVoucher, Initializable, AccessControlUpgradeable, UUP
 	// -------- Issuer --------
 
 	/**
-	 * @dev Sets the issuer address. This function can only be called by accounts with the DEFAULT_ADMIN_ROLE.
+	 * @notice Set the address of vouchers issuer.
+	 * @dev Require `DEFAULT_ADMIN_ROLE` to invoke.
 	 * @param account The address of the new issuer.
 	 */
 	function setIssuer(address account) external onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -84,7 +83,8 @@ contract TreasureVault is IVoucher, Initializable, AccessControlUpgradeable, UUP
 	// -------- Withdraw --------
 
 	/**
-	 * @dev Withdraws the specified token from the vault.
+	 * @notice Withdraw the specified token from the vault.
+	 * @dev Require `TREASURY_ROLE` to invoke.
 	 * @param tokenAddress The address of the token being withdrawn.
 	 * @param beneficiary The address of the account receiving the amount.
 	 * @param amount The amount of the token to be withdrawn.
@@ -108,7 +108,8 @@ contract TreasureVault is IVoucher, Initializable, AccessControlUpgradeable, UUP
 	// -------- Referrers --------
 
 	/**
-	 * @dev Registers a referrer for a child address.
+	 * @notice Register a referrer for a child address. Internal function.
+	 * @dev Emit `AffiliateRegistered` event.
 	 * @param child The child address to register the referrer for.
 	 * @param parent The address of the parent referrer.
 	 */
@@ -118,7 +119,7 @@ contract TreasureVault is IVoucher, Initializable, AccessControlUpgradeable, UUP
 	}
 
 	/**
-	 * @dev Checks if the target address is not a referrer of the base address.
+	 * @notice Check if the target address is not a referrer of the base address. Internal function.
 	 * @param target The target address to check.
 	 * @param base The base address to check against.
 	 */
@@ -134,9 +135,10 @@ contract TreasureVault is IVoucher, Initializable, AccessControlUpgradeable, UUP
 	// -------- Vouchers --------
 
 	/**
-	 * @dev Uses multiple vouchers at once.
+	 * @notice Use multiple vouchers at once.
+	 * @dev Emit `VoucherUsed` event for each voucher used.
 	 * @param vouchers An array of Voucher structs to be used.
-	 * @param signature The signature used to verify the vouchers.
+	 * @param signature Array of Vouchers signed by the Issuer.
 	 */
 	function useVouchers(Voucher[] calldata vouchers, bytes calldata signature) external {
 		_requireCorrectSigner(abi.encode(vouchers), signature, issuer);
@@ -146,9 +148,10 @@ contract TreasureVault is IVoucher, Initializable, AccessControlUpgradeable, UUP
 	}
 
 	/**
-	 * @dev Uses a single voucher.
+	 * @notice Use a single voucher.
+	 * @dev Emit `VoucherUsed` event.
 	 * @param voucher The Voucher struct to be used.
-	 * @param signature The signature used to verify the voucher.
+	 * @param signature Voucher signed by the Issuer.
 	 */
 	function useVoucher(Voucher calldata voucher, bytes calldata signature) external {
 		_requireCorrectSigner(abi.encode(voucher), signature, issuer);
@@ -157,6 +160,11 @@ contract TreasureVault is IVoucher, Initializable, AccessControlUpgradeable, UUP
 
 	// -------- Internal --------
 
+	/**
+	 * @notice Use a single voucher. Internal function.
+	 * @dev Emit `VoucherUsed` event.
+	 * @param voucher Voucher to be used.
+	 */
 	function _useVoucher(Voucher memory voucher) internal {
 		_requireValidVoucher(voucher);
 
@@ -199,6 +207,10 @@ contract TreasureVault is IVoucher, Initializable, AccessControlUpgradeable, UUP
 		);
 	}
 
+	/**
+	 * @notice Check voucher for being valid. Internal function.
+	 * @param voucher Voucher to check for validity.
+	 */
 	function _requireValidVoucher(Voucher memory voucher) internal view {
 		if (_usedVouchers[voucher.voucherCodeHash])
 			revert VoucherAlreadyUsed(voucher.voucherCodeHash);
@@ -211,6 +223,13 @@ contract TreasureVault is IVoucher, Initializable, AccessControlUpgradeable, UUP
 		) revert InvalidVoucher(voucher);
 	}
 
+	/**
+	 * @notice Perform reward payout, including commissions. Internal function.
+	 * @param beneficiary The address receiving the payout.
+	 * @param tokenAddress The token to be paid.
+	 * @param amount Amount to be paid.
+	 * @param referrersPayouts Commissions to be paid to the referrers of the beneficiary, if any.
+	 */
 	function _performPayout(
 		address beneficiary,
 		address tokenAddress,
@@ -237,6 +256,11 @@ contract TreasureVault is IVoucher, Initializable, AccessControlUpgradeable, UUP
 		}
 	}
 
+	/**
+	 * @notice Require this contract has not less than `expected` amount of the `token` deposited. Internal function.
+	 * @param token Token to be deposited to the address of this contract.
+	 * @param expected Minimal amount of the `token` to be on this contract.
+	 */
 	function _requireSufficientContractBalance(
 		IERC20Upgradeable token,
 		uint256 expected
@@ -245,6 +269,12 @@ contract TreasureVault is IVoucher, Initializable, AccessControlUpgradeable, UUP
 		if (actual < expected) revert InsufficientTokenBalance(address(token), expected, actual);
 	}
 
+	/**
+	 * @notice Require `encodedData` was signed by the `signer`. Internal function.
+	 * @param encodedData Encoded data signed.
+	 * @param signature Signature produced by the `signer` signing `encodedData`.
+	 * @param signer Signer to have signed `encodedData`.
+	 */
 	function _requireCorrectSigner(
 		bytes memory encodedData,
 		bytes memory signature,
@@ -256,6 +286,10 @@ contract TreasureVault is IVoucher, Initializable, AccessControlUpgradeable, UUP
 
 	// -------- Upgrading --------
 
+	/**
+	 * @notice Restrict upgrading this contract to address with `UPGRADER_ROLE`.
+	 * @param newImplementation Address of the new implementation.
+	 */
 	function _authorizeUpgrade(
 		address newImplementation
 	) internal override(UUPSUpgradeable) onlyRole(UPGRADER_ROLE) {}
