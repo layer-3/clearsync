@@ -8,7 +8,7 @@ async function main(): Promise<void> {
   console.log('Account balance:', balanceBN.toString());
 
   const TokenFactory = await ethers.getContractFactory('Token');
-  const Token = await TokenFactory.deploy('Canary', 'CANARY', 1_000_000_000n * 10n ** 8n);
+  const Token = await TokenFactory.deploy('Yellow Duckies', 'DUCKIES', 1_000_000_000n * 10n ** 8n);
 
   await Token.deployed();
 

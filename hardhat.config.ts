@@ -40,8 +40,8 @@ const config: HardhatUserConfig = {
       url: 'https://wandering-aged-tree.matic-testnet.quiknode.pro/a1e69e9f8661279922044553d45860b09aa4765e/',
       accounts,
     },
-    matic: {
-      url: 'https://polygon-mainnet.g.alchemy.com/v2/6hf_T5dXftK5fs3KBq_QKuJIk4hSN3wM',
+    polygon: {
+      url: 'https://frequent-icy-feather.matic.quiknode.pro/d2a51d3b849ba555c8f56e4ded259f70d9ae724e/',
       accounts,
     },
   },
