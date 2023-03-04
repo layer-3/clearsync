@@ -3,6 +3,12 @@ import { ethers, upgrades } from 'hardhat';
 import type { TreasureVault } from '../typechain-types';
 
 async function main(): Promise<void> {
+  const [deployer] = await ethers.getSigners();
+
+  console.log('Deploying contracts with the account:', deployer.address);
+  const balanceBN = await deployer.getBalance();
+  console.log('Account balance:', balanceBN.toString());
+
   //FIXME: automate probably address management and params
   const issuerAddress = process.env.ISSUER_ADDRESS ?? '';
 
