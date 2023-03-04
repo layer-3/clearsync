@@ -1,14 +1,14 @@
 import { expect } from 'chai';
-import { ethers, upgrades } from 'hardhat';
 import { constants, utils } from 'ethers';
+import { ethers, upgrades } from 'hardhat';
 
-import { connectGroup } from '../helpers/connect';
 import { ACCOUNT_MISSING_ROLE, randomBytes32 } from '../helpers/common';
-import { RewardParams, VoucherAction, encodeRewardParams } from '../helpers/TreasureVault';
-import { Voucher, signVoucher, signVouchers } from '../helpers/voucher';
+import { connectGroup } from '../helpers/connect';
+import { encodeRewardParams, RewardParams, VoucherAction } from '../helpers/TreasureVault';
+import { signVoucher, signVouchers, Voucher } from '../helpers/voucher';
 
-import type { TestERC20, TreasureVault } from '../../typechain-types';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import type { TestERC20, TreasureVault } from '../../typechain-types';
 
 const CIRCULAR_REFS = 'CircularReferrers';
 const VOUCHER_USED = 'VoucherAlreadyUsed';

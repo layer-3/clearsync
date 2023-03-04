@@ -1,13 +1,13 @@
 import 'dotenv/config';
 
-import '@openzeppelin/hardhat-upgrades';
 import '@nomicfoundation/hardhat-toolbox';
 import '@nomiclabs/hardhat-ethers';
-import 'solidity-docgen';
+import '@openzeppelin/hardhat-upgrades';
 import type { HardhatUserConfig } from 'hardhat/config';
+import 'solidity-docgen';
 
-import './src/tasks/activate';
 import './src/tasks/accounts';
+import './src/tasks/activate';
 
 const accounts = {
   mnemonic:

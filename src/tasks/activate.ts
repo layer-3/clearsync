@@ -1,5 +1,5 @@
-import { task } from 'hardhat/config';
 import '@nomicfoundation/hardhat-toolbox';
+import { task } from 'hardhat/config';
 
 import type { Token } from '../../typechain-types';
 
