@@ -19,13 +19,17 @@ const config: HardhatUserConfig = {
   solidity: {
     compilers: [
       {
-        version: '0.8.19',
+        version: '0.8.18',
         settings: {
+          viaIR: true,
           optimizer: {
             enabled: true,
-            runs: 200,
+            details: {
+              yulDetails: {
+                optimizerSteps: 'u',
+              },
+            },
           },
-          viaIR: true,
         },
       },
     ],

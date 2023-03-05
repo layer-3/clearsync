@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+// SPDX-License-Identifier: GPL-3.0-or-later
+pragma solidity 0.8.18;
 
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/access/AccessControl.sol';
@@ -19,21 +19,21 @@ import './interfaces/IBlacklist.sol';
  *
  * @dev Blacklist feature is using OpenZeppelin AccessControl.
  */
-contract Token is ERC20, AccessControl, IBlacklist {
-	/// @dev Role given to the DAO snapshot
-	bytes32 public constant MINTER_ROLE = keccak256('MINTER_ROLE');
-
+contract YellowToken is ERC20, AccessControl, IBlacklist {
 	/// @dev Role for managing the blacklist process chosen by the DAO
 	bytes32 public constant COMPLIANCE_ROLE = keccak256('COMPLIANCE_ROLE');
 
 	/// @dev Role for user blacklisted
 	bytes32 public constant BLACKLISTED_ROLE = keccak256('BLACKLISTED_ROLE');
 
-	/// @dev Token maximum supply
-	uint256 public immutable TOKEN_SUPPLY_CAP;
+	/// @dev Role given to the DAO snapshot
+	bytes32 public constant MINTER_ROLE = keccak256('MINTER_ROLE');
 
 	/// @dev Activation must be called at Token Listing Event.
 	uint256 public activatedAt;
+
+	/// @dev Token maximum supply
+	uint256 public immutable TOKEN_SUPPLY_CAP;
 
 	/**
 	 * @notice Activated event. Emitted when `activate` function is invoked.
@@ -56,6 +56,14 @@ contract Token is ERC20, AccessControl, IBlacklist {
 	/// Token functions
 
 	/**
+	 * @notice Return the cap on the token's total supply.
+	 * @return uint256 Token supply cap.
+	 */
+	function cap() external view returns (uint256) {
+		return TOKEN_SUPPLY_CAP;
+	}
+
+	/**
 	 * @notice Return the number of decimals used to get its user representation.
 	 * @dev Overrides ERC20 default value of 18;
 	 * @return uint8 Number of decimals of Token.
@@ -65,23 +73,15 @@ contract Token is ERC20, AccessControl, IBlacklist {
 	}
 
 	/**
-	 * @notice Return the cap on the token's total supply.
-	 * @return uint256 Token supply cap.
-	 */
-	function cap() external view returns (uint256) {
-		return TOKEN_SUPPLY_CAP;
-	}
-
-	/**
 	 * @notice Activate token, minting `premint` amount to `account` address.
 	 * @dev Require `DEFAULT_ADMIN_ROLE` to invoke. Premint must satisfy these conditions: 0 < premint < token supply cap. Can be called only once.
 	 * @param premint Amount of tokens to premint.
 	 * @param account Address of account to premint to.
 	 */
 	function activate(uint256 premint, address account) external onlyRole(DEFAULT_ADMIN_ROLE) {
-		require(activatedAt == 0, 'Already activated');
 		require(premint > 0, 'Zero premint');
 		require(premint <= TOKEN_SUPPLY_CAP, 'Premint exceeds cap');
+		require(activatedAt == 0, 'Already activated');
 
 		activatedAt = block.timestamp;
 		_mint(account, premint);

@@ -1,6 +1,6 @@
 # Solidity API
 
-## Token
+## YellowToken
 
 Yellow and Canary utility token inheriting AccessControl and implementing Cap and Blacklist.
 This smart contract is an ERC20 used by both YELLOW and DUCKIES tokens.
@@ -13,14 +13,6 @@ This is done not to give too much token governance power to once account, which 
 The similar applies to COMPLIANCE_ROLE. It is going to be granted to a multisig account, which will govern hackers and malicious users by blacklisting them.
 
 _Blacklist feature is using OpenZeppelin AccessControl._
-
-### MINTER_ROLE
-
-```solidity
-bytes32 MINTER_ROLE
-```
-
-_Role given to the DAO snapshot_
 
 ### COMPLIANCE_ROLE
 
@@ -38,13 +30,13 @@ bytes32 BLACKLISTED_ROLE
 
 _Role for user blacklisted_
 
-### TOKEN_SUPPLY_CAP
+### MINTER_ROLE
 
 ```solidity
-uint256 TOKEN_SUPPLY_CAP
+bytes32 MINTER_ROLE
 ```
 
-_Token maximum supply_
+_Role given to the DAO snapshot_
 
 ### activatedAt
 
@@ -53,6 +45,14 @@ uint256 activatedAt
 ```
 
 _Activation must be called at Token Listing Event._
+
+### TOKEN_SUPPLY_CAP
+
+```solidity
+uint256 TOKEN_SUPPLY_CAP
+```
+
+_Token maximum supply_
 
 ### Activated
 
@@ -85,6 +85,20 @@ Grants `DEFAULT_ADMIN_ROLE` and `MINTER_ROLE` to deployer._
 | symbol    | string  | Symbol of the Token. |
 | supplyCap | uint256 |                      |
 
+### cap
+
+```solidity
+function cap() external view returns (uint256)
+```
+
+Return the cap on the token's total supply.
+
+#### Return Values
+
+| Name | Type    | Description               |
+| ---- | ------- | ------------------------- |
+| [0]  | uint256 | uint256 Token supply cap. |
+
 ### decimals
 
 ```solidity
@@ -100,20 +114,6 @@ _Overrides ERC20 default value of 18;_
 | Name | Type  | Description                        |
 | ---- | ----- | ---------------------------------- |
 | [0]  | uint8 | uint8 Number of decimals of Token. |
-
-### cap
-
-```solidity
-function cap() external view returns (uint256)
-```
-
-Return the cap on the token's total supply.
-
-#### Return Values
-
-| Name | Type    | Description               |
-| ---- | ------- | ------------------------- |
-| [0]  | uint256 | uint256 Token supply cap. |
 
 ### activate
 

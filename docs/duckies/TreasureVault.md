@@ -2,11 +2,11 @@
 
 ## TreasureVault
 
-\_This contract allows users to deposit tokens into a vault and redeem vouchers for rewards.
+This contract allows users to deposit tokens into a vault and redeem vouchers for rewards.
 
 The vouchers can then be used to redeem rewards or to refer others to the platform. Referral commissions are paid out
 to referrers of up to 5 levels deep. This contract also allows the issuer to set an authorized address for signing
-vouchers and upgrading the contract.\_
+vouchers and upgrading the contract.
 
 ### CircularReferrers
 
@@ -48,6 +48,12 @@ error IncorrectSigner(address expected, address actual)
 
 ```solidity
 bytes32 UPGRADER_ROLE
+```
+
+### TREASURY_ROLE
+
+```solidity
+bytes32 TREASURY_ROLE
 ```
 
 ### REFERRAL_MAX_DEPTH
@@ -92,12 +98,6 @@ mapping(address => address) _referrerOf
 mapping(bytes32 => bool) _usedVouchers
 ```
 
-### \_balances
-
-```solidity
-mapping(address => mapping(address => uint256)) _balances
-```
-
 ### issuer
 
 ```solidity
@@ -108,12 +108,6 @@ address issuer
 
 ```solidity
 event AffiliateRegistered(address affiliate, address referrer)
-```
-
-### VoucherUsed
-
-```solidity
-event VoucherUsed(address wallet, uint8 VoucherAction, bytes32 voucherCodeHash, uint32 chainId)
 ```
 
 ### constructor
@@ -134,7 +128,9 @@ function initialize() public
 function setIssuer(address account) external
 ```
 
-_Sets the issuer address. This function can only be called by accounts with the DEFAULT_ADMIN_ROLE._
+Set the address of vouchers issuer.
+
+_Require `DEFAULT_ADMIN_ROLE` to invoke._
 
 #### Parameters
 
@@ -142,55 +138,24 @@ _Sets the issuer address. This function can only be called by accounts with the 
 | ------- | ------- | ------------------------------ |
 | account | address | The address of the new issuer. |
 
-### deposit
-
-```solidity
-function deposit(address token, uint256 amount) public payable
-```
-
-_Deposits the specified token into the vault._
-
-#### Parameters
-
-| Name   | Type    | Description                               |
-| ------ | ------- | ----------------------------------------- |
-| token  | address | The address of the token being deposited. |
-| amount | uint256 | The amount of the token being deposited.  |
-
 ### withdraw
 
 ```solidity
-function withdraw(address token, uint256 amount) public
+function withdraw(address tokenAddress, address beneficiary, uint256 amount) public
 ```
 
-_Withdraws the specified token from the vault._
+Withdraw the specified token from the vault. The risk of single account withdrawing all balances of this contract
+is mitigated by requiring `TREASURY_ROLE` to invoke, which is granted to a Quorum account.
+
+_Require `TREASURY_ROLE` to invoke._
 
 #### Parameters
 
-| Name   | Type    | Description                               |
-| ------ | ------- | ----------------------------------------- |
-| token  | address | The address of the token being withdrawn. |
-| amount | uint256 | The amount of the token to be withdrawn.  |
-
-### getBalance
-
-```solidity
-function getBalance(address token) public view returns (uint256)
-```
-
-_Returns the balance of the specified token for the caller._
-
-#### Parameters
-
-| Name  | Type    | Description                             |
-| ----- | ------- | --------------------------------------- |
-| token | address | The address of the token being queried. |
-
-#### Return Values
-
-| Name | Type    | Description                                  |
-| ---- | ------- | -------------------------------------------- |
-| [0]  | uint256 | The balance of the token held by the caller. |
+| Name         | Type    | Description                                      |
+| ------------ | ------- | ------------------------------------------------ |
+| tokenAddress | address | The address of the token being withdrawn.        |
+| beneficiary  | address | The address of the account receiving the amount. |
+| amount       | uint256 | The amount of the token to be withdrawn.         |
 
 ### \_registerReferrer
 
@@ -198,7 +163,9 @@ _Returns the balance of the specified token for the caller._
 function _registerReferrer(address child, address parent) internal
 ```
 
-_Registers a referrer for a child address._
+Register a referrer for a child address. Internal function.
+
+_Emit `AffiliateRegistered` event._
 
 #### Parameters
 
@@ -213,7 +180,7 @@ _Registers a referrer for a child address._
 function _requireNotReferrerOf(address target, address base) internal view
 ```
 
-_Checks if the target address is not a referrer of the base address._
+Check if the target address is not a referrer of the base address. Internal function.
 
 #### Parameters
 
@@ -228,14 +195,16 @@ _Checks if the target address is not a referrer of the base address._
 function useVouchers(struct IVoucher.Voucher[] vouchers, bytes signature) external
 ```
 
-_Uses multiple vouchers at once._
+Use multiple vouchers at once.
+
+_Emit `VoucherUsed` event for each voucher used._
 
 #### Parameters
 
-| Name      | Type                      | Description                                |
-| --------- | ------------------------- | ------------------------------------------ |
-| vouchers  | struct IVoucher.Voucher[] | An array of Voucher structs to be used.    |
-| signature | bytes                     | The signature used to verify the vouchers. |
+| Name      | Type                      | Description                             |
+| --------- | ------------------------- | --------------------------------------- |
+| vouchers  | struct IVoucher.Voucher[] | An array of Voucher structs to be used. |
+| signature | bytes                     | Array of Vouchers signed by the Issuer. |
 
 ### useVoucher
 
@@ -243,14 +212,16 @@ _Uses multiple vouchers at once._
 function useVoucher(struct IVoucher.Voucher voucher, bytes signature) external
 ```
 
-_Uses a single voucher._
+Use a single voucher.
+
+_Emit `VoucherUsed` event._
 
 #### Parameters
 
-| Name      | Type                    | Description                               |
-| --------- | ----------------------- | ----------------------------------------- |
-| voucher   | struct IVoucher.Voucher | The Voucher struct to be used.            |
-| signature | bytes                   | The signature used to verify the voucher. |
+| Name      | Type                    | Description                    |
+| --------- | ----------------------- | ------------------------------ |
+| voucher   | struct IVoucher.Voucher | The Voucher struct to be used. |
+| signature | bytes                   | Voucher signed by the Issuer.  |
 
 ### \_useVoucher
 
@@ -258,11 +229,29 @@ _Uses a single voucher._
 function _useVoucher(struct IVoucher.Voucher voucher) internal
 ```
 
+Use a single voucher. Internal function.
+
+_Emit `VoucherUsed` event._
+
+#### Parameters
+
+| Name    | Type                    | Description         |
+| ------- | ----------------------- | ------------------- |
+| voucher | struct IVoucher.Voucher | Voucher to be used. |
+
 ### \_requireValidVoucher
 
 ```solidity
 function _requireValidVoucher(struct IVoucher.Voucher voucher) internal view
 ```
+
+Check voucher for being valid. Internal function.
+
+#### Parameters
+
+| Name    | Type                    | Description                    |
+| ------- | ----------------------- | ------------------------------ |
+| voucher | struct IVoucher.Voucher | Voucher to check for validity. |
 
 ### \_performPayout
 
@@ -270,11 +259,31 @@ function _requireValidVoucher(struct IVoucher.Voucher voucher) internal view
 function _performPayout(address beneficiary, address tokenAddress, uint256 amount, uint8[5] referrersPayouts) internal
 ```
 
+Perform reward payout, including commissions. Internal function.
+
+#### Parameters
+
+| Name             | Type     | Description                                                         |
+| ---------------- | -------- | ------------------------------------------------------------------- |
+| beneficiary      | address  | The address receiving the payout.                                   |
+| tokenAddress     | address  | The token to be paid.                                               |
+| amount           | uint256  | Amount to be paid.                                                  |
+| referrersPayouts | uint8[5] | Commissions to be paid to the referrers of the beneficiary, if any. |
+
 ### \_requireSufficientContractBalance
 
 ```solidity
 function _requireSufficientContractBalance(contract IERC20Upgradeable token, uint256 expected) internal view
 ```
+
+Require this contract has not less than `expected` amount of the `token` deposited. Internal function.
+
+#### Parameters
+
+| Name     | Type                       | Description                                            |
+| -------- | -------------------------- | ------------------------------------------------------ |
+| token    | contract IERC20Upgradeable | Token to be deposited to the address of this contract. |
+| expected | uint256                    | Minimal amount of the `token` to be on this contract.  |
 
 ### \_requireCorrectSigner
 
@@ -282,19 +291,26 @@ function _requireSufficientContractBalance(contract IERC20Upgradeable token, uin
 function _requireCorrectSigner(bytes encodedData, bytes signature, address signer) internal pure
 ```
 
+Require `encodedData` was signed by the `signer`. Internal function.
+
+#### Parameters
+
+| Name        | Type    | Description                                               |
+| ----------- | ------- | --------------------------------------------------------- |
+| encodedData | bytes   | Encoded data signed.                                      |
+| signature   | bytes   | Signature produced by the `signer` signing `encodedData`. |
+| signer      | address | Signer to have signed `encodedData`.                      |
+
 ### \_authorizeUpgrade
 
 ```solidity
 function _authorizeUpgrade(address newImplementation) internal
 ```
 
-\_Function that should revert when `msg.sender` is not authorized to upgrade the contract. Called by
-{upgradeTo} and {upgradeToAndCall}.
+Restrict upgrading this contract to address with `UPGRADER_ROLE`.
 
-Normally, this function will use an xref:access.adoc[access control] modifier such as {Ownable-onlyOwner}.
+#### Parameters
 
-````solidity
-function _authorizeUpgrade(address) internal override onlyOwner {}
-```_
-
-````
+| Name              | Type    | Description                        |
+| ----------------- | ------- | ---------------------------------- |
+| newImplementation | address | Address of the new implementation. |

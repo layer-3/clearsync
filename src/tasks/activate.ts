@@ -1,7 +1,7 @@
 import '@nomicfoundation/hardhat-toolbox';
 import { task } from 'hardhat/config';
 
-import type { Token } from '../../typechain-types';
+import type { YellowToken } from '../../typechain-types';
 
 interface ActivateTokenArgs {
   tokenAddress: string;
@@ -14,7 +14,7 @@ task('activate', 'Activates Token (Canary and Yellow)')
   .addParam('premint', 'Amount of Tokens to premint')
   .addParam('premintTo', 'Address of an account to premint Tokens to')
   .setAction(async (taskArgs: ActivateTokenArgs, { ethers }) => {
-    const Token = (await ethers.getContractAt('Token', taskArgs.tokenAddress)) as Token;
+    const Token = (await ethers.getContractAt('YellowToken', taskArgs.tokenAddress)) as YellowToken;
     await Token.activate(taskArgs.premint, taskArgs.premintTo);
 
     console.log(

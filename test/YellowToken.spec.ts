@@ -7,7 +7,7 @@ import { ACCOUNT_MISSING_ROLE } from './helpers/common';
 import { connectGroup } from './helpers/connect';
 
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import type { Token } from '../typechain-types';
+import type { YellowToken } from '../typechain-types';
 
 const ADMIN_ROLE = ethers.constants.HashZero;
 const MINTER_ROLE = utils.id('MINTER_ROLE');
@@ -38,7 +38,7 @@ const IS_BLACKLISTED = 'Account is blacklisted';
 // erc20
 const INSUFFICIENT_ALLOWANCE = 'ERC20: insufficient allowance';
 
-describe('Token', function () {
+describe('YellowToken', function () {
   let TokenAdmin: SignerWithAddress;
   let Minter: SignerWithAddress;
   let Compliance: SignerWithAddress;
@@ -47,22 +47,22 @@ describe('Token', function () {
   let Someone: SignerWithAddress;
   let PremintReceiver: SignerWithAddress;
 
-  let Token: Token;
+  let Token: YellowToken;
 
-  let TokenAsAdmin: Token;
-  let TokenAsMinter: Token;
-  let TokenAsCompliance: Token;
-  let TokenAsBlacklisted: Token;
-  let TokenAsUser: Token;
-  let TokenAsSomeone: Token;
+  let TokenAsAdmin: YellowToken;
+  let TokenAsMinter: YellowToken;
+  let TokenAsCompliance: YellowToken;
+  let TokenAsBlacklisted: YellowToken;
+  let TokenAsUser: YellowToken;
+  let TokenAsSomeone: YellowToken;
 
-  async function deployTokenFixture(): Promise<{ Token: Token }> {
-    const TokenFactory = await ethers.getContractFactory('Token');
+  async function deployTokenFixture(): Promise<{ Token: YellowToken }> {
+    const TokenFactory = await ethers.getContractFactory('YellowToken');
     const Token = (await TokenFactory.connect(TokenAdmin).deploy(
       'Canary',
       'CANARY',
       TOKEN_SUPPLY_CAP,
-    )) as Token;
+    )) as YellowToken;
 
     return { Token };
   }
