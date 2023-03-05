@@ -102,7 +102,7 @@ Return the cap on the token's total supply.
 ### decimals
 
 ```solidity
-function decimals() public view virtual returns (uint8)
+function decimals() public pure returns (uint8)
 ```
 
 Return the number of decimals used to get its user representation.
@@ -206,7 +206,7 @@ _Require caller is not marked 'blacklisted'._
 ### transferFrom
 
 ```solidity
-function transferFrom(address from, address to, uint256 amount) public virtual returns (bool)
+function transferFrom(address from, address to, uint256 amount) public returns (bool)
 ```
 
 Transfer `amount` of tokens from `from` to `to` address.

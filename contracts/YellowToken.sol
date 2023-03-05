@@ -68,7 +68,7 @@ contract YellowToken is ERC20, AccessControl, IBlacklist {
 	 * @dev Overrides ERC20 default value of 18;
 	 * @return uint8 Number of decimals of Token.
 	 */
-	function decimals() public view virtual override returns (uint8) {
+	function decimals() public pure override returns (uint8) {
 		return 8;
 	}
 
@@ -143,11 +143,7 @@ contract YellowToken is ERC20, AccessControl, IBlacklist {
 	 * @param amount Amount of tokens to transfer.
 	 * @return bool true if transfer succeeded.
 	 */
-	function transferFrom(
-		address from,
-		address to,
-		uint256 amount
-	) public virtual override returns (bool) {
+	function transferFrom(address from, address to, uint256 amount) public override returns (bool) {
 		_requireAccountNotBlacklisted(from);
 
 		return ERC20.transferFrom(from, to, amount);
