@@ -8,6 +8,7 @@ import 'solidity-docgen';
 
 import './src/tasks/accounts';
 import './src/tasks/activate';
+import './src/tasks/forceImport';
 
 const accounts = {
   mnemonic:
