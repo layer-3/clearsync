@@ -12,6 +12,25 @@ pragma solidity 0.8.18;
  */
 interface IVoucher {
 	/**
+	 * @notice Custom error specifying that voucher has already been used.
+	 * @param voucherCodeHash Hash of the code of the voucher that has been used.
+	 */
+	error VoucherAlreadyUsed(bytes32 voucherCodeHash);
+
+	/**
+	 * @notice Custom error specifying that voucher has not passed general voucher checks and is invalid.
+	 * @param voucher Voucher that is invalid.
+	 */
+	error InvalidVoucher(Voucher voucher);
+
+	/**
+	 * @notice Custom error specifying that the message was expected to be signed by `expected` address, but was signed by `actual`.
+	 * @param expected Expected address to have signed the message.
+	 * @param actual Actual address that has signed the message.
+	 */
+	error IncorrectSigner(address expected, address actual);
+
+	/**
 	 * @dev Build and encode the Voucher from server side
 	 *
 	 * Voucher structure will be valid only in chainId until expire timestamp
