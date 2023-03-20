@@ -21,11 +21,8 @@ contract TreasureVault is IVoucher, Initializable, AccessControlUpgradeable, UUP
 	using ECDSAUpgradeable for bytes32;
 
 	error CircularReferrers(address target, address base);
-	error VoucherAlreadyUsed(bytes32 voucherCodeHash);
-	error InvalidVoucher(Voucher voucher);
 	error InvalidRewardParams(RewardParams rewardParams);
 	error InsufficientTokenBalance(address token, uint256 expected, uint256 actual);
-	error IncorrectSigner(address expected, address actual);
 
 	bytes32 public constant UPGRADER_ROLE = keccak256('UPGRADER_ROLE');
 	// TREASURY_ROLE will be granted to a Quorum address, which mitigates vector of attack that one person is responsible for all token balance of this contract.
