@@ -1,0 +1,476 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+pragma solidity 0.8.18;
+
+import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
+import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
+
+import '@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol';
+import '@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol';
+import '@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol';
+
+import '../../../interfaces/IVoucher.sol';
+import '../../../interfaces/IDucklings.sol';
+import '../RandomUpgradeable.sol';
+import '../Genome.sol';
+
+contract DuckyFamilyV1_0 is
+	IVoucher,
+	Initializable,
+	UUPSUpgradeable,
+	AccessControlUpgradeable,
+	RandomUpgradeable
+{
+	using CountersUpgradeable for CountersUpgradeable.Counter;
+	using Genome for uint256;
+	using ECDSAUpgradeable for bytes32;
+
+	// errors
+	error InvalidMintParams(MintParams mintParams);
+	error InvalidMeldParams(MeldParams meldParams);
+
+	error MintingRulesViolated(Collections collectionId, uint8 amount);
+	error MeldingRulesViolated(uint256[] tokenIds);
+	error IncorrectGenomesForMelding(uint256[] genomes);
+
+	// events
+	event Melded(
+		address owner,
+		uint256[] meldingTokenIds,
+		uint256 meldedTokenId,
+		uint256 meldedGenome,
+		uint256 chainId
+	);
+
+	// roles
+	bytes32 public constant UPGRADER_ROLE = keccak256('UPGRADER_ROLE');
+	bytes32 public constant MAINTAINER_ROLE = keccak256('MAINTAINER_ROLE');
+
+	// ------- IVoucher -------
+
+	enum VoucherActions {
+		MintPack,
+		MeldFlock
+	}
+
+	struct MintParams {
+		address to;
+		uint8 size;
+	}
+
+	struct MeldParams {
+		address owner;
+		uint256[] tokenIds;
+	}
+
+	address public issuer;
+
+	// Store the vouchers to avoid replay attacks
+	mapping(bytes32 => bool) internal _usedVouchers;
+
+	// ------- Ducklings Game -------
+
+	enum Collections {
+		Duckling,
+		Zombeak,
+		Mythic
+	}
+
+	enum Rarities {
+		Common,
+		Rare,
+		Epic,
+		Legendary
+	}
+
+	enum GeneDistributionTypes {
+		Even,
+		Uneven
+	}
+
+	// Duckling genes: Collection, Rarity, Color, Family, Body, Head, Eyes, Beak, Wings, FirstName, Temper
+	// Zombeak genes: Collection, Rarity, Color, Family, Body, Head, Eyes, Beak, Wings
+
+	enum GenerativeGenes {
+		Collection,
+		Rarity,
+		Color,
+		Family,
+		Body,
+		Head
+	}
+
+	enum MythicGenes {
+		Collection,
+		UniqId
+	}
+
+	// ------- Internal values -------
+
+	uint8 internal constant collectionGeneIdx = 0;
+	uint8 internal constant rarityGeneIdx = 1;
+	// general genes start after Collection and Rarity
+	uint8 internal constant generativeGenesOffset = 2;
+
+	// number of values for each gene for Duckling and Zombeak collections
+	uint8[][2] internal collectionsGeneValuesNum;
+	// distribution type of each gene for Duckling and Zombeak collections
+	uint32[2] internal collectionsGeneDistributionTypes;
+
+	uint8 internal mythicAmount;
+
+	// chance of a Duckling of a certain rarity to be generated
+	uint8[] internal rarityChances; // 70, 20, 5, 1
+
+	// chance of a Duckling of certain rarity to mutate to Zombeak while melding
+	uint8[] internal mutationChances; // 10, 5, 2, 0
+
+	// ------- Public values -------
+
+	uint8 public constant MAX_PACK_SIZE = 100;
+	uint8 public constant FLOCK_SIZE = 5;
+
+	uint256 public mintPrice;
+	uint256 public meldPrice;
+
+	CountersUpgradeable.Counter public nextMythicId;
+
+	ERC20BurnableUpgradeable public duckiesContract;
+	IDucklings public ducklingsContract;
+	address public treasureVaultAddress;
+
+	// ------- Initializer -------
+
+	// TODO: either pass configs as params or initialize them manually
+	function initialize(
+		address duckiesAddress,
+		address ducklingsAddress,
+		address treasureVaultAddress_
+	) external initializer {
+		__AccessControl_init();
+		__UUPSUpgradeable_init();
+		__Random_init();
+
+		_grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+		_grantRole(UPGRADER_ROLE, msg.sender);
+		_grantRole(MAINTAINER_ROLE, msg.sender);
+
+		// TODO: define price
+		mintPrice = 10_000 * 10 ** duckiesContract.decimals();
+		meldPrice = 10_000 * 10 ** duckiesContract.decimals();
+
+		duckiesContract = ERC20BurnableUpgradeable(duckiesAddress);
+		ducklingsContract = IDucklings(ducklingsAddress);
+		treasureVaultAddress = treasureVaultAddress_;
+	}
+
+	// -------- Upgrades --------
+
+	function _authorizeUpgrade(
+		address newImplementation
+	) internal override onlyRole(UPGRADER_ROLE) {}
+
+	// ------- Vouchers -------
+
+	function setIssuer(address account) external onlyRole(DEFAULT_ADMIN_ROLE) {
+		issuer = account;
+	}
+
+	function useVouchers(Voucher[] calldata vouchers, bytes calldata signature) external {
+		_requireCorrectSigner(abi.encode(vouchers), signature, issuer);
+		for (uint8 i = 0; i < vouchers.length; i++) {
+			_useVoucher(vouchers[i]);
+		}
+	}
+
+	function useVoucher(Voucher calldata voucher, bytes calldata signature) external {
+		_requireCorrectSigner(abi.encode(voucher), signature, issuer);
+		_useVoucher(voucher);
+	}
+
+	function _useVoucher(Voucher memory voucher) internal {
+		_requireValidVoucher(voucher);
+
+		_usedVouchers[voucher.voucherCodeHash] = true;
+
+		// parse & process Voucher
+		if (voucher.action == uint8(VoucherActions.MintPack)) {
+			MintParams memory mintParams = abi.decode(voucher.encodedParams, (MintParams));
+
+			// mintParams checks
+			if (
+				mintParams.to == address(0) ||
+				mintParams.size == 0 ||
+				mintParams.size > MAX_PACK_SIZE
+			) revert InvalidMintParams(mintParams);
+
+			_mintPackTo(mintParams.to, mintParams.size);
+		} else if (voucher.action == uint8(VoucherActions.MeldFlock)) {
+			MeldParams memory meldParams = abi.decode(voucher.encodedParams, (MeldParams));
+
+			// meldParams checks
+			if (meldParams.owner == address(0) || meldParams.tokenIds.length != FLOCK_SIZE)
+				revert InvalidMeldParams(meldParams);
+
+			_meldOf(meldParams.owner, meldParams.tokenIds);
+		} else {
+			revert InvalidVoucher(voucher);
+		}
+
+		emit VoucherUsed(
+			voucher.beneficiary,
+			voucher.action,
+			voucher.voucherCodeHash,
+			voucher.chainId
+		);
+	}
+
+	function _requireValidVoucher(Voucher memory voucher) internal view {
+		if (_usedVouchers[voucher.voucherCodeHash])
+			revert VoucherAlreadyUsed(voucher.voucherCodeHash);
+
+		if (
+			voucher.target != address(this) ||
+			voucher.beneficiary != msg.sender ||
+			block.timestamp > voucher.expire ||
+			voucher.chainId != block.chainid
+		) revert InvalidVoucher(voucher);
+	}
+
+	function _requireCorrectSigner(
+		bytes memory encodedData,
+		bytes memory signature,
+		address signer
+	) internal pure {
+		address actualSigner = keccak256(encodedData).toEthSignedMessageHash().recover(signature);
+		if (actualSigner != signer) revert IncorrectSigner(signer, actualSigner);
+	}
+
+	// -------- Price --------
+
+	function setMintPrice(uint256 price) external onlyRole(MAINTAINER_ROLE) {
+		mintPrice = price;
+	}
+
+	function setMeldPrice(uint256 price) external onlyRole(MAINTAINER_ROLE) {
+		meldPrice = price;
+	}
+
+	// ------- Mint -------
+
+	function mintPack(uint8 size) external UseRandom {
+		duckiesContract.transferFrom(msg.sender, treasureVaultAddress, mintPrice * size);
+		_mintPackTo(msg.sender, size);
+	}
+
+	function _mintPackTo(address to, uint8 amount) internal {
+		if (amount > MAX_PACK_SIZE) revert MintingRulesViolated(Collections.Duckling, amount);
+		for (uint256 i = 0; i < amount; i++) {
+			uint256 genome = _generateGenome(Collections.Duckling);
+			ducklingsContract.mintTo(to, genome);
+		}
+	}
+
+	function _generateGenome(Collections collection) internal returns (uint256) {
+		uint256 genome;
+
+		genome = genome.setGene(collectionGeneIdx, uint8(collection));
+
+		if (collection == Collections.Mythic) {
+			if (nextMythicId.current() > mythicAmount)
+				revert MintingRulesViolated(Collections.Mythic, 1);
+
+			genome = genome.setGene(uint8(MythicGenes.UniqId), uint8(nextMythicId.current()));
+			return genome;
+		}
+
+		genome = genome.setGene(rarityGeneIdx, uint8(_generateRarity()));
+		genome = _generateAndSetGenes(genome, collection);
+
+		return genome;
+	}
+
+	function _generateRarity() internal returns (Rarities) {
+		return Rarities(_randomWeightedNumber(rarityChances));
+	}
+
+	function _generateAndSetGenes(
+		uint256 genome,
+		Collections collection
+	) internal returns (uint256) {
+		uint8[] memory geneValuesNum = collectionsGeneValuesNum[uint8(collection)];
+		uint32 geneDistributionTypes = collectionsGeneDistributionTypes[uint8(collection)];
+
+		// generate and set each gene
+		for (uint8 i = 0; i < geneValuesNum.length; i++) {
+			GeneDistributionTypes distrType = _getDistibutionType(geneDistributionTypes, i);
+			uint8 geneValue;
+
+			if (distrType == GeneDistributionTypes.Even) {
+				geneValue = uint8(_randomMaxNumber(geneValuesNum[i]));
+			} else {
+				geneValue = uint8(_generateUnevenGeneValue(geneValuesNum[i]));
+			}
+
+			genome = genome.setGene(generativeGenesOffset + i, geneValue);
+		}
+
+		// set default values for Ducklings
+		if (collection == Collections.Duckling) {
+			Rarities rarity = Rarities(genome.getGene(rarityGeneIdx));
+
+			if (rarity == Rarities.Common) {
+				genome = genome.setGene(uint8(GenerativeGenes.Body), 0);
+				genome = genome.setGene(uint8(GenerativeGenes.Head), 0);
+			} else if (rarity == Rarities.Rare) {
+				genome = genome.setGene(uint8(GenerativeGenes.Head), 0);
+			}
+		}
+
+		return genome;
+	}
+
+	// ------- Meld -------
+
+	function meldFlock(uint256[] calldata meldingTokenIds) external UseRandom {
+		duckiesContract.transferFrom(msg.sender, treasureVaultAddress, meldPrice);
+		_meldOf(msg.sender, meldingTokenIds);
+	}
+
+	function _meldOf(address owner, uint256[] memory meldingTokenIds) internal {
+		if (meldingTokenIds.length != FLOCK_SIZE) revert MeldingRulesViolated(meldingTokenIds);
+		if (!ducklingsContract.isOwnerOf(owner, meldingTokenIds))
+			revert MeldingRulesViolated(meldingTokenIds);
+
+		uint256[] memory meldingGenomes = ducklingsContract.getGenomes(meldingTokenIds);
+		_requireGenomesSatisfyMelding(meldingGenomes);
+
+		ducklingsContract.burn(meldingTokenIds);
+
+		uint256 meldedGenome = _meldGenomes(meldingGenomes);
+		uint256 meldedTokenId = ducklingsContract.mintTo(owner, meldedGenome);
+
+		emit Melded(owner, meldingTokenIds, meldedTokenId, meldedGenome, block.chainid);
+	}
+
+	function _requireGenomesSatisfyMelding(uint256[] memory genomes) internal pure {
+		if (
+			// equal collections
+			!Genome._geneValuesAreEqual(genomes, collectionGeneIdx) ||
+			// not Mythic
+			genomes[0].getGene(collectionGeneIdx) == uint8(Collections.Mythic) ||
+			// Rarities must be the same
+			!Genome._geneValuesAreEqual(genomes, rarityGeneIdx)
+		) revert IncorrectGenomesForMelding(genomes);
+
+		// specific melding rules
+		if (genomes[0].getGene(rarityGeneIdx) == uint8(Rarities.Legendary)) {
+			if (
+				// can not meld Legendary Zombeaks
+				genomes[0].getGene(collectionGeneIdx) == uint8(Collections.Zombeak) ||
+				// cards must have the same Color
+				!Genome._geneValuesAreEqual(genomes, uint8(GenerativeGenes.Color)) ||
+				// cards must be of each Family
+				!Genome._geneValuesAreUnique(genomes, uint8(GenerativeGenes.Family))
+			) revert IncorrectGenomesForMelding(genomes);
+		} else {
+			//   Common, Rare, Epic
+			if (
+				// cards must have the same Color or the same Family
+				!Genome._geneValuesAreEqual(genomes, uint8(GenerativeGenes.Color)) &&
+				!Genome._geneValuesAreEqual(genomes, uint8(GenerativeGenes.Family))
+			) revert IncorrectGenomesForMelding(genomes);
+		}
+	}
+
+	function _isMutating(Rarities rarity) internal returns (bool) {
+		if (rarity <= Rarities.Epic) {
+			uint8 mutationPercentage = mutationChances[uint8(rarity)];
+			// dynamic array is needed for `_randomWeighterNumber()`
+			uint8[] memory chances;
+			chances[0] = mutationPercentage;
+			chances[1] = 100 - mutationPercentage;
+			return _randomWeightedNumber(chances) == 0;
+		} else {
+			return false;
+		}
+	}
+
+	function _meldGenomes(uint256[] memory genomes) internal returns (uint256) {
+		Collections collection = Collections(genomes[0].getGene(collectionGeneIdx));
+
+		if (collection == Collections.Duckling) {
+			Rarities rarity = Rarities(genomes[0].getGene(rarityGeneIdx));
+
+			if (_isMutating(rarity)) {
+				return _generateGenome(Collections.Zombeak);
+			}
+
+			if (rarity == Rarities.Legendary) {
+				nextMythicId.increment();
+				return _generateGenome(Collections.Mythic);
+			}
+		}
+
+		uint256 meldedGenome;
+
+		// set the same collection
+		meldedGenome = meldedGenome.setGene(collectionGeneIdx, uint8(collection));
+		// increase rarity
+		meldedGenome = meldedGenome.setGene(rarityGeneIdx, genomes[0].getGene(rarityGeneIdx) + 1);
+
+		uint8[] memory geneValuesNum = collectionsGeneValuesNum[uint8(collection)];
+
+		for (uint8 i = 0; i < geneValuesNum.length; i++) {
+			uint8 geneValue = _meldGenes(genomes, generativeGenesOffset + i, geneValuesNum[i]);
+			meldedGenome = meldedGenome.setGene(generativeGenesOffset + i, geneValue);
+		}
+
+		return meldedGenome;
+	}
+
+	function _meldGenes(
+		uint256[] memory genomes,
+		uint8 gene,
+		uint8 maxGeneValue
+	) internal returns (uint8) {
+		uint8 inheritanceIdx = _randomWeightedNumber(mutationChances);
+		if (inheritanceIdx < 5) {
+			// inheritance
+			return genomes[inheritanceIdx].getGene(gene);
+		} else {
+			// gene mutation
+			uint8 maxPresentGeneValue = Genome._maxGene(genomes, gene);
+			return maxPresentGeneValue == maxGeneValue ? maxGeneValue : maxPresentGeneValue + 1;
+		}
+	}
+
+	// ------- Gene distribution -------
+
+	function _getDistibutionType(
+		uint32 distributionTypes,
+		uint8 idx
+	) internal pure returns (GeneDistributionTypes) {
+		return GeneDistributionTypes(distributionTypes & (1 << idx));
+	}
+
+	function _generateUnevenGeneValue(uint8 N) internal returns (uint8) {
+		// using quadratic algorithm
+		// chance of each gene's value to be generated is (N - t)^2 / S
+		// N - number of trait values, t - trait value, S - sum of Squared trait values
+
+		uint256 S = (N * (N + 1) * (2 * N + 1)) / 6;
+		uint256 num = _randomMaxNumber(S);
+		uint256 accumNum = 0;
+
+		for (uint8 i = 0; i < N; i++) {
+			accumNum += (N - i) ** 2;
+
+			if (num < accumNum) {
+				return i;
+			}
+		}
+
+		// code execution should never reach this
+		return 0;
+	}
+}
