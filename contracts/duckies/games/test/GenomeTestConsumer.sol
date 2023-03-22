@@ -24,6 +24,6 @@ contract GenomeTestConsumer {
 		uint256[] memory genomes,
 		uint8 gene
 	) external pure returns (bool) {
-		return Genome._geneValuesAreEqual(genomes, gene);
+		return Genome._geneValuesAreUnique(genomes, gene);
 	}
 }

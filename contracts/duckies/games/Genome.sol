@@ -55,7 +55,7 @@ library Genome {
 		uint8 shiftingBy = gene * BITS_PER_GENE;
 
 		uint256 temp = genome >> shiftingBy;
-		return uint8(temp & ((1 << shiftingBy) - 1));
+		return uint8(temp & ((1 << BITS_PER_GENE) - 1));
 	}
 
 	function _maxGene(uint256[] memory genomes, uint8 gene) internal pure returns (uint8) {
@@ -90,13 +90,13 @@ library Genome {
 		uint256[] memory genomes,
 		uint8 gene
 	) internal pure returns (bool) {
-		uint256 valuesPresentBitfield = 0;
+		uint256 valuesPresentBitfield = 1 << getGene(genomes[0], gene);
 
 		for (uint256 i = 1; i < genomes.length; i++) {
-			if (valuesPresentBitfield % 2 ** getGene(genomes[i], gene) == 1) {
+			if (valuesPresentBitfield & (1 << getGene(genomes[i], gene)) != 0) {
 				return false;
 			}
-			valuesPresentBitfield += 2 ** getGene(genomes[i], gene);
+			valuesPresentBitfield |= 1 << getGene(genomes[i], gene);
 		}
 
 		return true;
