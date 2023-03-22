@@ -15,7 +15,7 @@ pragma solidity 0.8.18;
  * Genes have the following values: Body = 1, Head = 2, Rarity = 3.
  */
 library Genome {
-	uint8 public constant BYTES_PER_GENE = 8;
+	uint8 public constant BITS_PER_GENE = 8;
 
 	function setGene(
 		uint256 genome,
@@ -25,17 +25,17 @@ library Genome {
 	) internal pure returns (uint256) {
 		// number of bytes from genome's rightmost and geneBlock's rightmost
 		// NOTE: maximum index of a gene is actually uint5
-		uint8 shiftingBy = uint8(gene) * BYTES_PER_GENE;
+		uint8 shiftingBy = gene * BITS_PER_GENE;
 
 		// remember genes we will shift off
-		uint256 shiftedPart = genome % 10 ** shiftingBy;
+		uint256 shiftedPart = genome & ((1 << shiftingBy) - 1);
 
 		// shift right so that genome's rightmost bit is the geneBlock's rightmost
 		genome >>= shiftingBy;
 
 		// clear previous gene value by shifting it off
-		genome >>= BYTES_PER_GENE;
-		genome <<= BYTES_PER_GENE;
+		genome >>= BITS_PER_GENE;
+		genome <<= BITS_PER_GENE;
 
 		// update gene's value
 		genome += value;
@@ -52,10 +52,10 @@ library Genome {
 	function getGene(uint256 genome, uint8 gene) internal pure returns (uint8) {
 		// number of bytes from genome's rightmost and geneBlock's rightmost
 		// NOTE: maximum index of a gene is actually uint5
-		uint8 shiftingBy = uint8(gene) * BYTES_PER_GENE;
+		uint8 shiftingBy = gene * BITS_PER_GENE;
 
 		uint256 temp = genome >> shiftingBy;
-		return uint8(temp % 10 ** shiftingBy);
+		return uint8(temp & ((1 << shiftingBy) - 1));
 	}
 
 	function _maxGene(uint256[] memory genomes, uint8 gene) internal pure returns (uint8) {
