@@ -177,11 +177,11 @@ contract DuckyFamilyV1_0 is
 		// duckling
 		// TODO: confirm gene values
 		collectionsGeneValuesNum[0] = [4, 5, 16, 32, 32, 16, 8, 32, 16, 12, 5, 26];
-		collectionsGeneDistributionTypes[0] = 1005; // 001111101101
+		collectionsGeneDistributionTypes[0] = 2940; // reverse(001111101101) = 101101111100
 		// zombeak
 		// TODO: confirm gene values
 		collectionsGeneValuesNum[1] = [2, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4];
-		collectionsGeneDistributionTypes[1] = 1005; // 001111101101
+		collectionsGeneDistributionTypes[1] = 2940; // reverse(001111101101) = 101101111100
 
 		// TODO: confirm
 		maxMythicId = 64;
@@ -502,7 +502,10 @@ contract DuckyFamilyV1_0 is
 		uint32 distributionTypes,
 		uint8 idx
 	) internal pure returns (GeneDistributionTypes) {
-		return GeneDistributionTypes(distributionTypes & (1 << idx));
+		return
+			distributionTypes & (1 << idx) == 0
+				? GeneDistributionTypes.Even
+				: GeneDistributionTypes.Uneven;
 	}
 
 	function _generateUnevenGeneValue(uint8 N) internal returns (uint8) {
