@@ -28,7 +28,7 @@ contract DuckyFamilyV1_0 is
 	error InvalidMintParams(MintParams mintParams);
 	error InvalidMeldParams(MeldParams meldParams);
 
-	error MintingRulesViolated(Collections collectionId, uint8 amount);
+	error MintingRulesViolated(uint8 collectionId, uint8 amount);
 	error MeldingRulesViolated(uint256[] tokenIds);
 	error IncorrectGenomesForMelding(uint256[] genomes);
 
@@ -69,12 +69,18 @@ contract DuckyFamilyV1_0 is
 
 	// ------- Ducklings Game -------
 
-	// TODO: convert to constants (as enums in Solidity still can't have starting value) to encourage this practice in other Game contracts
-	enum Collections {
-		Duckling,
-		Zombeak,
-		Mythic
-	}
+	// for now, Solidity does not support starting value for enum
+	// enum Collections {
+	// 	Duckling = 0,
+	// 	Zombeak,
+	// 	Mythic,
+	// 	MythicZombeak
+	// }
+
+	uint8 internal constant ducklingCollectionId = 0;
+	uint8 internal constant zombeakCollectionId = 1;
+	uint8 internal constant mythicCollectionId = 2;
+	uint8 internal constant mythicZombeakCollectionId = 3;
 
 	enum Rarities {
 		Common,
@@ -117,7 +123,9 @@ contract DuckyFamilyV1_0 is
 	// distribution type of each gene for Duckling and Zombeak collections
 	uint32[2] internal collectionsGeneDistributionTypes;
 
-	uint8 internal mythicAmount;
+	uint8 internal maxMythicId;
+
+	uint8 internal maxMythicZombeakId;
 
 	// chance of a Duckling of a certain rarity to be generated
 	uint8[] internal rarityChances; // 70, 20, 5, 1
@@ -138,6 +146,7 @@ contract DuckyFamilyV1_0 is
 	uint256 public meldPrice;
 
 	CountersUpgradeable.Counter public nextMythicId;
+	CountersUpgradeable.Counter public nextMythicZombeakId;
 
 	// ------- Initializer -------
 
@@ -172,7 +181,10 @@ contract DuckyFamilyV1_0 is
 		collectionsGeneDistributionTypes[1] = 1005; // 001111101101
 
 		// TODO: confirm
-		mythicAmount = 100;
+		maxMythicId = 64;
+
+		// TODO: confirm
+		maxMythicZombeakId = 3;
 
 		rarityChances = [70, 20, 5, 1];
 
@@ -279,28 +291,37 @@ contract DuckyFamilyV1_0 is
 	}
 
 	function _mintPackTo(address to, uint8 amount) internal {
-		if (amount > MAX_PACK_SIZE) revert MintingRulesViolated(Collections.Duckling, amount);
+		if (amount > MAX_PACK_SIZE) revert MintingRulesViolated(ducklingCollectionId, amount);
 		for (uint256 i = 0; i < amount; i++) {
-			uint256 genome = _generateGenome(Collections.Duckling);
+			uint256 genome = _generateGenome(ducklingCollectionId);
 			ducklingsContract.mintTo(to, genome);
 		}
 	}
 
-	function _generateGenome(Collections collection) internal returns (uint256) {
+	function _generateGenome(uint8 collectionId) internal returns (uint256) {
 		uint256 genome;
 
-		genome = genome.setGene(collectionGeneIdx, uint8(collection));
+		genome = genome.setGene(collectionGeneIdx, collectionId);
 
-		if (collection == Collections.Mythic) {
-			if (nextMythicId.current() > mythicAmount)
-				revert MintingRulesViolated(Collections.Mythic, 1);
+		if (collectionId == mythicCollectionId) {
+			if (nextMythicId.current() > maxMythicId)
+				revert MintingRulesViolated(mythicCollectionId, 1);
 
 			genome = genome.setGene(uint8(MythicGenes.UniqId), uint8(nextMythicId.current()));
+			return genome;
+		} else if (collectionId == mythicZombeakCollectionId) {
+			if (nextMythicZombeakId.current() > maxMythicZombeakId)
+				revert MintingRulesViolated(mythicZombeakCollectionId, 1);
+
+			genome = genome.setGene(
+				uint8(MythicGenes.UniqId),
+				uint8(nextMythicZombeakId.current())
+			);
 			return genome;
 		}
 
 		genome = genome.setGene(rarityGeneIdx, uint8(_generateRarity()));
-		genome = _generateAndSetGenes(genome, collection);
+		genome = _generateAndSetGenes(genome, collectionId);
 
 		return genome;
 	}
@@ -309,12 +330,9 @@ contract DuckyFamilyV1_0 is
 		return Rarities(_randomWeightedNumber(rarityChances));
 	}
 
-	function _generateAndSetGenes(
-		uint256 genome,
-		Collections collection
-	) internal returns (uint256) {
-		uint8[] memory geneValuesNum = collectionsGeneValuesNum[uint8(collection)];
-		uint32 geneDistributionTypes = collectionsGeneDistributionTypes[uint8(collection)];
+	function _generateAndSetGenes(uint256 genome, uint8 collectionId) internal returns (uint256) {
+		uint8[] memory geneValuesNum = collectionsGeneValuesNum[collectionId];
+		uint32 geneDistributionTypes = collectionsGeneDistributionTypes[collectionId];
 
 		// generate and set each gene
 		for (uint8 i = 0; i < geneValuesNum.length; i++) {
@@ -331,7 +349,7 @@ contract DuckyFamilyV1_0 is
 		}
 
 		// set default values for Ducklings
-		if (collection == Collections.Duckling) {
+		if (collectionId == ducklingCollectionId) {
 			Rarities rarity = Rarities(genome.getGene(rarityGeneIdx));
 
 			if (rarity == Rarities.Common) {
@@ -373,16 +391,15 @@ contract DuckyFamilyV1_0 is
 			// equal collections
 			!Genome._geneValuesAreEqual(genomes, collectionGeneIdx) ||
 			// not Mythic
-			genomes[0].getGene(collectionGeneIdx) == uint8(Collections.Mythic) ||
+			genomes[0].getGene(collectionGeneIdx) == mythicCollectionId ||
 			// Rarities must be the same
 			!Genome._geneValuesAreEqual(genomes, rarityGeneIdx)
 		) revert IncorrectGenomesForMelding(genomes);
 
 		// specific melding rules
 		if (genomes[0].getGene(rarityGeneIdx) == uint8(Rarities.Legendary)) {
+			// TODO: clarify melding Legendary Zombeaks logic
 			if (
-				// can not meld Legendary Zombeaks
-				genomes[0].getGene(collectionGeneIdx) == uint8(Collections.Zombeak) ||
 				// cards must have the same Color
 				!Genome._geneValuesAreEqual(genomes, uint8(GenerativeGenes.Color)) ||
 				// cards must be of each Family
@@ -398,7 +415,46 @@ contract DuckyFamilyV1_0 is
 		}
 	}
 
-	function _isMutating(Rarities rarity) internal returns (bool) {
+	function _meldGenomes(uint256[] memory genomes) internal returns (uint256) {
+		uint8 collectionId = genomes[0].getGene(collectionGeneIdx);
+		Rarities rarity = Rarities(genomes[0].getGene(rarityGeneIdx));
+
+		// if melding Duckling, they can mutate or evolve into Mythic
+		if (collectionId == ducklingCollectionId) {
+			if (_isCollectionMutating(rarity)) {
+				return _generateGenome(zombeakCollectionId);
+			}
+
+			if (rarity == Rarities.Legendary) {
+				nextMythicId.increment();
+				return _generateGenome(mythicCollectionId);
+			}
+		}
+
+		// if melding Zombeak, they evolve into MythicZombeak
+		if (collectionId == zombeakCollectionId && rarity == Rarities.Legendary) {
+			nextMythicZombeakId.increment();
+			return _generateGenome(mythicZombeakCollectionId);
+		}
+
+		uint256 meldedGenome;
+
+		// set the same collection
+		meldedGenome = meldedGenome.setGene(collectionGeneIdx, collectionId);
+		// increase rarity
+		meldedGenome = meldedGenome.setGene(rarityGeneIdx, genomes[0].getGene(rarityGeneIdx) + 1);
+
+		uint8[] memory geneValuesNum = collectionsGeneValuesNum[collectionId];
+
+		for (uint8 i = 0; i < geneValuesNum.length; i++) {
+			uint8 geneValue = _meldGenes(genomes, generativeGenesOffset + i, geneValuesNum[i]);
+			meldedGenome = meldedGenome.setGene(generativeGenesOffset + i, geneValue);
+		}
+
+		return meldedGenome;
+	}
+
+	function _isCollectionMutating(Rarities rarity) internal returns (bool) {
 		if (rarity <= Rarities.Epic) {
 			uint8 mutationPercentage = mutationChances[uint8(rarity)];
 			// dynamic array is needed for `_randomWeighterNumber()`
@@ -409,39 +465,6 @@ contract DuckyFamilyV1_0 is
 		} else {
 			return false;
 		}
-	}
-
-	function _meldGenomes(uint256[] memory genomes) internal returns (uint256) {
-		Collections collection = Collections(genomes[0].getGene(collectionGeneIdx));
-
-		if (collection == Collections.Duckling) {
-			Rarities rarity = Rarities(genomes[0].getGene(rarityGeneIdx));
-
-			if (_isMutating(rarity)) {
-				return _generateGenome(Collections.Zombeak);
-			}
-
-			if (rarity == Rarities.Legendary) {
-				nextMythicId.increment();
-				return _generateGenome(Collections.Mythic);
-			}
-		}
-
-		uint256 meldedGenome;
-
-		// set the same collection
-		meldedGenome = meldedGenome.setGene(collectionGeneIdx, uint8(collection));
-		// increase rarity
-		meldedGenome = meldedGenome.setGene(rarityGeneIdx, genomes[0].getGene(rarityGeneIdx) + 1);
-
-		uint8[] memory geneValuesNum = collectionsGeneValuesNum[uint8(collection)];
-
-		for (uint8 i = 0; i < geneValuesNum.length; i++) {
-			uint8 geneValue = _meldGenes(genomes, generativeGenesOffset + i, geneValuesNum[i]);
-			meldedGenome = meldedGenome.setGene(generativeGenesOffset + i, geneValue);
-		}
-
-		return meldedGenome;
 	}
 
 	function _meldGenes(
