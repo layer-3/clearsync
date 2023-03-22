@@ -131,7 +131,10 @@ contract DuckyFamilyV1_0 is
 	uint8[] internal rarityChances; // 70, 20, 5, 1
 
 	// chance of a Duckling of certain rarity to mutate to Zombeak while melding
-	uint8[] internal mutationChances; // 10, 5, 2, 0
+	uint8[] internal collectionMutationChances; // 10, 5, 2, 0
+
+	uint8[] internal geneMutationChance; // 955, 45 (4.5% to mutate gene value)
+	uint8[] internal geneInheritanceChanges; // 5, 4, 3, 2, 1
 
 	// ------- Public values -------
 
@@ -188,7 +191,7 @@ contract DuckyFamilyV1_0 is
 
 		rarityChances = [70, 20, 5, 1];
 
-		mutationChances = [10, 5, 2, 0];
+		collectionMutationChances = [10, 5, 2, 0];
 	}
 
 	// -------- Upgrades --------
@@ -445,9 +448,15 @@ contract DuckyFamilyV1_0 is
 		meldedGenome = meldedGenome.setGene(rarityGeneIdx, genomes[0].getGene(rarityGeneIdx) + 1);
 
 		uint8[] memory geneValuesNum = collectionsGeneValuesNum[collectionId];
+		uint32 geneDistTypes = collectionsGeneDistributionTypes[collectionId];
 
 		for (uint8 i = 0; i < geneValuesNum.length; i++) {
-			uint8 geneValue = _meldGenes(genomes, generativeGenesOffset + i, geneValuesNum[i]);
+			uint8 geneValue = _meldGenes(
+				genomes,
+				generativeGenesOffset + i,
+				geneValuesNum[i],
+				_getDistibutionType(geneDistTypes, i)
+			);
 			meldedGenome = meldedGenome.setGene(generativeGenesOffset + i, geneValue);
 		}
 
@@ -456,7 +465,7 @@ contract DuckyFamilyV1_0 is
 
 	function _isCollectionMutating(Rarities rarity) internal returns (bool) {
 		if (rarity <= Rarities.Epic) {
-			uint8 mutationPercentage = mutationChances[uint8(rarity)];
+			uint8 mutationPercentage = collectionMutationChances[uint8(rarity)];
 			// dynamic array is needed for `_randomWeighterNumber()`
 			uint8[] memory chances;
 			chances[0] = mutationPercentage;
@@ -470,17 +479,21 @@ contract DuckyFamilyV1_0 is
 	function _meldGenes(
 		uint256[] memory genomes,
 		uint8 gene,
-		uint8 maxGeneValue
+		uint8 maxGeneValue,
+		GeneDistributionTypes geneDistrType
 	) internal returns (uint8) {
-		uint8 inheritanceIdx = _randomWeightedNumber(mutationChances);
-		if (inheritanceIdx < 5) {
-			// inheritance
-			return genomes[inheritanceIdx].getGene(gene);
-		} else {
-			// gene mutation
+		// gene mutation
+		if (
+			geneDistrType == GeneDistributionTypes.Uneven &&
+			_randomWeightedNumber(geneMutationChance) == 1
+		) {
 			uint8 maxPresentGeneValue = Genome._maxGene(genomes, gene);
 			return maxPresentGeneValue == maxGeneValue ? maxGeneValue : maxPresentGeneValue + 1;
 		}
+
+		// gene inheritance
+		uint8 inheritanceIdx = _randomWeightedNumber(geneInheritanceChanges);
+		return genomes[inheritanceIdx].getGene(gene);
 	}
 
 	// ------- Gene distribution -------
