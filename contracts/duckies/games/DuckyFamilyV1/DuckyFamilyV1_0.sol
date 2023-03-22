@@ -508,11 +508,12 @@ contract DuckyFamilyV1_0 is
 				: GeneDistributionTypes.Uneven;
 	}
 
-	function _generateUnevenGeneValue(uint8 N) internal returns (uint8) {
+	function _generateUnevenGeneValue(uint8 valuesNum) internal returns (uint8) {
 		// using quadratic algorithm
-		// chance of each gene's value to be generated is (N - t)^2 / S
-		// N - number of trait values, t - trait value, S - sum of Squared trait values
+		// chance of each gene value to be generated is (N - v)^2 / S
+		// N - number of gene values, v - gene value, S - sum of Squared gene values
 
+		uint256 N = uint256(valuesNum);
 		uint256 S = (N * (N + 1) * (2 * N + 1)) / 6;
 		uint256 num = _randomMaxNumber(S);
 		uint256 accumNum = 0;
