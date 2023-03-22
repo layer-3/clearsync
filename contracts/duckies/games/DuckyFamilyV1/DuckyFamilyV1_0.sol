@@ -69,6 +69,7 @@ contract DuckyFamilyV1_0 is
 
 	// ------- Ducklings Game -------
 
+	// TODO: convert to constants (as enums in Solidity still can't have starting value) to encourage this practice in other Game contracts
 	enum Collections {
 		Duckling,
 		Zombeak,
@@ -129,18 +130,17 @@ contract DuckyFamilyV1_0 is
 	uint8 public constant MAX_PACK_SIZE = 100;
 	uint8 public constant FLOCK_SIZE = 5;
 
+	ERC20BurnableUpgradeable public duckiesContract;
+	IDucklings public ducklingsContract;
+	address public treasureVaultAddress;
+
 	uint256 public mintPrice;
 	uint256 public meldPrice;
 
 	CountersUpgradeable.Counter public nextMythicId;
 
-	ERC20BurnableUpgradeable public duckiesContract;
-	IDucklings public ducklingsContract;
-	address public treasureVaultAddress;
-
 	// ------- Initializer -------
 
-	// TODO: either pass configs as params or initialize them manually
 	function initialize(
 		address duckiesAddress,
 		address ducklingsAddress,
@@ -154,13 +154,29 @@ contract DuckyFamilyV1_0 is
 		_grantRole(UPGRADER_ROLE, msg.sender);
 		_grantRole(MAINTAINER_ROLE, msg.sender);
 
-		// TODO: define price
-		mintPrice = 10_000 * 10 ** duckiesContract.decimals();
-		meldPrice = 10_000 * 10 ** duckiesContract.decimals();
-
 		duckiesContract = ERC20BurnableUpgradeable(duckiesAddress);
 		ducklingsContract = IDucklings(ducklingsAddress);
 		treasureVaultAddress = treasureVaultAddress_;
+
+		mintPrice = 5 * 10 ** duckiesContract.decimals();
+		meldPrice = 5 * 10 ** duckiesContract.decimals();
+
+		// config
+		// duckling
+		// TODO: confirm gene values
+		collectionsGeneValuesNum[0] = [4, 5, 16, 32, 32, 16, 8, 32, 16, 12, 5, 26];
+		collectionsGeneDistributionTypes[0] = 1005; // 001111101101
+		// zombeak
+		// TODO: confirm gene values
+		collectionsGeneValuesNum[1] = [2, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4];
+		collectionsGeneDistributionTypes[1] = 1005; // 001111101101
+
+		// TODO: confirm
+		mythicAmount = 100;
+
+		rarityChances = [70, 20, 5, 1];
+
+		mutationChances = [10, 5, 2, 0];
 	}
 
 	// -------- Upgrades --------
