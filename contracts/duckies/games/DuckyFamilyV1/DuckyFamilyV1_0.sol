@@ -73,14 +73,12 @@ contract DuckyFamilyV1_0 is
 	// enum Collections {
 	// 	Duckling = 0,
 	// 	Zombeak,
-	// 	Mythic,
-	// 	MythicZombeak
+	// 	Mythic
 	// }
 
 	uint8 internal constant ducklingCollectionId = 0;
 	uint8 internal constant zombeakCollectionId = 1;
 	uint8 internal constant mythicCollectionId = 2;
-	uint8 internal constant mythicZombeakCollectionId = 3;
 
 	enum Rarities {
 		Common,
@@ -124,8 +122,6 @@ contract DuckyFamilyV1_0 is
 	uint32[2] internal collectionsGeneDistributionTypes;
 
 	uint8 internal maxMythicId;
-
-	uint8 internal maxMythicZombeakId;
 
 	// chance of a Duckling of a certain rarity to be generated
 	uint8[] internal rarityChances; // 70, 20, 5, 1
@@ -185,9 +181,6 @@ contract DuckyFamilyV1_0 is
 
 		// TODO: confirm
 		maxMythicId = 64;
-
-		// TODO: confirm
-		maxMythicZombeakId = 3;
 
 		rarityChances = [70, 20, 5, 1];
 
@@ -312,15 +305,6 @@ contract DuckyFamilyV1_0 is
 
 			genome = genome.setGene(uint8(MythicGenes.UniqId), uint8(nextMythicId.current()));
 			return genome;
-		} else if (collectionId == mythicZombeakCollectionId) {
-			if (nextMythicZombeakId.current() > maxMythicZombeakId)
-				revert MintingRulesViolated(mythicZombeakCollectionId, 1);
-
-			genome = genome.setGene(
-				uint8(MythicGenes.UniqId),
-				uint8(nextMythicZombeakId.current())
-			);
-			return genome;
 		}
 
 		genome = genome.setGene(rarityGeneIdx, uint8(_generateRarity()));
@@ -401,8 +385,9 @@ contract DuckyFamilyV1_0 is
 
 		// specific melding rules
 		if (genomes[0].getGene(rarityGeneIdx) == uint8(Rarities.Legendary)) {
-			// TODO: clarify melding Legendary Zombeaks logic
 			if (
+				// not Legendary Zombeak
+				genomes[0].getGene(collectionGeneIdx) == zombeakCollectionId ||
 				// cards must have the same Color
 				!Genome._geneValuesAreEqual(genomes, uint8(GenerativeGenes.Color)) ||
 				// cards must be of each Family
@@ -432,12 +417,6 @@ contract DuckyFamilyV1_0 is
 				nextMythicId.increment();
 				return _generateGenome(mythicCollectionId);
 			}
-		}
-
-		// if melding Zombeak, they evolve into MythicZombeak
-		if (collectionId == zombeakCollectionId && rarity == Rarities.Legendary) {
-			nextMythicZombeakId.increment();
-			return _generateGenome(mythicZombeakCollectionId);
 		}
 
 		uint256 meldedGenome;
