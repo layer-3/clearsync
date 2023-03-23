@@ -39,7 +39,7 @@ contract RandomUpgradeable is Initializable {
 
 	function _randomWeightedNumber(uint8[] memory weights) internal returns (uint8) {
 		// generated number should be strictly less than right \/ segment boundary
-		uint256 randomNumber = _randomMaxNumber(_sum(weights) - 1);
+		uint256 randomNumber = _randomMaxNumber(_sum(weights));
 
 		uint256 segmentRightBoundary = 0;
 
