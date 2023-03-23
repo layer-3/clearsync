@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.18;
 
-interface IDucklings {
+import '@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol';
+
+interface IDucklings is IERC721Upgradeable {
 	// events
 	event Minted(address to, uint256 tokenId, uint256 genome, uint256 chainId);
 
