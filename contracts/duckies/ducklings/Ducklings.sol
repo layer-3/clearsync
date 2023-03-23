@@ -12,8 +12,8 @@ import '@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol';
 import '../../interfaces/IDucklings.sol';
 
 contract Ducklings is
-	IDucklings,
 	Initializable,
+	IDucklings,
 	ERC721Upgradeable,
 	ERC721RoyaltyUpgradeable,
 	UUPSUpgradeable,
@@ -93,7 +93,12 @@ contract Ducklings is
 		public
 		view
 		virtual
-		override(ERC721RoyaltyUpgradeable, ERC721Upgradeable, AccessControlUpgradeable)
+		override(
+			IERC165Upgradeable,
+			ERC721RoyaltyUpgradeable,
+			ERC721Upgradeable,
+			AccessControlUpgradeable
+		)
 		returns (bool)
 	{
 		return super.supportsInterface(interfaceId);
