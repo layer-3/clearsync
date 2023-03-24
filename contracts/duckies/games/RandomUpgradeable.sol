@@ -4,6 +4,8 @@ pragma solidity 0.8.18;
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 
 contract RandomUpgradeable is Initializable {
+	error InvalidWeights(uint8[] weights);
+
 	bytes32 private salt;
 	uint256 private nonce;
 
@@ -38,6 +40,9 @@ contract RandomUpgradeable is Initializable {
 	}
 
 	function _randomWeightedNumber(uint8[] memory weights) internal returns (uint8) {
+		// no sense in empty weights array
+		if (weights.length == 0) revert InvalidWeights(weights);
+
 		// generated number should be strictly less than right \/ segment boundary
 		uint256 randomNumber = _randomMaxNumber(_sum(weights));
 
