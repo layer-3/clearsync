@@ -326,7 +326,8 @@ contract DuckyFamilyV1_0 is
 				geneValue = uint8(_generateUnevenGeneValue(geneValuesNum[i]));
 			}
 
-			genome = genome.setGene(generativeGenesOffset + i, geneValue);
+			// gene with value 0 means it is a default value, thus this   \/
+			genome = genome.setGene(generativeGenesOffset + i, geneValue + 1);
 		}
 
 		// set default values for Ducklings
