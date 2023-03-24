@@ -210,6 +210,16 @@ describe('Ducklings', () => {
 
         await expectDucklingHasGenome(Ducklings, 1, GENOME_2);
       });
+
+      it('event is emitted', async () => {
+        const { chainId } = await ethers.provider.getNetwork();
+        const tx = await DucklingsAsGame.mintTo(Someone.address, GENOME);
+        const latestBlock = await ethers.provider.getBlock('latest');
+
+        await expect(tx)
+          .to.emit(Ducklings, 'Minted')
+          .withArgs(Someone.address, 0, GENOME, latestBlock.timestamp, chainId);
+      });
     });
 
     describe('burn', () => {
