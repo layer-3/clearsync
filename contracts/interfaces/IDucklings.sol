@@ -4,8 +4,13 @@ pragma solidity 0.8.18;
 import '@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol';
 
 interface IDucklings is IERC721Upgradeable {
+	struct Duckling {
+		uint256 genome;
+		uint64 birthdate;
+	}
+
 	// events
-	event Minted(address to, uint256 tokenId, uint256 genome, uint256 chainId);
+	event Minted(address to, uint256 tokenId, uint256 genome, uint64 birthdate, uint256 chainId);
 
 	function isOwnerOf(address account, uint256 tokenIds) external view returns (bool);
 

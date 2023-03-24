@@ -29,11 +29,6 @@ contract Ducklings is
 	bytes32 public constant MAINTAINER_ROLE = keccak256('MAINTAINER_ROLE');
 	bytes32 public constant GAME_ROLE = keccak256('GAME_ROLE');
 
-	struct Duckling {
-		uint256 genome;
-		uint64 birthdate;
-	}
-
 	// royalty
 	address private _royaltiesCollector;
 	uint32 private constant ROYALTY_FEE = 1000; // 10%
@@ -162,12 +157,13 @@ contract Ducklings is
 		uint256 genome
 	) external onlyRole(GAME_ROLE) returns (uint256 tokenId) {
 		tokenId = nextNewTokenId.current();
-		idToDuckling[tokenId] = Duckling(genome, uint64(block.timestamp));
+		uint64 birthdate = uint64(block.timestamp);
+		idToDuckling[tokenId] = Duckling(genome, birthdate);
 
 		_safeMint(to, tokenId);
 
 		nextNewTokenId.increment();
-		emit Minted(to, tokenId, genome, block.chainid);
+		emit Minted(to, tokenId, genome, birthdate, block.chainid);
 	}
 
 	function burn(uint256 tokenId) external onlyRole(GAME_ROLE) {

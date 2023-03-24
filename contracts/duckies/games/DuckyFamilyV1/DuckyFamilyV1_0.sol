@@ -33,13 +33,7 @@ contract DuckyFamilyV1_0 is
 	error IncorrectGenomesForMelding(uint256[] genomes);
 
 	// events
-	event Melded(
-		address owner,
-		uint256[] meldingTokenIds,
-		uint256 meldedTokenId,
-		uint256 meldedGenome,
-		uint256 chainId
-	);
+	event Melded(address owner, uint256[] meldingTokenIds, uint256 meldedTokenId, uint256 chainId);
 
 	// roles
 	bytes32 public constant UPGRADER_ROLE = keccak256('UPGRADER_ROLE');
@@ -370,7 +364,7 @@ contract DuckyFamilyV1_0 is
 		uint256 meldedGenome = _meldGenomes(meldingGenomes);
 		uint256 meldedTokenId = ducklingsContract.mintTo(owner, meldedGenome);
 
-		emit Melded(owner, meldingTokenIds, meldedTokenId, meldedGenome, block.chainid);
+		emit Melded(owner, meldingTokenIds, meldedTokenId, block.chainid);
 	}
 
 	function _requireGenomesSatisfyMelding(uint256[] memory genomes) internal pure {
