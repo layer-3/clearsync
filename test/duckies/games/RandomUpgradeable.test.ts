@@ -4,6 +4,8 @@ import { expect } from 'chai';
 import type { BigNumber, ContractTransaction } from 'ethers';
 import type { RandomTestConsumer } from '../../../typechain-types';
 
+const INVALID_WEIGHTS = 'InvalidWeights';
+
 const MAX_NUM_RUNS = 500;
 const MAX_NUM = 5;
 
@@ -57,32 +59,42 @@ describe('RandomUpgradeable', () => {
   });
 
   describe('randomWeightedNumber', () => {
-    const resultsDistibution = Array.from({ length: MAX_NUM }).fill(0) as number[];
+    describe('success', () => {
+      const resultsDistibution = Array.from({ length: MAX_NUM }).fill(0) as number[];
 
-    before(async () => {
-      for (let i = 0; i < WEIGHTS_RUNS; i++) {
-        resultsDistibution[
-          await extractNumFromEvent(await RandomConsumer.randomWeightedNumber(WEIGHTS))
-        ]++;
-      }
+      before(async () => {
+        for (let i = 0; i < WEIGHTS_RUNS; i++) {
+          resultsDistibution[
+            await extractNumFromEvent(await RandomConsumer.randomWeightedNumber(WEIGHTS))
+          ]++;
+        }
+      });
+
+      it('generated number is in correct range', () => {
+        expect(resultsDistibution.length == WEIGHTS.length);
+      });
+
+      it('correct distribution', () => {
+        const sum = resultsDistibution.reduce((acc, curr) => acc + curr, 0);
+        for (const [i, WEIGHT] of WEIGHTS.entries()) {
+          const freq = resultsDistibution[i] / sum;
+          const thFreq = WEIGHT / WEIGHTS_SUM;
+          const left = thFreq * (1 - PRECISION_MULTIPLIER);
+          const right = thFreq * (1 + PRECISION_MULTIPLIER);
+
+          console.log('Frequency: actual', freq, ', theoretical:', thFreq);
+          expect(freq).to.be.greaterThanOrEqual(left);
+          expect(freq).to.be.lessThanOrEqual(right);
+        }
+      });
     });
 
-    it('generated number is in correct range', () => {
-      expect(resultsDistibution.length == WEIGHTS.length);
-    });
-
-    it('correct distribution', () => {
-      const sum = resultsDistibution.reduce((acc, curr) => acc + curr, 0);
-      for (const [i, WEIGHT] of WEIGHTS.entries()) {
-        const freq = resultsDistibution[i] / sum;
-        const thFreq = WEIGHT / WEIGHTS_SUM;
-        const left = thFreq * (1 - PRECISION_MULTIPLIER);
-        const right = thFreq * (1 + PRECISION_MULTIPLIER);
-
-        console.log('Frequency: actual', freq, ', theoretical:', thFreq);
-        expect(freq).to.be.greaterThanOrEqual(left);
-        expect(freq).to.be.lessThanOrEqual(right);
-      }
+    describe('revert', () => {
+      it('when empty weights array', async () => {
+        await expect(RandomConsumer.randomWeightedNumber([]))
+          .to.be.revertedWithCustomError(RandomConsumer, INVALID_WEIGHTS)
+          .withArgs([]);
+      });
     });
   });
 });
