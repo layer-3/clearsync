@@ -86,7 +86,7 @@ contract DuckyFamilyV1_0 is
 		Uneven
 	}
 
-	// Duckling genes: Collection, Rarity, Color, Family, Body, Head, Eyes, Beak, Wings, FirstName, Temper
+	// Duckling genes: Collection, Rarity, Color, Family, Body, Head, Eyes, Beak, Wings, FirstName, Temper, Skill, Habitat, Breed
 	// Zombeak genes: Collection, Rarity, Color, Family, Body, Head, Eyes, Beak, Wings
 
 	enum GenerativeGenes {
@@ -115,7 +115,7 @@ contract DuckyFamilyV1_0 is
 	// distribution type of each gene for Duckling and Zombeak collections
 	uint32[2] internal collectionsGeneDistributionTypes;
 
-	uint8 internal maxMythicId;
+	uint8 internal mythicAmount;
 
 	// chance of a Duckling of a certain rarity to be generated
 	uint8[] internal rarityChances; // 70, 20, 5, 1
@@ -166,15 +166,15 @@ contract DuckyFamilyV1_0 is
 		// config
 		// duckling
 		// TODO: confirm gene values
-		collectionsGeneValuesNum[0] = [4, 5, 16, 32, 32, 16, 8, 32, 16, 12, 5, 26];
+		collectionsGeneValuesNum[0] = [4, 5, 9, 28, 30, 14, 10, 36, 16, 12, 5, 28];
 		collectionsGeneDistributionTypes[0] = 2940; // reverse(001111101101) = 101101111100
 		// zombeak
 		// TODO: confirm gene values
-		collectionsGeneValuesNum[1] = [2, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4];
+		collectionsGeneValuesNum[1] = [2, 3, 7, 6, 9, 7, 10, 4, 4, 4, 4, 4];
 		collectionsGeneDistributionTypes[1] = 2940; // reverse(001111101101) = 101101111100
 
 		// TODO: confirm
-		maxMythicId = 64;
+		mythicAmount = 65;
 
 		rarityChances = [70, 20, 5, 1];
 
@@ -294,7 +294,7 @@ contract DuckyFamilyV1_0 is
 		genome = genome.setGene(collectionGeneIdx, collectionId);
 
 		if (collectionId == mythicCollectionId) {
-			if (nextMythicId.current() > maxMythicId)
+			if (nextMythicId.current() > mythicAmount - 1)
 				revert MintingRulesViolated(mythicCollectionId, 1);
 
 			genome = genome.setGene(uint8(MythicGenes.UniqId), uint8(nextMythicId.current()));
