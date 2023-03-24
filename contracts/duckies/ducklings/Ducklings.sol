@@ -22,6 +22,8 @@ contract Ducklings is
 	using CountersUpgradeable for CountersUpgradeable.Counter;
 	using {StringsUpgradeable.toString} for uint256;
 
+	error InvalidTokenId(uint256 tokenId);
+
 	// roles
 	bytes32 public constant UPGRADER_ROLE = keccak256('UPGRADER_ROLE');
 	bytes32 public constant MAINTAINER_ROLE = keccak256('MAINTAINER_ROLE');
@@ -74,6 +76,7 @@ contract Ducklings is
 	) public view override(ERC721Upgradeable) returns (string memory) {
 		Duckling memory duckling = idToDuckling[tokenId];
 
+		// TODO: use string.concat
 		return
 			bytes(apiBaseURL).length > 0
 				? string(
@@ -106,6 +109,7 @@ contract Ducklings is
 
 	// -------- ERC2981 Royalties --------
 
+	// TODO: add full customize functions
 	function setRoyaltyCollector(address account) public onlyRole(DEFAULT_ADMIN_ROLE) {
 		_royaltiesCollector = account;
 	}
@@ -120,7 +124,7 @@ contract Ducklings is
 		apiBaseURL = apiBaseURL_;
 	}
 
-	// -------- IDuckies --------
+	// -------- IDucklings --------
 
 	function isOwnerOf(address account, uint256 tokenId) external view returns (bool) {
 		return account == ownerOf(tokenId);
@@ -137,13 +141,20 @@ contract Ducklings is
 	}
 
 	function getGenome(uint256 tokenId) external view returns (uint256) {
+		if (!_exists(tokenId)) revert InvalidTokenId(tokenId);
 		return idToDuckling[tokenId].genome;
 	}
 
-	function getGenomes(
-		uint256[] calldata tokenIds
-	) external view returns (uint256[] memory genomes) {
-		for (uint256 i = 0; i < tokenIds.length; i++) genomes[i] = idToDuckling[tokenIds[i]].genome;
+	function getGenomes(uint256[] calldata tokenIds) external view returns (uint256[] memory) {
+		// explicitly specify array length
+		uint256[] memory genomes = new uint256[](tokenIds.length);
+
+		for (uint256 i = 0; i < tokenIds.length; i++) {
+			if (!_exists(tokenIds[i])) revert InvalidTokenId(tokenIds[i]);
+			genomes[i] = idToDuckling[tokenIds[i]].genome;
+		}
+
+		return genomes;
 	}
 
 	function mintTo(
