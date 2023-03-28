@@ -24,22 +24,23 @@ package merkletree
 
 import "crypto/sha256"
 
-// sha256Digest is the reusable digest for defaultHashFunc.
+// sha256Digest is the reusable digest for DefaultHashFunc.
+// It is used to avoid creating a new hash digest for every call to DefaultHashFunc.
 var sha256Digest = sha256.New()
 
-// defaultHashFunc is used when no user hash function is specified.
-// It implements SHA256 hash function.
-func defaultHashFunc(data []byte) ([]byte, error) {
+// DefaultHashFunc is the default hash function used when no user-specified hash function is provided.
+// It implements the SHA256 hash function and reuses sha256Digest to reduce memory allocations.
+func DefaultHashFunc(data []byte) ([]byte, error) {
 	defer sha256Digest.Reset()
 	sha256Digest.Write(data)
-	return sha256Digest.Sum(nil), nil
+	return sha256Digest.Sum(make([]byte, 0, sha256Digest.Size())), nil
 }
 
-// defaultHashFuncParallel is used by parallel algorithms when no user hash function is specified.
-// It implements SHA256 hash function.
-// When implementing hash functions for paralleled algorithms, please make sure it is concurrent safe.
-func defaultHashFuncParallel(data []byte) ([]byte, error) {
+// DefaultHashFuncParallel is the default hash function used by parallel algorithms when no user-specified
+// hash function is provided. It implements the SHA256 hash function and creates a new hash digest for
+// each call, ensuring that it is safe for concurrent use.
+func DefaultHashFuncParallel(data []byte) ([]byte, error) {
 	digest := sha256.New()
 	digest.Write(data)
-	return digest.Sum(nil), nil
+	return digest.Sum(make([]byte, 0, digest.Size())), nil
 }

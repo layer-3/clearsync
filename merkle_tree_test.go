@@ -52,14 +52,60 @@ func dataBlocks(num int) []DataBlock {
 }
 
 func TestMerkleTreeNew_proofGen(t *testing.T) {
+	dummyDataBlocks := []DataBlock{
+		&mock.DataBlock{
+			Data: []byte("dummy_data_0"),
+		},
+		&mock.DataBlock{
+			Data: []byte("dummy_data_1"),
+		},
+		&mock.DataBlock{
+			Data: []byte("dummy_data_2"),
+		},
+	}
+	dummyHashList := make([][]byte, 3)
+	var err error
+	for i := 0; i < 3; i++ {
+		dataByte, err := dummyDataBlocks[i].Serialize()
+		if err != nil {
+			t.Fatal(err)
+		}
+		dummyHashList[i], err = DefaultHashFunc(dataByte)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	twoDummyRoot, err := DefaultHashFunc(
+		append(dummyHashList[0], dummyHashList[1]...),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	leftHash, err := DefaultHashFunc(
+		append(dummyHashList[0], dummyHashList[1]...),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rightHash, err := DefaultHashFunc(
+		append(dummyHashList[2], dummyHashList[2]...),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	threeDummyRoot, err := DefaultHashFunc(append(leftHash, rightHash...))
+	if err != nil {
+		t.Fatal(err)
+	}
 	type args struct {
 		blocks []DataBlock
 		config *Config
 	}
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		name     string
+		args     args
+		wantErr  bool
+		wantRoot []byte
 	}{
 		{
 			name: "test_0",
@@ -78,9 +124,18 @@ func TestMerkleTreeNew_proofGen(t *testing.T) {
 		{
 			name: "test_2",
 			args: args{
-				blocks: dataBlocks(2),
+				blocks: []DataBlock{dummyDataBlocks[0], dummyDataBlocks[1]},
 			},
-			wantErr: false,
+			wantErr:  false,
+			wantRoot: twoDummyRoot,
+		},
+		{
+			name: "test_3",
+			args: args{
+				blocks: dummyDataBlocks,
+			},
+			wantErr:  false,
+			wantRoot: threeDummyRoot,
 		},
 		{
 			name: "test_8",
@@ -131,18 +186,6 @@ func TestMerkleTreeNew_proofGen(t *testing.T) {
 				blocks: dataBlocks(100),
 				config: &Config{
 					RunInParallel: true,
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name: "test_100_parallel_4_random",
-			args: args{
-				blocks: dataBlocks(100),
-				config: &Config{
-					NoDuplicates:  true,
-					RunInParallel: true,
-					NumRoutines:   4,
 				},
 			},
 			wantErr: false,
@@ -220,12 +263,22 @@ func TestMerkleTreeNew_proofGen(t *testing.T) {
 			mt, err := New(tt.args.config, tt.args.blocks)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Build() error = %v, wantErr %v", err, tt.wantErr)
+				return
 			}
-			if !tt.wantErr {
+			if tt.wantErr {
+				return
+			}
+			if tt.wantRoot == nil {
 				for idx, block := range tt.args.blocks {
 					if ok, _ := mt.Verify(block, mt.Proofs[idx]); !ok {
 						t.Errorf("proof verification failed")
+						return
 					}
+				}
+			} else {
+				if !bytes.Equal(mt.Root, tt.wantRoot) {
+					t.Errorf("root mismatch, got %x, want %x", mt.Root, tt.wantRoot)
+					return
 				}
 			}
 		})
@@ -674,42 +727,6 @@ func TestMerkleTreeNew_proofGenAndTreeBuildParallel(t *testing.T) {
 	}
 }
 
-func Test_dummyHash(t *testing.T) {
-	patches := gomonkey.NewPatches()
-	defer patches.Reset()
-	tests := []struct {
-		name    string
-		want    []byte
-		mock    func()
-		wantErr bool
-	}{
-		{
-			name: "test_dummy_hash_error",
-			mock: func() {
-				patches.ApplyFuncReturn(rand.Read, nil, errors.New("test_dummy_hash_error"))
-			},
-			want:    nil,
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.mock != nil {
-				tt.mock()
-			}
-			defer patches.Reset()
-			got, err := dummyHash()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("dummyHash() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("dummyHash() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func verifySetup(size int) (*MerkleTree, []DataBlock) {
 	blocks := dataBlocks(size)
 	m, err := New(nil, blocks)
@@ -954,22 +971,6 @@ func TestMerkleTree_proofGen(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "test_fix_odd_err",
-			args: args{
-				config: &Config{
-					NoDuplicates: true,
-				},
-				blocks: dataBlocks(5),
-			},
-			mock: func() {
-				patches.ApplyFunc(dummyHash,
-					func() ([]byte, error) {
-						return nil, errors.New("test_get_dummy_hash_err")
-					})
-			},
-			wantErr: true,
-		},
-		{
 			name: "test_hash_func_err",
 			args: args{
 				config: &Config{
@@ -1191,7 +1192,7 @@ func Test_layeredHashHandler(t *testing.T) {
 	patches := gomonkey.NewPatches()
 	defer patches.Reset()
 	type args struct {
-		arg argType
+		arg poolWorkerArgs
 	}
 	mt, err := New(nil, dataBlocks(5))
 	if err != nil {
@@ -1210,7 +1211,7 @@ func Test_layeredHashHandler(t *testing.T) {
 		{
 			name: "test_hash_func_err",
 			args: args{
-				arg: argType{
+				arg: poolWorkerArgs{
 					mt:         mt,
 					byteField1: [][]byte{[]byte("test_buf1"), []byte("test_buf1")},
 					byteField2: [][]byte{[]byte("test_buf2")},
