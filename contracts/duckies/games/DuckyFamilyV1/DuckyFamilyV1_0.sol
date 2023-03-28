@@ -405,7 +405,8 @@ contract DuckyFamilyV1_0 is
 		// if melding Duckling, they can mutate or evolve into Mythic
 		if (collectionId == ducklingCollectionId) {
 			if (_isCollectionMutating(rarity)) {
-				return _generateGenome(zombeakCollectionId);
+				uint256 zombeakGenome = _generateGenome(zombeakCollectionId);
+				return zombeakGenome.setGene(rarityGeneIdx, uint8(rarity));
 			}
 
 			if (rarity == Rarities.Legendary) {
