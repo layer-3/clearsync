@@ -176,7 +176,7 @@ contract DuckyFamilyV1_0 is
 		// TODO: confirm
 		mythicAmount = 65;
 
-		rarityChances = [70, 20, 5, 1];
+		rarityChances = [74, 20, 5, 1];
 
 		collectionMutationChances = [10, 5, 2, 0];
 	}
