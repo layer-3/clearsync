@@ -86,9 +86,6 @@ contract DuckyFamilyV1_0 is
 		Uneven
 	}
 
-	// Duckling genes: Collection, Rarity, Color, Family, Body, Head, Eyes, Beak, Wings, FirstName, Temper, Skill, Habitat, Breed
-	// Zombeak genes: Collection, Rarity, Color, Family, Body, Head, Eyes, Beak, Wings
-
 	enum GenerativeGenes {
 		Collection,
 		Rarity,
@@ -166,10 +163,12 @@ contract DuckyFamilyV1_0 is
 		// config
 		// duckling
 		// TODO: confirm gene values
+		// Duckling genes: (Collection, Rarity), Color, Family, Body, Head, Eyes, Beak, Wings, FirstName, Temper, Skill, Habitat, Breed
 		collectionsGeneValuesNum[0] = [4, 5, 9, 28, 30, 14, 10, 36, 16, 12, 5, 28];
 		collectionsGeneDistributionTypes[0] = 2940; // reverse(001111101101) = 101101111100
 		// zombeak
 		// TODO: confirm gene values
+		// Zombeak genes: (Collection, Rarity), Color, Family, Body, Head, Eyes, Beak, Wings, FirstName, Temper, Skill, Habitat, Breed
 		collectionsGeneValuesNum[1] = [2, 3, 7, 6, 9, 7, 10, 4, 4, 4, 4, 4];
 		collectionsGeneDistributionTypes[1] = 2940; // reverse(001111101101) = 101101111100
 
@@ -281,7 +280,8 @@ contract DuckyFamilyV1_0 is
 	}
 
 	function _mintPackTo(address to, uint8 amount) internal {
-		if (amount > MAX_PACK_SIZE) revert MintingRulesViolated(ducklingCollectionId, amount);
+		if (amount == 0 || amount > MAX_PACK_SIZE)
+			revert MintingRulesViolated(ducklingCollectionId, amount);
 		for (uint256 i = 0; i < amount; i++) {
 			uint256 genome = _generateGenome(ducklingCollectionId);
 			ducklingsContract.mintTo(to, genome);
@@ -369,10 +369,10 @@ contract DuckyFamilyV1_0 is
 		if (
 			// equal collections
 			!Genome._geneValuesAreEqual(genomes, collectionGeneIdx) ||
-			// not Mythic
-			genomes[0].getGene(collectionGeneIdx) == mythicCollectionId ||
 			// Rarities must be the same
-			!Genome._geneValuesAreEqual(genomes, rarityGeneIdx)
+			!Genome._geneValuesAreEqual(genomes, rarityGeneIdx) ||
+			// not Mythic
+			genomes[0].getGene(collectionGeneIdx) == mythicCollectionId
 		) revert IncorrectGenomesForMelding(genomes);
 
 		// specific melding rules
