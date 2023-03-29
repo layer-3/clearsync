@@ -37,7 +37,7 @@ import (
 
 const benchSize = 10000
 
-func dataBlocks(num int) []DataBlock {
+func generatedTestDataBlocks(num int) []DataBlock {
 	blocks := make([]DataBlock, num)
 	for i := 0; i < num; i++ {
 		block := &mock.DataBlock{
@@ -51,7 +51,7 @@ func dataBlocks(num int) []DataBlock {
 	return blocks
 }
 
-func TestMerkleTreeNew_proofGen(t *testing.T) {
+func TestMerkleTreeNew_modeProofGen(t *testing.T) {
 	dummyDataBlocks := []DataBlock{
 		&mock.DataBlock{
 			Data: []byte("dummy_data_0"),
@@ -110,14 +110,14 @@ func TestMerkleTreeNew_proofGen(t *testing.T) {
 		{
 			name: "test_0",
 			args: args{
-				blocks: dataBlocks(0),
+				blocks: generatedTestDataBlocks(0),
 			},
 			wantErr: true,
 		},
 		{
 			name: "test_1",
 			args: args{
-				blocks: dataBlocks(1),
+				blocks: generatedTestDataBlocks(1),
 			},
 			wantErr: true,
 		},
@@ -140,28 +140,28 @@ func TestMerkleTreeNew_proofGen(t *testing.T) {
 		{
 			name: "test_8",
 			args: args{
-				blocks: dataBlocks(8),
+				blocks: generatedTestDataBlocks(8),
 			},
 			wantErr: false,
 		},
 		{
 			name: "test_5",
 			args: args{
-				blocks: dataBlocks(5),
+				blocks: generatedTestDataBlocks(5),
 			},
 			wantErr: false,
 		},
 		{
 			name: "test_1000",
 			args: args{
-				blocks: dataBlocks(1000),
+				blocks: generatedTestDataBlocks(1000),
 			},
 			wantErr: false,
 		},
 		{
 			name: "test_100_parallel_4",
 			args: args{
-				blocks: dataBlocks(100),
+				blocks: generatedTestDataBlocks(100),
 				config: &Config{
 					RunInParallel: true,
 					NumRoutines:   4,
@@ -172,7 +172,7 @@ func TestMerkleTreeNew_proofGen(t *testing.T) {
 		{
 			name: "test_10_parallel_32",
 			args: args{
-				blocks: dataBlocks(100),
+				blocks: generatedTestDataBlocks(100),
 				config: &Config{
 					RunInParallel: true,
 					NumRoutines:   32,
@@ -183,7 +183,7 @@ func TestMerkleTreeNew_proofGen(t *testing.T) {
 		{
 			name: "test_100_parallel_no_specify_num_of_routines",
 			args: args{
-				blocks: dataBlocks(100),
+				blocks: generatedTestDataBlocks(100),
 				config: &Config{
 					RunInParallel: true,
 				},
@@ -193,7 +193,7 @@ func TestMerkleTreeNew_proofGen(t *testing.T) {
 		{
 			name: "test_8_sorted",
 			args: args{
-				blocks: dataBlocks(8),
+				blocks: generatedTestDataBlocks(8),
 				config: &Config{
 					SortSiblingPairs: true,
 				},
@@ -203,7 +203,7 @@ func TestMerkleTreeNew_proofGen(t *testing.T) {
 		{
 			name: "test_hash_func_error",
 			args: args{
-				blocks: dataBlocks(100),
+				blocks: generatedTestDataBlocks(100),
 				config: &Config{
 					HashFunc: func([]byte) ([]byte, error) {
 						return nil, fmt.Errorf("hash func error")
@@ -215,7 +215,7 @@ func TestMerkleTreeNew_proofGen(t *testing.T) {
 		{
 			name: "test_hash_func_error_parallel",
 			args: args{
-				blocks: dataBlocks(100),
+				blocks: generatedTestDataBlocks(100),
 				config: &Config{
 					HashFunc: func([]byte) ([]byte, error) {
 						return nil, fmt.Errorf("hash func error")
@@ -228,7 +228,7 @@ func TestMerkleTreeNew_proofGen(t *testing.T) {
 		{
 			name: "test_100_disable_leaf_hashing",
 			args: args{
-				blocks: dataBlocks(100),
+				blocks: generatedTestDataBlocks(100),
 				config: &Config{
 					DisableLeafHashing: true,
 				},
@@ -238,7 +238,7 @@ func TestMerkleTreeNew_proofGen(t *testing.T) {
 		{
 			name: "test_100_disable_leaf_hashing_parallel_4",
 			args: args{
-				blocks: dataBlocks(100),
+				blocks: generatedTestDataBlocks(100),
 				config: &Config{
 					DisableLeafHashing: true,
 					RunInParallel:      true,
@@ -250,7 +250,7 @@ func TestMerkleTreeNew_proofGen(t *testing.T) {
 		{
 			name: "invalid_mode",
 			args: args{
-				blocks: dataBlocks(100),
+				blocks: generatedTestDataBlocks(100),
 				config: &Config{
 					Mode: 5,
 				},
@@ -285,7 +285,7 @@ func TestMerkleTreeNew_proofGen(t *testing.T) {
 	}
 }
 
-func TestMerkleTreeNew_buildTree(t *testing.T) {
+func TestMerkleTreeNew_modeTreeBuild(t *testing.T) {
 	type args struct {
 		blocks []DataBlock
 		config *Config
@@ -299,7 +299,7 @@ func TestMerkleTreeNew_buildTree(t *testing.T) {
 		{
 			name: "test_build_tree_2",
 			args: args{
-				blocks: dataBlocks(2),
+				blocks: generatedTestDataBlocks(2),
 				config: &Config{
 					Mode: ModeTreeBuild,
 				},
@@ -309,7 +309,7 @@ func TestMerkleTreeNew_buildTree(t *testing.T) {
 		{
 			name: "test_build_tree_5",
 			args: args{
-				blocks: dataBlocks(5),
+				blocks: generatedTestDataBlocks(5),
 				config: &Config{
 					Mode: ModeTreeBuild,
 				},
@@ -319,7 +319,7 @@ func TestMerkleTreeNew_buildTree(t *testing.T) {
 		{
 			name: "test_build_tree_8",
 			args: args{
-				blocks: dataBlocks(8),
+				blocks: generatedTestDataBlocks(8),
 				config: &Config{
 					Mode: ModeTreeBuild,
 				},
@@ -329,7 +329,7 @@ func TestMerkleTreeNew_buildTree(t *testing.T) {
 		{
 			name: "test_build_tree_1000",
 			args: args{
-				blocks: dataBlocks(1000),
+				blocks: generatedTestDataBlocks(1000),
 				config: &Config{
 					Mode: ModeTreeBuild,
 				},
@@ -339,7 +339,7 @@ func TestMerkleTreeNew_buildTree(t *testing.T) {
 		{
 			name: "test_hash_func_error",
 			args: args{
-				blocks: dataBlocks(100),
+				blocks: generatedTestDataBlocks(100),
 				config: &Config{
 					HashFunc: func([]byte) ([]byte, error) {
 						return nil, fmt.Errorf("hash func error")
@@ -352,7 +352,7 @@ func TestMerkleTreeNew_buildTree(t *testing.T) {
 		{
 			name: "test_disable_leaf_hashing",
 			args: args{
-				blocks: dataBlocks(100),
+				blocks: generatedTestDataBlocks(100),
 				config: &Config{
 					DisableLeafHashing: true,
 					Mode:               ModeTreeBuild,
@@ -386,7 +386,7 @@ func TestMerkleTreeNew_buildTree(t *testing.T) {
 	}
 }
 
-func TestMerkleTreeNew_treeBuildParallel(t *testing.T) {
+func TestMerkleTreeNew_modeTreeBuildRunInParallel(t *testing.T) {
 	type args struct {
 		blocks []DataBlock
 		config *Config
@@ -399,7 +399,7 @@ func TestMerkleTreeNew_treeBuildParallel(t *testing.T) {
 		{
 			name: "test_build_tree_parallel_2",
 			args: args{
-				blocks: dataBlocks(2),
+				blocks: generatedTestDataBlocks(2),
 				config: &Config{
 					RunInParallel: true,
 					NumRoutines:   4,
@@ -411,7 +411,7 @@ func TestMerkleTreeNew_treeBuildParallel(t *testing.T) {
 		{
 			name: "test_build_tree_parallel_4",
 			args: args{
-				blocks: dataBlocks(4),
+				blocks: generatedTestDataBlocks(4),
 				config: &Config{
 					RunInParallel: true,
 					NumRoutines:   4,
@@ -423,7 +423,7 @@ func TestMerkleTreeNew_treeBuildParallel(t *testing.T) {
 		{
 			name: "test_build_tree_parallel_5",
 			args: args{
-				blocks: dataBlocks(5),
+				blocks: generatedTestDataBlocks(5),
 				config: &Config{
 					RunInParallel: true,
 					NumRoutines:   4,
@@ -435,7 +435,7 @@ func TestMerkleTreeNew_treeBuildParallel(t *testing.T) {
 		{
 			name: "test_build_tree_parallel_8",
 			args: args{
-				blocks: dataBlocks(8),
+				blocks: generatedTestDataBlocks(8),
 				config: &Config{
 					RunInParallel: true,
 					NumRoutines:   4,
@@ -447,7 +447,7 @@ func TestMerkleTreeNew_treeBuildParallel(t *testing.T) {
 		{
 			name: "test_build_tree_parallel_8_32",
 			args: args{
-				blocks: dataBlocks(8),
+				blocks: generatedTestDataBlocks(8),
 				config: &Config{
 					RunInParallel: true,
 					NumRoutines:   32,
@@ -459,7 +459,7 @@ func TestMerkleTreeNew_treeBuildParallel(t *testing.T) {
 		{
 			name: "test_hash_func_error_parallel",
 			args: args{
-				blocks: dataBlocks(100),
+				blocks: generatedTestDataBlocks(100),
 				config: &Config{
 					HashFunc: func([]byte) ([]byte, error) {
 						return nil, fmt.Errorf("hash func error")
@@ -493,7 +493,7 @@ func TestMerkleTreeNew_treeBuildParallel(t *testing.T) {
 	}
 }
 
-func TestMerkleTreeNew_proofGenAndTreeBuild(t *testing.T) {
+func TestMerkleTreeNew_modeProofGenAndTreeBuild(t *testing.T) {
 	type args struct {
 		blocks []DataBlock
 		config *Config
@@ -506,7 +506,7 @@ func TestMerkleTreeNew_proofGenAndTreeBuild(t *testing.T) {
 		{
 			name: "test_build_tree_proof_2",
 			args: args{
-				blocks: dataBlocks(2),
+				blocks: generatedTestDataBlocks(2),
 				config: &Config{
 					Mode: ModeProofGenAndTreeBuild,
 				},
@@ -516,7 +516,7 @@ func TestMerkleTreeNew_proofGenAndTreeBuild(t *testing.T) {
 		{
 			name: "test_build_tree_proof_4",
 			args: args{
-				blocks: dataBlocks(4),
+				blocks: generatedTestDataBlocks(4),
 				config: &Config{
 					Mode: ModeProofGenAndTreeBuild,
 				},
@@ -526,7 +526,7 @@ func TestMerkleTreeNew_proofGenAndTreeBuild(t *testing.T) {
 		{
 			name: "test_build_tree_proof_5",
 			args: args{
-				blocks: dataBlocks(5),
+				blocks: generatedTestDataBlocks(5),
 				config: &Config{
 					Mode: ModeProofGenAndTreeBuild,
 				},
@@ -536,7 +536,7 @@ func TestMerkleTreeNew_proofGenAndTreeBuild(t *testing.T) {
 		{
 			name: "test_build_tree_proof_8",
 			args: args{
-				blocks: dataBlocks(8),
+				blocks: generatedTestDataBlocks(8),
 				config: &Config{
 					Mode: ModeProofGenAndTreeBuild,
 				},
@@ -546,7 +546,7 @@ func TestMerkleTreeNew_proofGenAndTreeBuild(t *testing.T) {
 		{
 			name: "test_build_tree_proof_9",
 			args: args{
-				blocks: dataBlocks(9),
+				blocks: generatedTestDataBlocks(9),
 				config: &Config{
 					Mode: ModeProofGenAndTreeBuild,
 				},
@@ -556,7 +556,7 @@ func TestMerkleTreeNew_proofGenAndTreeBuild(t *testing.T) {
 		{
 			name: "test_hash_func_error",
 			args: args{
-				blocks: dataBlocks(100),
+				blocks: generatedTestDataBlocks(100),
 				config: &Config{
 					HashFunc: func([]byte) ([]byte, error) {
 						return nil, fmt.Errorf("hash func error")
@@ -569,7 +569,7 @@ func TestMerkleTreeNew_proofGenAndTreeBuild(t *testing.T) {
 		{
 			name: "test_tree_build_hash_func_error",
 			args: args{
-				blocks: dataBlocks(100),
+				blocks: generatedTestDataBlocks(100),
 				config: &Config{
 					HashFunc: func(block []byte) ([]byte, error) {
 						if len(block) == 64 {
@@ -610,7 +610,7 @@ func TestMerkleTreeNew_proofGenAndTreeBuild(t *testing.T) {
 	}
 }
 
-func TestMerkleTreeNew_proofGenAndTreeBuildParallel(t *testing.T) {
+func TestMerkleTreeNew_modeProofGenAndTreeBuildRunInParallel(t *testing.T) {
 	type args struct {
 		blocks []DataBlock
 		config *Config
@@ -623,7 +623,7 @@ func TestMerkleTreeNew_proofGenAndTreeBuildParallel(t *testing.T) {
 		{
 			name: "test_build_tree_proof_parallel_2",
 			args: args{
-				blocks: dataBlocks(2),
+				blocks: generatedTestDataBlocks(2),
 				config: &Config{
 					RunInParallel: true,
 					NumRoutines:   4,
@@ -635,7 +635,7 @@ func TestMerkleTreeNew_proofGenAndTreeBuildParallel(t *testing.T) {
 		{
 			name: "test_build_tree_proof_parallel_4",
 			args: args{
-				blocks: dataBlocks(4),
+				blocks: generatedTestDataBlocks(4),
 				config: &Config{
 					RunInParallel: true,
 					NumRoutines:   4,
@@ -647,7 +647,7 @@ func TestMerkleTreeNew_proofGenAndTreeBuildParallel(t *testing.T) {
 		{
 			name: "test_build_tree_proof_parallel_5",
 			args: args{
-				blocks: dataBlocks(5),
+				blocks: generatedTestDataBlocks(5),
 				config: &Config{
 					RunInParallel: true,
 					NumRoutines:   4,
@@ -659,7 +659,7 @@ func TestMerkleTreeNew_proofGenAndTreeBuildParallel(t *testing.T) {
 		{
 			name: "test_build_tree_proof_parallel_8",
 			args: args{
-				blocks: dataBlocks(8),
+				blocks: generatedTestDataBlocks(8),
 				config: &Config{
 					RunInParallel: true,
 					NumRoutines:   4,
@@ -671,7 +671,7 @@ func TestMerkleTreeNew_proofGenAndTreeBuildParallel(t *testing.T) {
 		{
 			name: "test_hash_func_error",
 			args: args{
-				blocks: dataBlocks(100),
+				blocks: generatedTestDataBlocks(100),
 				config: &Config{
 					HashFunc: func([]byte) ([]byte, error) {
 						return nil, fmt.Errorf("hash func error")
@@ -685,7 +685,7 @@ func TestMerkleTreeNew_proofGenAndTreeBuildParallel(t *testing.T) {
 		{
 			name: "test_tree_build_hash_func_error",
 			args: args{
-				blocks: dataBlocks(100),
+				blocks: generatedTestDataBlocks(100),
 				config: &Config{
 					HashFunc: func(block []byte) ([]byte, error) {
 						if len(block) == 64 {
@@ -727,8 +727,8 @@ func TestMerkleTreeNew_proofGenAndTreeBuildParallel(t *testing.T) {
 	}
 }
 
-func verifySetup(size int) (*MerkleTree, []DataBlock) {
-	blocks := dataBlocks(size)
+func setupTestVerify(size int) (*MerkleTree, []DataBlock) {
+	blocks := generatedTestDataBlocks(size)
 	m, err := New(nil, blocks)
 	if err != nil {
 		panic(err)
@@ -736,8 +736,8 @@ func verifySetup(size int) (*MerkleTree, []DataBlock) {
 	return m, blocks
 }
 
-func verifySetupParallel(size int) (*MerkleTree, []DataBlock) {
-	blocks := dataBlocks(size)
+func setupTestVerifyRunInParallel(size int) (*MerkleTree, []DataBlock) {
+	blocks := generatedTestDataBlocks(size)
 	m, err := New(&Config{
 		RunInParallel: true,
 		NumRoutines:   1,
@@ -758,84 +758,84 @@ func TestMerkleTree_Verify(t *testing.T) {
 	}{
 		{
 			name:      "test_2",
-			setupFunc: verifySetup,
+			setupFunc: setupTestVerify,
 			blockSize: 2,
 			want:      true,
 			wantErr:   false,
 		},
 		{
 			name:      "test_3",
-			setupFunc: verifySetup,
+			setupFunc: setupTestVerify,
 			blockSize: 3,
 			want:      true,
 			wantErr:   false,
 		},
 		{
 			name:      "test_4",
-			setupFunc: verifySetup,
+			setupFunc: setupTestVerify,
 			blockSize: 4,
 			want:      true,
 			wantErr:   false,
 		},
 		{
 			name:      "test_5",
-			setupFunc: verifySetup,
+			setupFunc: setupTestVerify,
 			blockSize: 5,
 			want:      true,
 			wantErr:   false,
 		},
 		{
 			name:      "test_6",
-			setupFunc: verifySetup,
+			setupFunc: setupTestVerify,
 			blockSize: 6,
 			want:      true,
 			wantErr:   false,
 		},
 		{
 			name:      "test_8",
-			setupFunc: verifySetup,
+			setupFunc: setupTestVerify,
 			blockSize: 8,
 			want:      true,
 			wantErr:   false,
 		},
 		{
 			name:      "test_9",
-			setupFunc: verifySetup,
+			setupFunc: setupTestVerify,
 			blockSize: 9,
 			want:      true,
 			wantErr:   false,
 		},
 		{
 			name:      "test_1001",
-			setupFunc: verifySetup,
+			setupFunc: setupTestVerify,
 			blockSize: 1001,
 			want:      true,
 			wantErr:   false,
 		},
 		{
 			name:      "test_2_parallel",
-			setupFunc: verifySetupParallel,
+			setupFunc: setupTestVerifyRunInParallel,
 			blockSize: 2,
 			want:      true,
 			wantErr:   false,
 		},
 		{
 			name:      "test_4_parallel",
-			setupFunc: verifySetupParallel,
+			setupFunc: setupTestVerifyRunInParallel,
 			blockSize: 4,
 			want:      true,
 			wantErr:   false,
 		},
 		{
 			name:      "test_64_parallel",
-			setupFunc: verifySetupParallel,
+			setupFunc: setupTestVerifyRunInParallel,
 			blockSize: 64,
 			want:      true,
 			wantErr:   false,
 		},
 		{
 			name:      "test_1001_parallel",
-			setupFunc: verifySetupParallel,
+			setupFunc: setupTestVerifyRunInParallel,
 			blockSize: 1001,
 			want:      true,
 			wantErr:   false,
@@ -872,28 +872,28 @@ func TestMerkleTree_Proof(t *testing.T) {
 		{
 			name:   "test_2",
 			config: &Config{Mode: ModeTreeBuild},
-			blocks: dataBlocks(2),
+			blocks: generatedTestDataBlocks(2),
 		},
 		{
 			name:   "test_4",
 			config: &Config{Mode: ModeTreeBuild},
-			blocks: dataBlocks(4),
+			blocks: generatedTestDataBlocks(4),
 		},
 		{
 			name:   "test_5",
 			config: &Config{Mode: ModeTreeBuild},
-			blocks: dataBlocks(5),
+			blocks: generatedTestDataBlocks(5),
 		},
 		{
 			name:    "test_wrong_mode",
 			config:  &Config{Mode: ModeProofGen},
-			blocks:  dataBlocks(5),
+			blocks:  generatedTestDataBlocks(5),
 			wantErr: true,
 		},
 		{
 			name:   "test_wrong_blocks",
 			config: &Config{Mode: ModeTreeBuild},
-			blocks: dataBlocks(5),
+			blocks: generatedTestDataBlocks(5),
 			proofBlocks: []DataBlock{
 				&mock.DataBlock{
 					Data: []byte("test_wrong_blocks"),
@@ -910,7 +910,7 @@ func TestMerkleTree_Proof(t *testing.T) {
 						return nil, errors.New("data block serialize error")
 					})
 			},
-			blocks:  dataBlocks(5),
+			blocks:  generatedTestDataBlocks(5),
 			wantErr: true,
 		},
 	}
@@ -957,7 +957,7 @@ func mockHashFunc(data []byte) ([]byte, error) {
 	return sha256Func.Sum(nil), nil
 }
 
-func TestMerkleTree_proofGen(t *testing.T) {
+func TestMerkleTree_generateProofs(t *testing.T) {
 	patches := gomonkey.NewPatches()
 	defer patches.Reset()
 	type args struct {
@@ -976,7 +976,7 @@ func TestMerkleTree_proofGen(t *testing.T) {
 				config: &Config{
 					HashFunc: mockHashFunc,
 				},
-				blocks: dataBlocks(5),
+				blocks: generatedTestDataBlocks(5),
 			},
 			mock: func() {
 				patches.ApplyFunc(mockHashFunc,
@@ -998,15 +998,15 @@ func TestMerkleTree_proofGen(t *testing.T) {
 				tt.mock()
 			}
 			defer patches.Reset()
-			if err := m.proofGen(); (err != nil) != tt.wantErr {
-				t.Errorf("proofGen() error = %v, wantErr %v", err, tt.wantErr)
+			if err := m.generateProofs(); (err != nil) != tt.wantErr {
+				t.Errorf("generateProofs() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
 }
 
 func TestVerify(t *testing.T) {
-	blocks := dataBlocks(5)
+	blocks := generatedTestDataBlocks(5)
 	m, err := New(nil, blocks)
 	if err != nil {
 		t.Errorf("New() error = %v", err)
@@ -1035,9 +1035,6 @@ func TestVerify(t *testing.T) {
 				root:      m.Root,
 				config: &Config{
 					HashFunc: m.HashFunc,
-					concatFunc: func(left, right []byte) []byte {
-						return append(left, right...)
-					},
 				},
 			},
 			want: true,
@@ -1059,9 +1056,6 @@ func TestVerify(t *testing.T) {
 				root:      []byte("test_wrong_root"),
 				config: &Config{
 					HashFunc: m.HashFunc,
-					concatFunc: func(left, right []byte) []byte {
-						return append(left, right...)
-					},
 				},
 			},
 			want: false,
@@ -1074,9 +1068,6 @@ func TestVerify(t *testing.T) {
 				root:      m.Root,
 				config: &Config{
 					HashFunc: func([]byte) ([]byte, error) { return []byte("test_wrong_hash_hash"), nil },
-					concatFunc: func(left, right []byte) []byte {
-						return append(left, right...)
-					},
 				},
 			},
 			want: false,
@@ -1089,9 +1080,6 @@ func TestVerify(t *testing.T) {
 				root:      m.Root,
 				config: &Config{
 					HashFunc: m.HashFunc,
-					concatFunc: func(left, right []byte) []byte {
-						return append(left, right...)
-					},
 				},
 			},
 			want:    false,
@@ -1105,9 +1093,6 @@ func TestVerify(t *testing.T) {
 				root:      m.Root,
 				config: &Config{
 					HashFunc: m.HashFunc,
-					concatFunc: func(left, right []byte) []byte {
-						return append(left, right...)
-					},
 				},
 			},
 			want:    false,
@@ -1121,9 +1106,6 @@ func TestVerify(t *testing.T) {
 				root:      m.Root,
 				config: &Config{
 					HashFunc: nil,
-					concatFunc: func(left, right []byte) []byte {
-						return append(left, right...)
-					},
 				},
 			},
 			want:    true,
@@ -1139,9 +1121,6 @@ func TestVerify(t *testing.T) {
 					HashFunc: func([]byte) ([]byte, error) {
 						return nil, errors.New("test_hash_func_err")
 					},
-					concatFunc: func(left, right []byte) []byte {
-						return append(left, right...)
-					},
 				},
 			},
 			want:    false,
@@ -1155,9 +1134,6 @@ func TestVerify(t *testing.T) {
 				root:      m.Root,
 				config: &Config{
 					HashFunc: m.HashFunc,
-					concatFunc: func(left, right []byte) []byte {
-						return append(left, right...)
-					},
 				},
 			},
 			mock: func() {
@@ -1188,13 +1164,13 @@ func TestVerify(t *testing.T) {
 	}
 }
 
-func Test_layeredHashHandler(t *testing.T) {
+func Test_workerGenerateProofs(t *testing.T) {
 	patches := gomonkey.NewPatches()
 	defer patches.Reset()
 	type args struct {
-		arg poolWorkerArgs
+		arg workerArgs
 	}
-	mt, err := New(nil, dataBlocks(5))
+	mt, err := New(nil, generatedTestDataBlocks(5))
 	if err != nil {
 		t.Errorf("New() error = %v", err)
 		return
@@ -1211,12 +1187,15 @@ func Test_layeredHashHandler(t *testing.T) {
 		{
 			name: "test_hash_func_err",
 			args: args{
-				arg: poolWorkerArgs{
-					mt:         mt,
-					byteField1: [][]byte{[]byte("test_buf1"), []byte("test_buf1")},
-					byteField2: [][]byte{[]byte("test_buf2")},
-					intField2:  2,
-					intField3:  2,
+				arg: workerArgs{
+					generateProofs: &workerArgsGenerateProofs{
+						hashFunc:       mt.HashFunc,
+						concatHashFunc: mt.concatHashFunc,
+						buffer:         [][]byte{[]byte("test_buf1"), []byte("test_buf1")},
+						tempBuffer:     [][]byte{[]byte("test_buf2")},
+						bufferLength:   2,
+						numRoutines:    2,
+					},
 				},
 			},
 			wantErr: true,
@@ -1228,15 +1207,15 @@ func Test_layeredHashHandler(t *testing.T) {
 				tt.mock()
 			}
 			defer patches.Reset()
-			if err := proofGenHandler(tt.args.arg); (err != nil) != tt.wantErr {
-				t.Errorf("proofGenHandler() error = %v, wantErr %v", err, tt.wantErr)
+			if err := workerGenerateProofs(tt.args.arg); (err != nil) != tt.wantErr {
+				t.Errorf("workerGenerateProofs() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
 }
 
 func BenchmarkMerkleTreeNew(b *testing.B) {
-	testCases := dataBlocks(benchSize)
+	testCases := generatedTestDataBlocks(benchSize)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, err := New(nil, testCases)
@@ -1246,11 +1225,11 @@ func BenchmarkMerkleTreeNew(b *testing.B) {
 	}
 }
 
-func BenchmarkMerkleTreeNewParallel(b *testing.B) {
+func BenchmarkMerkleTreeNew_modeRunInParallel(b *testing.B) {
 	config := &Config{
 		RunInParallel: true,
 	}
-	testCases := dataBlocks(benchSize)
+	testCases := generatedTestDataBlocks(benchSize)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, err := New(config, testCases)
@@ -1260,8 +1239,8 @@ func BenchmarkMerkleTreeNewParallel(b *testing.B) {
 	}
 }
 
-func BenchmarkMerkleTreeBuild(b *testing.B) {
-	testCases := dataBlocks(benchSize)
+func BenchmarkMerkleTreeNew_modeTreeBuild(b *testing.B) {
+	testCases := generatedTestDataBlocks(benchSize)
 	config := &Config{
 		Mode: ModeTreeBuild,
 	}
@@ -1274,12 +1253,12 @@ func BenchmarkMerkleTreeBuild(b *testing.B) {
 	}
 }
 
-func BenchmarkMerkleTreeBuildParallel(b *testing.B) {
+func BenchmarkMerkleTreeNew_modeTreeBuildRunInParallel(b *testing.B) {
 	config := &Config{
 		Mode:          ModeTreeBuild,
 		RunInParallel: true,
 	}
-	testCases := dataBlocks(benchSize)
+	testCases := generatedTestDataBlocks(benchSize)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, err := New(config, testCases)
