@@ -100,7 +100,10 @@ contract DuckyFamilyV1_0 is
 		UniqId
 	}
 
-	// ------- Internal values -------
+	// ------- Game config variables -------
+
+	uint8 public constant MAX_PACK_SIZE = 100;
+	uint8 public constant FLOCK_SIZE = 5;
 
 	uint8 internal constant collectionGeneIdx = 0;
 	uint8 internal constant rarityGeneIdx = 1;
@@ -108,11 +111,11 @@ contract DuckyFamilyV1_0 is
 	uint8 internal constant generativeGenesOffset = 2;
 
 	// number of values for each gene for Duckling and Zombeak collections
-	uint8[][2] internal collectionsGeneValuesNum;
+	uint8[][2] public collectionsGeneValuesNum;
 	// distribution type of each gene for Duckling and Zombeak collections
 	uint32[2] internal collectionsGeneDistributionTypes;
 
-	uint8 internal mythicAmount;
+	uint8 public mythicAmount;
 
 	// chance of a Duckling of a certain rarity to be generated
 	uint8[] internal rarityChances; // 70, 20, 5, 1
@@ -124,9 +127,6 @@ contract DuckyFamilyV1_0 is
 	uint8[] internal geneInheritanceChanges; // 5, 4, 3, 2, 1
 
 	// ------- Public values -------
-
-	uint8 public constant MAX_PACK_SIZE = 100;
-	uint8 public constant FLOCK_SIZE = 5;
 
 	ERC20BurnableUpgradeable public duckiesContract;
 	IDucklings public ducklingsContract;
