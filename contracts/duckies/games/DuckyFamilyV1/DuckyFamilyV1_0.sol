@@ -100,7 +100,7 @@ contract DuckyFamilyV1_0 is
 		UniqId
 	}
 
-	// ------- Game config variables -------
+	// ------- Internal values -------
 
 	uint8 public constant MAX_PACK_SIZE = 100;
 	uint8 public constant FLOCK_SIZE = 5;
@@ -111,11 +111,11 @@ contract DuckyFamilyV1_0 is
 	uint8 internal constant generativeGenesOffset = 2;
 
 	// number of values for each gene for Duckling and Zombeak collections
-	uint8[][2] public collectionsGeneValuesNum;
+	uint8[][2] internal collectionsGeneValuesNum;
 	// distribution type of each gene for Duckling and Zombeak collections
 	uint32[2] internal collectionsGeneDistributionTypes;
 
-	uint8 public mythicAmount;
+	uint8 internal mythicAmount;
 
 	// chance of a Duckling of a certain rarity to be generated
 	uint8[] internal rarityChances; // 70, 20, 5, 1
@@ -123,10 +123,10 @@ contract DuckyFamilyV1_0 is
 	// chance of a Duckling of certain rarity to mutate to Zombeak while melding
 	uint8[] internal collectionMutationChances; // 10, 5, 2, 0
 
+	// ------- Public values -------
+
 	uint8[] internal geneMutationChance; // 955, 45 (4.5% to mutate gene value)
 	uint8[] internal geneInheritanceChanges; // 5, 4, 3, 2, 1
-
-	// ------- Public values -------
 
 	ERC20BurnableUpgradeable public duckiesContract;
 	IDucklings public ducklingsContract;
@@ -270,6 +270,12 @@ contract DuckyFamilyV1_0 is
 
 	function setMeldPrice(uint256 price) external onlyRole(MAINTAINER_ROLE) {
 		meldPrice = price;
+	}
+
+	// -------- Config --------
+
+	function getCollectionsGeneValues() external view returns (uint8[][2] memory, uint8) {
+		return (collectionsGeneValuesNum, mythicAmount);
 	}
 
 	// ------- Mint -------
