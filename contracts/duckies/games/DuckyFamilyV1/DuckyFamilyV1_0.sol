@@ -294,9 +294,6 @@ contract DuckyFamilyV1_0 is
 		genome = genome.setGene(collectionGeneIdx, collectionId);
 
 		if (collectionId == mythicCollectionId) {
-			if (nextMythicId.current() > mythicAmount - 1)
-				revert MintingRulesViolated(mythicCollectionId, 1);
-
 			genome = genome.setGene(uint8(MythicGenes.UniqId), uint8(nextMythicId.current()));
 			return genome;
 		}
@@ -410,6 +407,9 @@ contract DuckyFamilyV1_0 is
 			}
 
 			if (rarity == Rarities.Legendary) {
+				if (nextMythicId.current() > mythicAmount - 1)
+					revert MintingRulesViolated(mythicCollectionId, 1);
+
 				nextMythicId.increment();
 				return _generateGenome(mythicCollectionId);
 			}
