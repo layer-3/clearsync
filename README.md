@@ -177,14 +177,23 @@ Two tasks were performed:
 
 Benchmark implementation can be found in [txaty/merkle-tree-bench](https://github.com/txaty/merkle-tree-bench).
 
-<div style="display:flex;">
-    <img src="asset/proof_gen.png" style="width:50%; margin-right:1%;"/>
-    <img src="asset/proof_verification.png" style="width:50%; margin-left:1%;"/>
-</div>
+<table>
+<tbody>
+<tr><td>
+
+![Proof Generation](asset/proof_gen.png)
+
+</td><td>
+
+![Proof Verification](asset/proof_verification.png)
+
+</td></tr>
+</tbody></table>
 
 > **_Note:_** The size of each data block is determined by the tree depth, which is represented on the x-axis of the
 > figures. The y-axis is shown using a logarithmic scale to better visualize the range of values. Please note that the
-> real time difference between the data points will be larger than what is visualized on the figure due to the logarithmic
+> real time difference between the data points will be larger than what is visualized on the figure due to the
+> logarithmic
 > scale.
 
 ## Dependencies
