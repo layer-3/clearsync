@@ -11,7 +11,7 @@ contract RandomTestConsumer is RandomUpgradeable {
 		emit NumberGenerated(num);
 	}
 
-	function randomWeightedNumber(uint8[] memory weights) external UseRandom {
+	function randomWeightedNumber(uint32[] memory weights) external UseRandom {
 		uint256 num = _randomWeightedNumber(weights);
 		emit NumberGenerated(num);
 	}

@@ -3,8 +3,9 @@ pragma solidity 0.8.18;
 
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 
+// chances are represented in per mil, thus uint32
 contract RandomUpgradeable is Initializable {
-	error InvalidWeights(uint8[] weights);
+	error InvalidWeights(uint32[] weights);
 
 	bytes32 private salt;
 	uint256 private nonce;
@@ -39,7 +40,7 @@ contract RandomUpgradeable is Initializable {
 		return uint256(keccak256(abi.encode(salt, nonce, msg.sender, block.timestamp))) % max;
 	}
 
-	function _randomWeightedNumber(uint8[] memory weights) internal returns (uint8) {
+	function _randomWeightedNumber(uint32[] memory weights) internal returns (uint8) {
 		// no sense in empty weights array
 		if (weights.length == 0) revert InvalidWeights(weights);
 
@@ -59,7 +60,7 @@ contract RandomUpgradeable is Initializable {
 		return uint8(weights.length - 1);
 	}
 
-	function _sum(uint8[] memory numbers) internal pure returns (uint256 sum) {
+	function _sum(uint32[] memory numbers) internal pure returns (uint256 sum) {
 		for (uint256 i = 0; i < numbers.length; i++) sum += numbers[i];
 	}
 }

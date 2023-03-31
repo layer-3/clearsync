@@ -118,22 +118,22 @@ contract DuckyFamilyV1_0 is
 	uint8 internal mythicAmount;
 
 	// chance of a Duckling of a certain rarity to be generated
-	uint8[] internal rarityChances; // 70, 20, 5, 1
+	uint32[] internal rarityChances; // 85, 12, 2.5, 0.5
 
 	// chance of a Duckling of certain rarity to mutate to Zombeak while melding
-	uint8[] internal collectionMutationChances; // 10, 5, 2, 0
+	uint32[] internal collectionMutationChances; // 15, 10, 5, 1
 
 	// ------- Public values -------
 
-	uint8[] internal geneMutationChance; // 955, 45 (4.5% to mutate gene value)
-	uint8[] internal geneInheritanceChanges; // 5, 4, 3, 2, 1
+	uint32[] internal geneMutationChance; // 95.5, 4.5 (4.5% to mutate gene value)
+	uint32[] internal geneInheritanceChances; // 5 / 4 / 3 / 2 / 1
 
 	ERC20BurnableUpgradeable public duckiesContract;
 	IDucklings public ducklingsContract;
 	address public treasureVaultAddress;
 
 	uint256 public mintPrice;
-	uint256 public meldPrice;
+	uint256[] public meldPrices; // [0] - melding Commons, [1] - melding Rares...
 
 	CountersUpgradeable.Counter public nextMythicId;
 	CountersUpgradeable.Counter public nextMythicZombeakId;
@@ -157,8 +157,15 @@ contract DuckyFamilyV1_0 is
 		ducklingsContract = IDucklings(ducklingsAddress);
 		treasureVaultAddress = treasureVaultAddress_;
 
-		mintPrice = 5 * 10 ** duckiesContract.decimals();
-		meldPrice = 5 * 10 ** duckiesContract.decimals();
+		uint256 decimalsMultiplier = 10 ** duckiesContract.decimals();
+
+		mintPrice = 50 * decimalsMultiplier;
+		meldPrices = [
+			100 * decimalsMultiplier,
+			200 * decimalsMultiplier,
+			500 * decimalsMultiplier,
+			1000 * decimalsMultiplier
+		];
 
 		// config
 		// duckling
@@ -175,9 +182,10 @@ contract DuckyFamilyV1_0 is
 		// TODO: confirm
 		mythicAmount = 65;
 
-		rarityChances = [74, 20, 5, 1];
-
-		collectionMutationChances = [10, 5, 2, 0];
+		rarityChances = [850, 120, 25, 5]; // per mil
+		collectionMutationChances = [150, 100, 50, 10]; // per mil
+		geneMutationChance = [955, 45]; // per mil
+		geneInheritanceChances = [400, 300, 150, 100, 50]; // per mil
 	}
 
 	// -------- Upgrades --------
@@ -268,8 +276,8 @@ contract DuckyFamilyV1_0 is
 		mintPrice = price;
 	}
 
-	function setMeldPrice(uint256 price) external onlyRole(MAINTAINER_ROLE) {
-		meldPrice = price;
+	function setMeldPrices(uint256[] calldata prices) external onlyRole(MAINTAINER_ROLE) {
+		meldPrices = prices;
 	}
 
 	// -------- Config --------
@@ -351,7 +359,12 @@ contract DuckyFamilyV1_0 is
 	// ------- Meld -------
 
 	function meldFlock(uint256[] calldata meldingTokenIds) external UseRandom {
+		// assume all tokens have the same rarity. This is checked later.
+		uint256 meldPrice = meldPrices[
+			ducklingsContract.getGenome(meldingTokenIds[0]).getGene(rarityGeneIdx)
+		];
 		duckiesContract.transferFrom(msg.sender, treasureVaultAddress, meldPrice);
+
 		_meldOf(msg.sender, meldingTokenIds);
 	}
 
@@ -394,8 +407,8 @@ contract DuckyFamilyV1_0 is
 		} else {
 			//   Common, Rare, Epic
 			if (
-				// cards must have the same Color or the same Family
-				!Genome._geneValuesAreEqual(genomes, uint8(GenerativeGenes.Color)) &&
+				// cards must have the same Color and the same Family
+				!Genome._geneValuesAreEqual(genomes, uint8(GenerativeGenes.Color)) ||
 				!Genome._geneValuesAreEqual(genomes, uint8(GenerativeGenes.Family))
 			) revert IncorrectGenomesForMelding(genomes);
 		}
@@ -445,16 +458,17 @@ contract DuckyFamilyV1_0 is
 	}
 
 	function _isCollectionMutating(Rarities rarity) internal returns (bool) {
-		if (rarity <= Rarities.Epic) {
-			uint8 mutationPercentage = collectionMutationChances[uint8(rarity)];
-			// dynamic array is needed for `_randomWeighterNumber()`
-			uint8[] memory chances;
-			chances[0] = mutationPercentage;
-			chances[1] = 100 - mutationPercentage;
-			return _randomWeightedNumber(chances) == 0;
-		} else {
+		// check if mutating chance for this rarity is present
+		if (collectionMutationChances.length <= uint8(rarity)) {
 			return false;
 		}
+
+		uint32 mutationPercentage = collectionMutationChances[uint8(rarity)];
+		// dynamic array is needed for `_randomWeightedNumber()`
+		uint32[] memory chances;
+		chances[0] = mutationPercentage;
+		chances[1] = 100 - mutationPercentage;
+		return _randomWeightedNumber(chances) == 0;
 	}
 
 	function _meldGenes(
@@ -473,7 +487,7 @@ contract DuckyFamilyV1_0 is
 		}
 
 		// gene inheritance
-		uint8 inheritanceIdx = _randomWeightedNumber(geneInheritanceChanges);
+		uint8 inheritanceIdx = _randomWeightedNumber(geneInheritanceChances);
 		return genomes[inheritanceIdx].getGene(gene);
 	}
 
