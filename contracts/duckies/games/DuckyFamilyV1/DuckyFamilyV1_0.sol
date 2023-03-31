@@ -171,12 +171,12 @@ contract DuckyFamilyV1_0 is
 		// duckling
 		// TODO: confirm gene values
 		// Duckling genes: (Collection, Rarity), Color, Family, Body, Head, Eyes, Beak, Wings, FirstName, Temper, Skill, Habitat, Breed
-		collectionsGeneValuesNum[0] = [4, 5, 9, 28, 30, 14, 10, 36, 16, 12, 5, 28];
+		collectionsGeneValuesNum[0] = [4, 5, 11, 26, 30, 14, 10, 36, 16, 12, 5, 28];
 		collectionsGeneDistributionTypes[0] = 2940; // reverse(001111101101) = 101101111100
 		// zombeak
 		// TODO: confirm gene values
 		// Zombeak genes: (Collection, Rarity), Color, Family, Body, Head, Eyes, Beak, Wings, FirstName, Temper, Skill, Habitat, Breed
-		collectionsGeneValuesNum[1] = [2, 3, 7, 6, 9, 7, 10, 4, 4, 4, 4, 4];
+		collectionsGeneValuesNum[1] = [2, 3, 7, 6, 9, 7, 10, 36, 16, 12, 5, 28];
 		collectionsGeneDistributionTypes[1] = 2940; // reverse(001111101101) = 101101111100
 
 		// TODO: confirm
@@ -276,6 +276,10 @@ contract DuckyFamilyV1_0 is
 		mintPrice = price;
 	}
 
+	function getMeldPrices() external view returns (uint256[] memory) {
+		return meldPrices;
+	}
+
 	function setMeldPrices(uint256[] calldata prices) external onlyRole(MAINTAINER_ROLE) {
 		meldPrices = prices;
 	}
@@ -284,6 +288,30 @@ contract DuckyFamilyV1_0 is
 
 	function getCollectionsGeneValues() external view returns (uint8[][2] memory, uint8) {
 		return (collectionsGeneValuesNum, mythicAmount);
+	}
+
+	function setDucklingGeneValues(
+		uint8[] memory duckingGeneValuesNum
+	) external onlyRole(DEFAULT_ADMIN_ROLE) {
+		collectionsGeneValuesNum[0] = duckingGeneValuesNum;
+	}
+
+	function setDucklingGeneDistributionTypes(
+		uint32 ducklingGeneDistrTypes
+	) external onlyRole(DEFAULT_ADMIN_ROLE) {
+		collectionsGeneDistributionTypes[0] = ducklingGeneDistrTypes;
+	}
+
+	function setZombeakGeneValues(
+		uint8[] memory zombeaksGeneValuesNum
+	) external onlyRole(DEFAULT_ADMIN_ROLE) {
+		collectionsGeneValuesNum[1] = zombeaksGeneValuesNum;
+	}
+
+	function setZombeakGeneDistributionTypes(
+		uint32 zombeakGeneDistrTypes
+	) external onlyRole(DEFAULT_ADMIN_ROLE) {
+		collectionsGeneDistributionTypes[1] = zombeakGeneDistrTypes;
 	}
 
 	// ------- Mint -------
