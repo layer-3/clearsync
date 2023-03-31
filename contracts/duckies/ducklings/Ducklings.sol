@@ -71,16 +71,13 @@ contract Ducklings is
 	) public view override(ERC721Upgradeable) returns (string memory) {
 		Duckling memory duckling = idToDuckling[tokenId];
 
-		// TODO: use string.concat
 		return
 			bytes(apiBaseURL).length > 0
-				? string(
-					abi.encodePacked(
-						apiBaseURL,
-						duckling.genome.toString(),
-						'-',
-						uint256(duckling.birthdate).toString()
-					)
+				? string.concat(
+					apiBaseURL,
+					duckling.genome.toString(),
+					'-',
+					uint256(duckling.birthdate).toString()
 				)
 				: '';
 	}
