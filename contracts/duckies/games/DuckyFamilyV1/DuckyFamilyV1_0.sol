@@ -168,18 +168,14 @@ contract DuckyFamilyV1_0 is
 		];
 
 		// config
-		// duckling
-		// TODO: confirm gene values
 		// Duckling genes: (Collection, Rarity), Color, Family, Body, Head, Eyes, Beak, Wings, FirstName, Temper, Skill, Habitat, Breed
 		collectionsGeneValuesNum[0] = [4, 5, 10, 25, 30, 14, 10, 36, 16, 12, 5, 28];
 		collectionsGeneDistributionTypes[0] = 2940; // reverse(001111101101) = 101101111100
-		// zombeak
-		// TODO: confirm gene values
+
 		// Zombeak genes: (Collection, Rarity), Color, Family, Body, Head, Eyes, Beak, Wings, FirstName, Temper, Skill, Habitat, Breed
 		collectionsGeneValuesNum[1] = [2, 3, 7, 6, 9, 7, 10, 36, 16, 12, 5, 28];
 		collectionsGeneDistributionTypes[1] = 2940; // reverse(001111101101) = 101101111100
 
-		// TODO: confirm
 		mythicAmount = 65;
 
 		rarityChances = [850, 120, 25, 5]; // per mil
@@ -426,23 +422,35 @@ contract DuckyFamilyV1_0 is
 			genomes[0].getGene(collectionGeneIdx) == mythicCollectionId
 		) revert IncorrectGenomesForMelding(genomes);
 
+		Rarities rarity = Rarities(genomes[0].getGene(rarityGeneIdx));
+		bool sameColors = Genome._geneValuesAreEqual(genomes, uint8(GenerativeGenes.Color));
+		bool sameFamilies = Genome._geneValuesAreEqual(genomes, uint8(GenerativeGenes.Family));
+		bool uniqueFamilies = Genome._geneValuesAreUnique(genomes, uint8(GenerativeGenes.Family));
+
 		// specific melding rules
-		if (genomes[0].getGene(rarityGeneIdx) == uint8(Rarities.Legendary)) {
+		if (rarity == Rarities.Common) {
+			// Common
 			if (
-				// not Legendary Zombeak
-				genomes[0].getGene(collectionGeneIdx) == zombeakCollectionId ||
-				// cards must have the same Color
-				!Genome._geneValuesAreEqual(genomes, uint8(GenerativeGenes.Color)) ||
-				// cards must be of each Family
-				!Genome._geneValuesAreUnique(genomes, uint8(GenerativeGenes.Family))
+				// cards must have the same Color OR the same Family
+				!sameColors && !sameFamilies
 			) revert IncorrectGenomesForMelding(genomes);
 		} else {
-			//   Common, Rare, Epic
-			if (
-				// cards must have the same Color and the same Family
-				!Genome._geneValuesAreEqual(genomes, uint8(GenerativeGenes.Color)) ||
-				!Genome._geneValuesAreEqual(genomes, uint8(GenerativeGenes.Family))
-			) revert IncorrectGenomesForMelding(genomes);
+			// Rare, Epic
+			if (rarity == Rarities.Rare || rarity == Rarities.Epic) {
+				if (
+					// cards must have the same Color AND the same Family
+					!sameColors || !sameFamilies
+				) revert IncorrectGenomesForMelding(genomes);
+			} else {
+				// Legendary
+				if (
+					// not Legendary Zombeak
+					genomes[0].getGene(collectionGeneIdx) == zombeakCollectionId ||
+					// cards must have the same Color AND be of each Family
+					!sameColors ||
+					!uniqueFamilies
+				) revert IncorrectGenomesForMelding(genomes);
+			}
 		}
 	}
 
