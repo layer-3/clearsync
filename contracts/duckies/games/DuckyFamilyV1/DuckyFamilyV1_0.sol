@@ -171,7 +171,7 @@ contract DuckyFamilyV1_0 is
 		// duckling
 		// TODO: confirm gene values
 		// Duckling genes: (Collection, Rarity), Color, Family, Body, Head, Eyes, Beak, Wings, FirstName, Temper, Skill, Habitat, Breed
-		collectionsGeneValuesNum[0] = [4, 5, 11, 26, 30, 14, 10, 36, 16, 12, 5, 28];
+		collectionsGeneValuesNum[0] = [4, 5, 10, 25, 30, 14, 10, 36, 16, 12, 5, 28];
 		collectionsGeneDistributionTypes[0] = 2940; // reverse(001111101101) = 101101111100
 		// zombeak
 		// TODO: confirm gene values
@@ -288,6 +288,10 @@ contract DuckyFamilyV1_0 is
 
 	function getCollectionsGeneValues() external view returns (uint8[][2] memory, uint8) {
 		return (collectionsGeneValuesNum, mythicAmount);
+	}
+
+	function getCollectionsGeneDistributionTypes() external view returns (uint32[2] memory) {
+		return collectionsGeneDistributionTypes;
 	}
 
 	function setDucklingGeneValues(
@@ -493,9 +497,9 @@ contract DuckyFamilyV1_0 is
 
 		uint32 mutationPercentage = collectionMutationChances[uint8(rarity)];
 		// dynamic array is needed for `_randomWeightedNumber()`
-		uint32[] memory chances;
+		uint32[] memory chances = new uint32[](2);
 		chances[0] = mutationPercentage;
-		chances[1] = 100 - mutationPercentage;
+		chances[1] = 1000 - mutationPercentage; // 1000 as changes are represented in per mil
 		return _randomWeightedNumber(chances) == 0;
 	}
 
