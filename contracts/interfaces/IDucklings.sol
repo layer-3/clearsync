@@ -4,6 +4,8 @@ pragma solidity 0.8.18;
 import '@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol';
 
 interface IDucklings is IERC721Upgradeable {
+	error TokenNotTransferable(uint256 tokenId);
+
 	struct Duckling {
 		uint256 genome;
 		uint64 birthdate;
@@ -19,6 +21,8 @@ interface IDucklings is IERC721Upgradeable {
 	function getGenome(uint256 tokenId) external view returns (uint256);
 
 	function getGenomes(uint256[] calldata tokenIds) external view returns (uint256[] memory);
+
+	function setTransferable(uint256 tokenId, bool isTransferable) external;
 
 	function mintTo(address to, uint256 genome) external returns (uint256);
 

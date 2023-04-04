@@ -36,7 +36,8 @@ contract Ducklings is
 	string public apiBaseURL;
 
 	CountersUpgradeable.Counter public nextNewTokenId;
-	mapping(uint256 => Duckling) public idToDuckling;
+	mapping(uint256 => Duckling) public tokenToDuckling;
+	mapping(uint256 => bool) public isTokenNotTransferable; // use inverse here to make all tokens transferable by default
 
 	// ------- Initializer -------
 
@@ -69,7 +70,7 @@ contract Ducklings is
 	function tokenURI(
 		uint256 tokenId
 	) public view override(ERC721Upgradeable) returns (string memory) {
-		Duckling memory duckling = idToDuckling[tokenId];
+		Duckling memory duckling = tokenToDuckling[tokenId];
 
 		return
 			bytes(apiBaseURL).length > 0
@@ -134,7 +135,7 @@ contract Ducklings is
 
 	function getGenome(uint256 tokenId) external view returns (uint256) {
 		if (!_exists(tokenId)) revert InvalidTokenId(tokenId);
-		return idToDuckling[tokenId].genome;
+		return tokenToDuckling[tokenId].genome;
 	}
 
 	function getGenomes(uint256[] calldata tokenIds) external view returns (uint256[] memory) {
@@ -143,10 +144,34 @@ contract Ducklings is
 
 		for (uint256 i = 0; i < tokenIds.length; i++) {
 			if (!_exists(tokenIds[i])) revert InvalidTokenId(tokenIds[i]);
-			genomes[i] = idToDuckling[tokenIds[i]].genome;
+			genomes[i] = tokenToDuckling[tokenIds[i]].genome;
 		}
 
 		return genomes;
+	}
+
+	function isTokenTransferable(uint256 tokenId) external view returns (bool) {
+		if (!_exists(tokenId)) revert InvalidTokenId(tokenId);
+
+		return !isTokenNotTransferable[tokenId];
+	}
+
+	function setTransferable(uint256 tokenId, bool isTransferable) external onlyRole(GAME_ROLE) {
+		if (!_exists(tokenId)) revert InvalidTokenId(tokenId);
+
+		isTokenNotTransferable[tokenId] = !isTransferable;
+	}
+
+	function _beforeTokenTransfer(
+		address, // from,
+		address to,
+		uint256 firstTokenId,
+		uint256 // batchSize - always 1 in ERC721
+	) internal view override {
+		// burn for not transferable is allowed
+		if (to == address(0)) return;
+
+		if (isTokenNotTransferable[firstTokenId]) revert TokenNotTransferable(firstTokenId);
 	}
 
 	function mintTo(
@@ -155,7 +180,7 @@ contract Ducklings is
 	) external onlyRole(GAME_ROLE) returns (uint256 tokenId) {
 		tokenId = nextNewTokenId.current();
 		uint64 birthdate = uint64(block.timestamp);
-		idToDuckling[tokenId] = Duckling(genome, birthdate);
+		tokenToDuckling[tokenId] = Duckling(genome, birthdate);
 
 		_safeMint(to, tokenId);
 

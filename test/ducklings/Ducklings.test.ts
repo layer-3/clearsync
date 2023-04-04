@@ -21,7 +21,7 @@ async function expectDucklingHasGenome(
   tokenId: number,
   genome: number,
 ): Promise<void> {
-  const Duckling = await Ducklings.idToDuckling(tokenId);
+  const Duckling = await Ducklings.tokenToDuckling(tokenId);
   expect(Duckling.genome).to.equal(genome);
 }
 
@@ -166,6 +166,47 @@ describe('Ducklings', () => {
       });
     });
 
+    describe('transfer', () => {
+      it('set transferable on Game setting', async () => {
+        await DucklingsAsGame.mintTo(Someone.address, GENOME);
+        expect(await DucklingsAsGame.isTokenTransferable(0)).to.be.true;
+      });
+
+      it('revert on not Game set tranferable', async () => {
+        await DucklingsAsGame.mintTo(Someone.address, GENOME);
+        await expect(DucklingsAsSomeone.setTransferable(0, false)).to.be.revertedWith(
+          ACCOUNT_MISSING_ROLE(Someone.address, GAME_ROLE),
+        );
+      });
+
+      it('revert on set unexisting token tranferable', async () => {
+        await expect(DucklingsAsGame.setTransferable(0, false))
+          .to.be.revertedWithCustomError(Ducklings, 'InvalidTokenId')
+          .withArgs(0);
+      });
+
+      it('revert on transfering untransferable token', async () => {
+        await DucklingsAsGame.mintTo(Someone.address, GENOME);
+        await DucklingsAsGame.setTransferable(0, false);
+
+        await expect(DucklingsAsSomeone.transferFrom(Someone.address, Someother.address, 0))
+          .to.be.revertedWithCustomError(Ducklings, 'TokenNotTransferable')
+          .withArgs(0);
+      });
+
+      it('can burn not transferable token', async () => {
+        await DucklingsAsGame.mintTo(Someone.address, GENOME);
+        await DucklingsAsGame.setTransferable(0, false);
+
+        try {
+          await DucklingsAsGame['burn(uint256)'](0);
+          assert(true);
+        } catch {
+          assert(false);
+        }
+      });
+    });
+
     describe('minting', () => {
       it('Game can mint', async () => {
         try {
@@ -189,7 +230,7 @@ describe('Ducklings', () => {
 
       it('NFT birthdate is block timestamp', async () => {
         await DucklingsAsGame.mintTo(Someone.address, GENOME);
-        const Duckling = await Ducklings.idToDuckling(0);
+        const Duckling = await Ducklings.tokenToDuckling(0);
 
         const latestBlock = await ethers.provider.getBlock('latest');
 
