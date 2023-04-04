@@ -225,7 +225,10 @@ contract DuckyFamilyV1_0 is
 				mintParams.size > MAX_PACK_SIZE
 			) revert InvalidMintParams(mintParams);
 
-			_mintPackTo(mintParams.to, mintParams.size);
+			uint256[] memory tokenIds = _mintPackTo(mintParams.to, mintParams.size);
+
+			for (uint8 i = 0; i < tokenIds.length; i++)
+				ducklingsContract.setTransferable(tokenIds[i], false);
 		} else if (voucher.action == uint8(VoucherActions.MeldFlock)) {
 			MeldParams memory meldParams = abi.decode(voucher.encodedParams, (MeldParams));
 
@@ -233,7 +236,8 @@ contract DuckyFamilyV1_0 is
 			if (meldParams.owner == address(0) || meldParams.tokenIds.length != FLOCK_SIZE)
 				revert InvalidMeldParams(meldParams);
 
-			_meldOf(meldParams.owner, meldParams.tokenIds);
+			uint256 tokenId = _meldOf(meldParams.owner, meldParams.tokenIds);
+			ducklingsContract.setTransferable(tokenId, false);
 		} else {
 			revert InvalidVoucher(voucher);
 		}
@@ -324,13 +328,18 @@ contract DuckyFamilyV1_0 is
 		_mintPackTo(msg.sender, size);
 	}
 
-	function _mintPackTo(address to, uint8 amount) internal {
+	function _mintPackTo(address to, uint8 amount) internal returns (uint256[] memory) {
 		if (amount == 0 || amount > MAX_PACK_SIZE)
 			revert MintingRulesViolated(ducklingCollectionId, amount);
+
+		uint256[] memory newTokenIds = new uint256[](amount);
+
 		for (uint256 i = 0; i < amount; i++) {
 			uint256 genome = _generateGenome(ducklingCollectionId);
-			ducklingsContract.mintTo(to, genome);
+			newTokenIds[i] = ducklingsContract.mintTo(to, genome);
 		}
+
+		return newTokenIds;
 	}
 
 	function _generateGenome(uint8 collectionId) internal returns (uint256) {
@@ -432,7 +441,7 @@ contract DuckyFamilyV1_0 is
 		_meldOf(msg.sender, meldingTokenIds);
 	}
 
-	function _meldOf(address owner, uint256[] memory meldingTokenIds) internal {
+	function _meldOf(address owner, uint256[] memory meldingTokenIds) internal returns (uint256) {
 		if (meldingTokenIds.length != FLOCK_SIZE) revert MeldingRulesViolated(meldingTokenIds);
 		if (!ducklingsContract.isOwnerOf(owner, meldingTokenIds))
 			revert MeldingRulesViolated(meldingTokenIds);
@@ -446,6 +455,8 @@ contract DuckyFamilyV1_0 is
 		uint256 meldedTokenId = ducklingsContract.mintTo(owner, meldedGenome);
 
 		emit Melded(owner, meldingTokenIds, meldedTokenId, block.chainid);
+
+		return meldedTokenId;
 	}
 
 	function _requireGenomesSatisfyMelding(uint256[] memory genomes) internal pure {
