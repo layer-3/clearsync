@@ -115,6 +115,9 @@ contract DuckyFamilyV1_0 is
 	// distribution type of each gene for Duckling and Zombeak collections
 	uint32[2] internal collectionsGeneDistributionTypes;
 
+	// peculiarity is a sum of uneven gene values for Ducklings
+	uint16 internal maxPeculiarity;
+	uint8 internal constant MYTHIC_DISPERSION = 5;
 	uint8 internal mythicAmount;
 
 	// chance of a Duckling of a certain rarity to be generated
@@ -134,9 +137,6 @@ contract DuckyFamilyV1_0 is
 
 	uint256 public mintPrice;
 	uint256[] public meldPrices; // [0] - melding Commons, [1] - melding Rares...
-
-	CountersUpgradeable.Counter public nextMythicId;
-	CountersUpgradeable.Counter public nextMythicZombeakId;
 
 	// ------- Initializer -------
 
@@ -176,6 +176,7 @@ contract DuckyFamilyV1_0 is
 		collectionsGeneValuesNum[1] = [2, 3, 7, 6, 9, 7, 10, 36, 16, 12, 5, 28];
 		collectionsGeneDistributionTypes[1] = 2940; // reverse(001111101101) = 101101111100
 
+		maxPeculiarity = _calcMaxPeculiarity();
 		mythicAmount = 65;
 
 		rarityChances = [850, 120, 25, 5]; // per mil
@@ -294,12 +295,14 @@ contract DuckyFamilyV1_0 is
 		uint8[] memory duckingGeneValuesNum
 	) external onlyRole(DEFAULT_ADMIN_ROLE) {
 		collectionsGeneValuesNum[0] = duckingGeneValuesNum;
+		maxPeculiarity = _calcMaxPeculiarity();
 	}
 
 	function setDucklingGeneDistributionTypes(
 		uint32 ducklingGeneDistrTypes
 	) external onlyRole(DEFAULT_ADMIN_ROLE) {
 		collectionsGeneDistributionTypes[0] = ducklingGeneDistrTypes;
+		maxPeculiarity = _calcMaxPeculiarity();
 	}
 
 	function setZombeakGeneValues(
@@ -331,15 +334,13 @@ contract DuckyFamilyV1_0 is
 	}
 
 	function _generateGenome(uint8 collectionId) internal returns (uint256) {
+		if (collectionId != ducklingCollectionId && collectionId != zombeakCollectionId) {
+			revert MintingRulesViolated(collectionId, 1);
+		}
+
 		uint256 genome;
 
 		genome = genome.setGene(collectionGeneIdx, collectionId);
-
-		if (collectionId == mythicCollectionId) {
-			genome = genome.setGene(uint8(MythicGenes.UniqId), uint8(nextMythicId.current()));
-			return genome;
-		}
-
 		genome = genome.setGene(rarityGeneIdx, uint8(_generateRarity()));
 		genome = _generateAndSetGenes(genome, collectionId);
 
@@ -381,6 +382,41 @@ contract DuckyFamilyV1_0 is
 			}
 		}
 
+		return genome;
+	}
+
+	function _generateMythicGenome(uint256[] memory genomes) internal returns (uint256) {
+		uint16 sumPeculiarity = 0;
+
+		for (uint8 i = 0; i < genomes.length; i++) {
+			sumPeculiarity += _calcPeculiarity(genomes[i]);
+		}
+
+		uint8 maxUniqId = mythicAmount - 1;
+		uint8 pivotalUniqId = uint8((sumPeculiarity / maxPeculiarity) * maxUniqId);
+		uint8 leftEndUniqId;
+		uint8 uniqIdSegmentLength;
+
+		if (pivotalUniqId < MYTHIC_DISPERSION) {
+			// mythic id range overlaps with left dispersion border
+			leftEndUniqId = 0;
+			uniqIdSegmentLength = pivotalUniqId + MYTHIC_DISPERSION;
+		} else if (maxUniqId < pivotalUniqId + MYTHIC_DISPERSION) {
+			// mythic id range overlaps with right dispersion border
+			leftEndUniqId = pivotalUniqId - MYTHIC_DISPERSION;
+			uniqIdSegmentLength = maxUniqId - pivotalUniqId + MYTHIC_DISPERSION;
+		} else {
+			// mythic id range does not overlap with dispersion borders
+			leftEndUniqId = pivotalUniqId - MYTHIC_DISPERSION;
+			uniqIdSegmentLength = 2 * MYTHIC_DISPERSION;
+		}
+
+		uint8 uniqId = leftEndUniqId +
+			uint8(RandomUpgradeable._randomMaxNumber(uniqIdSegmentLength));
+
+		uint256 genome;
+		genome = genome.setGene(collectionGeneIdx, mythicCollectionId);
+		genome.setGene(uint8(MythicGenes.UniqId), uniqId);
 		return genome;
 	}
 
@@ -466,11 +502,7 @@ contract DuckyFamilyV1_0 is
 			}
 
 			if (rarity == Rarities.Legendary) {
-				if (nextMythicId.current() > mythicAmount - 1)
-					revert MintingRulesViolated(mythicCollectionId, 1);
-
-				nextMythicId.increment();
-				return _generateGenome(mythicCollectionId);
+				return _generateMythicGenome(genomes);
 			}
 		}
 
@@ -563,5 +595,32 @@ contract DuckyFamilyV1_0 is
 
 		// code execution should never reach this
 		return 0;
+	}
+
+	function _calcMaxPeculiarity() internal view returns (uint16) {
+		uint16 sum = 0;
+		uint32 ducklingDistrTypes = collectionsGeneDistributionTypes[ducklingCollectionId];
+		uint8[] memory ducklingGeneValuesNum = collectionsGeneValuesNum[ducklingCollectionId];
+
+		for (uint8 i = 0; i < ducklingGeneValuesNum.length; i++) {
+			if (_getDistibutionType(ducklingDistrTypes, i) == GeneDistributionTypes.Uneven) {
+				sum += ducklingGeneValuesNum[i];
+			}
+		}
+
+		return sum;
+	}
+
+	function _calcPeculiarity(uint256 genome) internal view returns (uint16) {
+		uint16 sum = 0;
+		uint32 ducklingDistrTypes = collectionsGeneDistributionTypes[ducklingCollectionId];
+
+		for (uint8 i = 0; i < collectionsGeneValuesNum[ducklingCollectionId].length; i++) {
+			if (_getDistibutionType(ducklingDistrTypes, i) == GeneDistributionTypes.Uneven) {
+				sum += genome.getGene(i + generativeGenesOffset);
+			}
+		}
+
+		return sum;
 	}
 }
