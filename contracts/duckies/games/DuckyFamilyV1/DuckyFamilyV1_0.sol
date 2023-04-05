@@ -101,25 +101,33 @@ contract DuckyFamilyV1_0 is IVoucher, AccessControl, Random {
 	uint8 internal constant generativeGenesOffset = 2;
 
 	// number of values for each gene for Duckling and Zombeak collections
-	uint8[][2] internal collectionsGeneValuesNum;
+	uint8[][2] internal collectionsGeneValuesNum = [
+		// Duckling genes: (Collection, Rarity), Color, Family, Body, Head, Eyes, Beak, Wings, FirstName, Temper, Skill, Habitat, Breed
+		[4, 5, 10, 25, 30, 14, 10, 36, 16, 12, 5, 28],
+		// Zombeak genes: (Collection, Rarity), Color, Family, Body, Head, Eyes, Beak, Wings, FirstName, Temper, Skill, Habitat, Breed
+		[2, 3, 7, 6, 9, 7, 10, 36, 16, 12, 5, 28]
+	];
 	// distribution type of each gene for Duckling and Zombeak collections
-	uint32[2] internal collectionsGeneDistributionTypes;
+	uint32[2] internal collectionsGeneDistributionTypes = [
+		2940, // reverse(001111101101) = 101101111100
+		2940 // reverse(001111101101) = 101101111100
+	];
 
 	// peculiarity is a sum of uneven gene values for Ducklings
 	uint16 internal maxPeculiarity;
 	uint8 internal constant MYTHIC_DISPERSION = 5;
-	uint8 internal mythicAmount;
+	uint8 internal mythicAmount = 65;
 
 	// chance of a Duckling of a certain rarity to be generated
-	uint32[] internal rarityChances; // 85, 12, 2.5, 0.5
+	uint32[] internal rarityChances = [850, 120, 25, 5]; // per mil
 
 	// chance of a Duckling of certain rarity to mutate to Zombeak while melding
-	uint32[] internal collectionMutationChances; // 15, 10, 5, 1
+	uint32[] internal collectionMutationChances = [150, 100, 50, 10]; // per mil
+
+	uint32[] internal geneMutationChance = [955, 45]; // 4.5% to mutate gene value
+	uint32[] internal geneInheritanceChances = [400, 300, 150, 100, 50]; // per mil
 
 	// ------- Public values -------
-
-	uint32[] internal geneMutationChance; // 95.5, 4.5 (4.5% to mutate gene value)
-	uint32[] internal geneInheritanceChances; // 5 / 4 / 3 / 2 / 1
 
 	ERC20Burnable public duckiesContract;
 	IDucklings public ducklingsContract;
@@ -148,22 +156,7 @@ contract DuckyFamilyV1_0 is IVoucher, AccessControl, Random {
 			1000 * decimalsMultiplier
 		];
 
-		// config
-		// Duckling genes: (Collection, Rarity), Color, Family, Body, Head, Eyes, Beak, Wings, FirstName, Temper, Skill, Habitat, Breed
-		collectionsGeneValuesNum[0] = [4, 5, 10, 25, 30, 14, 10, 36, 16, 12, 5, 28];
-		collectionsGeneDistributionTypes[0] = 2940; // reverse(001111101101) = 101101111100
-
-		// Zombeak genes: (Collection, Rarity), Color, Family, Body, Head, Eyes, Beak, Wings, FirstName, Temper, Skill, Habitat, Breed
-		collectionsGeneValuesNum[1] = [2, 3, 7, 6, 9, 7, 10, 36, 16, 12, 5, 28];
-		collectionsGeneDistributionTypes[1] = 2940; // reverse(001111101101) = 101101111100
-
 		maxPeculiarity = _calcMaxPeculiarity();
-		mythicAmount = 65;
-
-		rarityChances = [850, 120, 25, 5]; // per mil
-		collectionMutationChances = [150, 100, 50, 10]; // per mil
-		geneMutationChance = [955, 45]; // per mil
-		geneInheritanceChances = [400, 300, 150, 100, 50]; // per mil
 	}
 
 	// ------- Vouchers -------
