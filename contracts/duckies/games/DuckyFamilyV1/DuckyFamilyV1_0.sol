@@ -116,7 +116,7 @@ contract DuckyFamilyV1_0 is IVoucher, AccessControl, Random {
 	// peculiarity is a sum of uneven gene values for Ducklings
 	uint16 internal maxPeculiarity;
 	uint8 internal constant MYTHIC_DISPERSION = 5;
-	uint8 internal mythicAmount = 65;
+	uint8 internal mythicAmount = 59;
 
 	// chance of a Duckling of a certain rarity to be generated
 	uint32[] internal rarityChances = [850, 120, 25, 5]; // per mil
