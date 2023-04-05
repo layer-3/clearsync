@@ -1,28 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.18;
 
-import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
-import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
+import '@openzeppelin/contracts/access/AccessControl.sol';
 
-import '@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol';
-import '@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol';
-import '@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol';
+import '@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol';
+import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
 import '../../../interfaces/IVoucher.sol';
 import '../../../interfaces/IDucklings.sol';
-import '../RandomUpgradeable.sol';
+import '../Random.sol';
 import '../Genome.sol';
 
-contract DuckyFamilyV1_0 is
-	IVoucher,
-	Initializable,
-	UUPSUpgradeable,
-	AccessControlUpgradeable,
-	RandomUpgradeable
-{
-	using CountersUpgradeable for CountersUpgradeable.Counter;
+contract DuckyFamilyV1_0 is IVoucher, AccessControl, Random {
 	using Genome for uint256;
-	using ECDSAUpgradeable for bytes32;
+	using ECDSA for bytes32;
 
 	// errors
 	error InvalidMintParams(MintParams mintParams);
@@ -36,7 +27,6 @@ contract DuckyFamilyV1_0 is
 	event Melded(address owner, uint256[] meldingTokenIds, uint256 meldedTokenId, uint256 chainId);
 
 	// roles
-	bytes32 public constant UPGRADER_ROLE = keccak256('UPGRADER_ROLE');
 	bytes32 public constant MAINTAINER_ROLE = keccak256('MAINTAINER_ROLE');
 
 	// ------- IVoucher -------
@@ -131,7 +121,7 @@ contract DuckyFamilyV1_0 is
 	uint32[] internal geneMutationChance; // 95.5, 4.5 (4.5% to mutate gene value)
 	uint32[] internal geneInheritanceChances; // 5 / 4 / 3 / 2 / 1
 
-	ERC20BurnableUpgradeable public duckiesContract;
+	ERC20Burnable public duckiesContract;
 	IDucklings public ducklingsContract;
 	address public treasureVaultAddress;
 
@@ -140,20 +130,11 @@ contract DuckyFamilyV1_0 is
 
 	// ------- Initializer -------
 
-	function initialize(
-		address duckiesAddress,
-		address ducklingsAddress,
-		address treasureVaultAddress_
-	) external initializer {
-		__AccessControl_init();
-		__UUPSUpgradeable_init();
-		__Random_init();
-
+	constructor(address duckiesAddress, address ducklingsAddress, address treasureVaultAddress_) {
 		_grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-		_grantRole(UPGRADER_ROLE, msg.sender);
 		_grantRole(MAINTAINER_ROLE, msg.sender);
 
-		duckiesContract = ERC20BurnableUpgradeable(duckiesAddress);
+		duckiesContract = ERC20Burnable(duckiesAddress);
 		ducklingsContract = IDucklings(ducklingsAddress);
 		treasureVaultAddress = treasureVaultAddress_;
 
@@ -184,12 +165,6 @@ contract DuckyFamilyV1_0 is
 		geneMutationChance = [955, 45]; // per mil
 		geneInheritanceChances = [400, 300, 150, 100, 50]; // per mil
 	}
-
-	// -------- Upgrades --------
-
-	function _authorizeUpgrade(
-		address newImplementation
-	) internal override onlyRole(UPGRADER_ROLE) {}
 
 	// ------- Vouchers -------
 
@@ -420,8 +395,7 @@ contract DuckyFamilyV1_0 is
 			uniqIdSegmentLength = 2 * MYTHIC_DISPERSION;
 		}
 
-		uint8 uniqId = leftEndUniqId +
-			uint8(RandomUpgradeable._randomMaxNumber(uniqIdSegmentLength));
+		uint8 uniqId = leftEndUniqId + uint8(Random._randomMaxNumber(uniqIdSegmentLength));
 
 		uint256 genome;
 		genome = genome.setGene(collectionGeneIdx, mythicCollectionId);
