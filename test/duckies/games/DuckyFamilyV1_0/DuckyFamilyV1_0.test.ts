@@ -1,33 +1,56 @@
 import { utils } from 'ethers';
 import { ethers, upgrades } from 'hardhat';
+import { expect } from 'chai';
+
+import { connectGroup } from '../../../helpers/connect';
+import { ACCOUNT_MISSING_ROLE } from '../../../helpers/common';
+
+import {
+  Collections,
+  GeneDistrTypes,
+  MAX_PECULIARITY,
+  collectionsGeneValuesNum,
+  generativeGenesOffset,
+} from './config';
+import { Genome } from './genome';
 
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import type {
   Ducklings,
   DuckyFamilyV1_0,
+  TESTDuckyFamilyV1_0,
   TreasureVault,
   YellowToken,
-} from '../../../../typechain-types';
+} from '../../../../typechain';
 
 const GAME_ROLE = utils.id('GAME_ROLE');
+const MAINTAINER_ROLE = utils.id('MAINTAINER_ROLE');
 
 describe('DuckyFamilyV1_0', () => {
   let Admin: SignerWithAddress;
   let Maintainer: SignerWithAddress;
   let Someone: SignerWithAddress;
   let Someother: SignerWithAddress;
+  let GenomeSetter: SignerWithAddress;
 
   let Duckies: YellowToken;
   let Ducklings: Ducklings;
   let TreasureVault: TreasureVault;
-  let DuckyFamily: DuckyFamilyV1_0;
+  let Game: TESTDuckyFamilyV1_0;
+
+  let GameAsMaintainer: DuckyFamilyV1_0;
+  let GameAsSomeone: DuckyFamilyV1_0;
 
   before(async () => {
-    [Admin, Maintainer, Someone, Someother] = await ethers.getSigners();
+    [Admin, Maintainer, Someone, Someother, GenomeSetter] = await ethers.getSigners();
 
     const DuckiesFactory = await ethers.getContractFactory('YellowToken');
     Duckies = (await DuckiesFactory.deploy('Duckies', 'DUCKIES', 1_000_000 * 10e8)) as YellowToken;
     await Duckies.deployed();
+
+    await Duckies.activate(100_000_000_000_000, Admin.address);
+    await Duckies.mint(Someone.address, 100_000_000_000_000);
+    await Duckies.mint(Someother.address, 100_000_000_000_000);
 
     const DucklingsFactory = await ethers.getContractFactory('Ducklings');
     Ducklings = (await upgrades.deployProxy(DucklingsFactory, [], { kind: 'uups' })) as Ducklings;
@@ -39,15 +62,20 @@ describe('DuckyFamilyV1_0', () => {
     })) as TreasureVault;
     await TreasureVault.deployed();
 
-    const DuckyFamilyFactory = await ethers.getContractFactory('DuckyFamilyV1_0');
-    DuckyFamily = (await upgrades.deployProxy(DuckyFamilyFactory, [
+    const DuckyFamilyFactory = await ethers.getContractFactory('TESTDuckyFamilyV1_0');
+    Game = (await DuckyFamilyFactory.deploy(
       Duckies.address,
       Ducklings.address,
       TreasureVault.address,
-    ])) as DuckyFamilyV1_0;
-    await DuckyFamily.deployed();
+    )) as TESTDuckyFamilyV1_0;
+    await Game.deployed();
 
-    await Ducklings.grantRole(GAME_ROLE, DuckyFamily.address);
+    await Ducklings.grantRole(GAME_ROLE, Game.address);
+    await Ducklings.grantRole(GAME_ROLE, GenomeSetter.address);
+
+    await Game.grantRole(MAINTAINER_ROLE, Maintainer.address);
+
+    [GameAsMaintainer, GameAsSomeone] = connectGroup(Game, [Maintainer, Someone]);
   });
 
   describe('vouchers', () => {
@@ -112,17 +140,57 @@ describe('DuckyFamilyV1_0', () => {
 
   describe('NFT game', () => {
     describe('prices', () => {
-      it('maintainer can set mint price');
+      const MINT_PRICE = 5;
+      const MELD_PRICES = [10, 20, 50, 100];
 
-      it('revert on not maintainer set mint price');
+      it('maintainer can set mint price', async () => {
+        await GameAsMaintainer.setMintPrice(MINT_PRICE);
+        expect(await Game.mintPrice()).to.equal(MINT_PRICE);
+      });
 
-      it('maintainer can set meld price');
+      it('revert on not maintainer set mint price', async () => {
+        await expect(GameAsSomeone.setMintPrice(MINT_PRICE)).to.be.revertedWith(
+          ACCOUNT_MISSING_ROLE(Someone.address, MAINTAINER_ROLE),
+        );
+      });
 
-      it('revert on not maintainer set meld price');
+      it('maintainer can set meld price', async () => {
+        await GameAsMaintainer.setMeldPrices(MELD_PRICES);
+        expect(await Game.getMeldPrices()).to.deep.equal(MELD_PRICES);
+      });
+
+      it('revert on not maintainer set meld price', async () => {
+        await expect(GameAsSomeone.setMeldPrices(MELD_PRICES)).to.be.revertedWith(
+          ACCOUNT_MISSING_ROLE(Someone.address, MAINTAINER_ROLE),
+        );
+      });
     });
 
     describe('helpers', () => {
-      it('get correct distribution type');
+      it('_getDistributionType', async () => {
+        expect(await Game.getDistributionType(0b0, 0)).to.equal(GeneDistrTypes.Even);
+        expect(await Game.getDistributionType(0b1, 0)).to.equal(GeneDistrTypes.Uneven);
+        expect(await Game.getDistributionType(0b10, 1)).to.equal(GeneDistrTypes.Uneven);
+        expect(await Game.getDistributionType(0b010, 2)).to.equal(GeneDistrTypes.Even);
+        expect(await Game.getDistributionType(0b0010_0010, 7)).to.equal(GeneDistrTypes.Even);
+        expect(await Game.getDistributionType(0b100_0010_0010, 10)).to.equal(GeneDistrTypes.Uneven);
+      });
+
+      it('_calcMaxPeculiarity', async () => {
+        expect(await Game.calcMaxPeculiarity()).to.equal(MAX_PECULIARITY);
+      });
+
+      it('_calcPeculiarity', async () => {
+        const geneValues = Array.from({
+          length: collectionsGeneValuesNum[Collections.Duckling].length + generativeGenesOffset,
+        }).fill(1) as number[];
+        expect(await Game.calcPeculiarity(Genome.from(geneValues).genome)).to.equal(8); // 8 uneven genes
+        expect(
+          await Game.calcPeculiarity(
+            Genome.from([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]).genome,
+          ),
+        ).to.equal(5 + 6 + 7 + 8 + 9 + 11 + 12 + 14); // 001111101101
+      });
     });
 
     describe('minting', () => {
@@ -155,6 +223,41 @@ describe('DuckyFamilyV1_0', () => {
 
     describe('melding', () => {
       describe('meldGenes', () => {
+        it('can meld', async () => {
+          await Ducklings.connect(GenomeSetter).mintTo(
+            Someone.address,
+            // eslint-disable-next-line unicorn/numeric-separators-style
+            182700775082802730930410854023168n,
+          );
+
+          await Ducklings.connect(GenomeSetter).mintTo(
+            Someone.address,
+            // eslint-disable-next-line unicorn/numeric-separators-style
+            60926767771370839915004195766272n,
+          );
+
+          await Ducklings.connect(GenomeSetter).mintTo(
+            Someone.address,
+            // eslint-disable-next-line unicorn/numeric-separators-style
+            121932763563511447839369064611840n,
+          );
+
+          await Ducklings.connect(GenomeSetter).mintTo(
+            Someone.address,
+            // eslint-disable-next-line unicorn/numeric-separators-style
+            61164767845294952445087173574656n,
+          );
+
+          await Ducklings.connect(GenomeSetter).mintTo(
+            Someone.address,
+            // eslint-disable-next-line unicorn/numeric-separators-style
+            162419591386637366713636064854016n,
+          );
+
+          await Duckies.connect(Someone).increaseAllowance(Game.address, 10_000_000_000);
+          await Game.connect(Someone).meldFlock([0, 1, 2, 3, 4]);
+        });
+
         it('uneven gene can mutate');
 
         it('even gene can not mutate');

@@ -54,4 +54,12 @@ contract TESTDuckyFamilyV1_0 is DuckyFamilyV1_0 {
 	function generateUnevenGeneValue(uint8 valuesNum) external {
 		emit Uint8Returned(_generateUnevenGeneValue(valuesNum));
 	}
+
+	function calcMaxPeculiarity() external view returns (uint16) {
+		return _calcMaxPeculiarity();
+	}
+
+	function calcPeculiarity(uint256 genome) external view returns (uint16) {
+		return _calcPeculiarity(genome);
+	}
 }
