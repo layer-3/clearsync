@@ -44,11 +44,11 @@ contract TESTDuckyFamilyV1_0 is DuckyFamilyV1_0 {
 		emit GeneReturned(_meldGenes(genomes, gene, maxGeneValue, geneDistrType));
 	}
 
-	function getDistibutionType(
+	function getDistributionType(
 		uint32 distributionTypes,
 		uint8 idx
 	) external pure returns (GeneDistributionTypes) {
-		return _getDistibutionType(distributionTypes, idx);
+		return _getDistributionType(distributionTypes, idx);
 	}
 
 	function generateUnevenGeneValue(uint8 valuesNum) external {

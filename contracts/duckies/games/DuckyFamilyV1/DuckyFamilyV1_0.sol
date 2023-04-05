@@ -92,7 +92,7 @@ contract DuckyFamilyV1_0 is IVoucher, AccessControl, Random {
 
 	// ------- Internal values -------
 
-	uint8 public constant MAX_PACK_SIZE = 100;
+	uint8 public constant MAX_PACK_SIZE = 50;
 	uint8 public constant FLOCK_SIZE = 5;
 
 	uint8 internal constant collectionGeneIdx = 0;
@@ -334,7 +334,7 @@ contract DuckyFamilyV1_0 is IVoucher, AccessControl, Random {
 
 		// generate and set each gene
 		for (uint8 i = 0; i < geneValuesNum.length; i++) {
-			GeneDistributionTypes distrType = _getDistibutionType(geneDistributionTypes, i);
+			GeneDistributionTypes distrType = _getDistributionType(geneDistributionTypes, i);
 			uint8 geneValue;
 
 			if (distrType == GeneDistributionTypes.Even) {
@@ -499,7 +499,7 @@ contract DuckyFamilyV1_0 is IVoucher, AccessControl, Random {
 				genomes,
 				generativeGenesOffset + i,
 				geneValuesNum[i],
-				_getDistibutionType(geneDistTypes, i)
+				_getDistributionType(geneDistTypes, i)
 			);
 			meldedGenome = meldedGenome.setGene(generativeGenesOffset + i, geneValue);
 		}
@@ -543,7 +543,7 @@ contract DuckyFamilyV1_0 is IVoucher, AccessControl, Random {
 
 	// ------- Gene distribution -------
 
-	function _getDistibutionType(
+	function _getDistributionType(
 		uint32 distributionTypes,
 		uint8 idx
 	) internal pure returns (GeneDistributionTypes) {
@@ -581,7 +581,7 @@ contract DuckyFamilyV1_0 is IVoucher, AccessControl, Random {
 		uint8[] memory ducklingGeneValuesNum = collectionsGeneValuesNum[ducklingCollectionId];
 
 		for (uint8 i = 0; i < ducklingGeneValuesNum.length; i++) {
-			if (_getDistibutionType(ducklingDistrTypes, i) == GeneDistributionTypes.Uneven) {
+			if (_getDistributionType(ducklingDistrTypes, i) == GeneDistributionTypes.Uneven) {
 				sum += ducklingGeneValuesNum[i];
 			}
 		}
@@ -594,7 +594,7 @@ contract DuckyFamilyV1_0 is IVoucher, AccessControl, Random {
 		uint32 ducklingDistrTypes = collectionsGeneDistributionTypes[ducklingCollectionId];
 
 		for (uint8 i = 0; i < collectionsGeneValuesNum[ducklingCollectionId].length; i++) {
-			if (_getDistibutionType(ducklingDistrTypes, i) == GeneDistributionTypes.Uneven) {
+			if (_getDistributionType(ducklingDistrTypes, i) == GeneDistributionTypes.Uneven) {
 				sum += genome.getGene(i + generativeGenesOffset);
 			}
 		}
