@@ -9,6 +9,12 @@ contract TESTDuckyFamilyV1_0 is DuckyFamilyV1_0 {
 	event BoolReturned(bool returnedBool);
 	event Uint8Returned(uint8 returnedUint8);
 
+	constructor(
+		address duckiesAddress,
+		address ducklingsAddress,
+		address treasureVaultAddress
+	) DuckyFamilyV1_0(duckiesAddress, ducklingsAddress, treasureVaultAddress) {}
+
 	function generateGenome(uint8 collectionId) external {
 		emit GenomeReturned(_generateGenome(collectionId));
 	}
