@@ -582,6 +582,7 @@ contract DuckyFamilyV1_0 is IVoucher, AccessControl, Random {
 
 		for (uint8 i = 0; i < ducklingGeneValuesNum.length; i++) {
 			if (_getDistributionType(ducklingDistrTypes, i) == GeneDistributionTypes.Uneven) {
+				// add number of values and not actual values as actual values start with 1, which means number of values and actual values are equal
 				sum += ducklingGeneValuesNum[i];
 			}
 		}
@@ -595,6 +596,7 @@ contract DuckyFamilyV1_0 is IVoucher, AccessControl, Random {
 
 		for (uint8 i = 0; i < collectionsGeneValuesNum[ducklingCollectionId].length; i++) {
 			if (_getDistributionType(ducklingDistrTypes, i) == GeneDistributionTypes.Uneven) {
+				// add number of values and not actual values as actual values start with 1, which means number of values and actual values are equal
 				sum += genome.getGene(i + generativeGenesOffset);
 			}
 		}
