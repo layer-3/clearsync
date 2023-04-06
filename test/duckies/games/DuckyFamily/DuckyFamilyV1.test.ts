@@ -1,4 +1,4 @@
-import { utils } from 'ethers';
+import { ContractTransaction, utils } from 'ethers';
 import { ethers, upgrades } from 'hardhat';
 import { assert, expect } from 'chai';
 
@@ -15,16 +15,16 @@ import {
   generativeGenesOffset,
 } from './config';
 import { Genome } from './genome';
-import { randomGenome } from './helpers';
+import { RandomGenomeConfig, randomGenome } from './helpers';
 
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import type {
-  Ducklings,
+  DucklingsV1,
   DuckyFamilyV1,
   TESTDuckyFamilyV1,
   TreasureVault,
   YellowToken,
-} from '../../../../typechain';
+} from '../../../../typechain-types';
 
 const GAME_ROLE = utils.id('GAME_ROLE');
 const MAINTAINER_ROLE = utils.id('MAINTAINER_ROLE');
@@ -37,15 +37,32 @@ describe('DuckyFamilyV1', () => {
   let GenomeSetter: SignerWithAddress;
 
   let Duckies: YellowToken;
-  let Ducklings: Ducklings;
+  let Ducklings: DucklingsV1;
   let TreasureVault: TreasureVault;
   let Game: TESTDuckyFamilyV1;
 
   let GameAsMaintainer: DuckyFamilyV1;
   let GameAsSomeone: DuckyFamilyV1;
 
-  const mintTo = async (to: string, genome: bigint, isTransferable?: boolean): Promise<void> => {
-    await Ducklings.connect(GenomeSetter).mintTo(to, genome, isTransferable ?? true);
+  const mintTo = async (
+    to: string,
+    genome: bigint,
+    isTransferable?: boolean,
+  ): Promise<ContractTransaction> => {
+    return await Ducklings.connect(GenomeSetter).mintTo(to, genome, isTransferable ?? true);
+  };
+
+  interface TokenIdAndGenome {
+    tokenId: number;
+    genome: bigint;
+  }
+
+  const extractMintedTokenId = async (tx: ContractTransaction): Promise<TokenIdAndGenome> => {
+    const receipt = await tx.wait();
+    const event = receipt.events?.find((e) => e.event === 'Minted');
+    const tokenId = event?.args?.tokenId.toNumber() as number;
+    const genome = event?.args?.genome.toBigInt() as bigint;
+    return { tokenId, genome };
   };
 
   beforeEach(async () => {
@@ -59,8 +76,8 @@ describe('DuckyFamilyV1', () => {
     await Duckies.mint(Someone.address, 100_000_000_000_000);
     await Duckies.mint(Someother.address, 100_000_000_000_000);
 
-    const DucklingsFactory = await ethers.getContractFactory('Ducklings');
-    Ducklings = (await upgrades.deployProxy(DucklingsFactory, [], { kind: 'uups' })) as Ducklings;
+    const DucklingsFactory = await ethers.getContractFactory('DucklingsV1');
+    Ducklings = (await upgrades.deployProxy(DucklingsFactory, [], { kind: 'uups' })) as DucklingsV1;
     await Ducklings.deployed();
 
     const TreasureVaultFactory = await ethers.getContractFactory('TreasureVault');
@@ -148,7 +165,31 @@ describe('DuckyFamilyV1', () => {
     });
   });
 
+  // eslint-disable-next-line sonarjs/cognitive-complexity
   describe('NFT game', () => {
+    interface TokenIdsAndGenomes {
+      tokenIds: number[];
+      genomes: bigint[];
+    }
+
+    const generateAndMintGenomesForMelding = async (
+      collection: Collections,
+      config?: RandomGenomeConfig,
+    ): Promise<TokenIdsAndGenomes> => {
+      const tokenIds: number[] = [];
+      const genomes: bigint[] = [];
+
+      for (let i = 0; i < 5; i++) {
+        const tokenIdAndGenome = await extractMintedTokenId(
+          await mintTo(Someone.address, randomGenome(collection, config)),
+        );
+        tokenIds.push(tokenIdAndGenome.tokenId);
+        genomes.push(tokenIdAndGenome.genome);
+      }
+
+      return { tokenIds, genomes };
+    };
+
     describe('prices', () => {
       const MINT_PRICE = 5;
       const MELD_PRICES = [10, 20, 50, 100];
@@ -280,65 +321,129 @@ describe('DuckyFamilyV1', () => {
         it('legendary can not mutate');
       });
 
-      describe('requireGenomesSatisfyMelding', () => {
-        it.only('success on melding Common Ducklings', async () => {
-          await (async () => {
-            for (let i = 0; i < 5; i++)
-              await mintTo(
-                Someone.address,
-                randomGenome(Collections.Duckling, {
-                  [DucklingGenes.Rarity]: Rarities.Common,
-                  [DucklingGenes.Color]: 0,
-                }),
-              );
-          })();
+      describe.only('requireGenomesSatisfyMelding', () => {
+        it('success on Common Duckling', async () => {
+          const tokenIdsAndGenomes = await generateAndMintGenomesForMelding(Collections.Duckling, {
+            [DucklingGenes.Rarity]: Rarities.Common,
+          });
 
-          try {
-            await Duckies.connect(Someone).increaseAllowance(Game.address, 10_000_000_000);
-            await GameAsSomeone.meldFlock([0, 1, 2, 3, 4]);
-            assert(true);
-          } catch {
-            assert(false);
-          }
+          await Game.requireGenomesSatisfyMelding(tokenIdsAndGenomes.tokenIds);
         });
 
-        it('success on melding Rare Ducklings');
+        it('success on Rare Duckling');
 
-        it('success on melding Epic Ducklings');
+        it('success on Epic Duckling');
 
-        it('success on melding Legendary Ducklings');
+        it('success on Legendary Duckling');
 
-        it('success on melding Common Zombeak');
+        it('success on Common Zombeak');
 
-        it('success on melding Rare Zombeak');
+        it('success on Rare Zombeak');
 
-        it('success on melding Epic Zombeak');
+        it('success on Epic Zombeak');
 
-        it('revert on melding different collections');
+        it('revert on different collections');
 
-        it('revert on melding different rarities');
+        it('revert on different rarities');
 
-        it('revert on melding melding Mythic');
+        it('revert on Mythic');
 
-        it('revert on melding melding legendary Zombeak');
+        it('revert on legendary Zombeak');
 
-        it('revert on melding legendaries having different color');
+        it('revert on legendaries having different color');
 
-        it('revert on melding legendaries having repeated families');
+        it('revert on legendaries having repeated families');
 
-        it('revert on melding not legendary having different color and different family');
+        it('revert on not legendary having different color and different family');
       });
 
       describe('meldFlock', () => {
         describe('Duckling', () => {
-          it('can meld into rare');
+          it('success on melding Common Ducklings', async () => {
+            const tokenIdsAndGenomes = await generateAndMintGenomesForMelding(
+              Collections.Duckling,
+              {
+                [DucklingGenes.Rarity]: Rarities.Common,
+                [DucklingGenes.Color]: 0,
+              },
+            );
 
-          it('can meld into epic');
+            try {
+              await Duckies.connect(Someone).increaseAllowance(Game.address, 10_000_000_000);
+              await GameAsSomeone.meldFlock(tokenIdsAndGenomes.tokenIds);
+              assert(true);
+            } catch {
+              assert(false);
+            }
+          });
 
-          it('can meld into legendary');
+          it('success on melding Rare Ducklings', async () => {
+            const tokenIdsAndGenomes = await generateAndMintGenomesForMelding(
+              Collections.Duckling,
+              {
+                [DucklingGenes.Rarity]: Rarities.Rare,
+                [DucklingGenes.Color]: 1,
+                [DucklingGenes.Family]: 1,
+              },
+            );
+
+            try {
+              await Duckies.connect(Someone).increaseAllowance(Game.address, 10_000_000_000);
+              await GameAsSomeone.meldFlock(tokenIdsAndGenomes.tokenIds);
+              assert(true);
+            } catch {
+              assert(false);
+            }
+          });
+
+          it('success on melding Epic Ducklings', async () => {
+            const tokenIdsAndGenomes = await generateAndMintGenomesForMelding(
+              Collections.Duckling,
+              {
+                [DucklingGenes.Rarity]: Rarities.Epic,
+                [DucklingGenes.Color]: 1,
+                [DucklingGenes.Family]: 1,
+              },
+            );
+
+            try {
+              await Duckies.connect(Someone).increaseAllowance(Game.address, 10_000_000_000);
+              await GameAsSomeone.meldFlock(tokenIdsAndGenomes.tokenIds);
+              assert(true);
+            } catch {
+              assert(false);
+            }
+          });
+
+          it('success on melding Legendary Ducklings', async () => {
+            const meldingTokenIds: number[] = [];
+            await (async () => {
+              for (let i = 0; i < 5; i++) {
+                const tokenIdAndGenome = await extractMintedTokenId(
+                  await mintTo(
+                    Someone.address,
+                    randomGenome(Collections.Duckling, {
+                      [DucklingGenes.Rarity]: Rarities.Legendary,
+                      [DucklingGenes.Color]: 1,
+                      [DucklingGenes.Family]: i,
+                    }),
+                  ),
+                );
+                meldingTokenIds.push(tokenIdAndGenome.tokenId);
+              }
+            })();
+
+            try {
+              await Duckies.connect(Someone).increaseAllowance(Game.address, 10_000_000_000);
+              await GameAsSomeone.meldFlock(meldingTokenIds);
+              assert(true);
+            } catch {
+              assert(false);
+            }
+          });
         });
 
-        describe('Duckling', () => {
+        describe('Zombeak', () => {
           it('can meld into rare');
 
           it('can meld into epic');

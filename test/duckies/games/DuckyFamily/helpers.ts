@@ -11,7 +11,7 @@ import {
 } from './config';
 import { Genome } from './genome';
 
-type RandomGenomeConfig = { [key in Genes]?: number };
+export type RandomGenomeConfig = { [key in Genes]?: number };
 
 export const randomMaxNum = (maxNum: number): number => Math.floor(Math.random() * (maxNum + 1));
 
