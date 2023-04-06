@@ -44,8 +44,8 @@ describe('DuckyFamilyV1_0', () => {
   let GameAsMaintainer: DuckyFamilyV1_0;
   let GameAsSomeone: DuckyFamilyV1_0;
 
-  const mintTo = async (to: string, genome: bigint): Promise<void> => {
-    await Ducklings.connect(GenomeSetter).mintTo(to, genome);
+  const mintTo = async (to: string, genome: bigint, isTransferable?: boolean): Promise<void> => {
+    await Ducklings.connect(GenomeSetter).mintTo(to, genome, isTransferable ?? true);
   };
 
   beforeEach(async () => {

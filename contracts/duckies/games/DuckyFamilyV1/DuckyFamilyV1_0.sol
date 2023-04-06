@@ -39,11 +39,13 @@ contract DuckyFamilyV1_0 is IVoucher, AccessControl, Random {
 	struct MintParams {
 		address to;
 		uint8 size;
+		bool isTransferable;
 	}
 
 	struct MeldParams {
 		address owner;
 		uint256[] tokenIds;
+		bool isTransferable;
 	}
 
 	address public issuer;
@@ -193,10 +195,7 @@ contract DuckyFamilyV1_0 is IVoucher, AccessControl, Random {
 				mintParams.size > MAX_PACK_SIZE
 			) revert InvalidMintParams(mintParams);
 
-			uint256[] memory tokenIds = _mintPackTo(mintParams.to, mintParams.size);
-
-			for (uint8 i = 0; i < tokenIds.length; i++)
-				ducklingsContract.setTransferable(tokenIds[i], false);
+			_mintPackTo(mintParams.to, mintParams.size, mintParams.isTransferable);
 		} else if (voucher.action == uint8(VoucherActions.MeldFlock)) {
 			MeldParams memory meldParams = abi.decode(voucher.encodedParams, (MeldParams));
 
@@ -204,8 +203,7 @@ contract DuckyFamilyV1_0 is IVoucher, AccessControl, Random {
 			if (meldParams.owner == address(0) || meldParams.tokenIds.length != FLOCK_SIZE)
 				revert InvalidMeldParams(meldParams);
 
-			uint256 tokenId = _meldOf(meldParams.owner, meldParams.tokenIds);
-			ducklingsContract.setTransferable(tokenId, false);
+			_meldOf(meldParams.owner, meldParams.tokenIds, meldParams.isTransferable);
 		} else {
 			revert InvalidVoucher(voucher);
 		}
@@ -293,10 +291,14 @@ contract DuckyFamilyV1_0 is IVoucher, AccessControl, Random {
 
 	function mintPack(uint8 size) external UseRandom {
 		duckiesContract.transferFrom(msg.sender, treasureVaultAddress, mintPrice * size);
-		_mintPackTo(msg.sender, size);
+		_mintPackTo(msg.sender, size, true);
 	}
 
-	function _mintPackTo(address to, uint8 amount) internal returns (uint256[] memory) {
+	function _mintPackTo(
+		address to,
+		uint8 amount,
+		bool isTransferable
+	) internal returns (uint256[] memory) {
 		if (amount == 0 || amount > MAX_PACK_SIZE)
 			revert MintingRulesViolated(ducklingCollectionId, amount);
 
@@ -304,7 +306,7 @@ contract DuckyFamilyV1_0 is IVoucher, AccessControl, Random {
 
 		for (uint256 i = 0; i < amount; i++) {
 			uint256 genome = _generateGenome(ducklingCollectionId);
-			newTokenIds[i] = ducklingsContract.mintTo(to, genome);
+			newTokenIds[i] = ducklingsContract.mintTo(to, genome, isTransferable);
 		}
 
 		return newTokenIds;
@@ -405,10 +407,14 @@ contract DuckyFamilyV1_0 is IVoucher, AccessControl, Random {
 		];
 		duckiesContract.transferFrom(msg.sender, treasureVaultAddress, meldPrice);
 
-		_meldOf(msg.sender, meldingTokenIds);
+		_meldOf(msg.sender, meldingTokenIds, true);
 	}
 
-	function _meldOf(address owner, uint256[] memory meldingTokenIds) internal returns (uint256) {
+	function _meldOf(
+		address owner,
+		uint256[] memory meldingTokenIds,
+		bool isTransferable
+	) internal returns (uint256) {
 		if (meldingTokenIds.length != FLOCK_SIZE) revert MeldingRulesViolated(meldingTokenIds);
 		if (!ducklingsContract.isOwnerOf(owner, meldingTokenIds))
 			revert MeldingRulesViolated(meldingTokenIds);
@@ -419,7 +425,7 @@ contract DuckyFamilyV1_0 is IVoucher, AccessControl, Random {
 		ducklingsContract.burn(meldingTokenIds);
 
 		uint256 meldedGenome = _meldGenomes(meldingGenomes);
-		uint256 meldedTokenId = ducklingsContract.mintTo(owner, meldedGenome);
+		uint256 meldedTokenId = ducklingsContract.mintTo(owner, meldedGenome, isTransferable);
 
 		emit Melded(owner, meldingTokenIds, meldedTokenId, block.chainid);
 
