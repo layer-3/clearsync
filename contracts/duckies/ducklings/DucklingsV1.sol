@@ -11,7 +11,7 @@ import '@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol';
 
 import '../../interfaces/IDucklings.sol';
 
-contract Ducklings is
+contract DucklingsV1 is
 	Initializable,
 	IDucklings,
 	ERC721Upgradeable,

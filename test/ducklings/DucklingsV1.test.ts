@@ -6,18 +6,18 @@ import { ACCOUNT_MISSING_ROLE } from '../helpers/common';
 import { connectGroup } from '../helpers/connect';
 
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import type { Ducklings, TESTDucklingsV2 } from '../../typechain';
+import type { DucklingsV1, TESTDucklingsV2 } from '../../typechain';
 
-async function expectTokenExists(Ducklings: Ducklings, tokenId: number): Promise<void> {
+async function expectTokenExists(Ducklings: DucklingsV1, tokenId: number): Promise<void> {
   expect(await Ducklings.ownerOf(tokenId)).not.to.equal(AddressZero);
 }
 
-async function expectTokenNotExists(Ducklings: Ducklings, tokenId: number): Promise<void> {
+async function expectTokenNotExists(Ducklings: DucklingsV1, tokenId: number): Promise<void> {
   await expect(Ducklings.ownerOf(tokenId)).to.be.revertedWith(INVALID_TOKEN_ID);
 }
 
 async function expectDucklingHasGenome(
-  Ducklings: Ducklings,
+  Ducklings: DucklingsV1,
   tokenId: number,
   genome: bigint,
 ): Promise<void> {
@@ -40,7 +40,7 @@ const API_BASE_URL = 'test-url.com';
 const GENOME = 42n;
 const GENOME_2 = 422n;
 
-describe('Ducklings', () => {
+describe('DucklingsV1', () => {
   let Admin: SignerWithAddress;
   let Upgrader: SignerWithAddress;
   let Maintainer: SignerWithAddress;
@@ -48,9 +48,9 @@ describe('Ducklings', () => {
   let Someother: SignerWithAddress;
   let Game: SignerWithAddress;
 
-  let Ducklings: Ducklings;
-  let DucklingsAsSomeone: Ducklings;
-  let DucklingsAsGame: Ducklings;
+  let Ducklings: DucklingsV1;
+  let DucklingsAsSomeone: DucklingsV1;
+  let DucklingsAsGame: DucklingsV1;
 
   const mintTo = async (
     to: string,
@@ -65,8 +65,8 @@ describe('Ducklings', () => {
   });
 
   beforeEach(async () => {
-    const DucklingsFactory = await ethers.getContractFactory('Ducklings');
-    Ducklings = (await upgrades.deployProxy(DucklingsFactory, [], { kind: 'uups' })) as Ducklings;
+    const DucklingsFactory = await ethers.getContractFactory('DucklingsV1');
+    Ducklings = (await upgrades.deployProxy(DucklingsFactory, [], { kind: 'uups' })) as DucklingsV1;
     await Ducklings.deployed();
 
     await Ducklings.grantRole(UPGRADER_ROLE, Upgrader.address);
