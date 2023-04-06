@@ -1,18 +1,21 @@
 import { utils } from 'ethers';
 import { ethers, upgrades } from 'hardhat';
-import { expect } from 'chai';
+import { assert, expect } from 'chai';
 
 import { connectGroup } from '../../../helpers/connect';
 import { ACCOUNT_MISSING_ROLE } from '../../../helpers/common';
 
 import {
   Collections,
+  DucklingGenes,
   GeneDistrTypes,
   MAX_PECULIARITY,
+  Rarities,
   collectionsGeneValuesNum,
   generativeGenesOffset,
 } from './config';
 import { Genome } from './genome';
+import { randomGenome } from './helpers';
 
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import type {
@@ -41,7 +44,11 @@ describe('DuckyFamilyV1_0', () => {
   let GameAsMaintainer: DuckyFamilyV1_0;
   let GameAsSomeone: DuckyFamilyV1_0;
 
-  before(async () => {
+  const mintTo = async (to: string, genome: bigint): Promise<void> => {
+    await Ducklings.connect(GenomeSetter).mintTo(to, genome);
+  };
+
+  beforeEach(async () => {
     [Admin, Maintainer, Someone, Someother, GenomeSetter] = await ethers.getSigners();
 
     const DuckiesFactory = await ethers.getContractFactory('YellowToken');
@@ -69,6 +76,9 @@ describe('DuckyFamilyV1_0', () => {
       TreasureVault.address,
     )) as TESTDuckyFamilyV1_0;
     await Game.deployed();
+
+    await Duckies.connect(Someone).increaseAllowance(Game.address, 10_000_000_000);
+    await Duckies.connect(Someother).increaseAllowance(Game.address, 10_000_000_000);
 
     await Ducklings.grantRole(GAME_ROLE, Game.address);
     await Ducklings.grantRole(GAME_ROLE, GenomeSetter.address);
@@ -224,37 +234,36 @@ describe('DuckyFamilyV1_0', () => {
     describe('melding', () => {
       describe('meldGenes', () => {
         it('can meld', async () => {
-          await Ducklings.connect(GenomeSetter).mintTo(
+          await mintTo(
             Someone.address,
             // eslint-disable-next-line unicorn/numeric-separators-style
             182700775082802730930410854023168n,
           );
 
-          await Ducklings.connect(GenomeSetter).mintTo(
+          await mintTo(
             Someone.address,
             // eslint-disable-next-line unicorn/numeric-separators-style
             60926767771370839915004195766272n,
           );
 
-          await Ducklings.connect(GenomeSetter).mintTo(
+          await mintTo(
             Someone.address,
             // eslint-disable-next-line unicorn/numeric-separators-style
             121932763563511447839369064611840n,
           );
 
-          await Ducklings.connect(GenomeSetter).mintTo(
+          await mintTo(
             Someone.address,
             // eslint-disable-next-line unicorn/numeric-separators-style
             61164767845294952445087173574656n,
           );
 
-          await Ducklings.connect(GenomeSetter).mintTo(
+          await mintTo(
             Someone.address,
             // eslint-disable-next-line unicorn/numeric-separators-style
             162419591386637366713636064854016n,
           );
 
-          await Duckies.connect(Someone).increaseAllowance(Game.address, 10_000_000_000);
           await Game.connect(Someone).meldFlock([0, 1, 2, 3, 4]);
         });
 
@@ -271,20 +280,53 @@ describe('DuckyFamilyV1_0', () => {
         it('legendary can not mutate');
       });
 
-      describe('revert on melding rules not satisfied', () => {
-        it('on different collections');
+      describe('requireGenomesSatisfyMelding', () => {
+        it.only('success on melding Common Ducklings', async () => {
+          await (async () => {
+            for (let i = 0; i < 5; i++)
+              await mintTo(
+                Someone.address,
+                randomGenome(Collections.Duckling, {
+                  [DucklingGenes.Rarity]: Rarities.Common,
+                  [DucklingGenes.Color]: 0,
+                }),
+              );
+          })();
 
-        it('on different rarities');
+          try {
+            await Duckies.connect(Someone).increaseAllowance(Game.address, 10_000_000_000);
+            await GameAsSomeone.meldFlock([0, 1, 2, 3, 4]);
+            assert(true);
+          } catch {
+            assert(false);
+          }
+        });
 
-        it('on melding Mythic');
+        it('success on melding Rare Ducklings');
 
-        it('on melding legendary Zombeak');
+        it('success on melding Epic Ducklings');
 
-        it('on legendaries having different color');
+        it('success on melding Legendary Ducklings');
 
-        it('on legendaries having repeated families');
+        it('success on melding Common Zombeak');
 
-        it('on not legendary having different color and different family');
+        it('success on melding Rare Zombeak');
+
+        it('success on melding Epic Zombeak');
+
+        it('revert on melding different collections');
+
+        it('revert on melding different rarities');
+
+        it('revert on melding melding Mythic');
+
+        it('revert on melding melding legendary Zombeak');
+
+        it('revert on melding legendaries having different color');
+
+        it('revert on melding legendaries having repeated families');
+
+        it('revert on melding not legendary having different color and different family');
       });
 
       describe('meldFlock', () => {
