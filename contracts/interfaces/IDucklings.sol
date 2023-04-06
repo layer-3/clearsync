@@ -12,7 +12,16 @@ interface IDucklings is IERC721Upgradeable {
 	}
 
 	// events
-	event Minted(address to, uint256 tokenId, uint256 genome, uint64 birthdate, uint256 chainId);
+	event Minted(
+		address to,
+		uint256 tokenId,
+		bool isTransferable,
+		uint256 genome,
+		uint64 birthdate,
+		uint256 chainId
+	);
+
+	event TransferableSet(uint256 tokenId, bool isTransferable);
 
 	function isOwnerOf(address account, uint256 tokenIds) external view returns (bool);
 
@@ -24,7 +33,7 @@ interface IDucklings is IERC721Upgradeable {
 
 	function setTransferable(uint256 tokenId, bool isTransferable) external;
 
-	function mintTo(address to, uint256 genome) external returns (uint256);
+	function mintTo(address to, uint256 genome, bool isTransferable) external returns (uint256);
 
 	function burn(uint256 tokenId) external;
 

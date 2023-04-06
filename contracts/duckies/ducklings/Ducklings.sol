@@ -160,6 +160,8 @@ contract Ducklings is
 		if (!_exists(tokenId)) revert InvalidTokenId(tokenId);
 
 		isTokenNotTransferable[tokenId] = !isTransferable;
+
+		emit TransferableSet(tokenId, isTransferable);
 	}
 
 	function _beforeTokenTransfer(
@@ -176,16 +178,20 @@ contract Ducklings is
 
 	function mintTo(
 		address to,
-		uint256 genome
+		uint256 genome,
+		bool isTransferable
 	) external onlyRole(GAME_ROLE) returns (uint256 tokenId) {
 		tokenId = nextNewTokenId.current();
 		uint64 birthdate = uint64(block.timestamp);
 		tokenToDuckling[tokenId] = Duckling(genome, birthdate);
 
 		_safeMint(to, tokenId);
+		// no need to check if token exists, it has been just minted
+		isTokenNotTransferable[tokenId] = !isTransferable;
 
 		nextNewTokenId.increment();
-		emit Minted(to, tokenId, genome, birthdate, block.chainid);
+		emit Minted(to, tokenId, isTransferable, genome, birthdate, block.chainid);
+		emit TransferableSet(tokenId, isTransferable);
 	}
 
 	function burn(uint256 tokenId) external onlyRole(GAME_ROLE) {
