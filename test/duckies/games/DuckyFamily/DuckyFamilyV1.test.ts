@@ -29,7 +29,7 @@ import type {
 const GAME_ROLE = utils.id('GAME_ROLE');
 const MAINTAINER_ROLE = utils.id('MAINTAINER_ROLE');
 
-describe('DuckyFamilyV1_0', () => {
+describe('DuckyFamilyV1', () => {
   let Admin: SignerWithAddress;
   let Maintainer: SignerWithAddress;
   let Someone: SignerWithAddress;
