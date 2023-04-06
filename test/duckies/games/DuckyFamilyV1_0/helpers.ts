@@ -4,15 +4,16 @@ import {
   MythicGenes,
   collectionGeneIdx,
   collectionsGeneValuesNum,
+  generativeGenesOffset,
   mythicAmount,
   raritiesNum,
   rarityGeneIdx,
 } from './config';
 import { Genome } from './genome';
 
-type RandomGenomeConfig = Record<Genes, number>;
+type RandomGenomeConfig = { [key in Genes]?: number };
 
-const randomMaxNum = (maxNum: number): number => Math.round(Math.random() * maxNum);
+export const randomMaxNum = (maxNum: number): number => Math.floor(Math.random() * (maxNum + 1));
 
 export function randomGenome(collectionId: Collections, config?: RandomGenomeConfig): bigint {
   const genome = new Genome();
@@ -31,14 +32,14 @@ export function randomGenome(collectionId: Collections, config?: RandomGenomeCon
   const geneValuesNum = collectionsGeneValuesNum[collectionId];
 
   for (const [i, geneValues] of geneValuesNum.entries()) {
-    let geneValue;
-    if (config?.[i as Genes]) {
-      geneValue = config[i as Genes];
-    } else {
+    let geneValue = 0;
+    if (config?.[i as Genes] === undefined) {
       geneValue = randomMaxNum(geneValues);
+      genome.setGene(i + generativeGenesOffset, geneValue);
+    } else {
+      geneValue = config[i as Genes] as unknown as number;
+      genome.setGene(i, geneValue);
     }
-
-    genome.setGene(i, geneValue);
   }
 
   return genome.genome;
