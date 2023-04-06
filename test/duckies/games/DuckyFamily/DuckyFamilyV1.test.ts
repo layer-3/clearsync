@@ -20,8 +20,8 @@ import { randomGenome } from './helpers';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import type {
   Ducklings,
-  DuckyFamilyV1_0,
-  TESTDuckyFamilyV1_0,
+  DuckyFamilyV1,
+  TESTDuckyFamilyV1,
   TreasureVault,
   YellowToken,
 } from '../../../../typechain';
@@ -39,10 +39,10 @@ describe('DuckyFamilyV1_0', () => {
   let Duckies: YellowToken;
   let Ducklings: Ducklings;
   let TreasureVault: TreasureVault;
-  let Game: TESTDuckyFamilyV1_0;
+  let Game: TESTDuckyFamilyV1;
 
-  let GameAsMaintainer: DuckyFamilyV1_0;
-  let GameAsSomeone: DuckyFamilyV1_0;
+  let GameAsMaintainer: DuckyFamilyV1;
+  let GameAsSomeone: DuckyFamilyV1;
 
   const mintTo = async (to: string, genome: bigint, isTransferable?: boolean): Promise<void> => {
     await Ducklings.connect(GenomeSetter).mintTo(to, genome, isTransferable ?? true);
@@ -69,12 +69,12 @@ describe('DuckyFamilyV1_0', () => {
     })) as TreasureVault;
     await TreasureVault.deployed();
 
-    const DuckyFamilyFactory = await ethers.getContractFactory('TESTDuckyFamilyV1_0');
+    const DuckyFamilyFactory = await ethers.getContractFactory('TESTDuckyFamilyV1');
     Game = (await DuckyFamilyFactory.deploy(
       Duckies.address,
       Ducklings.address,
       TreasureVault.address,
-    )) as TESTDuckyFamilyV1_0;
+    )) as TESTDuckyFamilyV1;
     await Game.deployed();
 
     await Duckies.connect(Someone).increaseAllowance(Game.address, 10_000_000_000);

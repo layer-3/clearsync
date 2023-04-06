@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.18;
 
-import '../DuckyFamilyV1_0.sol';
+import '../DuckyFamilyV1.sol';
 
-contract TESTDuckyFamilyV1_0 is DuckyFamilyV1_0 {
+contract TESTDuckyFamilyV1 is DuckyFamilyV1 {
 	event GenomeReturned(uint256 genome);
 	event GeneReturned(uint8 gene);
 	event BoolReturned(bool returnedBool);
@@ -13,7 +13,7 @@ contract TESTDuckyFamilyV1_0 is DuckyFamilyV1_0 {
 		address duckiesAddress,
 		address ducklingsAddress,
 		address treasureVaultAddress
-	) DuckyFamilyV1_0(duckiesAddress, ducklingsAddress, treasureVaultAddress) {}
+	) DuckyFamilyV1(duckiesAddress, ducklingsAddress, treasureVaultAddress) {}
 
 	function generateGenome(uint8 collectionId) external {
 		emit GenomeReturned(_generateGenome(collectionId));

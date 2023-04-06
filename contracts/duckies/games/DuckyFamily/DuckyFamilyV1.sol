@@ -11,7 +11,7 @@ import '../../../interfaces/IDucklings.sol';
 import '../Random.sol';
 import '../Genome.sol';
 
-contract DuckyFamilyV1_0 is IVoucher, AccessControl, Random {
+contract DuckyFamilyV1 is IVoucher, AccessControl, Random {
 	using Genome for uint256;
 	using ECDSA for bytes32;
 
