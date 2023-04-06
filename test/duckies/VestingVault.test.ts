@@ -17,7 +17,7 @@ describe("TokenVesting", function () {
     erc20 = await ERC20.deploy("TestToken", "TTK");
     await erc20.deployed();
 
-    TokenVesting = await ethers.getContractFactory("TokenVesting");
+    TokenVesting = await ethers.getContractFactory("VestingVault");
     tokenVesting = await TokenVesting.deploy(erc20.address);
     await tokenVesting.deployed();
 
