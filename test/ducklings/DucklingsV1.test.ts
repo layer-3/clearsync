@@ -60,6 +60,14 @@ describe('DucklingsV1', () => {
     return await Ducklings.connect(Game).mintTo(to, genome, isTransferable ?? true);
   };
 
+  const mintBatchTo = async (
+    to: string,
+    genomes: bigint[],
+    isTransferable?: boolean,
+  ): Promise<ContractTransaction> => {
+    return await Ducklings.connect(Game).mintBatchTo(to, genomes, isTransferable ?? true);
+  };
+
   before(async () => {
     [Admin, Upgrader, Maintainer, Someone, Someother, Game] = await ethers.getSigners();
   });
@@ -222,7 +230,7 @@ describe('DucklingsV1', () => {
       });
     });
 
-    describe('minting', () => {
+    describe('mintTo', () => {
       it('Game can mint', async () => {
         try {
           await mintTo(Someone.address, GENOME);
@@ -290,6 +298,96 @@ describe('DucklingsV1', () => {
         const tx = await mintTo(Someone.address, GENOME, isTokenTransferable);
 
         await expect(tx).to.emit(Ducklings, 'TransferableSet').withArgs(0, isTokenTransferable);
+      });
+    });
+
+    describe.only('mintBatchTo', () => {
+      it('Game can mint', async () => {
+        try {
+          await mintBatchTo(Someone.address, [GENOME, GENOME_2]);
+          assert(true);
+        } catch {
+          assert(false);
+        }
+      });
+
+      it('revert on not Game minting', async () => {
+        await expect(
+          DucklingsAsSomeone.mintBatchTo(Someone.address, [GENOME, GENOME_2], true),
+        ).to.be.rejectedWith(ACCOUNT_MISSING_ROLE(Someone.address, GAME_ROLE));
+      });
+
+      it('genomes are set to NFTs', async () => {
+        await mintBatchTo(Someone.address, [GENOME, GENOME_2]);
+        await expectDucklingHasGenome(Ducklings, 0, GENOME);
+        await expectDucklingHasGenome(Ducklings, 1, GENOME_2);
+      });
+
+      it('NFTs birthdate is block timestamp', async () => {
+        await mintBatchTo(Someone.address, [GENOME, GENOME_2]);
+        const Duckling1 = await Ducklings.tokenToDuckling(0);
+        const Duckling2 = await Ducklings.tokenToDuckling(0);
+
+        const latestBlock = await ethers.provider.getBlock('latest');
+
+        expect(Duckling1.birthdate).to.equal(latestBlock.timestamp);
+        expect(Duckling2.birthdate).to.equal(latestBlock.timestamp);
+      });
+
+      it('NFTs id are incremental', async () => {
+        await mintBatchTo(Someone.address, [GENOME, GENOME_2]);
+        await expectTokenExists(Ducklings, 0);
+        await expectTokenExists(Ducklings, 1);
+        await expectTokenNotExists(Ducklings, 2);
+
+        await expectDucklingHasGenome(Ducklings, 0, GENOME);
+        await expectDucklingHasGenome(Ducklings, 1, GENOME_2);
+
+        // mint once more
+        await mintTo(Someone.address, GENOME_2);
+        await expectTokenExists(Ducklings, 0);
+        await expectTokenExists(Ducklings, 1);
+        await expectTokenExists(Ducklings, 2);
+        await expectTokenNotExists(Ducklings, 3);
+
+        await expectDucklingHasGenome(Ducklings, 2, GENOME_2);
+      });
+
+      it('Mint events are emitted', async () => {
+        const { chainId } = await ethers.provider.getNetwork();
+        const isTokenTransferable = true;
+        const tx = await mintBatchTo(Someone.address, [GENOME, GENOME_2], isTokenTransferable);
+        const latestBlock = await ethers.provider.getBlock('latest');
+
+        await expect(tx)
+          .to.emit(Ducklings, 'Minted')
+          .withArgs(
+            Someone.address,
+            0,
+            isTokenTransferable,
+            GENOME,
+            latestBlock.timestamp,
+            chainId,
+          );
+
+        await expect(tx)
+          .to.emit(Ducklings, 'Minted')
+          .withArgs(
+            Someone.address,
+            1,
+            isTokenTransferable,
+            GENOME_2,
+            latestBlock.timestamp,
+            chainId,
+          );
+      });
+
+      it('TransferableSet events are emitted', async () => {
+        const isTokenTransferable = true;
+        const tx = await mintBatchTo(Someone.address, [GENOME, GENOME_2], isTokenTransferable);
+
+        await expect(tx).to.emit(Ducklings, 'TransferableSet').withArgs(0, isTokenTransferable);
+        await expect(tx).to.emit(Ducklings, 'TransferableSet').withArgs(1, isTokenTransferable);
       });
     });
 

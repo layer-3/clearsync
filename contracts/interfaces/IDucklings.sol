@@ -35,6 +35,12 @@ interface IDucklings is IERC721Upgradeable {
 
 	function mintTo(address to, uint256 genome, bool isTransferable) external returns (uint256);
 
+	function mintBatchTo(
+		address to,
+		uint256[] calldata genomes,
+		bool isTransferable
+	) external returns (uint256[] memory);
+
 	function burn(uint256 tokenId) external;
 
 	function burn(uint256[] calldata tokenIds) external;

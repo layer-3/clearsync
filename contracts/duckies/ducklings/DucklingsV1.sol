@@ -181,6 +181,25 @@ contract DucklingsV1 is
 		uint256 genome,
 		bool isTransferable
 	) external onlyRole(GAME_ROLE) returns (uint256 tokenId) {
+		return _mintTo(to, genome, isTransferable);
+	}
+
+	function mintBatchTo(
+		address to,
+		uint256[] calldata genomes,
+		bool isTransferable
+	) external onlyRole(GAME_ROLE) returns (uint256[] memory tokenIds) {
+		tokenIds = new uint256[](genomes.length);
+		for (uint8 i = 0; i < genomes.length; i++) {
+			tokenIds[i] = _mintTo(to, genomes[i], isTransferable);
+		}
+	}
+
+	function _mintTo(
+		address to,
+		uint256 genome,
+		bool isTransferable
+	) internal returns (uint256 tokenId) {
 		tokenId = nextNewTokenId.current();
 		uint64 birthdate = uint64(block.timestamp);
 		tokenToDuckling[tokenId] = Duckling(genome, birthdate);
