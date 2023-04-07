@@ -422,7 +422,7 @@ contract DuckyFamilyV1 is IVoucher, AccessControl, Random {
 		uint256[] memory meldingGenomes = ducklingsContract.getGenomes(meldingTokenIds);
 		_requireGenomesSatisfyMelding(meldingGenomes);
 
-		ducklingsContract.burn(meldingTokenIds);
+		ducklingsContract.burnBatch(meldingTokenIds);
 
 		uint256 meldedGenome = _meldGenomes(meldingGenomes);
 		uint256 meldedTokenId = ducklingsContract.mintTo(owner, meldedGenome, isTransferable);

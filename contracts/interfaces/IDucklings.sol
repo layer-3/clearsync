@@ -43,5 +43,5 @@ interface IDucklings is IERC721Upgradeable {
 
 	function burn(uint256 tokenId) external;
 
-	function burn(uint256[] calldata tokenIds) external;
+	function burnBatch(uint256[] calldata tokenIds) external;
 }

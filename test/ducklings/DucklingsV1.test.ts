@@ -6,7 +6,7 @@ import { ACCOUNT_MISSING_ROLE } from '../helpers/common';
 import { connectGroup } from '../helpers/connect';
 
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import type { DucklingsV1, TESTDucklingsV2 } from '../../typechain';
+import type { DucklingsV1, TESTDucklingsV2 } from '../../typechain-types';
 
 async function expectTokenExists(Ducklings: DucklingsV1, tokenId: number): Promise<void> {
   expect(await Ducklings.ownerOf(tokenId)).not.to.equal(AddressZero);
@@ -215,7 +215,7 @@ describe('DucklingsV1', () => {
         await DucklingsAsGame.setTransferable(0, false);
 
         try {
-          await DucklingsAsGame['burn(uint256)'](0);
+          await DucklingsAsGame.burn(0);
           assert(true);
         } catch {
           assert(false);
@@ -301,7 +301,7 @@ describe('DucklingsV1', () => {
       });
     });
 
-    describe.only('mintBatchTo', () => {
+    describe('mintBatchTo', () => {
       it('Game can mint', async () => {
         try {
           await mintBatchTo(Someone.address, [GENOME, GENOME_2]);
@@ -394,41 +394,50 @@ describe('DucklingsV1', () => {
     describe('burn', () => {
       it('Game can burn 1 token', async () => {
         await mintTo(Someone.address, GENOME);
-        await DucklingsAsGame['burn(uint256)'](0);
+        await DucklingsAsGame.burn(0);
         await expectTokenNotExists(Ducklings, 0);
+      });
+
+      it('revert on not Game burning', async () => {
+        await expect(DucklingsAsSomeone.burn(0)).to.be.revertedWith(
+          ACCOUNT_MISSING_ROLE(Someone.address, GAME_ROLE),
+        );
       });
 
       it('revert on Game burning unexisting token', async () => {
-        await expect(DucklingsAsGame['burn(uint256)'](0)).to.be.revertedWith(INVALID_TOKEN_ID);
+        await expect(DucklingsAsGame.burn(0)).to.be.revertedWith(INVALID_TOKEN_ID);
       });
+    });
 
+    describe('burnBatch', () => {
       it('Game can burn several tokens of the same owner', async () => {
-        await mintTo(Someone.address, GENOME);
-        await mintTo(Someone.address, GENOME_2);
-        await DucklingsAsGame['burn(uint256[])']([0, 1]);
+        await mintBatchTo(Someone.address, [GENOME, GENOME_2]);
+        await DucklingsAsGame.burnBatch([0, 1]);
         await expectTokenNotExists(Ducklings, 0);
         await expectTokenNotExists(Ducklings, 1);
+      });
+
+      it('revert on not Game burning', async () => {
+        await expect(DucklingsAsSomeone.burnBatch([0, 1])).to.be.revertedWith(
+          ACCOUNT_MISSING_ROLE(Someone.address, GAME_ROLE),
+        );
       });
 
       it('Game can burn several tokens of the different owners', async () => {
         await mintTo(Someone.address, GENOME);
         await mintTo(Someother.address, GENOME_2);
-        await DucklingsAsGame['burn(uint256[])']([0, 1]);
+        await DucklingsAsGame.burnBatch([0, 1]);
         await expectTokenNotExists(Ducklings, 0);
         await expectTokenNotExists(Ducklings, 1);
       });
 
       it('revert on Game burning tokens with one unexisting', async () => {
         await mintTo(Someone.address, GENOME);
-        await expect(DucklingsAsGame['burn(uint256[])']([0, 1])).to.be.revertedWith(
-          INVALID_TOKEN_ID,
-        );
+        await expect(DucklingsAsGame.burnBatch([0, 1])).to.be.revertedWith(INVALID_TOKEN_ID);
       });
 
       it('revert on Game burning unexisting tokens', async () => {
-        await expect(DucklingsAsGame['burn(uint256[])']([0, 1])).to.be.revertedWith(
-          INVALID_TOKEN_ID,
-        );
+        await expect(DucklingsAsGame.burnBatch([0, 1])).to.be.revertedWith(INVALID_TOKEN_ID);
       });
     });
   });

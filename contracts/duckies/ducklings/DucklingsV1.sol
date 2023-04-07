@@ -217,7 +217,7 @@ contract DucklingsV1 is
 		_burn(tokenId);
 	}
 
-	function burn(uint256[] calldata tokenIds) external onlyRole(GAME_ROLE) {
+	function burnBatch(uint256[] calldata tokenIds) external onlyRole(GAME_ROLE) {
 		for (uint256 i = 0; i < tokenIds.length; i++) _burn(tokenIds[i]);
 	}
 }
