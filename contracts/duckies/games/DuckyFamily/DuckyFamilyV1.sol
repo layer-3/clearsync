@@ -298,18 +298,28 @@ contract DuckyFamilyV1 is IVoucher, AccessControl, Random {
 		address to,
 		uint8 amount,
 		bool isTransferable
-	) internal returns (uint256[] memory) {
+	) internal returns (uint256[] memory tokenIds) {
 		if (amount == 0 || amount > MAX_PACK_SIZE)
 			revert MintingRulesViolated(ducklingCollectionId, amount);
 
-		uint256[] memory newTokenIds = new uint256[](amount);
+		if (amount == 1) {
+			uint256 tokenId = ducklingsContract.mintTo(
+				to,
+				_generateGenome(ducklingCollectionId),
+				isTransferable
+			);
+			tokenIds = new uint256[](1);
+			tokenIds[0] = tokenId;
+		} else {
+			tokenIds = new uint256[](amount);
+			uint256[] memory tokenGenomes = new uint256[](amount);
 
-		for (uint256 i = 0; i < amount; i++) {
-			uint256 genome = _generateGenome(ducklingCollectionId);
-			newTokenIds[i] = ducklingsContract.mintTo(to, genome, isTransferable);
+			for (uint256 i = 0; i < amount; i++) {
+				tokenGenomes[i] = _generateGenome(ducklingCollectionId);
+			}
+
+			tokenIds = ducklingsContract.mintBatchTo(to, tokenGenomes, isTransferable);
 		}
-
-		return newTokenIds;
 	}
 
 	function _generateGenome(uint8 collectionId) internal returns (uint256) {
