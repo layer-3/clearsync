@@ -66,6 +66,8 @@ contract DuckyFamilyV1 is IVoucher, AccessControl, Random {
 	uint8 internal constant zombeakCollectionId = 1;
 	uint8 internal constant mythicCollectionId = 2;
 
+	uint8 internal constant RARITIES_NUM = 4;
+
 	enum Rarities {
 		Common,
 		Rare,
@@ -136,7 +138,7 @@ contract DuckyFamilyV1 is IVoucher, AccessControl, Random {
 	address public treasureVaultAddress;
 
 	uint256 public mintPrice;
-	uint256[] public meldPrices; // [0] - melding Commons, [1] - melding Rares...
+	uint256[RARITIES_NUM] public meldPrices; // [0] - melding Commons, [1] - melding Rares...
 
 	// ------- Initializer -------
 
@@ -240,15 +242,19 @@ contract DuckyFamilyV1 is IVoucher, AccessControl, Random {
 	// -------- Config --------
 
 	function setMintPrice(uint256 price) external onlyRole(MAINTAINER_ROLE) {
-		mintPrice = price;
+		mintPrice = price * 10 ** duckiesContract.decimals();
 	}
 
-	function getMeldPrices() external view returns (uint256[] memory) {
+	function getMeldPrices() external view returns (uint256[RARITIES_NUM] memory) {
 		return meldPrices;
 	}
 
-	function setMeldPrices(uint256[] calldata prices) external onlyRole(MAINTAINER_ROLE) {
-		meldPrices = prices;
+	function setMeldPrices(
+		uint256[RARITIES_NUM] calldata prices
+	) external onlyRole(MAINTAINER_ROLE) {
+		for (uint8 i = 0; i < RARITIES_NUM; i++) {
+			meldPrices[i] = prices[i] * 10 ** duckiesContract.decimals();
+		}
 	}
 
 	function getCollectionsGeneValues() external view returns (uint8[][2] memory, uint8) {
