@@ -237,7 +237,7 @@ contract DuckyFamilyV1 is IVoucher, AccessControl, Random {
 		if (actualSigner != signer) revert IncorrectSigner(signer, actualSigner);
 	}
 
-	// -------- Price --------
+	// -------- Config --------
 
 	function setMintPrice(uint256 price) external onlyRole(MAINTAINER_ROLE) {
 		mintPrice = price;
@@ -250,8 +250,6 @@ contract DuckyFamilyV1 is IVoucher, AccessControl, Random {
 	function setMeldPrices(uint256[] calldata prices) external onlyRole(MAINTAINER_ROLE) {
 		meldPrices = prices;
 	}
-
-	// -------- Config --------
 
 	function getCollectionsGeneValues() external view returns (uint8[][2] memory, uint8) {
 		return (collectionsGeneValuesNum, mythicAmount);
@@ -285,6 +283,10 @@ contract DuckyFamilyV1 is IVoucher, AccessControl, Random {
 		uint32 zombeakGeneDistrTypes
 	) external onlyRole(DEFAULT_ADMIN_ROLE) {
 		collectionsGeneDistributionTypes[1] = zombeakGeneDistrTypes;
+	}
+
+	function setMythicAmount(uint8 amount) external onlyRole(DEFAULT_ADMIN_ROLE) {
+		mythicAmount = amount;
 	}
 
 	// ------- Mint -------
