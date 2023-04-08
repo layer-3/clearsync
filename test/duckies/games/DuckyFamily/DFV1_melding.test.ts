@@ -1,7 +1,7 @@
-import { assert } from 'chai';
+import { assert, expect } from 'chai';
 
-import { Collections, DucklingGenes, Rarities, ZombeakGenes } from './config';
-import { RandomGenomeConfig, randomGenome } from './helpers';
+import { Collections, DucklingGenes, FLOCK_SIZE, Rarities, ZombeakGenes } from './config';
+import { RandomGenomeConfig, randomGenome, randomGenomes } from './helpers';
 import { setup } from './setup';
 
 import type { ContractTransaction } from 'ethers';
@@ -53,14 +53,16 @@ describe('DuckyFamilyV1 melding', () => {
     genomes: bigint[];
   }
 
-  const generateAndMintGenomesForMelding = async (
+  const generateAndMintGenomes = async (
     collection: Collections,
-    config?: RandomGenomeConfig,
+    config?: RandomGenomeConfig & { amount?: number },
   ): Promise<TokenIdsAndGenomes> => {
     const tokenIds: number[] = [];
     const genomes: bigint[] = [];
 
-    for (let i = 0; i < 5; i++) {
+    const amount = config?.amount ?? 5;
+
+    for (let i = 0; i < amount; i++) {
       const tokenIdAndGenome = await extractMintedTokenId(
         await mintTo(Someone.address, randomGenome(collection, config)),
       );
@@ -119,106 +121,270 @@ describe('DuckyFamilyV1 melding', () => {
     it('legendary can not mutate');
   });
 
-  describe('requireGenomesSatisfyMelding', () => {
+  describe.only('requireGenomesSatisfyMelding', () => {
     it('success on Common Duckling', async () => {
-      const tokenIdsAndGenomes = await generateAndMintGenomesForMelding(Collections.Duckling, {
+      const genomes = randomGenomes(Collections.Duckling, {
+        amount: FLOCK_SIZE,
         [DucklingGenes.Rarity]: Rarities.Common,
         [DucklingGenes.Color]: 0,
       });
 
-      await Game.requireGenomesSatisfyMelding(tokenIdsAndGenomes.genomes);
+      await Game.requireGenomesSatisfyMelding(genomes);
     });
 
     it('success on Rare Duckling', async () => {
-      const tokenIdsAndGenomes = await generateAndMintGenomesForMelding(Collections.Duckling, {
+      const genomes = randomGenomes(Collections.Duckling, {
+        amount: FLOCK_SIZE,
         [DucklingGenes.Rarity]: Rarities.Rare,
         [DucklingGenes.Color]: 0,
         [DucklingGenes.Family]: 0,
       });
 
-      await Game.requireGenomesSatisfyMelding(tokenIdsAndGenomes.genomes);
+      await Game.requireGenomesSatisfyMelding(genomes);
     });
 
     it('success on Epic Duckling', async () => {
-      const tokenIdsAndGenomes = await generateAndMintGenomesForMelding(Collections.Duckling, {
+      const genomes = randomGenomes(Collections.Duckling, {
         [DucklingGenes.Rarity]: Rarities.Epic,
         [DucklingGenes.Color]: 0,
         [DucklingGenes.Family]: 0,
       });
 
-      await Game.requireGenomesSatisfyMelding(tokenIdsAndGenomes.genomes);
+      await Game.requireGenomesSatisfyMelding(genomes);
     });
 
     it('success on Legendary Duckling', async () => {
-      const genomes: bigint[] = [];
-      await (async () => {
-        for (let i = 0; i < 5; i++) {
-          const tokenIdAndGenome = await extractMintedTokenId(
-            await mintTo(
-              Someone.address,
-              randomGenome(Collections.Duckling, {
-                [DucklingGenes.Rarity]: Rarities.Legendary,
-                [DucklingGenes.Color]: 1,
-                [DucklingGenes.Family]: i,
-              }),
-            ),
-          );
-          genomes.push(tokenIdAndGenome.genome);
-        }
-      })();
+      const genomes = [];
+
+      for (let i = 0; i < FLOCK_SIZE; i++) {
+        genomes.push(
+          randomGenome(Collections.Duckling, {
+            [DucklingGenes.Rarity]: Rarities.Legendary,
+            [DucklingGenes.Color]: 0,
+            // all families
+            [DucklingGenes.Family]: i,
+          }),
+        );
+      }
 
       await Game.requireGenomesSatisfyMelding(genomes);
     });
 
     it('success on Common Zombeak', async () => {
-      const tokenIdsAndGenomes = await generateAndMintGenomesForMelding(Collections.Zombeak, {
+      const genomes = randomGenomes(Collections.Zombeak, {
+        amount: FLOCK_SIZE,
         [ZombeakGenes.Rarity]: Rarities.Common,
         [ZombeakGenes.Color]: 0,
       });
 
-      await Game.requireGenomesSatisfyMelding(tokenIdsAndGenomes.genomes);
+      await Game.requireGenomesSatisfyMelding(genomes);
     });
 
     it('success on Rare Zombeak', async () => {
-      const tokenIdsAndGenomes = await generateAndMintGenomesForMelding(Collections.Zombeak, {
+      const genomes = randomGenomes(Collections.Zombeak, {
+        amount: FLOCK_SIZE,
         [ZombeakGenes.Rarity]: Rarities.Rare,
         [ZombeakGenes.Color]: 0,
         [ZombeakGenes.Family]: 0,
       });
 
-      await Game.requireGenomesSatisfyMelding(tokenIdsAndGenomes.genomes);
+      await Game.requireGenomesSatisfyMelding(genomes);
     });
 
     it('success on Epic Zombeak', async () => {
-      const tokenIdsAndGenomes = await generateAndMintGenomesForMelding(Collections.Zombeak, {
+      const genomes = randomGenomes(Collections.Zombeak, {
+        amount: FLOCK_SIZE,
         [ZombeakGenes.Rarity]: Rarities.Epic,
         [ZombeakGenes.Color]: 0,
         [ZombeakGenes.Family]: 0,
       });
 
-      await Game.requireGenomesSatisfyMelding(tokenIdsAndGenomes.genomes);
+      await Game.requireGenomesSatisfyMelding(genomes);
     });
 
-    it('revert on different collections');
+    it('revert on different collections', async () => {
+      const genomes = randomGenomes(Collections.Duckling, {
+        amount: FLOCK_SIZE - 1,
+        [DucklingGenes.Rarity]: Rarities.Common,
+        [DucklingGenes.Color]: 0,
+      });
 
-    it('revert on different rarities');
+      genomes.push(
+        randomGenome(Collections.Zombeak, {
+          [ZombeakGenes.Rarity]: Rarities.Common,
+          [ZombeakGenes.Color]: 0,
+        }),
+      );
 
-    it('revert on Mythic');
+      await expect(Game.requireGenomesSatisfyMelding(genomes))
+        .to.be.revertedWithCustomError(Game, 'IncorrectGenomesForMelding')
+        .withArgs(genomes);
+    });
 
-    it('revert on legendary Zombeak');
+    it('revert on different rarities', async () => {
+      const genomes = randomGenomes(Collections.Duckling, {
+        amount: FLOCK_SIZE - 1,
+        [DucklingGenes.Rarity]: Rarities.Common,
+        [DucklingGenes.Color]: 0,
+      });
 
-    it('revert on legendaries having different color');
+      genomes.push(
+        randomGenome(Collections.Duckling, {
+          [DucklingGenes.Rarity]: Rarities.Rare,
+          [DucklingGenes.Color]: 0,
+        }),
+      );
 
-    it('revert on legendaries having repeated families');
+      await expect(Game.requireGenomesSatisfyMelding(genomes))
+        .to.be.revertedWithCustomError(Game, 'IncorrectGenomesForMelding')
+        .withArgs(genomes);
+    });
 
-    it('revert on not legendary having different color and different family');
+    it('revert on Mythic', async () => {
+      const genomes = randomGenomes(Collections.Mythic);
+
+      await expect(Game.requireGenomesSatisfyMelding(genomes))
+        .to.be.revertedWithCustomError(Game, 'IncorrectGenomesForMelding')
+        .withArgs(genomes);
+    });
+
+    it('revert on Legendary Zombeak', async () => {
+      const genomes = randomGenomes(Collections.Zombeak, {
+        amount: FLOCK_SIZE,
+        [ZombeakGenes.Rarity]: Rarities.Legendary,
+        [ZombeakGenes.Color]: 0,
+        [ZombeakGenes.Family]: 0,
+      });
+
+      await expect(Game.requireGenomesSatisfyMelding(genomes))
+        .to.be.revertedWithCustomError(Game, 'IncorrectGenomesForMelding')
+        .withArgs(genomes);
+    });
+
+    it('revert on Legendaries having different color', async () => {
+      const genomes = [];
+
+      for (let i = 0; i < FLOCK_SIZE; i++) {
+        genomes.push(
+          randomGenome(Collections.Duckling, {
+            [ZombeakGenes.Rarity]: Rarities.Legendary,
+            // different colors
+            [ZombeakGenes.Color]: i,
+            [ZombeakGenes.Family]: i,
+          }),
+        );
+      }
+
+      await expect(Game.requireGenomesSatisfyMelding(genomes))
+        .to.be.revertedWithCustomError(Game, 'IncorrectGenomesForMelding')
+        .withArgs(genomes);
+    });
+
+    it('revert on Legendaries having repeated families', async () => {
+      const genomes = [];
+
+      for (let i = 0; i < FLOCK_SIZE; i++) {
+        genomes.push(
+          randomGenome(Collections.Duckling, {
+            [ZombeakGenes.Rarity]: Rarities.Legendary,
+            [ZombeakGenes.Color]: 0,
+            // repeated families
+            [ZombeakGenes.Family]: 0,
+          }),
+        );
+      }
+
+      await expect(Game.requireGenomesSatisfyMelding(genomes))
+        .to.be.revertedWithCustomError(Game, 'IncorrectGenomesForMelding')
+        .withArgs(genomes);
+    });
+
+    it('revert on Epic having different color', async () => {
+      const genomes = randomGenomes(Collections.Duckling, {
+        amount: FLOCK_SIZE,
+        [DucklingGenes.Rarity]: Rarities.Epic,
+        [DucklingGenes.Color]: 0,
+        [DucklingGenes.Family]: 0,
+      });
+
+      // different color
+      genomes[0] = randomGenome(Collections.Duckling, {
+        [DucklingGenes.Rarity]: Rarities.Epic,
+        [DucklingGenes.Color]: 1,
+        [DucklingGenes.Family]: 0,
+      });
+
+      await expect(Game.requireGenomesSatisfyMelding(genomes))
+        .to.be.revertedWithCustomError(Game, 'IncorrectGenomesForMelding')
+        .withArgs(genomes);
+    });
+
+    it('revert on Epic having different family', async () => {
+      const genomes = randomGenomes(Collections.Duckling, {
+        amount: FLOCK_SIZE,
+        [DucklingGenes.Rarity]: Rarities.Epic,
+        [DucklingGenes.Color]: 0,
+        [DucklingGenes.Family]: 0,
+      });
+
+      // different family
+      genomes[0] = randomGenome(Collections.Duckling, {
+        [DucklingGenes.Rarity]: Rarities.Epic,
+        [DucklingGenes.Color]: 0,
+        [DucklingGenes.Family]: 1,
+      });
+
+      await expect(Game.requireGenomesSatisfyMelding(genomes))
+        .to.be.revertedWithCustomError(Game, 'IncorrectGenomesForMelding')
+        .withArgs(genomes);
+    });
+
+    it('revert on Rare having different color', async () => {
+      const genomes = randomGenomes(Collections.Duckling, {
+        amount: FLOCK_SIZE,
+        [DucklingGenes.Rarity]: Rarities.Rare,
+        [DucklingGenes.Color]: 0,
+        [DucklingGenes.Family]: 0,
+      });
+
+      // different color
+      genomes[0] = randomGenome(Collections.Duckling, {
+        [DucklingGenes.Rarity]: Rarities.Rare,
+        [DucklingGenes.Color]: 1,
+        [DucklingGenes.Family]: 0,
+      });
+
+      await expect(Game.requireGenomesSatisfyMelding(genomes))
+        .to.be.revertedWithCustomError(Game, 'IncorrectGenomesForMelding')
+        .withArgs(genomes);
+    });
+
+    it('revert on Rare having different family', async () => {
+      const genomes = randomGenomes(Collections.Duckling, {
+        amount: FLOCK_SIZE,
+        [DucklingGenes.Rarity]: Rarities.Rare,
+        [DucklingGenes.Color]: 0,
+        [DucklingGenes.Family]: 0,
+      });
+
+      // different family
+      genomes[0] = randomGenome(Collections.Duckling, {
+        [DucklingGenes.Rarity]: Rarities.Rare,
+        [DucklingGenes.Color]: 0,
+        [DucklingGenes.Family]: 1,
+      });
+
+      await expect(Game.requireGenomesSatisfyMelding(genomes))
+        .to.be.revertedWithCustomError(Game, 'IncorrectGenomesForMelding')
+        .withArgs(genomes);
+    });
   });
 
   // eslint-disable-next-line sonarjs/cognitive-complexity
   describe('meldFlock', () => {
     describe.skip('Duckling', () => {
       it('success on melding Common Ducklings', async () => {
-        const tokenIdsAndGenomes = await generateAndMintGenomesForMelding(Collections.Duckling, {
+        const tokenIdsAndGenomes = await generateAndMintGenomes(Collections.Duckling, {
           [DucklingGenes.Rarity]: Rarities.Common,
           [DucklingGenes.Color]: 0,
         });
@@ -233,7 +399,7 @@ describe('DuckyFamilyV1 melding', () => {
       });
 
       it('success on melding Rare Ducklings', async () => {
-        const tokenIdsAndGenomes = await generateAndMintGenomesForMelding(Collections.Duckling, {
+        const tokenIdsAndGenomes = await generateAndMintGenomes(Collections.Duckling, {
           [DucklingGenes.Rarity]: Rarities.Rare,
           [DucklingGenes.Color]: 1,
           [DucklingGenes.Family]: 1,
@@ -249,7 +415,7 @@ describe('DuckyFamilyV1 melding', () => {
       });
 
       it('success on melding Epic Ducklings', async () => {
-        const tokenIdsAndGenomes = await generateAndMintGenomesForMelding(Collections.Duckling, {
+        const tokenIdsAndGenomes = await generateAndMintGenomes(Collections.Duckling, {
           [DucklingGenes.Rarity]: Rarities.Epic,
           [DucklingGenes.Color]: 1,
           [DucklingGenes.Family]: 1,

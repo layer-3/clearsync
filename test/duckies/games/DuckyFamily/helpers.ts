@@ -44,3 +44,13 @@ export function randomGenome(collectionId: Collections, config?: RandomGenomeCon
 
   return genome.genome;
 }
+
+export function randomGenomes(
+  collectionId: Collections,
+  config?: RandomGenomeConfig & { amount?: number },
+): bigint[] {
+  const amount = config?.amount ?? 1;
+  return Array.from({ length: amount })
+    .fill(0)
+    .map(() => randomGenome(collectionId, config));
+}

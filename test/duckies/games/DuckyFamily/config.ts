@@ -77,3 +77,5 @@ export const collectionsGeneDistributionTypes = [
   2940, // reverse(001111101101) = 101101111100
   2940, // reverse(001111101101) = 101101111100
 ] as const;
+
+export const FLOCK_SIZE = 5;
