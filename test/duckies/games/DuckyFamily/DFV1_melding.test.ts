@@ -1,4 +1,5 @@
 import { assert, expect } from 'chai';
+import { ethers } from 'hardhat';
 
 import {
   Collections,
@@ -84,7 +85,7 @@ describe('DuckyFamilyV1 melding', () => {
   };
 
   beforeEach(async () => {
-    ({ Someone, GenomeSetter, Duckies, Ducklings, Game } = await setup());
+    ({ Someone, GenomeSetter, Duckies, Ducklings, Game, GameAsSomeone } = await setup());
   });
 
   interface TokenIdsAndGenomes {
@@ -650,7 +651,7 @@ describe('DuckyFamilyV1 melding', () => {
 
         const meldedGene = await meldGenes(
           genomes,
-          DucklingGenes.Rarity,
+          DucklingGenes.FirstName,
           geneValuesNum[DucklingGenes.FirstName],
           GeneDistrTypes.Even,
         );
@@ -719,16 +720,19 @@ describe('DuckyFamilyV1 melding', () => {
 
   // eslint-disable-next-line sonarjs/cognitive-complexity
   describe('meldFlock', () => {
-    describe.skip('Duckling', () => {
+    beforeEach(async () => {
+      await Duckies.connect(Someone).increaseAllowance(Game.address, 100_000_000_000);
+    });
+
+    describe('Duckling', () => {
       it('success on melding Common Ducklings', async () => {
-        const tokenIdsAndGenomes = await generateAndMintGenomes(Collections.Duckling, {
+        const { tokenIds } = await generateAndMintGenomes(Collections.Duckling, {
           [DucklingGenes.Rarity]: Rarities.Common,
           [DucklingGenes.Color]: 0,
         });
 
         try {
-          await Duckies.connect(Someone).increaseAllowance(Game.address, 10_000_000_000);
-          await GameAsSomeone.meldFlock(tokenIdsAndGenomes.tokenIds);
+          await GameAsSomeone.meldFlock(tokenIds);
           assert(true);
         } catch {
           assert(false);
@@ -736,15 +740,14 @@ describe('DuckyFamilyV1 melding', () => {
       });
 
       it('success on melding Rare Ducklings', async () => {
-        const tokenIdsAndGenomes = await generateAndMintGenomes(Collections.Duckling, {
+        const { tokenIds } = await generateAndMintGenomes(Collections.Duckling, {
           [DucklingGenes.Rarity]: Rarities.Rare,
           [DucklingGenes.Color]: 1,
           [DucklingGenes.Family]: 1,
         });
 
         try {
-          await Duckies.connect(Someone).increaseAllowance(Game.address, 10_000_000_000);
-          await GameAsSomeone.meldFlock(tokenIdsAndGenomes.tokenIds);
+          await GameAsSomeone.meldFlock(tokenIds);
           assert(true);
         } catch {
           assert(false);
@@ -752,22 +755,69 @@ describe('DuckyFamilyV1 melding', () => {
       });
 
       it('success on melding Epic Ducklings', async () => {
-        const tokenIdsAndGenomes = await generateAndMintGenomes(Collections.Duckling, {
+        const { tokenIds } = await generateAndMintGenomes(Collections.Duckling, {
           [DucklingGenes.Rarity]: Rarities.Epic,
           [DucklingGenes.Color]: 1,
           [DucklingGenes.Family]: 1,
         });
 
         try {
-          await Duckies.connect(Someone).increaseAllowance(Game.address, 10_000_000_000);
-          await GameAsSomeone.meldFlock(tokenIdsAndGenomes.tokenIds);
+          await GameAsSomeone.meldFlock(tokenIds);
+          assert(true);
+        } catch {
+          assert(false);
+        }
+      });
+    });
+
+    describe('Zombeak', () => {
+      it('success on melding Common Zombeaks', async () => {
+        const { tokenIds } = await generateAndMintGenomes(Collections.Zombeak, {
+          [ZombeakGenes.Rarity]: Rarities.Common,
+          [ZombeakGenes.Color]: 0,
+        });
+
+        try {
+          await GameAsSomeone.meldFlock(tokenIds);
           assert(true);
         } catch {
           assert(false);
         }
       });
 
-      it('success on melding Legendary Ducklings', async () => {
+      it('success on melding Rare Zombeaks', async () => {
+        const { tokenIds } = await generateAndMintGenomes(Collections.Zombeak, {
+          [ZombeakGenes.Rarity]: Rarities.Rare,
+          [ZombeakGenes.Color]: 0,
+          [ZombeakGenes.Family]: 0,
+        });
+
+        try {
+          await GameAsSomeone.meldFlock(tokenIds);
+          assert(true);
+        } catch {
+          assert(false);
+        }
+      });
+
+      it('success on melding Epic Zombeaks', async () => {
+        const { tokenIds } = await generateAndMintGenomes(Collections.Zombeak, {
+          [ZombeakGenes.Rarity]: Rarities.Epic,
+          [ZombeakGenes.Color]: 0,
+          [ZombeakGenes.Family]: 0,
+        });
+
+        try {
+          await GameAsSomeone.meldFlock(tokenIds);
+          assert(true);
+        } catch {
+          assert(false);
+        }
+      });
+    });
+
+    describe('Mythic', () => {
+      it('success on melding Legendary Ducklings into Mythic', async () => {
         const meldingTokenIds: number[] = [];
         await (async () => {
           for (let i = 0; i < 5; i++) {
@@ -786,7 +836,6 @@ describe('DuckyFamilyV1 melding', () => {
         })();
 
         try {
-          await Duckies.connect(Someone).increaseAllowance(Game.address, 10_000_000_000);
           await GameAsSomeone.meldFlock(meldingTokenIds);
           assert(true);
         } catch {
@@ -795,22 +844,18 @@ describe('DuckyFamilyV1 melding', () => {
       });
     });
 
-    describe('Zombeak', () => {
-      it('can meld into rare');
+    it('event is emitted', async () => {
+      const { tokenIds } = await generateAndMintGenomes(Collections.Duckling, {
+        [DucklingGenes.Rarity]: Rarities.Common,
+        [DucklingGenes.Color]: 0,
+      });
 
-      it('can meld into epic');
+      const meldedTokenId = FLOCK_SIZE;
+      const chainId = await ethers.provider.getNetwork().then((network) => network.chainId);
 
-      it('can meld into legendary');
+      await expect(GameAsSomeone.meldFlock(tokenIds))
+        .to.emit(Game, 'Melded')
+        .withArgs(Someone.address, tokenIds, meldedTokenId, chainId);
     });
-
-    describe('Mythic', () => {
-      it('can meld into Mythic');
-
-      it('Mythic id increments');
-
-      it('revert on all Mythic minted');
-    });
-
-    it('event is emitted');
   });
 });
