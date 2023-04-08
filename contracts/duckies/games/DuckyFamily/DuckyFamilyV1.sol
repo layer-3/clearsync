@@ -384,15 +384,18 @@ contract DuckyFamilyV1 is IVoucher, AccessControl, Random {
 
 	function _generateMythicGenome(uint256[] memory genomes) internal returns (uint256) {
 		uint16 sumPeculiarity = 0;
+		uint16 maxSumPeculiarity = maxPeculiarity * uint16(genomes.length);
 
 		for (uint8 i = 0; i < genomes.length; i++) {
 			sumPeculiarity += _calcPeculiarity(genomes[i]);
 		}
 
-		uint8 maxUniqId = mythicAmount - 1;
-		uint8 pivotalUniqId = uint8((sumPeculiarity / maxPeculiarity) * maxUniqId);
-		uint8 leftEndUniqId;
-		uint8 uniqIdSegmentLength;
+		uint16 maxUniqId = mythicAmount - 1;
+		uint16 pivotalUniqId = uint16( // multiply and divide by 1000 to increase precision
+			(((uint64(sumPeculiarity) * 1000) / maxSumPeculiarity) * maxUniqId) / 1000
+		);
+		uint16 leftEndUniqId;
+		uint16 uniqIdSegmentLength;
 
 		if (pivotalUniqId < MYTHIC_DISPERSION) {
 			// mythic id range overlaps with left dispersion border
@@ -408,11 +411,11 @@ contract DuckyFamilyV1 is IVoucher, AccessControl, Random {
 			uniqIdSegmentLength = 2 * MYTHIC_DISPERSION;
 		}
 
-		uint8 uniqId = leftEndUniqId + uint8(Random._randomMaxNumber(uniqIdSegmentLength));
+		uint16 uniqId = leftEndUniqId + uint16(Random._randomMaxNumber(uniqIdSegmentLength));
 
 		uint256 genome;
 		genome = genome.setGene(collectionGeneIdx, mythicCollectionId);
-		genome.setGene(uint8(MythicGenes.UniqId), uniqId);
+		genome.setGene(uint8(MythicGenes.UniqId), uint8(uniqId));
 		return genome;
 	}
 
