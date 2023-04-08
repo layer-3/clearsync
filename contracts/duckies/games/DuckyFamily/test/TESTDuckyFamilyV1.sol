@@ -15,6 +15,21 @@ contract TESTDuckyFamilyV1 is DuckyFamilyV1 {
 		address treasureVaultAddress
 	) DuckyFamilyV1(duckiesAddress, ducklingsAddress, treasureVaultAddress) {}
 
+	// allow setting config for better testing
+	function setCollectionMutationChances(uint32[] calldata chances) external {
+		collectionMutationChances = chances;
+	}
+
+	function setGeneMutationChance(uint32 chance) external {
+		geneMutationChance = [1000 - chance, chance];
+	}
+
+	function setGeneInheritanceChances(uint32[] calldata chances) external {
+		geneInheritanceChances = chances;
+	}
+
+	// ===============
+
 	function generateGenome(uint8 collectionId) external {
 		emit GenomeReturned(_generateGenome(collectionId));
 	}

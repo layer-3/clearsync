@@ -1,6 +1,13 @@
 import { assert, expect } from 'chai';
 
-import { Collections, DucklingGenes, FLOCK_SIZE, Rarities, ZombeakGenes } from './config';
+import {
+  Collections,
+  DucklingGenes,
+  FLOCK_SIZE,
+  Rarities,
+  ZombeakGenes,
+  raritiesNum,
+} from './config';
 import { RandomGenomeConfig, randomGenome, randomGenomes } from './helpers';
 import { setup } from './setup';
 
@@ -42,6 +49,13 @@ describe('DuckyFamilyV1 melding', () => {
     const tokenId = event?.args?.tokenId.toNumber() as number;
     const genome = event?.args?.genome.toBigInt() as bigint;
     return { tokenId, genome };
+  };
+
+  const isCollectionMutating = async (rarity: Rarities): Promise<boolean> => {
+    const tx = await Game.isCollectionMutating(rarity);
+    const receipt = await tx.wait();
+    const event = receipt.events?.find((e) => e.event === 'BoolReturned');
+    return event?.args?.returnedBool as boolean;
   };
 
   beforeEach(async () => {
@@ -116,12 +130,56 @@ describe('DuckyFamilyV1 melding', () => {
   });
 
   describe('isCollectionMutating', () => {
-    it('<= Rare can collection mutate');
+    describe('all collections do mutate', () => {
+      beforeEach(async () => {
+        await Game.setCollectionMutationChances([1000, 1000, 1000, 1000]); // per mil chances
+      });
 
-    it('legendary can not mutate');
+      it('Common can mutate', async () => {
+        expect(await isCollectionMutating(Rarities.Common)).to.be.true;
+      });
+
+      it('Rare can mutate', async () => {
+        expect(await isCollectionMutating(Rarities.Rare)).to.be.true;
+      });
+
+      it('Epic can mutate', async () => {
+        expect(await isCollectionMutating(Rarities.Epic)).to.be.true;
+      });
+
+      it('Legendary can mutate', async () => {
+        expect(await isCollectionMutating(Rarities.Legendary)).to.be.true;
+      });
+    });
+
+    describe('all collections do not mutate', () => {
+      beforeEach(async () => {
+        await Game.setCollectionMutationChances([0, 0, 0, 0]);
+      });
+
+      it('Common can not mutate', async () => {
+        expect(await isCollectionMutating(Rarities.Common)).to.be.false;
+      });
+
+      it('Rare can not mutate', async () => {
+        expect(await isCollectionMutating(Rarities.Rare)).to.be.false;
+      });
+
+      it('Epic can not mutate', async () => {
+        expect(await isCollectionMutating(Rarities.Epic)).to.be.false;
+      });
+
+      it('Legendary can not mutate', async () => {
+        expect(await isCollectionMutating(Rarities.Legendary)).to.be.false;
+      });
+    });
+
+    it('revert when rarity is out of bounds', async () => {
+      await expect(Game.isCollectionMutating(raritiesNum)).to.be.reverted;
+    });
   });
 
-  describe.only('requireGenomesSatisfyMelding', () => {
+  describe('requireGenomesSatisfyMelding', () => {
     it('success on Common Duckling', async () => {
       const genomes = randomGenomes(Collections.Duckling, {
         amount: FLOCK_SIZE,
