@@ -6,10 +6,13 @@ import {
   FLOCK_SIZE,
   Rarities,
   ZombeakGenes,
+  collectionGeneIdx,
   raritiesNum,
+  rarityGeneIdx,
 } from './config';
 import { RandomGenomeConfig, randomGenome, randomGenomes } from './helpers';
 import { setup } from './setup';
+import { Genome } from './genome';
 
 import type { ContractTransaction } from 'ethers';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
@@ -58,6 +61,13 @@ describe('DuckyFamilyV1 melding', () => {
     return event?.args?.returnedBool as boolean;
   };
 
+  const meldGenomes = async (genomes: bigint[]): Promise<bigint> => {
+    const tx = await Game.meldGenomes(genomes);
+    const receipt = await tx.wait();
+    const event = receipt.events?.find((e) => e.event === 'GenomeReturned');
+    return event?.args?.genome.toBigInt() as bigint;
+  };
+
   beforeEach(async () => {
     ({ Someone, GenomeSetter, Duckies, Ducklings, Game } = await setup());
   });
@@ -86,98 +96,6 @@ describe('DuckyFamilyV1 melding', () => {
 
     return { tokenIds, genomes };
   };
-
-  describe('meldGenes', () => {
-    it('can meld', async () => {
-      await mintTo(
-        Someone.address,
-        // eslint-disable-next-line unicorn/numeric-separators-style
-        182700775082802730930410854023168n,
-      );
-
-      await mintTo(
-        Someone.address,
-        // eslint-disable-next-line unicorn/numeric-separators-style
-        60926767771370839915004195766272n,
-      );
-
-      await mintTo(
-        Someone.address,
-        // eslint-disable-next-line unicorn/numeric-separators-style
-        121932763563511447839369064611840n,
-      );
-
-      await mintTo(
-        Someone.address,
-        // eslint-disable-next-line unicorn/numeric-separators-style
-        61164767845294952445087173574656n,
-      );
-
-      await mintTo(
-        Someone.address,
-        // eslint-disable-next-line unicorn/numeric-separators-style
-        162419591386637366713636064854016n,
-      );
-
-      await Game.connect(Someone).meldFlock([0, 1, 2, 3, 4]);
-    });
-
-    it('uneven gene can mutate');
-
-    it('even gene can not mutate');
-
-    it('can inherit from all parents');
-  });
-
-  describe('isCollectionMutating', () => {
-    describe('all collections do mutate', () => {
-      beforeEach(async () => {
-        await Game.setCollectionMutationChances([1000, 1000, 1000, 1000]); // per mil chances
-      });
-
-      it('Common can mutate', async () => {
-        expect(await isCollectionMutating(Rarities.Common)).to.be.true;
-      });
-
-      it('Rare can mutate', async () => {
-        expect(await isCollectionMutating(Rarities.Rare)).to.be.true;
-      });
-
-      it('Epic can mutate', async () => {
-        expect(await isCollectionMutating(Rarities.Epic)).to.be.true;
-      });
-
-      it('Legendary can mutate', async () => {
-        expect(await isCollectionMutating(Rarities.Legendary)).to.be.true;
-      });
-    });
-
-    describe('all collections do not mutate', () => {
-      beforeEach(async () => {
-        await Game.setCollectionMutationChances([0, 0, 0, 0]);
-      });
-
-      it('Common can not mutate', async () => {
-        expect(await isCollectionMutating(Rarities.Common)).to.be.false;
-      });
-
-      it('Rare can not mutate', async () => {
-        expect(await isCollectionMutating(Rarities.Rare)).to.be.false;
-      });
-
-      it('Epic can not mutate', async () => {
-        expect(await isCollectionMutating(Rarities.Epic)).to.be.false;
-      });
-
-      it('Legendary can not mutate', async () => {
-        expect(await isCollectionMutating(Rarities.Legendary)).to.be.false;
-      });
-    });
-
-    it('revert when rarity is out of bounds', async () => {
-      await expect(Game.isCollectionMutating(raritiesNum)).to.be.reverted;
-    });
-  });
 
   describe('requireGenomesSatisfyMelding', () => {
     it('success on Common Duckling', async () => {
@@ -436,6 +354,242 @@ describe('DuckyFamilyV1 melding', () => {
         .to.be.revertedWithCustomError(Game, 'IncorrectGenomesForMelding')
         .withArgs(genomes);
     });
+  });
+
+  describe('isCollectionMutating', () => {
+    describe('all collections do mutate', () => {
+      beforeEach(async () => {
+        await Game.setCollectionMutationChances([1000, 1000, 1000, 1000]); // per mil chances
+      });
+
+      it('Common can mutate', async () => {
+        expect(await isCollectionMutating(Rarities.Common)).to.be.true;
+      });
+
+      it('Rare can mutate', async () => {
+        expect(await isCollectionMutating(Rarities.Rare)).to.be.true;
+      });
+
+      it('Epic can mutate', async () => {
+        expect(await isCollectionMutating(Rarities.Epic)).to.be.true;
+      });
+
+      it('Legendary can mutate', async () => {
+        expect(await isCollectionMutating(Rarities.Legendary)).to.be.true;
+      });
+    });
+
+    describe('all collections do not mutate', () => {
+      beforeEach(async () => {
+        await Game.setCollectionMutationChances([0, 0, 0, 0]);
+      });
+
+      it('Common can not mutate', async () => {
+        expect(await isCollectionMutating(Rarities.Common)).to.be.false;
+      });
+
+      it('Rare can not mutate', async () => {
+        expect(await isCollectionMutating(Rarities.Rare)).to.be.false;
+      });
+
+      it('Epic can not mutate', async () => {
+        expect(await isCollectionMutating(Rarities.Epic)).to.be.false;
+      });
+
+      it('Legendary can not mutate', async () => {
+        expect(await isCollectionMutating(Rarities.Legendary)).to.be.false;
+      });
+    });
+
+    it('revert when rarity is out of bounds', async () => {
+      await expect(Game.isCollectionMutating(raritiesNum)).to.be.reverted;
+    });
+  });
+
+  describe('meldGenomes', () => {
+    const collectionAndRarity = (genome_: bigint): [Collections, Rarities] => {
+      const genome = new Genome(genome_);
+      return [genome.getGene(collectionGeneIdx), genome.getGene(rarityGeneIdx)];
+    };
+
+    describe('same collection, increased rarity', () => {
+      beforeEach(async () => {
+        // disable mutations
+        await Game.setCollectionMutationChances([0, 0, 0, 0]);
+      });
+
+      it('when melding Common Ducklings', async () => {
+        const genomes = randomGenomes(Collections.Duckling, {
+          amount: FLOCK_SIZE,
+          [DucklingGenes.Rarity]: Rarities.Common,
+          [DucklingGenes.Color]: 0,
+        });
+
+        const [collection, rarity] = collectionAndRarity(await meldGenomes(genomes));
+
+        expect(collection).to.equal(Collections.Duckling);
+        expect(rarity).to.equal(Rarities.Rare);
+      });
+
+      it('when melding Rare Ducklings', async () => {
+        const genomes = randomGenomes(Collections.Duckling, {
+          amount: FLOCK_SIZE,
+          [DucklingGenes.Rarity]: Rarities.Rare,
+          [DucklingGenes.Color]: 0,
+          [DucklingGenes.Family]: 0,
+        });
+
+        const [collection, rarity] = collectionAndRarity(await meldGenomes(genomes));
+
+        expect(collection).to.equal(Collections.Duckling);
+        expect(rarity).to.equal(Rarities.Epic);
+      });
+
+      it('when melding Epic Ducklings', async () => {
+        const genomes = randomGenomes(Collections.Duckling, {
+          amount: FLOCK_SIZE,
+          [DucklingGenes.Rarity]: Rarities.Epic,
+          [DucklingGenes.Color]: 0,
+          [DucklingGenes.Family]: 0,
+        });
+
+        const [collection, rarity] = collectionAndRarity(await meldGenomes(genomes));
+
+        expect(collection).to.equal(Collections.Duckling);
+        expect(rarity).to.equal(Rarities.Legendary);
+      });
+
+      it('Mythic when melding Legendary Ducklings', async () => {
+        const genomes = [];
+
+        for (let i = 0; i < FLOCK_SIZE; i++) {
+          genomes.push(
+            randomGenome(Collections.Duckling, {
+              [ZombeakGenes.Rarity]: Rarities.Legendary,
+              // different colors
+              [ZombeakGenes.Color]: 0,
+              [ZombeakGenes.Family]: i,
+            }),
+          );
+        }
+
+        const [collection] = collectionAndRarity(await meldGenomes(genomes));
+        expect(collection).to.equal(Collections.Mythic);
+      });
+
+      it('when melding Common Zombeaks', async () => {
+        const genomes = randomGenomes(Collections.Zombeak, {
+          amount: FLOCK_SIZE,
+          [ZombeakGenes.Rarity]: Rarities.Common,
+          [ZombeakGenes.Color]: 0,
+        });
+
+        const [collection, rarity] = collectionAndRarity(await meldGenomes(genomes));
+
+        expect(collection).to.equal(Collections.Zombeak);
+        expect(rarity).to.equal(Rarities.Rare);
+      });
+
+      it('when melding Rare Zombeaks', async () => {
+        const genomes = randomGenomes(Collections.Zombeak, {
+          amount: FLOCK_SIZE,
+          [ZombeakGenes.Rarity]: Rarities.Rare,
+          [ZombeakGenes.Color]: 0,
+          [ZombeakGenes.Family]: 0,
+        });
+
+        const [collection, rarity] = collectionAndRarity(await meldGenomes(genomes));
+
+        expect(collection).to.equal(Collections.Zombeak);
+        expect(rarity).to.equal(Rarities.Epic);
+      });
+
+      it('when melding Epic Zombeaks', async () => {
+        const genomes = randomGenomes(Collections.Zombeak, {
+          amount: FLOCK_SIZE,
+          [ZombeakGenes.Rarity]: Rarities.Epic,
+          [ZombeakGenes.Color]: 0,
+          [ZombeakGenes.Family]: 0,
+        });
+
+        const [collection, rarity] = collectionAndRarity(await meldGenomes(genomes));
+
+        expect(collection).to.equal(Collections.Zombeak);
+        expect(rarity).to.equal(Rarities.Legendary);
+      });
+    });
+
+    describe('mutated into zombeak with the same rarity', () => {
+      beforeEach(async () => {
+        // 100% mutations
+        await Game.setCollectionMutationChances([1000, 1000, 1000, 1000]);
+      });
+
+      it('when melding Common Ducklings', async () => {
+        const genomes = randomGenomes(Collections.Duckling, {
+          amount: FLOCK_SIZE,
+          [DucklingGenes.Rarity]: Rarities.Common,
+          [DucklingGenes.Color]: 0,
+        });
+
+        const [collection, rarity] = collectionAndRarity(await meldGenomes(genomes));
+
+        expect(collection).to.equal(Collections.Zombeak);
+        expect(rarity).to.equal(Rarities.Common);
+      });
+
+      it('when melding Rare Ducklings', async () => {
+        const genomes = randomGenomes(Collections.Duckling, {
+          amount: FLOCK_SIZE,
+          [DucklingGenes.Rarity]: Rarities.Rare,
+          [DucklingGenes.Color]: 0,
+          [DucklingGenes.Family]: 0,
+        });
+
+        const [collection, rarity] = collectionAndRarity(await meldGenomes(genomes));
+
+        expect(collection).to.equal(Collections.Zombeak);
+        expect(rarity).to.equal(Rarities.Rare);
+      });
+
+      it('when melding Epic Ducklings', async () => {
+        const genomes = randomGenomes(Collections.Duckling, {
+          amount: FLOCK_SIZE,
+          [DucklingGenes.Rarity]: Rarities.Epic,
+          [DucklingGenes.Color]: 0,
+          [DucklingGenes.Family]: 0,
+        });
+
+        const [collection, rarity] = collectionAndRarity(await meldGenomes(genomes));
+
+        expect(collection).to.equal(Collections.Zombeak);
+        expect(rarity).to.equal(Rarities.Epic);
+      });
+
+      it('when melding Legendary Ducklings', async () => {
+        const genomes = randomGenomes(Collections.Duckling, {
+          amount: FLOCK_SIZE,
+          [DucklingGenes.Rarity]: Rarities.Legendary,
+          [DucklingGenes.Color]: 0,
+          [DucklingGenes.Family]: 0,
+        });
+
+        const [collection, rarity] = collectionAndRarity(await meldGenomes(genomes));
+
+        expect(collection).to.equal(Collections.Zombeak);
+        expect(rarity).to.equal(Rarities.Legendary);
+      });
+    });
+  });
+
+  describe('meldGenes', () => {
+    it('can meld');
+
+    it('uneven gene can mutate');
+
+    it('even gene can not mutate');
+
+    it('can inherit from all parents');
   });
 
   // eslint-disable-next-line sonarjs/cognitive-complexity
