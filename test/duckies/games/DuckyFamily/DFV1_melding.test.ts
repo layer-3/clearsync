@@ -4,9 +4,11 @@ import {
   Collections,
   DucklingGenes,
   FLOCK_SIZE,
+  GeneDistrTypes,
   Rarities,
   ZombeakGenes,
   collectionGeneIdx,
+  collectionsGeneValuesNum,
   raritiesNum,
   rarityGeneIdx,
 } from './config';
@@ -66,6 +68,19 @@ describe('DuckyFamilyV1 melding', () => {
     const receipt = await tx.wait();
     const event = receipt.events?.find((e) => e.event === 'GenomeReturned');
     return event?.args?.genome.toBigInt() as bigint;
+  };
+
+  const meldGenes = async (
+    genomes: bigint[],
+    gene: number,
+    maxGeneValue: number,
+    geneDistrType: GeneDistrTypes,
+  ): Promise<number> => {
+    const tx = await Game.meldGenes(genomes, gene, maxGeneValue, geneDistrType);
+    const receipt = await tx.wait();
+    const event = receipt.events?.find((e) => e.event === 'GeneReturned');
+    // gene is already a number
+    return event?.args?.gene as number;
   };
 
   beforeEach(async () => {
@@ -583,13 +598,123 @@ describe('DuckyFamilyV1 melding', () => {
   });
 
   describe('meldGenes', () => {
-    it('can meld');
+    const geneValuesNum = collectionsGeneValuesNum[Collections.Duckling];
 
-    it('uneven gene can mutate');
+    describe('when mutation is 100%', () => {
+      beforeEach(async () => {
+        await Game.setGeneMutationChance(1000);
+      });
 
-    it('even gene can not mutate');
+      it('uneven gene gets mutated', async () => {
+        const genomes = randomGenomes(Collections.Duckling, {
+          amount: 5,
+          // uneven gene
+          [DucklingGenes.Head]: 0,
+        });
 
-    it('can inherit from all parents');
+        const meldedGene = await meldGenes(
+          genomes,
+          DucklingGenes.Head,
+          geneValuesNum[DucklingGenes.Head],
+          GeneDistrTypes.Uneven,
+        );
+        expect(meldedGene).not.to.equal(0);
+      });
+
+      it('when mutated, the value is max + 1', async () => {
+        const genomes = [];
+        for (let i = 0; i < FLOCK_SIZE; i++) {
+          const genome = randomGenome(Collections.Duckling, {
+            [DucklingGenes.Head]: i,
+          });
+          genomes.push(genome);
+        }
+
+        const maxGeneValue = FLOCK_SIZE - 1;
+
+        const meldedGene = await meldGenes(
+          genomes,
+          DucklingGenes.Head,
+          geneValuesNum[DucklingGenes.Head],
+          GeneDistrTypes.Uneven,
+        );
+        expect(meldedGene).to.equal(maxGeneValue + 1);
+      });
+
+      it('even gene does not mutate', async () => {
+        const genomes = randomGenomes(Collections.Duckling, {
+          amount: 5,
+          // even gene
+          [DucklingGenes.FirstName]: 0,
+        });
+
+        const meldedGene = await meldGenes(
+          genomes,
+          DucklingGenes.Rarity,
+          geneValuesNum[DucklingGenes.FirstName],
+          GeneDistrTypes.Even,
+        );
+        expect(meldedGene).to.equal(0);
+      });
+    });
+
+    describe('when mutation is 0%', () => {
+      beforeEach(async () => {
+        await Game.setGeneMutationChance(0);
+      });
+
+      it('value for uneven gene is got from parents', async () => {
+        const genomes = [];
+        for (let i = 0; i < FLOCK_SIZE; i++) {
+          const genome = randomGenome(Collections.Duckling, {
+            [DucklingGenes.Head]: i,
+          });
+          genomes.push(genome);
+        }
+
+        const meldedGene = await meldGenes(
+          genomes,
+          DucklingGenes.Head,
+          geneValuesNum[DucklingGenes.Head],
+          GeneDistrTypes.Uneven,
+        );
+        expect(meldedGene).to.be.within(0, FLOCK_SIZE - 1);
+      });
+
+      it('value for even gene is got from parents', async () => {
+        const genomes = [];
+        for (let i = 0; i < FLOCK_SIZE; i++) {
+          const genome = randomGenome(Collections.Duckling, {
+            [DucklingGenes.FirstName]: i,
+          });
+          genomes.push(genome);
+        }
+
+        const meldedGene = await meldGenes(
+          genomes,
+          DucklingGenes.FirstName,
+          geneValuesNum[DucklingGenes.FirstName],
+          GeneDistrTypes.Even,
+        );
+        expect(meldedGene).to.be.within(0, FLOCK_SIZE - 1);
+      });
+
+      it('uneven gene: value does not change if all parents have the same value', async () => {
+        const genomes = randomGenomes(Collections.Duckling, {
+          amount: FLOCK_SIZE,
+          // uneven gene
+          [DucklingGenes.Head]: 0,
+        });
+
+        const meldedGene = await meldGenes(
+          genomes,
+          DucklingGenes.Head,
+          geneValuesNum[DucklingGenes.Head],
+          GeneDistrTypes.Uneven,
+        );
+        expect(meldedGene).to.equal(0);
+      });
+    });
   });
 
   // eslint-disable-next-line sonarjs/cognitive-complexity
