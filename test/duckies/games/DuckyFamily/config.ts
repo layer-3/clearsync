@@ -63,6 +63,7 @@ export enum MythicGenes {
 
 export const mythicAmount = 59;
 export const MAX_PECULIARITY = 145;
+export const MYTHIC_DISPERSION = 5;
 
 export type Genes = DucklingGenes | ZombeakGenes | MythicGenes;
 

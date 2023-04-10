@@ -4,33 +4,25 @@ import { setup } from './setup';
 import {
   Collections,
   DucklingGenes,
+  MAX_PECULIARITY,
+  MYTHIC_DISPERSION,
+  MythicGenes,
   Rarities,
   collectionGeneIdx,
   collectionsGeneValuesNum,
   generativeGenesOffset,
+  mythicAmount,
   rarityGeneIdx,
 } from './config';
 import { Genome } from './genome';
 
-import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import type {
-  DucklingsV1,
-  DuckyFamilyV1,
-  TESTDuckyFamilyV1,
-  YellowToken,
-} from '../../../../typechain-types';
+import type { TESTDuckyFamilyV1 } from '../../../../typechain-types';
 
 describe('DuckyFamilyV1 minting', () => {
-  let Someone: SignerWithAddress;
-
-  let Duckies: YellowToken;
-  let Ducklings: DucklingsV1;
   let Game: TESTDuckyFamilyV1;
 
-  let GameAsSomeone: DuckyFamilyV1;
-
   beforeEach(async () => {
-    ({ Someone, Duckies, Ducklings, Game, GameAsSomeone } = await setup());
+    ({ Game } = await setup());
   });
 
   const generateGenome = async (collectionId: Collections): Promise<bigint> => {
@@ -45,6 +37,13 @@ describe('DuckyFamilyV1 minting', () => {
     collectionId: Collections,
   ): Promise<bigint> => {
     const tx = await Game.generateAndSetGenes(genome, collectionId);
+    const receipt = await tx.wait();
+    const event = receipt.events?.find((e) => e.event === 'GenomeReturned');
+    return event?.args?.genome.toBigInt() as bigint;
+  };
+
+  const generateMythicGenome = async (genomes: bigint[]): Promise<bigint> => {
+    const tx = await Game.generateMythicGenome(genomes);
     const receipt = await tx.wait();
     const event = receipt.events?.find((e) => e.event === 'GenomeReturned');
     return event?.args?.genome.toBigInt() as bigint;
@@ -172,12 +171,61 @@ describe('DuckyFamilyV1 minting', () => {
     });
   });
 
-  describe('generateMythicGenome', () => {
-    it('correct range for low UniqId');
+  describe.only('generateMythicGenome', () => {
+    const zeroedGenome = new Genome(0).genome;
 
-    it('correct range for medium UniqId');
+    type generateGenomeArgsType = [bigint, bigint, bigint, bigint, bigint];
+    const maxUniqId = mythicAmount - 1;
 
-    it('correct range for high UniqId');
+    const genomesWithTheoUniqId = (theoUniqId: number): generateGenomeArgsType => {
+      const peculiarity = Math.ceil((theoUniqId / maxUniqId) * MAX_PECULIARITY);
+      const genome = Genome.from([0, 0, 0, 0, peculiarity]).genome;
+      return Array.from({ length: 5 }).fill(genome) as generateGenomeArgsType;
+    };
+
+    it('correct range for zero peculiarity', async () => {
+      const zeroedGenomes = Array.from({ length: 5 }).fill(zeroedGenome);
+      const _genome = await generateMythicGenome(zeroedGenomes as generateGenomeArgsType);
+      const genome = new Genome(_genome);
+      expect(genome.getGene(MythicGenes.UniqId)).to.be.within(0, MYTHIC_DISPERSION);
+    });
+
+    it('correct range for low UniqId', async () => {
+      const theoUniqId = 2;
+      const _genome = await generateMythicGenome(genomesWithTheoUniqId(theoUniqId));
+      const genome = new Genome(_genome);
+      expect(genome.getGene(MythicGenes.UniqId)).to.be.within(0, theoUniqId + MYTHIC_DISPERSION);
+    });
+
+    it('correct range for medium UniqId', async () => {
+      const theoUniqId = 30;
+      const _genome = await generateMythicGenome(genomesWithTheoUniqId(theoUniqId));
+      const genome = new Genome(_genome);
+      expect(genome.getGene(MythicGenes.UniqId)).to.be.within(
+        theoUniqId - MYTHIC_DISPERSION,
+        theoUniqId + MYTHIC_DISPERSION,
+      );
+    });
+
+    it('correct range for high UniqId', async () => {
+      const theoUniqId = maxUniqId - 2;
+      const _genome = await generateMythicGenome(genomesWithTheoUniqId(theoUniqId));
+      const genome = new Genome(_genome);
+      expect(genome.getGene(MythicGenes.UniqId)).to.be.within(
+        theoUniqId - MYTHIC_DISPERSION,
+        mythicAmount,
+      );
+    });
+
+    it('correct range for max peruliarity', async () => {
+      const theoUniqId = maxUniqId;
+      const _genome = await generateMythicGenome(genomesWithTheoUniqId(theoUniqId));
+      const genome = new Genome(_genome);
+      expect(genome.getGene(MythicGenes.UniqId)).to.be.within(
+        theoUniqId - MYTHIC_DISPERSION,
+        mythicAmount,
+      );
+    });
   });
 
   describe('mintPack', () => {

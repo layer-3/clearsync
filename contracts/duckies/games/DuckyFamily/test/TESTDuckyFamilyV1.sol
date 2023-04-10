@@ -42,6 +42,10 @@ contract TESTDuckyFamilyV1 is DuckyFamilyV1 {
 		emit GenomeReturned(_generateAndSetGenes(genome, collectionId));
 	}
 
+	function generateMythicGenome(uint256[] calldata genomes) external {
+		emit GenomeReturned(_generateMythicGenome(genomes));
+	}
+
 	function requireGenomesSatisfyMelding(uint256[] calldata genomes) external pure {
 		_requireGenomesSatisfyMelding(genomes);
 	}
