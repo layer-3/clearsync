@@ -1,9 +1,12 @@
 import { expect } from 'chai';
+import { ethers } from 'hardhat';
+import { anyUint } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 
 import { setup } from './setup';
 import {
   Collections,
   DucklingGenes,
+  MAX_PACK_SIZE,
   MAX_PECULIARITY,
   MYTHIC_DISPERSION,
   MythicGenes,
@@ -16,13 +19,24 @@ import {
 } from './config';
 import { Genome } from './genome';
 
-import type { TESTDuckyFamilyV1 } from '../../../../typechain-types';
+import type {
+  DucklingsV1,
+  DuckyFamilyV1,
+  TESTDuckyFamilyV1,
+  YellowToken,
+} from '../../../../typechain-types';
+import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 describe('DuckyFamilyV1 minting', () => {
+  let Someone: SignerWithAddress;
+
+  let Duckies: YellowToken;
+  let Ducklings: DucklingsV1;
   let Game: TESTDuckyFamilyV1;
+  let GameAsSomeone: DuckyFamilyV1;
 
   beforeEach(async () => {
-    ({ Game } = await setup());
+    ({ Someone, Duckies, Ducklings, Game, GameAsSomeone } = await setup());
   });
 
   const generateGenome = async (collectionId: Collections): Promise<bigint> => {
@@ -171,7 +185,7 @@ describe('DuckyFamilyV1 minting', () => {
     });
   });
 
-  describe.only('generateMythicGenome', () => {
+  describe('generateMythicGenome', () => {
     const zeroedGenome = new Genome(0).genome;
 
     type generateGenomeArgsType = [bigint, bigint, bigint, bigint, bigint];
@@ -229,14 +243,52 @@ describe('DuckyFamilyV1 minting', () => {
   });
 
   describe('mintPack', () => {
-    it('duckies are paid for mint');
+    beforeEach(async () => {
+      await Game.setMintPrice(1);
+    });
 
-    it('correct amount of tokens is minted');
+    it('duckies are paid for mint', async () => {
+      const amount = 10;
+      await expect(GameAsSomeone.mintPack(amount)).to.changeTokenBalance(
+        Duckies,
+        Someone,
+        -amount * 10 ** (await Duckies.decimals()),
+      );
+    });
 
-    it('revert on amount == 0');
+    it('correct amount of tokens is minted', async () => {
+      const amount = 10;
+      await GameAsSomeone.mintPack(amount);
 
-    it('revert on amount > MAX_PACK_SIZE');
+      expect(await Ducklings.balanceOf(Someone.address)).to.equal(amount);
+    });
 
-    it('event is emitted');
+    it('revert on amount == 0', async () => {
+      const amount = 0;
+      await expect(GameAsSomeone.mintPack(amount))
+        .to.be.revertedWithCustomError(Game, 'MintingRulesViolated')
+        .withArgs(Collections.Duckling, amount);
+    });
+
+    it('revert on amount > MAX_PACK_SIZE', async () => {
+      const amount = MAX_PACK_SIZE + 1;
+      await expect(GameAsSomeone.mintPack(amount))
+        .to.be.revertedWithCustomError(Game, 'MintingRulesViolated')
+        .withArgs(Collections.Duckling, amount);
+    });
+
+    it('event is emitted for every token', async () => {
+      const amount = 10;
+      const chainId = await ethers.provider.getNetwork().then((network) => network.chainId);
+      const tx = await GameAsSomeone.mintPack(amount);
+      const receipt = await tx.wait();
+      const { timestamp } = await ethers.provider.getBlock(receipt.blockNumber);
+
+      for (let i = 0; i < amount; i++) {
+        await expect(tx)
+          .to.emit(Ducklings, 'Minted')
+          .withArgs(Someone.address, i, true, anyUint, timestamp, chainId);
+      }
+    });
   });
 });
