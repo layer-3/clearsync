@@ -391,9 +391,7 @@ contract DuckyFamilyV1 is IVoucher, AccessControl, Random {
 		}
 
 		uint16 maxUniqId = mythicAmount - 1;
-		uint16 pivotalUniqId = uint16( // multiply and divide by 1000 to increase precision
-			(((uint64(sumPeculiarity) * 1000) / maxSumPeculiarity) * maxUniqId) / 1000
-		);
+		uint16 pivotalUniqId = uint16((uint64(sumPeculiarity) * maxUniqId) / maxSumPeculiarity); // multiply and then divide to avoid float numbers
 		uint16 leftEndUniqId;
 		uint16 uniqIdSegmentLength;
 
@@ -415,7 +413,7 @@ contract DuckyFamilyV1 is IVoucher, AccessControl, Random {
 
 		uint256 genome;
 		genome = genome.setGene(collectionGeneIdx, mythicCollectionId);
-		genome.setGene(uint8(MythicGenes.UniqId), uint8(uniqId));
+		genome = genome.setGene(uint8(MythicGenes.UniqId), uint8(uniqId));
 		return genome;
 	}
 
