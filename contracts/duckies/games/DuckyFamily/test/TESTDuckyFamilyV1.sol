@@ -16,6 +16,10 @@ contract TESTDuckyFamilyV1 is DuckyFamilyV1 {
 	) DuckyFamilyV1(duckiesAddress, ducklingsAddress, treasureVaultAddress) {}
 
 	// allow setting config for better testing
+	function setRarityChances(uint32[] calldata chances) external {
+		rarityChances = chances;
+	}
+
 	function setCollectionMutationChances(uint32[] calldata chances) external {
 		collectionMutationChances = chances;
 	}
