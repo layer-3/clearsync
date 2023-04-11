@@ -21,15 +21,17 @@ interface Config {
   GameAsMaintainer: TESTDuckyFamilyV1;
   GameAsSomeone: TESTDuckyFamilyV1;
   GameAsSomeother: TESTDuckyFamilyV1;
+
   Admin: SignerWithAddress;
   Maintainer: SignerWithAddress;
+  Signer: SignerWithAddress;
   Someone: SignerWithAddress;
   Someother: SignerWithAddress;
   GenomeSetter: SignerWithAddress;
 }
 
 export async function setup(): Promise<Config> {
-  const [Admin, Maintainer, Someone, Someother, GenomeSetter] = await ethers.getSigners();
+  const [Admin, Maintainer, Signer, Someone, Someother, GenomeSetter] = await ethers.getSigners();
 
   const DuckiesFactory = await ethers.getContractFactory('YellowToken');
   const Duckies = (await DuckiesFactory.deploy(
@@ -81,6 +83,7 @@ export async function setup(): Promise<Config> {
     GameAsSomeother: Game.connect(Someother),
     Admin,
     Maintainer,
+    Signer,
     Someone,
     Someother,
     GenomeSetter,
