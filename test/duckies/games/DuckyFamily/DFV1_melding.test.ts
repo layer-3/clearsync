@@ -13,11 +13,18 @@ import {
   raritiesNum,
   rarityGeneIdx,
 } from './config';
-import { RandomGenomeConfig, randomGenome, randomGenomes } from './helpers';
+import {
+  GenerateAndMintGenomesFunctT,
+  MintToFuncT,
+  extractMintedTokenId,
+  randomGenome,
+  randomGenomes,
+  setupGenerateAndMintGenomes,
+  setupMintTo,
+} from './helpers';
 import { setup } from './setup';
 import { Genome } from './genome';
 
-import type { ContractTransaction } from 'ethers';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import type {
   DucklingsV1,
@@ -36,26 +43,8 @@ describe('DuckyFamilyV1 melding', () => {
 
   let GameAsSomeone: DuckyFamilyV1;
 
-  const mintTo = async (
-    to: string,
-    genome: bigint,
-    isTransferable?: boolean,
-  ): Promise<ContractTransaction> => {
-    return await Ducklings.connect(GenomeSetter).mintTo(to, genome, isTransferable ?? true);
-  };
-
-  interface TokenIdAndGenome {
-    tokenId: number;
-    genome: bigint;
-  }
-
-  const extractMintedTokenId = async (tx: ContractTransaction): Promise<TokenIdAndGenome> => {
-    const receipt = await tx.wait();
-    const event = receipt.events?.find((e) => e.event === 'Minted');
-    const tokenId = event?.args?.tokenId.toNumber() as number;
-    const genome = event?.args?.genome.toBigInt() as bigint;
-    return { tokenId, genome };
-  };
+  let mintTo: MintToFuncT;
+  let generateAndMintGenomes: GenerateAndMintGenomesFunctT;
 
   const isCollectionMutating = async (rarity: Rarities): Promise<boolean> => {
     const tx = await Game.isCollectionMutating(rarity);
@@ -86,32 +75,10 @@ describe('DuckyFamilyV1 melding', () => {
 
   beforeEach(async () => {
     ({ Someone, GenomeSetter, Duckies, Ducklings, Game, GameAsSomeone } = await setup());
+
+    mintTo = setupMintTo(Ducklings.connect(GenomeSetter));
+    generateAndMintGenomes = setupGenerateAndMintGenomes(mintTo, Someone.address);
   });
-
-  interface TokenIdsAndGenomes {
-    tokenIds: number[];
-    genomes: bigint[];
-  }
-
-  const generateAndMintGenomes = async (
-    collection: Collections,
-    config?: RandomGenomeConfig & { amount?: number },
-  ): Promise<TokenIdsAndGenomes> => {
-    const tokenIds: number[] = [];
-    const genomes: bigint[] = [];
-
-    const amount = config?.amount ?? 5;
-
-    for (let i = 0; i < amount; i++) {
-      const tokenIdAndGenome = await extractMintedTokenId(
-        await mintTo(Someone.address, randomGenome(collection, config)),
-      );
-      tokenIds.push(tokenIdAndGenome.tokenId);
-      genomes.push(tokenIdAndGenome.genome);
-    }
-
-    return { tokenIds, genomes };
-  };
 
   describe('requireGenomesSatisfyMelding', () => {
     it('success on Common Duckling', async () => {
