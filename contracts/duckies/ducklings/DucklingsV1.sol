@@ -10,6 +10,8 @@ import '@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol';
 
 import '../../interfaces/IDucklings.sol';
+import '../games/Genome.sol';
+import '../games/Flags.sol';
 
 contract DucklingsV1 is
 	Initializable,
@@ -21,6 +23,8 @@ contract DucklingsV1 is
 {
 	using CountersUpgradeable for CountersUpgradeable.Counter;
 	using {StringsUpgradeable.toString} for uint256;
+	using Genome for uint256;
+	using Flags for uint8;
 
 	error InvalidTokenId(uint256 tokenId);
 
@@ -33,11 +37,14 @@ contract DucklingsV1 is
 	address private _royaltiesCollector;
 	uint32 private constant ROYALTY_FEE = 1000; // 10%
 
+	// config
+	uint8 public constant FLAGS_GENE_IDX = 0;
+	uint8 public constant COLLECTION_GENE_IDX = 1;
+
 	string public apiBaseURL;
 
 	CountersUpgradeable.Counter public nextNewTokenId;
 	mapping(uint256 => Duckling) public tokenToDuckling;
-	mapping(uint256 => bool) public isTokenNotTransferable; // use inverse here to make all tokens transferable by default
 
 	// ------- Initializer -------
 
@@ -133,6 +140,12 @@ contract DucklingsV1 is
 		return true;
 	}
 
+	function setGenome(uint256 tokenId, uint256 genome) external onlyRole(GAME_ROLE) {
+		if (!_exists(tokenId)) revert InvalidTokenId(tokenId);
+
+		tokenToDuckling[tokenId].genome = genome;
+	}
+
 	function getGenome(uint256 tokenId) external view returns (uint256) {
 		if (!_exists(tokenId)) revert InvalidTokenId(tokenId);
 		return tokenToDuckling[tokenId].genome;
@@ -153,15 +166,10 @@ contract DucklingsV1 is
 	function isTokenTransferable(uint256 tokenId) external view returns (bool) {
 		if (!_exists(tokenId)) revert InvalidTokenId(tokenId);
 
-		return !isTokenNotTransferable[tokenId];
-	}
-
-	function setTransferable(uint256 tokenId, bool isTransferable) external onlyRole(GAME_ROLE) {
-		if (!_exists(tokenId)) revert InvalidTokenId(tokenId);
-
-		isTokenNotTransferable[tokenId] = !isTransferable;
-
-		emit TransferableSet(tokenId, isTransferable);
+		return
+			tokenToDuckling[tokenId].genome.getGene(FLAGS_GENE_IDX).getFlag(
+				Flags.IS_TRANSFERABLE_FLAG
+			);
 	}
 
 	function _beforeTokenTransfer(
@@ -173,44 +181,39 @@ contract DucklingsV1 is
 		// burn for not transferable is allowed
 		if (to == address(0)) return;
 
-		if (isTokenNotTransferable[firstTokenId]) revert TokenNotTransferable(firstTokenId);
+		if (
+			tokenToDuckling[firstTokenId].genome.getGene(FLAGS_GENE_IDX).getFlag(
+				Flags.IS_TRANSFERABLE_FLAG
+			)
+		) revert TokenNotTransferable(firstTokenId);
 	}
 
 	function mintTo(
 		address to,
-		uint256 genome,
-		bool isTransferable
+		uint256 genome
 	) external onlyRole(GAME_ROLE) returns (uint256 tokenId) {
-		return _mintTo(to, genome, isTransferable);
+		return _mintTo(to, genome);
 	}
 
 	function mintBatchTo(
 		address to,
-		uint256[] calldata genomes,
-		bool isTransferable
+		uint256[] calldata genomes
 	) external onlyRole(GAME_ROLE) returns (uint256[] memory tokenIds) {
 		tokenIds = new uint256[](genomes.length);
 		for (uint8 i = 0; i < genomes.length; i++) {
-			tokenIds[i] = _mintTo(to, genomes[i], isTransferable);
+			tokenIds[i] = _mintTo(to, genomes[i]);
 		}
 	}
 
-	function _mintTo(
-		address to,
-		uint256 genome,
-		bool isTransferable
-	) internal returns (uint256 tokenId) {
+	function _mintTo(address to, uint256 genome) internal returns (uint256 tokenId) {
 		tokenId = nextNewTokenId.current();
 		uint64 birthdate = uint64(block.timestamp);
 		tokenToDuckling[tokenId] = Duckling(genome, birthdate);
 
 		_safeMint(to, tokenId);
-		// no need to check if token exists, it has been just minted
-		isTokenNotTransferable[tokenId] = !isTransferable;
 
 		nextNewTokenId.increment();
-		emit Minted(to, tokenId, isTransferable, genome, birthdate, block.chainid);
-		emit TransferableSet(tokenId, isTransferable);
+		emit Minted(to, tokenId, genome, birthdate, block.chainid);
 	}
 
 	function burn(uint256 tokenId) external onlyRole(GAME_ROLE) {
