@@ -23,12 +23,12 @@ library Genome {
 
 	uint8 public constant FLAG_TRANSFERABLE = 1; // 0b0000_0001
 
-	function getFlags(uint256 genome) internal pure returns (uint8) {
-		return getGene(genome, FLAGS_GENE_IDX);
+	function getFlags(uint256 self) internal pure returns (uint8) {
+		return getGene(self, FLAGS_GENE_IDX);
 	}
 
 	function setGene(
-		uint256 genome,
+		uint256 self,
 		uint8 gene,
 		// by specifying uint8 we set maxCap for gene values, which is 256
 		uint8 value
@@ -38,33 +38,33 @@ library Genome {
 		uint8 shiftingBy = gene * BITS_PER_GENE;
 
 		// remember genes we will shift off
-		uint256 shiftedPart = genome & ((1 << shiftingBy) - 1);
+		uint256 shiftedPart = self & ((1 << shiftingBy) - 1);
 
 		// shift right so that genome's rightmost bit is the geneBlock's rightmost
-		genome >>= shiftingBy;
+		self >>= shiftingBy;
 
 		// clear previous gene value by shifting it off
-		genome >>= BITS_PER_GENE;
-		genome <<= BITS_PER_GENE;
+		self >>= BITS_PER_GENE;
+		self <<= BITS_PER_GENE;
 
 		// update gene's value
-		genome += value;
+		self += value;
 
 		// reserve space for restoring previously shifted off values
-		genome <<= shiftingBy;
+		self <<= shiftingBy;
 
 		// restore previously shifted off values
-		genome += shiftedPart;
+		self += shiftedPart;
 
-		return genome;
+		return self;
 	}
 
-	function getGene(uint256 genome, uint8 gene) internal pure returns (uint8) {
+	function getGene(uint256 self, uint8 gene) internal pure returns (uint8) {
 		// number of bytes from genome's rightmost and geneBlock's rightmost
 		// NOTE: maximum index of a gene is actually uint5
 		uint8 shiftingBy = gene * BITS_PER_GENE;
 
-		uint256 temp = genome >> shiftingBy;
+		uint256 temp = self >> shiftingBy;
 		return uint8(temp & ((1 << BITS_PER_GENE) - 1));
 	}
 
