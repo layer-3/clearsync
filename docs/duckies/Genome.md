@@ -55,7 +55,7 @@ The Magic number is on the **most significant byte** (MSB)
 
 ## Mythic Schema 0xD2
 
-| Pos  | Attribute      | Distribution | Actual Qty Ducklings |
+| Pos  | Attribute      | Distribution | Actual Qty of Traits |
 | ---- | -------------- | ------------ | -------------------- |
 | 1    | Collection     | static       | 3                    |
 | 2    | UniqId         | static       | 60                   |
@@ -63,10 +63,10 @@ The Magic number is on the **most significant byte** (MSB)
 | 3    | Skill          | uneven       | 12                   |
 | 4    | Habitat        | even         | 5                    |
 | 5    | Breed          | uneven       | 20                   |
-| 6    | Empty          |              |                      |
-| 7    | Empty          |              |                      |
-| 8    | Empty          |              |                      |
-| 9    | Empty          |              |                      |
+| 6    | Birthplace     | even         |                      |
+| 7    | Quirk          | uneven       |                      |
+| 8    | Favorite Food  | uneven       |                      |
+| 9    | Favorite Color | even         |                      |
 | 10   | Empty          |              |                      |
 | 11   | Empty          |              |                      |
 | 12   | Empty          |              |                      |
