@@ -432,7 +432,7 @@ contract DuckyFamilyV1 is IVoucher, AccessControl, Random {
 		bool isTransferable
 	) internal returns (uint256) {
 		if (meldingTokenIds.length != FLOCK_SIZE) revert MeldingRulesViolated(meldingTokenIds);
-		if (!ducklingsContract.isOwnerOf(owner, meldingTokenIds))
+		if (!ducklingsContract.isOwnerOfBatch(owner, meldingTokenIds))
 			revert MeldingRulesViolated(meldingTokenIds);
 
 		uint256[] memory meldingGenomes = ducklingsContract.getGenomes(meldingTokenIds);

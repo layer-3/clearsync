@@ -128,7 +128,10 @@ contract DucklingsV1 is
 		return account == ownerOf(tokenId);
 	}
 
-	function isOwnerOf(address account, uint256[] calldata tokenIds) external view returns (bool) {
+	function isOwnerOfBatch(
+		address account,
+		uint256[] calldata tokenIds
+	) external view returns (bool) {
 		if (account == address(0)) revert InvalidAddress(account);
 
 		// first check if all tokens exist

@@ -16,7 +16,10 @@ interface IDucklings is IERC721Upgradeable {
 
 	function isOwnerOf(address account, uint256 tokenIds) external view returns (bool);
 
-	function isOwnerOf(address account, uint256[] calldata tokenIds) external view returns (bool);
+	function isOwnerOfBatch(
+		address account,
+		uint256[] calldata tokenIds
+	) external view returns (bool);
 
 	function getGenome(uint256 tokenId) external view returns (uint256);
 

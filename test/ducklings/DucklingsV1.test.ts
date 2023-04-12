@@ -121,62 +121,59 @@ describe('DucklingsV1', () => {
 
   describe('IDucklings', () => {
     describe('is owner of', () => {
-      describe('isOwnerOf(address,uint256)', () => {
+      describe('isOwnerOf', () => {
         it('return true for owner of 1 NFT', async () => {
           await mintTo(Someone.address, GENOME);
-          expect(await Ducklings['isOwnerOf(address,uint256)'](Someone.address, 0)).to.be.true;
+          expect(await Ducklings.isOwnerOf(Someone.address, 0)).to.be.true;
         });
 
         it('return false for not owner of 1 NFT', async () => {
           await mintTo(Someone.address, GENOME);
-          expect(await Ducklings['isOwnerOf(address,uint256)'](Someother.address, 0)).to.be.false;
+          expect(await Ducklings.isOwnerOf(Someother.address, 0)).to.be.false;
         });
 
         it('revert when quering for address(0)', async () => {
           await mintTo(Someone.address, GENOME);
-          await expect(Ducklings['isOwnerOf(address,uint256)'](constants.AddressZero, 0))
+          await expect(Ducklings.isOwnerOf(constants.AddressZero, 0))
             .to.be.revertedWithCustomError(Ducklings, 'InvalidAddress')
             .withArgs(constants.AddressZero);
         });
 
         it('revert when token does not exist', async () => {
-          await expect(Ducklings['isOwnerOf(address,uint256)'](Someother.address, 0))
+          await expect(Ducklings.isOwnerOf(Someother.address, 0))
             .to.be.revertedWithCustomError(Ducklings, 'InvalidTokenId')
             .withArgs(0);
         });
       });
 
       // TODO: rename to isOwnerOfBatch
-      describe('isOwnerOf(address,uint256[]', () => {
+      describe('isOwnerOfBatch', () => {
         it('return true for owner of several NFTs', async () => {
           await mintTo(Someone.address, GENOME);
           await mintTo(Someone.address, MYTHIC_GENOME);
 
-          expect(await Ducklings['isOwnerOf(address,uint256[])'](Someone.address, [0, 1])).to.be
-            .true;
+          expect(await Ducklings.isOwnerOfBatch(Someone.address, [0, 1])).to.be.true;
         });
 
         it('return false for not owner of at least 1 of several NFTs', async () => {
           await mintTo(Someone.address, GENOME);
           await mintTo(Someother.address, MYTHIC_GENOME);
 
-          expect(await Ducklings['isOwnerOf(address,uint256[])'](Someone.address, [0, 1])).to.be
-            .false;
+          expect(await Ducklings.isOwnerOfBatch(Someone.address, [0, 1])).to.be.false;
         });
 
         it('return false for not owner of all NFTs', async () => {
           await mintTo(Someone.address, GENOME);
           await mintTo(Someone.address, MYTHIC_GENOME);
 
-          expect(await Ducklings['isOwnerOf(address,uint256[])'](Someother.address, [0, 1])).to.be
-            .false;
+          expect(await Ducklings.isOwnerOfBatch(Someother.address, [0, 1])).to.be.false;
         });
 
         it('revert when quering for address(0)', async () => {
           await mintTo(Someone.address, GENOME);
           await mintTo(Someone.address, MYTHIC_GENOME);
 
-          await expect(Ducklings['isOwnerOf(address,uint256[])'](constants.AddressZero, [0, 1]))
+          await expect(Ducklings.isOwnerOfBatch(constants.AddressZero, [0, 1]))
             .to.be.revertedWithCustomError(Ducklings, 'InvalidAddress')
             .withArgs(constants.AddressZero);
         });
@@ -184,7 +181,7 @@ describe('DucklingsV1', () => {
         it('revert when at least one token does not exist', async () => {
           await mintTo(Someone.address, GENOME);
 
-          await expect(Ducklings['isOwnerOf(address,uint256[])'](Someother.address, [0, 1]))
+          await expect(Ducklings.isOwnerOfBatch(Someother.address, [0, 1]))
             .to.be.revertedWithCustomError(Ducklings, 'InvalidTokenId')
             .withArgs(1);
         });
