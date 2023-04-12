@@ -13,13 +13,10 @@ interface IDucklings is IERC721Upgradeable {
 
 	// events
 	event Minted(address to, uint256 tokenId, uint256 genome, uint64 birthdate, uint256 chainId);
-	event GenomeSet(uint256 tokenId, uint256 genome);
 
 	function isOwnerOf(address account, uint256 tokenIds) external view returns (bool);
 
 	function isOwnerOf(address account, uint256[] calldata tokenIds) external view returns (bool);
-
-	function setGenome(uint256 tokenId, uint256 genome) external;
 
 	function getGenome(uint256 tokenId) external view returns (uint256);
 
