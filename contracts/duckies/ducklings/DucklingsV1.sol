@@ -27,6 +27,7 @@ contract DucklingsV1 is
 
 	error InvalidTokenId(uint256 tokenId);
 	error InvalidAddress(address addr);
+	error InvalidMagicNumber(uint8 magicNumber);
 
 	// Roles
 	bytes32 public constant UPGRADER_ROLE = keccak256('UPGRADER_ROLE');
@@ -122,12 +123,20 @@ contract DucklingsV1 is
 
 	function isOwnerOf(address account, uint256 tokenId) external view returns (bool) {
 		if (account == address(0)) revert InvalidAddress(account);
+		if (!_exists(tokenId)) revert InvalidTokenId(tokenId);
+
 		return account == ownerOf(tokenId);
 	}
 
 	function isOwnerOf(address account, uint256[] calldata tokenIds) external view returns (bool) {
 		if (account == address(0)) revert InvalidAddress(account);
 
+		// first check if all tokens exist
+		for (uint256 i = 0; i < tokenIds.length; i++) {
+			if (!_exists(tokenIds[i])) revert InvalidTokenId(tokenIds[i]);
+		}
+
+		// then check if all tokens belong to the account
 		for (uint256 i = 0; i < tokenIds.length; i++) {
 			if (account != ownerOf(tokenIds[i])) {
 				return false;
@@ -196,6 +205,11 @@ contract DucklingsV1 is
 
 	function _mintTo(address to, uint256 genome) internal returns (uint256 tokenId) {
 		if (to == address(0)) revert InvalidAddress(to);
+
+		uint8 magicNum = genome.getGene(Genome.MAGIC_NUMBER_GENE_IDX);
+
+		if (magicNum != Genome.BASE_MAGIC_NUMBER && magicNum != Genome.MYTHIC_MAGIC_NUMBER)
+			revert InvalidMagicNumber(magicNum);
 
 		tokenId = nextNewTokenId.current();
 		uint64 birthdate = uint64(block.timestamp);

@@ -334,6 +334,7 @@ contract DuckyFamilyV1 is IVoucher, AccessControl, Random {
 		genome = genome.setGene(collectionGeneIdx, collectionId);
 		genome = genome.setGene(rarityGeneIdx, uint8(_generateRarity()));
 		genome = _generateAndSetGenes(genome, collectionId);
+		genome = genome.setGene(Genome.MAGIC_NUMBER_GENE_IDX, Genome.BASE_MAGIC_NUMBER);
 
 		return genome;
 	}
@@ -408,6 +409,8 @@ contract DuckyFamilyV1 is IVoucher, AccessControl, Random {
 		uint256 genome;
 		genome = genome.setGene(collectionGeneIdx, mythicCollectionId);
 		genome = genome.setGene(uint8(MythicGenes.UniqId), uint8(uniqId));
+		genome = genome.setGene(Genome.MAGIC_NUMBER_GENE_IDX, Genome.MYTHIC_MAGIC_NUMBER);
+
 		return genome;
 	}
 
@@ -525,6 +528,8 @@ contract DuckyFamilyV1 is IVoucher, AccessControl, Random {
 			);
 			meldedGenome = meldedGenome.setGene(generativeGenesOffset + i, geneValue);
 		}
+
+		meldedGenome = meldedGenome.setGene(Genome.MAGIC_NUMBER_GENE_IDX, Genome.BASE_MAGIC_NUMBER);
 
 		return meldedGenome;
 	}

@@ -18,10 +18,15 @@ library Genome {
 	uint8 public constant BITS_PER_GENE = 8;
 
 	uint8 public constant COLLECTION_GENE_IDX = 0;
-	uint8 public constant FLAGS_GENE_IDX = 30;
-	uint8 public constant MAGIC_NUMBER_GENE_IDX = 31;
 
+	// Flags
+	uint8 public constant FLAGS_GENE_IDX = 30;
 	uint8 public constant FLAG_TRANSFERABLE = 1; // 0b0000_0001
+
+	// Magic number
+	uint8 public constant MAGIC_NUMBER_GENE_IDX = 31;
+	uint8 public constant BASE_MAGIC_NUMBER = 209; // Ð
+	uint8 public constant MYTHIC_MAGIC_NUMBER = 210; // Ð + 1
 
 	function getFlags(uint256 self) internal pure returns (uint8) {
 		return getGene(self, FLAGS_GENE_IDX);
