@@ -166,13 +166,13 @@ contract DucklingsV1 is
 	}
 
 	function _beforeTokenTransfer(
-		address, // from,
+		address from,
 		address to,
 		uint256 firstTokenId,
 		uint256 // batchSize - always 1 in ERC721
 	) internal view override {
-		// burn for not transferable is allowed
-		if (to == address(0)) return;
+		// mint and burn for not transferable is allowed
+		if (from == address(0) || to == address(0)) return;
 
 		if (!_isTransferable(firstTokenId)) revert TokenNotTransferable(firstTokenId);
 	}
@@ -189,6 +189,7 @@ contract DucklingsV1 is
 		uint256[] calldata genomes
 	) external onlyRole(GAME_ROLE) returns (uint256[] memory tokenIds) {
 		tokenIds = new uint256[](genomes.length);
+
 		for (uint8 i = 0; i < genomes.length; i++) {
 			tokenIds[i] = _mintTo(to, genomes[i]);
 		}
