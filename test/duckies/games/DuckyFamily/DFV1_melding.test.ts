@@ -698,12 +698,7 @@ describe('DuckyFamilyV1 melding', () => {
           [DucklingGenes.Color]: 0,
         });
 
-        try {
-          await GameAsSomeone.meldFlock(tokenIds);
-          assert(true);
-        } catch {
-          assert(false);
-        }
+        await GameAsSomeone.meldFlock(tokenIds);
       });
 
       it('success on melding Rare Ducklings', async () => {

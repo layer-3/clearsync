@@ -2,6 +2,7 @@ import {
   Collections,
   Genes,
   MythicGenes,
+  baseMagicNumber,
   collectionGeneIdx,
   collectionsGeneValuesNum,
   generativeGenesOffset,
@@ -15,7 +16,10 @@ import type { DucklingsV1 } from '../../../../typechain-types';
 import type { ContractTransaction } from 'ethers';
 
 export type CollectionGenes = { [key in Genes]?: number };
-export type RandomGenomeConfig = CollectionGenes & { isTransferable?: boolean };
+export type RandomGenomeConfig = CollectionGenes & {
+  isTransferable?: boolean;
+  magicNumber?: number;
+};
 
 export const randomMaxNum = (maxNum: number): number => Math.floor(Math.random() * (maxNum + 1));
 
@@ -51,6 +55,10 @@ export function randomGenome(collectionId: Collections, config?: RandomGenomeCon
   } else {
     genome.setGene(30, 0);
   }
+
+  // default is base magic number as this function generates only Duckling and Zombeak genomes
+  const magicNumber = config?.magicNumber ?? baseMagicNumber;
+  genome.setGene(31, magicNumber);
 
   return genome.genome;
 }

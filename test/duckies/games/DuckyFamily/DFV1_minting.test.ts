@@ -11,10 +11,13 @@ import {
   MYTHIC_DISPERSION,
   MythicGenes,
   Rarities,
+  baseMagicNumber,
   collectionGeneIdx,
   collectionsGeneValuesNum,
   generativeGenesOffset,
+  magicNumberGeneIdx,
   mythicAmount,
+  mythicMagicNumber,
   rarityGeneIdx,
 } from './config';
 import { Genome } from './genome';
@@ -80,6 +83,12 @@ describe('DuckyFamilyV1 minting', () => {
       const genome = new Genome(_genome);
       expect(genome.getGene(collectionGeneIdx)).to.equal(Collections.Zombeak);
       expect(genome.getGene(rarityGeneIdx)).to.equal(0);
+    });
+
+    it('set correct magic number', async () => {
+      const _genome = await generateGenome(Collections.Duckling);
+      const genome = new Genome(_genome);
+      expect(genome.getGene(magicNumberGeneIdx)).to.equal(baseMagicNumber);
     });
 
     it('revert on collectionId not Duckling or Zombeak', async () => {
@@ -239,6 +248,12 @@ describe('DuckyFamilyV1 minting', () => {
         theoUniqId - MYTHIC_DISPERSION,
         mythicAmount,
       );
+    });
+
+    it('set correct magic number', async () => {
+      const _genome = await generateMythicGenome(genomesWithTheoUniqId(0));
+      const genome = new Genome(_genome);
+      expect(genome.getGene(magicNumberGeneIdx)).to.equal(mythicMagicNumber);
     });
   });
 

@@ -5,6 +5,12 @@ import { assert, expect } from 'chai';
 import { ACCOUNT_MISSING_ROLE } from '../helpers/common';
 import { connectGroup } from '../helpers/connect';
 import { randomGenome } from '../duckies/games/DuckyFamily/helpers';
+import { Genome } from '../duckies/games/DuckyFamily/genome';
+import {
+  baseMagicNumber,
+  magicNumberGeneIdx,
+  mythicMagicNumber,
+} from '../duckies/games/DuckyFamily/config';
 
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import type { DucklingsV1, TESTDucklingsV2 } from '../../typechain-types';
@@ -38,8 +44,8 @@ const GAME_ROLE = utils.id('GAME_ROLE');
 
 const API_BASE_URL = 'test-url.com';
 
-const GENOME = 42n;
-const GENOME_2 = 422n;
+const GENOME = new Genome().setGene(magicNumberGeneIdx, baseMagicNumber).genome;
+const MYTHIC_GENOME = new Genome().setGene(magicNumberGeneIdx, mythicMagicNumber).genome;
 
 describe('DucklingsV1', () => {
   let Admin: SignerWithAddress;
@@ -115,37 +121,73 @@ describe('DucklingsV1', () => {
 
   describe('IDucklings', () => {
     describe('is owner of', () => {
-      it('return true for owner of 1 NFT', async () => {
-        await mintTo(Someone.address, GENOME);
-        expect(await Ducklings['isOwnerOf(address,uint256)'](Someone.address, 0)).to.be.true;
+      describe('isOwnerOf(address,uint256)', () => {
+        it('return true for owner of 1 NFT', async () => {
+          await mintTo(Someone.address, GENOME);
+          expect(await Ducklings['isOwnerOf(address,uint256)'](Someone.address, 0)).to.be.true;
+        });
+
+        it('return false for not owner of 1 NFT', async () => {
+          await mintTo(Someone.address, GENOME);
+          expect(await Ducklings['isOwnerOf(address,uint256)'](Someother.address, 0)).to.be.false;
+        });
+
+        it('revert when quering for address(0)', async () => {
+          await mintTo(Someone.address, GENOME);
+          await expect(Ducklings['isOwnerOf(address,uint256)'](constants.AddressZero, 0))
+            .to.be.revertedWithCustomError(Ducklings, 'InvalidAddress')
+            .withArgs(constants.AddressZero);
+        });
+
+        it('revert when token does not exist', async () => {
+          await expect(Ducklings['isOwnerOf(address,uint256)'](Someother.address, 0))
+            .to.be.revertedWithCustomError(Ducklings, 'InvalidTokenId')
+            .withArgs(0);
+        });
       });
 
-      it('return false for not owner of 1 NFT', async () => {
-        await mintTo(Someone.address, GENOME);
-        expect(await Ducklings['isOwnerOf(address,uint256)'](Someother.address, 0)).to.be.false;
-      });
+      // TODO: rename to isOwnerOfBatch
+      describe('isOwnerOf(address,uint256[]', () => {
+        it('return true for owner of several NFTs', async () => {
+          await mintTo(Someone.address, GENOME);
+          await mintTo(Someone.address, MYTHIC_GENOME);
 
-      it('return true for owner of several NFTs', async () => {
-        await mintTo(Someone.address, GENOME);
-        await mintTo(Someone.address, GENOME_2);
+          expect(await Ducklings['isOwnerOf(address,uint256[])'](Someone.address, [0, 1])).to.be
+            .true;
+        });
 
-        expect(await Ducklings['isOwnerOf(address,uint256[])'](Someone.address, [0, 1])).to.be.true;
-      });
+        it('return false for not owner of at least 1 of several NFTs', async () => {
+          await mintTo(Someone.address, GENOME);
+          await mintTo(Someother.address, MYTHIC_GENOME);
 
-      it('return false for not owner of at least 1 of several NFTs', async () => {
-        await mintTo(Someone.address, GENOME);
-        await mintTo(Someother.address, GENOME_2);
+          expect(await Ducklings['isOwnerOf(address,uint256[])'](Someone.address, [0, 1])).to.be
+            .false;
+        });
 
-        expect(await Ducklings['isOwnerOf(address,uint256[])'](Someone.address, [0, 1])).to.be
-          .false;
-      });
+        it('return false for not owner of all NFTs', async () => {
+          await mintTo(Someone.address, GENOME);
+          await mintTo(Someone.address, MYTHIC_GENOME);
 
-      it('return false for not owner of all NFTs', async () => {
-        await mintTo(Someone.address, GENOME);
-        await mintTo(Someone.address, GENOME_2);
+          expect(await Ducklings['isOwnerOf(address,uint256[])'](Someother.address, [0, 1])).to.be
+            .false;
+        });
 
-        expect(await Ducklings['isOwnerOf(address,uint256[])'](Someother.address, [0, 1])).to.be
-          .false;
+        it('revert when quering for address(0)', async () => {
+          await mintTo(Someone.address, GENOME);
+          await mintTo(Someone.address, MYTHIC_GENOME);
+
+          await expect(Ducklings['isOwnerOf(address,uint256[])'](constants.AddressZero, [0, 1]))
+            .to.be.revertedWithCustomError(Ducklings, 'InvalidAddress')
+            .withArgs(constants.AddressZero);
+        });
+
+        it('revert when at least one token does not exist', async () => {
+          await mintTo(Someone.address, GENOME);
+
+          await expect(Ducklings['isOwnerOf(address,uint256[])'](Someother.address, [0, 1]))
+            .to.be.revertedWithCustomError(Ducklings, 'InvalidTokenId')
+            .withArgs(1);
+        });
       });
     });
 
@@ -163,8 +205,8 @@ describe('DucklingsV1', () => {
 
       it('return correct genomes given array of token ids', async () => {
         await mintTo(Someone.address, GENOME);
-        await mintTo(Someone.address, GENOME_2);
-        expect(await Ducklings.getGenomes([0, 1])).to.deep.equal([GENOME, GENOME_2]);
+        await mintTo(Someone.address, MYTHIC_GENOME);
+        expect(await Ducklings.getGenomes([0, 1])).to.deep.equal([GENOME, MYTHIC_GENOME]);
       });
 
       it('revert when at least 1 token does not exist', async () => {
@@ -176,9 +218,18 @@ describe('DucklingsV1', () => {
     });
 
     describe('mintTo', () => {
-      it('Game can mint', async () => {
+      it('Game can mint base genome', async () => {
         try {
           await mintTo(Someone.address, GENOME);
+          assert(true);
+        } catch {
+          assert(false);
+        }
+      });
+
+      it('Game can mint mythic genome', async () => {
+        try {
+          await mintTo(Someone.address, MYTHIC_GENOME);
           assert(true);
         } catch {
           assert(false);
@@ -189,6 +240,20 @@ describe('DucklingsV1', () => {
         await expect(DucklingsAsSomeone.mintTo(Someone.address, GENOME)).to.be.rejectedWith(
           ACCOUNT_MISSING_ROLE(Someone.address, GAME_ROLE),
         );
+      });
+
+      it('revert on minting to address(0)', async () => {
+        await expect(mintTo(constants.AddressZero, GENOME))
+          .to.be.revertedWithCustomError(Ducklings, 'InvalidAddress')
+          .withArgs(ethers.constants.AddressZero);
+      });
+
+      it('revert on minting with invalid magic number', async () => {
+        const invalidMagicNumber = 0;
+        const invalidMNGenome = new Genome().setGene(magicNumberGeneIdx, invalidMagicNumber).genome;
+        await expect(mintTo(Someone.address, invalidMNGenome))
+          .to.be.revertedWithCustomError(Ducklings, 'InvalidMagicNumber')
+          .withArgs(invalidMagicNumber);
       });
 
       it('genome is set to NFT', async () => {
@@ -212,12 +277,12 @@ describe('DucklingsV1', () => {
 
         await expectDucklingHasGenome(Ducklings, 0, GENOME);
 
-        await mintTo(Someone.address, GENOME_2);
+        await mintTo(Someone.address, MYTHIC_GENOME);
         await expectTokenExists(Ducklings, 0);
         await expectTokenExists(Ducklings, 1);
         await expectTokenNotExists(Ducklings, 2);
 
-        await expectDucklingHasGenome(Ducklings, 1, GENOME_2);
+        await expectDucklingHasGenome(Ducklings, 1, MYTHIC_GENOME);
       });
 
       it('Mint event is emitted', async () => {
@@ -232,9 +297,9 @@ describe('DucklingsV1', () => {
     });
 
     describe('mintBatchTo', () => {
-      it('Game can mint', async () => {
+      it('Game can mint genomes with both base and mythic magic numbers', async () => {
         try {
-          await mintBatchTo(Someone.address, [GENOME, GENOME_2]);
+          await mintBatchTo(Someone.address, [GENOME, MYTHIC_GENOME]);
           assert(true);
         } catch {
           assert(false);
@@ -243,18 +308,32 @@ describe('DucklingsV1', () => {
 
       it('revert on not Game minting', async () => {
         await expect(
-          DucklingsAsSomeone.mintBatchTo(Someone.address, [GENOME, GENOME_2]),
+          DucklingsAsSomeone.mintBatchTo(Someone.address, [GENOME, MYTHIC_GENOME]),
         ).to.be.rejectedWith(ACCOUNT_MISSING_ROLE(Someone.address, GAME_ROLE));
       });
 
+      it('revert on minting to address(0)', async () => {
+        await expect(mintBatchTo(ethers.constants.AddressZero, [GENOME, MYTHIC_GENOME]))
+          .to.be.revertedWithCustomError(Ducklings, 'InvalidAddress')
+          .withArgs(ethers.constants.AddressZero);
+      });
+
+      it('revert on minting with invalid magic number', async () => {
+        const invalidMagicNumber = 0;
+        const invalidMNGenome = new Genome().setGene(magicNumberGeneIdx, invalidMagicNumber).genome;
+        await expect(mintBatchTo(Someone.address, [GENOME, invalidMNGenome]))
+          .to.be.revertedWithCustomError(Ducklings, 'InvalidMagicNumber')
+          .withArgs(invalidMagicNumber);
+      });
+
       it('genomes are set to NFTs', async () => {
-        await mintBatchTo(Someone.address, [GENOME, GENOME_2]);
+        await mintBatchTo(Someone.address, [GENOME, MYTHIC_GENOME]);
         await expectDucklingHasGenome(Ducklings, 0, GENOME);
-        await expectDucklingHasGenome(Ducklings, 1, GENOME_2);
+        await expectDucklingHasGenome(Ducklings, 1, MYTHIC_GENOME);
       });
 
       it('NFTs birthdate is block timestamp', async () => {
-        await mintBatchTo(Someone.address, [GENOME, GENOME_2]);
+        await mintBatchTo(Someone.address, [GENOME, MYTHIC_GENOME]);
         const Duckling1 = await Ducklings.tokenToDuckling(0);
         const Duckling2 = await Ducklings.tokenToDuckling(0);
 
@@ -265,27 +344,27 @@ describe('DucklingsV1', () => {
       });
 
       it('NFTs id are incremental', async () => {
-        await mintBatchTo(Someone.address, [GENOME, GENOME_2]);
+        await mintBatchTo(Someone.address, [GENOME, MYTHIC_GENOME]);
         await expectTokenExists(Ducklings, 0);
         await expectTokenExists(Ducklings, 1);
         await expectTokenNotExists(Ducklings, 2);
 
         await expectDucklingHasGenome(Ducklings, 0, GENOME);
-        await expectDucklingHasGenome(Ducklings, 1, GENOME_2);
+        await expectDucklingHasGenome(Ducklings, 1, MYTHIC_GENOME);
 
         // mint once more
-        await mintTo(Someone.address, GENOME_2);
+        await mintTo(Someone.address, MYTHIC_GENOME);
         await expectTokenExists(Ducklings, 0);
         await expectTokenExists(Ducklings, 1);
         await expectTokenExists(Ducklings, 2);
         await expectTokenNotExists(Ducklings, 3);
 
-        await expectDucklingHasGenome(Ducklings, 2, GENOME_2);
+        await expectDucklingHasGenome(Ducklings, 2, MYTHIC_GENOME);
       });
 
       it('Mint events are emitted', async () => {
         const { chainId } = await ethers.provider.getNetwork();
-        const tx = await mintBatchTo(Someone.address, [GENOME, GENOME_2]);
+        const tx = await mintBatchTo(Someone.address, [GENOME, MYTHIC_GENOME]);
         const latestBlock = await ethers.provider.getBlock('latest');
 
         await expect(tx)
@@ -294,11 +373,11 @@ describe('DucklingsV1', () => {
 
         await expect(tx)
           .to.emit(Ducklings, 'Minted')
-          .withArgs(Someone.address, 1, GENOME_2, latestBlock.timestamp, chainId);
+          .withArgs(Someone.address, 1, MYTHIC_GENOME, latestBlock.timestamp, chainId);
       });
     });
 
-    describe.only('transferability', () => {
+    describe('transferability', () => {
       it('isTransferable return true for transferable token', async () => {
         const transferableGenome = randomGenome(0, { isTransferable: true });
         await mintTo(Someone.address, transferableGenome);
@@ -309,6 +388,12 @@ describe('DucklingsV1', () => {
         const nonTransferableGenome = randomGenome(0, { isTransferable: false });
         await mintTo(Someone.address, nonTransferableGenome);
         expect(await Ducklings.isTransferable(0)).to.equal(false);
+      });
+
+      it('revert when token does not exist', async () => {
+        await expect(Ducklings.isTransferable(0))
+          .to.be.revertedWithCustomError(Ducklings, 'InvalidTokenId')
+          .withArgs(0);
       });
 
       it('can tranfer transferable token', async () => {
@@ -354,7 +439,7 @@ describe('DucklingsV1', () => {
 
     describe('burnBatch', () => {
       it('Game can burn several tokens of the same owner', async () => {
-        await mintBatchTo(Someone.address, [GENOME, GENOME_2]);
+        await mintBatchTo(Someone.address, [GENOME, MYTHIC_GENOME]);
         await DucklingsAsGame.burnBatch([0, 1]);
         await expectTokenNotExists(Ducklings, 0);
         await expectTokenNotExists(Ducklings, 1);
@@ -368,7 +453,7 @@ describe('DucklingsV1', () => {
 
       it('Game can burn several tokens of the different owners', async () => {
         await mintTo(Someone.address, GENOME);
-        await mintTo(Someother.address, GENOME_2);
+        await mintTo(Someother.address, MYTHIC_GENOME);
         await DucklingsAsGame.burnBatch([0, 1]);
         await expectTokenNotExists(Ducklings, 0);
         await expectTokenNotExists(Ducklings, 1);
