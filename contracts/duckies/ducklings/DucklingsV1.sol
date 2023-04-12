@@ -11,6 +11,8 @@ import '@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol';
 
 import '../../interfaces/IDucklings.sol';
 
+import '../games/Genome.sol';
+
 contract DucklingsV1 is
 	Initializable,
 	IDucklings,
@@ -21,15 +23,21 @@ contract DucklingsV1 is
 {
 	using CountersUpgradeable for CountersUpgradeable.Counter;
 	using {StringsUpgradeable.toString} for uint256;
+	using Genome for uint256;
 
 	error InvalidTokenId(uint256 tokenId);
+	error InvalidAddress(address addr);
 
-	// roles
+	// Constants
+	uint8 internal constant FLAGS_GENE_IDX = 0;
+	uint8 internal constant COLLECTION_GENE_IDX = 1;
+	uint8 public constant FLAG_TRANSFERABLE = 0;
+
+	// Roles
 	bytes32 public constant UPGRADER_ROLE = keccak256('UPGRADER_ROLE');
-	bytes32 public constant MAINTAINER_ROLE = keccak256('MAINTAINER_ROLE');
 	bytes32 public constant GAME_ROLE = keccak256('GAME_ROLE');
 
-	// royalty
+	// Royalty
 	address private _royaltiesCollector;
 	uint32 private constant ROYALTY_FEE = 1000; // 10%
 
@@ -37,25 +45,23 @@ contract DucklingsV1 is
 
 	CountersUpgradeable.Counter public nextNewTokenId;
 	mapping(uint256 => Duckling) public tokenToDuckling;
-	mapping(uint256 => bool) public isTokenNotTransferable; // use inverse here to make all tokens transferable by default
 
 	// ------- Initializer -------
 
 	function initialize() external initializer {
-		__ERC721_init('Yellow Ducklings NFT Collection', 'YDNC');
+		__ERC721_init('Yellow Ducklings', 'DUCKLING');
 		__ERC721Royalty_init();
 		__AccessControl_init();
 		__UUPSUpgradeable_init();
 
 		_grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
 		_grantRole(UPGRADER_ROLE, msg.sender);
-		_grantRole(MAINTAINER_ROLE, msg.sender);
 
 		setRoyaltyCollector(msg.sender);
 		_setDefaultRoyalty(msg.sender, ROYALTY_FEE);
 	}
 
-	// -------- Upgrades --------
+	// ------- Upgradable -------
 
 	function _authorizeUpgrade(
 		address newImplementation
@@ -63,24 +69,24 @@ contract DucklingsV1 is
 
 	// -------- ERC721 --------
 
-	function _burn(uint256 tokenId) internal override(ERC721RoyaltyUpgradeable, ERC721Upgradeable) {
-		super._burn(tokenId);
+	function _burn(
+		uint256 existence
+	) internal override(ERC721RoyaltyUpgradeable, ERC721Upgradeable) {
+		// check on token existence is performed in ERC721Upgradeable._burn
+		super._burn(existence);
 	}
 
 	function tokenURI(
 		uint256 tokenId
 	) public view override(ERC721Upgradeable) returns (string memory) {
-		Duckling memory duckling = tokenToDuckling[tokenId];
+		if (!_exists(tokenId)) revert InvalidTokenId(tokenId);
 
-		return
-			bytes(apiBaseURL).length > 0
-				? string.concat(
-					apiBaseURL,
-					duckling.genome.toString(),
-					'-',
-					uint256(duckling.birthdate).toString()
-				)
-				: '';
+		Duckling memory duckling = tokenToDuckling[tokenId];
+		string memory genome = duckling.genome.toString();
+		string memory birthdate = uint256(duckling.birthdate).toString();
+		string memory uri = string.concat(apiBaseURL, genome, '-', birthdate);
+
+		return uri;
 	}
 
 	function supportsInterface(
@@ -113,17 +119,20 @@ contract DucklingsV1 is
 
 	// -------- API URL --------
 
-	function setAPIBaseURL(string calldata apiBaseURL_) external onlyRole(MAINTAINER_ROLE) {
+	function setAPIBaseURL(string calldata apiBaseURL_) external onlyRole(DEFAULT_ADMIN_ROLE) {
 		apiBaseURL = apiBaseURL_;
 	}
 
 	// -------- IDucklings --------
 
 	function isOwnerOf(address account, uint256 tokenId) external view returns (bool) {
+		if (account == address(0)) revert InvalidAddress(account);
 		return account == ownerOf(tokenId);
 	}
 
 	function isOwnerOf(address account, uint256[] calldata tokenIds) external view returns (bool) {
+		if (account == address(0)) revert InvalidAddress(account);
+
 		for (uint256 i = 0; i < tokenIds.length; i++) {
 			if (account != ownerOf(tokenIds[i])) {
 				return false;
@@ -150,18 +159,15 @@ contract DucklingsV1 is
 		return genomes;
 	}
 
-	function isTokenTransferable(uint256 tokenId) external view returns (bool) {
-		if (!_exists(tokenId)) revert InvalidTokenId(tokenId);
-
-		return !isTokenNotTransferable[tokenId];
+	function isTransferable(uint256 tokenId) external view returns (bool) {
+		return !_isTransferable(tokenId);
 	}
 
-	function setTransferable(uint256 tokenId, bool isTransferable) external onlyRole(GAME_ROLE) {
+	function _isTransferable(uint256 tokenId) internal view returns (bool) {
 		if (!_exists(tokenId)) revert InvalidTokenId(tokenId);
 
-		isTokenNotTransferable[tokenId] = !isTransferable;
-
-		emit TransferableSet(tokenId, isTransferable);
+		uint8 flags = tokenToDuckling[tokenId].genome.getGene(FLAGS_GENE_IDX);
+		return flags & (1 << FLAG_TRANSFERABLE) > 0;
 	}
 
 	function _beforeTokenTransfer(
@@ -173,44 +179,36 @@ contract DucklingsV1 is
 		// burn for not transferable is allowed
 		if (to == address(0)) return;
 
-		if (isTokenNotTransferable[firstTokenId]) revert TokenNotTransferable(firstTokenId);
+		if (!_isTransferable(firstTokenId)) revert TokenNotTransferable(firstTokenId);
 	}
 
 	function mintTo(
 		address to,
-		uint256 genome,
-		bool isTransferable
+		uint256 genome
 	) external onlyRole(GAME_ROLE) returns (uint256 tokenId) {
-		return _mintTo(to, genome, isTransferable);
+		return _mintTo(to, genome);
 	}
 
 	function mintBatchTo(
 		address to,
-		uint256[] calldata genomes,
-		bool isTransferable
+		uint256[] calldata genomes
 	) external onlyRole(GAME_ROLE) returns (uint256[] memory tokenIds) {
 		tokenIds = new uint256[](genomes.length);
 		for (uint8 i = 0; i < genomes.length; i++) {
-			tokenIds[i] = _mintTo(to, genomes[i], isTransferable);
+			tokenIds[i] = _mintTo(to, genomes[i]);
 		}
 	}
 
-	function _mintTo(
-		address to,
-		uint256 genome,
-		bool isTransferable
-	) internal returns (uint256 tokenId) {
+	function _mintTo(address to, uint256 genome) internal returns (uint256 tokenId) {
+		if (to == address(0)) revert InvalidAddress(to);
+
 		tokenId = nextNewTokenId.current();
 		uint64 birthdate = uint64(block.timestamp);
 		tokenToDuckling[tokenId] = Duckling(genome, birthdate);
-
 		_safeMint(to, tokenId);
-		// no need to check if token exists, it has been just minted
-		isTokenNotTransferable[tokenId] = !isTransferable;
-
 		nextNewTokenId.increment();
-		emit Minted(to, tokenId, isTransferable, genome, birthdate, block.chainid);
-		emit TransferableSet(tokenId, isTransferable);
+
+		emit Minted(to, tokenId, genome, birthdate, block.chainid);
 	}
 
 	function burn(uint256 tokenId) external onlyRole(GAME_ROLE) {

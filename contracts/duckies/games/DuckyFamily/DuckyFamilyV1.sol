@@ -10,9 +10,11 @@ import '../../../interfaces/IVoucher.sol';
 import '../../../interfaces/IDucklings.sol';
 import '../Random.sol';
 import '../Genome.sol';
+import '../Flags.sol';
 
 contract DuckyFamilyV1 is IVoucher, AccessControl, Random {
 	using Genome for uint256;
+	using Flags for uint8;
 	using ECDSA for bytes32;
 
 	// errors
@@ -99,10 +101,11 @@ contract DuckyFamilyV1 is IVoucher, AccessControl, Random {
 	uint8 public constant MAX_PACK_SIZE = 50;
 	uint8 public constant FLOCK_SIZE = 5;
 
-	uint8 internal constant collectionGeneIdx = 0;
-	uint8 internal constant rarityGeneIdx = 1;
+	uint8 internal constant flagsGeneIdx = 0;
+	uint8 internal constant collectionGeneIdx = 1;
+	uint8 internal constant rarityGeneIdx = 2;
 	// general genes start after Collection and Rarity
-	uint8 internal constant generativeGenesOffset = 2;
+	uint8 internal constant generativeGenesOffset = 3;
 
 	// number of values for each gene for Duckling and Zombeak collections
 	uint8[][2] internal collectionsGeneValuesNum = [
@@ -310,24 +313,16 @@ contract DuckyFamilyV1 is IVoucher, AccessControl, Random {
 		if (amount == 0 || amount > MAX_PACK_SIZE)
 			revert MintingRulesViolated(ducklingCollectionId, amount);
 
-		if (amount == 1) {
-			uint256 tokenId = ducklingsContract.mintTo(
-				to,
-				_generateGenome(ducklingCollectionId),
-				isTransferable
-			);
-			tokenIds = new uint256[](1);
-			tokenIds[0] = tokenId;
-		} else {
-			tokenIds = new uint256[](amount);
-			uint256[] memory tokenGenomes = new uint256[](amount);
+		tokenIds = new uint256[](amount);
+		uint256[] memory tokenGenomes = new uint256[](amount);
 
-			for (uint256 i = 0; i < amount; i++) {
-				tokenGenomes[i] = _generateGenome(ducklingCollectionId);
-			}
+		uint8 flags = uint8(0).setFlag(Flags.IS_TRANSFERABLE_FLAG, isTransferable);
 
-			tokenIds = ducklingsContract.mintBatchTo(to, tokenGenomes, isTransferable);
+		for (uint256 i = 0; i < amount; i++) {
+			tokenGenomes[i] = _generateGenome(ducklingCollectionId).setGene(flagsGeneIdx, flags);
 		}
+
+		tokenIds = ducklingsContract.mintBatchTo(to, tokenGenomes);
 	}
 
 	function _generateGenome(uint8 collectionId) internal returns (uint256) {
@@ -443,8 +438,10 @@ contract DuckyFamilyV1 is IVoucher, AccessControl, Random {
 
 		ducklingsContract.burnBatch(meldingTokenIds);
 
-		uint256 meldedGenome = _meldGenomes(meldingGenomes);
-		uint256 meldedTokenId = ducklingsContract.mintTo(owner, meldedGenome, isTransferable);
+		uint8 flags = uint8(0).setFlag(Flags.IS_TRANSFERABLE_FLAG, isTransferable);
+
+		uint256 meldedGenome = _meldGenomes(meldingGenomes).setGene(flagsGeneIdx, flags);
+		uint256 meldedTokenId = ducklingsContract.mintTo(owner, meldedGenome);
 
 		emit Melded(owner, meldingTokenIds, meldedTokenId, block.chainid);
 
