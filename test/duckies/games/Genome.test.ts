@@ -19,6 +19,68 @@ describe('Genome', () => {
     await GenomeConsumer.deployed();
   });
 
+  describe('getFlags', () => {
+    it('return correct flags on 30st byte', async () => {
+      expect(await GenomeConsumer.getFlags(0b1n << 240n)).to.equal(0b1);
+      expect(await GenomeConsumer.getFlags(0b10n << 240n)).to.equal(0b10);
+      expect(await GenomeConsumer.getFlags(0b1010n << 240n)).to.equal(0b1010);
+      expect(await GenomeConsumer.getFlags(0b1100_1010n << 240n)).to.equal(0b1100_1010);
+    });
+  });
+
+  describe('getFlag', () => {
+    it('return correct true flag', async () => {
+      expect(await GenomeConsumer.getFlag(0b1n << 240n, 0b1)).to.be.true;
+      expect(await GenomeConsumer.getFlag(0b101n << 240n, 0b1)).to.be.true;
+      expect(await GenomeConsumer.getFlag(0b101n << 240n, 0b100)).to.be.true;
+      expect(await GenomeConsumer.getFlag(0b1101n << 240n, 0b1000)).to.be.true;
+      expect(await GenomeConsumer.getFlag(0b1010_1000n << 240n, 0b10_0000)).to.be.true;
+      expect(await GenomeConsumer.getFlag(0b1000_0000n << 240n, 0b1000_0000)).to.be.true;
+    });
+
+    it('return correct false flag', async () => {
+      expect(await GenomeConsumer.getFlag(0b0n << 240n, 0b1)).to.be.false;
+      expect(await GenomeConsumer.getFlag(0b101n << 240n, 0b10)).to.be.false;
+      expect(await GenomeConsumer.getFlag(0b101n << 240n, 0b1000)).to.be.false;
+      expect(await GenomeConsumer.getFlag(0b1101n << 240n, 0b10)).to.be.false;
+      expect(await GenomeConsumer.getFlag(0b1010_1000n << 240n, 0b100_0000)).to.be.false;
+      expect(await GenomeConsumer.getFlag(0b1000_0000n << 240n, 0b10)).to.be.false;
+    });
+  });
+
+  describe('setFlag', () => {
+    it('can set flag to true', async () => {
+      expect(await GenomeConsumer.setFlag(0, 0b1, true)).to.equal(0b1n << 240n);
+      expect(await GenomeConsumer.setFlag(0, 0b10, true)).to.equal(0b10n << 240n);
+      expect(await GenomeConsumer.setFlag(0, 0b100, true)).to.equal(0b100n << 240n);
+      expect(await GenomeConsumer.setFlag(0, 0b1000, true)).to.equal(0b1000n << 240n);
+      expect(await GenomeConsumer.setFlag(0, 0b1000_0000, true)).to.equal(0b1000_0000n << 240n);
+    });
+
+    it('can set flat to false', async () => {
+      expect(await GenomeConsumer.setFlag(0, 0b1, false)).to.equal(0);
+      expect(await GenomeConsumer.setFlag(0, 0b10, false)).to.equal(0);
+      expect(await GenomeConsumer.setFlag(0, 0b100, false)).to.equal(0);
+      expect(await GenomeConsumer.setFlag(0, 0b1000, false)).to.equal(0);
+      expect(await GenomeConsumer.setFlag(0, 0b1000_0000, false)).to.equal(0);
+    });
+
+    it('can overwrite existing flag', async () => {
+      expect(await GenomeConsumer.setFlag(0b101n << 240n, 0b1, false)).to.equal(0b100n << 240n);
+      expect(await GenomeConsumer.setFlag(0b101n << 240n, 0b10, false)).to.equal(0b101n << 240n);
+      expect(await GenomeConsumer.setFlag(0b101n << 240n, 0b100, false)).to.equal(0b001n << 240n);
+      expect(await GenomeConsumer.setFlag(0b101n << 240n, 0b10, false)).to.equal(0b101n << 240n);
+      expect(await GenomeConsumer.setFlag(0b1111n << 240n, 0b1000, false)).to.equal(
+        0b0111n << 240n,
+      );
+
+      expect(await GenomeConsumer.setFlag(0b1n << 240n, 0b1, true)).to.equal(0b1n << 240n);
+      expect(await GenomeConsumer.setFlag(0b101n << 240n, 0b10, true)).to.equal(0b111n << 240n);
+      expect(await GenomeConsumer.setFlag(0b101n << 240n, 0b100, true)).to.equal(0b101n << 240n);
+      expect(await GenomeConsumer.setFlag(0b101n << 240n, 0b1000, true)).to.equal(0b1101n << 240n);
+    });
+  });
+
   describe('setGene', () => {
     it('can set 0 gene value', async () => {
       const genome = 0b0;

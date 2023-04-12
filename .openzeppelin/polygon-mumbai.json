@@ -1,0 +1,976 @@
+{
+  "manifestVersion": "3.2",
+  "proxies": [
+    {
+      "address": "0x8E97DC5aa3F3749E960213289059Db2CdD63B4bB",
+      "kind": "uups"
+    }
+  ],
+  "impls": {
+    "3a38910eedbed68c96da634c190fbb48ba10c56bd55224b2273cadb436fb6e4f": {
+      "address": "0x763b47415BFe512823d3C134903134E2d30e92dD",
+      "layout": {
+        "solcVersion": "0.8.18",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC1967UpgradeUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/ERC1967/ERC1967UpgradeUpgradeable.sol:211"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "UUPSUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol:107"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC165Upgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol:41"
+          },
+          {
+            "label": "_roles",
+            "offset": 0,
+            "slot": "201",
+            "type": "t_mapping(t_bytes32,t_struct(RoleData)34_storage)",
+            "contract": "AccessControlUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol:61"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "202",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "AccessControlUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol:259"
+          },
+          {
+            "label": "salt",
+            "offset": 0,
+            "slot": "251",
+            "type": "t_bytes32",
+            "contract": "RandomUpgradeable",
+            "src": "contracts/duckies/games/RandomUpgradeable.sol:10"
+          },
+          {
+            "label": "nonce",
+            "offset": 0,
+            "slot": "252",
+            "type": "t_uint256",
+            "contract": "RandomUpgradeable",
+            "src": "contracts/duckies/games/RandomUpgradeable.sol:11"
+          },
+          {
+            "label": "issuer",
+            "offset": 0,
+            "slot": "253",
+            "type": "t_address",
+            "contract": "DuckyFamilyV1_1",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_1.sol:59"
+          },
+          {
+            "label": "_usedVouchers",
+            "offset": 0,
+            "slot": "254",
+            "type": "t_mapping(t_bytes32,t_bool)",
+            "contract": "DuckyFamilyV1_1",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_1.sol:62"
+          },
+          {
+            "label": "collectionsGeneValuesNum",
+            "offset": 0,
+            "slot": "255",
+            "type": "t_array(t_array(t_uint8)dyn_storage)2_storage",
+            "contract": "DuckyFamilyV1_1",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_1.sol:114"
+          },
+          {
+            "label": "collectionsGeneDistributionTypes",
+            "offset": 0,
+            "slot": "257",
+            "type": "t_array(t_uint32)2_storage",
+            "contract": "DuckyFamilyV1_1",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_1.sol:116"
+          },
+          {
+            "label": "mythicAmount",
+            "offset": 0,
+            "slot": "258",
+            "type": "t_uint8",
+            "contract": "DuckyFamilyV1_1",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_1.sol:118"
+          },
+          {
+            "label": "rarityChances",
+            "offset": 0,
+            "slot": "259",
+            "type": "t_array(t_uint32)dyn_storage",
+            "contract": "DuckyFamilyV1_1",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_1.sol:121"
+          },
+          {
+            "label": "collectionMutationChances",
+            "offset": 0,
+            "slot": "260",
+            "type": "t_array(t_uint32)dyn_storage",
+            "contract": "DuckyFamilyV1_1",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_1.sol:124"
+          },
+          {
+            "label": "geneMutationChance",
+            "offset": 0,
+            "slot": "261",
+            "type": "t_array(t_uint32)dyn_storage",
+            "contract": "DuckyFamilyV1_1",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_1.sol:128"
+          },
+          {
+            "label": "geneInheritanceChances",
+            "offset": 0,
+            "slot": "262",
+            "type": "t_array(t_uint32)dyn_storage",
+            "contract": "DuckyFamilyV1_1",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_1.sol:129"
+          },
+          {
+            "label": "duckiesContract",
+            "offset": 0,
+            "slot": "263",
+            "type": "t_contract(ERC20BurnableUpgradeable)1856",
+            "contract": "DuckyFamilyV1_1",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_1.sol:131"
+          },
+          {
+            "label": "ducklingsContract",
+            "offset": 0,
+            "slot": "264",
+            "type": "t_contract(IDucklings)6101",
+            "contract": "DuckyFamilyV1_1",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_1.sol:132"
+          },
+          {
+            "label": "treasureVaultAddress",
+            "offset": 0,
+            "slot": "265",
+            "type": "t_address",
+            "contract": "DuckyFamilyV1_1",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_1.sol:133"
+          },
+          {
+            "label": "mintPrice",
+            "offset": 0,
+            "slot": "266",
+            "type": "t_uint256",
+            "contract": "DuckyFamilyV1_1",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_1.sol:135"
+          },
+          {
+            "label": "meldPrices",
+            "offset": 0,
+            "slot": "267",
+            "type": "t_array(t_uint256)dyn_storage",
+            "contract": "DuckyFamilyV1_1",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_1.sol:136"
+          },
+          {
+            "label": "nextMythicId",
+            "offset": 0,
+            "slot": "268",
+            "type": "t_struct(Counter)2329_storage",
+            "contract": "DuckyFamilyV1_1",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_1.sol:138"
+          },
+          {
+            "label": "nextMythicZombeakId",
+            "offset": 0,
+            "slot": "269",
+            "type": "t_struct(Counter)2329_storage",
+            "contract": "DuckyFamilyV1_1",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_1.sol:139"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_array(t_uint8)dyn_storage)2_storage": {
+            "label": "uint8[][2]",
+            "numberOfBytes": "64"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_array(t_uint256)dyn_storage": {
+            "label": "uint256[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_uint32)2_storage": {
+            "label": "uint32[2]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_uint32)dyn_storage": {
+            "label": "uint32[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_uint8)dyn_storage": {
+            "label": "uint8[]",
+            "numberOfBytes": "32"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_contract(ERC20BurnableUpgradeable)1856": {
+            "label": "contract ERC20BurnableUpgradeable",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IDucklings)6101": {
+            "label": "contract IDucklings",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_bool)": {
+            "label": "mapping(bytes32 => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_struct(RoleData)34_storage)": {
+            "label": "mapping(bytes32 => struct AccessControlUpgradeable.RoleData)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(Counter)2329_storage": {
+            "label": "struct CountersUpgradeable.Counter",
+            "members": [
+              {
+                "label": "_value",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(RoleData)34_storage": {
+            "label": "struct AccessControlUpgradeable.RoleData",
+            "members": [
+              {
+                "label": "members",
+                "type": "t_mapping(t_address,t_bool)",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "adminRole",
+                "type": "t_bytes32",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint32": {
+            "label": "uint32",
+            "numberOfBytes": "4"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "f48b838b78ca0c6e96e25fe08b1a5cb9160aaccf9b9d35a70d745deb53159d39": {
+      "address": "0x05585397a9242E4d6fc9c0dce581803aA3906cb5",
+      "txHash": "0x179454685ac1bebf5afcc25aeac9189e88350be01896e28657450aa03dd5690f",
+      "layout": {
+        "solcVersion": "0.8.18",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC1967UpgradeUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/ERC1967/ERC1967UpgradeUpgradeable.sol:211"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "UUPSUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol:107"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC165Upgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol:41"
+          },
+          {
+            "label": "_roles",
+            "offset": 0,
+            "slot": "201",
+            "type": "t_mapping(t_bytes32,t_struct(RoleData)34_storage)",
+            "contract": "AccessControlUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol:61"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "202",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "AccessControlUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol:259"
+          },
+          {
+            "label": "salt",
+            "offset": 0,
+            "slot": "251",
+            "type": "t_bytes32",
+            "contract": "RandomUpgradeable",
+            "src": "contracts/duckies/games/RandomUpgradeable.sol:10"
+          },
+          {
+            "label": "nonce",
+            "offset": 0,
+            "slot": "252",
+            "type": "t_uint256",
+            "contract": "RandomUpgradeable",
+            "src": "contracts/duckies/games/RandomUpgradeable.sol:11"
+          },
+          {
+            "label": "issuer",
+            "offset": 0,
+            "slot": "253",
+            "type": "t_address",
+            "contract": "DuckyFamilyV1_2",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_2.sol:59"
+          },
+          {
+            "label": "_usedVouchers",
+            "offset": 0,
+            "slot": "254",
+            "type": "t_mapping(t_bytes32,t_bool)",
+            "contract": "DuckyFamilyV1_2",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_2.sol:62"
+          },
+          {
+            "label": "collectionsGeneValuesNum",
+            "offset": 0,
+            "slot": "255",
+            "type": "t_array(t_array(t_uint8)dyn_storage)2_storage",
+            "contract": "DuckyFamilyV1_2",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_2.sol:114"
+          },
+          {
+            "label": "collectionsGeneDistributionTypes",
+            "offset": 0,
+            "slot": "257",
+            "type": "t_array(t_uint32)2_storage",
+            "contract": "DuckyFamilyV1_2",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_2.sol:116"
+          },
+          {
+            "label": "mythicAmount",
+            "offset": 0,
+            "slot": "258",
+            "type": "t_uint8",
+            "contract": "DuckyFamilyV1_2",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_2.sol:118"
+          },
+          {
+            "label": "rarityChances",
+            "offset": 0,
+            "slot": "259",
+            "type": "t_array(t_uint32)dyn_storage",
+            "contract": "DuckyFamilyV1_2",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_2.sol:121"
+          },
+          {
+            "label": "collectionMutationChances",
+            "offset": 0,
+            "slot": "260",
+            "type": "t_array(t_uint32)dyn_storage",
+            "contract": "DuckyFamilyV1_2",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_2.sol:124"
+          },
+          {
+            "label": "geneMutationChance",
+            "offset": 0,
+            "slot": "261",
+            "type": "t_array(t_uint32)dyn_storage",
+            "contract": "DuckyFamilyV1_2",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_2.sol:128"
+          },
+          {
+            "label": "geneInheritanceChances",
+            "offset": 0,
+            "slot": "262",
+            "type": "t_array(t_uint32)dyn_storage",
+            "contract": "DuckyFamilyV1_2",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_2.sol:129"
+          },
+          {
+            "label": "duckiesContract",
+            "offset": 0,
+            "slot": "263",
+            "type": "t_contract(ERC20BurnableUpgradeable)1856",
+            "contract": "DuckyFamilyV1_2",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_2.sol:131"
+          },
+          {
+            "label": "ducklingsContract",
+            "offset": 0,
+            "slot": "264",
+            "type": "t_contract(IDucklings)6101",
+            "contract": "DuckyFamilyV1_2",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_2.sol:132"
+          },
+          {
+            "label": "treasureVaultAddress",
+            "offset": 0,
+            "slot": "265",
+            "type": "t_address",
+            "contract": "DuckyFamilyV1_2",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_2.sol:133"
+          },
+          {
+            "label": "mintPrice",
+            "offset": 0,
+            "slot": "266",
+            "type": "t_uint256",
+            "contract": "DuckyFamilyV1_2",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_2.sol:135"
+          },
+          {
+            "label": "meldPrices",
+            "offset": 0,
+            "slot": "267",
+            "type": "t_array(t_uint256)dyn_storage",
+            "contract": "DuckyFamilyV1_2",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_2.sol:136"
+          },
+          {
+            "label": "nextMythicId",
+            "offset": 0,
+            "slot": "268",
+            "type": "t_struct(Counter)2329_storage",
+            "contract": "DuckyFamilyV1_2",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_2.sol:138"
+          },
+          {
+            "label": "nextMythicZombeakId",
+            "offset": 0,
+            "slot": "269",
+            "type": "t_struct(Counter)2329_storage",
+            "contract": "DuckyFamilyV1_2",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_2.sol:139"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_array(t_uint8)dyn_storage)2_storage": {
+            "label": "uint8[][2]",
+            "numberOfBytes": "64"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_array(t_uint256)dyn_storage": {
+            "label": "uint256[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_uint32)2_storage": {
+            "label": "uint32[2]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_uint32)dyn_storage": {
+            "label": "uint32[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_uint8)dyn_storage": {
+            "label": "uint8[]",
+            "numberOfBytes": "32"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_contract(ERC20BurnableUpgradeable)1856": {
+            "label": "contract ERC20BurnableUpgradeable",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IDucklings)6101": {
+            "label": "contract IDucklings",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_bool)": {
+            "label": "mapping(bytes32 => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_struct(RoleData)34_storage)": {
+            "label": "mapping(bytes32 => struct AccessControlUpgradeable.RoleData)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(Counter)2329_storage": {
+            "label": "struct CountersUpgradeable.Counter",
+            "members": [
+              {
+                "label": "_value",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(RoleData)34_storage": {
+            "label": "struct AccessControlUpgradeable.RoleData",
+            "members": [
+              {
+                "label": "members",
+                "type": "t_mapping(t_address,t_bool)",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "adminRole",
+                "type": "t_bytes32",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint32": {
+            "label": "uint32",
+            "numberOfBytes": "4"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "4aebd2ab04426906b749ffdc417afd220234d94ecc2579b902ec70d31ded8309": {
+      "address": "0x40a96A6c51752c63016993244933cB2206DE0C57",
+      "txHash": "0x0009fd3ede3f7be58edf4a2a0dd55663d14dd755e85b16035283355407854680",
+      "layout": {
+        "solcVersion": "0.8.18",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC1967UpgradeUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/ERC1967/ERC1967UpgradeUpgradeable.sol:211"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "UUPSUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol:107"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC165Upgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol:41"
+          },
+          {
+            "label": "_roles",
+            "offset": 0,
+            "slot": "201",
+            "type": "t_mapping(t_bytes32,t_struct(RoleData)34_storage)",
+            "contract": "AccessControlUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol:61"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "202",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "AccessControlUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol:259"
+          },
+          {
+            "label": "salt",
+            "offset": 0,
+            "slot": "251",
+            "type": "t_bytes32",
+            "contract": "RandomUpgradeable",
+            "src": "contracts/duckies/games/RandomUpgradeable.sol:10"
+          },
+          {
+            "label": "nonce",
+            "offset": 0,
+            "slot": "252",
+            "type": "t_uint256",
+            "contract": "RandomUpgradeable",
+            "src": "contracts/duckies/games/RandomUpgradeable.sol:11"
+          },
+          {
+            "label": "issuer",
+            "offset": 0,
+            "slot": "253",
+            "type": "t_address",
+            "contract": "DuckyFamilyV1_3",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_3.sol:59"
+          },
+          {
+            "label": "_usedVouchers",
+            "offset": 0,
+            "slot": "254",
+            "type": "t_mapping(t_bytes32,t_bool)",
+            "contract": "DuckyFamilyV1_3",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_3.sol:62"
+          },
+          {
+            "label": "collectionsGeneValuesNum",
+            "offset": 0,
+            "slot": "255",
+            "type": "t_array(t_array(t_uint8)dyn_storage)2_storage",
+            "contract": "DuckyFamilyV1_3",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_3.sol:114"
+          },
+          {
+            "label": "collectionsGeneDistributionTypes",
+            "offset": 0,
+            "slot": "257",
+            "type": "t_array(t_uint32)2_storage",
+            "contract": "DuckyFamilyV1_3",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_3.sol:116"
+          },
+          {
+            "label": "mythicAmount",
+            "offset": 0,
+            "slot": "258",
+            "type": "t_uint8",
+            "contract": "DuckyFamilyV1_3",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_3.sol:118"
+          },
+          {
+            "label": "rarityChances",
+            "offset": 0,
+            "slot": "259",
+            "type": "t_array(t_uint32)dyn_storage",
+            "contract": "DuckyFamilyV1_3",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_3.sol:121"
+          },
+          {
+            "label": "collectionMutationChances",
+            "offset": 0,
+            "slot": "260",
+            "type": "t_array(t_uint32)dyn_storage",
+            "contract": "DuckyFamilyV1_3",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_3.sol:124"
+          },
+          {
+            "label": "geneMutationChance",
+            "offset": 0,
+            "slot": "261",
+            "type": "t_array(t_uint32)dyn_storage",
+            "contract": "DuckyFamilyV1_3",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_3.sol:128"
+          },
+          {
+            "label": "geneInheritanceChances",
+            "offset": 0,
+            "slot": "262",
+            "type": "t_array(t_uint32)dyn_storage",
+            "contract": "DuckyFamilyV1_3",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_3.sol:129"
+          },
+          {
+            "label": "duckiesContract",
+            "offset": 0,
+            "slot": "263",
+            "type": "t_contract(ERC20BurnableUpgradeable)1856",
+            "contract": "DuckyFamilyV1_3",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_3.sol:131"
+          },
+          {
+            "label": "ducklingsContract",
+            "offset": 0,
+            "slot": "264",
+            "type": "t_contract(IDucklings)7965",
+            "contract": "DuckyFamilyV1_3",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_3.sol:132"
+          },
+          {
+            "label": "treasureVaultAddress",
+            "offset": 0,
+            "slot": "265",
+            "type": "t_address",
+            "contract": "DuckyFamilyV1_3",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_3.sol:133"
+          },
+          {
+            "label": "mintPrice",
+            "offset": 0,
+            "slot": "266",
+            "type": "t_uint256",
+            "contract": "DuckyFamilyV1_3",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_3.sol:135"
+          },
+          {
+            "label": "meldPrices",
+            "offset": 0,
+            "slot": "267",
+            "type": "t_array(t_uint256)dyn_storage",
+            "contract": "DuckyFamilyV1_3",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_3.sol:136"
+          },
+          {
+            "label": "nextMythicId",
+            "offset": 0,
+            "slot": "268",
+            "type": "t_struct(Counter)2329_storage",
+            "contract": "DuckyFamilyV1_3",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_3.sol:138"
+          },
+          {
+            "label": "nextMythicZombeakId",
+            "offset": 0,
+            "slot": "269",
+            "type": "t_struct(Counter)2329_storage",
+            "contract": "DuckyFamilyV1_3",
+            "src": "contracts/duckies/games/DuckyFamilyV1/DuckyFamilyV1_3.sol:139"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_array(t_uint8)dyn_storage)2_storage": {
+            "label": "uint8[][2]",
+            "numberOfBytes": "64"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_array(t_uint256)dyn_storage": {
+            "label": "uint256[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_uint32)2_storage": {
+            "label": "uint32[2]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_uint32)dyn_storage": {
+            "label": "uint32[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_uint8)dyn_storage": {
+            "label": "uint8[]",
+            "numberOfBytes": "32"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_contract(ERC20BurnableUpgradeable)1856": {
+            "label": "contract ERC20BurnableUpgradeable",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IDucklings)7965": {
+            "label": "contract IDucklings",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_bool)": {
+            "label": "mapping(bytes32 => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_struct(RoleData)34_storage)": {
+            "label": "mapping(bytes32 => struct AccessControlUpgradeable.RoleData)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(Counter)2329_storage": {
+            "label": "struct CountersUpgradeable.Counter",
+            "members": [
+              {
+                "label": "_value",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(RoleData)34_storage": {
+            "label": "struct AccessControlUpgradeable.RoleData",
+            "members": [
+              {
+                "label": "members",
+                "type": "t_mapping(t_address,t_bool)",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "adminRole",
+                "type": "t_bytes32",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint32": {
+            "label": "uint32",
+            "numberOfBytes": "4"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    }
+  }
+}

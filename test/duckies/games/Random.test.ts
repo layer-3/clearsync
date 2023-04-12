@@ -14,7 +14,7 @@ const WEIGHTS = [5, 3, 2];
 const WEIGHTS_SUM = WEIGHTS.reduce((acc, curr) => acc + curr, 0);
 const PRECISION_MULTIPLIER = 0.5;
 
-describe('RandomUpgradeable', () => {
+describe('Random', () => {
   let RandomConsumer: RandomTestConsumer;
 
   before(async () => {

@@ -11,7 +11,9 @@ import '@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol';
 
 import '../../interfaces/IDucklings.sol';
 
-contract Ducklings is
+import '../games/Genome.sol';
+
+contract DucklingsV1 is
 	Initializable,
 	IDucklings,
 	ERC721Upgradeable,
@@ -21,40 +23,41 @@ contract Ducklings is
 {
 	using CountersUpgradeable for CountersUpgradeable.Counter;
 	using {StringsUpgradeable.toString} for uint256;
+	using Genome for uint256;
 
 	error InvalidTokenId(uint256 tokenId);
+	error InvalidAddress(address addr);
+	error InvalidMagicNumber(uint8 magicNumber);
 
-	// roles
+	// Roles
 	bytes32 public constant UPGRADER_ROLE = keccak256('UPGRADER_ROLE');
-	bytes32 public constant MAINTAINER_ROLE = keccak256('MAINTAINER_ROLE');
 	bytes32 public constant GAME_ROLE = keccak256('GAME_ROLE');
 
-	// royalty
+	// Royalty
 	address private _royaltiesCollector;
 	uint32 private constant ROYALTY_FEE = 1000; // 10%
 
 	string public apiBaseURL;
 
 	CountersUpgradeable.Counter public nextNewTokenId;
-	mapping(uint256 => Duckling) public idToDuckling;
+	mapping(uint256 => Duckling) public tokenToDuckling;
 
 	// ------- Initializer -------
 
 	function initialize() external initializer {
-		__ERC721_init('Yellow Ducklings NFT Collection', 'YDNC');
+		__ERC721_init('Yellow Ducklings', 'DUCKLING');
 		__ERC721Royalty_init();
 		__AccessControl_init();
 		__UUPSUpgradeable_init();
 
 		_grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
 		_grantRole(UPGRADER_ROLE, msg.sender);
-		_grantRole(MAINTAINER_ROLE, msg.sender);
 
 		setRoyaltyCollector(msg.sender);
 		_setDefaultRoyalty(msg.sender, ROYALTY_FEE);
 	}
 
-	// -------- Upgrades --------
+	// ------- Upgradable -------
 
 	function _authorizeUpgrade(
 		address newImplementation
@@ -62,24 +65,24 @@ contract Ducklings is
 
 	// -------- ERC721 --------
 
-	function _burn(uint256 tokenId) internal override(ERC721RoyaltyUpgradeable, ERC721Upgradeable) {
-		super._burn(tokenId);
+	function _burn(
+		uint256 existence
+	) internal override(ERC721RoyaltyUpgradeable, ERC721Upgradeable) {
+		// check on token existence is performed in ERC721Upgradeable._burn
+		super._burn(existence);
 	}
 
 	function tokenURI(
 		uint256 tokenId
 	) public view override(ERC721Upgradeable) returns (string memory) {
-		Duckling memory duckling = idToDuckling[tokenId];
+		if (!_exists(tokenId)) revert InvalidTokenId(tokenId);
 
-		return
-			bytes(apiBaseURL).length > 0
-				? string.concat(
-					apiBaseURL,
-					duckling.genome.toString(),
-					'-',
-					uint256(duckling.birthdate).toString()
-				)
-				: '';
+		Duckling memory duckling = tokenToDuckling[tokenId];
+		string memory genome = duckling.genome.toString();
+		string memory birthdate = uint256(duckling.birthdate).toString();
+		string memory uri = string.concat(apiBaseURL, genome, '-', birthdate);
+
+		return uri;
 	}
 
 	function supportsInterface(
@@ -112,17 +115,31 @@ contract Ducklings is
 
 	// -------- API URL --------
 
-	function setAPIBaseURL(string calldata apiBaseURL_) external onlyRole(MAINTAINER_ROLE) {
+	function setAPIBaseURL(string calldata apiBaseURL_) external onlyRole(DEFAULT_ADMIN_ROLE) {
 		apiBaseURL = apiBaseURL_;
 	}
 
 	// -------- IDucklings --------
 
 	function isOwnerOf(address account, uint256 tokenId) external view returns (bool) {
+		if (account == address(0)) revert InvalidAddress(account);
+		if (!_exists(tokenId)) revert InvalidTokenId(tokenId);
+
 		return account == ownerOf(tokenId);
 	}
 
-	function isOwnerOf(address account, uint256[] calldata tokenIds) external view returns (bool) {
+	function isOwnerOfBatch(
+		address account,
+		uint256[] calldata tokenIds
+	) external view returns (bool) {
+		if (account == address(0)) revert InvalidAddress(account);
+
+		// first check if all tokens exist
+		for (uint256 i = 0; i < tokenIds.length; i++) {
+			if (!_exists(tokenIds[i])) revert InvalidTokenId(tokenIds[i]);
+		}
+
+		// then check if all tokens belong to the account
 		for (uint256 i = 0; i < tokenIds.length; i++) {
 			if (account != ownerOf(tokenIds[i])) {
 				return false;
@@ -134,7 +151,7 @@ contract Ducklings is
 
 	function getGenome(uint256 tokenId) external view returns (uint256) {
 		if (!_exists(tokenId)) revert InvalidTokenId(tokenId);
-		return idToDuckling[tokenId].genome;
+		return tokenToDuckling[tokenId].genome;
 	}
 
 	function getGenomes(uint256[] calldata tokenIds) external view returns (uint256[] memory) {
@@ -143,23 +160,66 @@ contract Ducklings is
 
 		for (uint256 i = 0; i < tokenIds.length; i++) {
 			if (!_exists(tokenIds[i])) revert InvalidTokenId(tokenIds[i]);
-			genomes[i] = idToDuckling[tokenIds[i]].genome;
+			genomes[i] = tokenToDuckling[tokenIds[i]].genome;
 		}
 
 		return genomes;
+	}
+
+	function isTransferable(uint256 tokenId) external view returns (bool) {
+		return _isTransferable(tokenId);
+	}
+
+	function _isTransferable(uint256 tokenId) internal view returns (bool) {
+		if (!_exists(tokenId)) revert InvalidTokenId(tokenId);
+
+		return tokenToDuckling[tokenId].genome.getFlag(Genome.FLAG_TRANSFERABLE);
+	}
+
+	function _beforeTokenTransfer(
+		address from,
+		address to,
+		uint256 firstTokenId,
+		uint256 // batchSize - always 1 in ERC721
+	) internal view override {
+		// mint and burn for not transferable is allowed
+		if (from == address(0) || to == address(0)) return;
+
+		if (!_isTransferable(firstTokenId)) revert TokenNotTransferable(firstTokenId);
 	}
 
 	function mintTo(
 		address to,
 		uint256 genome
 	) external onlyRole(GAME_ROLE) returns (uint256 tokenId) {
+		return _mintTo(to, genome);
+	}
+
+	function mintBatchTo(
+		address to,
+		uint256[] calldata genomes
+	) external onlyRole(GAME_ROLE) returns (uint256[] memory tokenIds) {
+		tokenIds = new uint256[](genomes.length);
+
+		for (uint8 i = 0; i < genomes.length; i++) {
+			tokenIds[i] = _mintTo(to, genomes[i]);
+		}
+	}
+
+	function _mintTo(address to, uint256 genome) internal returns (uint256 tokenId) {
+		if (to == address(0)) revert InvalidAddress(to);
+
+		uint8 magicNum = genome.getGene(Genome.MAGIC_NUMBER_GENE_IDX);
+
+		if (magicNum != Genome.BASE_MAGIC_NUMBER && magicNum != Genome.MYTHIC_MAGIC_NUMBER)
+			revert InvalidMagicNumber(magicNum);
+
 		tokenId = nextNewTokenId.current();
 		uint64 birthdate = uint64(block.timestamp);
-		idToDuckling[tokenId] = Duckling(genome, birthdate);
-
+		tokenToDuckling[tokenId] = Duckling(genome, birthdate);
 		_safeMint(to, tokenId);
-
 		nextNewTokenId.increment();
+
 		emit Minted(to, tokenId, genome, birthdate, block.chainid);
 	}
 
@@ -167,7 +227,7 @@ contract Ducklings is
 		_burn(tokenId);
 	}
 
-	function burn(uint256[] calldata tokenIds) external onlyRole(GAME_ROLE) {
+	function burnBatch(uint256[] calldata tokenIds) external onlyRole(GAME_ROLE) {
 		for (uint256 i = 0; i < tokenIds.length; i++) _burn(tokenIds[i]);
 	}
 }
