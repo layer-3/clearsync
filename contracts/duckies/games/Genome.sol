@@ -17,6 +17,14 @@ pragma solidity 0.8.18;
 library Genome {
 	uint8 public constant BITS_PER_GENE = 8;
 
+	uint8 public constant COLLECTION_GENE_IDX = 0;
+	uint8 public constant FLAGS_GENE_IDX = 30;
+	uint8 public constant MAGIC_NUMBER_GENE_IDX = 31;
+
+	enum Flags {
+		IS_TRANSFERABLE
+	}
+
 	function setGene(
 		uint256 genome,
 		uint8 gene,

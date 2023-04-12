@@ -28,11 +28,6 @@ contract DucklingsV1 is
 	error InvalidTokenId(uint256 tokenId);
 	error InvalidAddress(address addr);
 
-	// Constants
-	uint8 internal constant FLAGS_GENE_IDX = 0;
-	uint8 internal constant COLLECTION_GENE_IDX = 1;
-	uint8 public constant FLAG_TRANSFERABLE = 0;
-
 	// Roles
 	bytes32 public constant UPGRADER_ROLE = keccak256('UPGRADER_ROLE');
 	bytes32 public constant GAME_ROLE = keccak256('GAME_ROLE');
@@ -166,8 +161,8 @@ contract DucklingsV1 is
 	function _isTransferable(uint256 tokenId) internal view returns (bool) {
 		if (!_exists(tokenId)) revert InvalidTokenId(tokenId);
 
-		uint8 flags = tokenToDuckling[tokenId].genome.getGene(FLAGS_GENE_IDX);
-		return flags & (1 << FLAG_TRANSFERABLE) > 0;
+		uint8 flags = tokenToDuckling[tokenId].genome.getGene(Genome.FLAGS_GENE_IDX);
+		return flags & (1 << uint8(Genome.Flags.IS_TRANSFERABLE)) > 0;
 	}
 
 	function _beforeTokenTransfer(
