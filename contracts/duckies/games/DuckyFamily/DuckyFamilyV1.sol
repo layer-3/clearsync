@@ -1,28 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.18;
 
-import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
-import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
+import '@openzeppelin/contracts/access/AccessControl.sol';
 
-import '@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol';
-import '@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol';
-import '@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol';
+import '@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol';
+import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
 import '../../../interfaces/IVoucher.sol';
 import '../../../interfaces/IDucklings.sol';
-import '../RandomUpgradeable.sol';
+import '../Random.sol';
 import '../Genome.sol';
 
-contract DuckyFamilyV1_0 is
-	IVoucher,
-	Initializable,
-	UUPSUpgradeable,
-	AccessControlUpgradeable,
-	RandomUpgradeable
-{
-	using CountersUpgradeable for CountersUpgradeable.Counter;
+contract DuckyFamilyV1 is IVoucher, AccessControl, Random {
 	using Genome for uint256;
-	using ECDSAUpgradeable for bytes32;
+	using ECDSA for bytes32;
 
 	// errors
 	error InvalidMintParams(MintParams mintParams);
@@ -36,7 +27,6 @@ contract DuckyFamilyV1_0 is
 	event Melded(address owner, uint256[] meldingTokenIds, uint256 meldedTokenId, uint256 chainId);
 
 	// roles
-	bytes32 public constant UPGRADER_ROLE = keccak256('UPGRADER_ROLE');
 	bytes32 public constant MAINTAINER_ROLE = keccak256('MAINTAINER_ROLE');
 
 	// ------- IVoucher -------
@@ -49,11 +39,13 @@ contract DuckyFamilyV1_0 is
 	struct MintParams {
 		address to;
 		uint8 size;
+		bool isTransferable;
 	}
 
 	struct MeldParams {
 		address owner;
 		uint256[] tokenIds;
+		bool isTransferable;
 	}
 
 	address public issuer;
@@ -73,6 +65,8 @@ contract DuckyFamilyV1_0 is
 	uint8 internal constant ducklingCollectionId = 0;
 	uint8 internal constant zombeakCollectionId = 1;
 	uint8 internal constant mythicCollectionId = 2;
+
+	uint8 internal constant RARITIES_NUM = 4;
 
 	enum Rarities {
 		Common,
@@ -102,58 +96,58 @@ contract DuckyFamilyV1_0 is
 
 	// ------- Internal values -------
 
-	uint8 public constant MAX_PACK_SIZE = 100;
+	uint8 public constant MAX_PACK_SIZE = 50;
 	uint8 public constant FLOCK_SIZE = 5;
 
-	uint8 internal constant collectionGeneIdx = 0;
+	uint8 internal constant collectionGeneIdx = Genome.COLLECTION_GENE_IDX;
 	uint8 internal constant rarityGeneIdx = 1;
+	uint8 internal constant flagsGeneIdx = Genome.FLAGS_GENE_IDX;
 	// general genes start after Collection and Rarity
 	uint8 internal constant generativeGenesOffset = 2;
 
 	// number of values for each gene for Duckling and Zombeak collections
-	uint8[][2] internal collectionsGeneValuesNum;
+	uint8[][2] internal collectionsGeneValuesNum = [
+		// Duckling genes: (Collection, Rarity), Color, Family, Body, Head, Eyes, Beak, Wings, FirstName, Temper, Skill, Habitat, Breed
+		[4, 5, 10, 25, 30, 14, 10, 36, 16, 12, 5, 28],
+		// Zombeak genes: (Collection, Rarity), Color, Family, Body, Head, Eyes, Beak, Wings, FirstName, Temper, Skill, Habitat, Breed
+		[2, 3, 7, 6, 9, 7, 10, 36, 16, 12, 5, 28]
+	];
 	// distribution type of each gene for Duckling and Zombeak collections
-	uint32[2] internal collectionsGeneDistributionTypes;
+	uint32[2] internal collectionsGeneDistributionTypes = [
+		2940, // reverse(001111101101) = 101101111100
+		2940 // reverse(001111101101) = 101101111100
+	];
 
-	uint8 internal mythicAmount;
+	// peculiarity is a sum of uneven gene values for Ducklings
+	uint16 internal maxPeculiarity;
+	uint8 internal constant MYTHIC_DISPERSION = 5;
+	uint8 internal mythicAmount = 59;
 
 	// chance of a Duckling of a certain rarity to be generated
-	uint32[] internal rarityChances; // 85, 12, 2.5, 0.5
+	uint32[] internal rarityChances = [850, 120, 25, 5]; // per mil
 
 	// chance of a Duckling of certain rarity to mutate to Zombeak while melding
-	uint32[] internal collectionMutationChances; // 15, 10, 5, 1
+	uint32[] internal collectionMutationChances = [150, 100, 50, 10]; // per mil
+
+	uint32[] internal geneMutationChance = [955, 45]; // 4.5% to mutate gene value
+	uint32[] internal geneInheritanceChances = [400, 300, 150, 100, 50]; // per mil
 
 	// ------- Public values -------
 
-	uint32[] internal geneMutationChance; // 95.5, 4.5 (4.5% to mutate gene value)
-	uint32[] internal geneInheritanceChances; // 5 / 4 / 3 / 2 / 1
-
-	ERC20BurnableUpgradeable public duckiesContract;
+	ERC20Burnable public duckiesContract;
 	IDucklings public ducklingsContract;
 	address public treasureVaultAddress;
 
 	uint256 public mintPrice;
-	uint256[] public meldPrices; // [0] - melding Commons, [1] - melding Rares...
-
-	CountersUpgradeable.Counter public nextMythicId;
-	CountersUpgradeable.Counter public nextMythicZombeakId;
+	uint256[RARITIES_NUM] public meldPrices; // [0] - melding Commons, [1] - melding Rares...
 
 	// ------- Initializer -------
 
-	function initialize(
-		address duckiesAddress,
-		address ducklingsAddress,
-		address treasureVaultAddress_
-	) external initializer {
-		__AccessControl_init();
-		__UUPSUpgradeable_init();
-		__Random_init();
-
+	constructor(address duckiesAddress, address ducklingsAddress, address treasureVaultAddress_) {
 		_grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-		_grantRole(UPGRADER_ROLE, msg.sender);
 		_grantRole(MAINTAINER_ROLE, msg.sender);
 
-		duckiesContract = ERC20BurnableUpgradeable(duckiesAddress);
+		duckiesContract = ERC20Burnable(duckiesAddress);
 		ducklingsContract = IDucklings(ducklingsAddress);
 		treasureVaultAddress = treasureVaultAddress_;
 
@@ -167,28 +161,8 @@ contract DuckyFamilyV1_0 is
 			1000 * decimalsMultiplier
 		];
 
-		// config
-		// Duckling genes: (Collection, Rarity), Color, Family, Body, Head, Eyes, Beak, Wings, FirstName, Temper, Skill, Habitat, Breed
-		collectionsGeneValuesNum[0] = [4, 5, 10, 25, 30, 14, 10, 36, 16, 12, 5, 28];
-		collectionsGeneDistributionTypes[0] = 2940; // reverse(001111101101) = 101101111100
-
-		// Zombeak genes: (Collection, Rarity), Color, Family, Body, Head, Eyes, Beak, Wings, FirstName, Temper, Skill, Habitat, Breed
-		collectionsGeneValuesNum[1] = [2, 3, 7, 6, 9, 7, 10, 36, 16, 12, 5, 28];
-		collectionsGeneDistributionTypes[1] = 2940; // reverse(001111101101) = 101101111100
-
-		mythicAmount = 65;
-
-		rarityChances = [850, 120, 25, 5]; // per mil
-		collectionMutationChances = [150, 100, 50, 10]; // per mil
-		geneMutationChance = [955, 45]; // per mil
-		geneInheritanceChances = [400, 300, 150, 100, 50]; // per mil
+		maxPeculiarity = _calcMaxPeculiarity();
 	}
-
-	// -------- Upgrades --------
-
-	function _authorizeUpgrade(
-		address newImplementation
-	) internal override onlyRole(UPGRADER_ROLE) {}
 
 	// ------- Vouchers -------
 
@@ -224,7 +198,7 @@ contract DuckyFamilyV1_0 is
 				mintParams.size > MAX_PACK_SIZE
 			) revert InvalidMintParams(mintParams);
 
-			_mintPackTo(mintParams.to, mintParams.size);
+			_mintPackTo(mintParams.to, mintParams.size, mintParams.isTransferable);
 		} else if (voucher.action == uint8(VoucherActions.MeldFlock)) {
 			MeldParams memory meldParams = abi.decode(voucher.encodedParams, (MeldParams));
 
@@ -232,7 +206,7 @@ contract DuckyFamilyV1_0 is
 			if (meldParams.owner == address(0) || meldParams.tokenIds.length != FLOCK_SIZE)
 				revert InvalidMeldParams(meldParams);
 
-			_meldOf(meldParams.owner, meldParams.tokenIds);
+			_meldOf(meldParams.owner, meldParams.tokenIds, meldParams.isTransferable);
 		} else {
 			revert InvalidVoucher(voucher);
 		}
@@ -266,21 +240,23 @@ contract DuckyFamilyV1_0 is
 		if (actualSigner != signer) revert IncorrectSigner(signer, actualSigner);
 	}
 
-	// -------- Price --------
+	// -------- Config --------
 
 	function setMintPrice(uint256 price) external onlyRole(MAINTAINER_ROLE) {
-		mintPrice = price;
+		mintPrice = price * 10 ** duckiesContract.decimals();
 	}
 
-	function getMeldPrices() external view returns (uint256[] memory) {
+	function getMeldPrices() external view returns (uint256[RARITIES_NUM] memory) {
 		return meldPrices;
 	}
 
-	function setMeldPrices(uint256[] calldata prices) external onlyRole(MAINTAINER_ROLE) {
-		meldPrices = prices;
+	function setMeldPrices(
+		uint256[RARITIES_NUM] calldata prices
+	) external onlyRole(MAINTAINER_ROLE) {
+		for (uint8 i = 0; i < RARITIES_NUM; i++) {
+			meldPrices[i] = prices[i] * 10 ** duckiesContract.decimals();
+		}
 	}
-
-	// -------- Config --------
 
 	function getCollectionsGeneValues() external view returns (uint8[][2] memory, uint8) {
 		return (collectionsGeneValuesNum, mythicAmount);
@@ -294,12 +270,14 @@ contract DuckyFamilyV1_0 is
 		uint8[] memory duckingGeneValuesNum
 	) external onlyRole(DEFAULT_ADMIN_ROLE) {
 		collectionsGeneValuesNum[0] = duckingGeneValuesNum;
+		maxPeculiarity = _calcMaxPeculiarity();
 	}
 
 	function setDucklingGeneDistributionTypes(
 		uint32 ducklingGeneDistrTypes
 	) external onlyRole(DEFAULT_ADMIN_ROLE) {
 		collectionsGeneDistributionTypes[0] = ducklingGeneDistrTypes;
+		maxPeculiarity = _calcMaxPeculiarity();
 	}
 
 	function setZombeakGeneValues(
@@ -314,34 +292,49 @@ contract DuckyFamilyV1_0 is
 		collectionsGeneDistributionTypes[1] = zombeakGeneDistrTypes;
 	}
 
+	function setMythicAmount(uint8 amount) external onlyRole(DEFAULT_ADMIN_ROLE) {
+		mythicAmount = amount;
+	}
+
 	// ------- Mint -------
 
 	function mintPack(uint8 size) external UseRandom {
 		duckiesContract.transferFrom(msg.sender, treasureVaultAddress, mintPrice * size);
-		_mintPackTo(msg.sender, size);
+		_mintPackTo(msg.sender, size, true);
 	}
 
-	function _mintPackTo(address to, uint8 amount) internal {
+	function _mintPackTo(
+		address to,
+		uint8 amount,
+		bool isTransferable
+	) internal returns (uint256[] memory tokenIds) {
 		if (amount == 0 || amount > MAX_PACK_SIZE)
 			revert MintingRulesViolated(ducklingCollectionId, amount);
+
+		tokenIds = new uint256[](amount);
+		uint256[] memory tokenGenomes = new uint256[](amount);
+
 		for (uint256 i = 0; i < amount; i++) {
-			uint256 genome = _generateGenome(ducklingCollectionId);
-			ducklingsContract.mintTo(to, genome);
+			tokenGenomes[i] = _generateGenome(ducklingCollectionId).setFlag(
+				Genome.FLAG_TRANSFERABLE,
+				isTransferable
+			);
 		}
+
+		tokenIds = ducklingsContract.mintBatchTo(to, tokenGenomes);
 	}
 
 	function _generateGenome(uint8 collectionId) internal returns (uint256) {
+		if (collectionId != ducklingCollectionId && collectionId != zombeakCollectionId) {
+			revert MintingRulesViolated(collectionId, 1);
+		}
+
 		uint256 genome;
 
 		genome = genome.setGene(collectionGeneIdx, collectionId);
-
-		if (collectionId == mythicCollectionId) {
-			genome = genome.setGene(uint8(MythicGenes.UniqId), uint8(nextMythicId.current()));
-			return genome;
-		}
-
 		genome = genome.setGene(rarityGeneIdx, uint8(_generateRarity()));
 		genome = _generateAndSetGenes(genome, collectionId);
+		genome = genome.setGene(Genome.MAGIC_NUMBER_GENE_IDX, Genome.BASE_MAGIC_NUMBER);
 
 		return genome;
 	}
@@ -356,7 +349,7 @@ contract DuckyFamilyV1_0 is
 
 		// generate and set each gene
 		for (uint8 i = 0; i < geneValuesNum.length; i++) {
-			GeneDistributionTypes distrType = _getDistibutionType(geneDistributionTypes, i);
+			GeneDistributionTypes distrType = _getDistributionType(geneDistributionTypes, i);
 			uint8 geneValue;
 
 			if (distrType == GeneDistributionTypes.Even) {
@@ -384,6 +377,43 @@ contract DuckyFamilyV1_0 is
 		return genome;
 	}
 
+	function _generateMythicGenome(uint256[] memory genomes) internal returns (uint256) {
+		uint16 sumPeculiarity = 0;
+		uint16 maxSumPeculiarity = maxPeculiarity * uint16(genomes.length);
+
+		for (uint8 i = 0; i < genomes.length; i++) {
+			sumPeculiarity += _calcPeculiarity(genomes[i]);
+		}
+
+		uint16 maxUniqId = mythicAmount - 1;
+		uint16 pivotalUniqId = uint16((uint64(sumPeculiarity) * maxUniqId) / maxSumPeculiarity); // multiply and then divide to avoid float numbers
+		uint16 leftEndUniqId;
+		uint16 uniqIdSegmentLength;
+
+		if (pivotalUniqId < MYTHIC_DISPERSION) {
+			// mythic id range overlaps with left dispersion border
+			leftEndUniqId = 0;
+			uniqIdSegmentLength = pivotalUniqId + MYTHIC_DISPERSION;
+		} else if (maxUniqId < pivotalUniqId + MYTHIC_DISPERSION) {
+			// mythic id range overlaps with right dispersion border
+			leftEndUniqId = pivotalUniqId - MYTHIC_DISPERSION;
+			uniqIdSegmentLength = maxUniqId - pivotalUniqId + MYTHIC_DISPERSION;
+		} else {
+			// mythic id range does not overlap with dispersion borders
+			leftEndUniqId = pivotalUniqId - MYTHIC_DISPERSION;
+			uniqIdSegmentLength = 2 * MYTHIC_DISPERSION;
+		}
+
+		uint16 uniqId = leftEndUniqId + uint16(Random._randomMaxNumber(uniqIdSegmentLength));
+
+		uint256 genome;
+		genome = genome.setGene(collectionGeneIdx, mythicCollectionId);
+		genome = genome.setGene(uint8(MythicGenes.UniqId), uint8(uniqId));
+		genome = genome.setGene(Genome.MAGIC_NUMBER_GENE_IDX, Genome.MYTHIC_MAGIC_NUMBER);
+
+		return genome;
+	}
+
 	// ------- Meld -------
 
 	function meldFlock(uint256[] calldata meldingTokenIds) external UseRandom {
@@ -393,23 +423,32 @@ contract DuckyFamilyV1_0 is
 		];
 		duckiesContract.transferFrom(msg.sender, treasureVaultAddress, meldPrice);
 
-		_meldOf(msg.sender, meldingTokenIds);
+		_meldOf(msg.sender, meldingTokenIds, true);
 	}
 
-	function _meldOf(address owner, uint256[] memory meldingTokenIds) internal {
+	function _meldOf(
+		address owner,
+		uint256[] memory meldingTokenIds,
+		bool isTransferable
+	) internal returns (uint256) {
 		if (meldingTokenIds.length != FLOCK_SIZE) revert MeldingRulesViolated(meldingTokenIds);
-		if (!ducklingsContract.isOwnerOf(owner, meldingTokenIds))
+		if (!ducklingsContract.isOwnerOfBatch(owner, meldingTokenIds))
 			revert MeldingRulesViolated(meldingTokenIds);
 
 		uint256[] memory meldingGenomes = ducklingsContract.getGenomes(meldingTokenIds);
 		_requireGenomesSatisfyMelding(meldingGenomes);
 
-		ducklingsContract.burn(meldingTokenIds);
+		ducklingsContract.burnBatch(meldingTokenIds);
 
-		uint256 meldedGenome = _meldGenomes(meldingGenomes);
+		uint256 meldedGenome = _meldGenomes(meldingGenomes).setFlag(
+			Genome.FLAG_TRANSFERABLE,
+			isTransferable
+		);
 		uint256 meldedTokenId = ducklingsContract.mintTo(owner, meldedGenome);
 
 		emit Melded(owner, meldingTokenIds, meldedTokenId, block.chainid);
+
+		return meldedTokenId;
 	}
 
 	function _requireGenomesSatisfyMelding(uint256[] memory genomes) internal pure {
@@ -466,11 +505,7 @@ contract DuckyFamilyV1_0 is
 			}
 
 			if (rarity == Rarities.Legendary) {
-				if (nextMythicId.current() > mythicAmount - 1)
-					revert MintingRulesViolated(mythicCollectionId, 1);
-
-				nextMythicId.increment();
-				return _generateGenome(mythicCollectionId);
+				return _generateMythicGenome(genomes);
 			}
 		}
 
@@ -489,10 +524,12 @@ contract DuckyFamilyV1_0 is
 				genomes,
 				generativeGenesOffset + i,
 				geneValuesNum[i],
-				_getDistibutionType(geneDistTypes, i)
+				_getDistributionType(geneDistTypes, i)
 			);
 			meldedGenome = meldedGenome.setGene(generativeGenesOffset + i, geneValue);
 		}
+
+		meldedGenome = meldedGenome.setGene(Genome.MAGIC_NUMBER_GENE_IDX, Genome.BASE_MAGIC_NUMBER);
 
 		return meldedGenome;
 	}
@@ -533,7 +570,7 @@ contract DuckyFamilyV1_0 is
 
 	// ------- Gene distribution -------
 
-	function _getDistibutionType(
+	function _getDistributionType(
 		uint32 distributionTypes,
 		uint8 idx
 	) internal pure returns (GeneDistributionTypes) {
@@ -563,5 +600,34 @@ contract DuckyFamilyV1_0 is
 
 		// code execution should never reach this
 		return 0;
+	}
+
+	function _calcMaxPeculiarity() internal view returns (uint16) {
+		uint16 sum = 0;
+		uint32 ducklingDistrTypes = collectionsGeneDistributionTypes[ducklingCollectionId];
+		uint8[] memory ducklingGeneValuesNum = collectionsGeneValuesNum[ducklingCollectionId];
+
+		for (uint8 i = 0; i < ducklingGeneValuesNum.length; i++) {
+			if (_getDistributionType(ducklingDistrTypes, i) == GeneDistributionTypes.Uneven) {
+				// add number of values and not actual values as actual values start with 1, which means number of values and actual values are equal
+				sum += ducklingGeneValuesNum[i];
+			}
+		}
+
+		return sum;
+	}
+
+	function _calcPeculiarity(uint256 genome) internal view returns (uint16) {
+		uint16 sum = 0;
+		uint32 ducklingDistrTypes = collectionsGeneDistributionTypes[ducklingCollectionId];
+
+		for (uint8 i = 0; i < collectionsGeneValuesNum[ducklingCollectionId].length; i++) {
+			if (_getDistributionType(ducklingDistrTypes, i) == GeneDistributionTypes.Uneven) {
+				// add number of values and not actual values as actual values start with 1, which means number of values and actual values are equal
+				sum += genome.getGene(i + generativeGenesOffset);
+			}
+		}
+
+		return sum;
 	}
 }

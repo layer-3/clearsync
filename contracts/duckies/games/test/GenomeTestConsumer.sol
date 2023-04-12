@@ -4,6 +4,18 @@ pragma solidity 0.8.18;
 import '../Genome.sol';
 
 contract GenomeTestConsumer {
+	function getFlags(uint256 genome) external pure returns (uint8) {
+		return Genome.getFlags(genome);
+	}
+
+	function getFlag(uint256 genome, uint8 flag) external pure returns (bool) {
+		return Genome.getFlag(genome, flag);
+	}
+
+	function setFlag(uint256 genome, uint8 flag, bool value) external pure returns (uint256) {
+		return Genome.setFlag(genome, flag, value);
+	}
+
 	function setGene(uint256 genome, uint8 gene, uint8 value) external pure returns (uint256) {
 		return Genome.setGene(genome, gene, value);
 	}

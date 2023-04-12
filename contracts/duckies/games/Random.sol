@@ -1,24 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
-import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
-
 // chances are represented in per mil, thus uint32
-contract RandomUpgradeable is Initializable {
+contract Random {
 	error InvalidWeights(uint32[] weights);
 
 	bytes32 private salt;
 	uint256 private nonce;
-
-	function __Random_init() internal onlyInitializing {}
-
-	function __Random_init_unchained() internal onlyInitializing {}
-
-	// internal
-	modifier Random() {
-		_;
-		_updateNonce();
-	}
 
 	// specifies an external function which uses Random logic
 	modifier UseRandom() {
@@ -36,7 +24,8 @@ contract RandomUpgradeable is Initializable {
 		salt = keccak256(abi.encode(msg.sender, block.timestamp));
 	}
 
-	function _randomMaxNumber(uint256 max) internal Random returns (uint256) {
+	function _randomMaxNumber(uint256 max) internal returns (uint256) {
+		_updateNonce();
 		return uint256(keccak256(abi.encode(salt, nonce, msg.sender, block.timestamp))) % max;
 	}
 
