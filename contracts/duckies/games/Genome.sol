@@ -27,6 +27,20 @@ library Genome {
 		return getGene(self, FLAGS_GENE_IDX);
 	}
 
+	function getFlag(uint256 self, uint8 flag) internal pure returns (bool) {
+		return getGene(self, FLAGS_GENE_IDX) & flag > 0;
+	}
+
+	function setFlag(uint256 self, uint8 flag, bool value) internal pure returns (uint256) {
+		uint8 flags = getGene(self, FLAGS_GENE_IDX);
+		if (value) {
+			flags |= flag;
+		} else {
+			flags &= ~flag;
+		}
+		return setGene(self, FLAGS_GENE_IDX, flags);
+	}
+
 	function setGene(
 		uint256 self,
 		uint8 gene,

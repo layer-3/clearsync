@@ -314,10 +314,11 @@ contract DuckyFamilyV1 is IVoucher, AccessControl, Random {
 		tokenIds = new uint256[](amount);
 		uint256[] memory tokenGenomes = new uint256[](amount);
 
-		uint8 flags = isTransferable ? uint8(0) | Genome.FLAG_TRANSFERABLE : 0;
-
 		for (uint256 i = 0; i < amount; i++) {
-			tokenGenomes[i] = _generateGenome(ducklingCollectionId).setGene(flagsGeneIdx, flags);
+			tokenGenomes[i] = _generateGenome(ducklingCollectionId).setFlag(
+				Genome.FLAG_TRANSFERABLE,
+				isTransferable
+			);
 		}
 
 		tokenIds = ducklingsContract.mintBatchTo(to, tokenGenomes);
@@ -436,9 +437,10 @@ contract DuckyFamilyV1 is IVoucher, AccessControl, Random {
 
 		ducklingsContract.burnBatch(meldingTokenIds);
 
-		uint8 flags = isTransferable ? uint8(0) | Genome.FLAG_TRANSFERABLE : 0;
-
-		uint256 meldedGenome = _meldGenomes(meldingGenomes).setGene(flagsGeneIdx, flags);
+		uint256 meldedGenome = _meldGenomes(meldingGenomes).setFlag(
+			Genome.FLAG_TRANSFERABLE,
+			isTransferable
+		);
 		uint256 meldedTokenId = ducklingsContract.mintTo(owner, meldedGenome);
 
 		emit Melded(owner, meldingTokenIds, meldedTokenId, block.chainid);
