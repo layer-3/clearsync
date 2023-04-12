@@ -161,8 +161,8 @@ contract DucklingsV1 is
 	function _isTransferable(uint256 tokenId) internal view returns (bool) {
 		if (!_exists(tokenId)) revert InvalidTokenId(tokenId);
 
-		uint8 flags = tokenToDuckling[tokenId].genome.getGene(Genome.FLAGS_GENE_IDX);
-		return flags & (1 << uint8(Genome.Flags.IS_TRANSFERABLE)) > 0;
+		uint8 flags = tokenToDuckling[tokenId].genome.getFlags();
+		return flags & Genome.FLAG_TRANSFERABLE > 0;
 	}
 
 	function _beforeTokenTransfer(

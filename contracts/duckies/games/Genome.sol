@@ -21,8 +21,10 @@ library Genome {
 	uint8 public constant FLAGS_GENE_IDX = 30;
 	uint8 public constant MAGIC_NUMBER_GENE_IDX = 31;
 
-	enum Flags {
-		IS_TRANSFERABLE
+	uint8 public constant FLAG_TRANSFERABLE = 1; // 0b0000_0001
+
+	function getFlags(uint256 genome) internal pure returns (uint8) {
+		return getGene(genome, FLAGS_GENE_IDX);
 	}
 
 	function setGene(
