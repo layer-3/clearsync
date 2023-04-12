@@ -11,6 +11,8 @@ import '@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol';
 
 import '../../interfaces/IDucklings.sol';
 
+import '../games/Genome.sol';
+
 contract DucklingsV1 is
 	Initializable,
 	IDucklings,
@@ -21,10 +23,14 @@ contract DucklingsV1 is
 {
 	using CountersUpgradeable for CountersUpgradeable.Counter;
 	using {StringsUpgradeable.toString} for uint256;
+	using Genome for uint256;
 
 	error InvalidTokenId(uint256 tokenId);
+	error InvalidAddress(address addr);
 
 	// Constants
+	uint8 internal constant FLAGS_GENE_IDX = 0;
+	uint8 internal constant COLLECTION_GENE_IDX = 1;
 	uint8 public constant FLAG_TRANSFERABLE = 0;
 
 	// Roles
@@ -56,22 +62,25 @@ contract DucklingsV1 is
 	}
 
 	// ------- Upgradable -------
+
 	function _authorizeUpgrade(
 		address newImplementation
 	) internal override onlyRole(UPGRADER_ROLE) {}
 
 	// -------- ERC721 --------
 
-	function _burn(uint256 tokenId) internal override(ERC721RoyaltyUpgradeable, ERC721Upgradeable) {
-		require(_exists(tokenId), 'Token does not exist');
-		require(_isApprovedOrOwner(_msgSender(), tokenId), 'Caller is not owner nor approved');
-		super._burn(tokenId);
+	function _burn(
+		uint256 existence
+	) internal override(ERC721RoyaltyUpgradeable, ERC721Upgradeable) {
+		// check on token existence is performed in ERC721Upgradeable._burn
+		super._burn(existence);
 	}
 
 	function tokenURI(
 		uint256 tokenId
 	) public view override(ERC721Upgradeable) returns (string memory) {
-		require(_exists(tokenId), 'Ducklings: token does not exist');
+		if (!_exists(tokenId)) revert InvalidTokenId(tokenId);
+
 		Duckling memory duckling = tokenToDuckling[tokenId];
 		string memory genome = duckling.genome.toString();
 		string memory birthdate = uint256(duckling.birthdate).toString();
@@ -117,12 +126,13 @@ contract DucklingsV1 is
 	// -------- IDucklings --------
 
 	function isOwnerOf(address account, uint256 tokenId) external view returns (bool) {
-		require(account != address(0), 'ERC721: owner query for the zero address');
+		if (account == address(0)) revert InvalidAddress(account);
 		return account == ownerOf(tokenId);
 	}
 
 	function isOwnerOf(address account, uint256[] calldata tokenIds) external view returns (bool) {
-		require(account != address(0), 'ERC721: owner query for the zero address');
+		if (account == address(0)) revert InvalidAddress(account);
+
 		for (uint256 i = 0; i < tokenIds.length; i++) {
 			if (account != ownerOf(tokenIds[i])) {
 				return false;
@@ -156,8 +166,8 @@ contract DucklingsV1 is
 	function _isTransferable(uint256 tokenId) internal view returns (bool) {
 		if (!_exists(tokenId)) revert InvalidTokenId(tokenId);
 
-		uint8 headGene = uint8(tokenToDuckling[tokenId].genome >> 248);
-		return headGene & (1 << FLAG_TRANSFERABLE) == 0;
+		uint8 flags = tokenToDuckling[tokenId].genome.getGene(FLAGS_GENE_IDX);
+		return flags & (1 << FLAG_TRANSFERABLE) > 0;
 	}
 
 	function _beforeTokenTransfer(
@@ -190,13 +200,14 @@ contract DucklingsV1 is
 	}
 
 	function _mintTo(address to, uint256 genome) internal returns (uint256 tokenId) {
-		require(to != address(0), 'ERC721: mint to the zero address');
-		require(genome != 0, 'ERC721: mint with zero genome');
+		if (to == address(0)) revert InvalidAddress(to);
+
 		tokenId = nextNewTokenId.current();
 		uint64 birthdate = uint64(block.timestamp);
 		tokenToDuckling[tokenId] = Duckling(genome, birthdate);
 		_safeMint(to, tokenId);
 		nextNewTokenId.increment();
+
 		emit Minted(to, tokenId, genome, birthdate, block.chainid);
 	}
 
