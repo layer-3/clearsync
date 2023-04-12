@@ -59,7 +59,7 @@ describe('DuckyFamilyV1 vouchers', () => {
 
     VoucherBase.voucherCodeHash = randomBytes32();
     VoucherBase.target = Game.address;
-    VoucherBase.expire = Math.round(Date.now() / 1000) + 600; // 10 mins from now
+    VoucherBase.expire = Math.round(Date.now() / 1000) + 6000; // 100 mins from now | 2000 blocks from now
   });
 
   describe('issuer', () => {
@@ -160,7 +160,6 @@ describe('DuckyFamilyV1 vouchers', () => {
         voucherSig = await signVoucher(SomeoneMintVoucher, Signer);
       });
 
-      // TODO: add transferability tests
       it('successfuly use mint voucher', async () => {
         await GameAsSomeone.useVoucher(SomeoneMintVoucher, voucherSig);
         expect(await Ducklings.balanceOf(Someone.address)).to.equal(1);
@@ -170,6 +169,11 @@ describe('DuckyFamilyV1 vouchers', () => {
         await expect(
           GameAsSomeone.useVoucher(SomeoneMintVoucher, voucherSig),
         ).to.changeTokenBalance(Duckies, Someone, 0);
+      });
+
+      it('minted token is marked not transferable', async () => {
+        await GameAsSomeone.useVoucher(SomeoneMintVoucher, voucherSig);
+        expect(await Ducklings.isTransferable(0)).to.be.false;
       });
 
       it('revert on using same voucher for second time', async () => {
@@ -263,6 +267,12 @@ describe('DuckyFamilyV1 vouchers', () => {
         await expect(
           GameAsSomeone.useVoucher(SomeoneMeldVoucher, voucherSig),
         ).to.changeTokenBalance(Duckies, Someone, 0);
+      });
+
+      it('melded token is marked not transferable', async () => {
+        const meldedTokenId = 5;
+        await GameAsSomeone.useVoucher(SomeoneMeldVoucher, voucherSig);
+        expect(await Ducklings.isTransferable(meldedTokenId)).to.be.false;
       });
 
       it('revert on using same voucher for second time', async () => {

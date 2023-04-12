@@ -4,6 +4,10 @@ export enum Collections {
   Mythic,
 }
 
+export enum Flags {
+  isTransferable = 1,
+}
+
 export const raritiesNum = 4;
 export enum Rarities {
   Common,
@@ -19,6 +23,8 @@ export enum GeneDistrTypes {
 
 export const collectionGeneIdx = 0;
 export const rarityGeneIdx = 1;
+export const flagsGeneIdx = 30;
+export const magicNumberGeneIdx = 31;
 
 export const generativeGenesOffset = 2;
 

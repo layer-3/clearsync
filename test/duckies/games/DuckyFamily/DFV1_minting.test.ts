@@ -263,6 +263,12 @@ describe('DuckyFamilyV1 minting', () => {
       expect(await Ducklings.balanceOf(Someone.address)).to.equal(amount);
     });
 
+    it('FLAG_TRANSFERABLE is set', async () => {
+      const amount = 1;
+      await GameAsSomeone.mintPack(amount);
+      expect(await Ducklings.isTransferable(0)).to.be.true;
+    });
+
     it('revert on amount == 0', async () => {
       const amount = 0;
       await expect(GameAsSomeone.mintPack(amount))
@@ -287,7 +293,7 @@ describe('DuckyFamilyV1 minting', () => {
       for (let i = 0; i < amount; i++) {
         await expect(tx)
           .to.emit(Ducklings, 'Minted')
-          .withArgs(Someone.address, i, true, anyUint, timestamp, chainId);
+          .withArgs(Someone.address, i, anyUint, timestamp, chainId);
       }
     });
   });

@@ -14,7 +14,8 @@ import { Genome } from './genome';
 import type { DucklingsV1 } from '../../../../typechain-types';
 import type { ContractTransaction } from 'ethers';
 
-export type RandomGenomeConfig = { [key in Genes]?: number };
+export type CollectionGenes = { [key in Genes]?: number };
+export type RandomGenomeConfig = CollectionGenes & { isTransferable?: boolean };
 
 export const randomMaxNum = (maxNum: number): number => Math.floor(Math.random() * (maxNum + 1));
 
@@ -45,6 +46,12 @@ export function randomGenome(collectionId: Collections, config?: RandomGenomeCon
     }
   }
 
+  if (config?.isTransferable || config?.isTransferable === undefined) {
+    genome.setGene(30, 1);
+  } else {
+    genome.setGene(30, 0);
+  }
+
   return genome.genome;
 }
 
@@ -65,12 +72,8 @@ export type MintToFuncT = (
 ) => Promise<ContractTransaction>;
 
 export const setupMintTo = (DucklingsAsGame: DucklingsV1): MintToFuncT => {
-  return async (
-    to: string,
-    genome: bigint,
-    isTransferable?: boolean,
-  ): Promise<ContractTransaction> => {
-    return await DucklingsAsGame.mintTo(to, genome, isTransferable ?? true);
+  return async (to: string, genome: bigint): Promise<ContractTransaction> => {
+    return await DucklingsAsGame.mintTo(to, genome);
   };
 };
 
