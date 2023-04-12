@@ -155,7 +155,7 @@ contract DucklingsV1 is
 	}
 
 	function isTransferable(uint256 tokenId) external view returns (bool) {
-		return !_isTransferable(tokenId);
+		return _isTransferable(tokenId);
 	}
 
 	function _isTransferable(uint256 tokenId) internal view returns (bool) {
