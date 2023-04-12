@@ -60,14 +60,13 @@ The Magic number is on the **most significant byte** (MSB)
 | 1    | Collection     | static       | 3                    |
 | 2    | UniqId         | static       | 60                   |
 | 3    | Temper         | uneven       | 16                   |
-| 3    | Skill          | uneven       | 12                   |
-| 4    | Habitat        | even         | 5                    |
-| 5    | Breed          | uneven       | 20                   |
-| 6    | Birthplace     | even         |                      |
-| 7    | Quirk          | uneven       |                      |
-| 8    | Favorite Food  | uneven       |                      |
-| 9    | Favorite Color | even         |                      |
-| 10   | Empty          |              |                      |
+| 4    | Skill          | uneven       | 12                   |
+| 5    | Habitat        | even         | 5                    |
+| 6    | Breed          | uneven       | 20                   |
+| 7    | Birthplace     | even         |                      |
+| 8    | Quirk          | uneven       |                      |
+| 9    | Favorite Food  | uneven       |                      |
+| 10   | Favorite Color | even         |                      |
 | 11   | Empty          |              |                      |
 | 12   | Empty          |              |                      |
 | 13   | Empty          |              |                      |
