@@ -55,37 +55,37 @@ The Magic number is on the **most significant byte** (MSB)
 
 ## Mythic Schema 0xD2
 
-| Pos  | Attribute      | Distribution | Actual Qty of Traits |
-| ---- | -------------- | ------------ | -------------------- |
-| 1    | Collection     | static       | 3                    |
-| 2    | UniqId         | static       | 60                   |
-| 3    | Temper         | uneven       | 16                   |
-| 4    | Skill          | uneven       | 12                   |
-| 5    | Habitat        | even         | 5                    |
-| 6    | Breed          | uneven       | 20                   |
-| 7    | Birthplace     | even         |                      |
-| 8    | Quirk          | uneven       |                      |
-| 9    | Favorite Food  | uneven       |                      |
-| 10   | Favorite Color | even         |                      |
-| 11   | Empty          |              |                      |
-| 12   | Empty          |              |                      |
-| 13   | Empty          |              |                      |
-| 14   | Empty          |              |                      |
-| 15   | Empty          |              |                      |
-| 16   | Empty          |              |                      |
-| 17   | Empty          |              |                      |
-| 18   | Empty          |              |                      |
-| 19   | Empty          |              |                      |
-| 20   | Empty          |              |                      |
-| 21   | Empty          |              |                      |
-| 22   | Empty          |              |                      |
-| 23   | Empty          |              |                      |
-| 24   | Empty          |              |                      |
-| 25   | Empty          |              |                      |
-| 26   | Empty          |              |                      |
-| 27   | Empty          |              |                      |
-| 28   | Empty          |              |                      |
-| 29   | Empty          |              |                      |
-| 30   | Empty          |              |                      |
-| 31   | Reserved Flags |              |                      |
-| 32   | Magic Number   | 210          | 0xD2                 |
+| Pos  | Attribute      | Distribution | Actual Qty of Traits     |
+| ---- | -------------- | ------------ | ------------------------ |
+| 1    | Collection     | static       | 3                        |
+| 2    | UniqId         | static       | 60                       |
+| 3    | Temper         | uneven       | 16                       |
+| 4    | Skill          | uneven       | 12                       |
+| 5    | Habitat        | even         | 5                        |
+| 6    | Breed          | uneven       | 20                       |
+| 7    | Birthplace     | even         | 5 (Same as habitat)      |
+| 8    | Quirk          | uneven       | 10                       |
+| 9    | Favorite Food  | uneven       | 8                        |
+| 10   | Favorite Color | even         | 4 (Same as basic colors) |
+| 11   | Empty          |              |                          |
+| 12   | Empty          |              |                          |
+| 13   | Empty          |              |                          |
+| 14   | Empty          |              |                          |
+| 15   | Empty          |              |                          |
+| 16   | Empty          |              |                          |
+| 17   | Empty          |              |                          |
+| 18   | Empty          |              |                          |
+| 19   | Empty          |              |                          |
+| 20   | Empty          |              |                          |
+| 21   | Empty          |              |                          |
+| 22   | Empty          |              |                          |
+| 23   | Empty          |              |                          |
+| 24   | Empty          |              |                          |
+| 25   | Empty          |              |                          |
+| 26   | Empty          |              |                          |
+| 27   | Empty          |              |                          |
+| 28   | Empty          |              |                          |
+| 29   | Empty          |              |                          |
+| 30   | Empty          |              |                          |
+| 31   | Reserved Flags |              |                          |
+| 32   | Magic Number   | 210          | 0xD2                     |
