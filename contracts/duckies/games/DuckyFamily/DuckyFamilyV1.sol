@@ -6,47 +6,17 @@ import '@openzeppelin/contracts/access/AccessControl.sol';
 import '@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol';
 import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
-import '../../../interfaces/IVoucher.sol';
+import '../../../interfaces/IDuckyFamily.sol';
 import '../../../interfaces/IDucklings.sol';
 import '../Random.sol';
 import '../Genome.sol';
 
-contract DuckyFamilyV1 is IVoucher, AccessControl, Random {
+contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 	using Genome for uint256;
 	using ECDSA for bytes32;
 
-	// errors
-	error InvalidMintParams(MintParams mintParams);
-	error InvalidMeldParams(MeldParams meldParams);
-
-	error MintingRulesViolated(uint8 collectionId, uint8 amount);
-	error MeldingRulesViolated(uint256[] tokenIds);
-	error IncorrectGenomesForMelding(uint256[] genomes);
-
-	// events
-	event Melded(address owner, uint256[] meldingTokenIds, uint256 meldedTokenId, uint256 chainId);
-
 	// roles
 	bytes32 public constant MAINTAINER_ROLE = keccak256('MAINTAINER_ROLE');
-
-	// ------- IVoucher -------
-
-	enum VoucherActions {
-		MintPack,
-		MeldFlock
-	}
-
-	struct MintParams {
-		address to;
-		uint8 size;
-		bool isTransferable;
-	}
-
-	struct MeldParams {
-		address owner;
-		uint256[] tokenIds;
-		bool isTransferable;
-	}
 
 	address public issuer;
 
@@ -55,44 +25,10 @@ contract DuckyFamilyV1 is IVoucher, AccessControl, Random {
 
 	// ------- Ducklings Game -------
 
-	// for now, Solidity does not support starting value for enum
-	// enum Collections {
-	// 	Duckling = 0,
-	// 	Zombeak,
-	// 	Mythic
-	// }
-
 	uint8 internal constant ducklingCollectionId = 0;
 	uint8 internal constant zombeakCollectionId = 1;
 	uint8 internal constant mythicCollectionId = 2;
-
 	uint8 internal constant RARITIES_NUM = 4;
-
-	enum Rarities {
-		Common,
-		Rare,
-		Epic,
-		Legendary
-	}
-
-	enum GeneDistributionTypes {
-		Even,
-		Uneven
-	}
-
-	enum GenerativeGenes {
-		Collection,
-		Rarity,
-		Color,
-		Family,
-		Body,
-		Head
-	}
-
-	enum MythicGenes {
-		Collection,
-		UniqId
-	}
 
 	// ------- Internal values -------
 
@@ -245,6 +181,10 @@ contract DuckyFamilyV1 is IVoucher, AccessControl, Random {
 	}
 
 	// -------- Config --------
+
+	function getMintPrice() external view returns (uint256) {
+		return mintPrice;
+	}
 
 	function setMintPrice(uint256 price) external onlyRole(MAINTAINER_ROLE) {
 		mintPrice = price * 10 ** duckiesContract.decimals();
