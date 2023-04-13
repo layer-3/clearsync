@@ -395,6 +395,102 @@ describe('DuckyFamilyV1 melding', () => {
       return [genome.getGene(collectionGeneIdx), genome.getGene(rarityGeneIdx)];
     };
 
+    describe('defaulted values are randomized after melding Ducklings', () => {
+      beforeEach(async () => {
+        await Game.setGeneMutationChance(0);
+      });
+
+      it('Body is randomized after melding Common Ducklings', async () => {
+        const genomes = randomGenomes(Collections.Duckling, {
+          amount: FLOCK_SIZE,
+          [DucklingGenes.Rarity]: Rarities.Common,
+          [DucklingGenes.Color]: 0,
+          // set default Body
+          [DucklingGenes.Body]: 0,
+        });
+
+        const _genome = await meldGenomes(genomes);
+        const genome = new Genome(_genome);
+        expect(genome.getGene(DucklingGenes.Body)).to.not.equal(0);
+      });
+
+      it('Head is randomized after melding Rare Ducklings', async () => {
+        const genomes = randomGenomes(Collections.Duckling, {
+          amount: FLOCK_SIZE,
+          [DucklingGenes.Rarity]: Rarities.Rare,
+          [DucklingGenes.Color]: 0,
+          [DucklingGenes.Family]: 0,
+          // set default Head
+          [DucklingGenes.Head]: 0,
+        });
+
+        //{Collection:0 Rarity:1 Color:0 Family:0 Body:0 Head:7 Eyes:0 Beak:9 Wings:4 Forename:19 Temper:12 Skill:6 Habitat:1 Breed:7}
+        //{Collection:0 Rarity:1 Color:0 Family:0 Body:0 Head:7 Eyes:18 Beak:9 Wings:4 Forename:19 Temper:12 Skill:6 Habitat:1 Breed:7}
+        const _genome = await meldGenomes(genomes);
+        const genome = new Genome(_genome);
+        expect(genome.getGene(DucklingGenes.Head)).to.not.equal(0);
+      });
+
+      it('Body is not randomized after melding Rare Ducklings', async () => {
+        const genomes = randomGenomes(Collections.Duckling, {
+          amount: FLOCK_SIZE,
+          [DucklingGenes.Rarity]: Rarities.Rare,
+          [DucklingGenes.Color]: 0,
+          [DucklingGenes.Family]: 0,
+          // set default Body
+          [DucklingGenes.Body]: 0,
+        });
+
+        const _genome = await meldGenomes(genomes);
+        const genome = new Genome(_genome);
+        expect(genome.getGene(DucklingGenes.Body)).to.equal(0);
+      });
+
+      it('Head is not randomized after melding Common Ducklings', async () => {
+        const genomes = randomGenomes(Collections.Duckling, {
+          amount: FLOCK_SIZE,
+          [DucklingGenes.Rarity]: Rarities.Common,
+          [DucklingGenes.Color]: 0,
+          [DucklingGenes.Family]: 0,
+          // set default Head
+          [DucklingGenes.Head]: 0,
+        });
+
+        const _genome = await meldGenomes(genomes);
+        const genome = new Genome(_genome);
+        expect(genome.getGene(DucklingGenes.Head)).to.equal(0);
+      });
+
+      it('Body is not randomized after melding Common Zombeaks', async () => {
+        const genomes = randomGenomes(Collections.Zombeak, {
+          amount: FLOCK_SIZE,
+          [ZombeakGenes.Rarity]: Rarities.Common,
+          [ZombeakGenes.Color]: 0,
+          // set default Body
+          [ZombeakGenes.Body]: 0,
+        });
+
+        const _genome = await meldGenomes(genomes);
+        const genome = new Genome(_genome);
+        expect(genome.getGene(ZombeakGenes.Body)).to.equal(0);
+      });
+
+      it('Head is not randomized after melding Rare Zombeaks', async () => {
+        const genomes = randomGenomes(Collections.Zombeak, {
+          amount: FLOCK_SIZE,
+          [ZombeakGenes.Rarity]: Rarities.Rare,
+          [ZombeakGenes.Color]: 0,
+          [ZombeakGenes.Family]: 0,
+          // set default Head
+          [ZombeakGenes.Head]: 0,
+        });
+
+        const _genome = await meldGenomes(genomes);
+        const genome = new Genome(_genome);
+        expect(genome.getGene(ZombeakGenes.Head)).to.equal(0);
+      });
+    });
+
     describe('same collection, increased rarity', () => {
       beforeEach(async () => {
         // disable mutations

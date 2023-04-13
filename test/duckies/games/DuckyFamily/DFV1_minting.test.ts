@@ -6,6 +6,7 @@ import { setup } from './setup';
 import {
   Collections,
   DucklingGenes,
+  GeneDistrTypes,
   MAX_PACK_SIZE,
   MAX_PECULIARITY,
   MYTHIC_DISPERSION,
@@ -54,6 +55,18 @@ describe('DuckyFamilyV1 minting', () => {
     collectionId: Collections,
   ): Promise<bigint> => {
     const tx = await Game.generateAndSetGenes(genome, collectionId);
+    const receipt = await tx.wait();
+    const event = receipt.events?.find((e) => e.event === 'GenomeReturned');
+    return event?.args?.genome.toBigInt() as bigint;
+  };
+
+  const generateAndSetGene = async (
+    genome: bigint,
+    geneIx: number,
+    geneValuesNum: number,
+    distrType: GeneDistrTypes,
+  ): Promise<bigint> => {
+    const tx = await Game.generateAndSetGene(genome, geneIx, geneValuesNum, distrType);
     const receipt = await tx.wait();
     const event = receipt.events?.find((e) => e.event === 'GenomeReturned');
     return event?.args?.genome.toBigInt() as bigint;
@@ -230,6 +243,22 @@ describe('DuckyFamilyV1 minting', () => {
           expect(gene).to.be.within(1, valuesNum);
         }
       });
+    });
+  });
+
+  describe('generateAndSetGene', () => {
+    it('values start at 1', async () => {
+      const geneIdx = 0;
+      const geneValuesNum = 15;
+
+      const _genome = await generateAndSetGene(
+        BigInt(0),
+        geneIdx,
+        geneValuesNum,
+        GeneDistrTypes.Even,
+      );
+      const genome = new Genome(_genome);
+      expect(genome.getGene(geneIdx)).to.be.greaterThan(0);
     });
   });
 

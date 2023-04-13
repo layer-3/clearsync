@@ -306,16 +306,12 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 		// generate and set each gene
 		for (uint8 i = 0; i < geneValuesNum.length; i++) {
 			GeneDistributionTypes distrType = _getDistributionType(geneDistributionTypes, i);
-			uint8 geneValue;
-
-			if (distrType == GeneDistributionTypes.Even) {
-				geneValue = uint8(_randomMaxNumber(geneValuesNum[i]));
-			} else {
-				geneValue = uint8(_generateUnevenGeneValue(geneValuesNum[i]));
-			}
-
-			// gene with value 0 means it is a default value, thus this   \/
-			genome = genome.setGene(generativeGenesOffset + i, geneValue + 1);
+			genome = _generateAndSetGene(
+				genome,
+				generativeGenesOffset + i,
+				geneValuesNum[i],
+				distrType
+			);
 		}
 
 		// set default values for Ducklings
@@ -329,6 +325,26 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 				genome = genome.setGene(uint8(GenerativeGenes.Head), 0);
 			}
 		}
+
+		return genome;
+	}
+
+	function _generateAndSetGene(
+		uint256 genome,
+		uint8 geneIdx,
+		uint8 geneValuesNum,
+		GeneDistributionTypes distrType
+	) internal returns (uint256) {
+		uint8 geneValue;
+
+		if (distrType == GeneDistributionTypes.Even) {
+			geneValue = uint8(_randomMaxNumber(geneValuesNum));
+		} else {
+			geneValue = uint8(_generateUnevenGeneValue(geneValuesNum));
+		}
+
+		// gene with value 0 means it is a default value, thus this   \/
+		genome = genome.setGene(geneIdx, geneValue + 1);
 
 		return genome;
 	}
@@ -484,6 +500,25 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 				_getDistributionType(geneDistTypes, i)
 			);
 			meldedGenome = meldedGenome.setGene(generativeGenesOffset + i, geneValue);
+		}
+
+		// randomize Body for Common and Head for Rare for Ducklings
+		if (collectionId == ducklingCollectionId) {
+			if (rarity == Rarities.Common) {
+				meldedGenome = _generateAndSetGene(
+					meldedGenome,
+					uint8(GenerativeGenes.Body),
+					geneValuesNum[uint8(GenerativeGenes.Body)],
+					GeneDistributionTypes.Uneven
+				);
+			} else if (rarity == Rarities.Rare) {
+				meldedGenome = _generateAndSetGene(
+					meldedGenome,
+					uint8(GenerativeGenes.Head),
+					geneValuesNum[uint8(GenerativeGenes.Head)],
+					GeneDistributionTypes.Uneven
+				);
+			}
 		}
 
 		meldedGenome = meldedGenome.setGene(Genome.MAGIC_NUMBER_GENE_IDX, Genome.BASE_MAGIC_NUMBER);
