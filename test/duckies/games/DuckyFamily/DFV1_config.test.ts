@@ -38,13 +38,13 @@ describe('DuckyFamilyV1 config', () => {
 
   describe('mintPrice', () => {
     it('returns correct value', async () => {
-      expect(await Game.mintPrice()).to.deep.equal(MINT_PRICE * duckiesDecMultiplies);
+      expect(await Game.getMintPrice()).to.deep.equal(MINT_PRICE * duckiesDecMultiplies);
     });
 
     describe('setMintPrice', () => {
       it('maintainer can set mint price', async () => {
         await GameAsMaintainer.setMintPrice(CUSTOM_MINT_PRICE);
-        expect(await Game.mintPrice()).to.deep.equal(CUSTOM_MINT_PRICE * duckiesDecMultiplies);
+        expect(await Game.getMintPrice()).to.deep.equal(CUSTOM_MINT_PRICE * duckiesDecMultiplies);
       });
 
       it('revert on not maintainer set mint price', async () => {
