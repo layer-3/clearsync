@@ -99,6 +99,8 @@ describe('DuckyFamilyV1 minting', () => {
     });
   });
 
+  // does not include flags and magic number
+  // eslint-disable-next-line sonarjs/cognitive-complexity
   describe('generateAndSetGenes', () => {
     describe('Duckling', () => {
       const baseDucklingGenome = new Genome(0).setGene(collectionGeneIdx, Collections.Duckling);
@@ -184,6 +186,43 @@ describe('DuckyFamilyV1 minting', () => {
       it('does not exceed max gene values', async () => {
         const zombeakGenome = baseZombeakGenome.setGene(rarityGeneIdx, Rarities.Common).genome;
         const _genome = await generateAndSetGenes(zombeakGenome, Collections.Zombeak);
+        const genome = new Genome(_genome);
+
+        for (const [i, valuesNum] of geneValuesNum.entries()) {
+          const gene = genome.getGene(generativeGenesOffset + i);
+          expect(gene).to.be.within(1, valuesNum);
+        }
+      });
+    });
+
+    describe('Mythic', () => {
+      const baseMythicGenome = new Genome(0).setGene(collectionGeneIdx, Collections.Mythic);
+      const geneValuesNum = collectionsGeneValuesNum[Collections.Mythic];
+
+      it('has correct numbers of genes', async () => {
+        const mythicGenome = baseMythicGenome.setGene(rarityGeneIdx, Rarities.Common).genome;
+        const genome = await generateAndSetGenes(mythicGenome, Collections.Mythic);
+
+        // as not default values start from 1 and the last gene is not default,
+        // the number of genes is equal to number of bytes in genome returned
+        const numberOfGenes = Math.ceil(genome.toString(2).length / 8);
+        expect(numberOfGenes).to.equal(generativeGenesOffset + geneValuesNum.length);
+      });
+
+      it('not defaulted values start at 1', async () => {
+        const mythicGenome = baseMythicGenome.setGene(rarityGeneIdx, Rarities.Common).genome;
+        const _genome = await generateAndSetGenes(mythicGenome, Collections.Mythic);
+        const genome = new Genome(_genome);
+
+        for (let i = 0; i < geneValuesNum.length; i++) {
+          const gene = genome.getGene(generativeGenesOffset + i);
+          expect(gene).to.be.greaterThan(0);
+        }
+      });
+
+      it('does not exceed max gene values', async () => {
+        const mythicGenome = baseMythicGenome.setGene(rarityGeneIdx, Rarities.Common).genome;
+        const _genome = await generateAndSetGenes(mythicGenome, Collections.Mythic);
         const genome = new Genome(_genome);
 
         for (const [i, valuesNum] of geneValuesNum.entries()) {

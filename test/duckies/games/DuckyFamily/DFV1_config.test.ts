@@ -175,4 +175,36 @@ describe('DuckyFamilyV1 config', () => {
       });
     });
   });
+
+  describe('setMythicGeneValues', () => {
+    it('admin can set gene values', async () => {
+      const newMythicGeneValues = [1, 2, 3, 4, 42];
+      await Game.setMythicGeneValues(newMythicGeneValues);
+      const [contractGeneValues] = await Game.getCollectionsGeneValues();
+      expect(contractGeneValues[Collections.Mythic]).to.deep.equal(newMythicGeneValues);
+    });
+
+    it('revert on not admin set gene values', async () => {
+      const newMythicGeneValues = [1, 2, 3, 4, 42];
+      await expect(GameAsSomeone.setMythicGeneValues(newMythicGeneValues)).to.be.revertedWith(
+        ACCOUNT_MISSING_ROLE(Someone.address, ADMIN_ROLE),
+      );
+    });
+  });
+
+  describe('setMythicGeneDistributionTypes', () => {
+    it('admin can set gene distribution types', async () => {
+      const newMythicGeneDistrTypes = 42;
+      await Game.setMythicGeneDistributionTypes(newMythicGeneDistrTypes);
+      const contractGeneDistrTypes = await Game.getCollectionsGeneDistributionTypes();
+      expect(contractGeneDistrTypes[Collections.Mythic]).to.equal(newMythicGeneDistrTypes);
+    });
+
+    it('revert on not admin set gene distribution types', async () => {
+      const newMythicGeneDistrTypes = 42;
+      await expect(
+        GameAsSomeone.setMythicGeneDistributionTypes(newMythicGeneDistrTypes),
+      ).to.be.revertedWith(ACCOUNT_MISSING_ROLE(Someone.address, ADMIN_ROLE));
+    });
+  });
 });
