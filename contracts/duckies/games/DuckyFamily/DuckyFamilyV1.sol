@@ -106,16 +106,13 @@ contract DuckyFamilyV1 is IVoucher, AccessControl, Random {
 	uint8 internal constant generativeGenesOffset = 2;
 
 	// number of values for each gene for Duckling and Zombeak collections
-	uint8[][2] internal collectionsGeneValuesNum = [
-		// Duckling genes: (Collection, Rarity), Color, Family, Body, Head, Eyes, Beak, Wings, FirstName, Temper, Skill, Habitat, Breed
-		[4, 5, 10, 25, 30, 14, 10, 36, 16, 12, 5, 28],
-		// Zombeak genes: (Collection, Rarity), Color, Family, Body, Head, Eyes, Beak, Wings, FirstName, Temper, Skill, Habitat, Breed
-		[2, 3, 7, 6, 9, 7, 10, 36, 16, 12, 5, 28]
-	];
+	uint8[][3] internal collectionsGeneValuesNum; // set in constructor
+
 	// distribution type of each gene for Duckling and Zombeak collections
-	uint32[2] internal collectionsGeneDistributionTypes = [
+	uint32[3] internal collectionsGeneDistributionTypes = [
 		2940, // reverse(001111101101) = 101101111100
-		2940 // reverse(001111101101) = 101101111100
+		2940, // reverse(001111101101) = 101101111100
+		6 // reverse(0110) = 0110
 	];
 
 	// peculiarity is a sum of uneven gene values for Ducklings
@@ -160,6 +157,13 @@ contract DuckyFamilyV1 is IVoucher, AccessControl, Random {
 			500 * decimalsMultiplier,
 			1000 * decimalsMultiplier
 		];
+
+		// Duckling genes: (Collection, Rarity), Color, Family, Body, Head, Eyes, Beak, Wings, FirstName, Temper, Skill, Habitat, Breed
+		collectionsGeneValuesNum[0] = [4, 5, 10, 25, 30, 14, 10, 36, 16, 12, 5, 28];
+		// Zombeak genes: (Collection, Rarity), Color, Family, Body, Head, Eyes, Beak, Wings, FirstName, Temper, Skill, Habitat, Breed
+		collectionsGeneValuesNum[1] = [2, 3, 7, 6, 9, 7, 10, 36, 16, 12, 5, 28];
+		// Mythic genes: (Collection, UniqId), Temper, Skill, Habitat, Breed
+		collectionsGeneValuesNum[2] = [32, 16, 12, 5];
 
 		maxPeculiarity = _calcMaxPeculiarity();
 	}
@@ -258,11 +262,11 @@ contract DuckyFamilyV1 is IVoucher, AccessControl, Random {
 		}
 	}
 
-	function getCollectionsGeneValues() external view returns (uint8[][2] memory, uint8) {
+	function getCollectionsGeneValues() external view returns (uint8[][3] memory, uint8) {
 		return (collectionsGeneValuesNum, mythicAmount);
 	}
 
-	function getCollectionsGeneDistributionTypes() external view returns (uint32[2] memory) {
+	function getCollectionsGeneDistributionTypes() external view returns (uint32[3] memory) {
 		return collectionsGeneDistributionTypes;
 	}
 
@@ -294,6 +298,18 @@ contract DuckyFamilyV1 is IVoucher, AccessControl, Random {
 
 	function setMythicAmount(uint8 amount) external onlyRole(DEFAULT_ADMIN_ROLE) {
 		mythicAmount = amount;
+	}
+
+	function setMythicGeneValues(
+		uint8[] memory mythicGeneValuesNum
+	) external onlyRole(DEFAULT_ADMIN_ROLE) {
+		collectionsGeneValuesNum[2] = mythicGeneValuesNum;
+	}
+
+	function setMythicGeneDistributionTypes(
+		uint32 mythicGeneDistrTypes
+	) external onlyRole(DEFAULT_ADMIN_ROLE) {
+		collectionsGeneDistributionTypes[2] = mythicGeneDistrTypes;
 	}
 
 	// ------- Mint -------
@@ -409,6 +425,7 @@ contract DuckyFamilyV1 is IVoucher, AccessControl, Random {
 		uint256 genome;
 		genome = genome.setGene(collectionGeneIdx, mythicCollectionId);
 		genome = genome.setGene(uint8(MythicGenes.UniqId), uint8(uniqId));
+		genome = _generateAndSetGenes(genome, mythicCollectionId);
 		genome = genome.setGene(Genome.MAGIC_NUMBER_GENE_IDX, Genome.MYTHIC_MAGIC_NUMBER);
 
 		return genome;
