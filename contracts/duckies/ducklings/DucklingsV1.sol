@@ -65,11 +65,9 @@ contract DucklingsV1 is
 
 	// -------- ERC721 --------
 
-	function _burn(
-		uint256 existence
-	) internal override(ERC721RoyaltyUpgradeable, ERC721Upgradeable) {
+	function _burn(uint256 tokenId) internal override(ERC721RoyaltyUpgradeable, ERC721Upgradeable) {
 		// check on token existence is performed in ERC721Upgradeable._burn
-		super._burn(existence);
+		super._burn(tokenId);
 	}
 
 	function tokenURI(
