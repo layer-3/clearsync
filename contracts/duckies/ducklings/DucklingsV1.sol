@@ -27,7 +27,6 @@ contract DucklingsV1 is
 
 	error InvalidTokenId(uint256 tokenId);
 	error InvalidAddress(address addr);
-	error InvalidMagicNumber(uint8 magicNumber);
 
 	// Roles
 	bytes32 public constant UPGRADER_ROLE = keccak256('UPGRADER_ROLE');

@@ -5,6 +5,7 @@ import '@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol'
 
 interface IDucklings is IERC721Upgradeable {
 	error TokenNotTransferable(uint256 tokenId);
+	error InvalidMagicNumber(uint8 magicNumber);
 
 	struct Duckling {
 		uint256 genome;
