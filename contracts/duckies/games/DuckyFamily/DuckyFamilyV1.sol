@@ -54,7 +54,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 	// peculiarity is a sum of uneven gene values for Ducklings
 	uint16 internal maxPeculiarity;
 	uint8 internal constant MYTHIC_DISPERSION = 5;
-	uint8 internal mythicAmount = 59;
+	uint8 internal mythicAmount = 60;
 
 	// chance of a Duckling of a certain rarity to be generated
 	uint32[] internal rarityChances = [850, 120, 25, 5]; // per mil
@@ -99,7 +99,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 		// Zombeak genes: (Collection, Rarity), Color, Family, Body, Head, Eyes, Beak, Wings, FirstName, Temper, Skill, Habitat, Breed
 		collectionsGeneValuesNum[1] = [2, 3, 7, 6, 9, 7, 10, 36, 16, 12, 5, 28];
 		// Mythic genes: (Collection, UniqId), Temper, Skill, Habitat, Breed, Birthplace, Quirk, Favorite Food, Favorite Color
-		collectionsGeneValuesNum[2] = [16, 12, 5, 20, 5, 10, 8, 4];
+		collectionsGeneValuesNum[2] = [16, 12, 5, 28, 5, 10, 8, 4];
 
 		maxPeculiarity = _calcMaxPeculiarity();
 	}
