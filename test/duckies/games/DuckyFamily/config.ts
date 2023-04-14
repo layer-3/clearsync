@@ -33,6 +33,12 @@ export const mythicMagicNumber = 210;
 
 export const generativeGenesOffset = 2;
 
+export enum GeneralGenes {
+  Collection,
+  Flags = 30,
+  MagicNumber = 31,
+}
+
 export enum DucklingGenes {
   Collection,
   Rarity,
@@ -48,6 +54,8 @@ export enum DucklingGenes {
   Skill,
   Habitat,
   Breed,
+  Flags = 30,
+  MagicNumber = 31,
 }
 
 export enum ZombeakGenes {
@@ -65,6 +73,8 @@ export enum ZombeakGenes {
   Skill,
   Habitat,
   Breed,
+  Flags = 30,
+  MagicNumber = 31,
 }
 
 export enum MythicGenes {
@@ -78,13 +88,21 @@ export enum MythicGenes {
   Quirk,
   FavoriteFood,
   FavoriteColor,
+  Flags = 30,
+  MagicNumber = 31,
 }
 
 export const mythicAmount = 60;
 export const MAX_PECULIARITY = 145;
 export const MYTHIC_DISPERSION = 5;
 
-export type Genes = DucklingGenes | ZombeakGenes | MythicGenes;
+export type Genes = DucklingGenes | ZombeakGenes | MythicGenes | GeneralGenes;
+export type GeneIdxToValue = { [key in Genes]: number };
+export type GeneToValue =
+  | keyof typeof DucklingGenes
+  | keyof typeof ZombeakGenes
+  | keyof typeof MythicGenes
+  | keyof typeof GeneralGenes;
 
 export const collectionsGeneValuesNum = [
   // Duckling genes: (Collection, Rarity), Color, Family, Body, Head, Eyes, Beak, Wings, FirstName, Temper, Skill, Habitat, Breed
