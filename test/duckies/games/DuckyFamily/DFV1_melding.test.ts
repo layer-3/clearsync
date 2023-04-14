@@ -424,8 +424,6 @@ describe('DuckyFamilyV1 melding', () => {
           [DucklingGenes.Head]: 0,
         });
 
-        //{Collection:0 Rarity:1 Color:0 Family:0 Body:0 Head:7 Eyes:0 Beak:9 Wings:4 Forename:19 Temper:12 Skill:6 Habitat:1 Breed:7}
-        //{Collection:0 Rarity:1 Color:0 Family:0 Body:0 Head:7 Eyes:18 Beak:9 Wings:4 Forename:19 Temper:12 Skill:6 Habitat:1 Breed:7}
         const _genome = await meldGenomes(genomes);
         const genome = new Genome(_genome);
         expect(genome.getGene(DucklingGenes.Head)).to.not.equal(0);

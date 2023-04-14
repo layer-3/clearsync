@@ -1,7 +1,11 @@
 import {
   Collections,
+  DucklingGenes,
+  GeneToValue,
+  GeneralGenes,
   Genes,
   MythicGenes,
+  ZombeakGenes,
   baseMagicNumber,
   collectionGeneIdx,
   collectionsGeneValuesNum,
@@ -15,13 +19,11 @@ import { Genome } from './genome';
 import type { DucklingsV1 } from '../../../../typechain-types';
 import type { ContractTransaction } from 'ethers';
 
-export type CollectionGenes = { [key in Genes]?: number };
-export type RandomGenomeConfig = CollectionGenes & {
-  isTransferable?: boolean;
-  magicNumber?: number;
-};
+export type GenesConfig = { [key in Genes]?: number };
+// only isTransferable flag is supported for now
+export type RandomGenomeConfig = GenesConfig & { isTransferable?: boolean };
 
-export const randomMaxNum = (maxNum: number): number => Math.floor(Math.random() * (maxNum + 1));
+export const randomMaxNum = (maxNum: number): number => Math.floor(Math.random() * maxNum);
 
 export function randomGenome(collectionId: Collections, config?: RandomGenomeConfig): bigint {
   const genome = new Genome();
@@ -29,36 +31,42 @@ export function randomGenome(collectionId: Collections, config?: RandomGenomeCon
 
   if (collectionId == Collections.Mythic) {
     if (config?.[MythicGenes.UniqId]) {
-      return genome.setGene(MythicGenes.UniqId, config[MythicGenes.UniqId]).genome;
+      genome.setGene(MythicGenes.UniqId, config[MythicGenes.UniqId]).genome;
     } else {
-      return genome.randomizeGene(MythicGenes.UniqId, mythicAmount).genome;
+      genome.randomizeGene(MythicGenes.UniqId, mythicAmount).genome;
     }
+  } else {
+    const rarity = config?.[rarityGeneIdx] ?? randomMaxNum(raritiesNum - 1);
+    genome.setGene(rarityGeneIdx, rarity);
   }
-
-  genome.setGene(rarityGeneIdx, randomMaxNum(raritiesNum - 1));
 
   const geneValuesNum = collectionsGeneValuesNum[collectionId];
 
   for (const [i, geneValues] of geneValuesNum.entries()) {
-    let geneValue = 0;
-    if (config?.[i as Genes] === undefined) {
-      geneValue = randomMaxNum(geneValues);
+    if (config?.[(i + generativeGenesOffset) as Genes] === undefined) {
+      const geneValue = randomMaxNum(geneValues) + 1;
       genome.setGene(i + generativeGenesOffset, geneValue);
     } else {
-      geneValue = config[i as Genes] as unknown as number;
-      genome.setGene(i, geneValue);
+      genome.setGene(
+        i + generativeGenesOffset,
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        config[(i + generativeGenesOffset) as Genes]!,
+      );
     }
   }
 
-  if (config?.isTransferable || config?.isTransferable === undefined) {
-    genome.setGene(30, 1);
-  } else {
-    genome.setGene(30, 0);
+  let flags = config?.[GeneralGenes.Flags] ?? 0;
+
+  // only isTransferable flag is supported for now
+  if (config?.isTransferable) {
+    flags = 1;
   }
 
+  genome.setGene(GeneralGenes.Flags, flags);
+
   // default is base magic number as this function generates only Duckling and Zombeak genomes
-  const magicNumber = config?.magicNumber ?? baseMagicNumber;
-  genome.setGene(31, magicNumber);
+  const magicNumber = config?.[GeneralGenes.MagicNumber] ?? baseMagicNumber;
+  genome.setGene(GeneralGenes.MagicNumber, magicNumber);
 
   return genome.genome;
 }
@@ -71,6 +79,44 @@ export function randomGenomes(
   return Array.from({ length: amount })
     .fill(0)
     .map(() => randomGenome(collectionId, config));
+}
+
+export function parseGenome(genome_: bigint): GeneToValue {
+  const genome = new Genome(genome_);
+
+  let NFTGenes;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
+  const NFTGenome = {} as any; // use any as we are building this object dynamically
+
+  const collection = genome.getGene(collectionGeneIdx);
+
+  switch (collection) {
+    case Collections.Duckling: {
+      NFTGenes = DucklingGenes;
+      break;
+    }
+    case Collections.Zombeak: {
+      NFTGenes = ZombeakGenes;
+      break;
+    }
+    case Collections.Mythic: {
+      NFTGenes = MythicGenes;
+      break;
+    }
+    default: {
+      throw new Error('Unknown collection');
+    }
+  }
+
+  NFTGenome[NFTGenes[GeneralGenes.Collection]] = collection;
+
+  for (const value in NFTGenes) {
+    if (Number.isNaN(Number(value))) continue;
+    const numValue = Number(value);
+    NFTGenome[NFTGenes[numValue]] = genome.getGene(numValue as Genes);
+  }
+
+  return NFTGenome as GeneToValue;
 }
 
 export type MintToFuncT = (
