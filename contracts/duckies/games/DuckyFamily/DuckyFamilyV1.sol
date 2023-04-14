@@ -369,7 +369,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 		} else if (maxUniqId < pivotalUniqId + MYTHIC_DISPERSION) {
 			// mythic id range overlaps with right dispersion border
 			leftEndUniqId = pivotalUniqId - MYTHIC_DISPERSION;
-			uniqIdSegmentLength = maxUniqId - pivotalUniqId + MYTHIC_DISPERSION;
+			uniqIdSegmentLength = maxUniqId - leftEndUniqId + 1; // +1 to include right border, where the last UniqId is located
 		} else {
 			// mythic id range does not overlap with dispersion borders
 			leftEndUniqId = pivotalUniqId - MYTHIC_DISPERSION;
