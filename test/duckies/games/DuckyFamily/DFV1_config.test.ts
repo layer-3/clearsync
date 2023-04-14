@@ -40,139 +40,139 @@ describe('DuckyFamilyV1 config', () => {
     it('returns correct value', async () => {
       expect(await Game.getMintPrice()).to.deep.equal(MINT_PRICE * duckiesDecMultiplies);
     });
+  });
 
-    describe('setMintPrice', () => {
-      it('maintainer can set mint price', async () => {
-        await GameAsMaintainer.setMintPrice(CUSTOM_MINT_PRICE);
-        expect(await Game.getMintPrice()).to.deep.equal(CUSTOM_MINT_PRICE * duckiesDecMultiplies);
-      });
-
-      it('revert on not maintainer set mint price', async () => {
-        await expect(GameAsSomeone.setMintPrice(MINT_PRICE)).to.be.revertedWith(
-          ACCOUNT_MISSING_ROLE(Someone.address, MAINTAINER_ROLE),
-        );
-      });
+  describe('setMintPrice', () => {
+    it('maintainer can set mint price', async () => {
+      await GameAsMaintainer.setMintPrice(CUSTOM_MINT_PRICE);
+      expect(await Game.getMintPrice()).to.deep.equal(CUSTOM_MINT_PRICE * duckiesDecMultiplies);
     });
 
-    describe('getMeldPrices', () => {
-      it('returns correct values', async () => {
-        const duckiesDecMultiplier = 10 ** (await Duckies.decimals());
-        expect(await Game.getMeldPrices()).to.deep.equal(
-          MELD_PRICES.map((v) => v * duckiesDecMultiplier),
-        );
-      });
+    it('revert on not maintainer set mint price', async () => {
+      await expect(GameAsSomeone.setMintPrice(MINT_PRICE)).to.be.revertedWith(
+        ACCOUNT_MISSING_ROLE(Someone.address, MAINTAINER_ROLE),
+      );
+    });
+  });
+
+  describe('getMeldPrices', () => {
+    it('returns correct values', async () => {
+      const duckiesDecMultiplier = 10 ** (await Duckies.decimals());
+      expect(await Game.getMeldPrices()).to.deep.equal(
+        MELD_PRICES.map((v) => v * duckiesDecMultiplier),
+      );
+    });
+  });
+
+  describe('setMeldPrices', () => {
+    it('maintainer can set meld price', async () => {
+      await GameAsMaintainer.setMeldPrices(CUSTOM_MELD_PRICES as MeldPrices);
+      const duckiesDecMultiplier = 10 ** (await Duckies.decimals());
+      expect(await Game.getMeldPrices()).to.deep.equal(
+        CUSTOM_MELD_PRICES.map((v) => v * duckiesDecMultiplier),
+      );
     });
 
-    describe('setMeldPrices', () => {
-      it('maintainer can set meld price', async () => {
-        await GameAsMaintainer.setMeldPrices(CUSTOM_MELD_PRICES as MeldPrices);
-        const duckiesDecMultiplier = 10 ** (await Duckies.decimals());
-        expect(await Game.getMeldPrices()).to.deep.equal(
-          CUSTOM_MELD_PRICES.map((v) => v * duckiesDecMultiplier),
-        );
-      });
+    it('revert on not maintainer set meld price', async () => {
+      await expect(GameAsSomeone.setMeldPrices(MELD_PRICES as MeldPrices)).to.be.revertedWith(
+        ACCOUNT_MISSING_ROLE(Someone.address, MAINTAINER_ROLE),
+      );
+    });
+  });
 
-      it('revert on not maintainer set meld price', async () => {
-        await expect(GameAsSomeone.setMeldPrices(MELD_PRICES as MeldPrices)).to.be.revertedWith(
-          ACCOUNT_MISSING_ROLE(Someone.address, MAINTAINER_ROLE),
-        );
-      });
+  describe('getCollectionsGeneValues', () => {
+    it('returns correct values', async () => {
+      const [contractCollectionsGeneValues, contractMythicAmount] =
+        await Game.getCollectionsGeneValues();
+      expect(contractCollectionsGeneValues).to.deep.equal(collectionsGeneValuesNum);
+      expect(contractMythicAmount).to.deep.equal(mythicAmount);
+    });
+  });
+
+  describe('getCollectionsGeneDistributionTypes', () => {
+    it('returns correct values', async () => {
+      const contractGeneDistrTypes = await Game.getCollectionsGeneDistributionTypes();
+      expect(contractGeneDistrTypes).to.deep.equal(collectionsGeneDistributionTypes);
+    });
+  });
+
+  describe('setDucklingGeneValues', () => {
+    it('admin can set gene values', async () => {
+      const newDucklingGeneValues = [1, 2, 3, 4, 42];
+      await Game.setDucklingGeneValues(newDucklingGeneValues);
+      const [contractGeneValues] = await Game.getCollectionsGeneValues();
+      expect(contractGeneValues[Collections.Duckling]).to.deep.equal(newDucklingGeneValues);
     });
 
-    describe('getCollectionsGeneValues', () => {
-      it('returns correct values', async () => {
-        const [contractCollectionsGeneValues, contractMythicAmount] =
-          await Game.getCollectionsGeneValues();
-        expect(contractCollectionsGeneValues).to.deep.equal(collectionsGeneValuesNum);
-        expect(contractMythicAmount).to.deep.equal(mythicAmount);
-      });
+    it('revert on not admin set gene values', async () => {
+      const newDucklingGeneValues = [1, 2, 3, 4, 42];
+      await expect(GameAsSomeone.setDucklingGeneValues(newDucklingGeneValues)).to.be.revertedWith(
+        ACCOUNT_MISSING_ROLE(Someone.address, ADMIN_ROLE),
+      );
+    });
+  });
+
+  describe('setDucklingGeneDistributionTypes', () => {
+    it('admin can set gene distribution types', async () => {
+      const newDucklingGeneDistrTypes = 42;
+      await Game.setDucklingGeneDistributionTypes(newDucklingGeneDistrTypes);
+      const contractGeneDistrTypes = await Game.getCollectionsGeneDistributionTypes();
+      expect(contractGeneDistrTypes[Collections.Duckling]).to.equal(newDucklingGeneDistrTypes);
     });
 
-    describe('getCollectionsGeneDistributionTypes', () => {
-      it('returns correct values', async () => {
-        const contractGeneDistrTypes = await Game.getCollectionsGeneDistributionTypes();
-        expect(contractGeneDistrTypes).to.deep.equal(collectionsGeneDistributionTypes);
-      });
+    it('revert on not admin set gene distribution types', async () => {
+      const newDucklingGeneDistrTypes = 42;
+      await expect(
+        GameAsSomeone.setDucklingGeneDistributionTypes(newDucklingGeneDistrTypes),
+      ).to.be.revertedWith(ACCOUNT_MISSING_ROLE(Someone.address, ADMIN_ROLE));
+    });
+  });
+
+  describe('setZombeakGeneValues', () => {
+    it('admin can set gene values', async () => {
+      const newZombeakGeneValues = [1, 2, 3, 4, 42];
+      await Game.setZombeakGeneValues(newZombeakGeneValues);
+      const [contractGeneValues] = await Game.getCollectionsGeneValues();
+      expect(contractGeneValues[Collections.Zombeak]).to.deep.equal(newZombeakGeneValues);
     });
 
-    describe('setDucklingGeneValues', () => {
-      it('admin can set gene values', async () => {
-        const newDucklingGeneValues = [1, 2, 3, 4, 42];
-        await Game.setDucklingGeneValues(newDucklingGeneValues);
-        const [contractGeneValues] = await Game.getCollectionsGeneValues();
-        expect(contractGeneValues[Collections.Duckling]).to.deep.equal(newDucklingGeneValues);
-      });
+    it('revert on not admin set gene values', async () => {
+      const newZombeakGeneValues = [1, 2, 3, 4, 42];
+      await expect(GameAsSomeone.setZombeakGeneValues(newZombeakGeneValues)).to.be.revertedWith(
+        ACCOUNT_MISSING_ROLE(Someone.address, ADMIN_ROLE),
+      );
+    });
+  });
 
-      it('revert on not admin set gene values', async () => {
-        const newDucklingGeneValues = [1, 2, 3, 4, 42];
-        await expect(GameAsSomeone.setDucklingGeneValues(newDucklingGeneValues)).to.be.revertedWith(
-          ACCOUNT_MISSING_ROLE(Someone.address, ADMIN_ROLE),
-        );
-      });
+  describe('setZombeakGeneDistributionTypes', () => {
+    it('admin can set gene distribution types', async () => {
+      const newZombeakGeneDistrTypes = 42;
+      await Game.setZombeakGeneDistributionTypes(newZombeakGeneDistrTypes);
+      const contractGeneDistrTypes = await Game.getCollectionsGeneDistributionTypes();
+      expect(contractGeneDistrTypes[Collections.Zombeak]).to.equal(newZombeakGeneDistrTypes);
     });
 
-    describe('setDucklingGeneDistributionTypes', () => {
-      it('admin can set gene distribution types', async () => {
-        const newDucklingGeneDistrTypes = 42;
-        await Game.setDucklingGeneDistributionTypes(newDucklingGeneDistrTypes);
-        const contractGeneDistrTypes = await Game.getCollectionsGeneDistributionTypes();
-        expect(contractGeneDistrTypes[Collections.Duckling]).to.equal(newDucklingGeneDistrTypes);
-      });
+    it('revert on not admin set gene distribution types', async () => {
+      const newZombeakGeneDistrTypes = 42;
+      await expect(
+        GameAsSomeone.setZombeakGeneDistributionTypes(newZombeakGeneDistrTypes),
+      ).to.be.revertedWith(ACCOUNT_MISSING_ROLE(Someone.address, ADMIN_ROLE));
+    });
+  });
 
-      it('revert on not admin set gene distribution types', async () => {
-        const newDucklingGeneDistrTypes = 42;
-        await expect(
-          GameAsSomeone.setDucklingGeneDistributionTypes(newDucklingGeneDistrTypes),
-        ).to.be.revertedWith(ACCOUNT_MISSING_ROLE(Someone.address, ADMIN_ROLE));
-      });
+  describe('setMythicAmount', () => {
+    it('admin can set mythic amount', async () => {
+      const newMythicAmount = 42;
+      await Game.setMythicAmount(newMythicAmount);
+      const [, contractMythicAmount] = await Game.getCollectionsGeneValues();
+      expect(contractMythicAmount).to.equal(newMythicAmount);
     });
 
-    describe('setZombeakGeneValues', () => {
-      it('admin can set gene values', async () => {
-        const newZombeakGeneValues = [1, 2, 3, 4, 42];
-        await Game.setZombeakGeneValues(newZombeakGeneValues);
-        const [contractGeneValues] = await Game.getCollectionsGeneValues();
-        expect(contractGeneValues[Collections.Zombeak]).to.deep.equal(newZombeakGeneValues);
-      });
-
-      it('revert on not admin set gene values', async () => {
-        const newZombeakGeneValues = [1, 2, 3, 4, 42];
-        await expect(GameAsSomeone.setZombeakGeneValues(newZombeakGeneValues)).to.be.revertedWith(
-          ACCOUNT_MISSING_ROLE(Someone.address, ADMIN_ROLE),
-        );
-      });
-    });
-
-    describe('setZombeakGeneDistributionTypes', () => {
-      it('admin can set gene distribution types', async () => {
-        const newZombeakGeneDistrTypes = 42;
-        await Game.setZombeakGeneDistributionTypes(newZombeakGeneDistrTypes);
-        const contractGeneDistrTypes = await Game.getCollectionsGeneDistributionTypes();
-        expect(contractGeneDistrTypes[Collections.Zombeak]).to.equal(newZombeakGeneDistrTypes);
-      });
-
-      it('revert on not admin set gene distribution types', async () => {
-        const newZombeakGeneDistrTypes = 42;
-        await expect(
-          GameAsSomeone.setZombeakGeneDistributionTypes(newZombeakGeneDistrTypes),
-        ).to.be.revertedWith(ACCOUNT_MISSING_ROLE(Someone.address, ADMIN_ROLE));
-      });
-    });
-
-    describe('setMythicAmount', () => {
-      it('admin can set mythic amount', async () => {
-        const newMythicAmount = 42;
-        await Game.setMythicAmount(newMythicAmount);
-        const [, contractMythicAmount] = await Game.getCollectionsGeneValues();
-        expect(contractMythicAmount).to.equal(newMythicAmount);
-      });
-
-      it('revert on not admin set mythic amount', async () => {
-        const newMythicAmount = 42;
-        await expect(GameAsSomeone.setMythicAmount(newMythicAmount)).to.be.revertedWith(
-          ACCOUNT_MISSING_ROLE(Someone.address, ADMIN_ROLE),
-        );
-      });
+    it('revert on not admin set mythic amount', async () => {
+      const newMythicAmount = 42;
+      await expect(GameAsSomeone.setMythicAmount(newMythicAmount)).to.be.revertedWith(
+        ACCOUNT_MISSING_ROLE(Someone.address, ADMIN_ROLE),
+      );
     });
   });
 

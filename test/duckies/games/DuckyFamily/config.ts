@@ -80,7 +80,7 @@ export enum MythicGenes {
   FavoriteColor,
 }
 
-export const mythicAmount = 59;
+export const mythicAmount = 60;
 export const MAX_PECULIARITY = 145;
 export const MYTHIC_DISPERSION = 5;
 
@@ -92,7 +92,7 @@ export const collectionsGeneValuesNum = [
   // Zombeak genes: (Collection, Rarity), Color, Family, Body, Head, Eyes, Beak, Wings, FirstName, Temper, Skill, Habitat, Breed
   [2, 3, 7, 6, 9, 7, 10, 36, 16, 12, 5, 28],
   // Mythic genes: (Collection, UniqId), Temper, Skill, Habitat, Breed, Birthplace, Quirk, Favorite Food, Favorite Color
-  [16, 12, 5, 20, 5, 10, 8, 4],
+  [16, 12, 5, 28, 5, 10, 8, 4],
 ] as const;
 
 export const collectionsGeneDistributionTypes = [
