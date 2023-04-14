@@ -359,22 +359,10 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 
 		uint16 maxUniqId = mythicAmount - 1;
 		uint16 pivotalUniqId = uint16((uint64(sumPeculiarity) * maxUniqId) / maxSumPeculiarity); // multiply and then divide to avoid float numbers
-		uint16 leftEndUniqId;
-		uint16 uniqIdSegmentLength;
-
-		if (pivotalUniqId < MYTHIC_DISPERSION) {
-			// mythic id range overlaps with left dispersion border
-			leftEndUniqId = 0;
-			uniqIdSegmentLength = pivotalUniqId + MYTHIC_DISPERSION;
-		} else if (maxUniqId < pivotalUniqId + MYTHIC_DISPERSION) {
-			// mythic id range overlaps with right dispersion border
-			leftEndUniqId = pivotalUniqId - MYTHIC_DISPERSION;
-			uniqIdSegmentLength = maxUniqId - pivotalUniqId + MYTHIC_DISPERSION;
-		} else {
-			// mythic id range does not overlap with dispersion borders
-			leftEndUniqId = pivotalUniqId - MYTHIC_DISPERSION;
-			uniqIdSegmentLength = 2 * MYTHIC_DISPERSION;
-		}
+		(uint16 leftEndUniqId, uint16 uniqIdSegmentLength) = _calcUniqIdGenerationParams(
+			pivotalUniqId,
+			maxUniqId
+		);
 
 		uint16 uniqId = leftEndUniqId + uint16(Random._randomMaxNumber(uniqIdSegmentLength));
 
@@ -621,5 +609,24 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 		}
 
 		return sum;
+	}
+
+	function _calcUniqIdGenerationParams(
+		uint16 pivotalUniqId,
+		uint16 maxUniqId
+	) internal pure returns (uint16 leftEndUniqId, uint16 uniqIdSegmentLength) {
+		if (pivotalUniqId < MYTHIC_DISPERSION) {
+			// mythic id range overlaps with left dispersion border
+			leftEndUniqId = 0;
+			uniqIdSegmentLength = pivotalUniqId + MYTHIC_DISPERSION;
+		} else if (maxUniqId < pivotalUniqId + MYTHIC_DISPERSION) {
+			// mythic id range overlaps with right dispersion border
+			leftEndUniqId = pivotalUniqId - MYTHIC_DISPERSION;
+			uniqIdSegmentLength = maxUniqId - leftEndUniqId + 1; // +1 to include right border, where the last UniqId is located
+		} else {
+			// mythic id range does not overlap with dispersion borders
+			leftEndUniqId = pivotalUniqId - MYTHIC_DISPERSION;
+			uniqIdSegmentLength = 2 * MYTHIC_DISPERSION;
+		}
 	}
 }

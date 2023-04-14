@@ -94,4 +94,11 @@ contract TESTDuckyFamilyV1 is DuckyFamilyV1 {
 	function calcPeculiarity(uint256 genome) external view returns (uint16) {
 		return _calcPeculiarity(genome);
 	}
+
+	function calcUniqIdGenerationParams(
+		uint16 pivotalUniqId,
+		uint16 maxUniqId
+	) external pure returns (uint16 leftEndUniqId, uint16 uniqIdSegmentLength) {
+		return _calcUniqIdGenerationParams(pivotalUniqId, maxUniqId);
+	}
 }
