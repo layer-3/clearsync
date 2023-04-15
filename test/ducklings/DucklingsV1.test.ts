@@ -94,8 +94,9 @@ describe('DucklingsV1', () => {
       expect(await Ducklings.getRoyaltyCollector()).to.equal(Admin.address);
     });
 
-    // TODO:
-    it('has correct Royalty fee');
+    it('has correct Royalty fee', async () => {
+      expect(await Ducklings.getRoyaltyFee()).to.equal(1000);
+    });
 
     it('NFT has correct name', async () => {
       expect(await Ducklings.name()).to.equal('Yellow Ducklings');
@@ -146,7 +147,6 @@ describe('DucklingsV1', () => {
         });
       });
 
-      // TODO: rename to isOwnerOfBatch
       describe('isOwnerOfBatch', () => {
         it('return true for owner of several NFTs', async () => {
           await mintTo(Someone.address, GENOME);
@@ -488,6 +488,18 @@ describe('DucklingsV1', () => {
 
     it('revert on not Admin setting Royalty collector', async () => {
       await expect(DucklingsAsSomeone.setRoyaltyCollector(Someother.address)).to.be.revertedWith(
+        ACCOUNT_MISSING_ROLE(Someone.address, ADMIN_ROLE),
+      );
+    });
+
+    it('Admin can set Royalty fee', async () => {
+      const newRoyaltyFee = 2000;
+      await Ducklings.setRoyaltyFee(newRoyaltyFee);
+      expect(await Ducklings.getRoyaltyFee()).to.equal(newRoyaltyFee);
+    });
+
+    it('revert on not Admin setting Royalty fee', async () => {
+      await expect(DucklingsAsSomeone.setRoyaltyFee(2000)).to.be.revertedWith(
         ACCOUNT_MISSING_ROLE(Someone.address, ADMIN_ROLE),
       );
     });
