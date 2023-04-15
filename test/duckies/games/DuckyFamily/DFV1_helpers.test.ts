@@ -43,7 +43,7 @@ describe('DuckyGameV1 helpers', () => {
     ).to.equal(5 + 6 + 7 + 8 + 9 + 11 + 12 + 14); // 001111101101
   });
 
-  describe.only('_calcUniqIdGenerationParams', () => {
+  describe('_calcUniqIdGenerationParams', () => {
     const maxUniqId = 59;
 
     it('mythic id range overlaps with left dispersion border', async () => {
