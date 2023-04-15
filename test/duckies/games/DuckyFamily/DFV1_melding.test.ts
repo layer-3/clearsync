@@ -397,6 +397,7 @@ describe('DuckyFamilyV1 melding', () => {
 
     describe('defaulted values are randomized after melding Ducklings', () => {
       beforeEach(async () => {
+        await Game.setCollectionMutationChances([0, 0, 0, 0]);
         await Game.setGeneMutationChance(0);
       });
 
