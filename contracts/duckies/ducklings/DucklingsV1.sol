@@ -51,8 +51,8 @@ contract DucklingsV1 is
 	bytes32 public constant GAME_ROLE = keccak256('GAME_ROLE');
 
 	// Royalty
-	address private _royaltiesCollector;
-	uint32 private constant ROYALTY_FEE = 1000; // 10%
+	address internal _royaltiesCollector;
+	uint32 internal _royaltyFee;
 
 	// Server address that is prepended to tokenURI
 	string public apiBaseURL;
@@ -77,8 +77,9 @@ contract DucklingsV1 is
 		_grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
 		_grantRole(UPGRADER_ROLE, msg.sender);
 
-		setRoyaltyCollector(msg.sender);
-		_setDefaultRoyalty(msg.sender, ROYALTY_FEE);
+		_royaltiesCollector = msg.sender;
+		_royaltyFee = 1000; // 10%
+		_setDefaultRoyalty(_royaltiesCollector, _royaltyFee);
 	}
 
 	// ------- Upgradable -------
@@ -147,8 +148,6 @@ contract DucklingsV1 is
 
 	// -------- ERC2981 Royalties --------
 
-	// TODO: add full customize functions
-
 	/**
 	 * @notice Sets royalties collector.
 	 * @dev Requires DEFAULT_ADMIN_ROLE to invoke.
@@ -156,6 +155,7 @@ contract DucklingsV1 is
 	 */
 	function setRoyaltyCollector(address account) public onlyRole(DEFAULT_ADMIN_ROLE) {
 		_royaltiesCollector = account;
+		_setDefaultRoyalty(account, _royaltyFee);
 	}
 
 	/**
@@ -165,6 +165,25 @@ contract DucklingsV1 is
 	 */
 	function getRoyaltyCollector() public view returns (address) {
 		return _royaltiesCollector;
+	}
+
+	/**
+	 * @notice Sets royalties fee.
+	 * @dev Requires DEFAULT_ADMIN_ROLE to invoke.
+	 * @param fee Royalties fee in permyriad.
+	 */
+	function setRoyaltyFee(uint32 fee) public onlyRole(DEFAULT_ADMIN_ROLE) {
+		_royaltyFee = fee;
+		_setDefaultRoyalty(_royaltiesCollector, fee);
+	}
+
+	/**
+	 * @notice Returns royalties fee.
+	 * @dev Returns royalties fee.
+	 * @return uint32 Royalties fee in permyriad.
+	 */
+	function getRoyaltyFee() public view returns (uint32) {
+		return _royaltyFee;
 	}
 
 	// -------- API URL --------
