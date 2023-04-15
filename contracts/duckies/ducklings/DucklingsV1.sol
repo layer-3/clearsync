@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.18;
 
-import '@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol';
+import '@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721RoyaltyUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
@@ -25,7 +25,7 @@ import '../games/Genome.sol';
 contract DucklingsV1 is
 	Initializable,
 	IDucklings,
-	ERC721Upgradeable,
+	ERC721EnumerableUpgradeable,
 	ERC721RoyaltyUpgradeable,
 	UUPSUpgradeable,
 	AccessControlUpgradeable
@@ -137,8 +137,8 @@ contract DucklingsV1 is
 		virtual
 		override(
 			IERC165Upgradeable,
+			ERC721EnumerableUpgradeable,
 			ERC721RoyaltyUpgradeable,
-			ERC721Upgradeable,
 			AccessControlUpgradeable
 		)
 		returns (bool)
@@ -303,8 +303,10 @@ contract DucklingsV1 is
 		address from,
 		address to,
 		uint256 firstTokenId,
-		uint256 // batchSize - always 1 in ERC721
-	) internal view override {
+		uint256 batchSize
+	) internal override(ERC721Upgradeable, ERC721EnumerableUpgradeable) {
+		super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
+
 		// mint and burn for not transferable is allowed
 		if (from == address(0) || to == address(0)) return;
 
