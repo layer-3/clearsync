@@ -64,8 +64,8 @@ Activated event. Emitted when `activate` function is invoked.
 
 #### Parameters
 
-| Name    | Type    | Description                                   |
-| ------- | ------- | --------------------------------------------- |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | premint | uint256 | Amount of tokes pre-minted during activation. |
 
 ### constructor
@@ -79,11 +79,11 @@ Grants `DEFAULT_ADMIN_ROLE` and `MINTER_ROLE` to deployer._
 
 #### Parameters
 
-| Name      | Type    | Description          |
-| --------- | ------- | -------------------- |
-| name      | string  | Name of the Token.   |
-| symbol    | string  | Symbol of the Token. |
-| supplyCap | uint256 |                      |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| name | string | Name of the Token. |
+| symbol | string | Symbol of the Token. |
+| supplyCap | uint256 |  |
 
 ### cap
 
@@ -95,9 +95,9 @@ Return the cap on the token's total supply.
 
 #### Return Values
 
-| Name | Type    | Description               |
-| ---- | ------- | ------------------------- |
-| [0]  | uint256 | uint256 Token supply cap. |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | uint256 Token supply cap. |
 
 ### decimals
 
@@ -111,9 +111,9 @@ _Overrides ERC20 default value of 18;_
 
 #### Return Values
 
-| Name | Type  | Description                        |
-| ---- | ----- | ---------------------------------- |
-| [0]  | uint8 | uint8 Number of decimals of Token. |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint8 | uint8 Number of decimals of Token. |
 
 ### activate
 
@@ -127,9 +127,9 @@ _Require `DEFAULT_ADMIN_ROLE` to invoke. Premint must satisfy these conditions: 
 
 #### Parameters
 
-| Name    | Type    | Description                       |
-| ------- | ------- | --------------------------------- |
-| premint | uint256 | Amount of tokens to premint.      |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| premint | uint256 | Amount of tokens to premint. |
 | account | address | Address of account to premint to. |
 
 ### mint
@@ -146,10 +146,10 @@ The following conditions must be satisfied: `totalSupply + amount <= supplyCap`.
 
 #### Parameters
 
-| Name   | Type    | Description                |
-| ------ | ------- | -------------------------- |
-| to     | address | Address to mint tokens to. |
-| amount | uint256 | Amount of tokens to mint.  |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| to | address | Address to mint tokens to. |
+| amount | uint256 | Amount of tokens to mint. |
 
 ### burn
 
@@ -161,8 +161,8 @@ Destroys `amount` tokens from caller's account. Emit `Transfer` event.
 
 #### Parameters
 
-| Name   | Type    | Description               |
-| ------ | ------- | ------------------------- |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | amount | uint256 | Amount of tokens to burn. |
 
 ### burnFrom
@@ -175,10 +175,10 @@ Destroys `amount` tokens from `account`, deducting from the caller's allowance. 
 
 #### Parameters
 
-| Name    | Type    | Description                             |
-| ------- | ------- | --------------------------------------- |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | account | address | Address of account to burn tokens from. |
-| amount  | uint256 | Amount of tokens to burn.               |
+| amount | uint256 | Amount of tokens to burn. |
 
 ### transfer
 
@@ -192,16 +192,16 @@ _Require caller is not marked 'blacklisted'._
 
 #### Parameters
 
-| Name   | Type    | Description                    |
-| ------ | ------- | ------------------------------ |
-| to     | address | Address to transfer tokens to. |
-| amount | uint256 | Amount of tokens to transfer.  |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| to | address | Address to transfer tokens to. |
+| amount | uint256 | Amount of tokens to transfer. |
 
 #### Return Values
 
-| Name | Type | Description                      |
-| ---- | ---- | -------------------------------- |
-| [0]  | bool | bool true if transfer succeeded. |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | bool | bool true if transfer succeeded. |
 
 ### transferFrom
 
@@ -215,17 +215,17 @@ _Require `from` is not marked 'blacklisted'._
 
 #### Parameters
 
-| Name   | Type    | Description                      |
-| ------ | ------- | -------------------------------- |
-| from   | address | Address to transfer tokens from. |
-| to     | address | Address to transfer tokens to.   |
-| amount | uint256 | Amount of tokens to transfer.    |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| from | address | Address to transfer tokens from. |
+| to | address | Address to transfer tokens to. |
+| amount | uint256 | Amount of tokens to transfer. |
 
 #### Return Values
 
-| Name | Type | Description                      |
-| ---- | ---- | -------------------------------- |
-| [0]  | bool | bool true if transfer succeeded. |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | bool | bool true if transfer succeeded. |
 
 ### blacklist
 
@@ -239,8 +239,8 @@ _Require `COMPLIANCE_ROLE` to invoke. Emit `Blacklisted` event`._
 
 #### Parameters
 
-| Name    | Type    | Description                               |
-| ------- | ------- | ----------------------------------------- |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | account | address | Address of account to mark 'blacklisted'. |
 
 ### removeBlacklisted
@@ -255,8 +255,8 @@ _Require `COMPLIANCE_ROLE` to invoke. Emit `BlacklistedRemoved` event`._
 
 #### Parameters
 
-| Name    | Type    | Description                                           |
-| ------- | ------- | ----------------------------------------------------- |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | account | address | Address of account to remove 'blacklisted' mark from. |
 
 ### burnBlacklisted
@@ -272,11 +272,11 @@ Account specified must be blacklisted._
 
 #### Parameters
 
-| Name    | Type    | Description                                          |
-| ------- | ------- | ---------------------------------------------------- |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | account | address | Address of 'blacklisted' account to burn funds from. |
 
-### \_requireAccountNotBlacklisted
+### _requireAccountNotBlacklisted
 
 ```solidity
 function _requireAccountNotBlacklisted(address account) internal view
@@ -288,6 +288,7 @@ _Require `account` is not marked 'blacklisted'._
 
 #### Parameters
 
-| Name    | Type    | Description                                             |
-| ------- | ------- | ------------------------------------------------------- |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | account | address | Address of account to require not marked 'blacklisted'. |
+

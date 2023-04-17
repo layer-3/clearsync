@@ -14,18 +14,6 @@ vouchers and upgrading the contract.
 error CircularReferrers(address target, address base)
 ```
 
-### VoucherAlreadyUsed
-
-```solidity
-error VoucherAlreadyUsed(bytes32 voucherCodeHash)
-```
-
-### InvalidVoucher
-
-```solidity
-error InvalidVoucher(struct IVoucher.Voucher voucher)
-```
-
 ### InvalidRewardParams
 
 ```solidity
@@ -36,12 +24,6 @@ error InvalidRewardParams(struct TreasureVault.RewardParams rewardParams)
 
 ```solidity
 error InsufficientTokenBalance(address token, uint256 expected, uint256 actual)
-```
-
-### IncorrectSigner
-
-```solidity
-error IncorrectSigner(address expected, address actual)
 ```
 
 ### UPGRADER_ROLE
@@ -62,7 +44,7 @@ bytes32 TREASURY_ROLE
 uint8 REFERRAL_MAX_DEPTH
 ```
 
-### \_REFERRAL_PAYOUT_DIVIDER
+### _REFERRAL_PAYOUT_DIVIDER
 
 ```solidity
 uint8 _REFERRAL_PAYOUT_DIVIDER
@@ -86,13 +68,13 @@ struct RewardParams {
 }
 ```
 
-### \_referrerOf
+### _referrerOf
 
 ```solidity
 mapping(address => address) _referrerOf
 ```
 
-### \_usedVouchers
+### _usedVouchers
 
 ```solidity
 mapping(bytes32 => bool) _usedVouchers
@@ -134,8 +116,8 @@ _Require `DEFAULT_ADMIN_ROLE` to invoke._
 
 #### Parameters
 
-| Name    | Type    | Description                    |
-| ------- | ------- | ------------------------------ |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | account | address | The address of the new issuer. |
 
 ### withdraw
@@ -151,13 +133,13 @@ _Require `TREASURY_ROLE` to invoke._
 
 #### Parameters
 
-| Name         | Type    | Description                                      |
-| ------------ | ------- | ------------------------------------------------ |
-| tokenAddress | address | The address of the token being withdrawn.        |
-| beneficiary  | address | The address of the account receiving the amount. |
-| amount       | uint256 | The amount of the token to be withdrawn.         |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenAddress | address | The address of the token being withdrawn. |
+| beneficiary | address | The address of the account receiving the amount. |
+| amount | uint256 | The amount of the token to be withdrawn. |
 
-### \_registerReferrer
+### _registerReferrer
 
 ```solidity
 function _registerReferrer(address child, address parent) internal
@@ -169,12 +151,12 @@ _Emit `AffiliateRegistered` event._
 
 #### Parameters
 
-| Name   | Type    | Description                                     |
-| ------ | ------- | ----------------------------------------------- |
-| child  | address | The child address to register the referrer for. |
-| parent | address | The address of the parent referrer.             |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| child | address | The child address to register the referrer for. |
+| parent | address | The address of the parent referrer. |
 
-### \_requireNotReferrerOf
+### _requireNotReferrerOf
 
 ```solidity
 function _requireNotReferrerOf(address target, address base) internal view
@@ -184,10 +166,10 @@ Check if the target address is not a referrer of the base address. Internal func
 
 #### Parameters
 
-| Name   | Type    | Description                        |
-| ------ | ------- | ---------------------------------- |
-| target | address | The target address to check.       |
-| base   | address | The base address to check against. |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| target | address | The target address to check. |
+| base | address | The base address to check against. |
 
 ### useVouchers
 
@@ -201,10 +183,10 @@ _Emit `VoucherUsed` event for each voucher used._
 
 #### Parameters
 
-| Name      | Type                      | Description                             |
-| --------- | ------------------------- | --------------------------------------- |
-| vouchers  | struct IVoucher.Voucher[] | An array of Voucher structs to be used. |
-| signature | bytes                     | Array of Vouchers signed by the Issuer. |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| vouchers | struct IVoucher.Voucher[] | An array of Voucher structs to be used. |
+| signature | bytes | Array of Vouchers signed by the Issuer. |
 
 ### useVoucher
 
@@ -218,12 +200,12 @@ _Emit `VoucherUsed` event._
 
 #### Parameters
 
-| Name      | Type                    | Description                    |
-| --------- | ----------------------- | ------------------------------ |
-| voucher   | struct IVoucher.Voucher | The Voucher struct to be used. |
-| signature | bytes                   | Voucher signed by the Issuer.  |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| voucher | struct IVoucher.Voucher | The Voucher struct to be used. |
+| signature | bytes | Voucher signed by the Issuer. |
 
-### \_useVoucher
+### _useVoucher
 
 ```solidity
 function _useVoucher(struct IVoucher.Voucher voucher) internal
@@ -235,11 +217,11 @@ _Emit `VoucherUsed` event._
 
 #### Parameters
 
-| Name    | Type                    | Description         |
-| ------- | ----------------------- | ------------------- |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | voucher | struct IVoucher.Voucher | Voucher to be used. |
 
-### \_requireValidVoucher
+### _requireValidVoucher
 
 ```solidity
 function _requireValidVoucher(struct IVoucher.Voucher voucher) internal view
@@ -249,11 +231,11 @@ Check voucher for being valid. Internal function.
 
 #### Parameters
 
-| Name    | Type                    | Description                    |
-| ------- | ----------------------- | ------------------------------ |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | voucher | struct IVoucher.Voucher | Voucher to check for validity. |
 
-### \_performPayout
+### _performPayout
 
 ```solidity
 function _performPayout(address beneficiary, address tokenAddress, uint256 amount, uint8[5] referrersPayouts) internal
@@ -263,14 +245,14 @@ Perform reward payout, including commissions. Internal function.
 
 #### Parameters
 
-| Name             | Type     | Description                                                         |
-| ---------------- | -------- | ------------------------------------------------------------------- |
-| beneficiary      | address  | The address receiving the payout.                                   |
-| tokenAddress     | address  | The token to be paid.                                               |
-| amount           | uint256  | Amount to be paid.                                                  |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| beneficiary | address | The address receiving the payout. |
+| tokenAddress | address | The token to be paid. |
+| amount | uint256 | Amount to be paid. |
 | referrersPayouts | uint8[5] | Commissions to be paid to the referrers of the beneficiary, if any. |
 
-### \_requireSufficientContractBalance
+### _requireSufficientContractBalance
 
 ```solidity
 function _requireSufficientContractBalance(contract IERC20Upgradeable token, uint256 expected) internal view
@@ -280,12 +262,12 @@ Require this contract has not less than `expected` amount of the `token` deposit
 
 #### Parameters
 
-| Name     | Type                       | Description                                            |
-| -------- | -------------------------- | ------------------------------------------------------ |
-| token    | contract IERC20Upgradeable | Token to be deposited to the address of this contract. |
-| expected | uint256                    | Minimal amount of the `token` to be on this contract.  |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| token | contract IERC20Upgradeable | Token to be deposited to the address of this contract. |
+| expected | uint256 | Minimal amount of the `token` to be on this contract. |
 
-### \_requireCorrectSigner
+### _requireCorrectSigner
 
 ```solidity
 function _requireCorrectSigner(bytes encodedData, bytes signature, address signer) internal pure
@@ -295,13 +277,13 @@ Require `encodedData` was signed by the `signer`. Internal function.
 
 #### Parameters
 
-| Name        | Type    | Description                                               |
-| ----------- | ------- | --------------------------------------------------------- |
-| encodedData | bytes   | Encoded data signed.                                      |
-| signature   | bytes   | Signature produced by the `signer` signing `encodedData`. |
-| signer      | address | Signer to have signed `encodedData`.                      |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| encodedData | bytes | Encoded data signed. |
+| signature | bytes | Signature produced by the `signer` signing `encodedData`. |
+| signer | address | Signer to have signed `encodedData`. |
 
-### \_authorizeUpgrade
+### _authorizeUpgrade
 
 ```solidity
 function _authorizeUpgrade(address newImplementation) internal
@@ -311,6 +293,7 @@ Restrict upgrading this contract to address with `UPGRADER_ROLE`.
 
 #### Parameters
 
-| Name              | Type    | Description                        |
-| ----------------- | ------- | ---------------------------------- |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | newImplementation | address | Address of the new implementation. |
+
