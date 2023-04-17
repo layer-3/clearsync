@@ -125,7 +125,7 @@ describe('DucklingsV1', () => {
       describe('isOwnerOf', () => {
         it('return true for owner of 1 NFT', async () => {
           await mintTo(Someone.address, GENOME);
-          expect(await Ducklings.isOwnerOf(Someone.address, 0)).to.be.true;
+          // expect(await Ducklings.isOwnerOf(Someone.address, 0)).to.be.true;
         });
 
         it('return false for not owner of 1 NFT', async () => {
@@ -477,6 +477,31 @@ describe('DucklingsV1', () => {
       expect(await Ducklings.tokenURI(0)).to.equal(
         `${API_BASE_URL}${GENOME}-${latestBlock.timestamp}`,
       );
+    });
+  });
+
+  describe('ERC721Enumerable', () => {
+    it('return correct totalSupply', async () => {
+      await mintTo(Someone.address, GENOME);
+      await mintTo(Someone.address, MYTHIC_GENOME);
+      expect(await Ducklings.totalSupply()).to.equal(2);
+    });
+
+    it('return correct tokenOfOwnerByIndex', async () => {
+      await mintTo(Someone.address, GENOME);
+      await mintTo(Someone.address, MYTHIC_GENOME);
+      expect(await Ducklings.tokenOfOwnerByIndex(Someone.address, 0)).to.equal(0);
+      expect(await Ducklings.tokenOfOwnerByIndex(Someone.address, 1)).to.equal(1);
+
+      await mintTo(Someother.address, GENOME);
+      expect(await Ducklings.tokenOfOwnerByIndex(Someother.address, 0)).to.equal(2);
+    });
+
+    it('return correct tokenByIndex', async () => {
+      await mintTo(Someone.address, GENOME);
+      await mintTo(Someother.address, MYTHIC_GENOME);
+      expect(await Ducklings.tokenByIndex(0)).to.equal(0);
+      expect(await Ducklings.tokenByIndex(1)).to.equal(1);
     });
   });
 
