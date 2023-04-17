@@ -8,7 +8,7 @@ The YELLOW token is a collateral to open a state channel with another network en
 Additionally, it is used to pay the settlement fees on the network.
 
 After deployment, DEFAULT_ADMIN_ROLE will be transferred to a DAO, which will govern the token.
-This is done not to give too much token governance power to once account, which will definitely be a vector of attack.
+This is done not to give too much token governance power to one account, which will definitely be a vector of attack.
 
 The similar applies to COMPLIANCE_ROLE. It is going to be granted to a multisig account, which will govern hackers and malicious users by blacklisting them.
 
