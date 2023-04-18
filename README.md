@@ -24,7 +24,7 @@ ClearSync is licensed under the GNU General Public License v3.0
 
 ### Project purpose
 
-In traditional finance, clearing denotes all activities from the time a commitment is made for a transaction until it is settled. Yellow Network facilitate the scaling of trading between crypto-currency exchanges by interconnecting them through a simple clearing protocol called ClearSync.
+In traditional finance, clearing denotes all activities from the time a commitment is made for a transaction until it is settled. Yellow Network facilitates the scaling of trading between crypto-currency exchanges by interconnecting them through a simple clearing protocol called ClearSync.
 
 ### Business use cases
 
