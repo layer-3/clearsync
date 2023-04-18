@@ -127,6 +127,9 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 	uint32[] internal geneMutationChance = [955, 45]; // 4.5% to mutate gene value
 	uint32[] internal geneInheritanceChances = [400, 300, 150, 100, 50]; // per mil
 
+	// precalculated sums of gene values for all possible gene values
+	mapping(uint8 => uint256) internal _sumOfSquaredGeneValues;
+
 	// ------- Public values -------
 
 	ERC20Burnable public duckiesContract;
@@ -171,6 +174,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 		collectionsGeneValuesNum[2] = [16, 12, 5, 28, 5, 10, 8, 4];
 
 		maxPeculiarity = _calcMaxPeculiarity();
+		_calcSumOfSquaredGeneValues();
 	}
 
 	// ------- Vouchers -------
@@ -827,23 +831,42 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 	function _generateUnevenGeneValue(uint8 valuesNum) internal returns (uint8) {
 		// using quadratic algorithm
 		// chance of each gene value to be generated is (N - v)^2 / S
-		// N - number of gene values, v - gene value, S - sum of Squared gene values
+		// valuesNum - number of gene values, v - gene value, S - sum of Squared gene values
 
-		uint256 N = uint256(valuesNum);
-		uint256 S = (N * (N + 1) * (2 * N + 1)) / 6;
+		uint256 S = _sumOfSquaredGeneValues[valuesNum];
 		uint256 num = _randomMaxNumber(S);
-		uint256 accumNum = 0;
 
-		for (uint8 i = 0; i < N; i++) {
-			accumNum += (N - i) ** 2;
-
-			if (num < accumNum) {
+		for (uint8 i = 0; i < valuesNum; i++) {
+			if (num < _sumOfSquaredGeneValues[valuesNum-i]) {
 				return i;
 			}
 		}
 
 		// code execution should never reach this
 		return 0;
+	}
+
+	/**
+	 * @notice Calculate sum of squared gene values for a current Duckling config.
+	 * @dev Go through all collections and calculate sum of squared gene values for uneven gene values.
+	 */
+	function _calcSumOfSquaredGeneValues() internal {
+		uint8 maxValuesNum = 0;
+		for (uint8 cid = 0; cid < collectionsGeneValuesNum.length; cid++) {
+			uint8[] memory geneValuesNum = collectionsGeneValuesNum[cid];
+			uint32 distrTypes = collectionsGeneDistributionTypes[cid];
+
+			for (uint8 i = 0; i < geneValuesNum.length; i++) {
+				if (_getDistributionType(distrTypes, i) == GeneDistributionTypes.Uneven && geneValuesNum[i] > maxValuesNum) {
+					maxValuesNum = geneValuesNum[i];
+				}
+			}
+		}
+
+		for (uint8 i = 1; i <= maxValuesNum; i++) {
+			uint256 N = uint256(i);
+			_sumOfSquaredGeneValues[i] = _sumOfSquaredGeneValues[i - 1] + (N ** 2);
+		}
 	}
 
 	/**
