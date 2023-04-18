@@ -851,7 +851,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 
 	/**
 	 * @notice Generate uneven gene value given the maximum number of values.
-	 * @dev Generate uneven gene value using quadratic algorithm described below.
+	 * @dev Generate uneven gene value using reciprocal algorithm described below.
 	 * @param valuesNum Maximum number of gene values.
 	 * @param bitSlice Bit slice to use for randomization.
 	 * @return geneValue Gene value.
@@ -860,25 +860,20 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 		uint8 valuesNum,
 		bytes3 bitSlice
 	) internal pure returns (uint8) {
-		// using quadratic algorithm
-		// chance of each gene value to be generated is (N - v)^2 / S
-		// N - number of gene values, v - gene value, S - sum of Squared gene values
+		// using reciprocal algorithm
+		// gene value is selected as ceil[(2N/(x+1))-N],
+		// where x is random number between 0 and 1
+		// Because of shape of reciprocal graph,
+		// evenly distributed x values will result in unevenly distributed y values.
 
-		uint24 N = uint24(valuesNum);
-		uint24 S = (N * (N + 1) * (2 * N + 1)) / 6;
-		uint24 num = _max(bitSlice, S);
-		uint256 accumNum = 0;
+		// N - number of gene values
+		uint256 N = uint256(valuesNum);
+		// Generates number from 1 to 10^8
+		uint256 x = 1 + _max(bitSlice, 10e6);
+		// Calculates uneven distributed y, value of y is between 0 and N
+		uint256 y = (2 * N * 10e6) / (x + 10e6) - N;
 
-		for (uint8 i = 0; i < N; i++) {
-			accumNum += (N - i) ** 2;
-
-			if (num < accumNum) {
-				return i;
-			}
-		}
-
-		// code execution should never reach this
-		return 0;
+		return uint8(y);
 	}
 
 	/**
