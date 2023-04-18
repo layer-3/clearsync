@@ -410,9 +410,16 @@ describe('DuckyFamilyV1 melding', () => {
           [DucklingGenes.Body]: 0,
         });
 
-        const _genome = await meldGenomes(genomes);
-        const genome = new Genome(_genome);
-        expect(genome.getGene(DucklingGenes.Body)).to.not.equal(0);
+        // TODO: remove this when we have a better way to test randomness
+        await Promise.all(
+          [...Array(100)].map(async (_, i) => {
+            const _genome = await meldGenomes(genomes);
+            const genome = new Genome(_genome);
+            expect(genome.getGene(DucklingGenes.Body)).greaterThan(0);
+            // 10 - number of all bodies
+            expect(genome.getGene(DucklingGenes.Body)).lessThanOrEqual(10);
+          }),
+        );
       });
 
       it('Head is randomized after melding Rare Ducklings', async () => {

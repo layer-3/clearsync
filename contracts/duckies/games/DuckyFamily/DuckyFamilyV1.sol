@@ -732,14 +732,14 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 				meldedGenome = _generateAndSetGene(
 					meldedGenome,
 					uint8(GenerativeGenes.Body),
-					geneValuesNum[uint8(GenerativeGenes.Body)],
+					geneValuesNum[uint8(GenerativeGenes.Body) - generativeGenesOffset],
 					GeneDistributionTypes.Uneven
 				);
 			} else if (rarity == Rarities.Rare) {
 				meldedGenome = _generateAndSetGene(
 					meldedGenome,
 					uint8(GenerativeGenes.Head),
-					geneValuesNum[uint8(GenerativeGenes.Head)],
+					geneValuesNum[uint8(GenerativeGenes.Head) - generativeGenesOffset],
 					GeneDistributionTypes.Uneven
 				);
 			}
