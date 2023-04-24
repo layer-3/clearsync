@@ -2,7 +2,8 @@
   "name": "clearsync-project",
   "scripts": {
     "lint": "npx eslint \"./\" && prettier '**/*.{json,sol,md}' -c && solhint 'contracts/**/*.sol'",
-    "lint:fix": "eslint '**/*.{js,ts}' --fix && prettier '**/*.{json,sol,md}' --write && solhint 'contracts/**/*.sol' --fix"
+    "lint:fix": "eslint '**/*.{js,ts}' --fix && prettier '**/*.{json,sol,md}' --write && solhint 'contracts/**/*.sol' --fix",
+    "bench:duckies-mint": "REPORT_GAS=true npx hardhat test 'test/benchmarks/DuckyFamilyV1/benchmark_mint.test.ts'"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.6",
