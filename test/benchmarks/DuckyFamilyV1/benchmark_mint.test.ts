@@ -49,6 +49,7 @@ describe('Benchmark DuckyFamilyV1 minting', () => {
 
   it('mint', async () => {
     await GameAsSomeone.mintPack(1);
+    await GameAsSomeone.mintPack(1);
   });
 
   it('generateGenome', async () => {
