@@ -173,6 +173,11 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 		maxPeculiarity = _calcMaxPeculiarity();
 	}
 
+	// ------- Random -------
+	function setPepper(bytes32 pepper) external onlyRole(MAINTAINER_ROLE) {
+		_setPepper(pepper);
+	}
+
 	// ------- Vouchers -------
 
 	/**

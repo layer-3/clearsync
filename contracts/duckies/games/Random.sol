@@ -18,6 +18,7 @@ contract Random {
 	error InvalidWeights(uint32[] weights);
 
 	bytes32 private salt;
+	bytes32 private pepper;
 	uint256 private nonce;
 
 	/**
@@ -33,8 +34,12 @@ contract Random {
 		}
 	}
 
+	function _setPepper(bytes32 newPepper) internal {
+		pepper = newPepper;
+	}
+
 	function _randomSeed() internal view returns (bytes32) {
-		return keccak256(abi.encode(salt, nonce, msg.sender, block.timestamp));
+		return keccak256(abi.encode(salt, pepper, nonce, msg.sender, block.timestamp));
 	}
 
 	// circular shift of 3 bytes to the left
@@ -51,7 +56,7 @@ contract Random {
 	 * @return Random number in range [0, max).
 	 */
 	function _random(uint256 max, bytes3 seed) internal view returns (uint256) {
-		return uint256(keccak256(abi.encode(salt, nonce, seed))) % max;
+		return uint256(keccak256(abi.encode(salt, seed))) % max;
 	}
 
 	/**
