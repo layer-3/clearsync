@@ -737,13 +737,14 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 
 		// randomize Body for Common and Head for Rare for Ducklings
 		if (collectionId == ducklingCollectionId) {
+			(seedChunk, seed) = _rotateSeedChunk(seed);
 			if (rarity == Rarities.Common) {
 				meldedGenome = _generateAndSetGene(
 					meldedGenome,
 					uint8(GenerativeGenes.Body),
 					geneValuesNum[uint8(GenerativeGenes.Body) - generativeGenesOffset],
 					GeneDistributionTypes.Uneven,
-					bytes3('42')
+					seedChunk
 				);
 			} else if (rarity == Rarities.Rare) {
 				meldedGenome = _generateAndSetGene(
@@ -751,7 +752,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 					uint8(GenerativeGenes.Head),
 					geneValuesNum[uint8(GenerativeGenes.Head) - generativeGenesOffset],
 					GeneDistributionTypes.Uneven,
-					bytes3('42')
+					seedChunk
 				);
 			}
 		}
