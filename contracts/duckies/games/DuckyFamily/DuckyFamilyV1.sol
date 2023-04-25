@@ -444,7 +444,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 		address to,
 		uint8 amount,
 		bool isTransferable
-	) internal useRandom returns (uint256[] memory tokenIds) {
+	) internal returns (uint256[] memory tokenIds) {
 		if (amount == 0 || amount > MAX_PACK_SIZE)
 			revert MintingRulesViolated(ducklingCollectionId, amount);
 
@@ -621,7 +621,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 		address owner,
 		uint256[] memory meldingTokenIds,
 		bool isTransferable
-	) internal useRandom returns (uint256) {
+	) internal returns (uint256) {
 		if (meldingTokenIds.length != FLOCK_SIZE) revert MeldingRulesViolated(meldingTokenIds);
 		if (!ducklingsContract.isOwnerOfBatch(owner, meldingTokenIds))
 			revert MeldingRulesViolated(meldingTokenIds);
@@ -695,7 +695,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 	 * @param genomes Array of genomes to meld.
 	 * @return meldedGenome Melded genome.
 	 */
-	function _meldGenomes(uint256[] memory genomes) internal view returns (uint256) {
+	function _meldGenomes(uint256[] memory genomes) internal useRandom returns (uint256) {
 		uint8 collectionId = genomes[0].getGene(collectionGeneIdx);
 		Rarities rarity = Rarities(genomes[0].getGene(rarityGeneIdx));
 
