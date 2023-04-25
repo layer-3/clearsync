@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
+// TODO: dev docs
 // chances are represented in per mil, thus uint32
 /**
  * @title Random
@@ -23,37 +24,34 @@ contract Random {
 	 * @notice Specifies that calling function uses random number generation.
 	 * @dev Modifier that updates salt after calling function is invoked.
 	 */
-	modifier UseRandom() {
+	modifier useRandom() {
 		_;
-		_updateSalt();
-	}
-
-	/**
-	 * @notice Updates nonce
-	 */
-	function _updateNonce() private {
+		// use old salt to generate a new one, so that user's predictions are invalid after function that uses random is called
+		salt = keccak256(abi.encode(salt, msg.sender, block.timestamp));
 		unchecked {
 			nonce++;
 		}
 	}
 
-	/**
-	 * @notice Updates salt.
-	 * @dev Salt is a hash of encoded block timestamp and msg sender.
-	 */
-	function _updateSalt() private {
-		salt = keccak256(abi.encode(msg.sender, block.timestamp));
+	function _randomSeed() internal view returns (bytes32) {
+		return keccak256(abi.encode(salt, nonce, msg.sender, block.timestamp));
+	}
+
+	// circular shift of 3 bytes to the left
+	function _rotateSeedChunk(bytes32 seed) internal pure returns (bytes3, bytes32) {
+		bytes3 chunk = bytes3(seed);
+		return (chunk, bytes32(uint256(seed) >> 24) | chunk);
 	}
 
 	/**
 	 * @notice Generates a random number in range [0, max).
-	 * @dev Cast hash of encoded salt, nonce, msg sender block timestamp to the number, and returns modulo `max`.
+	 * @dev Calculates hash of encoded salt, nonce, msg sender block timestamp to the number, and returns modulo `max`.
 	 * @param max Upper bound of the range.
+	 * @param seed Upper bound of the range.
 	 * @return Random number in range [0, max).
 	 */
-	function _randomMaxNumber(uint256 max) internal returns (uint256) {
-		_updateNonce();
-		return uint256(keccak256(abi.encode(salt, nonce, msg.sender, block.timestamp))) % max;
+	function _random(uint256 max, bytes3 seed) internal view returns (uint256) {
+		return uint256(keccak256(abi.encode(salt, nonce, seed))) % max;
 	}
 
 	/**
@@ -62,12 +60,14 @@ contract Random {
 	 * @param weights Array of weights.
 	 * @return Random number in range [0, weights.length).
 	 */
-	function _randomWeightedNumber(uint32[] memory weights) internal returns (uint8) {
+	function _randomWeightedNumber(
+		uint32[] memory weights,
+		bytes3 seed
+	) internal view returns (uint8) {
 		// no sense in empty weights array
 		if (weights.length == 0) revert InvalidWeights(weights);
 
-		// generated number should be strictly less than right \/ segment boundary
-		uint256 randomNumber = _randomMaxNumber(_sum(weights));
+		uint256 randomNumber = _random(_sum(weights), seed);
 
 		uint256 segmentRightBoundary = 0;
 
