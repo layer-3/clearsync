@@ -38,6 +38,10 @@ contract TESTDuckyFamilyV1 is DuckyFamilyV1 {
 		emit GenomeReturned(_generateGenome(collectionId));
 	}
 
+	function generateRarity() external {
+		emit Uint8Returned(uint8(_generateRarity()));
+	}
+
 	function generateAndSetGenes(uint256 genome, uint8 collectionId) external {
 		emit GenomeReturned(_generateAndSetGenes(genome, collectionId));
 	}

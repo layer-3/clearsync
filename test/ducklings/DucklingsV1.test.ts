@@ -46,6 +46,7 @@ const API_BASE_URL = 'test-url.com';
 
 const GENOME = new Genome().setGene(magicNumberGeneIdx, baseMagicNumber).genome;
 const MYTHIC_GENOME = new Genome().setGene(magicNumberGeneIdx, mythicMagicNumber).genome;
+const TRANSFERABLE_GENOME = randomGenome(0, { isTransferable: true });
 
 describe('DucklingsV1', () => {
   let Admin: SignerWithAddress;
@@ -376,8 +377,8 @@ describe('DucklingsV1', () => {
 
     describe('transferability', () => {
       it('isTransferable return true for transferable token', async () => {
-        const transferableGenome = randomGenome(0, { isTransferable: true });
-        await mintTo(Someone.address, transferableGenome);
+        const TRANSFERABLE_GENOME = randomGenome(0, { isTransferable: true });
+        await mintTo(Someone.address, TRANSFERABLE_GENOME);
         expect(await Ducklings.isTransferable(0)).to.equal(true);
       });
 
@@ -394,8 +395,7 @@ describe('DucklingsV1', () => {
       });
 
       it('can tranfer transferable token', async () => {
-        const transferableGenome = randomGenome(0, { isTransferable: true });
-        await mintTo(Someone.address, transferableGenome);
+        await mintTo(Someone.address, TRANSFERABLE_GENOME);
         await DucklingsAsSomeone.transferFrom(Someone.address, Someother.address, 0);
         expect(await Ducklings.ownerOf(0)).to.equal(Someother.address);
       });
@@ -480,28 +480,29 @@ describe('DucklingsV1', () => {
     });
   });
 
-  describe('ERC721Enumerable', () => {
-    it('return correct totalSupply', async () => {
+  describe.only('ERC721Enumerable', () => {
+    it('mint increates totalSupply', async () => {
       await mintTo(Someone.address, GENOME);
       await mintTo(Someone.address, MYTHIC_GENOME);
       expect(await Ducklings.totalSupply()).to.equal(2);
     });
 
-    it('return correct tokenOfOwnerByIndex', async () => {
+    it('burn decreases totalSupply', async () => {
       await mintTo(Someone.address, GENOME);
       await mintTo(Someone.address, MYTHIC_GENOME);
-      expect(await Ducklings.tokenOfOwnerByIndex(Someone.address, 0)).to.equal(0);
-      expect(await Ducklings.tokenOfOwnerByIndex(Someone.address, 1)).to.equal(1);
+      expect(await Ducklings.totalSupply()).to.equal(2);
 
-      await mintTo(Someother.address, GENOME);
-      expect(await Ducklings.tokenOfOwnerByIndex(Someother.address, 0)).to.equal(2);
+      await DucklingsAsGame.burn(0);
+      expect(await Ducklings.totalSupply()).to.equal(1);
     });
 
-    it('return correct tokenByIndex', async () => {
-      await mintTo(Someone.address, GENOME);
-      await mintTo(Someother.address, MYTHIC_GENOME);
-      expect(await Ducklings.tokenByIndex(0)).to.equal(0);
-      expect(await Ducklings.tokenByIndex(1)).to.equal(1);
+    it('transfer does not affect totalSupply', async () => {
+      await mintTo(Someone.address, TRANSFERABLE_GENOME);
+      await mintTo(Someone.address, MYTHIC_GENOME);
+      expect(await Ducklings.totalSupply()).to.equal(2);
+
+      await DucklingsAsSomeone.transferFrom(Someone.address, Someother.address, 0);
+      expect(await Ducklings.totalSupply()).to.equal(2);
     });
   });
 

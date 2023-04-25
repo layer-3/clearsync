@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.18;
 
-import '@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol';
+import '@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721RoyaltyUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
@@ -25,7 +25,7 @@ import '../games/Genome.sol';
 contract DucklingsV1 is
 	Initializable,
 	IDucklings,
-	ERC721EnumerableUpgradeable,
+	ERC721Upgradeable,
 	ERC721RoyaltyUpgradeable,
 	UUPSUpgradeable,
 	AccessControlUpgradeable
@@ -57,6 +57,7 @@ contract DucklingsV1 is
 	// Server address that is prepended to tokenURI
 	string public apiBaseURL;
 
+	CountersUpgradeable.Counter internal _totalSupply;
 	CountersUpgradeable.Counter public nextNewTokenId;
 	mapping(uint256 => Duckling) public tokenToDuckling;
 
@@ -95,6 +96,10 @@ contract DucklingsV1 is
 
 	// -------- ERC721 --------
 
+	function totalSupply() external view returns (uint256) {
+		return _totalSupply.current();
+	}
+
 	/**
 	 * @notice Necessary override to specify what implementation of _burn to use.
 	 * @dev Necessary override to specify what implementation of _burn to use.
@@ -102,6 +107,15 @@ contract DucklingsV1 is
 	function _burn(uint256 tokenId) internal override(ERC721RoyaltyUpgradeable, ERC721Upgradeable) {
 		// check on token existence is performed in ERC721Upgradeable._burn
 		super._burn(tokenId);
+
+		_totalSupply.decrement();
+	}
+
+	function _safeMint(address to, uint256 tokenId) internal override(ERC721Upgradeable) {
+		// check on token existence is performed in ERC721Upgradeable._burn
+		super._safeMint(to, tokenId);
+
+		_totalSupply.increment();
 	}
 
 	/**
@@ -137,7 +151,7 @@ contract DucklingsV1 is
 		virtual
 		override(
 			IERC165Upgradeable,
-			ERC721EnumerableUpgradeable,
+			ERC721Upgradeable,
 			ERC721RoyaltyUpgradeable,
 			AccessControlUpgradeable
 		)
@@ -304,7 +318,7 @@ contract DucklingsV1 is
 		address to,
 		uint256 firstTokenId,
 		uint256 batchSize
-	) internal override(ERC721Upgradeable, ERC721EnumerableUpgradeable) {
+	) internal override(ERC721Upgradeable) {
 		super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
 
 		// mint and burn for not transferable is allowed
