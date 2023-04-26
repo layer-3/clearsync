@@ -45,11 +45,11 @@ contract Random {
 	 * @notice Generates a random number in range [0, max).
 	 * @dev Calculates hash of encoded salt, nonce, msg sender block timestamp to the number, and returns modulo `max`.
 	 * @param max Upper bound of the range.
-	 * @param seed Upper bound of the range.
+	 * @param seedSlice Upper bound of the range.
 	 * @return Random number in range [0, max).
 	 */
-	function _random(uint256 max, bytes3 seed) internal view returns (uint256) {
-		return uint256(keccak256(abi.encode(salt, seed))) % max;
+	function _random(uint24 max, bytes3 seedSlice) internal pure returns (uint24) {
+		return uint24(seedSlice) % max;
 	}
 
 	/**
@@ -60,12 +60,12 @@ contract Random {
 	 */
 	function _randomWeightedNumber(
 		uint32[] memory weights,
-		bytes3 seed
-	) internal view returns (uint8) {
+		bytes3 seedSlice
+	) internal pure returns (uint8) {
 		// no sense in empty weights array
 		if (weights.length == 0) revert InvalidWeights(weights);
 
-		uint256 randomNumber = _random(_sum(weights), seed);
+		uint256 randomNumber = _random(uint24(_sum(weights)), seedSlice);
 
 		uint256 segmentRightBoundary = 0;
 

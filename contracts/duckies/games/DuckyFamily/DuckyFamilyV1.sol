@@ -548,14 +548,14 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 		uint8 geneIdx,
 		uint8 geneValuesNum,
 		GeneDistributionTypes distrType,
-		bytes3 seed
-	) internal view returns (uint256) {
+		bytes3 seedSlice
+	) internal pure returns (uint256) {
 		uint8 geneValue;
 
 		if (distrType == GeneDistributionTypes.Even) {
-			geneValue = uint8(_random(geneValuesNum, seed));
+			geneValue = uint8(_random(geneValuesNum, seedSlice));
 		} else {
-			geneValue = uint8(_generateUnevenGeneValue(geneValuesNum, seed));
+			geneValue = uint8(_generateUnevenGeneValue(geneValuesNum, seedSlice));
 		}
 
 		// gene with value 0 means it is a default value, thus this   \/
@@ -572,7 +572,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 	 */
 	function _generateMythicGenome(
 		uint256[] memory genomes,
-		bytes3 seed
+		bytes32 seed
 	) internal view returns (uint256) {
 		uint16 sumPeculiarity = 0;
 		uint16 maxSumPeculiarity = maxPeculiarity * uint16(genomes.length);
@@ -588,12 +588,13 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 			maxUniqId
 		);
 
-		uint16 uniqId = leftEndUniqId + uint16(Random._random(uniqIdSegmentLength, seed));
+		(bytes3 seedSlice, bytes32 newSeed) = _rotateSeedSlice(seed);
+		uint16 uniqId = leftEndUniqId + uint16(_random(uniqIdSegmentLength, seedSlice));
 
 		uint256 genome;
 		genome = genome.setGene(collectionGeneIdx, mythicCollectionId);
 		genome = genome.setGene(uint8(MythicGenes.UniqId), uint8(uniqId));
-		genome = _generateAndSetGenes(genome, mythicCollectionId, seed);
+		genome = _generateAndSetGenes(genome, mythicCollectionId, newSeed);
 		genome = genome.setGene(Genome.MAGIC_NUMBER_GENE_IDX, Genome.MYTHIC_MAGIC_NUMBER);
 
 		return genome;
@@ -773,7 +774,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 	 * @param rarity Rarity of the collection.
 	 * @return isMutating True if mutating, false otherwise.
 	 */
-	function _isCollectionMutating(Rarities rarity, bytes3 seed) internal view returns (bool) {
+	function _isCollectionMutating(Rarities rarity, bytes3 seedSlice) internal view returns (bool) {
 		// check if mutating chance for this rarity is present
 		if (collectionMutationChances.length <= uint8(rarity)) {
 			return false;
@@ -784,7 +785,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 		uint32[] memory chances = new uint32[](2);
 		chances[0] = mutationPercentage;
 		chances[1] = 1000 - mutationPercentage; // 1000 as changes are represented in per mil
-		return _randomWeightedNumber(chances, seed) == 0;
+		return _randomWeightedNumber(chances, seedSlice) == 0;
 	}
 
 	/**
@@ -801,19 +802,19 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 		uint8 gene,
 		uint8 maxGeneValue,
 		GeneDistributionTypes geneDistrType,
-		bytes3 seed
+		bytes3 seedSlice
 	) internal view returns (uint8) {
 		// gene mutation
 		if (
 			geneDistrType == GeneDistributionTypes.Uneven &&
-			_randomWeightedNumber(geneMutationChance, seed) == 1
+			_randomWeightedNumber(geneMutationChance, seedSlice) == 1
 		) {
 			uint8 maxPresentGeneValue = Genome._maxGene(genomes, gene);
 			return maxPresentGeneValue == maxGeneValue ? maxGeneValue : maxPresentGeneValue + 1;
 		}
 
 		// gene inheritance
-		uint8 inheritanceIdx = _randomWeightedNumber(geneInheritanceChances, seed);
+		uint8 inheritanceIdx = _randomWeightedNumber(geneInheritanceChances, seedSlice);
 		return genomes[inheritanceIdx].getGene(gene);
 	}
 
@@ -842,14 +843,17 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 	 * @param valuesNum Maximum number of gene values.
 	 * @return geneValue Gene value.
 	 */
-	function _generateUnevenGeneValue(uint8 valuesNum, bytes3 seed) internal view returns (uint8) {
+	function _generateUnevenGeneValue(
+		uint8 valuesNum,
+		bytes3 seedSlice
+	) internal pure returns (uint8) {
 		// using quadratic algorithm
 		// chance of each gene value to be generated is (N - v)^2 / S
 		// N - number of gene values, v - gene value, S - sum of Squared gene values
 
-		uint256 N = uint256(valuesNum);
-		uint256 S = (N * (N + 1) * (2 * N + 1)) / 6;
-		uint256 num = _random(S, seed);
+		uint24 N = uint24(valuesNum);
+		uint24 S = (N * (N + 1) * (2 * N + 1)) / 6;
+		uint24 num = _random(S, seedSlice);
 		uint256 accumNum = 0;
 
 		for (uint8 i = 0; i < N; i++) {
