@@ -35,14 +35,14 @@ describe('Random', () => {
     const resultsDistibution = Array.from({ length: MAX_NUM }).fill(0) as number[];
 
     before(async () => {
-      let [seedChunk, newSeed] = ['', ''];
+      let [seedSlice, newSeed] = ['', ''];
       for (let i = 0; i < MAX_NUM_RUNS; i++) {
         if (i % SEED_TIME_OF_LIFE == 0) {
           newSeed = await extractSeed(RandomConsumer.randomSeed());
         }
 
-        [seedChunk, newSeed] = await RandomConsumer.rotateSeedChunk(newSeed);
-        const randomBN = await RandomConsumer.random(MAX_NUM, seedChunk);
+        [seedSlice, newSeed] = await RandomConsumer.rotateSeedSlice(newSeed);
+        const randomBN = await RandomConsumer.random(MAX_NUM, seedSlice);
         resultsDistibution[randomBN.toNumber()]++;
       }
     });
@@ -79,14 +79,14 @@ describe('Random', () => {
       const resultsDistibution = Array.from({ length: MAX_NUM }).fill(0) as number[];
 
       before(async () => {
-        let [seedChunk, newSeed] = ['', ''];
+        let [seedSlice, newSeed] = ['', ''];
         for (let i = 0; i < WEIGHTS_RUNS; i++) {
           if (i % SEED_TIME_OF_LIFE == 0) {
             newSeed = await extractSeed(RandomConsumer.randomSeed());
           }
 
-          [seedChunk, newSeed] = await RandomConsumer.rotateSeedChunk(newSeed);
-          const randomBN = await RandomConsumer.randomWeightedNumber(WEIGHTS, seedChunk);
+          [seedSlice, newSeed] = await RandomConsumer.rotateSeedSlice(newSeed);
+          const randomBN = await RandomConsumer.randomWeightedNumber(WEIGHTS, seedSlice);
           resultsDistibution[randomBN.toNumber()]++;
         }
       });

@@ -10,8 +10,8 @@ contract RandomTestConsumer is Random {
 		emit SeedGenerated(_randomSeed());
 	}
 
-	function rotateSeedChunk(bytes32 seed) external pure returns (bytes3, bytes32) {
-		return _rotateSeedChunk(seed);
+	function rotateSeedSlice(bytes32 seed) external pure returns (bytes3, bytes32) {
+		return _rotateSeedSlice(seed);
 	}
 
 	function random(uint256 max, bytes3 seed) external view returns (uint256) {

@@ -477,12 +477,12 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 			revert MintingRulesViolated(collectionId, 1);
 		}
 
-		(bytes3 seedChunk, bytes32 seed) = _rotateSeedChunk(_randomSeed());
+		(bytes3 seedSlice, bytes32 seed) = _rotateSeedSlice(_randomSeed());
 
 		uint256 genome;
 
 		genome = genome.setGene(collectionGeneIdx, collectionId);
-		genome = genome.setGene(rarityGeneIdx, _randomWeightedNumber(rarityChances, seedChunk));
+		genome = genome.setGene(rarityGeneIdx, _randomWeightedNumber(rarityChances, seedSlice));
 		genome = _generateAndSetGenes(genome, collectionId, seed);
 		genome = genome.setGene(Genome.MAGIC_NUMBER_GENE_IDX, Genome.BASE_MAGIC_NUMBER);
 
@@ -508,14 +508,14 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 		// generate and set each gene
 		for (uint8 i = 0; i < geneValuesNum.length; i++) {
 			GeneDistributionTypes distrType = _getDistributionType(geneDistributionTypes, i);
-			bytes3 seedChunk;
-			(seedChunk, newSeed) = _rotateSeedChunk(seed);
+			bytes3 seedSlice;
+			(seedSlice, newSeed) = _rotateSeedSlice(seed);
 			genome = _generateAndSetGene(
 				genome,
 				generativeGenesOffset + i,
 				geneValuesNum[i],
 				distrType,
-				seedChunk
+				seedSlice
 			);
 		}
 
@@ -704,17 +704,17 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 		uint8 collectionId = genomes[0].getGene(collectionGeneIdx);
 		Rarities rarity = Rarities(genomes[0].getGene(rarityGeneIdx));
 
-		(bytes3 seedChunk, bytes32 seed) = _rotateSeedChunk(_randomSeed());
+		(bytes3 seedSlice, bytes32 seed) = _rotateSeedSlice(_randomSeed());
 
 		// if melding Duckling, they can mutate or evolve into Mythic
 		if (collectionId == ducklingCollectionId) {
-			if (_isCollectionMutating(rarity, seedChunk)) {
+			if (_isCollectionMutating(rarity, seedSlice)) {
 				uint256 zombeakGenome = _generateGenome(zombeakCollectionId);
 				return zombeakGenome.setGene(rarityGeneIdx, uint8(rarity));
 			}
 
 			if (rarity == Rarities.Legendary) {
-				return _generateMythicGenome(genomes, seedChunk);
+				return _generateMythicGenome(genomes, seedSlice);
 			}
 		}
 
@@ -729,27 +729,27 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 		uint32 geneDistTypes = collectionsGeneDistributionTypes[collectionId];
 
 		for (uint8 i = 0; i < geneValuesNum.length; i++) {
-			(seedChunk, seed) = _rotateSeedChunk(seed);
+			(seedSlice, seed) = _rotateSeedSlice(seed);
 			uint8 geneValue = _meldGenes(
 				genomes,
 				generativeGenesOffset + i,
 				geneValuesNum[i],
 				_getDistributionType(geneDistTypes, i),
-				seedChunk
+				seedSlice
 			);
 			meldedGenome = meldedGenome.setGene(generativeGenesOffset + i, geneValue);
 		}
 
 		// randomize Body for Common and Head for Rare for Ducklings
 		if (collectionId == ducklingCollectionId) {
-			(seedChunk, seed) = _rotateSeedChunk(seed);
+			(seedSlice, seed) = _rotateSeedSlice(seed);
 			if (rarity == Rarities.Common) {
 				meldedGenome = _generateAndSetGene(
 					meldedGenome,
 					uint8(GenerativeGenes.Body),
 					geneValuesNum[uint8(GenerativeGenes.Body) - generativeGenesOffset],
 					GeneDistributionTypes.Uneven,
-					seedChunk
+					seedSlice
 				);
 			} else if (rarity == Rarities.Rare) {
 				meldedGenome = _generateAndSetGene(
@@ -757,7 +757,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 					uint8(GenerativeGenes.Head),
 					geneValuesNum[uint8(GenerativeGenes.Head) - generativeGenesOffset],
 					GeneDistributionTypes.Uneven,
-					seedChunk
+					seedSlice
 				);
 			}
 		}

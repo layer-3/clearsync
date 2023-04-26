@@ -37,7 +37,7 @@ describe('DuckyFamilyV1 config', () => {
   const CUSTOM_MINT_PRICE = 5;
   const CUSTOM_MELD_PRICES = [10, 20, 50, 100];
 
-  describe.only('setPepper', () => {
+  describe('setPepper', () => {
     const pepper = utils.id('pepper');
 
     it('maintainer can set pepper', async () => {
