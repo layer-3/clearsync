@@ -38,7 +38,7 @@ contract Random {
 	// circular shift of 3 bytes to the left
 	function _rotateSeedChunk(bytes32 seed) internal pure returns (bytes3, bytes32) {
 		bytes3 chunk = bytes3(seed);
-		return (chunk, bytes32(uint256(seed) >> 24) | chunk);
+		return (chunk, (seed << 24) | (bytes32(chunk) >> 232));
 	}
 
 	/**
