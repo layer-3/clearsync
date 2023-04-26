@@ -472,7 +472,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 	 * @param collectionId Collection ID.
 	 * @return genome Generated genome.
 	 */
-	function _generateGenome(uint8 collectionId) internal view returns (uint256) {
+	function _generateGenome(uint8 collectionId) internal returns (uint256) {
 		if (collectionId != ducklingCollectionId && collectionId != zombeakCollectionId) {
 			revert MintingRulesViolated(collectionId, 1);
 		}
@@ -700,7 +700,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 	 * @param genomes Array of genomes to meld.
 	 * @return meldedGenome Melded genome.
 	 */
-	function _meldGenomes(uint256[] memory genomes) internal useRandom returns (uint256) {
+	function _meldGenomes(uint256[] memory genomes) internal returns (uint256) {
 		uint8 collectionId = genomes[0].getGene(collectionGeneIdx);
 		Rarities rarity = Rarities(genomes[0].getGene(rarityGeneIdx));
 

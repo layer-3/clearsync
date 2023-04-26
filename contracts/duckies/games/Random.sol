@@ -21,24 +21,17 @@ contract Random {
 	bytes32 private pepper;
 	uint256 private nonce;
 
-	/**
-	 * @notice Specifies that calling function uses random number generation.
-	 * @dev Modifier that updates salt after calling function is invoked.
-	 */
-	modifier useRandom() {
-		_;
+	function _setPepper(bytes32 newPepper) internal {
+		pepper = newPepper;
+	}
+
+	function _randomSeed() internal returns (bytes32) {
 		// use old salt to generate a new one, so that user's predictions are invalid after function that uses random is called
 		salt = keccak256(abi.encode(salt, msg.sender, block.timestamp));
 		unchecked {
 			nonce++;
 		}
-	}
 
-	function _setPepper(bytes32 newPepper) internal {
-		pepper = newPepper;
-	}
-
-	function _randomSeed() internal view returns (bytes32) {
 		return keccak256(abi.encode(salt, pepper, nonce, msg.sender, block.timestamp));
 	}
 
