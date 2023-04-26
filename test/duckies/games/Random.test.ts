@@ -35,14 +35,14 @@ describe('Random', () => {
     const resultsDistibution = Array.from({ length: MAX_NUM }).fill(0) as number[];
 
     before(async () => {
-      let [seedSlice, newSeed] = ['', ''];
+      let [bitSlice, newSeed] = ['', ''];
       for (let i = 0; i < MAX_NUM_RUNS; i++) {
         if (i % SEED_TIME_OF_LIFE == 0) {
           newSeed = await extractSeed(RandomConsumer.randomSeed());
         }
 
-        [seedSlice, newSeed] = await RandomConsumer.rotateSeedSlice(newSeed);
-        const randomBN = await RandomConsumer.random(MAX_NUM, seedSlice);
+        [bitSlice, newSeed] = await RandomConsumer.shiftSeedSlice(newSeed);
+        const randomBN = await RandomConsumer.max(bitSlice, MAX_NUM);
         resultsDistibution[randomBN.toNumber()]++;
       }
     });
@@ -68,8 +68,8 @@ describe('Random', () => {
     it('generates same number for same seed', async () => {
       const bigMaxNum = 424_242;
       const seed = '0xaabbcc';
-      const randomBN = await RandomConsumer.random(bigMaxNum, seed);
-      const randomBN2 = await RandomConsumer.random(bigMaxNum, seed);
+      const randomBN = await RandomConsumer.max(seed, bigMaxNum);
+      const randomBN2 = await RandomConsumer.max(seed, bigMaxNum);
       expect(randomBN).to.be.equal(randomBN2);
     });
   });
@@ -79,14 +79,14 @@ describe('Random', () => {
       const resultsDistibution = Array.from({ length: MAX_NUM }).fill(0) as number[];
 
       before(async () => {
-        let [seedSlice, newSeed] = ['', ''];
+        let [bitSlice, newSeed] = ['', ''];
         for (let i = 0; i < WEIGHTS_RUNS; i++) {
           if (i % SEED_TIME_OF_LIFE == 0) {
             newSeed = await extractSeed(RandomConsumer.randomSeed());
           }
 
-          [seedSlice, newSeed] = await RandomConsumer.rotateSeedSlice(newSeed);
-          const randomBN = await RandomConsumer.randomWeightedNumber(WEIGHTS, seedSlice);
+          [bitSlice, newSeed] = await RandomConsumer.shiftSeedSlice(newSeed);
+          const randomBN = await RandomConsumer.randomWeightedNumber(WEIGHTS, bitSlice);
           resultsDistibution[randomBN.toNumber()]++;
         }
       });

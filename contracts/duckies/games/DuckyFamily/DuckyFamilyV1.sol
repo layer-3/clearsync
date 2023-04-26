@@ -477,12 +477,12 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 			revert MintingRulesViolated(collectionId, 1);
 		}
 
-		(bytes3 seedSlice, bytes32 seed) = _rotateSeedSlice(_randomSeed());
+		(bytes3 bitSlice, bytes32 seed) = _shiftSeedSlice(_randomSeed());
 
 		uint256 genome;
 
 		genome = genome.setGene(collectionGeneIdx, collectionId);
-		genome = genome.setGene(rarityGeneIdx, _randomWeightedNumber(rarityChances, seedSlice));
+		genome = genome.setGene(rarityGeneIdx, _randomWeightedNumber(rarityChances, bitSlice));
 		genome = _generateAndSetGenes(genome, collectionId, seed);
 		genome = genome.setGene(Genome.MAGIC_NUMBER_GENE_IDX, Genome.BASE_MAGIC_NUMBER);
 
@@ -508,14 +508,14 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 		// generate and set each gene
 		for (uint8 i = 0; i < geneValuesNum.length; i++) {
 			GeneDistributionTypes distrType = _getDistributionType(geneDistributionTypes, i);
-			bytes3 seedSlice;
-			(seedSlice, newSeed) = _rotateSeedSlice(seed);
+			bytes3 bitSlice;
+			(bitSlice, newSeed) = _shiftSeedSlice(seed);
 			genome = _generateAndSetGene(
 				genome,
 				generativeGenesOffset + i,
 				geneValuesNum[i],
 				distrType,
-				seedSlice
+				bitSlice
 			);
 		}
 
@@ -548,14 +548,14 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 		uint8 geneIdx,
 		uint8 geneValuesNum,
 		GeneDistributionTypes distrType,
-		bytes3 seedSlice
+		bytes3 bitSlice
 	) internal pure returns (uint256) {
 		uint8 geneValue;
 
 		if (distrType == GeneDistributionTypes.Even) {
-			geneValue = uint8(_random(geneValuesNum, seedSlice));
+			geneValue = uint8(_max(bitSlice, geneValuesNum));
 		} else {
-			geneValue = uint8(_generateUnevenGeneValue(geneValuesNum, seedSlice));
+			geneValue = uint8(_generateUnevenGeneValue(geneValuesNum, bitSlice));
 		}
 
 		// gene with value 0 means it is a default value, thus this   \/
@@ -588,8 +588,8 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 			maxUniqId
 		);
 
-		(bytes3 seedSlice, bytes32 newSeed) = _rotateSeedSlice(seed);
-		uint16 uniqId = leftEndUniqId + uint16(_random(uniqIdSegmentLength, seedSlice));
+		(bytes3 bitSlice, bytes32 newSeed) = _shiftSeedSlice(seed);
+		uint16 uniqId = leftEndUniqId + uint16(_max(bitSlice, uniqIdSegmentLength));
 
 		uint256 genome;
 		genome = genome.setGene(collectionGeneIdx, mythicCollectionId);
@@ -705,17 +705,17 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 		uint8 collectionId = genomes[0].getGene(collectionGeneIdx);
 		Rarities rarity = Rarities(genomes[0].getGene(rarityGeneIdx));
 
-		(bytes3 seedSlice, bytes32 seed) = _rotateSeedSlice(_randomSeed());
+		(bytes3 bitSlice, bytes32 seed) = _shiftSeedSlice(_randomSeed());
 
 		// if melding Duckling, they can mutate or evolve into Mythic
 		if (collectionId == ducklingCollectionId) {
-			if (_isCollectionMutating(rarity, seedSlice)) {
+			if (_isCollectionMutating(rarity, bitSlice)) {
 				uint256 zombeakGenome = _generateGenome(zombeakCollectionId);
 				return zombeakGenome.setGene(rarityGeneIdx, uint8(rarity));
 			}
 
 			if (rarity == Rarities.Legendary) {
-				return _generateMythicGenome(genomes, seedSlice);
+				return _generateMythicGenome(genomes, bitSlice);
 			}
 		}
 
@@ -730,27 +730,27 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 		uint32 geneDistTypes = collectionsGeneDistributionTypes[collectionId];
 
 		for (uint8 i = 0; i < geneValuesNum.length; i++) {
-			(seedSlice, seed) = _rotateSeedSlice(seed);
+			(bitSlice, seed) = _shiftSeedSlice(seed);
 			uint8 geneValue = _meldGenes(
 				genomes,
 				generativeGenesOffset + i,
 				geneValuesNum[i],
 				_getDistributionType(geneDistTypes, i),
-				seedSlice
+				bitSlice
 			);
 			meldedGenome = meldedGenome.setGene(generativeGenesOffset + i, geneValue);
 		}
 
 		// randomize Body for Common and Head for Rare for Ducklings
 		if (collectionId == ducklingCollectionId) {
-			(seedSlice, seed) = _rotateSeedSlice(seed);
+			(bitSlice, seed) = _shiftSeedSlice(seed);
 			if (rarity == Rarities.Common) {
 				meldedGenome = _generateAndSetGene(
 					meldedGenome,
 					uint8(GenerativeGenes.Body),
 					geneValuesNum[uint8(GenerativeGenes.Body) - generativeGenesOffset],
 					GeneDistributionTypes.Uneven,
-					seedSlice
+					bitSlice
 				);
 			} else if (rarity == Rarities.Rare) {
 				meldedGenome = _generateAndSetGene(
@@ -758,7 +758,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 					uint8(GenerativeGenes.Head),
 					geneValuesNum[uint8(GenerativeGenes.Head) - generativeGenesOffset],
 					GeneDistributionTypes.Uneven,
-					seedSlice
+					bitSlice
 				);
 			}
 		}
@@ -774,7 +774,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 	 * @param rarity Rarity of the collection.
 	 * @return isMutating True if mutating, false otherwise.
 	 */
-	function _isCollectionMutating(Rarities rarity, bytes3 seedSlice) internal view returns (bool) {
+	function _isCollectionMutating(Rarities rarity, bytes3 bitSlice) internal view returns (bool) {
 		// check if mutating chance for this rarity is present
 		if (collectionMutationChances.length <= uint8(rarity)) {
 			return false;
@@ -785,7 +785,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 		uint32[] memory chances = new uint32[](2);
 		chances[0] = mutationPercentage;
 		chances[1] = 1000 - mutationPercentage; // 1000 as changes are represented in per mil
-		return _randomWeightedNumber(chances, seedSlice) == 0;
+		return _randomWeightedNumber(chances, bitSlice) == 0;
 	}
 
 	/**
@@ -802,19 +802,19 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 		uint8 gene,
 		uint8 maxGeneValue,
 		GeneDistributionTypes geneDistrType,
-		bytes3 seedSlice
+		bytes3 bitSlice
 	) internal view returns (uint8) {
 		// gene mutation
 		if (
 			geneDistrType == GeneDistributionTypes.Uneven &&
-			_randomWeightedNumber(geneMutationChance, seedSlice) == 1
+			_randomWeightedNumber(geneMutationChance, bitSlice) == 1
 		) {
 			uint8 maxPresentGeneValue = Genome._maxGene(genomes, gene);
 			return maxPresentGeneValue == maxGeneValue ? maxGeneValue : maxPresentGeneValue + 1;
 		}
 
 		// gene inheritance
-		uint8 inheritanceIdx = _randomWeightedNumber(geneInheritanceChances, seedSlice);
+		uint8 inheritanceIdx = _randomWeightedNumber(geneInheritanceChances, bitSlice);
 		return genomes[inheritanceIdx].getGene(gene);
 	}
 
@@ -845,7 +845,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 	 */
 	function _generateUnevenGeneValue(
 		uint8 valuesNum,
-		bytes3 seedSlice
+		bytes3 bitSlice
 	) internal pure returns (uint8) {
 		// using quadratic algorithm
 		// chance of each gene value to be generated is (N - v)^2 / S
@@ -853,7 +853,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 
 		uint24 N = uint24(valuesNum);
 		uint24 S = (N * (N + 1) * (2 * N + 1)) / 6;
-		uint24 num = _random(S, seedSlice);
+		uint24 num = _max(bitSlice, S);
 		uint256 accumNum = 0;
 
 		for (uint8 i = 0; i < N; i++) {

@@ -36,7 +36,7 @@ contract Random {
 	}
 
 	// circular shift of 3 bytes to the left
-	function _rotateSeedSlice(bytes32 seed) internal pure returns (bytes3, bytes32) {
+	function _shiftSeedSlice(bytes32 seed) internal pure returns (bytes3, bytes32) {
 		bytes3 slice = bytes3(seed);
 		return (slice, (seed << 24) | (bytes32(slice) >> 232));
 	}
@@ -45,11 +45,11 @@ contract Random {
 	 * @notice Generates a random number in range [0, max).
 	 * @dev Calculates hash of encoded salt, nonce, msg sender block timestamp to the number, and returns modulo `max`.
 	 * @param max Upper bound of the range.
-	 * @param seedSlice Upper bound of the range.
+	 * @param bitSlice Upper bound of the range.
 	 * @return Random number in range [0, max).
 	 */
-	function _random(uint24 max, bytes3 seedSlice) internal pure returns (uint24) {
-		return uint24(seedSlice) % max;
+	function _max(bytes3 bitSlice, uint24 max) internal pure returns (uint24) {
+		return uint24(bitSlice) % max;
 	}
 
 	/**
@@ -60,12 +60,12 @@ contract Random {
 	 */
 	function _randomWeightedNumber(
 		uint32[] memory weights,
-		bytes3 seedSlice
+		bytes3 bitSlice
 	) internal pure returns (uint8) {
 		// no sense in empty weights array
 		if (weights.length == 0) revert InvalidWeights(weights);
 
-		uint256 randomNumber = _random(uint24(_sum(weights)), seedSlice);
+		uint256 randomNumber = _max(bitSlice, uint24(_sum(weights)));
 
 		uint256 segmentRightBoundary = 0;
 

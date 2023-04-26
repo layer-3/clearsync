@@ -85,7 +85,7 @@ contract TESTDuckyFamilyV1 is DuckyFamilyV1 {
 		return _getDistributionType(distributionTypes, idx);
 	}
 
-	function generateUnevenGeneValue(uint8 valuesNum, bytes3 seed) external view returns (uint8) {
+	function generateUnevenGeneValue(uint8 valuesNum, bytes3 seed) external pure returns (uint8) {
 		return _generateUnevenGeneValue(valuesNum, seed);
 	}
 
