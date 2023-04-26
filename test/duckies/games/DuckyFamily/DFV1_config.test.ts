@@ -1,4 +1,5 @@
 import { expect } from 'chai';
+import { utils } from 'ethers';
 
 import { ACCOUNT_MISSING_ROLE } from '../../../helpers/common';
 
@@ -35,6 +36,20 @@ describe('DuckyFamilyV1 config', () => {
 
   const CUSTOM_MINT_PRICE = 5;
   const CUSTOM_MELD_PRICES = [10, 20, 50, 100];
+
+  describe.only('setPepper', () => {
+    const pepper = utils.id('pepper');
+
+    it('maintainer can set pepper', async () => {
+      await GameAsMaintainer.setPepper(pepper);
+    });
+
+    it('revert on not maintainer set pepper', async () => {
+      await expect(GameAsSomeone.setPepper(pepper)).to.be.revertedWith(
+        ACCOUNT_MISSING_ROLE(Someone.address, MAINTAINER_ROLE),
+      );
+    });
+  });
 
   describe('mintPrice', () => {
     it('returns correct value', async () => {
