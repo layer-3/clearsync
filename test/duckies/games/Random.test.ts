@@ -1,10 +1,12 @@
 import { ethers } from 'hardhat';
 import { expect } from 'chai';
 
-import type { BigNumber, ContractTransaction } from 'ethers';
+import type { ContractTransaction } from 'ethers';
 import type { RandomTestConsumer } from '../../../typechain-types';
 
 const INVALID_WEIGHTS = 'InvalidWeights';
+
+const SEED_TIME_OF_LIFE = 32;
 
 const MAX_NUM_RUNS = 500;
 const MAX_NUM = 5;
@@ -23,19 +25,25 @@ describe('Random', () => {
     await RandomConsumer.deployed();
   });
 
-  const extractNumFromEvent = async (tx: ContractTransaction): Promise<number> => {
+  const extractSeed = async (txPromise: Promise<ContractTransaction>): Promise<string> => {
+    const tx = await txPromise;
     const receipt = await tx.wait();
-    return (receipt.events?.[0].args?.[0] as BigNumber).toNumber();
+    return receipt.events?.[0].args?.[0] as string;
   };
 
-  describe('randomMaxNumber', () => {
+  describe('random', () => {
     const resultsDistibution = Array.from({ length: MAX_NUM }).fill(0) as number[];
 
     before(async () => {
+      let [bitSlice, newSeed] = ['', ''];
       for (let i = 0; i < MAX_NUM_RUNS; i++) {
-        resultsDistibution[
-          await extractNumFromEvent(await RandomConsumer.randomMaxNumber(MAX_NUM))
-        ]++;
+        if (i % SEED_TIME_OF_LIFE == 0) {
+          newSeed = await extractSeed(RandomConsumer.randomSeed());
+        }
+
+        [bitSlice, newSeed] = await RandomConsumer.shiftSeedSlice(newSeed);
+        const randomBN = await RandomConsumer.max(bitSlice, MAX_NUM);
+        resultsDistibution[randomBN.toNumber()]++;
       }
     });
 
@@ -56,6 +64,14 @@ describe('Random', () => {
         expect(freq).to.be.lessThanOrEqual(right);
       }
     });
+
+    it('generates same number for same seed', async () => {
+      const bigMaxNum = 424_242;
+      const seed = '0xaabbcc';
+      const randomBN = await RandomConsumer.max(seed, bigMaxNum);
+      const randomBN2 = await RandomConsumer.max(seed, bigMaxNum);
+      expect(randomBN).to.be.equal(randomBN2);
+    });
   });
 
   describe('randomWeightedNumber', () => {
@@ -63,10 +79,15 @@ describe('Random', () => {
       const resultsDistibution = Array.from({ length: MAX_NUM }).fill(0) as number[];
 
       before(async () => {
+        let [bitSlice, newSeed] = ['', ''];
         for (let i = 0; i < WEIGHTS_RUNS; i++) {
-          resultsDistibution[
-            await extractNumFromEvent(await RandomConsumer.randomWeightedNumber(WEIGHTS))
-          ]++;
+          if (i % SEED_TIME_OF_LIFE == 0) {
+            newSeed = await extractSeed(RandomConsumer.randomSeed());
+          }
+
+          [bitSlice, newSeed] = await RandomConsumer.shiftSeedSlice(newSeed);
+          const randomBN = await RandomConsumer.randomWeightedNumber(WEIGHTS, bitSlice);
+          resultsDistibution[randomBN.toNumber()]++;
         }
       });
 
@@ -91,7 +112,7 @@ describe('Random', () => {
 
     describe('revert', () => {
       it('when empty weights array', async () => {
-        await expect(RandomConsumer.randomWeightedNumber([]))
+        await expect(RandomConsumer.randomWeightedNumber([], '0xaabbcc'))
           .to.be.revertedWithCustomError(RandomConsumer, INVALID_WEIGHTS)
           .withArgs([]);
       });

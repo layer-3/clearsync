@@ -22,6 +22,8 @@ import { setup } from '../../duckies/games/DuckyFamily/setup';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import type { DucklingsV1, DuckyFamilyV1, TESTDuckyFamilyV1 } from '../../../typechain-types';
 
+const seed = '0xaabbcc';
+
 describe('Benchmark DuckyFamilyV1 melding', () => {
   let Someone: SignerWithAddress;
   let GenomeSetter: SignerWithAddress;
@@ -34,8 +36,8 @@ describe('Benchmark DuckyFamilyV1 melding', () => {
   let mintTo: MintToFuncT;
   let generateAndMintGenomes: GenerateAndMintGenomesFunctT;
 
-  const isCollectionMutating = async (rarity: Rarities): Promise<boolean> => {
-    const tx = await Game.isCollectionMutating(rarity);
+  const isCollectionMutating = async (rarity: Rarities, seed: string): Promise<boolean> => {
+    const tx = await Game.isCollectionMutating(rarity, seed);
     const receipt = await tx.wait();
     const event = receipt.events?.find((e) => e.event === 'BoolReturned');
     return event?.args?.returnedBool as boolean;
@@ -53,8 +55,9 @@ describe('Benchmark DuckyFamilyV1 melding', () => {
     gene: number,
     maxGeneValue: number,
     geneDistrType: GeneDistrTypes,
+    seed: string,
   ): Promise<number> => {
-    const tx = await Game.meldGenes(genomes, gene, maxGeneValue, geneDistrType);
+    const tx = await Game.meldGenes(genomes, gene, maxGeneValue, geneDistrType, seed);
     const receipt = await tx.wait();
     const event = receipt.events?.find((e) => e.event === 'GeneReturned');
     // gene is already a number
@@ -104,7 +107,7 @@ describe('Benchmark DuckyFamilyV1 melding', () => {
   });
 
   it('isCollectionMutating', async () => {
-    await isCollectionMutating(Rarities.Common);
+    await isCollectionMutating(Rarities.Common, seed);
   });
 
   it('meldGenes', async () => {
@@ -122,6 +125,7 @@ describe('Benchmark DuckyFamilyV1 melding', () => {
       DucklingGenes.Head,
       geneValuesNum[DucklingGenes.Head],
       GeneDistrTypes.Uneven,
+      seed,
     );
   });
 });

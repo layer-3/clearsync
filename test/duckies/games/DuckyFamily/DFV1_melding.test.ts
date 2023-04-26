@@ -33,6 +33,8 @@ import type {
   YellowToken,
 } from '../../../../typechain-types';
 
+const seed = '0xaabbcc';
+
 describe('DuckyFamilyV1 melding', () => {
   let Someone: SignerWithAddress;
   let GenomeSetter: SignerWithAddress;
@@ -47,7 +49,7 @@ describe('DuckyFamilyV1 melding', () => {
   let generateAndMintGenomes: GenerateAndMintGenomesFunctT;
 
   const isCollectionMutating = async (rarity: Rarities): Promise<boolean> => {
-    const tx = await Game.isCollectionMutating(rarity);
+    const tx = await Game.isCollectionMutating(rarity, seed);
     const receipt = await tx.wait();
     const event = receipt.events?.find((e) => e.event === 'BoolReturned');
     return event?.args?.returnedBool as boolean;
@@ -66,7 +68,7 @@ describe('DuckyFamilyV1 melding', () => {
     maxGeneValue: number,
     geneDistrType: GeneDistrTypes,
   ): Promise<number> => {
-    const tx = await Game.meldGenes(genomes, gene, maxGeneValue, geneDistrType);
+    const tx = await Game.meldGenes(genomes, gene, maxGeneValue, geneDistrType, seed);
     const receipt = await tx.wait();
     const event = receipt.events?.find((e) => e.event === 'GeneReturned');
     // gene is already a number
@@ -385,7 +387,7 @@ describe('DuckyFamilyV1 melding', () => {
     });
 
     it('revert when rarity is out of bounds', async () => {
-      await expect(Game.isCollectionMutating(raritiesNum)).to.be.reverted;
+      await expect(Game.isCollectionMutating(raritiesNum, seed)).to.be.reverted;
     });
   });
 
@@ -412,7 +414,7 @@ describe('DuckyFamilyV1 melding', () => {
 
         // TODO: remove this when we have a better way to test randomness
         await Promise.all(
-          [...Array(100)].map(async (_, i) => {
+          Array.from({ length: 100 }, async () => {
             const _genome = await meldGenomes(genomes);
             const genome = new Genome(_genome);
             expect(genome.getGene(DucklingGenes.Body)).greaterThan(0);

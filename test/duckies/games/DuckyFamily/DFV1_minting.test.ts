@@ -31,6 +31,8 @@ import type {
 } from '../../../../typechain-types';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
+const SEED = '0xaabbcc';
+
 describe('DuckyFamilyV1 minting', () => {
   let Someone: SignerWithAddress;
 
@@ -53,8 +55,9 @@ describe('DuckyFamilyV1 minting', () => {
   const generateAndSetGenes = async (
     genome: bigint,
     collectionId: Collections,
+    seed: string = SEED,
   ): Promise<bigint> => {
-    const tx = await Game.generateAndSetGenes(genome, collectionId);
+    const tx = await Game.generateAndSetGenes(genome, collectionId, seed);
     const receipt = await tx.wait();
     const event = receipt.events?.find((e) => e.event === 'GenomeReturned');
     return event?.args?.genome.toBigInt() as bigint;
@@ -65,15 +68,16 @@ describe('DuckyFamilyV1 minting', () => {
     geneIx: number,
     geneValuesNum: number,
     distrType: GeneDistrTypes,
+    seed: string = SEED,
   ): Promise<bigint> => {
-    const tx = await Game.generateAndSetGene(genome, geneIx, geneValuesNum, distrType);
+    const tx = await Game.generateAndSetGene(genome, geneIx, geneValuesNum, distrType, seed);
     const receipt = await tx.wait();
     const event = receipt.events?.find((e) => e.event === 'GenomeReturned');
     return event?.args?.genome.toBigInt() as bigint;
   };
 
-  const generateMythicGenome = async (genomes: bigint[]): Promise<bigint> => {
-    const tx = await Game.generateMythicGenome(genomes);
+  const generateMythicGenome = async (genomes: bigint[], seed: string = SEED): Promise<bigint> => {
+    const tx = await Game.generateMythicGenome(genomes, seed);
     const receipt = await tx.wait();
     const event = receipt.events?.find((e) => e.event === 'GenomeReturned');
     return event?.args?.genome.toBigInt() as bigint;

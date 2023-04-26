@@ -38,25 +38,22 @@ contract TESTDuckyFamilyV1 is DuckyFamilyV1 {
 		emit GenomeReturned(_generateGenome(collectionId));
 	}
 
-	function generateRarity() external {
-		emit Uint8Returned(uint8(_generateRarity()));
-	}
-
-	function generateAndSetGenes(uint256 genome, uint8 collectionId) external {
-		emit GenomeReturned(_generateAndSetGenes(genome, collectionId));
+	function generateAndSetGenes(uint256 genome, uint8 collectionId, bytes3 seed) external {
+		emit GenomeReturned(_generateAndSetGenes(genome, collectionId, seed));
 	}
 
 	function generateAndSetGene(
 		uint256 genome,
 		uint8 geneIdx,
 		uint8 geneValuesNum,
-		GeneDistributionTypes distrType
+		GeneDistributionTypes distrType,
+		bytes3 seed
 	) external {
-		emit GenomeReturned(_generateAndSetGene(genome, geneIdx, geneValuesNum, distrType));
+		emit GenomeReturned(_generateAndSetGene(genome, geneIdx, geneValuesNum, distrType, seed));
 	}
 
-	function generateMythicGenome(uint256[] calldata genomes) external {
-		emit GenomeReturned(_generateMythicGenome(genomes));
+	function generateMythicGenome(uint256[] calldata genomes, bytes3 seed) external {
+		emit GenomeReturned(_generateMythicGenome(genomes, seed));
 	}
 
 	function requireGenomesSatisfyMelding(uint256[] calldata genomes) external pure {
@@ -67,17 +64,18 @@ contract TESTDuckyFamilyV1 is DuckyFamilyV1 {
 		emit GenomeReturned(_meldGenomes(genomes));
 	}
 
-	function isCollectionMutating(Rarities rarity) external {
-		emit BoolReturned(_isCollectionMutating(rarity));
+	function isCollectionMutating(Rarities rarity, bytes3 seed) external {
+		emit BoolReturned(_isCollectionMutating(rarity, seed));
 	}
 
 	function meldGenes(
 		uint256[] calldata genomes,
 		uint8 gene,
 		uint8 maxGeneValue,
-		GeneDistributionTypes geneDistrType
+		GeneDistributionTypes geneDistrType,
+		bytes3 seed
 	) external {
-		emit GeneReturned(_meldGenes(genomes, gene, maxGeneValue, geneDistrType));
+		emit GeneReturned(_meldGenes(genomes, gene, maxGeneValue, geneDistrType, seed));
 	}
 
 	function getDistributionType(
@@ -87,8 +85,8 @@ contract TESTDuckyFamilyV1 is DuckyFamilyV1 {
 		return _getDistributionType(distributionTypes, idx);
 	}
 
-	function generateUnevenGeneValue(uint8 valuesNum) external {
-		emit Uint8Returned(_generateUnevenGeneValue(valuesNum));
+	function generateUnevenGeneValue(uint8 valuesNum, bytes3 seed) external pure returns (uint8) {
+		return _generateUnevenGeneValue(valuesNum, seed);
 	}
 
 	function calcMaxPeculiarity() external view returns (uint16) {

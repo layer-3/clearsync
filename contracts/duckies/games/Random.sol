@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
+// TODO: dev docs
 // chances are represented in per mil, thus uint32
 /**
  * @title Random
@@ -17,43 +18,38 @@ contract Random {
 	error InvalidWeights(uint32[] weights);
 
 	bytes32 private salt;
+	bytes32 private pepper;
 	uint256 private nonce;
 
-	/**
-	 * @notice Specifies that calling function uses random number generation.
-	 * @dev Modifier that updates salt after calling function is invoked.
-	 */
-	modifier UseRandom() {
-		_;
-		_updateSalt();
+	function _setPepper(bytes32 newPepper) internal {
+		pepper = newPepper;
 	}
 
-	/**
-	 * @notice Updates nonce
-	 */
-	function _updateNonce() private {
+	function _randomSeed() internal returns (bytes32) {
+		// use old salt to generate a new one, so that user's predictions are invalid after function that uses random is called
+		salt = keccak256(abi.encode(salt, msg.sender, block.timestamp));
 		unchecked {
 			nonce++;
 		}
+
+		return keccak256(abi.encode(salt, pepper, nonce, msg.sender, block.timestamp));
 	}
 
-	/**
-	 * @notice Updates salt.
-	 * @dev Salt is a hash of encoded block timestamp and msg sender.
-	 */
-	function _updateSalt() private {
-		salt = keccak256(abi.encode(msg.sender, block.timestamp));
+	// circular shift of 3 bytes to the left
+	function _shiftSeedSlice(bytes32 seed) internal pure returns (bytes3, bytes32) {
+		bytes3 slice = bytes3(seed);
+		return (slice, (seed << 24) | (bytes32(slice) >> 232));
 	}
 
 	/**
 	 * @notice Generates a random number in range [0, max).
-	 * @dev Cast hash of encoded salt, nonce, msg sender block timestamp to the number, and returns modulo `max`.
+	 * @dev Calculates hash of encoded salt, nonce, msg sender block timestamp to the number, and returns modulo `max`.
 	 * @param max Upper bound of the range.
+	 * @param bitSlice Upper bound of the range.
 	 * @return Random number in range [0, max).
 	 */
-	function _randomMaxNumber(uint256 max) internal returns (uint256) {
-		_updateNonce();
-		return uint256(keccak256(abi.encode(salt, nonce, msg.sender, block.timestamp))) % max;
+	function _max(bytes3 bitSlice, uint24 max) internal pure returns (uint24) {
+		return uint24(bitSlice) % max;
 	}
 
 	/**
@@ -62,12 +58,14 @@ contract Random {
 	 * @param weights Array of weights.
 	 * @return Random number in range [0, weights.length).
 	 */
-	function _randomWeightedNumber(uint32[] memory weights) internal returns (uint8) {
+	function _randomWeightedNumber(
+		uint32[] memory weights,
+		bytes3 bitSlice
+	) internal pure returns (uint8) {
 		// no sense in empty weights array
 		if (weights.length == 0) revert InvalidWeights(weights);
 
-		// generated number should be strictly less than right \/ segment boundary
-		uint256 randomNumber = _randomMaxNumber(_sum(weights));
+		uint256 randomNumber = _max(bitSlice, uint24(_sum(weights)));
 
 		uint256 segmentRightBoundary = 0;
 

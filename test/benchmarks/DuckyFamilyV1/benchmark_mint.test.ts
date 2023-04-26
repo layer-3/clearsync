@@ -3,6 +3,8 @@ import { Collections, GeneDistrTypes } from '../../duckies/games/DuckyFamily/con
 
 import type { DuckyFamilyV1, TESTDuckyFamilyV1 } from '../../../typechain-types';
 
+const seed = '0xaabbcc';
+
 describe('Benchmark DuckyFamilyV1 minting', () => {
   let Game: TESTDuckyFamilyV1;
   let GameAsSomeone: DuckyFamilyV1;
@@ -13,18 +15,13 @@ describe('Benchmark DuckyFamilyV1 minting', () => {
     const event = receipt.events?.find((e) => e.event === 'GenomeReturned');
     return event?.args?.genome.toBigInt() as bigint;
   };
-  const generateRarity = async (): Promise<number> => {
-    const tx = await Game.generateRarity();
-    const receipt = await tx.wait();
-    const event = receipt.events?.find((e) => e.event === 'Uint8Returned');
-    return event?.args?.uint8 as number;
-  };
 
   const generateAndSetGenes = async (
     genome: bigint,
     collectionId: Collections,
+    seed: string,
   ): Promise<bigint> => {
-    const tx = await Game.generateAndSetGenes(genome, collectionId);
+    const tx = await Game.generateAndSetGenes(genome, collectionId, seed);
     const receipt = await tx.wait();
     const event = receipt.events?.find((e) => e.event === 'GenomeReturned');
     return event?.args?.genome.toBigInt() as bigint;
@@ -35,8 +32,9 @@ describe('Benchmark DuckyFamilyV1 minting', () => {
     geneIx: number,
     geneValuesNum: number,
     distrType: GeneDistrTypes,
+    seed: string,
   ): Promise<bigint> => {
-    const tx = await Game.generateAndSetGene(genome, geneIx, geneValuesNum, distrType);
+    const tx = await Game.generateAndSetGene(genome, geneIx, geneValuesNum, distrType, seed);
     const receipt = await tx.wait();
     const event = receipt.events?.find((e) => e.event === 'GenomeReturned');
     return event?.args?.genome.toBigInt() as bigint;
@@ -56,19 +54,15 @@ describe('Benchmark DuckyFamilyV1 minting', () => {
     await generateGenome(Collections.Duckling);
   });
 
-  it('generateRarity', async () => {
-    await generateRarity();
-  });
-
   it('generateAndSetGenes', async () => {
-    await generateAndSetGenes(0n, Collections.Duckling);
+    await generateAndSetGenes(0n, Collections.Duckling, seed);
   });
 
   it('generateAndSetGene even', async () => {
-    await generateAndSetGene(0n, 0, 2, GeneDistrTypes.Even);
+    await generateAndSetGene(0n, 0, 2, GeneDistrTypes.Even, seed);
   });
 
   it('generateAndSetGene uneven', async () => {
-    await generateAndSetGene(0n, 0, 2, GeneDistrTypes.Uneven);
+    await generateAndSetGene(0n, 0, 2, GeneDistrTypes.Uneven, seed);
   });
 });
