@@ -851,7 +851,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 
 	/**
 	 * @notice Generate uneven gene value given the maximum number of values.
-	 * @dev Generate uneven gene value using reciprocal algorithm described below.
+	 * @dev Generate uneven gene value using reciprocal distribution described below.
 	 * @param valuesNum Maximum number of gene values.
 	 * @param bitSlice Bit slice to use for randomization.
 	 * @return geneValue Gene value.
@@ -860,7 +860,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 		uint8 valuesNum,
 		bytes3 bitSlice
 	) internal pure returns (uint8) {
-		// using reciprocal algorithm
+		// using reciprocal distribution
 		// gene value is selected as ceil[(2N/(x+1))-N],
 		// where x is random number between 0 and 1
 		// Because of shape of reciprocal graph,
