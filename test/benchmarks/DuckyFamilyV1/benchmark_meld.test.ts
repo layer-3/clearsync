@@ -106,6 +106,23 @@ describe('Benchmark DuckyFamilyV1 melding', () => {
     await meldGenomes(genomes);
   });
 
+  it('meldGenomes Legendary Ducklings', async () => {
+    const genomes = [];
+
+    for (let i = 0; i < FLOCK_SIZE; i++) {
+      genomes.push(
+        randomGenome(Collections.Duckling, {
+          [ZombeakGenes.Rarity]: Rarities.Legendary,
+          // different colors
+          [ZombeakGenes.Color]: 0,
+          [ZombeakGenes.Family]: i,
+        }),
+      );
+    }
+
+    await meldGenomes(genomes);
+  });
+
   it('isCollectionMutating', async () => {
     await isCollectionMutating(Rarities.Common, seed);
   });
