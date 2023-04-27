@@ -906,7 +906,8 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 		uint16 sum = 0;
 		uint32 ducklingDistrTypes = collectionsGeneDistributionTypes[ducklingCollectionId];
 
-		for (uint8 i = 0; i < collectionsGeneValuesNum[ducklingCollectionId].length; i++) {
+		uint256 genesNum = collectionsGeneValuesNum[ducklingCollectionId].length;
+		for (uint8 i = 0; i < genesNum; i++) {
 			if (_getDistributionType(ducklingDistrTypes, i) == GeneDistributionTypes.Uneven) {
 				// add number of values and not actual values as actual values start with 1, which means number of values and actual values are equal
 				sum += genome.getGene(i + generativeGenesOffset);
