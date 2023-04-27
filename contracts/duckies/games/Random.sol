@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
-// TODO: dev docs
 // chances are represented in per mil, thus uint32
 /**
  * @title Random
  * @notice A contract that provides pseudo random number generation.
- * Pseudo random number generation is based on the block timestamp, sender address, salt and nonce.
- * Salt is based on block timestamp and msg sender, and is calculated every time a user-function that uses Random logic is called.
+ * Pseudo random number generation is based on the seed created from the salt, pepper, nonce, sender address, and block timestamp.
+ * Seed is divided into 32 bit slices, and each slice is used to generate a random number.
+ * User of this contract must keep track of used bit slices to avoid reusing them.
+ * Salt is a data based on block timestamp and msg sender, and is calculated every time a seed is generated.
+ * Pepper is a random data changed periodically by external entity.
  * Nonce is incremented every time a random number is generated.
  */
 contract Random {
@@ -21,10 +23,20 @@ contract Random {
 	bytes32 private pepper;
 	uint256 private nonce;
 
+	/**
+	 * @notice Sets the pepper.
+	 * @dev Pepper is a random data changed periodically by external entity.
+	 * @param newPepper New pepper.
+	 */
 	function _setPepper(bytes32 newPepper) internal {
 		pepper = newPepper;
 	}
 
+	/**
+	 * @notice Creates a new seed based on the salt, pepper, nonce, sender address, and block timestamp.
+	 * @dev Creates a new seed based on the salt, pepper, nonce, sender address, and block timestamp.
+	 * @return New seed.
+	 */
 	function _randomSeed() internal returns (bytes32) {
 		// use old salt to generate a new one, so that user's predictions are invalid after function that uses random is called
 		salt = keccak256(abi.encode(salt, msg.sender, block.timestamp));
@@ -35,18 +47,24 @@ contract Random {
 		return keccak256(abi.encode(salt, pepper, nonce, msg.sender, block.timestamp));
 	}
 
-	// circular shift of 3 bytes to the left
+	/**
+	 * @notice Perform circular shift on the seed by 3 bytes to the left, and returns the shifted slice and the updated seed.
+	 * @dev User of this contract must keep track of used bit slices to avoid reusing them.
+	 * @param seed Seed to shift and extract the shifted slice from.
+	 * @return bitSlice Shifted bit slice.
+	 * @return updatedSeed Shifted seed.
+	 */
 	function _shiftSeedSlice(bytes32 seed) internal pure returns (bytes3, bytes32) {
 		bytes3 slice = bytes3(seed);
 		return (slice, (seed << 24) | (bytes32(slice) >> 232));
 	}
 
 	/**
-	 * @notice Generates a random number in range [0, max).
-	 * @dev Calculates hash of encoded salt, nonce, msg sender block timestamp to the number, and returns modulo `max`.
-	 * @param max Upper bound of the range.
-	 * @param bitSlice Upper bound of the range.
-	 * @return Random number in range [0, max).
+	 * @notice Extracts a number from the bit slice in range [0, max).
+	 * @dev Extracts a number from the bit slice in range [0, max).
+	 * @param bitSlice Bit slice to extract the number from.
+	 * @param max Max number to extract.
+	 * @return Extracted number in range [0, max).
 	 */
 	function _max(bytes3 bitSlice, uint24 max) internal pure returns (uint24) {
 		return uint24(bitSlice) % max;

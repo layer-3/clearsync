@@ -174,6 +174,12 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 	}
 
 	// ------- Random -------
+
+	/**
+	 * @notice Sets the pepper for random generator.
+	 * @dev Require MAINTAINER_ROLE to call. Pepper is a random data changed periodically by external entity.
+	 * @param pepper New pepper.
+	 */
 	function setPepper(bytes32 pepper) external onlyRole(MAINTAINER_ROLE) {
 		_setPepper(pepper);
 	}
@@ -494,6 +500,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 	 * @dev Generate and set all genes from a corresponding collection to `genome`.
 	 * @param genome Genome to set genes to.
 	 * @param collectionId Collection ID.
+	 * @param seed Random seed to generate genes from.
 	 * @return genome Genome with set genes.
 	 */
 	function _generateAndSetGenes(
@@ -541,6 +548,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 	 * @param geneIdx Gene index.
 	 * @param geneValuesNum Number of gene values.
 	 * @param distrType Gene distribution type.
+	 * @param bitSlice Random bit slice to generate a gene from.
 	 * @return genome Genome with set gene.
 	 */
 	function _generateAndSetGene(
@@ -568,6 +576,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 	 * @notice Generate mythic genome based on melding `genomes`.
 	 * @dev Calculates flock peculiarity, and randomizes UniqId corresponding to the peculiarity.
 	 * @param genomes Array of genomes to meld into Mythic.
+	 * @param seed Random seed to generate mythic genome from.
 	 * @return genome Generated Mythic genome.
 	 */
 	function _generateMythicGenome(
@@ -622,6 +631,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 	 * @dev Check `owner` is indeed the owner of `meldingTokenIds`. Burn NFTs with `meldingTokenIds`. Transfers Duckies to the TreasureVault.
 	 * @param meldingTokenIds Array of token IDs to meld.
 	 * @param isTransferable Whether the new token is transferable.
+	 * @return meldedTokenId ID of the new token.
 	 */
 	function _meldOf(
 		address owner,
@@ -715,7 +725,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 			}
 
 			if (rarity == Rarities.Legendary) {
-				return _generateMythicGenome(genomes, bitSlice);
+				return _generateMythicGenome(genomes, seed);
 			}
 		}
 
@@ -772,6 +782,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 	 * @notice Randomize if collection is mutating.
 	 * @dev Randomize if collection is mutating.
 	 * @param rarity Rarity of the collection.
+	 * @param bitSlice Bit slice to use for randomization.
 	 * @return isMutating True if mutating, false otherwise.
 	 */
 	function _isCollectionMutating(Rarities rarity, bytes3 bitSlice) internal view returns (bool) {
@@ -795,6 +806,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 	 * @param gene Gene to be meld.
 	 * @param maxGeneValue Max gene value.
 	 * @param geneDistrType Gene distribution type.
+	 * @param bitSlice Bit slice to use for randomization.
 	 * @return geneValue Melded gene value.
 	 */
 	function _meldGenes(
@@ -841,6 +853,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 	 * @notice Generate uneven gene value given the maximum number of values.
 	 * @dev Generate uneven gene value using quadratic algorithm described below.
 	 * @param valuesNum Maximum number of gene values.
+	 * @param bitSlice Bit slice to use for randomization.
 	 * @return geneValue Gene value.
 	 */
 	function _generateUnevenGeneValue(

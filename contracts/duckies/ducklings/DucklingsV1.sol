@@ -96,13 +96,19 @@ contract DucklingsV1 is
 
 	// -------- ERC721 --------
 
+	/**
+	 * @notice Returns total supply of tokens.
+	 * @dev Total supply is equal to the number of minted tokens minus the number of burned tokens.
+	 * @return totalSupply Total supply of tokens.
+	 */
 	function totalSupply() external view returns (uint256) {
 		return _totalSupply.current();
 	}
 
 	/**
-	 * @notice Necessary override to specify what implementation of _burn to use.
-	 * @dev Necessary override to specify what implementation of _burn to use.
+	 * @notice Necessary override to specify what implementation of _burn to use. Also include total supply decrement.
+	 * @dev Necessary override to specify what implementation of _burn to use. Also include total supply decrement.
+	 * @param tokenId Id of the token to burn.
 	 */
 	function _burn(uint256 tokenId) internal override(ERC721RoyaltyUpgradeable, ERC721Upgradeable) {
 		// check on token existence is performed in ERC721Upgradeable._burn
@@ -111,8 +117,13 @@ contract DucklingsV1 is
 		_totalSupply.decrement();
 	}
 
+	/**
+	 * @notice Override the ERC721 _mint function to increment the total supply.
+	 * @dev Override the ERC721 _mint function to increment the total supply.
+	 * @param to Address to mint token to.
+	 * @param tokenId Id of the token to mint.
+	 */
 	function _safeMint(address to, uint256 tokenId) internal override(ERC721Upgradeable) {
-		// check on token existence is performed in ERC721Upgradeable._burn
 		super._safeMint(to, tokenId);
 
 		_totalSupply.increment();
