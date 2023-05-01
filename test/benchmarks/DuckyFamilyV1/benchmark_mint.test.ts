@@ -65,4 +65,8 @@ describe('Benchmark DuckyFamilyV1 minting', () => {
   it('generateAndSetGene uneven', async () => {
     await generateAndSetGene(0n, 0, 2, GeneDistrTypes.Uneven, seed);
   });
+
+  it('generateUnevenGeneValue', async () => {
+    await Game.generateUnevenGeneValue(32, '0xaabbcc');
+  });
 });
