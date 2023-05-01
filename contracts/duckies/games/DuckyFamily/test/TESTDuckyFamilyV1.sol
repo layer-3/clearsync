@@ -196,16 +196,23 @@ contract TESTDuckyFamilyV1 is DuckyFamilyV1 {
 
 	/**
 	 * @notice Generate uneven gene value.
-	 * @dev Exposed for testing.
+	 * @dev Exposed for testing. Not pure to measure gas consumption.
 	 * @param valuesNum Number of gene values.
 	 * @param bitSlice Bit slice for randomization.
 	 * @return Uneven gene value.
 	 */
-	function generateUnevenGeneValue(
-		uint8 valuesNum,
-		bytes3 bitSlice
-	) external pure returns (uint8) {
+	function generateUnevenGeneValue(uint8 valuesNum, bytes3 bitSlice) external returns (uint8) {
 		return _generateUnevenGeneValue(valuesNum, bitSlice);
+	}
+
+	/**
+	 * @notice Calculates square root of `x` rounded down.
+	 * @dev Exposed for testing.
+	 * @param x Number to calculate square root of.
+	 * @return result Square root of `x` rounded down.
+	 */
+	function floorSqrt(uint256 x) external pure returns (uint256) {
+		return _floorSqrt(x);
 	}
 
 	/**

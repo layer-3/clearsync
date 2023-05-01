@@ -868,12 +868,69 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 
 		// N - number of gene values
 		uint256 N = uint256(valuesNum);
-		// Generates number from 1 to 10^8
+		// Generates number from 1 to 10^6
 		uint256 x = 1 + _max(bitSlice, 10e6);
 		// Calculates uneven distributed y, value of y is between 0 and N
-		uint256 y = (2 * N * 10e6) / (x + 10e6) - N;
+		uint256 y = (2 * N * 10e6) / (_floorSqrt(x) + 10e6) - N;
 
 		return uint8(y);
+	}
+
+	/**
+	 * @notice Calculates square root of `x` rounded down.
+	 * @dev Copied from 'aulRBerg/prb-math'.
+	 * @param x Number to calculate square root of.
+	 * @return result Square root of `x` rounded down.
+	 */
+	function _floorSqrt(uint256 x) internal pure returns (uint256 result) {
+		if (x == 0) {
+			return 0;
+		}
+
+		uint256 xAux = uint256(x);
+		result = 1;
+		if (xAux >= 2 ** 128) {
+			xAux >>= 128;
+			result <<= 64;
+		}
+		if (xAux >= 2 ** 64) {
+			xAux >>= 64;
+			result <<= 32;
+		}
+		if (xAux >= 2 ** 32) {
+			xAux >>= 32;
+			result <<= 16;
+		}
+		if (xAux >= 2 ** 16) {
+			xAux >>= 16;
+			result <<= 8;
+		}
+		if (xAux >= 2 ** 8) {
+			xAux >>= 8;
+			result <<= 4;
+		}
+		if (xAux >= 2 ** 4) {
+			xAux >>= 4;
+			result <<= 2;
+		}
+		if (xAux >= 2 ** 2) {
+			result <<= 1;
+		}
+
+		unchecked {
+			result = (result + x / result) >> 1;
+			result = (result + x / result) >> 1;
+			result = (result + x / result) >> 1;
+			result = (result + x / result) >> 1;
+			result = (result + x / result) >> 1;
+			result = (result + x / result) >> 1;
+			result = (result + x / result) >> 1;
+
+			uint256 roundedResult = x / result;
+			if (result >= roundedResult) {
+				result = roundedResult;
+			}
+		}
 	}
 
 	/**
