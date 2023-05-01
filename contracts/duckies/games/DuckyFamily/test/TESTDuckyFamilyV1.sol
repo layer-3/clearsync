@@ -208,6 +208,10 @@ contract TESTDuckyFamilyV1 is DuckyFamilyV1 {
 		return _generateUnevenGeneValue(valuesNum, bitSlice);
 	}
 
+	function floorSqrt(uint256 x) external pure returns (uint256) {
+		return _floorSqrt(x);
+	}
+
 	/**
 	 * @notice Calculate maximum (config) peculiarity.
 	 * @dev Exposed for testing.

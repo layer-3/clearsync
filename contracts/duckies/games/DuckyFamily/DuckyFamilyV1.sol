@@ -851,7 +851,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 
 	/**
 	 * @notice Generate uneven gene value given the maximum number of values.
-	 * @dev Generate uneven gene value using reciprocal distribution described below.
+	 * @dev Generate uneven gene value using weighed distribution created by squares difference.
 	 * @param valuesNum Maximum number of gene values.
 	 * @param bitSlice Bit slice to use for randomization.
 	 * @return geneValue Gene value.
@@ -860,20 +860,28 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 		uint8 valuesNum,
 		bytes3 bitSlice
 	) internal pure returns (uint8) {
-		// using reciprocal distribution
-		// gene value is selected as ceil[(2N/(x+1))-N],
-		// where x is random number between 0 and 1
-		// Because of shape of reciprocal graph,
-		// evenly distributed x values will result in unevenly distributed y values.
+		// number axis is divided into segments by squares of natural numbers (e.g., 1, 4, 9, 16 up to valuesNum ** 2)
+		// then a number x is generated in range [0, valuesNum ** 2)
+		// the number of segment S number x lies in represents generated gene value
+		// however, as larger segments are located further away from 0 at number axis, we need to subtract S from the total number of segments
 
-		// N - number of gene values
-		uint256 N = uint256(valuesNum);
-		// Generates number from 1 to 10^8
-		uint256 x = 1 + _max(bitSlice, 10e6);
-		// Calculates uneven distributed y, value of y is between 0 and N
-		uint256 y = (2 * N * 10e6) / (x + 10e6) - N;
+		uint256 x = _max(bitSlice, uint24(valuesNum) ** 2);
+		return valuesNum - uint8(_floorSqrt(x)) - 1;
+	}
 
-		return uint8(y);
+	function _floorSqrt(uint256 n) internal pure returns (uint256) {
+		unchecked {
+			if (n > 0) {
+				uint256 x = n / 2 + 1;
+				uint256 y = (x + n / x) / 2;
+				while (x > y) {
+					x = y;
+					y = (x + n / x) / 2;
+				}
+				return x;
+			}
+			return 0;
+		}
 	}
 
 	/**
