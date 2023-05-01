@@ -25,6 +25,11 @@ export type RandomGenomeConfig = GenesConfig & { isTransferable?: boolean };
 
 export const randomMaxNum = (maxNum: number): number => Math.floor(Math.random() * maxNum);
 
+export const bytes3 = (rem: number): string => {
+  const bytes3 = rem.toString(16).padStart(6, '0');
+  return `0x${bytes3}`;
+};
+
 export function randomGenome(collectionId: Collections, config?: RandomGenomeConfig): bigint {
   const genome = new Genome();
   genome.setGene(collectionGeneIdx, collectionId);

@@ -9,6 +9,7 @@ import {
 } from './config';
 import { Genome } from './genome';
 import { setup } from './setup';
+import { bytes3 } from './helpers';
 
 import type { TESTDuckyFamilyV1 } from '../../../../typechain-types';
 
@@ -25,6 +26,73 @@ describe('DuckyGameV1 helpers', () => {
     expect(await Game.getDistributionType(0b010, 2)).to.equal(GeneDistrTypes.Even);
     expect(await Game.getDistributionType(0b0010_0010, 7)).to.equal(GeneDistrTypes.Even);
     expect(await Game.getDistributionType(0b100_0010_0010, 10)).to.equal(GeneDistrTypes.Uneven);
+  });
+
+  it('_generateUnevenGeneValue', async () => {
+    // value 0: [961, 1023]
+    expect(await Game.generateUnevenGeneValue(32, bytes3(961))).to.equal(0);
+    expect(await Game.generateUnevenGeneValue(32, bytes3(1000))).to.equal(0);
+    expect(await Game.generateUnevenGeneValue(32, bytes3(1023))).to.equal(0);
+
+    // value 1: [900, 960]
+    expect(await Game.generateUnevenGeneValue(32, bytes3(900))).to.equal(1);
+    expect(await Game.generateUnevenGeneValue(32, bytes3(942))).to.equal(1);
+    expect(await Game.generateUnevenGeneValue(32, bytes3(960))).to.equal(1);
+
+    // value 2: [841, 899]
+    expect(await Game.generateUnevenGeneValue(32, bytes3(841))).to.equal(2);
+    expect(await Game.generateUnevenGeneValue(32, bytes3(869))).to.equal(2);
+    expect(await Game.generateUnevenGeneValue(32, bytes3(899))).to.equal(2);
+
+    // value 5: [676, 728]
+    expect(await Game.generateUnevenGeneValue(32, bytes3(676))).to.equal(5);
+    expect(await Game.generateUnevenGeneValue(32, bytes3(700))).to.equal(5);
+    expect(await Game.generateUnevenGeneValue(32, bytes3(728))).to.equal(5);
+
+    // value 17: [196, 224]
+    expect(await Game.generateUnevenGeneValue(32, bytes3(196))).to.equal(17);
+    expect(await Game.generateUnevenGeneValue(32, bytes3(210))).to.equal(17);
+    expect(await Game.generateUnevenGeneValue(32, bytes3(224))).to.equal(17);
+
+    // value 29: [4, 8]
+    expect(await Game.generateUnevenGeneValue(32, bytes3(4))).to.equal(29);
+    expect(await Game.generateUnevenGeneValue(32, bytes3(6))).to.equal(29);
+    expect(await Game.generateUnevenGeneValue(32, bytes3(8))).to.equal(29);
+
+    // value 30: [1, 3]
+    expect(await Game.generateUnevenGeneValue(32, bytes3(1))).to.equal(30);
+    expect(await Game.generateUnevenGeneValue(32, bytes3(2))).to.equal(30);
+    expect(await Game.generateUnevenGeneValue(32, bytes3(3))).to.equal(30);
+
+    // value 31: [0, 0]
+    expect(await Game.generateUnevenGeneValue(32, bytes3(0))).to.equal(31);
+  });
+
+  it('_floorSqrt', async () => {
+    expect(await Game.floorSqrt(0)).to.equal(0);
+    expect(await Game.floorSqrt(1)).to.equal(1);
+    expect(await Game.floorSqrt(2)).to.equal(1);
+    expect(await Game.floorSqrt(3)).to.equal(1);
+    expect(await Game.floorSqrt(4)).to.equal(2);
+    expect(await Game.floorSqrt(5)).to.equal(2);
+    expect(await Game.floorSqrt(6)).to.equal(2);
+    expect(await Game.floorSqrt(7)).to.equal(2);
+    expect(await Game.floorSqrt(8)).to.equal(2);
+    expect(await Game.floorSqrt(9)).to.equal(3);
+    expect(await Game.floorSqrt(15)).to.equal(3);
+    expect(await Game.floorSqrt(16)).to.equal(4);
+    expect(await Game.floorSqrt(24)).to.equal(4);
+    expect(await Game.floorSqrt(25)).to.equal(5);
+    expect(await Game.floorSqrt(35)).to.equal(5);
+    expect(await Game.floorSqrt(36)).to.equal(6);
+    expect(await Game.floorSqrt(48)).to.equal(6);
+    expect(await Game.floorSqrt(49)).to.equal(7);
+    expect(await Game.floorSqrt(63)).to.equal(7);
+    expect(await Game.floorSqrt(64)).to.equal(8);
+    expect(await Game.floorSqrt(80)).to.equal(8);
+    expect(await Game.floorSqrt(81)).to.equal(9);
+    expect(await Game.floorSqrt(99)).to.equal(9);
+    expect(await Game.floorSqrt(100)).to.equal(10);
   });
 
   it('_calcMaxPeculiarity', async () => {

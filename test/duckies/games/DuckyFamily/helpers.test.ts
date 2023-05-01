@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 
-import { randomGenome, randomMaxNum } from './helpers';
+import { bytes3, randomGenome, randomMaxNum } from './helpers';
 import {
   Collections,
   DucklingGenes,
@@ -21,6 +21,20 @@ describe('helpers', () => {
     }
 
     expect(randomMaxNum(0)).to.equal(0);
+  });
+
+  it('bytes3', () => {
+    expect(bytes3(0)).to.equal('0x000000');
+    expect(bytes3(1)).to.equal('0x000001');
+    expect(bytes3(15)).to.equal('0x00000f');
+    expect(bytes3(16)).to.equal('0x000010');
+    expect(bytes3(42)).to.equal('0x00002a');
+    expect(bytes3(255)).to.equal('0x0000ff');
+    expect(bytes3(256)).to.equal('0x000100');
+    expect(bytes3(424)).to.equal('0x0001a8');
+    expect(bytes3(4095)).to.equal('0x000fff');
+    expect(bytes3(4096)).to.equal('0x001000');
+    expect(bytes3(4242)).to.equal('0x001092');
   });
 
   describe('randomGenome', () => {
