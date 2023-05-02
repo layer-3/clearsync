@@ -1,8 +1,9 @@
 import { ethers } from 'hardhat';
 import { expect } from 'chai';
 
-import type { ContractTransaction } from 'ethers';
-import type { RandomTestConsumer } from '../../../typechain-types';
+import { randomBytes32 } from '../../helpers/common';
+
+import type { SeededRandomTestConsumer } from '../../../typechain-types';
 
 const INVALID_WEIGHTS = 'InvalidWeights';
 
@@ -17,19 +18,13 @@ const WEIGHTS_SUM = WEIGHTS.reduce((acc, curr) => acc + curr, 0);
 const PRECISION_MULTIPLIER = 0.5;
 
 describe('Random', () => {
-  let RandomConsumer: RandomTestConsumer;
+  let SeededRandom: SeededRandomTestConsumer;
 
   before(async () => {
-    const RandomConsumerFactory = await ethers.getContractFactory('RandomTestConsumer');
-    RandomConsumer = (await RandomConsumerFactory.deploy()) as RandomTestConsumer;
-    await RandomConsumer.deployed();
+    const SeededRandomFactory = await ethers.getContractFactory('SeededRandomTestConsumer');
+    SeededRandom = (await SeededRandomFactory.deploy()) as SeededRandomTestConsumer;
+    await SeededRandom.deployed();
   });
-
-  const extractSeed = async (txPromise: Promise<ContractTransaction>): Promise<string> => {
-    const tx = await txPromise;
-    const receipt = await tx.wait();
-    return receipt.events?.[0].args?.[0] as string;
-  };
 
   describe('random', () => {
     const resultsDistibution = Array.from({ length: MAX_NUM }).fill(0) as number[];
@@ -38,11 +33,11 @@ describe('Random', () => {
       let [bitSlice, newSeed] = ['', ''];
       for (let i = 0; i < MAX_NUM_RUNS; i++) {
         if (i % SEED_TIME_OF_LIFE == 0) {
-          newSeed = await extractSeed(RandomConsumer.randomSeed());
+          newSeed = randomBytes32();
         }
 
-        [bitSlice, newSeed] = await RandomConsumer.shiftSeedSlice(newSeed);
-        const randomBN = await RandomConsumer.max(bitSlice, MAX_NUM);
+        [bitSlice, newSeed] = await SeededRandom.shiftSeedSlice(newSeed);
+        const randomBN = await SeededRandom.max(bitSlice, MAX_NUM);
         resultsDistibution[randomBN.toNumber()]++;
       }
     });
@@ -68,8 +63,8 @@ describe('Random', () => {
     it('generates same number for same seed', async () => {
       const bigMaxNum = 424_242;
       const seed = '0xaabbcc';
-      const randomBN = await RandomConsumer.max(seed, bigMaxNum);
-      const randomBN2 = await RandomConsumer.max(seed, bigMaxNum);
+      const randomBN = await SeededRandom.max(seed, bigMaxNum);
+      const randomBN2 = await SeededRandom.max(seed, bigMaxNum);
       expect(randomBN).to.be.equal(randomBN2);
     });
   });
@@ -82,11 +77,11 @@ describe('Random', () => {
         let [bitSlice, newSeed] = ['', ''];
         for (let i = 0; i < WEIGHTS_RUNS; i++) {
           if (i % SEED_TIME_OF_LIFE == 0) {
-            newSeed = await extractSeed(RandomConsumer.randomSeed());
+            newSeed = randomBytes32();
           }
 
-          [bitSlice, newSeed] = await RandomConsumer.shiftSeedSlice(newSeed);
-          const randomBN = await RandomConsumer.randomWeightedNumber(WEIGHTS, bitSlice);
+          [bitSlice, newSeed] = await SeededRandom.shiftSeedSlice(newSeed);
+          const randomBN = await SeededRandom.randomWeightedNumber(WEIGHTS, bitSlice);
           resultsDistibution[randomBN.toNumber()]++;
         }
       });
@@ -112,8 +107,8 @@ describe('Random', () => {
 
     describe('revert', () => {
       it('when empty weights array', async () => {
-        await expect(RandomConsumer.randomWeightedNumber([], '0xaabbcc'))
-          .to.be.revertedWithCustomError(RandomConsumer, INVALID_WEIGHTS)
+        await expect(SeededRandom.randomWeightedNumber([], '0xaabbcc'))
+          .to.be.revertedWithCustomError(SeededRandom, INVALID_WEIGHTS)
           .withArgs([]);
       });
     });
