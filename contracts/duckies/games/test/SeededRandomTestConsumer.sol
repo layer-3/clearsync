@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
-import '../SeededRandom.sol';
+import '../Utils.sol';
 
 /**
  * @title RandomTestConsumer
  * @notice Contract for testing Random contract. NOT FOR USE IN PRODUCTION.
  */
-contract SeededRandomTestConsumer {
+contract UtilsTestConsumer {
 	/**
 	 * @notice Perform circular shift on the seed by 3 bytes to the left, and returns the shifted slice and the updated seed.
 	 * @dev Expose internal _shiftSeedSlice function. User of this contract must keep track of used bit slices to avoid reusing them.
@@ -16,7 +16,7 @@ contract SeededRandomTestConsumer {
 	 * @return updatedSeed Shifted seed.
 	 */
 	function shiftSeedSlice(bytes32 seed) external pure returns (bytes3, bytes32) {
-		return SeededRandom._shiftSeedSlice(seed);
+		return Utils._shiftSeedSlice(seed);
 	}
 
 	/**
@@ -27,7 +27,7 @@ contract SeededRandomTestConsumer {
 	 * @return Extracted number in range [0, max).
 	 */
 	function max(bytes3 bitSlice, uint24 max_) external pure returns (uint256) {
-		return SeededRandom._max(bitSlice, max_);
+		return Utils._max(bitSlice, max_);
 	}
 
 	/**
@@ -40,6 +40,6 @@ contract SeededRandomTestConsumer {
 		uint32[] memory weights,
 		bytes3 bitSlice
 	) external pure returns (uint256) {
-		return SeededRandom._randomWeightedNumber(weights, bitSlice);
+		return Utils._randomWeightedNumber(weights, bitSlice);
 	}
 }

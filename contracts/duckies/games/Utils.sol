@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
-library SeededRandom {
+library Utils {
 	/**
 	 * @notice Invalid weights error while trying to generate a weighted random number.
 	 * @param weights Empty weights array.

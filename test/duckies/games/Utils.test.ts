@@ -3,7 +3,7 @@ import { expect } from 'chai';
 
 import { randomBytes32 } from '../../helpers/common';
 
-import type { SeededRandomTestConsumer } from '../../../typechain-types';
+import type { UtilsTestConsumer } from '../../../typechain-types';
 
 const INVALID_WEIGHTS = 'InvalidWeights';
 
@@ -18,12 +18,12 @@ const WEIGHTS_SUM = WEIGHTS.reduce((acc, curr) => acc + curr, 0);
 const PRECISION_MULTIPLIER = 0.5;
 
 describe('Random', () => {
-  let SeededRandom: SeededRandomTestConsumer;
+  let Utils: UtilsTestConsumer;
 
   before(async () => {
-    const SeededRandomFactory = await ethers.getContractFactory('SeededRandomTestConsumer');
-    SeededRandom = (await SeededRandomFactory.deploy()) as SeededRandomTestConsumer;
-    await SeededRandom.deployed();
+    const UtilsTestFactory = await ethers.getContractFactory('UtilsTestConsumer');
+    Utils = (await UtilsTestFactory.deploy()) as UtilsTestConsumer;
+    await Utils.deployed();
   });
 
   describe('random', () => {
@@ -36,8 +36,8 @@ describe('Random', () => {
           newSeed = randomBytes32();
         }
 
-        [bitSlice, newSeed] = await SeededRandom.shiftSeedSlice(newSeed);
-        const randomBN = await SeededRandom.max(bitSlice, MAX_NUM);
+        [bitSlice, newSeed] = await Utils.shiftSeedSlice(newSeed);
+        const randomBN = await Utils.max(bitSlice, MAX_NUM);
         resultsDistibution[randomBN.toNumber()]++;
       }
     });
@@ -63,8 +63,8 @@ describe('Random', () => {
     it('generates same number for same seed', async () => {
       const bigMaxNum = 424_242;
       const seed = '0xaabbcc';
-      const randomBN = await SeededRandom.max(seed, bigMaxNum);
-      const randomBN2 = await SeededRandom.max(seed, bigMaxNum);
+      const randomBN = await Utils.max(seed, bigMaxNum);
+      const randomBN2 = await Utils.max(seed, bigMaxNum);
       expect(randomBN).to.be.equal(randomBN2);
     });
   });
@@ -80,8 +80,8 @@ describe('Random', () => {
             newSeed = randomBytes32();
           }
 
-          [bitSlice, newSeed] = await SeededRandom.shiftSeedSlice(newSeed);
-          const randomBN = await SeededRandom.randomWeightedNumber(WEIGHTS, bitSlice);
+          [bitSlice, newSeed] = await Utils.shiftSeedSlice(newSeed);
+          const randomBN = await Utils.randomWeightedNumber(WEIGHTS, bitSlice);
           resultsDistibution[randomBN.toNumber()]++;
         }
       });
@@ -107,8 +107,8 @@ describe('Random', () => {
 
     describe('revert', () => {
       it('when empty weights array', async () => {
-        await expect(SeededRandom.randomWeightedNumber([], '0xaabbcc'))
-          .to.be.revertedWithCustomError(SeededRandom, INVALID_WEIGHTS)
+        await expect(Utils.randomWeightedNumber([], '0xaabbcc'))
+          .to.be.revertedWithCustomError(Utils, INVALID_WEIGHTS)
           .withArgs([]);
       });
     });
