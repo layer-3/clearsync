@@ -1,8 +1,11 @@
 import { ethers } from 'hardhat';
 import { expect } from 'chai';
+import { utils } from 'ethers';
 
-import type { ContractTransaction } from 'ethers';
-import type { RandomTestConsumer } from '../../../typechain-types';
+import { randomBytes32 } from '../../helpers/common';
+
+import type { UtilsTestConsumer } from '../../../typechain-types';
+import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 const INVALID_WEIGHTS = 'InvalidWeights';
 
@@ -16,33 +19,32 @@ const WEIGHTS = [5, 3, 2];
 const WEIGHTS_SUM = WEIGHTS.reduce((acc, curr) => acc + curr, 0);
 const PRECISION_MULTIPLIER = 0.5;
 
-describe('Random', () => {
-  let RandomConsumer: RandomTestConsumer;
+describe('Utils', () => {
+  let Someone: SignerWithAddress;
+  let Someother: SignerWithAddress;
+
+  let Utils: UtilsTestConsumer;
 
   before(async () => {
-    const RandomConsumerFactory = await ethers.getContractFactory('RandomTestConsumer');
-    RandomConsumer = (await RandomConsumerFactory.deploy()) as RandomTestConsumer;
-    await RandomConsumer.deployed();
+    [Someone, Someother] = await ethers.getSigners();
+
+    const UtilsTestFactory = await ethers.getContractFactory('UtilsTestConsumer');
+    Utils = (await UtilsTestFactory.deploy()) as UtilsTestConsumer;
+    await Utils.deployed();
   });
 
-  const extractSeed = async (txPromise: Promise<ContractTransaction>): Promise<string> => {
-    const tx = await txPromise;
-    const receipt = await tx.wait();
-    return receipt.events?.[0].args?.[0] as string;
-  };
-
-  describe('random', () => {
+  describe('max', () => {
     const resultsDistibution = Array.from({ length: MAX_NUM }).fill(0) as number[];
 
     before(async () => {
       let [bitSlice, newSeed] = ['', ''];
       for (let i = 0; i < MAX_NUM_RUNS; i++) {
         if (i % SEED_TIME_OF_LIFE == 0) {
-          newSeed = await extractSeed(RandomConsumer.randomSeed());
+          newSeed = randomBytes32();
         }
 
-        [bitSlice, newSeed] = await RandomConsumer.shiftSeedSlice(newSeed);
-        const randomBN = await RandomConsumer.max(bitSlice, MAX_NUM);
+        [bitSlice, newSeed] = await Utils.shiftSeedSlice(newSeed);
+        const randomBN = await Utils.max(bitSlice, MAX_NUM);
         resultsDistibution[randomBN.toNumber()]++;
       }
     });
@@ -68,8 +70,8 @@ describe('Random', () => {
     it('generates same number for same seed', async () => {
       const bigMaxNum = 424_242;
       const seed = '0xaabbcc';
-      const randomBN = await RandomConsumer.max(seed, bigMaxNum);
-      const randomBN2 = await RandomConsumer.max(seed, bigMaxNum);
+      const randomBN = await Utils.max(seed, bigMaxNum);
+      const randomBN2 = await Utils.max(seed, bigMaxNum);
       expect(randomBN).to.be.equal(randomBN2);
     });
   });
@@ -82,11 +84,11 @@ describe('Random', () => {
         let [bitSlice, newSeed] = ['', ''];
         for (let i = 0; i < WEIGHTS_RUNS; i++) {
           if (i % SEED_TIME_OF_LIFE == 0) {
-            newSeed = await extractSeed(RandomConsumer.randomSeed());
+            newSeed = randomBytes32();
           }
 
-          [bitSlice, newSeed] = await RandomConsumer.shiftSeedSlice(newSeed);
-          const randomBN = await RandomConsumer.randomWeightedNumber(WEIGHTS, bitSlice);
+          [bitSlice, newSeed] = await Utils.shiftSeedSlice(newSeed);
+          const randomBN = await Utils.randomWeightedNumber(WEIGHTS, bitSlice);
           resultsDistibution[randomBN.toNumber()]++;
         }
       });
@@ -112,10 +114,36 @@ describe('Random', () => {
 
     describe('revert', () => {
       it('when empty weights array', async () => {
-        await expect(RandomConsumer.randomWeightedNumber([], '0xaabbcc'))
-          .to.be.revertedWithCustomError(RandomConsumer, INVALID_WEIGHTS)
+        await expect(Utils.randomWeightedNumber([], '0xaabbcc'))
+          .to.be.revertedWithCustomError(Utils, INVALID_WEIGHTS)
           .withArgs([]);
       });
+    });
+  });
+
+  describe('_requireCorrectSigner', () => {
+    const coder = ethers.utils.defaultAbiCoder;
+
+    it('success on correct signer', async () => {
+      const message = '0x42';
+      const encodedMessage = coder.encode(['string'], [message]);
+      const signedMessage = await Someone.signMessage(
+        utils.arrayify(utils.keccak256(encodedMessage)),
+      );
+
+      await Utils.requireCorrectSigner(encodedMessage, signedMessage, Someone.address);
+    });
+
+    it('revert on incorrect signer', async () => {
+      const message = '0x42';
+      const encodedMessage = coder.encode(['string'], [message]);
+      const signedMessage = await Someone.signMessage(
+        utils.arrayify(utils.keccak256(encodedMessage)),
+      );
+
+      await expect(Utils.requireCorrectSigner(encodedMessage, signedMessage, Someother.address))
+        .to.be.revertedWithCustomError(Utils, 'IncorrectSigner')
+        .withArgs(Someother.address, Someone.address);
     });
   });
 });
