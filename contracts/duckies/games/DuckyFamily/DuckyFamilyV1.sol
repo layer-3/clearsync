@@ -869,10 +869,9 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 		// N - number of gene values
 		uint256 N = uint256(valuesNum);
 		// Generates number from 1 to 10^6
-		uint256 x = 1 + _max(bitSlice, 10e6);
+		uint256 x = 1 + _max(bitSlice, 1_000_000);
 		// Calculates uneven distributed y, value of y is between 0 and N
-		uint256 y = (2 * N * 10e6) / (_floorSqrt(x) + 10e6) - N;
-
+		uint256 y = (2 * N * 1_000) / (_floorSqrt(x) + 1_000) - N;
 		return uint8(y);
 	}
 
