@@ -9,11 +9,19 @@ import {
 } from './config';
 import { Genome } from './genome';
 import { setup } from './setup';
+import { bytes3 } from './helpers';
 
 import type { TESTDuckyFamilyV1 } from '../../../../typechain-types';
 
 describe('DuckyGameV1 helpers', () => {
   let Game: TESTDuckyFamilyV1;
+
+  const generateUnevenGeneValue = async (valuesNum: number, bitSlice: string): Promise<number> => {
+    const tx = await Game.generateUnevenGeneValue(valuesNum, bitSlice);
+    const receipt = await tx.wait();
+    const event = receipt.events?.find((e) => e.event === 'Uint8Returned');
+    return event?.args?.returnedUint8 as number;
+  };
 
   beforeEach(async () => {
     ({ Game } = await setup());
@@ -25,6 +33,49 @@ describe('DuckyGameV1 helpers', () => {
     expect(await Game.getDistributionType(0b010, 2)).to.equal(GeneDistrTypes.Even);
     expect(await Game.getDistributionType(0b0010_0010, 7)).to.equal(GeneDistrTypes.Even);
     expect(await Game.getDistributionType(0b100_0010_0010, 10)).to.equal(GeneDistrTypes.Uneven);
+  });
+
+  it('_generateUnevenGeneValue', async () => {
+    // value 0: [883600, 1000000]                            \/ account for +1 shift in the function
+    expect(await generateUnevenGeneValue(32, bytes3(883_600 - 1))).to.equal(0);
+    expect(await generateUnevenGeneValue(32, bytes3(969_696))).to.equal(0);
+    expect(await generateUnevenGeneValue(32, bytes3(1_000_000 - 1))).to.equal(0);
+
+    // value 1: [779689, 883599]
+    expect(await generateUnevenGeneValue(32, bytes3(779_689 - 1))).to.equal(1);
+    expect(await generateUnevenGeneValue(32, bytes3(805_696))).to.equal(1);
+    expect(await generateUnevenGeneValue(32, bytes3(883_599 - 1))).to.equal(1);
+
+    // value 2: [687241, 779688]
+    expect(await generateUnevenGeneValue(32, bytes3(687_241 - 1))).to.equal(2);
+    expect(await generateUnevenGeneValue(32, bytes3(750_750))).to.equal(2);
+    expect(await generateUnevenGeneValue(32, bytes3(779_688 - 1))).to.equal(2);
+
+    // value 5: [469225, 532899]
+    expect(await generateUnevenGeneValue(32, bytes3(469_225 - 1))).to.equal(5);
+    expect(await generateUnevenGeneValue(32, bytes3(500_000))).to.equal(5);
+    expect(await generateUnevenGeneValue(32, bytes3(532_899 - 1))).to.equal(5);
+
+    // value 17: [78961, 94248]
+    expect(await generateUnevenGeneValue(32, bytes3(78_961 - 1))).to.equal(17);
+    expect(await generateUnevenGeneValue(32, bytes3(85_858))).to.equal(17);
+    expect(await generateUnevenGeneValue(32, bytes3(94_248 - 1))).to.equal(17);
+
+    // value 29: [1089, 2499]
+    expect(await generateUnevenGeneValue(32, bytes3(1089 - 1))).to.equal(29);
+    expect(await generateUnevenGeneValue(32, bytes3(1750))).to.equal(29);
+    expect(await generateUnevenGeneValue(32, bytes3(2499 - 1))).to.equal(29);
+
+    // value 30: [256, 1088]
+    expect(await generateUnevenGeneValue(32, bytes3(256 - 1))).to.equal(30);
+    expect(await generateUnevenGeneValue(32, bytes3(555))).to.equal(30);
+    expect(await generateUnevenGeneValue(32, bytes3(1088 - 1))).to.equal(30);
+
+    // value 31: [1, 255]
+    // eslint-disable-next-line sonarjs/no-identical-expressions
+    expect(await generateUnevenGeneValue(32, bytes3(1 - 1))).to.equal(31);
+    expect(await generateUnevenGeneValue(32, bytes3(69))).to.equal(31);
+    expect(await generateUnevenGeneValue(32, bytes3(255 - 1))).to.equal(31);
   });
 
   it('_calcMaxPeculiarity', async () => {

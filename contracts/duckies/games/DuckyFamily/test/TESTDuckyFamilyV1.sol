@@ -195,17 +195,13 @@ contract TESTDuckyFamilyV1 is DuckyFamilyV1 {
 	}
 
 	/**
-	 * @notice Generate uneven gene value.
-	 * @dev Exposed for testing.
+	 * @notice Generate uneven gene value. Emits Uint8Returned event.
+	 * @dev Exposed for testing. Not pure to measure gas consumption.
 	 * @param valuesNum Number of gene values.
 	 * @param bitSlice Bit slice for randomization.
-	 * @return Uneven gene value.
 	 */
-	function generateUnevenGeneValue(
-		uint8 valuesNum,
-		bytes3 bitSlice
-	) external pure returns (uint8) {
-		return _generateUnevenGeneValue(valuesNum, bitSlice);
+	function generateUnevenGeneValue(uint8 valuesNum, bytes3 bitSlice) external {
+		emit Uint8Returned(_generateUnevenGeneValue(valuesNum, bitSlice));
 	}
 
 	/**

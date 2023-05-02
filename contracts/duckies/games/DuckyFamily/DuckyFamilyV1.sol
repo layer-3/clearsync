@@ -5,6 +5,7 @@ import '@openzeppelin/contracts/access/AccessControl.sol';
 
 import '@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol';
 import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
+import '@openzeppelin/contracts/utils/math/Math.sol';
 
 import '../../../interfaces/IDuckyFamily.sol';
 import '../../../interfaces/IDucklings.sol';
@@ -868,11 +869,10 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Random {
 
 		// N - number of gene values
 		uint256 N = uint256(valuesNum);
-		// Generates number from 1 to 10^8
-		uint256 x = 1 + _max(bitSlice, 10e6);
+		// Generates number from 1 to 10^6
+		uint256 x = 1 + _max(bitSlice, 1_000_000);
 		// Calculates uneven distributed y, value of y is between 0 and N
-		uint256 y = (2 * N * 10e6) / (x + 10e6) - N;
-
+		uint256 y = (2 * N * 1_000) / (Math.sqrt(x) + 1_000) - N;
 		return uint8(y);
 	}
 
