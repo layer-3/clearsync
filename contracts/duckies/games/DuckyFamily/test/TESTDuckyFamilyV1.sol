@@ -205,16 +205,6 @@ contract TESTDuckyFamilyV1 is DuckyFamilyV1 {
 	}
 
 	/**
-	 * @notice Calculates square root of `x` rounded down.
-	 * @dev Exposed for testing.
-	 * @param x Number to calculate square root of.
-	 * @return result Square root of `x` rounded down.
-	 */
-	function floorSqrt(uint256 x) external pure returns (uint256) {
-		return _floorSqrt(x);
-	}
-
-	/**
 	 * @notice Calculate maximum (config) peculiarity.
 	 * @dev Exposed for testing.
 	 * @return Maximum peculiarity.

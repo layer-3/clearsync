@@ -78,33 +78,6 @@ describe('DuckyGameV1 helpers', () => {
     expect(await generateUnevenGeneValue(32, bytes3(255 - 1))).to.equal(31);
   });
 
-  it('_floorSqrt', async () => {
-    expect(await Game.floorSqrt(0)).to.equal(0);
-    expect(await Game.floorSqrt(1)).to.equal(1);
-    expect(await Game.floorSqrt(2)).to.equal(1);
-    expect(await Game.floorSqrt(3)).to.equal(1);
-    expect(await Game.floorSqrt(4)).to.equal(2);
-    expect(await Game.floorSqrt(5)).to.equal(2);
-    expect(await Game.floorSqrt(6)).to.equal(2);
-    expect(await Game.floorSqrt(7)).to.equal(2);
-    expect(await Game.floorSqrt(8)).to.equal(2);
-    expect(await Game.floorSqrt(9)).to.equal(3);
-    expect(await Game.floorSqrt(15)).to.equal(3);
-    expect(await Game.floorSqrt(16)).to.equal(4);
-    expect(await Game.floorSqrt(24)).to.equal(4);
-    expect(await Game.floorSqrt(25)).to.equal(5);
-    expect(await Game.floorSqrt(35)).to.equal(5);
-    expect(await Game.floorSqrt(36)).to.equal(6);
-    expect(await Game.floorSqrt(48)).to.equal(6);
-    expect(await Game.floorSqrt(49)).to.equal(7);
-    expect(await Game.floorSqrt(63)).to.equal(7);
-    expect(await Game.floorSqrt(64)).to.equal(8);
-    expect(await Game.floorSqrt(80)).to.equal(8);
-    expect(await Game.floorSqrt(81)).to.equal(9);
-    expect(await Game.floorSqrt(99)).to.equal(9);
-    expect(await Game.floorSqrt(100)).to.equal(10);
-  });
-
   it('_calcMaxPeculiarity', async () => {
     expect(await Game.calcMaxPeculiarity()).to.equal(MAX_PECULIARITY);
   });
