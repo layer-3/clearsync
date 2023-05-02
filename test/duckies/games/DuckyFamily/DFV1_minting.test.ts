@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { anyUint } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
+import { utils } from 'ethers';
 
 import { setup } from './setup';
 import {
@@ -31,7 +32,8 @@ import type {
 } from '../../../../typechain-types';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
-const SEED = '0xaabbcc';
+const SEED = utils.id('seed');
+const BIT_SLICE = '0xaabbcc';
 
 describe('DuckyFamilyV1 minting', () => {
   let Someone: SignerWithAddress;
@@ -55,9 +57,9 @@ describe('DuckyFamilyV1 minting', () => {
   const generateAndSetGenes = async (
     genome: bigint,
     collectionId: Collections,
-    seed: string = SEED,
+    bitSlice: string = BIT_SLICE,
   ): Promise<bigint> => {
-    const tx = await Game.generateAndSetGenes(genome, collectionId, seed);
+    const tx = await Game.generateAndSetGenes(genome, collectionId, bitSlice);
     const receipt = await tx.wait();
     const event = receipt.events?.find((e) => e.event === 'GenomeReturned');
     return event?.args?.genome.toBigInt() as bigint;
@@ -68,9 +70,9 @@ describe('DuckyFamilyV1 minting', () => {
     geneIx: number,
     geneValuesNum: number,
     distrType: GeneDistrTypes,
-    seed: string = SEED,
+    bitSlice: string = BIT_SLICE,
   ): Promise<bigint> => {
-    const tx = await Game.generateAndSetGene(genome, geneIx, geneValuesNum, distrType, seed);
+    const tx = await Game.generateAndSetGene(genome, geneIx, geneValuesNum, distrType, bitSlice);
     const receipt = await tx.wait();
     const event = receipt.events?.find((e) => e.event === 'GenomeReturned');
     return event?.args?.genome.toBigInt() as bigint;

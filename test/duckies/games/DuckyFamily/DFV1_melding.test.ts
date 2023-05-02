@@ -33,7 +33,7 @@ import type {
   YellowToken,
 } from '../../../../typechain-types';
 
-const seed = '0xaabbcc';
+const BIT_SLICE = '0xaabbcc';
 
 describe('DuckyFamilyV1 melding', () => {
   let Someone: SignerWithAddress;
@@ -48,8 +48,11 @@ describe('DuckyFamilyV1 melding', () => {
   let mintTo: MintToFuncT;
   let generateAndMintGenomes: GenerateAndMintGenomesFunctT;
 
-  const isCollectionMutating = async (rarity: Rarities): Promise<boolean> => {
-    const tx = await Game.isCollectionMutating(rarity, seed);
+  const isCollectionMutating = async (
+    rarity: Rarities,
+    bitSlice: string = BIT_SLICE,
+  ): Promise<boolean> => {
+    const tx = await Game.isCollectionMutating(rarity, bitSlice);
     const receipt = await tx.wait();
     const event = receipt.events?.find((e) => e.event === 'BoolReturned');
     return event?.args?.returnedBool as boolean;
@@ -67,8 +70,9 @@ describe('DuckyFamilyV1 melding', () => {
     gene: number,
     maxGeneValue: number,
     geneDistrType: GeneDistrTypes,
+    bitSlice: string = BIT_SLICE,
   ): Promise<number> => {
-    const tx = await Game.meldGenes(genomes, gene, maxGeneValue, geneDistrType, seed);
+    const tx = await Game.meldGenes(genomes, gene, maxGeneValue, geneDistrType, bitSlice);
     const receipt = await tx.wait();
     const event = receipt.events?.find((e) => e.event === 'GeneReturned');
     // gene is already a number
@@ -387,7 +391,7 @@ describe('DuckyFamilyV1 melding', () => {
     });
 
     it('revert when rarity is out of bounds', async () => {
-      await expect(Game.isCollectionMutating(raritiesNum, seed)).to.be.reverted;
+      await expect(Game.isCollectionMutating(raritiesNum, BIT_SLICE)).to.be.reverted;
     });
   });
 
