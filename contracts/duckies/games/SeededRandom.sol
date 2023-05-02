@@ -1,51 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
-// chances are represented in per mil, thus uint32
-/**
- * @title Random
- * @notice A contract that provides pseudo random number generation.
- * Pseudo random number generation is based on the seed created from the salt, pepper, nonce, sender address, and block timestamp.
- * Seed is divided into 32 bit slices, and each slice is used to generate a random number.
- * User of this contract must keep track of used bit slices to avoid reusing them.
- * Salt is a data based on block timestamp and msg sender, and is calculated every time a seed is generated.
- * Pepper is a random data changed periodically by external entity.
- * Nonce is incremented every time a random number is generated.
- */
-contract Random {
+library SeededRandom {
 	/**
 	 * @notice Invalid weights error while trying to generate a weighted random number.
 	 * @param weights Empty weights array.
 	 */
 	error InvalidWeights(uint32[] weights);
-
-	bytes32 private salt;
-	bytes32 private pepper;
-	uint256 private nonce;
-
-	/**
-	 * @notice Sets the pepper.
-	 * @dev Pepper is a random data changed periodically by external entity.
-	 * @param newPepper New pepper.
-	 */
-	function _setPepper(bytes32 newPepper) internal {
-		pepper = newPepper;
-	}
-
-	/**
-	 * @notice Creates a new seed based on the salt, pepper, nonce, sender address, and block timestamp.
-	 * @dev Creates a new seed based on the salt, pepper, nonce, sender address, and block timestamp.
-	 * @return New seed.
-	 */
-	function _randomSeed() internal returns (bytes32) {
-		// use old salt to generate a new one, so that user's predictions are invalid after function that uses random is called
-		salt = keccak256(abi.encode(salt, msg.sender, block.timestamp));
-		unchecked {
-			nonce++;
-		}
-
-		return keccak256(abi.encode(salt, pepper, nonce, msg.sender, block.timestamp));
-	}
 
 	/**
 	 * @notice Perform circular shift on the seed by 3 bytes to the left, and returns the shifted slice and the updated seed.
