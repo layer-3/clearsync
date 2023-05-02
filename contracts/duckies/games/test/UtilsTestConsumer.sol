@@ -4,8 +4,8 @@ pragma solidity 0.8.18;
 import '../Utils.sol';
 
 /**
- * @title RandomTestConsumer
- * @notice Contract for testing Random contract. NOT FOR USE IN PRODUCTION.
+ * @title UtilsTestConsumer
+ * @notice Contract for testing Utils contract. NOT FOR USE IN PRODUCTION.
  */
 contract UtilsTestConsumer {
 	/**
@@ -41,5 +41,20 @@ contract UtilsTestConsumer {
 		bytes3 bitSlice
 	) external pure returns (uint256) {
 		return Utils._randomWeightedNumber(weights, bitSlice);
+	}
+
+	/**
+	 * @notice Check that `signatures is `encodedData` signed by `signer`. Reverts if not.
+	 * @dev Expose internal _requireCorrectSigner function. Check that `signatures is `encodedData` signed by `signer`. Reverts if not.
+	 * @param encodedData Data to check.
+	 * @param signature Signature to check.
+	 * @param signer Address of the signer.
+	 */
+	function requireCorrectSigner(
+		bytes memory encodedData,
+		bytes memory signature,
+		address signer
+	) external pure {
+		Utils._requireCorrectSigner(encodedData, signature, signer);
 	}
 }

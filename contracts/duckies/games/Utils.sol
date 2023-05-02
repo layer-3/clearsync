@@ -1,7 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
+import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
+
+import '../../interfaces/IVoucher.sol';
+
 library Utils {
+	using ECDSA for bytes32;
+
 	/**
 	 * @notice Invalid weights error while trying to generate a weighted random number.
 	 * @param weights Empty weights array.
@@ -67,5 +73,21 @@ library Utils {
 	 */
 	function _sum(uint32[] memory numbers) internal pure returns (uint256 sum) {
 		for (uint256 i = 0; i < numbers.length; i++) sum += numbers[i];
+	}
+
+	/**
+	 * @notice Check that `signatures is `encodedData` signed by `signer`. Reverts if not.
+	 * @dev Check that `signatures is `encodedData` signed by `signer`. Reverts if not.
+	 * @param encodedData Data to check.
+	 * @param signature Signature to check.
+	 * @param signer Address of the signer.
+	 */
+	function _requireCorrectSigner(
+		bytes memory encodedData,
+		bytes memory signature,
+		address signer
+	) internal pure {
+		address actualSigner = keccak256(encodedData).toEthSignedMessageHash().recover(signature);
+		if (actualSigner != signer) revert IVoucher.IncorrectSigner(signer, actualSigner);
 	}
 }

@@ -4,7 +4,6 @@ pragma solidity 0.8.18;
 import '@openzeppelin/contracts/access/AccessControl.sol';
 
 import '@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol';
-import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 import '@openzeppelin/contracts/utils/math/Math.sol';
 
 import '../../../interfaces/IDuckyFamily.sol';
@@ -78,7 +77,6 @@ import '../Genome.sol';
  */
 contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Seeding {
 	using Genome for uint256;
-	using ECDSA for bytes32;
 
 	// Roles
 	bytes32 public constant MAINTAINER_ROLE = keccak256('MAINTAINER_ROLE'); // can change minting and melding price
@@ -204,7 +202,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Seeding {
 	 * @param signature Vouchers signed by the issuer.
 	 */
 	function useVouchers(Voucher[] calldata vouchers, bytes calldata signature) external {
-		_requireCorrectSigner(abi.encode(vouchers), signature, issuer);
+		Utils._requireCorrectSigner(abi.encode(vouchers), signature, issuer);
 		for (uint8 i = 0; i < vouchers.length; i++) {
 			_useVoucher(vouchers[i]);
 		}
@@ -217,7 +215,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Seeding {
 	 * @param signature Voucher signed by the issuer.
 	 */
 	function useVoucher(Voucher calldata voucher, bytes calldata signature) external {
-		_requireCorrectSigner(abi.encode(voucher), signature, issuer);
+		Utils._requireCorrectSigner(abi.encode(voucher), signature, issuer);
 		_useVoucher(voucher);
 	}
 
@@ -278,22 +276,6 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Seeding {
 			block.timestamp > voucher.expire ||
 			voucher.chainId != block.chainid
 		) revert InvalidVoucher(voucher);
-	}
-
-	/**
-	 * @notice Check that `signatures is `encodedData` signed by `signer`. Reverts if not.
-	 * @dev Check that `signatures is `encodedData` signed by `signer`. Reverts if not.
-	 * @param encodedData Data to check.
-	 * @param signature Signature to check.
-	 * @param signer Address of the signer.
-	 */
-	function _requireCorrectSigner(
-		bytes memory encodedData,
-		bytes memory signature,
-		address signer
-	) internal pure {
-		address actualSigner = keccak256(encodedData).toEthSignedMessageHash().recover(signature);
-		if (actualSigner != signer) revert IncorrectSigner(signer, actualSigner);
 	}
 
 	// -------- Config --------

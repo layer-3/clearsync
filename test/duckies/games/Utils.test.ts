@@ -1,9 +1,11 @@
 import { ethers } from 'hardhat';
 import { expect } from 'chai';
+import { utils } from 'ethers';
 
 import { randomBytes32 } from '../../helpers/common';
 
 import type { UtilsTestConsumer } from '../../../typechain-types';
+import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 const INVALID_WEIGHTS = 'InvalidWeights';
 
@@ -17,16 +19,21 @@ const WEIGHTS = [5, 3, 2];
 const WEIGHTS_SUM = WEIGHTS.reduce((acc, curr) => acc + curr, 0);
 const PRECISION_MULTIPLIER = 0.5;
 
-describe('Random', () => {
+describe('Utils', () => {
+  let Someone: SignerWithAddress;
+  let Someother: SignerWithAddress;
+
   let Utils: UtilsTestConsumer;
 
   before(async () => {
+    [Someone, Someother] = await ethers.getSigners();
+
     const UtilsTestFactory = await ethers.getContractFactory('UtilsTestConsumer');
     Utils = (await UtilsTestFactory.deploy()) as UtilsTestConsumer;
     await Utils.deployed();
   });
 
-  describe('random', () => {
+  describe('max', () => {
     const resultsDistibution = Array.from({ length: MAX_NUM }).fill(0) as number[];
 
     before(async () => {
@@ -111,6 +118,32 @@ describe('Random', () => {
           .to.be.revertedWithCustomError(Utils, INVALID_WEIGHTS)
           .withArgs([]);
       });
+    });
+  });
+
+  describe('_requireCorrectSigner', () => {
+    const coder = ethers.utils.defaultAbiCoder;
+
+    it('success on correct signer', async () => {
+      const message = '0x42';
+      const encodedMessage = coder.encode(['string'], [message]);
+      const signedMessage = await Someone.signMessage(
+        utils.arrayify(utils.keccak256(encodedMessage)),
+      );
+
+      await Utils.requireCorrectSigner(encodedMessage, signedMessage, Someone.address);
+    });
+
+    it('revert on incorrect signer', async () => {
+      const message = '0x42';
+      const encodedMessage = coder.encode(['string'], [message]);
+      const signedMessage = await Someone.signMessage(
+        utils.arrayify(utils.keccak256(encodedMessage)),
+      );
+
+      await expect(Utils.requireCorrectSigner(encodedMessage, signedMessage, Someother.address))
+        .to.be.revertedWithCustomError(Utils, 'IncorrectSigner')
+        .withArgs(Someother.address, Someone.address);
     });
   });
 });
