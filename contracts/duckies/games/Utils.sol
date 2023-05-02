@@ -5,6 +5,12 @@ import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
 import '../../interfaces/IVoucher.sol';
 
+/**
+ * @title Utils
+ * @notice Utility functions for games, that include pseudo random number generation, signature verification, etc.
+ *
+ * Pseudo random number generation is based on the bitSlices, which are part of a seed created in `Seeding.sol`.
+ */
 library Utils {
 	using ECDSA for bytes32;
 
@@ -44,7 +50,7 @@ library Utils {
 	 * @return Random number in range [0, weights.length).
 	 */
 	function _randomWeightedNumber(
-		uint32[] memory weights,
+		uint32[] memory weights, // chances are represented in per mil
 		bytes3 bitSlice
 	) internal pure returns (uint8) {
 		// no sense in empty weights array

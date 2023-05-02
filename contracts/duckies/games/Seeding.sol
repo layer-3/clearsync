@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
-// chances are represented in per mil, thus uint32
 /**
  * @title Seeding
- * @notice A contract that provides pseudo random number generation.
- * Pseudo random number generation is based on the seed created from the salt, pepper, nonce, sender address, and block timestamp.
- * Seed is divided into 32 bit slices, and each slice is used to generate a random number.
- * User of this contract must keep track of used bit slices to avoid reusing them.
+ * @notice A contract that provides seeds for pseudo random number generation.
+ * Seed is created from the salt, pepper, nonce, sender address, and block timestamp.
+ * Seed is divided into 32 bit slices, and each slice is later used to generate a random number.
+ * Seed user must keep track of used bit slices to avoid reusing them.
  * Salt is a data based on block timestamp and msg sender, and is calculated every time a seed is generated.
  * Pepper is a random data changed periodically by external entity.
  * Nonce is incremented every time a random number is generated.
