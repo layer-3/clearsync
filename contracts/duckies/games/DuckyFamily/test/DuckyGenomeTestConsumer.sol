@@ -162,7 +162,7 @@ contract DuckyGenomeTestConsumer {
 	 * @dev Exposed for testing.
 	 * @return Maximum peculiarity.
 	 */
-	function _calcConfigPeculiarity(
+	function calcConfigPeculiarity(
 		uint8[] memory geneValuesNum,
 		uint32 geneDistrTypes
 	) external pure returns (uint16) {
