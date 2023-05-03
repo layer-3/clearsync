@@ -20,7 +20,7 @@ import type { DuckyGenomeTestConsumer } from '../../../../typechain-types';
 const SEED = utils.id('seed');
 const BIT_SLICE = '0xaabbcc';
 
-describe('DuckyFamilyV1 minting', () => {
+describe('DuckyGenome minting', () => {
   let DuckyGenome: DuckyGenomeTestConsumer;
 
   beforeEach(async () => {
