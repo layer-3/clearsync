@@ -66,8 +66,8 @@ contract TESTDuckyFamilyV1 is DuckyFamilyV1 {
 	 * @dev Exposed for testing.
 	 * @param collectionId Collection Id to generate genome for.
 	 */
-	function generateGenome(uint8 collectionId) external {
-		emit GenomeReturned(_generateGenome(collectionId));
+	function generateGenome(uint8 collectionId, bytes32 seed) external {
+		emit GenomeReturned(_generateGenome(collectionId, seed));
 	}
 
 	/**
@@ -78,9 +78,10 @@ contract TESTDuckyFamilyV1 is DuckyFamilyV1 {
 	function generateMythicGenome(
 		uint256[] calldata genomes,
 		uint16 maxPeculiarity,
-		uint16 mythicAmount
+		uint16 mythicAmount,
+		bytes32 seed
 	) external {
-		emit GenomeReturned(_generateMythicGenome(genomes, maxPeculiarity, mythicAmount));
+		emit GenomeReturned(_generateMythicGenome(genomes, maxPeculiarity, mythicAmount, seed));
 	}
 
 	/**
@@ -88,7 +89,7 @@ contract TESTDuckyFamilyV1 is DuckyFamilyV1 {
 	 * @dev Exposed for testing.
 	 * @param genomes Genomes to meld.
 	 */
-	function meldGenomes(uint256[] calldata genomes) external {
-		emit GenomeReturned(_meldGenomes(genomes));
+	function meldGenomes(uint256[] calldata genomes, bytes32 seed) external {
+		emit GenomeReturned(_meldGenomes(genomes, seed));
 	}
 }
