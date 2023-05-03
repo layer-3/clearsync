@@ -90,19 +90,20 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Seeding {
 
 	// ------- Config -------
 
+	/// @dev constants must be duplicated both here and in DuckyGenome as Solidity does not see Library constants as constants, see https://github.com/ethereum/solidity/issues/12248
 	uint8 internal constant ducklingCollectionId = 0;
 	uint8 internal constant zombeakCollectionId = 1;
 	uint8 internal constant mythicCollectionId = 2;
 	uint8 internal constant RARITIES_NUM = 4;
-
-	uint8 public constant MAX_PACK_SIZE = 50;
-	uint8 public constant FLOCK_SIZE = 5;
 
 	uint8 internal constant collectionGeneIdx = Genome.COLLECTION_GENE_IDX;
 	uint8 internal constant rarityGeneIdx = 1;
 	uint8 internal constant flagsGeneIdx = Genome.FLAGS_GENE_IDX;
 	// general genes start after Collection and Rarity
 	uint8 internal constant generativeGenesOffset = 2;
+
+	uint8 public constant MAX_PACK_SIZE = 50;
+	uint8 public constant FLOCK_SIZE = 5;
 
 	// number of values for each gene for Duckling and Zombeak collections
 	uint8[][3] internal collectionsGeneValuesNum; // set in constructor

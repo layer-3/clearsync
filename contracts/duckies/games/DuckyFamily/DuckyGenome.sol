@@ -10,6 +10,7 @@ import '../Utils.sol';
 library DuckyGenome {
 	using Genome for uint256;
 
+	/// @dev constants must be duplicated both here and in DuckyFamilyV1 as Solidity does not see Library constants as constants, see https://github.com/ethereum/solidity/issues/12248
 	uint8 internal constant ducklingCollectionId = 0;
 	uint8 internal constant zombeakCollectionId = 1;
 	uint8 internal constant mythicCollectionId = 2;
