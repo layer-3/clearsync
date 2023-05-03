@@ -3,6 +3,7 @@ import { ethers, upgrades } from 'hardhat';
 
 import type {
   DucklingsV1,
+  DuckyGenomeTestConsumer,
   TESTDuckyFamilyV1,
   TreasureVault,
   YellowToken,
@@ -17,6 +18,7 @@ interface Config {
   Duckies: YellowToken;
   Ducklings: DucklingsV1;
   TreasureVault: TreasureVault;
+  DuckyGenome: DuckyGenomeTestConsumer;
   Game: TESTDuckyFamilyV1;
   GameAsMaintainer: TESTDuckyFamilyV1;
   GameAsSomeone: TESTDuckyFamilyV1;
@@ -57,6 +59,10 @@ export async function setup(): Promise<Config> {
   })) as TreasureVault;
   await TreasureVault.deployed();
 
+  const DuckyGenomeTestConsumerFactory = await ethers.getContractFactory('DuckyGenomeTestConsumer');
+  const DuckyGenome = (await DuckyGenomeTestConsumerFactory.deploy()) as DuckyGenomeTestConsumer;
+  await DuckyGenome.deployed();
+
   const DuckyFamilyFactory = await ethers.getContractFactory('TESTDuckyFamilyV1');
   const Game = (await DuckyFamilyFactory.deploy(
     Duckies.address,
@@ -77,6 +83,7 @@ export async function setup(): Promise<Config> {
     Duckies,
     Ducklings,
     TreasureVault,
+    DuckyGenome,
     Game,
     GameAsMaintainer: Game.connect(Maintainer),
     GameAsSomeone: Game.connect(Someone),
