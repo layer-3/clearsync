@@ -121,3 +121,6 @@ export const collectionsGeneDistributionTypes = [
 
 export const MAX_PACK_SIZE = 50;
 export const FLOCK_SIZE = 5;
+
+export const geneMutationChance = [955, 45];
+export const geneInheritanceChances = [400, 300, 150, 100, 50];
