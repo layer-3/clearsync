@@ -35,6 +35,29 @@ describe('Utils', () => {
     await Utils.deployed();
   });
 
+  describe('shiftSeedSlice', () => {
+    it('bitSlice is 3 first bytes', async () => {
+      const SEED = randomBytes32();
+      const [bitSlice] = await Utils.shiftSeedSlice(SEED);
+      expect(bitSlice).to.be.equal(SEED.slice(0, 8));
+    });
+
+    it('newSeed is a circularly shifted seed', async () => {
+      const SEED = randomBytes32();
+      const [, newSeed] = await Utils.shiftSeedSlice(SEED);
+      expect(newSeed).to.be.equal('0x' + SEED.slice(8) + SEED.slice(2, 8));
+    });
+
+    it('after 32 shifts, newSeed is equal to SEED', async () => {
+      const SEED = randomBytes32();
+      let newSeed = SEED;
+      for (let i = 0; i < 32; i++) {
+        [, newSeed] = await Utils.shiftSeedSlice(newSeed);
+      }
+      expect(newSeed).to.be.equal(SEED);
+    });
+  });
+
   describe('max', () => {
     const resultsDistibution = Array.from({ length: MAX_NUM }).fill(0) as number[];
 
