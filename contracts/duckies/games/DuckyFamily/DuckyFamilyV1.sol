@@ -472,6 +472,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Seeding {
 	 * @notice Generate genome for Duckling or Zombeak.
 	 * @dev Generate and set all genes from a corresponding collection.
 	 * @param collectionId Collection ID.
+	 * @param seed Seed for randomization.
 	 * @return genome Generated genome.
 	 */
 	function _generateGenome(uint8 collectionId, bytes32 seed) internal view returns (uint256) {
@@ -503,6 +504,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Seeding {
 	 * @param genomes Array of genomes to meld into Mythic.
 	 * @param maxPeculiarity_ Maximum peculiarity for the genomes collection config.
 	 * @param mythicAmount_ Number of different Mythic tokens.
+	 * @param seed Seed for randomization.
 	 * @return genome Generated Mythic genome.
 	 */
 	function _generateMythicGenome(
@@ -603,6 +605,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Seeding {
 	 * @notice Meld `genomes` into a new genome.
 	 * @dev Meld `genomes` into a new genome gene by gene. Set the corresponding collection
 	 * @param genomes Array of genomes to meld.
+	 * @param seed Seed for randomization.
 	 * @return meldedGenome Melded genome.
 	 */
 	function _meldGenomes(uint256[] memory genomes, bytes32 seed) internal view returns (uint256) {
