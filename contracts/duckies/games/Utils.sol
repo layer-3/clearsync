@@ -5,6 +5,12 @@ import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
 import '../../interfaces/IVoucher.sol';
 
+/**
+ * @title Utils
+ * @notice Utility functions for games, that include pseudo random number generation, signature verification, etc.
+ *
+ * Pseudo random number generation is based on the bitSlices, which are part of a seed created in `Seeding.sol`.
+ */
 library Utils {
 	using ECDSA for bytes32;
 
@@ -21,7 +27,7 @@ library Utils {
 	 * @return bitSlice Shifted bit slice.
 	 * @return updatedSeed Shifted seed.
 	 */
-	function _shiftSeedSlice(bytes32 seed) internal pure returns (bytes3, bytes32) {
+	function shiftSeedSlice(bytes32 seed) internal pure returns (bytes3, bytes32) {
 		bytes3 slice = bytes3(seed);
 		return (slice, (seed << 24) | (bytes32(slice) >> 232));
 	}
@@ -33,30 +39,32 @@ library Utils {
 	 * @param max Max number to extract.
 	 * @return Extracted number in range [0, max).
 	 */
-	function _max(bytes3 bitSlice, uint24 max) internal pure returns (uint24) {
+	function randomNumber(bytes3 bitSlice, uint24 max) internal pure returns (uint24) {
 		return uint24(bitSlice) % max;
 	}
 
 	/**
-	 * @notice Generates a weighted random number given the `weights` array in range [0, weights.length).
+	 * @notice Generates a weighted random number in range [0, weights.length).
 	 * @dev Number `x` is generated with probability `weights[x] / sum(weights)`.
 	 * @param weights Array of weights.
 	 * @return Random number in range [0, weights.length).
 	 */
-	function _randomWeightedNumber(
-		uint32[] memory weights,
+	function randomWeightedNumber(
+		uint32[] memory weights, // chances are represented in per mil
 		bytes3 bitSlice
 	) internal pure returns (uint8) {
-		// no sense in empty weights array
-		if (weights.length == 0) revert InvalidWeights(weights);
+		uint24 wsum = uint24(sum(weights));
 
-		uint256 randomNumber = _max(bitSlice, uint24(_sum(weights)));
+		// no sense in empty weights array
+		if (weights.length == 0 || wsum == 0) revert InvalidWeights(weights);
+
+		uint256 rnum = randomNumber(bitSlice, wsum);
 
 		uint256 segmentRightBoundary = 0;
 
 		for (uint8 i = 0; i < weights.length; i++) {
 			segmentRightBoundary += weights[i];
-			if (randomNumber < segmentRightBoundary) {
+			if (rnum < segmentRightBoundary) {
 				return i;
 			}
 		}
@@ -69,10 +77,10 @@ library Utils {
 	 * @notice Calculates sum of all elements in array.
 	 * @dev Calculates sum of all elements in array.
 	 * @param numbers Array of numbers.
-	 * @return sum Sum of all elements in array.
+	 * @return res Sum of all elements in array.
 	 */
-	function _sum(uint32[] memory numbers) internal pure returns (uint256 sum) {
-		for (uint256 i = 0; i < numbers.length; i++) sum += numbers[i];
+	function sum(uint32[] memory numbers) internal pure returns (uint256 res) {
+		for (uint256 i = 0; i < numbers.length; i++) res += numbers[i];
 	}
 
 	/**
@@ -82,7 +90,7 @@ library Utils {
 	 * @param signature Signature to check.
 	 * @param signer Address of the signer.
 	 */
-	function _requireCorrectSigner(
+	function requireCorrectSigner(
 		bytes memory encodedData,
 		bytes memory signature,
 		address signer

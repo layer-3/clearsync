@@ -19,6 +19,8 @@ const WEIGHTS = [5, 3, 2];
 const WEIGHTS_SUM = WEIGHTS.reduce((acc, curr) => acc + curr, 0);
 const PRECISION_MULTIPLIER = 0.5;
 
+const BIT_SLICE = '0xaabbcc';
+
 describe('Utils', () => {
   let Someone: SignerWithAddress;
   let Someother: SignerWithAddress;
@@ -31,6 +33,29 @@ describe('Utils', () => {
     const UtilsTestFactory = await ethers.getContractFactory('UtilsTestConsumer');
     Utils = (await UtilsTestFactory.deploy()) as UtilsTestConsumer;
     await Utils.deployed();
+  });
+
+  describe('shiftSeedSlice', () => {
+    it('bitSlice is 3 first bytes', async () => {
+      const SEED = randomBytes32();
+      const [bitSlice] = await Utils.shiftSeedSlice(SEED);
+      expect(bitSlice).to.be.equal(SEED.slice(0, 8));
+    });
+
+    it('newSeed is a circularly shifted seed', async () => {
+      const SEED = randomBytes32();
+      const [, newSeed] = await Utils.shiftSeedSlice(SEED);
+      expect(newSeed).to.be.equal('0x' + SEED.slice(8) + SEED.slice(2, 8));
+    });
+
+    it('after 32 shifts, newSeed is equal to SEED', async () => {
+      const SEED = randomBytes32();
+      let newSeed = SEED;
+      for (let i = 0; i < 32; i++) {
+        [, newSeed] = await Utils.shiftSeedSlice(newSeed);
+      }
+      expect(newSeed).to.be.equal(SEED);
+    });
   });
 
   describe('max', () => {
@@ -69,9 +94,8 @@ describe('Utils', () => {
 
     it('generates same number for same seed', async () => {
       const bigMaxNum = 424_242;
-      const seed = '0xaabbcc';
-      const randomBN = await Utils.max(seed, bigMaxNum);
-      const randomBN2 = await Utils.max(seed, bigMaxNum);
+      const randomBN = await Utils.max(BIT_SLICE, bigMaxNum);
+      const randomBN2 = await Utils.max(BIT_SLICE, bigMaxNum);
       expect(randomBN).to.be.equal(randomBN2);
     });
   });
@@ -114,14 +138,20 @@ describe('Utils', () => {
 
     describe('revert', () => {
       it('when empty weights array', async () => {
-        await expect(Utils.randomWeightedNumber([], '0xaabbcc'))
+        await expect(Utils.randomWeightedNumber([], BIT_SLICE))
           .to.be.revertedWithCustomError(Utils, INVALID_WEIGHTS)
           .withArgs([]);
+      });
+
+      it('when weights sum is 0', async () => {
+        await expect(Utils.randomWeightedNumber([0, 0, 0], BIT_SLICE))
+          .to.be.revertedWithCustomError(Utils, INVALID_WEIGHTS)
+          .withArgs([0, 0, 0]);
       });
     });
   });
 
-  describe('_requireCorrectSigner', () => {
+  describe('requireCorrectSigner', () => {
     const coder = ethers.utils.defaultAbiCoder;
 
     it('success on correct signer', async () => {

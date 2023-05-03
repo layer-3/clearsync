@@ -30,6 +30,12 @@ export const bytes3 = (rem: number): string => {
   return `0x${bytes3}`;
 };
 
+export const reverse = (num: number): number => {
+  const bin = num.toString(2);
+  const reversed = [...bin].reverse().join('');
+  return Number.parseInt(reversed, 2);
+};
+
 export function randomGenome(collectionId: Collections, config?: RandomGenomeConfig): bigint {
   const genome = new Genome();
   genome.setGene(collectionGeneIdx, collectionId);

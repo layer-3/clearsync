@@ -10,29 +10,29 @@ import '../Utils.sol';
 contract UtilsTestConsumer {
 	/**
 	 * @notice Perform circular shift on the seed by 3 bytes to the left, and returns the shifted slice and the updated seed.
-	 * @dev Expose internal _shiftSeedSlice function. User of this contract must keep track of used bit slices to avoid reusing them.
+	 * @dev Expose internal shiftSeedSlice function. User of this contract must keep track of used bit slices to avoid reusing them.
 	 * @param seed Seed to shift and extract the shifted slice from.
 	 * @return bitSlice Shifted bit slice.
 	 * @return updatedSeed Shifted seed.
 	 */
 	function shiftSeedSlice(bytes32 seed) external pure returns (bytes3, bytes32) {
-		return Utils._shiftSeedSlice(seed);
+		return Utils.shiftSeedSlice(seed);
 	}
 
 	/**
 	 * @notice Extracts a number from the bit slice in range [0, max).
-	 * @dev Expose internal _max function. Extracts a number from the bit slice in range [0, max).
+	 * @dev Expose internal randomNumber function. Extracts a number from the bit slice in range [0, max).
 	 * @param bitSlice Bit slice to extract the number from.
 	 * @param max_ Max number to extract.
 	 * @return Extracted number in range [0, max).
 	 */
 	function max(bytes3 bitSlice, uint24 max_) external pure returns (uint256) {
-		return Utils._max(bitSlice, max_);
+		return Utils.randomNumber(bitSlice, max_);
 	}
 
 	/**
 	 * @notice Generates a weighted random number given the `weights` array in range [0, weights.length).
-	 * @dev Expose internal _randomWeightedNumber function. Number `x` is generated with probability `weights[x] / sum(weights)`.
+	 * @dev Expose internal randomWeightedNumber function. Number `x` is generated with probability `weights[x] / sum(weights)`.
 	 * @param weights Array of weights.
 	 * @return Random number in range [0, weights.length).
 	 */
@@ -40,12 +40,12 @@ contract UtilsTestConsumer {
 		uint32[] memory weights,
 		bytes3 bitSlice
 	) external pure returns (uint256) {
-		return Utils._randomWeightedNumber(weights, bitSlice);
+		return Utils.randomWeightedNumber(weights, bitSlice);
 	}
 
 	/**
 	 * @notice Check that `signatures is `encodedData` signed by `signer`. Reverts if not.
-	 * @dev Expose internal _requireCorrectSigner function. Check that `signatures is `encodedData` signed by `signer`. Reverts if not.
+	 * @dev Expose internal requireCorrectSigner function. Check that `signatures is `encodedData` signed by `signer`. Reverts if not.
 	 * @param encodedData Data to check.
 	 * @param signature Signature to check.
 	 * @param signer Address of the signer.
@@ -55,6 +55,6 @@ contract UtilsTestConsumer {
 		bytes memory signature,
 		address signer
 	) external pure {
-		Utils._requireCorrectSigner(encodedData, signature, signer);
+		Utils.requireCorrectSigner(encodedData, signature, signer);
 	}
 }

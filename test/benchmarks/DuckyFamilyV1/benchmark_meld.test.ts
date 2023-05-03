@@ -15,12 +15,20 @@ import {
   GeneDistrTypes,
   Rarities,
   ZombeakGenes,
+  collectionMutationChances,
   collectionsGeneValuesNum,
+  geneInheritanceChances,
+  geneMutationChance,
 } from '../../duckies/games/DuckyFamily/config';
 import { setup } from '../../duckies/games/DuckyFamily/setup';
 
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import type { DucklingsV1, DuckyFamilyV1, TESTDuckyFamilyV1 } from '../../../typechain-types';
+import type {
+  DucklingsV1,
+  DuckyFamilyV1,
+  DuckyGenomeTestConsumer,
+  TESTDuckyFamilyV1,
+} from '../../../typechain-types';
 
 const seed = '0xaabbcc';
 
@@ -29,6 +37,7 @@ describe('Benchmark DuckyFamilyV1 melding', () => {
   let GenomeSetter: SignerWithAddress;
 
   let Ducklings: DucklingsV1;
+  let DuckyGenome: DuckyGenomeTestConsumer;
   let Game: TESTDuckyFamilyV1;
 
   let GameAsSomeone: DuckyFamilyV1;
@@ -37,7 +46,7 @@ describe('Benchmark DuckyFamilyV1 melding', () => {
   let generateAndMintGenomes: GenerateAndMintGenomesFunctT;
 
   const isCollectionMutating = async (rarity: Rarities, seed: string): Promise<boolean> => {
-    const tx = await Game.isCollectionMutating(rarity, seed);
+    const tx = await DuckyGenome.isCollectionMutating(rarity, collectionMutationChances, seed);
     const receipt = await tx.wait();
     const event = receipt.events?.find((e) => e.event === 'BoolReturned');
     return event?.args?.returnedBool as boolean;
@@ -57,7 +66,15 @@ describe('Benchmark DuckyFamilyV1 melding', () => {
     geneDistrType: GeneDistrTypes,
     seed: string,
   ): Promise<number> => {
-    const tx = await Game.meldGenes(genomes, gene, maxGeneValue, geneDistrType, seed);
+    const tx = await DuckyGenome.meldGenes(
+      genomes,
+      gene,
+      maxGeneValue,
+      geneDistrType,
+      geneMutationChance,
+      geneInheritanceChances,
+      seed,
+    );
     const receipt = await tx.wait();
     const event = receipt.events?.find((e) => e.event === 'GeneReturned');
     // gene is already a number
@@ -65,7 +82,7 @@ describe('Benchmark DuckyFamilyV1 melding', () => {
   };
 
   beforeEach(async () => {
-    ({ Someone, GenomeSetter, Ducklings, Game, GameAsSomeone } = await setup());
+    ({ Someone, GenomeSetter, Ducklings, DuckyGenome, Game, GameAsSomeone } = await setup());
 
     mintTo = setupMintTo(Ducklings.connect(GenomeSetter));
     generateAndMintGenomes = setupGenerateAndMintGenomes(mintTo, Someone.address);
