@@ -118,6 +118,12 @@ describe('Utils', () => {
           .to.be.revertedWithCustomError(Utils, INVALID_WEIGHTS)
           .withArgs([]);
       });
+
+      it('when weights sum is 0', async () => {
+        await expect(Utils.randomWeightedNumber([0, 0, 0], '0xaabbcc'))
+          .to.be.revertedWithCustomError(Utils, INVALID_WEIGHTS)
+          .withArgs([0, 0, 0]);
+      });
     });
   });
 

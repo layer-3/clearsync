@@ -53,10 +53,12 @@ library Utils {
 		uint32[] memory weights, // chances are represented in per mil
 		bytes3 bitSlice
 	) internal pure returns (uint8) {
-		// no sense in empty weights array
-		if (weights.length == 0) revert InvalidWeights(weights);
+		uint24 sum = uint24(_sum(weights));
 
-		uint256 randomNumber = _max(bitSlice, uint24(_sum(weights)));
+		// no sense in empty weights array
+		if (weights.length == 0 || sum == 0) revert InvalidWeights(weights);
+
+		uint256 randomNumber = _max(bitSlice, sum);
 
 		uint256 segmentRightBoundary = 0;
 
