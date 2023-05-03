@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { anyUint } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
+import { utils } from 'ethers';
 
 import { setup } from './setup';
 import {
@@ -26,6 +27,8 @@ import type {
 } from '../../../../typechain-types';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
+const SEED = utils.id('seed');
+
 describe('DuckyFamilyV1 minting', () => {
   let Someone: SignerWithAddress;
 
@@ -38,15 +41,18 @@ describe('DuckyFamilyV1 minting', () => {
     ({ Someone, Duckies, Ducklings, Game, GameAsSomeone } = await setup());
   });
 
-  const generateGenome = async (collectionId: Collections): Promise<bigint> => {
-    const tx = await Game.generateGenome(collectionId);
+  const generateGenome = async (
+    collectionId: Collections,
+    seed: string = SEED,
+  ): Promise<bigint> => {
+    const tx = await Game.generateGenome(collectionId, seed);
     const receipt = await tx.wait();
     const event = receipt.events?.find((e) => e.event === 'GenomeReturned');
     return event?.args?.genome.toBigInt() as bigint;
   };
 
-  const generateMythicGenome = async (genomes: bigint[]): Promise<bigint> => {
-    const tx = await Game.generateMythicGenome(genomes, MAX_PECULIARITY, mythicAmount);
+  const generateMythicGenome = async (genomes: bigint[], seed: string = SEED): Promise<bigint> => {
+    const tx = await Game.generateMythicGenome(genomes, MAX_PECULIARITY, mythicAmount, seed);
     const receipt = await tx.wait();
     const event = receipt.events?.find((e) => e.event === 'GenomeReturned');
     return event?.args?.genome.toBigInt() as bigint;
@@ -85,7 +91,7 @@ describe('DuckyFamilyV1 minting', () => {
 
     it('revert on collectionId not Duckling or Zombeak', async () => {
       const notDucklingOrZombeak = 2;
-      await expect(Game.generateGenome(2))
+      await expect(Game.generateGenome(2, SEED))
         .to.be.revertedWithCustomError(Game, 'MintingRulesViolated')
         .withArgs(notDucklingOrZombeak, 1);
     });

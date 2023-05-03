@@ -22,8 +22,11 @@ describe('Benchmark DuckyFamilyV1 minting', () => {
   let Game: TESTDuckyFamilyV1;
   let GameAsSomeone: DuckyFamilyV1;
 
-  const generateGenome = async (collectionId: Collections): Promise<bigint> => {
-    const tx = await Game.generateGenome(collectionId);
+  const generateGenome = async (
+    collectionId: Collections,
+    seed: string = SEED,
+  ): Promise<bigint> => {
+    const tx = await Game.generateGenome(collectionId, seed);
     const receipt = await tx.wait();
     const event = receipt.events?.find((e) => e.event === 'GenomeReturned');
     return event?.args?.genome.toBigInt() as bigint;
