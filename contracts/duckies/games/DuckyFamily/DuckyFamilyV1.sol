@@ -504,6 +504,8 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Seeding {
 	 * @notice Generate mythic genome based on melding `genomes`.
 	 * @dev Calculates flock peculiarity, and randomizes UniqId corresponding to the peculiarity.
 	 * @param genomes Array of genomes to meld into Mythic.
+	 * @param maxPeculiarity_ Maximum peculiarity for the genomes collection config.
+	 * @param mythicAmount_ Number of different Mythic tokens.
 	 * @return genome Generated Mythic genome.
 	 */
 	function _generateMythicGenome(
@@ -566,6 +568,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Seeding {
 	/**
 	 * @notice Meld tokens with `meldingTokenIds` into a new token. Internal function.
 	 * @dev Check `owner` is indeed the owner of `meldingTokenIds`. Burn NFTs with `meldingTokenIds`. Transfers Duckies to the TreasureVault.
+	 * @param owner Address of the owner of the tokens to meld.
 	 * @param meldingTokenIds Array of token IDs to meld.
 	 * @param isTransferable Whether the new token is transferable.
 	 * @return meldedTokenId ID of the new token.
