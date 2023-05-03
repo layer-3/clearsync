@@ -151,7 +151,7 @@ describe('Utils', () => {
     });
   });
 
-  describe('_requireCorrectSigner', () => {
+  describe('requireCorrectSigner', () => {
     const coder = ethers.utils.defaultAbiCoder;
 
     it('success on correct signer', async () => {

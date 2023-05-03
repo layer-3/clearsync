@@ -138,7 +138,7 @@ library Genome {
 	 * @param gene Gene to get.
 	 * @return maxValue Largest value of a `gene` in `genomes`.
 	 */
-	function _maxGene(uint256[] memory genomes, uint8 gene) internal pure returns (uint8) {
+	function maxGene(uint256[] memory genomes, uint8 gene) internal pure returns (uint8) {
 		uint8 maxValue = 0;
 
 		for (uint256 i = 0; i < genomes.length; i++) {
@@ -158,10 +158,7 @@ library Genome {
 	 * @param gene Gene to check.
 	 * @return isEqual True if values of `gene` in `genomes` are equal, false otherwise.
 	 */
-	function _geneValuesAreEqual(
-		uint256[] memory genomes,
-		uint8 gene
-	) internal pure returns (bool) {
+	function geneValuesAreEqual(uint256[] memory genomes, uint8 gene) internal pure returns (bool) {
 		uint8 geneValue = getGene(genomes[0], gene);
 
 		for (uint256 i = 1; i < genomes.length; i++) {
@@ -180,7 +177,7 @@ library Genome {
 	 * @param gene Gene to check.
 	 * @return isUnique True if values of `gene` in `genomes` are unique, false otherwise.
 	 */
-	function _geneValuesAreUnique(
+	function geneValuesAreUnique(
 		uint256[] memory genomes,
 		uint8 gene
 	) internal pure returns (bool) {

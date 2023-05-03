@@ -55,7 +55,7 @@ contract DuckyGenomeTestConsumer {
 		bytes32 seed
 	) external {
 		emit GenomeReturned(
-			DuckyGenome._generateAndSetGenes(
+			DuckyGenome.generateAndSetGenes(
 				genome,
 				collectionId,
 				geneValuesNum,
@@ -82,7 +82,7 @@ contract DuckyGenomeTestConsumer {
 		bytes3 bitSlice
 	) external {
 		emit GenomeReturned(
-			DuckyGenome._generateAndSetGene(genome, geneIdx, geneValuesNum, distrType, bitSlice)
+			DuckyGenome.generateAndSetGene(genome, geneIdx, geneValuesNum, distrType, bitSlice)
 		);
 	}
 
@@ -92,7 +92,7 @@ contract DuckyGenomeTestConsumer {
 	 * @param genomes Genomes to check.
 	 */
 	function requireGenomesSatisfyMelding(uint256[] calldata genomes) external pure {
-		DuckyGenome._requireGenomesSatisfyMelding(genomes);
+		DuckyGenome.requireGenomesSatisfyMelding(genomes);
 	}
 
 	/**
@@ -107,7 +107,7 @@ contract DuckyGenomeTestConsumer {
 		uint32[] memory mutationChances,
 		bytes3 bitSlice
 	) external {
-		emit BoolReturned(DuckyGenome._isCollectionMutating(rarity, mutationChances, bitSlice));
+		emit BoolReturned(DuckyGenome.isCollectionMutating(rarity, mutationChances, bitSlice));
 	}
 
 	/**
@@ -131,7 +131,7 @@ contract DuckyGenomeTestConsumer {
 		bytes3 bitSlice
 	) external {
 		emit GeneReturned(
-			DuckyGenome._meldGenes(
+			DuckyGenome.meldGenes(
 				genomes,
 				gene,
 				maxGeneValue,
@@ -156,7 +156,7 @@ contract DuckyGenomeTestConsumer {
 		uint32 distributionTypes,
 		uint8 idx
 	) external pure returns (IDuckyFamily.GeneDistributionTypes) {
-		return DuckyGenome._getDistributionType(distributionTypes, idx);
+		return DuckyGenome.getDistributionType(distributionTypes, idx);
 	}
 
 	/**
@@ -166,7 +166,7 @@ contract DuckyGenomeTestConsumer {
 	 * @param bitSlice Bit slice for randomization.
 	 */
 	function generateUnevenGeneValue(uint8 valuesNum, bytes3 bitSlice) external {
-		emit Uint8Returned(DuckyGenome._generateUnevenGeneValue(valuesNum, bitSlice));
+		emit Uint8Returned(DuckyGenome.generateUnevenGeneValue(valuesNum, bitSlice));
 	}
 
 	/**
@@ -180,7 +180,7 @@ contract DuckyGenomeTestConsumer {
 		uint8[] memory geneValuesNum,
 		uint32 geneDistrTypes
 	) external pure returns (uint16) {
-		return DuckyGenome._calcConfigPeculiarity(geneValuesNum, geneDistrTypes);
+		return DuckyGenome.calcConfigPeculiarity(geneValuesNum, geneDistrTypes);
 	}
 
 	/**
@@ -196,7 +196,7 @@ contract DuckyGenomeTestConsumer {
 		uint8 genesNum,
 		uint32 geneDistrTypes
 	) external pure returns (uint16) {
-		return DuckyGenome._calcPeculiarity(genome, genesNum, geneDistrTypes);
+		return DuckyGenome.calcPeculiarity(genome, genesNum, geneDistrTypes);
 	}
 
 	/**
@@ -213,6 +213,6 @@ contract DuckyGenomeTestConsumer {
 		uint16 maxUniqId,
 		uint16 mythicDispersion
 	) external pure returns (uint16 leftEndUniqId, uint16 uniqIdSegmentLength) {
-		return DuckyGenome._calcUniqIdGenerationParams(pivotalUniqId, maxUniqId, mythicDispersion);
+		return DuckyGenome.calcUniqIdGenerationParams(pivotalUniqId, maxUniqId, mythicDispersion);
 	}
 }

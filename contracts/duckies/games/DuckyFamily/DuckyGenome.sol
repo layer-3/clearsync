@@ -35,7 +35,7 @@ library DuckyGenome {
 	 * @param geneDistributionTypes Gene distribution types.
 	 * @param seed Seed for randomization.
 	 */
-	function _generateAndSetGenes(
+	function generateAndSetGenes(
 		uint256 genome,
 		uint8 collectionId,
 		uint8[] memory geneValuesNum,
@@ -47,13 +47,13 @@ library DuckyGenome {
 
 		// generate and set each gene
 		for (uint8 i = 0; i < genesNum; i++) {
-			IDuckyFamily.GeneDistributionTypes distrType = _getDistributionType(
+			IDuckyFamily.GeneDistributionTypes distrType = getDistributionType(
 				geneDistributionTypes,
 				i
 			);
 			bytes3 bitSlice;
-			(bitSlice, newSeed) = Utils._shiftSeedSlice(seed);
-			genome = _generateAndSetGene(
+			(bitSlice, newSeed) = Utils.shiftSeedSlice(seed);
+			genome = generateAndSetGene(
 				genome,
 				generativeGenesOffset + i,
 				geneValuesNum[i],
@@ -87,7 +87,7 @@ library DuckyGenome {
 	 * @param bitSlice Random bit slice to generate a gene from.
 	 * @return genome Genome with set gene.
 	 */
-	function _generateAndSetGene(
+	function generateAndSetGene(
 		uint256 genome,
 		uint8 geneIdx,
 		uint8 geneValuesNum,
@@ -97,9 +97,9 @@ library DuckyGenome {
 		uint8 geneValue;
 
 		if (distrType == IDuckyFamily.GeneDistributionTypes.Even) {
-			geneValue = uint8(Utils._max(bitSlice, geneValuesNum));
+			geneValue = uint8(Utils.randomNumber(bitSlice, geneValuesNum));
 		} else {
-			geneValue = uint8(_generateUnevenGeneValue(geneValuesNum, bitSlice));
+			geneValue = uint8(generateUnevenGeneValue(geneValuesNum, bitSlice));
 		}
 
 		// gene with value 0 means it is a default value, thus this   \/
@@ -113,26 +113,26 @@ library DuckyGenome {
 	 * @dev Check that `genomes` satisfy melding rules. Reverts if not.
 	 * @param genomes Array of genomes to check.
 	 */
-	function _requireGenomesSatisfyMelding(uint256[] memory genomes) internal pure {
+	function requireGenomesSatisfyMelding(uint256[] memory genomes) internal pure {
 		if (
 			// equal collections
-			!Genome._geneValuesAreEqual(genomes, collectionGeneIdx) ||
+			!Genome.geneValuesAreEqual(genomes, collectionGeneIdx) ||
 			// Rarities must be the same
-			!Genome._geneValuesAreEqual(genomes, rarityGeneIdx) ||
+			!Genome.geneValuesAreEqual(genomes, rarityGeneIdx) ||
 			// not Mythic
 			genomes[0].getGene(collectionGeneIdx) == mythicCollectionId
 		) revert IDuckyFamily.IncorrectGenomesForMelding(genomes);
 
 		IDuckyFamily.Rarities rarity = IDuckyFamily.Rarities(genomes[0].getGene(rarityGeneIdx));
-		bool sameColors = Genome._geneValuesAreEqual(
+		bool sameColors = Genome.geneValuesAreEqual(
 			genomes,
 			uint8(IDuckyFamily.GenerativeGenes.Color)
 		);
-		bool sameFamilies = Genome._geneValuesAreEqual(
+		bool sameFamilies = Genome.geneValuesAreEqual(
 			genomes,
 			uint8(IDuckyFamily.GenerativeGenes.Family)
 		);
-		bool uniqueFamilies = Genome._geneValuesAreUnique(
+		bool uniqueFamilies = Genome.geneValuesAreUnique(
 			genomes,
 			uint8(IDuckyFamily.GenerativeGenes.Family)
 		);
@@ -172,7 +172,7 @@ library DuckyGenome {
 	 * @param bitSlice Bit slice to use for randomization.
 	 * @return isMutating True if mutating, false otherwise.
 	 */
-	function _isCollectionMutating(
+	function isCollectionMutating(
 		IDuckyFamily.Rarities rarity,
 		uint32[] memory mutationChances,
 		bytes3 bitSlice
@@ -183,11 +183,11 @@ library DuckyGenome {
 		}
 
 		uint32 mutationPercentage = mutationChances[uint8(rarity)];
-		// dynamic array is needed for `_randomWeightedNumber()`
+		// dynamic array is needed for `randomWeightedNumber()`
 		uint32[] memory chances = new uint32[](2);
 		chances[0] = mutationPercentage;
 		chances[1] = 1000 - mutationPercentage; // 1000 as changes are represented in per mil
-		return Utils._randomWeightedNumber(chances, bitSlice) == 0;
+		return Utils.randomWeightedNumber(chances, bitSlice) == 0;
 	}
 
 	/**
@@ -202,7 +202,7 @@ library DuckyGenome {
 	 * @param bitSlice Bit slice to use for randomization.
 	 * @return geneValue Melded gene value.
 	 */
-	function _meldGenes(
+	function meldGenes(
 		uint256[] memory genomes,
 		uint8 gene,
 		uint8 maxGeneValue,
@@ -214,14 +214,14 @@ library DuckyGenome {
 		// gene mutation
 		if (
 			geneDistrType == IDuckyFamily.GeneDistributionTypes.Uneven &&
-			Utils._randomWeightedNumber(mutationChance, bitSlice) == 1
+			Utils.randomWeightedNumber(mutationChance, bitSlice) == 1
 		) {
-			uint8 maxPresentGeneValue = Genome._maxGene(genomes, gene);
+			uint8 maxPresentGeneValue = Genome.maxGene(genomes, gene);
 			return maxPresentGeneValue == maxGeneValue ? maxGeneValue : maxPresentGeneValue + 1;
 		}
 
 		// gene inheritance
-		uint8 inheritanceIdx = Utils._randomWeightedNumber(inheritanceChances, bitSlice);
+		uint8 inheritanceIdx = Utils.randomWeightedNumber(inheritanceChances, bitSlice);
 		return genomes[inheritanceIdx].getGene(gene);
 	}
 
@@ -234,7 +234,7 @@ library DuckyGenome {
 	 * @param idx Index of the gene.
 	 * @return Gene distribution type.
 	 */
-	function _getDistributionType(
+	function getDistributionType(
 		uint32 distributionTypes,
 		uint8 idx
 	) internal pure returns (IDuckyFamily.GeneDistributionTypes) {
@@ -251,7 +251,7 @@ library DuckyGenome {
 	 * @param bitSlice Bit slice to use for randomization.
 	 * @return geneValue Gene value.
 	 */
-	function _generateUnevenGeneValue(
+	function generateUnevenGeneValue(
 		uint8 valuesNum,
 		bytes3 bitSlice
 	) internal pure returns (uint8) {
@@ -264,7 +264,7 @@ library DuckyGenome {
 		// N - number of gene values
 		uint256 N = uint256(valuesNum);
 		// Generates number from 1 to 10^6
-		uint256 x = 1 + Utils._max(bitSlice, 1_000_000);
+		uint256 x = 1 + Utils.randomNumber(bitSlice, 1_000_000);
 		// Calculates uneven distributed y, value of y is between 0 and N
 		uint256 y = (2 * N * 1_000) / (Math.sqrt(x) + 1_000) - N;
 		return uint8(y);
@@ -277,7 +277,7 @@ library DuckyGenome {
 	 * @param geneDistrTypes Gene distribution types.
 	 * @return maxPeculiarity Max peculiarity.
 	 */
-	function _calcConfigPeculiarity(
+	function calcConfigPeculiarity(
 		uint8[] memory geneValuesNum,
 		uint32 geneDistrTypes
 	) internal pure returns (uint16) {
@@ -286,7 +286,7 @@ library DuckyGenome {
 		uint8 genesNum = uint8(geneValuesNum.length);
 		for (uint8 i = 0; i < genesNum; i++) {
 			if (
-				_getDistributionType(geneDistrTypes, i) == IDuckyFamily.GeneDistributionTypes.Uneven
+				getDistributionType(geneDistrTypes, i) == IDuckyFamily.GeneDistributionTypes.Uneven
 			) {
 				// add number of values and not actual values as actual values start with 1, which means number of values and actual values are equal
 				sum += geneValuesNum[i];
@@ -304,7 +304,7 @@ library DuckyGenome {
 	 * @param geneDistrTypes Gene distribution types.
 	 * @return peculiarity Peculiarity.
 	 */
-	function _calcPeculiarity(
+	function calcPeculiarity(
 		uint256 genome,
 		uint8 genesNum,
 		uint32 geneDistrTypes
@@ -313,7 +313,7 @@ library DuckyGenome {
 
 		for (uint8 i = 0; i < genesNum; i++) {
 			if (
-				_getDistributionType(geneDistrTypes, i) == IDuckyFamily.GeneDistributionTypes.Uneven
+				getDistributionType(geneDistrTypes, i) == IDuckyFamily.GeneDistributionTypes.Uneven
 			) {
 				// add number of values and not actual values as actual values start with 1, which means number of values and actual values are equal
 				sum += genome.getGene(i + generativeGenesOffset);
@@ -332,7 +332,7 @@ library DuckyGenome {
 	 * @return leftEndUniqId Left end of the UniqId segment.
 	 * @return uniqIdSegmentLength Length of the UniqId segment.
 	 */
-	function _calcUniqIdGenerationParams(
+	function calcUniqIdGenerationParams(
 		uint16 pivotalUniqId,
 		uint16 maxUniqId,
 		uint16 mythicDispersion

@@ -72,7 +72,7 @@ contract GenomeTestConsumer {
 	 * @return maxValue Largest value of a `gene` in `genomes`.
 	 */
 	function maxGene(uint256[] memory genomes, uint8 gene) external pure returns (uint8) {
-		return Genome._maxGene(genomes, gene);
+		return Genome.maxGene(genomes, gene);
 	}
 
 	/**
@@ -83,7 +83,7 @@ contract GenomeTestConsumer {
 	 * @return isEqual True if values of `gene` in `genomes` are equal, false otherwise.
 	 */
 	function geneValuesAreEqual(uint256[] memory genomes, uint8 gene) external pure returns (bool) {
-		return Genome._geneValuesAreEqual(genomes, gene);
+		return Genome.geneValuesAreEqual(genomes, gene);
 	}
 
 	/**
@@ -97,6 +97,6 @@ contract GenomeTestConsumer {
 		uint256[] memory genomes,
 		uint8 gene
 	) external pure returns (bool) {
-		return Genome._geneValuesAreUnique(genomes, gene);
+		return Genome.geneValuesAreUnique(genomes, gene);
 	}
 }

@@ -173,7 +173,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Seeding {
 		// Mythic genes: (Collection, UniqId), Temper, Skill, Habitat, Breed, Birthplace, Quirk, Favorite Food, Favorite Color
 		collectionsGeneValuesNum[2] = [16, 12, 5, 28, 5, 10, 8, 4];
 
-		maxPeculiarity = DuckyGenome._calcConfigPeculiarity(
+		maxPeculiarity = DuckyGenome.calcConfigPeculiarity(
 			collectionsGeneValuesNum[ducklingCollectionId],
 			collectionsGeneDistributionTypes[ducklingCollectionId]
 		);
@@ -208,7 +208,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Seeding {
 	 * @param signature Vouchers signed by the issuer.
 	 */
 	function useVouchers(Voucher[] calldata vouchers, bytes calldata signature) external {
-		Utils._requireCorrectSigner(abi.encode(vouchers), signature, issuer);
+		Utils.requireCorrectSigner(abi.encode(vouchers), signature, issuer);
 		for (uint8 i = 0; i < vouchers.length; i++) {
 			_useVoucher(vouchers[i]);
 		}
@@ -221,7 +221,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Seeding {
 	 * @param signature Voucher signed by the issuer.
 	 */
 	function useVoucher(Voucher calldata voucher, bytes calldata signature) external {
-		Utils._requireCorrectSigner(abi.encode(voucher), signature, issuer);
+		Utils.requireCorrectSigner(abi.encode(voucher), signature, issuer);
 		_useVoucher(voucher);
 	}
 
@@ -353,7 +353,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Seeding {
 		uint8[] memory duckingGeneValuesNum
 	) external onlyRole(DEFAULT_ADMIN_ROLE) {
 		collectionsGeneValuesNum[0] = duckingGeneValuesNum;
-		maxPeculiarity = DuckyGenome._calcConfigPeculiarity(
+		maxPeculiarity = DuckyGenome.calcConfigPeculiarity(
 			collectionsGeneValuesNum[ducklingCollectionId],
 			collectionsGeneDistributionTypes[ducklingCollectionId]
 		);
@@ -368,7 +368,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Seeding {
 		uint32 ducklingGeneDistrTypes
 	) external onlyRole(DEFAULT_ADMIN_ROLE) {
 		collectionsGeneDistributionTypes[0] = ducklingGeneDistrTypes;
-		maxPeculiarity = DuckyGenome._calcConfigPeculiarity(
+		maxPeculiarity = DuckyGenome.calcConfigPeculiarity(
 			collectionsGeneValuesNum[ducklingCollectionId],
 			collectionsGeneDistributionTypes[ducklingCollectionId]
 		);
@@ -479,16 +479,13 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Seeding {
 			revert MintingRulesViolated(collectionId, 1);
 		}
 
-		(bytes3 bitSlice, bytes32 seed) = Utils._shiftSeedSlice(_randomSeed());
+		(bytes3 bitSlice, bytes32 seed) = Utils.shiftSeedSlice(_randomSeed());
 
 		uint256 genome;
 
 		genome = genome.setGene(collectionGeneIdx, collectionId);
-		genome = genome.setGene(
-			rarityGeneIdx,
-			Utils._randomWeightedNumber(rarityChances, bitSlice)
-		);
-		genome = DuckyGenome._generateAndSetGenes(
+		genome = genome.setGene(rarityGeneIdx, Utils.randomWeightedNumber(rarityChances, bitSlice));
+		genome = DuckyGenome.generateAndSetGenes(
 			genome,
 			collectionId,
 			collectionsGeneValuesNum[collectionId],
@@ -513,12 +510,12 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Seeding {
 		uint16 maxPeculiarity_,
 		uint16 mythicAmount_
 	) internal returns (uint256) {
-		(bytes3 bitSlice, bytes32 seed) = Utils._shiftSeedSlice(_randomSeed());
+		(bytes3 bitSlice, bytes32 seed) = Utils.shiftSeedSlice(_randomSeed());
 
 		uint16 flockPeculiarity = 0;
 
 		for (uint8 i = 0; i < genomes.length; i++) {
-			flockPeculiarity += DuckyGenome._calcPeculiarity(
+			flockPeculiarity += DuckyGenome.calcPeculiarity(
 				genomes[i],
 				uint8(collectionsGeneValuesNum[ducklingCollectionId].length),
 				collectionsGeneDistributionTypes[ducklingCollectionId]
@@ -528,15 +525,18 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Seeding {
 		uint16 maxSumPeculiarity = maxPeculiarity_ * uint16(genomes.length);
 		uint16 maxUniqId = mythicAmount_ - 1;
 		uint16 pivotalUniqId = uint16((uint64(flockPeculiarity) * maxUniqId) / maxSumPeculiarity); // multiply and then divide to avoid float numbers
-		(uint16 leftEndUniqId, uint16 uniqIdSegmentLength) = DuckyGenome
-			._calcUniqIdGenerationParams(pivotalUniqId, maxUniqId, MYTHIC_DISPERSION);
+		(uint16 leftEndUniqId, uint16 uniqIdSegmentLength) = DuckyGenome.calcUniqIdGenerationParams(
+			pivotalUniqId,
+			maxUniqId,
+			MYTHIC_DISPERSION
+		);
 
-		uint16 uniqId = leftEndUniqId + uint16(Utils._max(bitSlice, uniqIdSegmentLength));
+		uint16 uniqId = leftEndUniqId + uint16(Utils.randomNumber(bitSlice, uniqIdSegmentLength));
 
 		uint256 genome;
 		genome = genome.setGene(collectionGeneIdx, mythicCollectionId);
 		genome = genome.setGene(uint8(MythicGenes.UniqId), uint8(uniqId));
-		genome = DuckyGenome._generateAndSetGenes(
+		genome = DuckyGenome.generateAndSetGenes(
 			genome,
 			mythicCollectionId,
 			collectionsGeneValuesNum[mythicCollectionId],
@@ -583,7 +583,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Seeding {
 			revert MeldingRulesViolated(meldingTokenIds);
 
 		uint256[] memory meldingGenomes = ducklingsContract.getGenomes(meldingTokenIds);
-		DuckyGenome._requireGenomesSatisfyMelding(meldingGenomes);
+		DuckyGenome.requireGenomesSatisfyMelding(meldingGenomes);
 
 		ducklingsContract.burnBatch(meldingTokenIds);
 
@@ -608,11 +608,11 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Seeding {
 		uint8 collectionId = genomes[0].getGene(collectionGeneIdx);
 		Rarities rarity = Rarities(genomes[0].getGene(rarityGeneIdx));
 
-		(bytes3 bitSlice, bytes32 seed) = Utils._shiftSeedSlice(_randomSeed());
+		(bytes3 bitSlice, bytes32 seed) = Utils.shiftSeedSlice(_randomSeed());
 
 		// if melding Duckling, they can mutate or evolve into Mythic
 		if (collectionId == ducklingCollectionId) {
-			if (DuckyGenome._isCollectionMutating(rarity, collectionMutationChances, bitSlice)) {
+			if (DuckyGenome.isCollectionMutating(rarity, collectionMutationChances, bitSlice)) {
 				uint256 zombeakGenome = _generateGenome(zombeakCollectionId);
 				return zombeakGenome.setGene(rarityGeneIdx, uint8(rarity));
 			}
@@ -633,12 +633,12 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Seeding {
 		uint32 geneDistTypes = collectionsGeneDistributionTypes[collectionId];
 
 		for (uint8 i = 0; i < geneValuesNum.length; i++) {
-			(bitSlice, seed) = Utils._shiftSeedSlice(seed);
-			uint8 geneValue = DuckyGenome._meldGenes(
+			(bitSlice, seed) = Utils.shiftSeedSlice(seed);
+			uint8 geneValue = DuckyGenome.meldGenes(
 				genomes,
 				generativeGenesOffset + i,
 				geneValuesNum[i],
-				DuckyGenome._getDistributionType(geneDistTypes, i),
+				DuckyGenome.getDistributionType(geneDistTypes, i),
 				geneMutationChance,
 				geneInheritanceChances,
 				bitSlice
@@ -648,9 +648,9 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Seeding {
 
 		// randomize Body for Common and Head for Rare for Ducklings
 		if (collectionId == ducklingCollectionId) {
-			(bitSlice, seed) = Utils._shiftSeedSlice(seed);
+			(bitSlice, seed) = Utils.shiftSeedSlice(seed);
 			if (rarity == Rarities.Common) {
-				meldedGenome = DuckyGenome._generateAndSetGene(
+				meldedGenome = DuckyGenome.generateAndSetGene(
 					meldedGenome,
 					uint8(GenerativeGenes.Body),
 					geneValuesNum[uint8(GenerativeGenes.Body) - generativeGenesOffset],
@@ -658,7 +658,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Seeding {
 					bitSlice
 				);
 			} else if (rarity == Rarities.Rare) {
-				meldedGenome = DuckyGenome._generateAndSetGene(
+				meldedGenome = DuckyGenome.generateAndSetGene(
 					meldedGenome,
 					uint8(GenerativeGenes.Head),
 					geneValuesNum[uint8(GenerativeGenes.Head) - generativeGenesOffset],

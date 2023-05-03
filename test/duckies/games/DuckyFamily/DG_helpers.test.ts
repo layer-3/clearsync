@@ -27,7 +27,7 @@ describe('DuckyGenome helpers', () => {
   beforeEach(async () => {
     ({ DuckyGenome } = await setup());
   });
-  it('_getDistributionType', async () => {
+  it('getDistributionType', async () => {
     expect(await DuckyGenome.getDistributionType(0b0, 0)).to.equal(GeneDistrTypes.Even);
     expect(await DuckyGenome.getDistributionType(0b1, 0)).to.equal(GeneDistrTypes.Uneven);
     expect(await DuckyGenome.getDistributionType(0b10, 1)).to.equal(GeneDistrTypes.Uneven);
@@ -38,7 +38,7 @@ describe('DuckyGenome helpers', () => {
     );
   });
 
-  it('_generateUnevenGeneValue', async () => {
+  it('generateUnevenGeneValue', async () => {
     // value 0: [883600, 1000000]                            \/ account for +1 shift in the function
     expect(await generateUnevenGeneValue(32, bytes3(883_600 - 1))).to.equal(0);
     expect(await generateUnevenGeneValue(32, bytes3(969_696))).to.equal(0);
@@ -81,7 +81,7 @@ describe('DuckyGenome helpers', () => {
     expect(await generateUnevenGeneValue(32, bytes3(255 - 1))).to.equal(31);
   });
 
-  it('_calcConfigPeculiarity', async () => {
+  it('calcConfigPeculiarity', async () => {
     expect(await DuckyGenome.calcConfigPeculiarity([1, 1, 1], reverse(0b111))).to.equal(3);
     expect(await DuckyGenome.calcConfigPeculiarity([1, 2, 3], reverse(0b111))).to.equal(6);
     expect(await DuckyGenome.calcConfigPeculiarity([1, 1, 1, 1], reverse(0b1010))).to.equal(2);
@@ -96,7 +96,7 @@ describe('DuckyGenome helpers', () => {
     ).to.equal(MAX_PECULIARITY);
   });
 
-  it('_calcPeculiarity', async () => {
+  it('calcPeculiarity', async () => {
     // NOTE: only genes after `generativeGenesOffset` are taken into account
     expect(
       //                                              \/ generativeGenesOffset
@@ -117,7 +117,7 @@ describe('DuckyGenome helpers', () => {
     ).to.equal(15);
   });
 
-  describe('_calcUniqIdGenerationParams', () => {
+  describe('calcUniqIdGenerationParams', () => {
     const maxUniqId = 59;
 
     it('mythic id range overlaps with left dispersion border', async () => {
