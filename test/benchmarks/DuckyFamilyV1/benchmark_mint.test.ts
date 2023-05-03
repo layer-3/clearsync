@@ -1,11 +1,24 @@
+import { utils } from 'ethers';
+
 import { setup } from '../../duckies/games/DuckyFamily/setup';
-import { Collections, GeneDistrTypes } from '../../duckies/games/DuckyFamily/config';
+import {
+  Collections,
+  GeneDistrTypes,
+  collectionsGeneDistributionTypes,
+  collectionsGeneValuesNum,
+} from '../../duckies/games/DuckyFamily/config';
 
-import type { DuckyFamilyV1, TESTDuckyFamilyV1 } from '../../../typechain-types';
+import type {
+  DuckyFamilyV1,
+  DuckyGenomeTestConsumer,
+  TESTDuckyFamilyV1,
+} from '../../../typechain-types';
 
-const seed = '0xaabbcc';
+const SEED = utils.id('seed');
+const BIT_SLICE = '0xaabbcc';
 
 describe('Benchmark DuckyFamilyV1 minting', () => {
+  let DuckyGenome: DuckyGenomeTestConsumer;
   let Game: TESTDuckyFamilyV1;
   let GameAsSomeone: DuckyFamilyV1;
 
@@ -21,7 +34,15 @@ describe('Benchmark DuckyFamilyV1 minting', () => {
     collectionId: Collections,
     seed: string,
   ): Promise<bigint> => {
-    const tx = await Game.generateAndSetGenes(genome, collectionId, seed);
+    const geneValuesNum = [...collectionsGeneValuesNum[collectionId]];
+    const geneDistrTypes = collectionsGeneDistributionTypes[collectionId];
+    const tx = await DuckyGenome.generateAndSetGenes(
+      genome,
+      collectionId,
+      geneValuesNum,
+      geneDistrTypes,
+      seed,
+    );
     const receipt = await tx.wait();
     const event = receipt.events?.find((e) => e.event === 'GenomeReturned');
     return event?.args?.genome.toBigInt() as bigint;
@@ -34,14 +55,14 @@ describe('Benchmark DuckyFamilyV1 minting', () => {
     distrType: GeneDistrTypes,
     seed: string,
   ): Promise<bigint> => {
-    const tx = await Game.generateAndSetGene(genome, geneIx, geneValuesNum, distrType, seed);
+    const tx = await DuckyGenome.generateAndSetGene(genome, geneIx, geneValuesNum, distrType, seed);
     const receipt = await tx.wait();
     const event = receipt.events?.find((e) => e.event === 'GenomeReturned');
     return event?.args?.genome.toBigInt() as bigint;
   };
 
   beforeEach(async () => {
-    ({ Game, GameAsSomeone } = await setup());
+    ({ DuckyGenome, Game, GameAsSomeone } = await setup());
     await Game.setMintPrice(1);
   });
 
@@ -55,18 +76,18 @@ describe('Benchmark DuckyFamilyV1 minting', () => {
   });
 
   it('generateAndSetGenes', async () => {
-    await generateAndSetGenes(0n, Collections.Duckling, seed);
+    await generateAndSetGenes(0n, Collections.Duckling, SEED);
   });
 
   it('generateAndSetGene even', async () => {
-    await generateAndSetGene(0n, 0, 2, GeneDistrTypes.Even, seed);
+    await generateAndSetGene(0n, 0, 2, GeneDistrTypes.Even, BIT_SLICE);
   });
 
   it('generateAndSetGene uneven', async () => {
-    await generateAndSetGene(0n, 0, 2, GeneDistrTypes.Uneven, seed);
+    await generateAndSetGene(0n, 0, 2, GeneDistrTypes.Uneven, BIT_SLICE);
   });
 
   it('generateUnevenGeneValue', async () => {
-    await Game.generateUnevenGeneValue(32, '0xaabbcc');
+    await DuckyGenome.generateUnevenGeneValue(32, BIT_SLICE);
   });
 });
