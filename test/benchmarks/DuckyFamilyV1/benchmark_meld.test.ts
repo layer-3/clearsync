@@ -1,4 +1,5 @@
 import { assert } from 'chai';
+import { utils } from 'ethers';
 
 import {
   GenerateAndMintGenomesFunctT,
@@ -30,7 +31,8 @@ import type {
   TESTDuckyFamilyV1,
 } from '../../../typechain-types';
 
-const seed = '0xaabbcc';
+const SEED = utils.id('seed');
+const BIT_SLICE = '0xaabbcc';
 
 describe('Benchmark DuckyFamilyV1 melding', () => {
   let Someone: SignerWithAddress;
@@ -45,15 +47,18 @@ describe('Benchmark DuckyFamilyV1 melding', () => {
   let mintTo: MintToFuncT;
   let generateAndMintGenomes: GenerateAndMintGenomesFunctT;
 
-  const isCollectionMutating = async (rarity: Rarities, seed: string): Promise<boolean> => {
-    const tx = await DuckyGenome.isCollectionMutating(rarity, collectionMutationChances, seed);
+  const isCollectionMutating = async (
+    rarity: Rarities,
+    bitSlice: string = BIT_SLICE,
+  ): Promise<boolean> => {
+    const tx = await DuckyGenome.isCollectionMutating(rarity, collectionMutationChances, bitSlice);
     const receipt = await tx.wait();
     const event = receipt.events?.find((e) => e.event === 'BoolReturned');
     return event?.args?.returnedBool as boolean;
   };
 
-  const meldGenomes = async (genomes: bigint[]): Promise<bigint> => {
-    const tx = await Game.meldGenomes(genomes);
+  const meldGenomes = async (genomes: bigint[], seed: string = SEED): Promise<bigint> => {
+    const tx = await Game.meldGenomes(genomes, seed);
     const receipt = await tx.wait();
     const event = receipt.events?.find((e) => e.event === 'GenomeReturned');
     return event?.args?.genome.toBigInt() as bigint;
@@ -141,7 +146,7 @@ describe('Benchmark DuckyFamilyV1 melding', () => {
   });
 
   it('isCollectionMutating', async () => {
-    await isCollectionMutating(Rarities.Common, seed);
+    await isCollectionMutating(Rarities.Common, BIT_SLICE);
   });
 
   it('meldGenes', async () => {
@@ -159,7 +164,7 @@ describe('Benchmark DuckyFamilyV1 melding', () => {
       DucklingGenes.Head,
       geneValuesNum[DucklingGenes.Head],
       GeneDistrTypes.Uneven,
-      seed,
+      BIT_SLICE,
     );
   });
 });

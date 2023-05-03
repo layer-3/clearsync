@@ -65,30 +65,36 @@ contract TESTDuckyFamilyV1 is DuckyFamilyV1 {
 	 * @notice Generates a genome. Emits GenomeReturned event.
 	 * @dev Exposed for testing.
 	 * @param collectionId Collection Id to generate genome for.
+	 * @param seed Seed for randomization.
 	 */
-	function generateGenome(uint8 collectionId) external {
-		emit GenomeReturned(_generateGenome(collectionId));
+	function generateGenome(uint8 collectionId, bytes32 seed) external {
+		emit GenomeReturned(_generateGenome(collectionId, seed));
 	}
 
 	/**
 	 * @notice Generates a mythic genome. Emits GenomeReturned event.
 	 * @dev Exposed for testing.
 	 * @param genomes Genomes to generate mythic genome from.
+	 * @param maxPeculiarity Max peculiarity for mythic genome.
+	 * @param mythicAmount Amount of mythic genes to generate.
+	 * @param seed Seed for randomization.
 	 */
 	function generateMythicGenome(
 		uint256[] calldata genomes,
 		uint16 maxPeculiarity,
-		uint16 mythicAmount
+		uint16 mythicAmount,
+		bytes32 seed
 	) external {
-		emit GenomeReturned(_generateMythicGenome(genomes, maxPeculiarity, mythicAmount));
+		emit GenomeReturned(_generateMythicGenome(genomes, maxPeculiarity, mythicAmount, seed));
 	}
 
 	/**
 	 * @notice Melds genomes. Emits GenomeReturned event.
 	 * @dev Exposed for testing.
 	 * @param genomes Genomes to meld.
+	 * @param seed Seed for randomization.
 	 */
-	function meldGenomes(uint256[] calldata genomes) external {
-		emit GenomeReturned(_meldGenomes(genomes));
+	function meldGenomes(uint256[] calldata genomes, bytes32 seed) external {
+		emit GenomeReturned(_meldGenomes(genomes, seed));
 	}
 }

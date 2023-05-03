@@ -1,5 +1,6 @@
 import { assert, expect } from 'chai';
 import { ethers } from 'hardhat';
+import { utils } from 'ethers';
 
 import {
   Collections,
@@ -30,6 +31,8 @@ import type {
   YellowToken,
 } from '../../../../typechain-types';
 
+const SEED = utils.id('seed');
+
 describe('DuckyFamilyV1 melding', () => {
   let Someone: SignerWithAddress;
   let GenomeSetter: SignerWithAddress;
@@ -43,8 +46,8 @@ describe('DuckyFamilyV1 melding', () => {
   let mintTo: MintToFuncT;
   let generateAndMintGenomes: GenerateAndMintGenomesFunctT;
 
-  const meldGenomes = async (genomes: bigint[]): Promise<bigint> => {
-    const tx = await Game.meldGenomes(genomes);
+  const meldGenomes = async (genomes: bigint[], seed: string = SEED): Promise<bigint> => {
+    const tx = await Game.meldGenomes(genomes, seed);
     const receipt = await tx.wait();
     const event = receipt.events?.find((e) => e.event === 'GenomeReturned');
     return event?.args?.genome.toBigInt() as bigint;
