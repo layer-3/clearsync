@@ -30,7 +30,7 @@ import type {
   YellowToken,
 } from '../../../../typechain-types';
 
-describe('DuckyGenome melding', () => {
+describe('DuckyFamilyV1 melding', () => {
   let Someone: SignerWithAddress;
   let GenomeSetter: SignerWithAddress;
 

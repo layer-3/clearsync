@@ -19,7 +19,7 @@ import type { DuckyGenomeTestConsumer } from '../../../../typechain-types';
 
 const BIT_SLICE = '0xaabbcc';
 
-describe('DuckyFamilyV1 melding', () => {
+describe('DuckyGenome melding', () => {
   let DuckyGenome: DuckyGenomeTestConsumer;
 
   const isCollectionMutating = async (
