@@ -2,10 +2,7 @@
 pragma solidity 0.8.18;
 
 import '@openzeppelin/contracts/access/AccessControl.sol';
-
 import '@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol';
-import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
-import '@openzeppelin/contracts/utils/math/Math.sol';
 
 import '../../../interfaces/IDuckyFamily.sol';
 import '../../../interfaces/IDucklings.sol';
