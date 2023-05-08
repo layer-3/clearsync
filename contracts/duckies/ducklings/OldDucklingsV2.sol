@@ -60,6 +60,17 @@ contract OldDucklingsV2 is
 	CountersUpgradeable.Counter public nextNewTokenId;
 	mapping(uint256 => Duckling) public tokenToDuckling;
 
+	// ------- Constructor -------
+
+	/**
+	 * @notice Creates the contract and disable initializers, so that this contract can not be used directly.
+	 * @dev Creates the contract and disable initializers, so that this contract can not be used directly.
+	 */
+	/// @custom:oz-upgrades-unsafe-allow constructor
+	constructor() {
+		_disableInitializers();
+	}
+
 	// ------- Initializer -------
 
 	/**
