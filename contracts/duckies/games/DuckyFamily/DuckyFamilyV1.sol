@@ -502,6 +502,8 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Seeding {
 	 * @dev Generate and set all genes from a corresponding collection to `genome`.
 	 * @param genome Genome to set genes to.
 	 * @param collectionId Collection ID.
+	 * @param geneValues TODO.
+	 * @param geneDistributionTypes TODO.
 	 * @param seed Random seed to generate genes from.
 	 * @return genome Genome with set genes.
 	 */
@@ -579,6 +581,8 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Seeding {
 	 * @notice Generate mythic genome based on melding `genomes`.
 	 * @dev Calculates flock peculiarity, and randomizes UniqId corresponding to the peculiarity.
 	 * @param genomes Array of genomes to meld into Mythic.
+	 * @param maxPeculiarity_ Max peculiarity of the flock.
+	 * @param mythicAmount_ Number of different Mythic tokens.
 	 * @return genome Generated Mythic genome.
 	 */
 	function _generateMythicGenome(
@@ -798,6 +802,7 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Seeding {
 	 * @notice Randomize if collection is mutating.
 	 * @dev Randomize if collection is mutating.
 	 * @param rarity Rarity of the collection.
+	 * @param mutationChances Mutation chances for each rarity.
 	 * @param bitSlice Bit slice to use for randomization.
 	 * @return isMutating True if mutating, false otherwise.
 	 */
@@ -826,6 +831,8 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Seeding {
 	 * @param gene Gene to be meld.
 	 * @param maxGeneValue Max gene value.
 	 * @param geneDistrType Gene distribution type.
+	 * @param mutationChance Mutation chance.
+	 * @param inheritanceChances Inheritance chances.
 	 * @param bitSlice Bit slice to use for randomization.
 	 * @return geneValue Melded gene value.
 	 */
@@ -900,6 +907,8 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Seeding {
 	/**
 	 * @notice Calculate max peculiarity for a current Duckling config.
 	 * @dev Sum up number of uneven gene values.
+	 * @param geneValuesNum Number of gene values for each gene.
+	 * @param geneDistrTypes Gene distribution types.
 	 * @return maxPeculiarity Max peculiarity.
 	 */
 	function _calcConfigPeculiarity(
@@ -923,6 +932,8 @@ contract DuckyFamilyV1 is IDuckyFamily, AccessControl, Seeding {
 	 * @notice Calculate peculiarity for a given genome.
 	 * @dev Sum up number of uneven gene values.
 	 * @param genome Genome.
+	 * @param genesNum Number of genes.
+	 * @param geneDistrTypes Gene distribution types.
 	 * @return peculiarity Peculiarity.
 	 */
 	function _calcPeculiarity(
