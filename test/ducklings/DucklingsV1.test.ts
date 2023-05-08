@@ -480,7 +480,7 @@ describe('DucklingsV1', () => {
     });
   });
 
-  describe.only('ERC721Enumerable', () => {
+  describe('Total supply', () => {
     it('mint increates totalSupply', async () => {
       await mintTo(Someone.address, GENOME);
       await mintTo(Someone.address, MYTHIC_GENOME);
