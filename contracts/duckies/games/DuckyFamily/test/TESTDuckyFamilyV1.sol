@@ -99,7 +99,9 @@ contract TESTDuckyFamilyV1 is DuckyFamilyV1 {
 	 * @param bitSlice Bit slice for randomization.
 	 */
 	function generateAndSetGenes(uint256 genome, uint8 collectionId, bytes3 bitSlice) external {
-		emit GenomeReturned(_generateAndSetGenes(genome, collectionId, bitSlice));
+		emit GenomeReturned(_generateAndSetGenes(genome, collectionId,
+			collectionsGeneValuesNum[collectionId],
+			collectionsGeneDistributionTypes[collectionId], bitSlice));
 	}
 
 	/**
@@ -130,7 +132,7 @@ contract TESTDuckyFamilyV1 is DuckyFamilyV1 {
 	 * @param seed Seed for randomization.
 	 */
 	function generateMythicGenome(uint256[] calldata genomes, bytes32 seed) external {
-		emit GenomeReturned(_generateMythicGenome(genomes, seed));
+		emit GenomeReturned(_generateMythicGenome(genomes, maxPeculiarity, mythicAmount));
 	}
 
 	/**
@@ -158,7 +160,7 @@ contract TESTDuckyFamilyV1 is DuckyFamilyV1 {
 	 * @param bitSlice Bit slice for randomization.
 	 */
 	function isCollectionMutating(Rarities rarity, bytes3 bitSlice) external {
-		emit BoolReturned(_isCollectionMutating(rarity, bitSlice));
+		emit BoolReturned(_isCollectionMutating(rarity, collectionMutationChances, bitSlice));
 	}
 
 	/**
@@ -177,7 +179,7 @@ contract TESTDuckyFamilyV1 is DuckyFamilyV1 {
 		GeneDistributionTypes geneDistrType,
 		bytes3 bitSlice
 	) external {
-		emit GeneReturned(_meldGenes(genomes, gene, maxGeneValue, geneDistrType, bitSlice));
+		emit GeneReturned(_meldGenes(genomes, gene, maxGeneValue, geneDistrType, geneMutationChance, geneInheritanceChances, bitSlice));
 	}
 
 	/**
@@ -210,7 +212,10 @@ contract TESTDuckyFamilyV1 is DuckyFamilyV1 {
 	 * @return Maximum peculiarity.
 	 */
 	function calcMaxPeculiarity() external view returns (uint16) {
-		return _calcMaxPeculiarity();
+		return _calcConfigPeculiarity(
+			collectionsGeneValuesNum[ducklingCollectionId],
+			collectionsGeneDistributionTypes[ducklingCollectionId]
+		);
 	}
 
 	/**
@@ -220,7 +225,11 @@ contract TESTDuckyFamilyV1 is DuckyFamilyV1 {
 	 * @return peculiarity Peculiarity.
 	 */
 	function calcPeculiarity(uint256 genome) external view returns (uint16) {
-		return _calcPeculiarity(genome);
+		return _calcPeculiarity(
+			genome,
+			uint8(collectionsGeneValuesNum[ducklingCollectionId].length),
+			collectionsGeneDistributionTypes[ducklingCollectionId]
+		);
 	}
 
 	/**

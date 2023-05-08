@@ -47,6 +47,10 @@ const config: HardhatUserConfig = {
       url: process.env.GOERLI_URL ?? '',
       accounts: ACCOUNTS,
     },
+    sepolia: {
+      url: process.env.SEPOLIA_URL ?? '',
+      accounts: ACCOUNTS,
+    },
     polygon: {
       url: process.env.POLYGON_URL ?? '',
       accounts: ACCOUNTS,
@@ -76,6 +80,7 @@ const config: HardhatUserConfig = {
     apiKey: {
       mainnet: ETHERSCAN_API_KEY,
       goerli: ETHERSCAN_API_KEY,
+      sepolia: ETHERSCAN_API_KEY,
       polygon: POLYGONSCAN_API_KEY,
       polygonMumbai: POLYGONSCAN_API_KEY,
     },
