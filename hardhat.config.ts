@@ -11,7 +11,18 @@ import './src/tasks/activate';
 import './src/tasks/forceImport';
 import './src/tasks/setupNFTs';
 
-const ACCOUNTS = process.env.PRIVATE_KEY === undefined ? [] : [process.env.PRIVATE_KEY];
+let accounts;
+
+if (process.env.MNEMONIC) {
+  accounts = {
+    mnemonic: process.env.MNEMONIC,
+    initialIndex: 0,
+    count: 10,
+  };
+} else if (process.env.PRIVATE_KEY) {
+  accounts = [process.env.PRIVATE_KEY];
+}
+
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY ?? '';
 const POLYGONSCAN_API_KEY = process.env.POLYGONSCAN_API_KEY ?? '';
 
@@ -34,29 +45,28 @@ const config: HardhatUserConfig = {
     target: 'ethers-v5',
   },
   networks: {
+    hardhat: {
+      accounts: {
+        mnemonic: 'bring tumble anger wild frame you famous usage ramp federal captain company',
+        count: 100,
+      },
+    },
     ethereum: {
       url: process.env.ETHEREUM_URL ?? '',
-      accounts: ACCOUNTS,
+      accounts,
     },
     goerli: {
       url: process.env.GOERLI_URL ?? '',
-      accounts: ACCOUNTS,
+      accounts,
     },
     polygon: {
       url: process.env.POLYGON_URL ?? '',
-      accounts: ACCOUNTS,
+      gasPrice: 2e11,
+      accounts,
     },
     mumbai: {
       url: process.env.MUMBAI_URL ?? '',
-      accounts: ACCOUNTS,
-    },
-    generic: {
-      url: process.env.GENERIC_URL ?? '',
-      chainId: Number.parseInt(process.env.GENERIC_CHAIN_ID ?? '0'),
-      gasPrice: process.env.GENERIC_GAS_PRICE
-        ? Number.parseInt(process.env.GENERIC_GAS_PRICE)
-        : 'auto',
-      accounts: ACCOUNTS,
+      accounts,
     },
   },
   docgen: {
