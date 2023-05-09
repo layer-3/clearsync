@@ -63,4 +63,21 @@ describe('OldDucklingsV2', () => {
       );
     });
   });
+
+  describe('collection', () => {
+    it('collection name changes after reinitialization', async () => {
+      // reinitialize
+      await OldDucklingsV2.initializeV2();
+
+      expect(await OldDucklingsV2.name()).to.equal('(Deleted) Yellow Ducklings');
+      expect(await OldDucklingsV2.name()).to.equal('(Deleted) Yellow Ducklings');
+    });
+
+    it('collection symbol changes after reinitialization', async () => {
+      // reinitialize
+      await OldDucklingsV2.initializeV2();
+
+      expect(await OldDucklingsV2.symbol()).to.equal('DELETED');
+    });
+  });
 });

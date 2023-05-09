@@ -93,6 +93,14 @@ contract OldDucklingsV2 is
 		_setDefaultRoyalty(_royaltiesCollector, _royaltyFee);
 	}
 
+	/**
+	 * @notice Change the name of NFT collection.
+	 * @dev Change the name of NFT collection.
+	 */
+	function initializeV2() external reinitializer(2) {
+		__ERC721_init('(Deleted) Yellow Ducklings', 'DELETED');
+	}
+
 	// ------- Destruct -------
 
 	/**
