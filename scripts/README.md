@@ -53,4 +53,4 @@ Verify:
 
 ## Setup and connect DuckyFamily to Ducklings
 
-`npx hardhat setupNFTs  --ducklings DUCKLINGSV1_ADDRESS  --ducky-family DUCKY_FAMILYV1_ADDRESS --api-base-url 'https://www.yellow.org/api/v3/nft/metadata/' --issuer 0xC5F825188ad49b13a8c5116FfDab7121b1CEf595 --network polygon`
+`npx hardhat setupNFTs  --ducklings DUCKLINGSV1_ADDRESS  --ducky-family DUCKY_FAMILYV1_ADDRESS --api-base-url 'https://www.yellow.org/api/v3/public/nft/metadata/' --issuer 0xC5F825188ad49b13a8c5116FfDab7121b1CEf595 --network polygon`
