@@ -10,8 +10,8 @@ import './src/tasks/accounts';
 import './src/tasks/activate';
 import './src/tasks/forceImport';
 import './src/tasks/setupNFTs';
-import './src/tasks/upgradeOldDucklings';
-import './src/tasks/destructOldDucklings';
+import './src/tasks/upgradeDucklings';
+import './src/tasks/destructDucklings';
 
 let accounts;
 
