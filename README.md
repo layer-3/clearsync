@@ -89,6 +89,15 @@ Duckies is the **canary network for Yellow**, for testing ClearSync technology i
 
 DUCKIES ERC20 token and ClearSync is deployed on Polygon mainnet.
 
+Here are addresses of deployed last versions of smart contracts on the [Polygon](https://polygonscan.com/) chain:
+
+| Contract        | Address                                                                                                                      |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Duckies         | `0x18e73A5333984549484348A94f4D219f4faB7b81` [↗](https://polygonscan.com/address/0x18e73A5333984549484348A94f4D219f4faB7b81) |
+| TreasureVaultV1 | `0x68d1E3F802058Ce517e9ba871Ab182299E74D852` [↗](https://polygonscan.com/address/0x68d1E3F802058Ce517e9ba871Ab182299E74D852) |
+| DucklingsV1     | `0x435b74f6DC4A0723CA19e4dD2AC8Aa1361c7B0f0` [↗](https://polygonscan.com/address/0x435b74f6DC4A0723CA19e4dD2AC8Aa1361c7B0f0) |
+| DuckyFamilyV1   | `0xB66bf78cad7cBab51988ddc792652CbabdFf7675` [↗](https://polygonscan.com/address/0xB66bf78cad7cBab51988ddc792652CbabdFf7675) |
+
 ### Main Networks
 
 The first network for YELLOW ERC20 and ClearSync system will be on Ethereum mainnet, but the system can be extended later to Layer-2, Solana, or a Polkadot parachain.
