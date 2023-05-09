@@ -22,7 +22,7 @@ import '../games/Genome.sol';
  *
  * Ducklings can be upgraded by an account with UPGRADER_ROLE to add certain functionality if needed.
  */
-contract OldDucklingsV2 is
+contract DucklingsV2 is
 	Initializable,
 	IDucklings,
 	ERC721EnumerableUpgradeable,

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.18;
 
-import '@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol';
+import '@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721RoyaltyUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
@@ -25,7 +25,7 @@ import '../games/Genome.sol';
 contract DucklingsV1 is
 	Initializable,
 	IDucklings,
-	ERC721Upgradeable,
+	ERC721EnumerableUpgradeable,
 	ERC721RoyaltyUpgradeable,
 	UUPSUpgradeable,
 	AccessControlUpgradeable
@@ -57,7 +57,6 @@ contract DucklingsV1 is
 	// Server address that is prepended to tokenURI
 	string public apiBaseURL;
 
-	CountersUpgradeable.Counter internal _totalSupply;
 	CountersUpgradeable.Counter public nextNewTokenId;
 	mapping(uint256 => Duckling) public tokenToDuckling;
 
@@ -108,36 +107,12 @@ contract DucklingsV1 is
 	// -------- ERC721 --------
 
 	/**
-	 * @notice Returns total supply of tokens.
-	 * @dev Total supply is equal to the number of minted tokens minus the number of burned tokens.
-	 * @return totalSupply Total supply of tokens.
-	 */
-	function totalSupply() external view returns (uint256) {
-		return _totalSupply.current();
-	}
-
-	/**
-	 * @notice Necessary override to specify what implementation of _burn to use. Also include total supply decrement.
-	 * @dev Necessary override to specify what implementation of _burn to use. Also include total supply decrement.
-	 * @param tokenId Id of the token to burn.
+	 * @notice Necessary override to specify what implementation of _burn to use.
+	 * @dev Necessary override to specify what implementation of _burn to use.
 	 */
 	function _burn(uint256 tokenId) internal override(ERC721RoyaltyUpgradeable, ERC721Upgradeable) {
 		// check on token existence is performed in ERC721Upgradeable._burn
 		super._burn(tokenId);
-
-		_totalSupply.decrement();
-	}
-
-	/**
-	 * @notice Override the ERC721 _mint function to increment the total supply.
-	 * @dev Override the ERC721 _mint function to increment the total supply.
-	 * @param to Address to mint token to.
-	 * @param tokenId Id of the token to mint.
-	 */
-	function _safeMint(address to, uint256 tokenId) internal override(ERC721Upgradeable) {
-		super._safeMint(to, tokenId);
-
-		_totalSupply.increment();
 	}
 
 	/**
@@ -173,7 +148,7 @@ contract DucklingsV1 is
 		virtual
 		override(
 			IERC165Upgradeable,
-			ERC721Upgradeable,
+			ERC721EnumerableUpgradeable,
 			ERC721RoyaltyUpgradeable,
 			AccessControlUpgradeable
 		)
@@ -340,7 +315,7 @@ contract DucklingsV1 is
 		address to,
 		uint256 firstTokenId,
 		uint256 batchSize
-	) internal override(ERC721Upgradeable) {
+	) internal override(ERC721Upgradeable, ERC721EnumerableUpgradeable) {
 		super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
 
 		// mint and burn for not transferable is allowed
