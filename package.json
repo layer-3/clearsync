@@ -38,5 +38,8 @@
     "solhint-plugin-prettier": "^0.0.5",
     "solidity-docgen": "^0.6.0-beta.35",
     "tsx": "^3.12.6"
+  },
+  "dependencies": {
+    "csv-parse": "^5.3.10"
   }
 }

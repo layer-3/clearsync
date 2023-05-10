@@ -1,10 +1,11 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.0;
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 
 contract BatchTransfer is Ownable {
-	function batchTransferPersonalAmounts(
+	function batchTransferUniqueAmounts(
 		address token,
 		address[] memory recipients,
 		uint256[] memory amounts,
@@ -27,7 +28,7 @@ contract BatchTransfer is Ownable {
 		}
 	}
 
-	function batchTransfeSameAmount(
+	function batchTransferSameAmount(
 		address token,
 		address[] memory recipients,
 		uint256 amount
