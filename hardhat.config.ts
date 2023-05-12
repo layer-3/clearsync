@@ -10,6 +10,7 @@ import './src/tasks/accounts';
 import './src/tasks/activate';
 import './src/tasks/forceImport';
 import './src/tasks/setupNFTs';
+import './src/tasks/sendBatchTransfer';
 
 const ACCOUNTS = process.env.PRIVATE_KEY === undefined ? [] : [process.env.PRIVATE_KEY];
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY ?? '';
