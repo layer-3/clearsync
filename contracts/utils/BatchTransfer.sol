@@ -5,46 +5,33 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 
 contract BatchTransfer is Ownable {
-	function batchTransferUniqueAmounts(
-		address token,
-		address[] memory recipients,
-		uint256[] memory amounts,
-		uint256 totalAmount
-	) external onlyOwner {
-		require(recipients.length == amounts.length, 'Arrays should have the same length.');
-
-		IERC20 erc20Token = IERC20(token);
-
-		require(
-			erc20Token.allowance(msg.sender, address(this)) >= totalAmount,
-			'Contract has insufficient allowance.'
-		);
-
-		for (uint256 i = 0; i < recipients.length; i++) {
-			require(
-				erc20Token.transferFrom(msg.sender, recipients[i], amounts[i]),
-				'Token transfer failed.'
-			);
-		}
-	}
-
-	function batchTransferSameAmount(
-		address token,
+	function batchTransfer(
+		address tokenAddress,
 		address[] memory recipients,
 		uint256 amount
 	) external onlyOwner {
-		IERC20 erc20Token = IERC20(token);
+		IERC20 token = IERC20(tokenAddress);
 
 		require(
-			erc20Token.allowance(msg.sender, address(this)) >= amount * recipients.length,
-			'Contract has insufficient allowance.'
+			token.balanceOf(address(this)) >= amount * recipients.length,
+			'Contract has insufficient balance.'
 		);
 
 		for (uint256 i = 0; i < recipients.length; i++) {
-			require(
-				erc20Token.transferFrom(msg.sender, recipients[i], amount),
-				'Token transfer failed.'
-			);
+			require(token.transfer(recipients[i], amount), 'Token transfer failed.');
 		}
+	}
+
+	function withdraw(address tokenAddress) external onlyOwner {
+		IERC20 token = IERC20(tokenAddress);
+
+		require(token.balanceOf(address(this)) > 0, 'Contract has no balance of such token.');
+
+		token.transfer(msg.sender, token.balanceOf(address(this)));
+	}
+
+	function balanceOf(address tokenAddress) public view returns (uint256) {
+		IERC20 token = IERC20(tokenAddress);
+		return token.balanceOf(address(this));
 	}
 }
