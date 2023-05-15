@@ -23,31 +23,13 @@ contract BatchTransfer is Ownable {
 		address[] memory recipients,
 		uint256 amount
 	) external onlyOwner {
-		IERC20 token = IERC20(tokenAddress);
-
-		uint256 tokenBalance = 0;
-		if (tokenAddress == address(0)) {
-			tokenBalance = address(this).balance;
-		} else {
-			tokenBalance = token.balanceOf(address(this));
-		}
-
 		require(
-			tokenBalance >= amount * recipients.length,
+			_getBalance(tokenAddress) >= amount * recipients.length,
 			'Contract has insufficient balance.'
 		);
 
 		for (uint256 i = 0; i < recipients.length; i++) {
-			bool success = false;
-			if (tokenAddress == address(0)) {
-				(success, ) = recipients[i].call{value: amount}(''); //solhint-disable-line avoid-low-level-calls
-			} else {
-				success = token.transfer(recipients[i], amount);
-			}
-
-			if (!success) {
-				revert TransferFailed(recipients[i]);
-			}
+			if (!_transfer(recipients[i], amount)) revert TransferFailed(recipients[i]);
 		}
 	}
 
@@ -63,22 +45,36 @@ contract BatchTransfer is Ownable {
 	 * @param tokenAddress The address of the ERC20 token to be withdrawn.
 	 */
 	function withdraw(address tokenAddress) external onlyOwner {
-		uint256 tokenBalance = 0;
-		if (tokenAddress == address(0)) {
-			tokenBalance = address(this).balance;
-		} else {
-			tokenBalance = IERC20(tokenAddress).balanceOf(address(this));
-		}
-
+		uint256 tokenBalance = _getBalance(tokenAddress);
 		require(tokenBalance > 0, 'Contract has no balance of such token.');
 		
-		bool success = false;
-		if (tokenAddress == address(0)) {
-			(success, ) = msg.sender.call{value: tokenBalance}(''); //solhint-disable-line avoid-low-level-calls
-		} else {
-			success = IERC20(tokenAddress).transfer(msg.sender, tokenBalance);
-		}
+        require(_transfer(tokenAddress, tokenBalance), 'Could not transfer tokens');
+	}
 
-        require(success, 'Could not transfer tokens');
+	/**
+	 * @notice Returns the balance of `tokenAddress` held by the contract.
+	 * @dev Can only be called by the contract owner.
+	 * @param tokenAddress The address of the ERC20 token to be withdrawn.
+	 */
+	function _getBalance(address tokenAddress) internal view returns (uint256) {
+		if (tokenAddress == address(0)) {
+			return address(this).balance;
+		} else {
+			return IERC20(tokenAddress).balanceOf(address(this));
+		}
+	}
+
+	/**
+	 * @notice Transfers `amount` tokens of `tokenAddress` to the sender.
+	 * @dev Can only be called by the contract owner.
+	 * @param tokenAddress The address of the token to be transferred.
+	 * @param amount The amount of tokens to be transferred.
+	 */
+	function _transfer(address tokenAddress, uint256 amount) internal returns (bool success) {
+		if (tokenAddress == address(0)) {
+			(success, ) = msg.sender.call{value: amount}(''); //solhint-disable-line avoid-low-level-calls
+		} else {
+			success = IERC20(tokenAddress).transfer(msg.sender, amount);
+		}
 	}
 }
