@@ -25,13 +25,26 @@ contract BatchTransfer is Ownable {
 	) external onlyOwner {
 		IERC20 token = IERC20(tokenAddress);
 
+		uint256 tokenBalance = 0;
+		if (tokenAddress == address(0)) {
+			tokenBalance = address(this).balance;
+		} else {
+			tokenBalance = token.balanceOf(address(this));
+		}
+
 		require(
-			token.balanceOf(address(this)) >= amount * recipients.length,
+			tokenBalance >= amount * recipients.length,
 			'Contract has insufficient balance.'
 		);
 
 		for (uint256 i = 0; i < recipients.length; i++) {
-			bool success = token.transfer(recipients[i], amount);
+			bool success = false;
+			if (tokenAddress == address(0)) {
+				(success, ) = recipients[i].call{value: amount}(''); //solhint-disable-line avoid-low-level-calls
+			} else {
+				success = token.transfer(recipients[i], amount);
+			}
+
 			if (!success) {
 				revert TransferFailed(recipients[i]);
 			}
@@ -39,15 +52,33 @@ contract BatchTransfer is Ownable {
 	}
 
 	/**
+	 * @notice Receives ETH transfers.
+	 * @dev Required to receive ETH transfers.
+	 */
+	receive() external payable {}
+
+	/**
 	 * @notice Withdraws all tokens of `tokenAddress` from the contract.
 	 * @dev Can only be called by the contract owner.
 	 * @param tokenAddress The address of the ERC20 token to be withdrawn.
 	 */
 	function withdraw(address tokenAddress) external onlyOwner {
-		IERC20 token = IERC20(tokenAddress);
+		uint256 tokenBalance = 0;
+		if (tokenAddress == address(0)) {
+			tokenBalance = address(this).balance;
+		} else {
+			tokenBalance = IERC20(tokenAddress).balanceOf(address(this));
+		}
 
-		require(token.balanceOf(address(this)) > 0, 'Contract has no balance of such token.');
+		require(tokenBalance > 0, 'Contract has no balance of such token.');
+		
+		bool success = false;
+		if (tokenAddress == address(0)) {
+			(success, ) = msg.sender.call{value: tokenBalance}(''); //solhint-disable-line avoid-low-level-calls
+		} else {
+			success = IERC20(tokenAddress).transfer(msg.sender, tokenBalance);
+		}
 
-		token.transfer(msg.sender, token.balanceOf(address(this)));
+        require(success, 'Could not transfer tokens');
 	}
 }

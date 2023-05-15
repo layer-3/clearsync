@@ -4,6 +4,7 @@ import { ethers } from 'hardhat';
 
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import type { BatchTransfer, TestERC20 } from '../../typechain-types';
+import type { BigNumber } from 'ethers';
 
 describe('BatchTransfer', function () {
   const TOKEN_CAP = 100_000_000_000;
@@ -12,6 +13,8 @@ describe('BatchTransfer', function () {
   let TokenAdmin: SignerWithAddress;
   let BatchTransferOwner: SignerWithAddress;
   let Receivers: SignerWithAddress[];
+  let nativeBalances: BigNumber[];
+  let tokenBalances: BigNumber[];
 
   let Token:TestERC20;
   let Batcher: BatchTransfer;
@@ -39,39 +42,81 @@ describe('BatchTransfer', function () {
     ({ Token, Batcher } = await loadFixture(deployTokenFixture));
     Token = Token.connect(TokenAdmin);
     Batcher = Batcher.connect(BatchTransferOwner);
+    nativeBalances = await Promise.all(Receivers.map(r => r.getBalance()));
+    tokenBalances = await Promise.all(Receivers.map(r => Token.balanceOf(r.address)));
 
     await Token.mint(Batcher.address, BATCHER_BALANCE);
+    await TokenAdmin.sendTransaction({
+      to: Batcher.address,
+      value: BATCHER_BALANCE,
+    });
   });
 
-  it('Successful transfers', async () => {
+  it('Successful ERC20 transfers', async () => {
     const amount = 20;
     const receivers = Receivers.slice(0, 20).map(r => r.address);
     await Batcher.batchTransfer(Token.address, receivers, amount);
 
     expect(await Token.balanceOf(Batcher.address)).to.equal(BATCHER_BALANCE - amount * receivers.length);
     
-    for (const receiver of receivers) {
-      expect(await Token.balanceOf(receiver)).to.equal(amount);
+    for (let i = 0; i < receivers.length; i++) {
+      expect(await Token.balanceOf(receivers[i])).to.equal(tokenBalances[i].add(amount));
     }
   });
 
-  it('Insufficient balance', async () => {
+  it('Successful native token transfers', async () => {
+    const amount = 20;
+    const receivers = Receivers.slice(0, 20).map(r => r.address);
+    await Batcher.batchTransfer(ethers.constants.AddressZero, receivers, amount);
+
+    expect(await Batcher.provider.getBalance(Batcher.address)).to.equal(BATCHER_BALANCE - amount * receivers.length);
+    
+    for (let i = 0; i < receivers.length; i++) {
+      expect(await Receivers[i].getBalance()).to.equal(nativeBalances[i].add(amount));
+    }
+  });
+
+  it('Insufficient ERC20 balance', async () => {
     const amount = 2000;
     const receivers = Receivers.slice(0, 20).map(r => r.address);
     await expect(Batcher.batchTransfer(Token.address, receivers, amount)).to.be.revertedWith('Contract has insufficient balance.');
 
     expect(await Token.balanceOf(Batcher.address)).to.equal(BATCHER_BALANCE);
     
-    for (const receiver of receivers) {
-      expect(await Token.balanceOf(receiver)).to.equal(0);
+    for (let i = 0; i < receivers.length; i++) {
+      expect(await Token.balanceOf(receivers[i])).to.equal(tokenBalances[i]);
     }
   });
 
-  it('Successful withdrawal', async () => {
+  it('Insufficient native token balance', async () => {
+    const amount = 2000;
+    const receivers = Receivers.slice(0, 20).map(r => r.address);
+    await expect(Batcher.batchTransfer(ethers.constants.AddressZero, receivers, amount)).to.be.revertedWith('Contract has insufficient balance.');
+
+    expect(await Batcher.provider.getBalance(Batcher.address)).to.equal(BATCHER_BALANCE);
+    
+    for (let i = 0; i < receivers.length; i++) {
+      expect(await Receivers[i].getBalance()).to.equal(nativeBalances[i]);
+    }
+  });
+
+  it('Successful ERC20 withdrawal', async () => {
     await Batcher.withdraw(Token.address);
     
     expect(await Token.balanceOf(Batcher.address)).to.equal(0);
     expect(await Token.balanceOf(BatchTransferOwner.address)).to.equal(BATCHER_BALANCE);
+  });
+
+  it('Successful native token withdrawal', async () => {
+    const ownerBalance = await BatchTransferOwner.getBalance();
+    const batcherBalance = await Batcher.provider.getBalance(Batcher.address);
+    
+    const { gasLimit, gasPrice } = await Batcher.withdraw(ethers.constants.AddressZero);
+
+    expect(await Batcher.provider.getBalance(Batcher.address)).to.equal(0);
+    expect(await BatchTransferOwner.getBalance()).to.be.greaterThan(
+      ownerBalance.add(batcherBalance).sub(gasLimit.mul(gasPrice?.toNumber() ?? 0))
+    );
   });
 
   it('Unknown token', async () => {
