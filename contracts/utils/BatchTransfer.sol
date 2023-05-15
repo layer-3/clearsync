@@ -29,7 +29,7 @@ contract BatchTransfer is Ownable {
 		);
 
 		for (uint256 i = 0; i < recipients.length; i++) {
-			if (!_transfer(recipients[i], amount)) revert TransferFailed(recipients[i]);
+			if (!_transfer(tokenAddress, recipients[i], amount)) revert TransferFailed(recipients[i]);
 		}
 	}
 
@@ -48,7 +48,7 @@ contract BatchTransfer is Ownable {
 		uint256 tokenBalance = _getBalance(tokenAddress);
 		require(tokenBalance > 0, 'Contract has no balance of such token.');
 		
-        require(_transfer(tokenAddress, tokenBalance), 'Could not transfer tokens');
+        require(_transfer(tokenAddress, msg.sender, tokenBalance), 'Could not transfer tokens');
 	}
 
 	/**
@@ -70,11 +70,11 @@ contract BatchTransfer is Ownable {
 	 * @param tokenAddress The address of the token to be transferred.
 	 * @param amount The amount of tokens to be transferred.
 	 */
-	function _transfer(address tokenAddress, uint256 amount) internal returns (bool success) {
+	function _transfer(address tokenAddress, address recipient, uint256 amount) internal returns (bool success) {
 		if (tokenAddress == address(0)) {
-			(success, ) = msg.sender.call{value: amount}(''); //solhint-disable-line avoid-low-level-calls
+			(success, ) = recipient.call{value: amount}(''); //solhint-disable-line avoid-low-level-calls
 		} else {
-			success = IERC20(tokenAddress).transfer(msg.sender, amount);
+			success = IERC20(tokenAddress).transfer(recipient, amount);
 		}
 	}
 }
