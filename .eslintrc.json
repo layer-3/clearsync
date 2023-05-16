@@ -78,6 +78,11 @@
     "no-constructor-bind/no-constructor-bind": "error",
     "no-constructor-bind/no-constructor-state": "error",
 
+    "promise/param-names": [
+      "error",
+      { "resolvePattern": "^__|resolve", "rejectPattern": "^__|reject" }
+    ],
+
     "sonarjs/no-duplicate-string": 0,
 
     "unicorn/filename-case": 0,
