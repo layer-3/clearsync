@@ -40,7 +40,7 @@ contract VestingVault is Ownable {
 	 * @param _token The address of the ERC20 token.
 	 */
 	constructor(IERC20 _token) {
-		require(address(_token) != address(0), 'TokenVesting: invalid token address');
+		require(address(_token) != address(0), 'invalid token address');
 		token = _token;
 	}
 
@@ -58,9 +58,9 @@ contract VestingVault is Ownable {
 		uint256 _start,
 		uint256 _duration
 	) public onlyOwner {
-		require(_beneficiary != address(0), 'TokenVesting: invalid beneficiary address');
-		require(_amount > 0, 'TokenVesting: amount must be greater than 0');
-		require(_duration > 0, 'TokenVesting: duration must be greater than 0');
+		require(_beneficiary != address(0), 'invalid beneficiary address');
+		require(_amount > 0, 'amount must be greater than 0');
+		require(_duration > 0, 'duration must be greater than 0');
 		require(_start > block.timestamp, 'start <= now');
 
 		Schedule memory newSchedule = Schedule({
@@ -83,7 +83,7 @@ contract VestingVault is Ownable {
 	 */
 	function deleteSchedule(address _beneficiary, uint256 _index) public onlyOwner {
 		Schedule[] storage schedules = beneficiarySchedules[_beneficiary];
-		require(_index < schedules.length, 'TokenVesting: index out of range');
+		require(_index < schedules.length, 'index out of range');
 
 		schedules[_index] = schedules[schedules.length - 1];
 		schedules.pop();
@@ -99,7 +99,7 @@ contract VestingVault is Ownable {
 		uint256 totalUnreleasedAmount = 0;
 		Schedule[] storage schedules = beneficiarySchedules[msg.sender];
 
-		require(schedules.length > 0, 'TokenVesting: no schedules for the beneficiary');
+		require(schedules.length > 0, 'no schedules for the beneficiary');
 
 		for (uint256 i = 0; i < schedules.length; i++) {
 			Schedule storage schedule = schedules[i];
@@ -114,7 +114,7 @@ contract VestingVault is Ownable {
 			}
 		}
 
-		require(totalUnreleasedAmount > 0, 'TokenVesting: no tokens to release');
+		require(totalUnreleasedAmount > 0, 'no tokens to release');
 
 		token.transfer(msg.sender, totalUnreleasedAmount);
 
