@@ -99,7 +99,7 @@ contract VestingVault is Ownable {
 	 * @dev Releases vested tokens for the calling beneficiary.
 	 * Can only be called by a beneficiary.
 	 */
-	function release() public {
+	function claim() public {
 		uint256 totalUnreleasedAmount = 0;
 		Schedule[] storage schedules = beneficiarySchedules[msg.sender];
 
