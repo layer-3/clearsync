@@ -8,6 +8,9 @@ import type { TestERC20, VestingVault } from '../../typechain-types';
 
 const TOKEN_CAP = 100_000_000_000_000;
 const TOKEN_DECIMALS = 8;
+const NOW = Math.floor(Date.now() / 1000);
+const IN_FUTURE = NOW + 60 * 10;
+const IN_PAST = NOW - 60 * 10;
 
 describe('Vesting', function () {
   let owner: SignerWithAddress, beneficiary: SignerWithAddress, someone: SignerWithAddress;
@@ -55,7 +58,7 @@ describe('Vesting', function () {
         VestingAsOwner.addSchedule(
           beneficiaryAddress,
           ethers.utils.parseUnits('100', TOKEN_DECIMALS),
-          1_627_376_512,
+          IN_FUTURE,
           100,
         ),
       )
@@ -63,7 +66,7 @@ describe('Vesting', function () {
         .withArgs(
           beneficiaryAddress,
           ethers.utils.parseUnits('100', TOKEN_DECIMALS),
-          1_627_376_512,
+          IN_FUTURE,
           100,
         );
     });
@@ -73,10 +76,38 @@ describe('Vesting', function () {
         VestingAsSomeone.addSchedule(
           beneficiaryAddress,
           ethers.utils.parseUnits('100', TOKEN_DECIMALS),
-          1_627_376_512,
+          IN_FUTURE,
           100,
         ),
       ).to.be.revertedWith('Ownable: caller is not the owner');
+    });
+
+    it('revert when adding schedule with zero amount', async function () {
+      await expect(
+        VestingAsOwner.addSchedule(beneficiaryAddress, 0, IN_FUTURE, 100),
+      ).to.be.revertedWithCustomError(Vesting, 'InvalidSchedule');
+    });
+
+    it('revert when adding schedule with zero duration', async function () {
+      await expect(
+        VestingAsOwner.addSchedule(
+          beneficiaryAddress,
+          ethers.utils.parseUnits('100', TOKEN_DECIMALS),
+          0,
+          100,
+        ),
+      ).to.be.revertedWithCustomError(Vesting, 'InvalidSchedule');
+    });
+
+    it('revert when adding schedule with start in the past', async function () {
+      await expect(
+        VestingAsOwner.addSchedule(
+          beneficiaryAddress,
+          ethers.utils.parseUnits('100', TOKEN_DECIMALS),
+          IN_PAST,
+          100,
+        ),
+      ).to.be.revertedWithCustomError(Vesting, 'InvalidSchedule');
     });
   });
 
@@ -85,7 +116,7 @@ describe('Vesting', function () {
       await VestingAsOwner.addSchedule(
         beneficiaryAddress,
         ethers.utils.parseUnits('100', TOKEN_DECIMALS),
-        1_627_376_512,
+        IN_FUTURE,
         100,
       );
       await expect(Vesting.connect(owner).deleteSchedule(beneficiaryAddress, 0))
@@ -97,14 +128,21 @@ describe('Vesting', function () {
       await VestingAsOwner.addSchedule(
         beneficiaryAddress,
         ethers.utils.parseUnits('100', TOKEN_DECIMALS),
-        1_627_376_512,
+        IN_FUTURE,
         100,
       );
       await expect(VestingAsSomeone.deleteSchedule(beneficiaryAddress, 0)).to.be.revertedWith(
         'Ownable: caller is not the owner',
       );
     });
+
+    it('revert when owner removes non-existent schedule', async function () {
+      const index = 0;
+      await expect(VestingAsOwner.deleteSchedule(beneficiaryAddress, index))
+        .to.be.revertedWithCustomError(Vesting, 'NoScheduleForBeneficiary')
+        .withArgs(beneficiaryAddress, index);
+    });
   });
 
-  describe('claim', () => {});
+  // describe('claim', () => {});
 });
