@@ -61,6 +61,7 @@ contract VestingVault is Ownable {
 		require(_beneficiary != address(0), 'TokenVesting: invalid beneficiary address');
 		require(_amount > 0, 'TokenVesting: amount must be greater than 0');
 		require(_duration > 0, 'TokenVesting: duration must be greater than 0');
+		require(_start > block.timestamp, 'start <= now');
 
 		Schedule memory newSchedule = Schedule({
 			amount: _amount,
