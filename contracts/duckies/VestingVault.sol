@@ -32,12 +32,17 @@ contract VestingVault is Ownable {
 	event ScheduleDeleted(address indexed beneficiary, uint256 index);
 	event TokensReleased(address indexed beneficiary, uint256 amount);
 
+	error InvalidTokenAddress(address tokenAddress);
+	error InvalidSchedule(Schedule schedule);
+	error NoScheduleForBeneficiary(address beneficiary, uint256 index);
+	error UnableToRelease(address beneficiary);
+
 	/**
 	 * @dev Initializes the contract with the given ERC20 token.
 	 * @param _token The address of the ERC20 token.
 	 */
 	constructor(IERC20 _token) {
-		require(address(_token) != address(0), 'invalid token address');
+		if (address(_token) == address(0)) revert InvalidTokenAddress(address(_token));
 		token = _token;
 	}
 
@@ -55,17 +60,19 @@ contract VestingVault is Ownable {
 		uint256 _start,
 		uint256 _duration
 	) public onlyOwner {
-		require(_beneficiary != address(0), 'invalid beneficiary address');
-		require(_amount > 0, 'amount must be greater than 0');
-		require(_duration > 0, 'duration must be greater than 0');
-		require(_start > block.timestamp, 'start <= now');
-
 		Schedule memory newSchedule = Schedule({
 			amount: _amount,
 			start: _start,
 			duration: _duration,
 			released: 0
 		});
+
+		if (
+			_beneficiary == address(0) ||
+			_amount == 0 ||
+			_start <= block.timestamp ||
+			_duration == 0
+		) revert InvalidSchedule(newSchedule);
 
 		beneficiarySchedules[_beneficiary].push(newSchedule);
 
@@ -80,7 +87,7 @@ contract VestingVault is Ownable {
 	 */
 	function deleteSchedule(address _beneficiary, uint256 _index) public onlyOwner {
 		Schedule[] storage schedules = beneficiarySchedules[_beneficiary];
-		require(_index < schedules.length, 'index out of range');
+		if (_index >= schedules.length) revert NoScheduleForBeneficiary(_beneficiary, _index);
 
 		schedules[_index] = schedules[schedules.length - 1];
 		schedules.pop();
@@ -96,7 +103,7 @@ contract VestingVault is Ownable {
 		uint256 totalUnreleasedAmount = 0;
 		Schedule[] storage schedules = beneficiarySchedules[msg.sender];
 
-		require(schedules.length > 0, 'no schedules for the beneficiary');
+		if (schedules.length == 0) revert UnableToRelease(msg.sender);
 
 		for (uint256 i = 0; i < schedules.length; i++) {
 			Schedule storage schedule = schedules[i];
@@ -111,7 +118,7 @@ contract VestingVault is Ownable {
 			}
 		}
 
-		require(totalUnreleasedAmount > 0, 'no tokens to release');
+		if (totalUnreleasedAmount == 0) revert UnableToRelease(msg.sender);
 
 		token.transfer(msg.sender, totalUnreleasedAmount);
 
