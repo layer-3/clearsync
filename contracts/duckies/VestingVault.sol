@@ -113,8 +113,8 @@ contract VestingVault is Ownable {
 			uint256 unreleasedAmount = vestedAmount - schedule.released;
 
 			if (unreleasedAmount > 0) {
-				schedule.released = schedule.released + unreleasedAmount;
-				totalUnreleasedAmount = totalUnreleasedAmount + unreleasedAmount;
+				schedule.released += unreleasedAmount;
+				totalUnreleasedAmount += unreleasedAmount;
 			}
 		}
 
