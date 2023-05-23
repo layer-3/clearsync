@@ -2,7 +2,6 @@
 pragma solidity 0.8.18;
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import '@openzeppelin/contracts/utils/math/SafeMath.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 
 /**
@@ -10,8 +9,6 @@ import '@openzeppelin/contracts/access/Ownable.sol';
  * @dev A token vesting contract that supports multiple vesting schedules for each beneficiary.
  */
 contract VestingVault is Ownable {
-	using SafeMath for uint256;
-
 	// The vesting schedule structure
 	struct Schedule {
 		uint256 amount;
@@ -104,13 +101,13 @@ contract VestingVault is Ownable {
 		for (uint256 i = 0; i < schedules.length; i++) {
 			Schedule storage schedule = schedules[i];
 
-			uint256 elapsedTime = block.timestamp.sub(schedule.start);
-			uint256 vestedAmount = schedule.amount.mul(elapsedTime).div(schedule.duration);
-			uint256 unreleasedAmount = vestedAmount.sub(schedule.released);
+			uint256 elapsedTime = block.timestamp - schedule.start;
+			uint256 vestedAmount = (schedule.amount * elapsedTime) / schedule.duration;
+			uint256 unreleasedAmount = vestedAmount - schedule.released;
 
 			if (unreleasedAmount > 0) {
-				schedule.released = schedule.released.add(unreleasedAmount);
-				totalUnreleasedAmount = totalUnreleasedAmount.add(unreleasedAmount);
+				schedule.released = schedule.released + unreleasedAmount;
+				totalUnreleasedAmount = totalUnreleasedAmount + unreleasedAmount;
 			}
 		}
 
