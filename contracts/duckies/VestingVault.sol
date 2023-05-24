@@ -39,64 +39,60 @@ contract VestingVault is Ownable {
 
 	/**
 	 * @dev Initializes the contract with the given ERC20 token.
-	 * @param _token The address of the ERC20 token.
+	 * @param token_ The address of the ERC20 token.
 	 */
-	constructor(IERC20 _token) {
-		if (address(_token) == address(0)) revert InvalidTokenAddress(address(_token));
-		token = _token;
+	constructor(IERC20 token_) {
+		if (address(token_) == address(0)) revert InvalidTokenAddress(address(token_));
+		token = token_;
 	}
 
 	/**
 	 * @dev Adds a vesting schedule for a beneficiary.
 	 * Can only be called by the contract owner.
-	 * @param _beneficiary The address of the beneficiary.
-	 * @param _amount The total amount of tokens to be vested.
-	 * @param _start The start timestamp for the vesting schedule.
-	 * @param _duration The duration of the vesting period in seconds.
+	 * @param beneficiary The address of the beneficiary.
+	 * @param amount The total amount of tokens to be vested.
+	 * @param start The start timestamp for the vesting schedule.
+	 * @param duration The duration of the vesting period in seconds.
 	 */
 	function addSchedule(
-		address _beneficiary,
-		uint256 _amount,
-		uint64 _start,
-		uint64 _duration
+		address beneficiary,
+		uint256 amount,
+		uint64 start,
+		uint64 duration
 	) public onlyOwner {
 		Schedule memory newSchedule = Schedule({
-			amount: _amount,
+			amount: amount,
 			releasedAmount: 0,
-			start: _start,
-			duration: _duration
+			start: start,
+			duration: duration
 		});
 
-		if (
-			_beneficiary == address(0) ||
-			_amount == 0 ||
-			_start <= block.timestamp ||
-			_duration == 0
-		) revert InvalidSchedule(newSchedule);
+		if (beneficiary == address(0) || amount == 0 || start <= block.timestamp || duration == 0)
+			revert InvalidSchedule(newSchedule);
 
-		beneficiarySchedules[_beneficiary].push(newSchedule);
+		beneficiarySchedules[beneficiary].push(newSchedule);
 
-		emit ScheduleAdded(_beneficiary, _amount, _start, _duration);
+		emit ScheduleAdded(beneficiary, amount, start, duration);
 	}
 
 	/**
 	 * @dev Deletes a vesting schedule for a beneficiary.
 	 * Can only be called by the contract owner.
-	 * @param _beneficiary The address of the beneficiary.
-	 * @param _index The index of the vesting schedule to be deleted.
+	 * @param beneficiary The address of the beneficiary.
+	 * @param index The index of the vesting schedule to be deleted.
 	 */
-	function deleteSchedule(address _beneficiary, uint256 _index) public onlyOwner {
-		_deleteSchedule(_beneficiary, _index);
+	function deleteSchedule(address beneficiary, uint256 index) public onlyOwner {
+		_deleteSchedule(beneficiary, index);
 	}
 
-	function _deleteSchedule(address _beneficiary, uint256 _index) internal {
-		Schedule[] storage schedules = beneficiarySchedules[_beneficiary];
-		if (_index >= schedules.length) revert NoScheduleForBeneficiary(_beneficiary, _index);
+	function _deleteSchedule(address beneficiary, uint256 index) internal {
+		Schedule[] storage schedules = beneficiarySchedules[beneficiary];
+		if (index >= schedules.length) revert NoScheduleForBeneficiary(beneficiary, index);
 
-		schedules[_index] = schedules[schedules.length - 1];
+		schedules[index] = schedules[schedules.length - 1];
 		schedules.pop();
 
-		emit ScheduleDeleted(_beneficiary, _index);
+		emit ScheduleDeleted(beneficiary, index);
 	}
 
 	/**
