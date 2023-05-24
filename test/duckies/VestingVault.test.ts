@@ -14,6 +14,9 @@ const NOW = Math.floor(Date.now() / 1000);
 const TIME_DIFF = 60 * 10; // 10 minutes
 const VESTING_1_START = NOW + TIME_DIFF;
 
+const VESTING_1_AMOUNT = ethers.utils.parseUnits('100', TOKEN_DECIMALS);
+const VESTING_DURATION = 60 * 60 * 24 * 10; // 10 days
+
 describe('Vesting', function () {
   let Owner: SignerWithAddress, Beneficiary: SignerWithAddress, Someone: SignerWithAddress;
   let BeneficiaryAddress: string;
@@ -59,45 +62,35 @@ describe('Vesting', function () {
       await expect(
         VestingAsOwner.addSchedule(
           BeneficiaryAddress,
-          ethers.utils.parseUnits('100', TOKEN_DECIMALS),
+          VESTING_1_AMOUNT,
           VESTING_1_START,
-          100,
+          VESTING_DURATION,
         ),
       )
         .to.emit(Vesting, 'ScheduleAdded')
-        .withArgs(
-          BeneficiaryAddress,
-          ethers.utils.parseUnits('100', TOKEN_DECIMALS),
-          VESTING_1_START,
-          100,
-        );
+        .withArgs(BeneficiaryAddress, VESTING_1_AMOUNT, VESTING_1_START, VESTING_DURATION);
     });
 
     it('revert when not Owner adds new schedule', async function () {
       await expect(
         VestingAsSomeone.addSchedule(
           BeneficiaryAddress,
-          ethers.utils.parseUnits('100', TOKEN_DECIMALS),
+          VESTING_1_AMOUNT,
           VESTING_1_START,
-          100,
+          VESTING_DURATION,
         ),
       ).to.be.revertedWith('Ownable: caller is not the owner');
     });
 
     it('revert when adding schedule with zero amount', async function () {
       await expect(
-        VestingAsOwner.addSchedule(BeneficiaryAddress, 0, VESTING_1_START, 100),
+        VestingAsOwner.addSchedule(BeneficiaryAddress, 0, VESTING_1_START, VESTING_DURATION),
       ).to.be.revertedWithCustomError(Vesting, 'InvalidSchedule');
     });
 
     it('revert when adding schedule with zero duration', async function () {
       await expect(
-        VestingAsOwner.addSchedule(
-          BeneficiaryAddress,
-          ethers.utils.parseUnits('100', TOKEN_DECIMALS),
-          0,
-          100,
-        ),
+        VestingAsOwner.addSchedule(BeneficiaryAddress, VESTING_1_AMOUNT, 0, VESTING_DURATION),
       ).to.be.revertedWithCustomError(Vesting, 'InvalidSchedule');
     });
 
@@ -105,9 +98,9 @@ describe('Vesting', function () {
       await expect(
         VestingAsOwner.addSchedule(
           BeneficiaryAddress,
-          ethers.utils.parseUnits('100', TOKEN_DECIMALS),
+          VESTING_1_AMOUNT,
           NOW - 42,
-          100,
+          VESTING_DURATION,
         ),
       ).to.be.revertedWithCustomError(Vesting, 'InvalidSchedule');
     });
@@ -116,18 +109,13 @@ describe('Vesting', function () {
       await expect(
         VestingAsOwner.addSchedule(
           BeneficiaryAddress,
-          ethers.utils.parseUnits('100', TOKEN_DECIMALS),
+          VESTING_1_AMOUNT,
           VESTING_1_START,
-          100,
+          VESTING_DURATION,
         ),
       )
         .to.emit(Vesting, 'ScheduleAdded')
-        .withArgs(
-          BeneficiaryAddress,
-          ethers.utils.parseUnits('100', TOKEN_DECIMALS),
-          VESTING_1_START,
-          100,
-        );
+        .withArgs(BeneficiaryAddress, VESTING_1_AMOUNT, VESTING_1_START, VESTING_DURATION);
     });
   });
 
@@ -135,9 +123,9 @@ describe('Vesting', function () {
     it('success when Owner removes schedule', async function () {
       await VestingAsOwner.addSchedule(
         BeneficiaryAddress,
-        ethers.utils.parseUnits('100', TOKEN_DECIMALS),
+        VESTING_1_AMOUNT,
         VESTING_1_START,
-        100,
+        VESTING_DURATION,
       );
       await expect(Vesting.connect(Owner).deleteSchedule(BeneficiaryAddress, 0))
         .to.emit(Vesting, 'ScheduleDeleted')
@@ -147,9 +135,9 @@ describe('Vesting', function () {
     it('revert when not Owner removes schedule', async function () {
       await VestingAsOwner.addSchedule(
         BeneficiaryAddress,
-        ethers.utils.parseUnits('100', TOKEN_DECIMALS),
+        VESTING_1_AMOUNT,
         VESTING_1_START,
-        100,
+        VESTING_DURATION,
       );
       await expect(VestingAsSomeone.deleteSchedule(BeneficiaryAddress, 0)).to.be.revertedWith(
         'Ownable: caller is not the owner',
@@ -166,9 +154,9 @@ describe('Vesting', function () {
     it('event is emitted', async function () {
       await VestingAsOwner.addSchedule(
         BeneficiaryAddress,
-        ethers.utils.parseUnits('100', TOKEN_DECIMALS),
+        VESTING_1_AMOUNT,
         VESTING_1_START,
-        100,
+        VESTING_DURATION,
       );
       await expect(VestingAsOwner.deleteSchedule(BeneficiaryAddress, 0))
         .to.emit(Vesting, 'ScheduleDeleted')
@@ -177,9 +165,6 @@ describe('Vesting', function () {
   });
 
   describe('claim', () => {
-    const vestingAmount = ethers.utils.parseUnits('100', TOKEN_DECIMALS);
-    const vestingDuration = 60 * 60 * 24 * 10; // 10 days
-
     let snapshot: SnapshotRestorer;
 
     beforeEach(async function () {
@@ -194,19 +179,19 @@ describe('Vesting', function () {
       beforeEach(async function () {
         await VestingAsOwner.addSchedule(
           BeneficiaryAddress,
-          vestingAmount,
+          VESTING_1_AMOUNT,
           VESTING_1_START,
-          vestingDuration,
+          VESTING_DURATION,
         );
       });
 
       it('claim all tokens after vesting period ends', async function () {
         expect(await ERC20.balanceOf(BeneficiaryAddress)).to.equal(0);
 
-        await setNextBlockTimestamp(VESTING_1_START + vestingDuration);
+        await setNextBlockTimestamp(VESTING_1_START + VESTING_DURATION);
         await VestingAsBeneficiary.claim();
 
-        expect(await ERC20.balanceOf(BeneficiaryAddress)).to.equal(vestingAmount);
+        expect(await ERC20.balanceOf(BeneficiaryAddress)).to.equal(VESTING_1_AMOUNT);
       });
 
       it('claim part of the tokens before vesting period ends', async function () {
@@ -215,7 +200,7 @@ describe('Vesting', function () {
         await VestingAsBeneficiary.claim();
 
         expect(await ERC20.balanceOf(BeneficiaryAddress)).to.equal(
-          vestingAmount.mul(timeDiff).div(vestingDuration),
+          VESTING_1_AMOUNT.mul(timeDiff).div(VESTING_DURATION),
         );
       });
 
@@ -225,7 +210,7 @@ describe('Vesting', function () {
         await VestingAsBeneficiary.claim();
 
         expect(await ERC20.balanceOf(BeneficiaryAddress)).to.equal(
-          vestingAmount.mul(timeDiff1).div(vestingDuration),
+          VESTING_1_AMOUNT.mul(timeDiff1).div(VESTING_DURATION),
         );
 
         const timeDiff2 = 60 * 60 * 24 * 4;
@@ -233,7 +218,7 @@ describe('Vesting', function () {
         await VestingAsBeneficiary.claim();
 
         expect(await ERC20.balanceOf(BeneficiaryAddress)).to.equal(
-          vestingAmount.mul(timeDiff2).div(vestingDuration),
+          VESTING_1_AMOUNT.mul(timeDiff2).div(VESTING_DURATION),
         );
       });
 
@@ -250,7 +235,7 @@ describe('Vesting', function () {
       });
 
       it('revert when no tokens to claim', async function () {
-        await setNextBlockTimestamp(VESTING_1_START + vestingDuration);
+        await setNextBlockTimestamp(VESTING_1_START + VESTING_DURATION);
         await VestingAsBeneficiary.claim();
 
         await expect(VestingAsBeneficiary.claim())
@@ -259,7 +244,7 @@ describe('Vesting', function () {
       });
 
       it('deletes schedule when all tokens claimed', async () => {
-        await setNextBlockTimestamp(VESTING_1_START + vestingDuration);
+        await setNextBlockTimestamp(VESTING_1_START + VESTING_DURATION);
         await VestingAsBeneficiary.claim();
 
         await expect(VestingAsOwner.beneficiarySchedule(BeneficiaryAddress, 0))
@@ -268,31 +253,31 @@ describe('Vesting', function () {
       });
 
       it('event is emitted', async function () {
-        await setNextBlockTimestamp(VESTING_1_START + vestingDuration);
+        await setNextBlockTimestamp(VESTING_1_START + VESTING_DURATION);
         await expect(VestingAsBeneficiary.claim())
           .to.emit(Vesting, 'TokensClaimed')
-          .withArgs(BeneficiaryAddress, vestingAmount);
+          .withArgs(BeneficiaryAddress, VESTING_1_AMOUNT);
       });
     });
 
     describe('multiple schedules', () => {
-      const VESTING_AMOUNT_2 = vestingAmount.mul(2);
-      const VESTING_2_START_SHIFT = vestingDuration / 2;
+      const VESTING_AMOUNT_2 = VESTING_1_AMOUNT.mul(2);
+      const VESTING_2_START_SHIFT = VESTING_DURATION / 2;
       const VESTING_2_START = VESTING_1_START + VESTING_2_START_SHIFT;
 
       // starts and vesting periods are the same
       beforeEach(async function () {
         await VestingAsOwner.addSchedule(
           BeneficiaryAddress,
-          vestingAmount,
+          VESTING_1_AMOUNT,
           VESTING_1_START,
-          vestingDuration,
+          VESTING_DURATION,
         );
         await VestingAsOwner.addSchedule(
           BeneficiaryAddress,
           VESTING_AMOUNT_2,
           VESTING_2_START,
-          vestingDuration,
+          VESTING_DURATION,
         );
       });
 
@@ -300,11 +285,11 @@ describe('Vesting', function () {
         // after both schedules end
         expect(await ERC20.balanceOf(BeneficiaryAddress)).to.equal(0);
 
-        await setNextBlockTimestamp(VESTING_2_START + vestingDuration);
+        await setNextBlockTimestamp(VESTING_2_START + VESTING_DURATION);
         await VestingAsBeneficiary.claim();
 
         expect(await ERC20.balanceOf(BeneficiaryAddress)).to.equal(
-          vestingAmount.add(VESTING_AMOUNT_2),
+          VESTING_1_AMOUNT.add(VESTING_AMOUNT_2),
         );
       });
 
@@ -314,11 +299,12 @@ describe('Vesting', function () {
         await setNextBlockTimestamp(VESTING_1_START + timeDiff);
         await VestingAsBeneficiary.claim();
 
-        const expectedBalance = vestingAmount
-          .mul(timeDiff)
-          .div(vestingDuration)
+        const expectedBalance = VESTING_1_AMOUNT.mul(timeDiff)
+          .div(VESTING_DURATION)
           .add(
-            VESTING_AMOUNT_2.mul(VESTING_1_START + timeDiff - VESTING_2_START).div(vestingDuration),
+            VESTING_AMOUNT_2.mul(VESTING_1_START + timeDiff - VESTING_2_START).div(
+              VESTING_DURATION,
+            ),
           );
 
         expect(await ERC20.balanceOf(BeneficiaryAddress)).to.equal(expectedBalance);
@@ -330,7 +316,7 @@ describe('Vesting', function () {
         await VestingAsBeneficiary.claim();
 
         expect(await ERC20.balanceOf(BeneficiaryAddress)).to.equal(
-          vestingAmount.mul(timeDiff1).div(vestingDuration),
+          VESTING_1_AMOUNT.mul(timeDiff1).div(VESTING_DURATION),
         );
 
         const timeDiff2 = VESTING_2_START_SHIFT + 4200;
@@ -338,10 +324,9 @@ describe('Vesting', function () {
         await VestingAsBeneficiary.claim();
 
         expect(await ERC20.balanceOf(BeneficiaryAddress)).to.equal(
-          vestingAmount
-            .mul(timeDiff2)
-            .div(vestingDuration)
-            .add(VESTING_AMOUNT_2.mul(4200).div(vestingDuration)),
+          VESTING_1_AMOUNT.mul(timeDiff2)
+            .div(VESTING_DURATION)
+            .add(VESTING_AMOUNT_2.mul(4200).div(VESTING_DURATION)),
         );
       });
 
@@ -352,7 +337,7 @@ describe('Vesting', function () {
       });
 
       it('revert when no tokens to claim', async function () {
-        await setNextBlockTimestamp(VESTING_2_START + vestingDuration);
+        await setNextBlockTimestamp(VESTING_2_START + VESTING_DURATION);
         await VestingAsBeneficiary.claim();
 
         await expect(VestingAsBeneficiary.claim())
@@ -361,7 +346,7 @@ describe('Vesting', function () {
       });
 
       it('deletes one schedule when all its tokens claimed', async () => {
-        await setNextBlockTimestamp(VESTING_1_START + vestingDuration);
+        await setNextBlockTimestamp(VESTING_1_START + VESTING_DURATION);
         await VestingAsBeneficiary.claim();
 
         const schedulesLeft = await VestingAsOwner.beneficiarySchedules(BeneficiaryAddress);
@@ -369,7 +354,7 @@ describe('Vesting', function () {
       });
 
       it('deletes both schedules when all tokens claimed', async () => {
-        await setNextBlockTimestamp(VESTING_2_START + vestingDuration);
+        await setNextBlockTimestamp(VESTING_2_START + VESTING_DURATION);
         await VestingAsBeneficiary.claim();
 
         await expect(VestingAsOwner.beneficiarySchedule(BeneficiaryAddress, 0))
@@ -382,10 +367,10 @@ describe('Vesting', function () {
       });
 
       it('event is emitted', async function () {
-        await setNextBlockTimestamp(VESTING_2_START + vestingDuration);
+        await setNextBlockTimestamp(VESTING_2_START + VESTING_DURATION);
         await expect(VestingAsBeneficiary.claim())
           .to.emit(Vesting, 'TokensClaimed')
-          .withArgs(BeneficiaryAddress, vestingAmount.add(VESTING_AMOUNT_2));
+          .withArgs(BeneficiaryAddress, VESTING_1_AMOUNT.add(VESTING_AMOUNT_2));
       });
     });
   });
