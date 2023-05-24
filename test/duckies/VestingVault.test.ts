@@ -111,6 +111,24 @@ describe('Vesting', function () {
         ),
       ).to.be.revertedWithCustomError(Vesting, 'InvalidSchedule');
     });
+
+    it('event is emitted', async function () {
+      await expect(
+        VestingAsOwner.addSchedule(
+          BeneficiaryAddress,
+          ethers.utils.parseUnits('100', TOKEN_DECIMALS),
+          VESTING_1_START,
+          100,
+        ),
+      )
+        .to.emit(Vesting, 'ScheduleAdded')
+        .withArgs(
+          BeneficiaryAddress,
+          ethers.utils.parseUnits('100', TOKEN_DECIMALS),
+          VESTING_1_START,
+          100,
+        );
+    });
   });
 
   describe('deleteSchedule', () => {
@@ -143,6 +161,18 @@ describe('Vesting', function () {
       await expect(VestingAsOwner.deleteSchedule(BeneficiaryAddress, index))
         .to.be.revertedWithCustomError(Vesting, 'NoScheduleForBeneficiary')
         .withArgs(BeneficiaryAddress, index);
+    });
+
+    it('event is emitted', async function () {
+      await VestingAsOwner.addSchedule(
+        BeneficiaryAddress,
+        ethers.utils.parseUnits('100', TOKEN_DECIMALS),
+        VESTING_1_START,
+        100,
+      );
+      await expect(VestingAsOwner.deleteSchedule(BeneficiaryAddress, 0))
+        .to.emit(Vesting, 'ScheduleDeleted')
+        .withArgs(BeneficiaryAddress, 0);
     });
   });
 
@@ -235,6 +265,13 @@ describe('Vesting', function () {
         await expect(VestingAsOwner.beneficiarySchedule(BeneficiaryAddress, 0))
           .to.be.revertedWithCustomError(Vesting, 'NoScheduleForBeneficiary')
           .withArgs(BeneficiaryAddress, 0);
+      });
+
+      it('event is emitted', async function () {
+        await setNextBlockTimestamp(VESTING_1_START + vestingDuration);
+        await expect(VestingAsBeneficiary.claim())
+          .to.emit(Vesting, 'TokensClaimed')
+          .withArgs(BeneficiaryAddress, vestingAmount);
       });
     });
 
@@ -342,6 +379,13 @@ describe('Vesting', function () {
         await expect(VestingAsOwner.beneficiarySchedule(BeneficiaryAddress, 1))
           .to.be.revertedWithCustomError(Vesting, 'NoScheduleForBeneficiary')
           .withArgs(BeneficiaryAddress, 1);
+      });
+
+      it('event is emitted', async function () {
+        await setNextBlockTimestamp(VESTING_2_START + vestingDuration);
+        await expect(VestingAsBeneficiary.claim())
+          .to.emit(Vesting, 'TokensClaimed')
+          .withArgs(BeneficiaryAddress, vestingAmount.add(VESTING_AMOUNT_2));
       });
     });
   });
