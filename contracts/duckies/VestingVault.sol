@@ -30,12 +30,12 @@ contract VestingVault is Ownable {
 		uint256 duration
 	);
 	event ScheduleDeleted(address indexed beneficiary, uint256 index);
-	event TokensReleased(address indexed beneficiary, uint256 amount);
+	event TokensClaimed(address indexed beneficiary, uint256 amount);
 
 	error InvalidTokenAddress(address tokenAddress);
 	error InvalidSchedule(Schedule schedule);
 	error NoScheduleForBeneficiary(address beneficiary, uint256 index);
-	error UnableToRelease(address beneficiary);
+	error UnableToClaim(address beneficiary);
 
 	/**
 	 * @dev Initializes the contract with the given ERC20 token.
@@ -103,10 +103,12 @@ contract VestingVault is Ownable {
 		uint256 totalUnreleasedAmount = 0;
 		Schedule[] storage schedules = beneficiarySchedules[msg.sender];
 
-		if (schedules.length == 0) revert UnableToRelease(msg.sender);
+		if (schedules.length == 0) revert UnableToClaim(msg.sender);
 
 		for (uint256 i = 0; i < schedules.length; i++) {
 			Schedule storage schedule = schedules[i];
+
+			if (schedule.start > block.timestamp) continue;
 
 			uint256 elapsedTime = block.timestamp - schedule.start;
 			uint256 vestedAmount = (schedule.amount * elapsedTime) / schedule.duration;
@@ -119,10 +121,10 @@ contract VestingVault is Ownable {
 			}
 		}
 
-		if (totalUnreleasedAmount == 0) revert UnableToRelease(msg.sender);
+		if (totalUnreleasedAmount == 0) revert UnableToClaim(msg.sender);
 
 		token.transfer(msg.sender, totalUnreleasedAmount);
 
-		emit TokensReleased(msg.sender, totalUnreleasedAmount);
+		emit TokensClaimed(msg.sender, totalUnreleasedAmount);
 	}
 }
