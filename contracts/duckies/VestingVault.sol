@@ -110,6 +110,7 @@ contract VestingVault is Ownable {
 
 			uint256 elapsedTime = block.timestamp - schedule.start;
 			uint256 vestedAmount = (schedule.amount * elapsedTime) / schedule.duration;
+			if (vestedAmount > schedule.amount) vestedAmount = schedule.amount;
 			uint256 unreleasedAmount = vestedAmount - schedule.released;
 
 			if (unreleasedAmount > 0) {
