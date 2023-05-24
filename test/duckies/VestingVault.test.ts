@@ -227,6 +227,15 @@ describe('Vesting', function () {
           .to.be.revertedWithCustomError(Vesting, 'UnableToClaim')
           .withArgs(BeneficiaryAddress);
       });
+
+      it('deletes schedule when all tokens claimed', async () => {
+        await setNextBlockTimestamp(VESTING_1_START + vestingDuration);
+        await VestingAsBeneficiary.claim();
+
+        await expect(VestingAsOwner.beneficiarySchedule(BeneficiaryAddress, 0))
+          .to.be.revertedWithCustomError(Vesting, 'NoScheduleForBeneficiary')
+          .withArgs(BeneficiaryAddress, 0);
+      });
     });
 
     describe('multiple schedules', () => {
@@ -312,6 +321,27 @@ describe('Vesting', function () {
         await expect(VestingAsBeneficiary.claim())
           .to.be.revertedWithCustomError(Vesting, 'UnableToClaim')
           .withArgs(BeneficiaryAddress);
+      });
+
+      it('deletes one schedule when all its tokens claimed', async () => {
+        await setNextBlockTimestamp(VESTING_1_START + vestingDuration);
+        await VestingAsBeneficiary.claim();
+
+        const schedulesLeft = await VestingAsOwner.beneficiarySchedules(BeneficiaryAddress);
+        expect(schedulesLeft).to.have.lengthOf(1);
+      });
+
+      it('deletes both schedules when all tokens claimed', async () => {
+        await setNextBlockTimestamp(VESTING_2_START + vestingDuration);
+        await VestingAsBeneficiary.claim();
+
+        await expect(VestingAsOwner.beneficiarySchedule(BeneficiaryAddress, 0))
+          .to.be.revertedWithCustomError(Vesting, 'NoScheduleForBeneficiary')
+          .withArgs(BeneficiaryAddress, 0);
+
+        await expect(VestingAsOwner.beneficiarySchedule(BeneficiaryAddress, 1))
+          .to.be.revertedWithCustomError(Vesting, 'NoScheduleForBeneficiary')
+          .withArgs(BeneficiaryAddress, 1);
       });
     });
   });
