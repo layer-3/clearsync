@@ -12,9 +12,9 @@ contract VestingVault is Ownable {
 	// The vesting schedule structure
 	struct Schedule {
 		uint256 amount;
-		uint256 start;
-		uint256 duration;
-		uint256 released;
+		uint256 releasedAmount;
+		uint64 start;
+		uint64 duration;
 	}
 
 	// The ERC20 token being vested
@@ -57,14 +57,14 @@ contract VestingVault is Ownable {
 	function addSchedule(
 		address _beneficiary,
 		uint256 _amount,
-		uint256 _start,
-		uint256 _duration
+		uint64 _start,
+		uint64 _duration
 	) public onlyOwner {
 		Schedule memory newSchedule = Schedule({
 			amount: _amount,
+			releasedAmount: 0,
 			start: _start,
-			duration: _duration,
-			released: 0
+			duration: _duration
 		});
 
 		if (
@@ -111,12 +111,14 @@ contract VestingVault is Ownable {
 			if (schedule.start > block.timestamp) continue;
 
 			uint256 elapsedTime = block.timestamp - schedule.start;
-			uint256 vestedAmount = (schedule.amount * elapsedTime) / schedule.duration;
-			if (vestedAmount > schedule.amount) vestedAmount = schedule.amount;
-			uint256 unreleasedAmount = vestedAmount - schedule.released;
+			uint256 vestedAmount = elapsedTime >= schedule.duration
+				? schedule.amount
+				: (schedule.amount * elapsedTime) / schedule.duration;
+
+			uint256 unreleasedAmount = vestedAmount - schedule.releasedAmount;
 
 			if (unreleasedAmount > 0) {
-				schedule.released += unreleasedAmount;
+				schedule.releasedAmount = vestedAmount;
 				totalUnreleasedAmount += unreleasedAmount;
 			}
 		}
