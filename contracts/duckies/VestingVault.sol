@@ -20,7 +20,7 @@ contract VestingVault is Ownable {
 	// The ERC20 token being vested
 	IERC20 public token;
 	// Mapping of beneficiary address to an array of vesting schedules
-	mapping(address => Schedule[]) public beneficiarySchedules;
+	mapping(address => Schedule[]) internal _beneficiarySchedules;
 
 	// Events
 	event ScheduleAdded(
@@ -44,6 +44,19 @@ contract VestingVault is Ownable {
 	constructor(IERC20 token_) {
 		if (address(token_) == address(0)) revert InvalidTokenAddress(address(token_));
 		token = token_;
+	}
+
+	function beneficiarySchedules(address beneficiary) public view returns (Schedule[] memory) {
+		return _beneficiarySchedules[beneficiary];
+	}
+
+	function beneficiarySchedule(
+		address beneficiary,
+		uint256 index
+	) public view returns (Schedule memory) {
+		Schedule[] memory schedules = _beneficiarySchedules[beneficiary];
+		if (index >= schedules.length) revert NoScheduleForBeneficiary(beneficiary, index);
+		return schedules[index];
 	}
 
 	/**
@@ -70,7 +83,7 @@ contract VestingVault is Ownable {
 		if (beneficiary == address(0) || amount == 0 || start <= block.timestamp || duration == 0)
 			revert InvalidSchedule(newSchedule);
 
-		beneficiarySchedules[beneficiary].push(newSchedule);
+		_beneficiarySchedules[beneficiary].push(newSchedule);
 
 		emit ScheduleAdded(beneficiary, amount, start, duration);
 	}
@@ -86,7 +99,7 @@ contract VestingVault is Ownable {
 	}
 
 	function _deleteSchedule(address beneficiary, uint256 index) internal {
-		Schedule[] storage schedules = beneficiarySchedules[beneficiary];
+		Schedule[] storage schedules = _beneficiarySchedules[beneficiary];
 		if (index >= schedules.length) revert NoScheduleForBeneficiary(beneficiary, index);
 
 		schedules[index] = schedules[schedules.length - 1];
@@ -101,7 +114,7 @@ contract VestingVault is Ownable {
 	 */
 	function claim() public {
 		uint256 totalUnreleasedAmount = 0;
-		Schedule[] storage schedules = beneficiarySchedules[msg.sender];
+		Schedule[] storage schedules = _beneficiarySchedules[msg.sender];
 
 		if (schedules.length == 0) revert UnableToClaim(msg.sender);
 
