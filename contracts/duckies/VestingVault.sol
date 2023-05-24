@@ -86,6 +86,10 @@ contract VestingVault is Ownable {
 	 * @param _index The index of the vesting schedule to be deleted.
 	 */
 	function deleteSchedule(address _beneficiary, uint256 _index) public onlyOwner {
+		_deleteSchedule(_beneficiary, _index);
+	}
+
+	function _deleteSchedule(address _beneficiary, uint256 _index) internal {
 		Schedule[] storage schedules = beneficiarySchedules[_beneficiary];
 		if (_index >= schedules.length) revert NoScheduleForBeneficiary(_beneficiary, _index);
 
@@ -105,15 +109,24 @@ contract VestingVault is Ownable {
 
 		if (schedules.length == 0) revert UnableToClaim(msg.sender);
 
+		// amount of fully paid schedules is not known beforehand, but it's always <= schedules.length
+		uint256[] memory fullyPaidScheduleIndices = new uint256[](schedules.length);
+		uint256 numberOfFullyPaidSchedules = 0;
+
 		for (uint256 i = 0; i < schedules.length; i++) {
 			Schedule storage schedule = schedules[i];
 
 			if (schedule.start > block.timestamp) continue;
 
 			uint256 elapsedTime = block.timestamp - schedule.start;
-			uint256 vestedAmount = elapsedTime >= schedule.duration
-				? schedule.amount
-				: (schedule.amount * elapsedTime) / schedule.duration;
+			uint256 vestedAmount = 0;
+			if (elapsedTime >= schedule.duration) {
+				vestedAmount = schedule.amount;
+				fullyPaidScheduleIndices[numberOfFullyPaidSchedules] = i;
+				numberOfFullyPaidSchedules++;
+			} else {
+				vestedAmount = (schedule.amount * elapsedTime) / schedule.duration;
+			}
 
 			uint256 unreleasedAmount = vestedAmount - schedule.releasedAmount;
 
@@ -124,6 +137,12 @@ contract VestingVault is Ownable {
 		}
 
 		if (totalUnreleasedAmount == 0) revert UnableToClaim(msg.sender);
+
+		// delete fully paid schedules
+		// traverse indices in descending order to avoid shifting indices when deleting
+		for (uint256 i = numberOfFullyPaidSchedules; i > 0; i--) {
+			_deleteSchedule(msg.sender, fullyPaidScheduleIndices[i - 1]);
+		}
 
 		token.transfer(msg.sender, totalUnreleasedAmount);
 
