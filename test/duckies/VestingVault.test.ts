@@ -81,7 +81,7 @@ describe('Vesting', function () {
           VESTING_1_START,
           100,
         ),
-      ).to.be.revertedWith('Ownable: caller is not the Owner');
+      ).to.be.revertedWith('Ownable: caller is not the owner');
     });
 
     it('revert when adding schedule with zero amount', async function () {
@@ -134,7 +134,7 @@ describe('Vesting', function () {
         100,
       );
       await expect(VestingAsSomeone.deleteSchedule(BeneficiaryAddress, 0)).to.be.revertedWith(
-        'Ownable: caller is not the Owner',
+        'Ownable: caller is not the owner',
       );
     });
 
@@ -229,7 +229,7 @@ describe('Vesting', function () {
       });
     });
 
-    describe.only('multiple schedules', () => {
+    describe('multiple schedules', () => {
       const VESTING_AMOUNT_2 = vestingAmount.mul(2);
       const VESTING_2_START_SHIFT = vestingDuration / 2;
       const VESTING_2_START = VESTING_1_START + VESTING_2_START_SHIFT;
