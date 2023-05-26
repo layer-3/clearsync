@@ -404,8 +404,8 @@ describe('DucklingsV1', () => {
         const nonTransferableGenome = randomGenome(0, { isTransferable: false });
         await mintTo(Someone.address, nonTransferableGenome);
         await expect(DucklingsAsSomeone.transferFrom(Someone.address, Someother.address, 0))
-          .to.be.revertedWithCustomError(Ducklings, 'TokenNotTransferable')
-          .withArgs(0);
+          .to.be.revertedWithCustomError(Ducklings, 'IncorrectTransferability')
+          .withArgs(0, true);
       });
 
       it('can burn non-transferable token', async () => {
@@ -480,7 +480,7 @@ describe('DucklingsV1', () => {
     });
   });
 
-  describe.only('ERC721Enumerable', () => {
+  describe('ERC721Enumerable', () => {
     it('mint increates totalSupply', async () => {
       await mintTo(Someone.address, GENOME);
       await mintTo(Someone.address, MYTHIC_GENOME);
@@ -528,6 +528,184 @@ describe('DucklingsV1', () => {
       await expect(DucklingsAsSomeone.setRoyaltyFee(2000)).to.be.revertedWith(
         ACCOUNT_MISSING_ROLE(Someone.address, ADMIN_ROLE),
       );
+    });
+  });
+
+  describe('IERC5192', () => {
+    it('on mint transferable Unlocked event emitted', async () => {
+      await expect(mintTo(Someone.address, TRANSFERABLE_GENOME))
+        .to.emit(Ducklings, 'Unlocked')
+        .withArgs(0);
+    });
+
+    it('on mint non-transferable Locked event emitted', async () => {
+      await expect(mintTo(Someone.address, GENOME)).to.emit(Ducklings, 'Locked').withArgs(0);
+    });
+
+    describe('locked', () => {
+      it('return false for transferable token', async () => {
+        await mintTo(Someone.address, TRANSFERABLE_GENOME);
+        expect(await Ducklings.locked(0)).to.equal(false);
+      });
+
+      it('return true for non-transferable token', async () => {
+        await mintTo(Someone.address, GENOME);
+        expect(await Ducklings.locked(0)).to.equal(true);
+      });
+
+      it('revert for unexisting token', async () => {
+        await expect(Ducklings.locked(0))
+          .to.be.revertedWithCustomError(Ducklings, 'InvalidTokenId')
+          .withArgs(0);
+      });
+    });
+
+    describe('lock', () => {
+      it('admin can lock transferable token', async () => {
+        await mintTo(Someone.address, TRANSFERABLE_GENOME);
+        await Ducklings.lock(0);
+        expect(await Ducklings.locked(0)).to.equal(true);
+      });
+
+      it('revert on not admin locking transferable token', async () => {
+        await mintTo(Someone.address, TRANSFERABLE_GENOME);
+        await expect(DucklingsAsSomeone.lock(0)).to.be.revertedWith(
+          ACCOUNT_MISSING_ROLE(Someone.address, ADMIN_ROLE),
+        );
+      });
+
+      it('revert on locking non-transferable token', async () => {
+        await mintTo(Someone.address, GENOME);
+        await expect(Ducklings.lock(0))
+          .to.be.revertedWithCustomError(Ducklings, 'IncorrectTransferability')
+          .withArgs(0, true);
+      });
+
+      it('revert on locking unexisting token', async () => {
+        await expect(Ducklings.lock(0))
+          .to.be.revertedWithCustomError(Ducklings, 'InvalidTokenId')
+          .withArgs(0);
+      });
+
+      it('Locked event is emitted', async () => {
+        await mintTo(Someone.address, TRANSFERABLE_GENOME);
+        await expect(Ducklings.lock(0)).to.emit(Ducklings, 'Locked').withArgs(0);
+      });
+    });
+
+    describe('lockBatch', () => {
+      it('admin can lock transferable tokens', async () => {
+        await mintTo(Someone.address, TRANSFERABLE_GENOME);
+        await mintTo(Someother.address, TRANSFERABLE_GENOME);
+        await Ducklings.lockBatch([0, 1]);
+        expect(await Ducklings.locked(0)).to.equal(true);
+        expect(await Ducklings.locked(1)).to.equal(true);
+      });
+
+      it('revert on not admin locking transferable tokens', async () => {
+        await mintTo(Someone.address, TRANSFERABLE_GENOME);
+        await mintTo(Someother.address, TRANSFERABLE_GENOME);
+        await expect(DucklingsAsSomeone.lockBatch([0, 1])).to.be.revertedWith(
+          ACCOUNT_MISSING_ROLE(Someone.address, ADMIN_ROLE),
+        );
+      });
+
+      it('revert on locking when some tokens are transferable', async () => {
+        await mintTo(Someone.address, TRANSFERABLE_GENOME);
+        await mintTo(Someother.address, GENOME);
+        await expect(Ducklings.lockBatch([0, 1]))
+          .to.be.revertedWithCustomError(Ducklings, 'IncorrectTransferability')
+          .withArgs(1, true);
+      });
+
+      it('revert on locking unexisting token', async () => {
+        await mintTo(Someone.address, TRANSFERABLE_GENOME);
+        await expect(Ducklings.lockBatch([0, 1]))
+          .to.be.revertedWithCustomError(Ducklings, 'InvalidTokenId')
+          .withArgs(1);
+      });
+
+      it('revert on locking non-transferable tokens', async () => {
+        await mintTo(Someone.address, GENOME);
+        await mintTo(Someother.address, GENOME);
+        await expect(Ducklings.lockBatch([0, 1]))
+          .to.be.revertedWithCustomError(Ducklings, 'IncorrectTransferability')
+          .withArgs(0, true);
+      });
+    });
+
+    describe('unlock', () => {
+      it('admin can unlock non-transferable token', async () => {
+        await mintTo(Someone.address, GENOME);
+        await Ducklings.unlock(0);
+        expect(await Ducklings.locked(0)).to.equal(false);
+      });
+
+      it('revert on not admin unlocking non-transferable token', async () => {
+        await mintTo(Someone.address, GENOME);
+        await expect(DucklingsAsSomeone.unlock(0)).to.be.revertedWith(
+          ACCOUNT_MISSING_ROLE(Someone.address, ADMIN_ROLE),
+        );
+      });
+
+      it('revert on unlocking transferable token', async () => {
+        await mintTo(Someone.address, TRANSFERABLE_GENOME);
+        await expect(Ducklings.unlock(0))
+          .to.be.revertedWithCustomError(Ducklings, 'IncorrectTransferability')
+          .withArgs(0, false);
+      });
+
+      it('revert on unlocking unexisting token', async () => {
+        await expect(Ducklings.unlock(0))
+          .to.be.revertedWithCustomError(Ducklings, 'InvalidTokenId')
+          .withArgs(0);
+      });
+
+      it('Unlock event is emitted', async () => {
+        await mintTo(Someone.address, GENOME);
+        await expect(Ducklings.unlock(0)).to.emit(Ducklings, 'Unlocked').withArgs(0);
+      });
+    });
+
+    describe('unlockBatch', () => {
+      it('admin can unlock non-transferable tokens', async () => {
+        await mintTo(Someone.address, GENOME);
+        await mintTo(Someother.address, GENOME);
+        await Ducklings.unlockBatch([0, 1]);
+        expect(await Ducklings.locked(0)).to.equal(false);
+        expect(await Ducklings.locked(1)).to.equal(false);
+      });
+
+      it('revert on not admin unlocking non-transferable tokens', async () => {
+        await mintTo(Someone.address, GENOME);
+        await mintTo(Someother.address, GENOME);
+        await expect(DucklingsAsSomeone.unlockBatch([0, 1])).to.be.revertedWith(
+          ACCOUNT_MISSING_ROLE(Someone.address, ADMIN_ROLE),
+        );
+      });
+
+      it('revert on unlocking when some tokens are non-transferable', async () => {
+        await mintTo(Someone.address, GENOME);
+        await mintTo(Someother.address, TRANSFERABLE_GENOME);
+        await expect(Ducklings.unlockBatch([0, 1]))
+          .to.be.revertedWithCustomError(Ducklings, 'IncorrectTransferability')
+          .withArgs(1, false);
+      });
+
+      it('revert on unlocking unexisting token', async () => {
+        await mintTo(Someone.address, GENOME);
+        await expect(Ducklings.unlockBatch([0, 1]))
+          .to.be.revertedWithCustomError(Ducklings, 'InvalidTokenId')
+          .withArgs(1);
+      });
+
+      it('revert on unlocking transferable tokens', async () => {
+        await mintTo(Someone.address, TRANSFERABLE_GENOME);
+        await mintTo(Someother.address, TRANSFERABLE_GENOME);
+        await expect(Ducklings.unlockBatch([0, 1]))
+          .to.be.revertedWithCustomError(Ducklings, 'IncorrectTransferability')
+          .withArgs(0, false);
+      });
     });
   });
 
