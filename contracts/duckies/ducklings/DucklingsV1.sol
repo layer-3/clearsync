@@ -9,6 +9,7 @@ import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol'
 import '@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol';
 
+import '../../interfaces/IERC5192.sol';
 import '../../interfaces/IDucklings.sol';
 import '../games/Genome.sol';
 
@@ -23,6 +24,7 @@ import '../games/Genome.sol';
  * Ducklings can be upgraded by an account with UPGRADER_ROLE to add certain functionality if needed.
  */
 contract DucklingsV1 is
+	IERC5192,
 	Initializable,
 	IDucklings,
 	ERC721Upgradeable,
@@ -179,7 +181,7 @@ contract DucklingsV1 is
 		)
 		returns (bool)
 	{
-		return super.supportsInterface(interfaceId);
+		return interfaceId == type(IERC5192).interfaceId || super.supportsInterface(interfaceId);
 	}
 
 	// -------- ERC2981 Royalties --------
@@ -220,6 +222,12 @@ contract DucklingsV1 is
 	 */
 	function getRoyaltyFee() public view returns (uint32) {
 		return _royaltyFee;
+	}
+
+	// -------- ERC5192 --------
+
+	function locked(uint256 tokenId) public view returns (bool) {
+		return !_isTransferable(tokenId);
 	}
 
 	// -------- API URL --------
@@ -401,6 +409,12 @@ contract DucklingsV1 is
 		tokenToDuckling[tokenId] = Duckling(genome, birthdate);
 		_safeMint(to, tokenId);
 		nextNewTokenId.increment();
+
+		if (genome.getFlag(Genome.FLAG_TRANSFERABLE)) {
+			emit Unlocked(tokenId);
+		} else {
+			emit Locked(tokenId);
+		}
 
 		emit Minted(to, tokenId, genome, birthdate, block.chainid);
 	}
