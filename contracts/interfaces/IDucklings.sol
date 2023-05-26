@@ -10,10 +10,12 @@ import '@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol'
  */
 interface IDucklings is IERC721Upgradeable {
 	/**
-	 * @notice Token not transferable error. Is used when trying to transfer a token that is not transferable.
-	 * @param tokenId Token Id that is not transferable.
+	 * @notice Incorrect transferability error. Is thrown when expected transferability of `tokenId` to be `expected` but is the opposite.
+	 * @param tokenId Token Id that has incorrect transferability.
+	 * @param expected Expected transferability of `tokenId`.
 	 */
-	error TokenNotTransferable(uint256 tokenId);
+	error IncorrectTransferability(uint256 tokenId, bool expected);
+
 	/**
 	 * @notice Invalid magic number error. Is used when trying to mint a token with an invalid magic number.
 	 * @param magicNumber Magic number that is invalid.

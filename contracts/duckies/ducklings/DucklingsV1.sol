@@ -231,7 +231,7 @@ contract DucklingsV1 is
 	}
 
 	function lock(uint256 tokenId) public onlyRole(DEFAULT_ADMIN_ROLE) {
-		if (!_isTransferable(tokenId)) revert TokenNotTransferable(tokenId);
+		if (!_isTransferable(tokenId)) revert IncorrectTransferability(tokenId, true);
 
 		uint256 updatedGenome = tokenToDuckling[tokenId].genome.setFlag(
 			Genome.FLAG_TRANSFERABLE,
@@ -247,8 +247,7 @@ contract DucklingsV1 is
 	}
 
 	function unlock(uint256 tokenId) public onlyRole(DEFAULT_ADMIN_ROLE) {
-		// TODO: change error
-		// if (_isTransferable(tokenId)) revert TokenNotTransferable(tokenId);
+		if (_isTransferable(tokenId)) revert IncorrectTransferability(tokenId, false);
 
 		uint256 updatedGenome = tokenToDuckling[tokenId].genome.setFlag(
 			Genome.FLAG_TRANSFERABLE,
@@ -387,7 +386,7 @@ contract DucklingsV1 is
 		// mint and burn for not transferable is allowed
 		if (from == address(0) || to == address(0)) return;
 
-		if (!_isTransferable(firstTokenId)) revert TokenNotTransferable(firstTokenId);
+		if (!_isTransferable(firstTokenId)) revert IncorrectTransferability(firstTokenId, true);
 	}
 
 	/**
