@@ -230,6 +230,39 @@ contract DucklingsV1 is
 		return !_isTransferable(tokenId);
 	}
 
+	function lock(uint256 tokenId) public onlyRole(DEFAULT_ADMIN_ROLE) {
+		if (!_isTransferable(tokenId)) revert TokenNotTransferable(tokenId);
+
+		uint256 updatedGenome = tokenToDuckling[tokenId].genome.setFlag(
+			Genome.FLAG_TRANSFERABLE,
+			false
+		);
+		tokenToDuckling[tokenId].genome = updatedGenome;
+
+		emit Locked(tokenId);
+	}
+
+	function lockBatch(uint256[] memory tokenIds) public onlyRole(DEFAULT_ADMIN_ROLE) {
+		for (uint256 i = 0; i < tokenIds.length; i++) lock(tokenIds[i]);
+	}
+
+	function unlock(uint256 tokenId) public onlyRole(DEFAULT_ADMIN_ROLE) {
+		// TODO: change error
+		// if (_isTransferable(tokenId)) revert TokenNotTransferable(tokenId);
+
+		uint256 updatedGenome = tokenToDuckling[tokenId].genome.setFlag(
+			Genome.FLAG_TRANSFERABLE,
+			true
+		);
+		tokenToDuckling[tokenId].genome = updatedGenome;
+
+		emit Unlocked(tokenId);
+	}
+
+	function unlockBatch(uint256[] memory tokenIds) public onlyRole(DEFAULT_ADMIN_ROLE) {
+		for (uint256 i = 0; i < tokenIds.length; i++) unlock(tokenIds[i]);
+	}
+
 	// -------- API URL --------
 
 	/**
