@@ -9,8 +9,8 @@ import 'solidity-docgen';
 import './src/tasks/accounts';
 import './src/tasks/activate';
 import './src/tasks/forceImport';
-import './src/tasks/setupNFTs';
 import './src/tasks/sendBatchTransfer';
+import './src/tasks/ducky-game';
 
 let accounts;
 
