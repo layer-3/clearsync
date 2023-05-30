@@ -5,6 +5,7 @@ import {
   setNextBlockTimestamp,
 } from '@nomicfoundation/hardhat-network-helpers/dist/src/helpers/time';
 import { SnapshotRestorer, takeSnapshot } from '@nomicfoundation/hardhat-network-helpers';
+import { constants } from 'ethers';
 
 import { connectGroup } from '../helpers/connect';
 
@@ -71,6 +72,11 @@ describe('Vesting', function () {
     it('has correct token address', async function () {
       expect(await Vesting.token()).to.equal(ERC20.address);
     });
+
+    it('revert when token address is zero', async function () {
+      const VestingVaultFactory = await ethers.getContractFactory('VestingVault');
+      await expect(VestingVaultFactory.deploy(constants.AddressZero)).to.be.reverted;
+    });
   });
 
   describe('addSchedule', () => {
@@ -98,15 +104,20 @@ describe('Vesting', function () {
       ).to.be.revertedWith('Ownable: caller is not the owner');
     });
 
-    it('revert when adding schedule with zero amount', async function () {
+    it('revert when adding schedule for zero address', async function () {
       await expect(
-        VestingAsOwner.addSchedule(BeneficiaryAddress, 0, VESTING_1_START, VESTING_DURATION),
+        VestingAsOwner.addSchedule(
+          ethers.constants.AddressZero,
+          VESTING_1_AMOUNT,
+          VESTING_1_START,
+          VESTING_DURATION,
+        ),
       ).to.be.revertedWithCustomError(Vesting, 'InvalidSchedule');
     });
 
-    it('revert when adding schedule with zero duration', async function () {
+    it('revert when adding schedule with zero amount', async function () {
       await expect(
-        VestingAsOwner.addSchedule(BeneficiaryAddress, VESTING_1_AMOUNT, 0, VESTING_DURATION),
+        VestingAsOwner.addSchedule(BeneficiaryAddress, 0, VESTING_1_START, VESTING_DURATION),
       ).to.be.revertedWithCustomError(Vesting, 'InvalidSchedule');
     });
 
@@ -118,6 +129,12 @@ describe('Vesting', function () {
           NOW - 42,
           VESTING_DURATION,
         ),
+      ).to.be.revertedWithCustomError(Vesting, 'InvalidSchedule');
+    });
+
+    it('revert when adding schedule with zero duration', async function () {
+      await expect(
+        VestingAsOwner.addSchedule(BeneficiaryAddress, VESTING_1_AMOUNT, VESTING_1_START, 0),
       ).to.be.revertedWithCustomError(Vesting, 'InvalidSchedule');
     });
 
@@ -176,6 +193,59 @@ describe('Vesting', function () {
       );
       await expect(VestingAsOwner.deleteSchedule(BeneficiaryAddress, 0))
         .to.emit(Vesting, 'ScheduleDeleted')
+        .withArgs(BeneficiaryAddress, 0);
+    });
+  });
+
+  describe('beneficiarySchedules', () => {
+    it('returns correct schedules', async function () {
+      await VestingAsOwner.addSchedule(
+        BeneficiaryAddress,
+        VESTING_1_AMOUNT,
+        VESTING_1_START,
+        VESTING_DURATION,
+      );
+      await VestingAsOwner.addSchedule(
+        BeneficiaryAddress,
+        VESTING_2_AMOUNT,
+        VESTING_2_START,
+        VESTING_DURATION,
+      );
+
+      const schedules = await VestingAsOwner.beneficiarySchedules(BeneficiaryAddress);
+      expect(schedules).to.have.lengthOf(2);
+      expect(schedules[0].amount).to.equal(VESTING_1_AMOUNT);
+      expect(schedules[0].start).to.equal(VESTING_1_START);
+      expect(schedules[0].duration).to.equal(VESTING_DURATION);
+      expect(schedules[1].amount).to.equal(VESTING_2_AMOUNT);
+      expect(schedules[1].start).to.equal(VESTING_2_START);
+      expect(schedules[1].duration).to.equal(VESTING_DURATION);
+    });
+
+    it('returns empty array when no schedules', async function () {
+      const schedules = await VestingAsOwner.beneficiarySchedules(BeneficiaryAddress);
+      expect(schedules).to.have.lengthOf(0);
+    });
+  });
+
+  describe('beneficiarySchedule', () => {
+    it('returns correct schedule', async function () {
+      await VestingAsOwner.addSchedule(
+        BeneficiaryAddress,
+        VESTING_1_AMOUNT,
+        VESTING_1_START,
+        VESTING_DURATION,
+      );
+
+      const schedule = await VestingAsOwner.beneficiarySchedule(BeneficiaryAddress, 0);
+      expect(schedule.amount).to.equal(VESTING_1_AMOUNT);
+      expect(schedule.start).to.equal(VESTING_1_START);
+      expect(schedule.duration).to.equal(VESTING_DURATION);
+    });
+
+    it('revert when no schedule', async function () {
+      await expect(VestingAsOwner.beneficiarySchedule(BeneficiaryAddress, 0))
+        .to.be.revertedWithCustomError(Vesting, 'NoScheduleForBeneficiary')
         .withArgs(BeneficiaryAddress, 0);
     });
   });
