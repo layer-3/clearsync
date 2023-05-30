@@ -108,6 +108,43 @@ contract VestingVault is Ownable {
 		emit ScheduleDeleted(beneficiary, index);
 	}
 
+	// TODO: reorder functions
+	function totalClaimable(address beneficiary) public view returns (uint256 claimable) {
+		Schedule[] memory schedules = _beneficiarySchedules[beneficiary];
+
+		for (uint256 i = 0; i < schedules.length; i++) {
+			(uint256 scheduleClaimable_, ) = _scheduleClaimable(schedules[i]);
+			claimable += scheduleClaimable_;
+		}
+	}
+
+	function scheduleClaimable(
+		address beneficiary,
+		uint256 index
+	) public view returns (uint256 claimable) {
+		if (index >= _beneficiarySchedules[beneficiary].length)
+			revert NoScheduleForBeneficiary(beneficiary, index);
+
+		(claimable, ) = _scheduleClaimable(_beneficiarySchedules[beneficiary][index]);
+	}
+
+	function _scheduleClaimable(
+		Schedule memory schedule
+	) internal view returns (uint256 claimable, bool fullyPaid) {
+		if (block.timestamp < schedule.start) return (0, false);
+
+		uint256 elapsedTime = block.timestamp - schedule.start;
+		uint256 vestedAmount = 0;
+		if (elapsedTime >= schedule.duration) {
+			vestedAmount = schedule.amount;
+			fullyPaid = true;
+		} else {
+			vestedAmount = (schedule.amount * elapsedTime) / schedule.duration;
+		}
+
+		claimable = vestedAmount - schedule.releasedAmount;
+	}
+
 	/**
 	 * @dev Releases vested tokens for the calling beneficiary.
 	 * Can only be called by a beneficiary.
@@ -125,23 +162,16 @@ contract VestingVault is Ownable {
 		for (uint256 i = 0; i < schedules.length; i++) {
 			Schedule storage schedule = schedules[i];
 
-			if (schedule.start > block.timestamp) continue;
+			(uint256 claimable, bool fullyPaid) = _scheduleClaimable(schedule);
 
-			uint256 elapsedTime = block.timestamp - schedule.start;
-			uint256 vestedAmount = 0;
-			if (elapsedTime >= schedule.duration) {
-				vestedAmount = schedule.amount;
-				fullyPaidScheduleIndices[numberOfFullyPaidSchedules] = i;
-				numberOfFullyPaidSchedules++;
-			} else {
-				vestedAmount = (schedule.amount * elapsedTime) / schedule.duration;
+			if (claimable > 0) {
+				schedule.releasedAmount += claimable;
+				totalUnreleasedAmount += claimable;
 			}
 
-			uint256 unreleasedAmount = vestedAmount - schedule.releasedAmount;
-
-			if (unreleasedAmount > 0) {
-				schedule.releasedAmount = vestedAmount;
-				totalUnreleasedAmount += unreleasedAmount;
+			if (fullyPaid) {
+				fullyPaidScheduleIndices[numberOfFullyPaidSchedules] = i;
+				numberOfFullyPaidSchedules++;
 			}
 		}
 
