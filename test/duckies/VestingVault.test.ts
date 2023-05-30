@@ -1,6 +1,9 @@
 import { ethers } from 'hardhat';
 import { expect } from 'chai';
-import { setNextBlockTimestamp } from '@nomicfoundation/hardhat-network-helpers/dist/src/helpers/time';
+import {
+  increaseTo,
+  setNextBlockTimestamp,
+} from '@nomicfoundation/hardhat-network-helpers/dist/src/helpers/time';
 import { SnapshotRestorer, takeSnapshot } from '@nomicfoundation/hardhat-network-helpers';
 
 import { connectGroup } from '../helpers/connect';
@@ -17,6 +20,10 @@ const VESTING_1_START = NOW + TIME_DIFF;
 const VESTING_1_AMOUNT = ethers.utils.parseUnits('100', TOKEN_DECIMALS);
 const VESTING_DURATION = 60 * 60 * 24 * 10; // 10 days
 
+const VESTING_2_AMOUNT = VESTING_1_AMOUNT.mul(2);
+const VESTING_2_START_SHIFT = VESTING_DURATION / 2;
+const VESTING_2_START = VESTING_1_START + VESTING_2_START_SHIFT;
+
 describe('Vesting', function () {
   let Owner: SignerWithAddress, Beneficiary: SignerWithAddress, Someone: SignerWithAddress;
   let BeneficiaryAddress: string;
@@ -27,12 +34,17 @@ describe('Vesting', function () {
     VestingAsSomeone: VestingVault,
     ERC20: TestERC20;
 
+  // each test to start with current timestamp
+  let snapshot: SnapshotRestorer;
+
   before(async () => {
     [Owner, Beneficiary, Someone] = await ethers.getSigners();
     BeneficiaryAddress = await Beneficiary.getAddress();
   });
 
   beforeEach(async function () {
+    snapshot = await takeSnapshot();
+
     const TestERC20Factory = await ethers.getContractFactory('TestERC20');
     ERC20 = (await TestERC20Factory.deploy('TestToken', 'TTK', TOKEN_CAP)) as TestERC20;
     await ERC20.deployed();
@@ -49,6 +61,10 @@ describe('Vesting', function () {
 
     // Transfer tokens to Vesting contract
     await ERC20.mint(Vesting.address, ethers.utils.parseUnits('1000', TOKEN_DECIMALS));
+  });
+
+  afterEach(async function () {
+    await snapshot.restore();
   });
 
   describe('deployment', () => {
@@ -164,17 +180,106 @@ describe('Vesting', function () {
     });
   });
 
-  describe('claim', () => {
-    let snapshot: SnapshotRestorer;
-
+  describe('scheduleClaimable', () => {
     beforeEach(async function () {
-      snapshot = await takeSnapshot();
+      await VestingAsOwner.addSchedule(
+        BeneficiaryAddress,
+        VESTING_1_AMOUNT,
+        VESTING_1_START,
+        VESTING_DURATION,
+      );
+      await VestingAsOwner.addSchedule(
+        BeneficiaryAddress,
+        VESTING_2_AMOUNT,
+        VESTING_2_START,
+        VESTING_DURATION,
+      );
     });
 
-    afterEach(async function () {
-      await snapshot.restore();
+    it('returns correct amount for schedule 1 after period ends', async function () {
+      await increaseTo(VESTING_1_START + VESTING_DURATION);
+      expect(await Vesting.scheduleClaimable(BeneficiaryAddress, 0)).to.equal(VESTING_1_AMOUNT);
     });
 
+    it('returns correct amount for schedule 2 after period ends', async function () {
+      await increaseTo(VESTING_2_START + VESTING_DURATION);
+      expect(await Vesting.scheduleClaimable(BeneficiaryAddress, 1)).to.equal(VESTING_2_AMOUNT);
+    });
+
+    it('returns correct amount for schedule 1 before perion ends', async function () {
+      await increaseTo(VESTING_1_START + VESTING_DURATION / 2);
+      expect(await Vesting.scheduleClaimable(BeneficiaryAddress, 0)).to.equal(
+        VESTING_1_AMOUNT.div(2),
+      );
+    });
+
+    it('returns zero after tokens claimed before period ends', async function () {
+      await increaseTo(VESTING_1_START + VESTING_DURATION / 2);
+      await VestingAsBeneficiary.claim();
+      expect(await Vesting.scheduleClaimable(BeneficiaryAddress, 0)).to.equal(0);
+    });
+
+    it('revert after schedule claimed', async function () {
+      await increaseTo(VESTING_1_START + VESTING_DURATION);
+      await VestingAsBeneficiary.claim();
+      expect(await Vesting.scheduleClaimable(BeneficiaryAddress, 0)).to.equal(0);
+    });
+
+    it('revert when schedule does not exist', async function () {
+      await expect(Vesting.scheduleClaimable(BeneficiaryAddress, 2))
+        .to.be.revertedWithCustomError(Vesting, 'NoScheduleForBeneficiary')
+        .withArgs(BeneficiaryAddress, 2);
+    });
+  });
+
+  describe('totalClaimable', () => {
+    beforeEach(async function () {
+      await VestingAsOwner.addSchedule(
+        BeneficiaryAddress,
+        VESTING_1_AMOUNT,
+        VESTING_1_START,
+        VESTING_DURATION,
+      );
+      await VestingAsOwner.addSchedule(
+        BeneficiaryAddress,
+        VESTING_2_AMOUNT,
+        VESTING_2_START,
+        VESTING_DURATION,
+      );
+    });
+
+    it('correct amount after all periods end', async function () {
+      await increaseTo(VESTING_2_START + VESTING_DURATION);
+      expect(await Vesting.totalClaimable(BeneficiaryAddress)).to.equal(
+        VESTING_1_AMOUNT.add(VESTING_2_AMOUNT),
+      );
+    });
+
+    it('correct amount before all periods end', async function () {
+      await increaseTo(VESTING_1_START + (VESTING_DURATION * 3) / 4);
+      expect(await Vesting.totalClaimable(BeneficiaryAddress)).to.equal(
+        VESTING_1_AMOUNT.mul(3).div(4).add(VESTING_2_AMOUNT.div(4)),
+      );
+    });
+
+    it('zero after tokens claimed before period ends', async function () {
+      await increaseTo(VESTING_1_START + (VESTING_DURATION * 3) / 4);
+      await VestingAsBeneficiary.claim();
+      expect(await Vesting.totalClaimable(BeneficiaryAddress)).to.equal(0);
+    });
+
+    it('zero after all tokens claimed', async function () {
+      await increaseTo(VESTING_2_START + VESTING_DURATION);
+      await VestingAsBeneficiary.claim();
+      expect(await Vesting.totalClaimable(BeneficiaryAddress)).to.equal(0);
+    });
+
+    it('zero when no schedules for Beneficiary', async function () {
+      expect(await Vesting.totalClaimable(Someone.address)).to.equal(0);
+    });
+  });
+
+  describe('claim', () => {
     describe('one schedule', () => {
       beforeEach(async function () {
         await VestingAsOwner.addSchedule(
@@ -261,10 +366,6 @@ describe('Vesting', function () {
     });
 
     describe('multiple schedules', () => {
-      const VESTING_AMOUNT_2 = VESTING_1_AMOUNT.mul(2);
-      const VESTING_2_START_SHIFT = VESTING_DURATION / 2;
-      const VESTING_2_START = VESTING_1_START + VESTING_2_START_SHIFT;
-
       // starts and vesting periods are the same
       beforeEach(async function () {
         await VestingAsOwner.addSchedule(
@@ -275,7 +376,7 @@ describe('Vesting', function () {
         );
         await VestingAsOwner.addSchedule(
           BeneficiaryAddress,
-          VESTING_AMOUNT_2,
+          VESTING_2_AMOUNT,
           VESTING_2_START,
           VESTING_DURATION,
         );
@@ -289,7 +390,7 @@ describe('Vesting', function () {
         await VestingAsBeneficiary.claim();
 
         expect(await ERC20.balanceOf(BeneficiaryAddress)).to.equal(
-          VESTING_1_AMOUNT.add(VESTING_AMOUNT_2),
+          VESTING_1_AMOUNT.add(VESTING_2_AMOUNT),
         );
       });
 
@@ -302,7 +403,7 @@ describe('Vesting', function () {
         const expectedBalance = VESTING_1_AMOUNT.mul(timeDiff)
           .div(VESTING_DURATION)
           .add(
-            VESTING_AMOUNT_2.mul(VESTING_1_START + timeDiff - VESTING_2_START).div(
+            VESTING_2_AMOUNT.mul(VESTING_1_START + timeDiff - VESTING_2_START).div(
               VESTING_DURATION,
             ),
           );
@@ -326,7 +427,7 @@ describe('Vesting', function () {
         expect(await ERC20.balanceOf(BeneficiaryAddress)).to.equal(
           VESTING_1_AMOUNT.mul(timeDiff2)
             .div(VESTING_DURATION)
-            .add(VESTING_AMOUNT_2.mul(4200).div(VESTING_DURATION)),
+            .add(VESTING_2_AMOUNT.mul(4200).div(VESTING_DURATION)),
         );
       });
 
@@ -370,7 +471,7 @@ describe('Vesting', function () {
         await setNextBlockTimestamp(VESTING_2_START + VESTING_DURATION);
         await expect(VestingAsBeneficiary.claim())
           .to.emit(Vesting, 'TokensClaimed')
-          .withArgs(BeneficiaryAddress, VESTING_1_AMOUNT.add(VESTING_AMOUNT_2));
+          .withArgs(BeneficiaryAddress, VESTING_1_AMOUNT.add(VESTING_2_AMOUNT));
       });
     });
   });
