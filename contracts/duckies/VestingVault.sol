@@ -17,12 +17,15 @@ contract VestingVault is Ownable {
 		uint64 duration;
 	}
 
+	// ====== Variables ======
+
 	// The ERC20 token being vested
 	IERC20 public token;
 	// Mapping of beneficiary address to an array of vesting schedules
 	mapping(address => Schedule[]) internal _beneficiarySchedules;
 
-	// Events
+	// ====== Events ======
+
 	event ScheduleAdded(
 		address indexed beneficiary,
 		uint256 amount,
@@ -32,10 +35,14 @@ contract VestingVault is Ownable {
 	event ScheduleDeleted(address indexed beneficiary, uint256 index);
 	event TokensClaimed(address indexed beneficiary, uint256 amount);
 
+	// ====== Errors ======
+
 	error InvalidTokenAddress(address tokenAddress);
 	error InvalidSchedule(Schedule schedule);
 	error NoScheduleForBeneficiary(address beneficiary, uint256 index);
 	error UnableToClaim(address beneficiary);
+
+	// ====== Constructor ======
 
 	/**
 	 * @dev Initializes the contract with the given ERC20 token.
@@ -46,18 +53,7 @@ contract VestingVault is Ownable {
 		token = token_;
 	}
 
-	function beneficiarySchedules(address beneficiary) public view returns (Schedule[] memory) {
-		return _beneficiarySchedules[beneficiary];
-	}
-
-	function beneficiarySchedule(
-		address beneficiary,
-		uint256 index
-	) public view returns (Schedule memory) {
-		Schedule[] memory schedules = _beneficiarySchedules[beneficiary];
-		if (index >= schedules.length) revert NoScheduleForBeneficiary(beneficiary, index);
-		return schedules[index];
-	}
+	// ====== Owner functions ======
 
 	/**
 	 * @dev Adds a vesting schedule for a beneficiary.
@@ -98,24 +94,19 @@ contract VestingVault is Ownable {
 		_deleteSchedule(beneficiary, index);
 	}
 
-	function _deleteSchedule(address beneficiary, uint256 index) internal {
-		Schedule[] storage schedules = _beneficiarySchedules[beneficiary];
-		if (index >= schedules.length) revert NoScheduleForBeneficiary(beneficiary, index);
+	// ====== View functions ======
 
-		schedules[index] = schedules[schedules.length - 1];
-		schedules.pop();
-
-		emit ScheduleDeleted(beneficiary, index);
+	function beneficiarySchedules(address beneficiary) public view returns (Schedule[] memory) {
+		return _beneficiarySchedules[beneficiary];
 	}
 
-	// TODO: reorder functions
-	function totalClaimable(address beneficiary) public view returns (uint256 claimable) {
+	function beneficiarySchedule(
+		address beneficiary,
+		uint256 index
+	) public view returns (Schedule memory) {
 		Schedule[] memory schedules = _beneficiarySchedules[beneficiary];
-
-		for (uint256 i = 0; i < schedules.length; i++) {
-			(uint256 scheduleClaimable_, ) = _scheduleClaimable(schedules[i]);
-			claimable += scheduleClaimable_;
-		}
+		if (index >= schedules.length) revert NoScheduleForBeneficiary(beneficiary, index);
+		return schedules[index];
 	}
 
 	function scheduleClaimable(
@@ -128,22 +119,16 @@ contract VestingVault is Ownable {
 		(claimable, ) = _scheduleClaimable(_beneficiarySchedules[beneficiary][index]);
 	}
 
-	function _scheduleClaimable(
-		Schedule memory schedule
-	) internal view returns (uint256 claimable, bool fullyPaid) {
-		if (block.timestamp < schedule.start) return (0, false);
+	function totalClaimable(address beneficiary) public view returns (uint256 claimable) {
+		Schedule[] memory schedules = _beneficiarySchedules[beneficiary];
 
-		uint256 elapsedTime = block.timestamp - schedule.start;
-		uint256 vestedAmount = 0;
-		if (elapsedTime >= schedule.duration) {
-			vestedAmount = schedule.amount;
-			fullyPaid = true;
-		} else {
-			vestedAmount = (schedule.amount * elapsedTime) / schedule.duration;
+		for (uint256 i = 0; i < schedules.length; i++) {
+			(uint256 scheduleClaimable_, ) = _scheduleClaimable(schedules[i]);
+			claimable += scheduleClaimable_;
 		}
-
-		claimable = vestedAmount - schedule.releasedAmount;
 	}
+
+	// ====== Modifying functions ======
 
 	/**
 	 * @dev Releases vested tokens for the calling beneficiary.
@@ -186,5 +171,34 @@ contract VestingVault is Ownable {
 		token.transfer(msg.sender, totalUnreleasedAmount);
 
 		emit TokensClaimed(msg.sender, totalUnreleasedAmount);
+	}
+
+	// ====== Internal functions ======
+
+	function _deleteSchedule(address beneficiary, uint256 index) internal {
+		Schedule[] storage schedules = _beneficiarySchedules[beneficiary];
+		if (index >= schedules.length) revert NoScheduleForBeneficiary(beneficiary, index);
+
+		schedules[index] = schedules[schedules.length - 1];
+		schedules.pop();
+
+		emit ScheduleDeleted(beneficiary, index);
+	}
+
+	function _scheduleClaimable(
+		Schedule memory schedule
+	) internal view returns (uint256 claimable, bool fullyPaid) {
+		if (block.timestamp < schedule.start) return (0, false);
+
+		uint256 elapsedTime = block.timestamp - schedule.start;
+		uint256 vestedAmount = 0;
+		if (elapsedTime >= schedule.duration) {
+			vestedAmount = schedule.amount;
+			fullyPaid = true;
+		} else {
+			vestedAmount = (schedule.amount * elapsedTime) / schedule.duration;
+		}
+
+		claimable = vestedAmount - schedule.releasedAmount;
 	}
 }
