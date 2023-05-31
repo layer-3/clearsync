@@ -55,6 +55,7 @@ describe('DucklingsV1', () => {
   let Someone: SignerWithAddress;
   let Someother: SignerWithAddress;
   let Game: SignerWithAddress;
+  let NonTransferableStorageAddress: string;
 
   let Ducklings: DucklingsV1;
   let DucklingsAsSomeone: DucklingsV1;
@@ -80,6 +81,8 @@ describe('DucklingsV1', () => {
     await Ducklings.grantRole(UPGRADER_ROLE, Upgrader.address);
     await Ducklings.grantRole(MAINTAINER_ROLE, Maintainer.address);
     await Ducklings.grantRole(GAME_ROLE, Game.address);
+
+    NonTransferableStorageAddress = await Ducklings.NON_TRANS_STORAGE();
 
     [DucklingsAsSomeone, DucklingsAsGame] = connectGroup(Ducklings, [Someone, Game]);
   });
@@ -234,6 +237,21 @@ describe('DucklingsV1', () => {
         }
       });
 
+      it('transferable is minted to user address', async () => {
+        await mintTo(Someone.address, TRANSFERABLE_GENOME);
+        expect(await Ducklings.ownerOf(0)).to.equal(Someone.address);
+      });
+
+      it('non-transferable is minted to special storage address', async () => {
+        await mintTo(Someone.address, GENOME);
+        expect(await Ducklings.ownerOf(0)).to.equal(NonTransferableStorageAddress);
+      });
+
+      it('when non-transferable, approve is given to the user', async () => {
+        await mintTo(Someone.address, GENOME);
+        expect(await Ducklings.getApproved(0)).to.equal(Someone.address);
+      });
+
       it('revert on not Game minting', async () => {
         await expect(DucklingsAsSomeone.mintTo(Someone.address, GENOME)).to.be.rejectedWith(
           ACCOUNT_MISSING_ROLE(Someone.address, GAME_ROLE),
@@ -302,6 +320,17 @@ describe('DucklingsV1', () => {
         } catch {
           assert(false);
         }
+      });
+
+      it('transferable is minted to user address, non-transf to special storage address', async () => {
+        await mintBatchTo(Someone.address, [TRANSFERABLE_GENOME, GENOME]);
+        expect(await Ducklings.ownerOf(0)).to.equal(Someone.address);
+        expect(await Ducklings.ownerOf(1)).to.equal(NonTransferableStorageAddress);
+      });
+
+      it('non-trasf is approved to the user', async () => {
+        await mintBatchTo(Someone.address, [TRANSFERABLE_GENOME, GENOME]);
+        expect(await Ducklings.getApproved(1)).to.equal(Someone.address);
       });
 
       it('revert on not Game minting', async () => {
@@ -403,9 +432,9 @@ describe('DucklingsV1', () => {
       it('revert on transfering non-transferable token', async () => {
         const nonTransferableGenome = randomGenome(0, { isTransferable: false });
         await mintTo(Someone.address, nonTransferableGenome);
-        await expect(DucklingsAsSomeone.transferFrom(Someone.address, Someother.address, 0))
-          .to.be.revertedWithCustomError(Ducklings, 'TokenNotTransferable')
-          .withArgs(0);
+        await expect(
+          DucklingsAsSomeone.transferFrom(Someone.address, Someother.address, 0),
+        ).to.be.revertedWith('ERC721: transfer from incorrect owner');
       });
 
       it('can burn non-transferable token', async () => {
@@ -480,7 +509,7 @@ describe('DucklingsV1', () => {
     });
   });
 
-  describe.only('ERC721Enumerable', () => {
+  describe('ERC721Enumerable', () => {
     it('mint increates totalSupply', async () => {
       await mintTo(Someone.address, GENOME);
       await mintTo(Someone.address, MYTHIC_GENOME);

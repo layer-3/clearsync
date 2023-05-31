@@ -61,6 +61,8 @@ contract DucklingsV1 is
 	CountersUpgradeable.Counter public nextNewTokenId;
 	mapping(uint256 => Duckling) public tokenToDuckling;
 
+	address public constant NON_TRANS_STORAGE = address(42);
+
 	// ------- Constructor -------
 
 	/**
@@ -399,7 +401,14 @@ contract DucklingsV1 is
 		tokenId = nextNewTokenId.current();
 		uint64 birthdate = uint64(block.timestamp);
 		tokenToDuckling[tokenId] = Duckling(genome, birthdate);
-		_safeMint(to, tokenId);
+
+		if (genome.getFlag(Genome.FLAG_TRANSFERABLE)) {
+			_safeMint(to, tokenId);
+		} else {
+			_safeMint(NON_TRANS_STORAGE, tokenId);
+			_approve(to, tokenId);
+		}
+
 		nextNewTokenId.increment();
 
 		emit Minted(to, tokenId, genome, birthdate, block.chainid);
