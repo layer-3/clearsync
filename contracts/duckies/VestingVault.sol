@@ -6,7 +6,7 @@ import '@openzeppelin/contracts/access/Ownable.sol';
 
 /**
  * @title VestingVault
- * @dev A token vesting contract that supports multiple vesting schedules for each beneficiary.
+ * @notice A linear token vesting contract that supports multiple vesting schedules for each beneficiary.
  */
 contract VestingVault is Ownable {
 	// The vesting schedule structure
@@ -26,25 +26,64 @@ contract VestingVault is Ownable {
 
 	// ====== Events ======
 
+	/**
+	 * @notice Emitted when a new vesting schedule is added.
+	 * @dev Emitted when a new vesting schedule is added.
+	 * @param beneficiary The address of the beneficiary.
+	 * @param amount The total amount of tokens to be vested.
+	 * @param start The start timestamp for the vesting schedule.
+	 * @param duration The duration of the vesting period in seconds.
+	 */
 	event ScheduleAdded(
 		address indexed beneficiary,
 		uint256 amount,
 		uint256 start,
 		uint256 duration
 	);
+
+	/**
+	 * @notice Emitted when a vesting schedule is deleted.
+	 * @dev Emitted when a vesting schedule is deleted.
+	 * @param beneficiary The address of the beneficiary.
+	 * @param index The index of the vesting schedule that was deleted.
+	 */
 	event ScheduleDeleted(address indexed beneficiary, uint256 index);
+
+	/**
+	 * @notice Emitted when tokens are claimed by a beneficiary.
+	 * @dev Emitted when tokens are claimed by a beneficiary.
+	 * @param beneficiary The address of the beneficiary.
+	 * @param amount The amount of tokens claimed.
+	 */
 	event TokensClaimed(address indexed beneficiary, uint256 amount);
 
 	// ====== Errors ======
 
+	/**
+	 * @dev Is used when token address is zero.
+	 */
 	error InvalidTokenAddress(address tokenAddress);
+
+	/**
+	 * @dev Is used when a vesting schedule does not comply with the rules.
+	 */
 	error InvalidSchedule(Schedule schedule);
+
+	/**
+	 * @dev Is used when a beneficiary does not have a vesting schedule at the given index.
+	 */
 	error NoScheduleForBeneficiary(address beneficiary, uint256 index);
+
+	/**
+	 * @dev Is used when a beneficiary tries to claim tokens but has no vesting schedules
+	 * or no tokens have been vested since last claim.
+	 */
 	error UnableToClaim(address beneficiary);
 
 	// ====== Constructor ======
 
 	/**
+	 * @notice Initializes the contract with the given ERC20 token.
 	 * @dev Initializes the contract with the given ERC20 token.
 	 * @param token_ The address of the ERC20 token.
 	 */
@@ -85,7 +124,7 @@ contract VestingVault is Ownable {
 	}
 
 	/**
-	 * @dev Deletes a vesting schedule for a beneficiary.
+	 * @dev Deletes a vesting schedule for a `beneficiary`.
 	 * Can only be called by the contract owner.
 	 * @param beneficiary The address of the beneficiary.
 	 * @param index The index of the vesting schedule to be deleted.
@@ -96,10 +135,23 @@ contract VestingVault is Ownable {
 
 	// ====== View functions ======
 
+	/**
+	 * @notice Returns the vesting schedules for a `beneficiary`.
+	 * @dev Returns the vesting schedules for a `beneficiary`.
+	 * @param beneficiary The address of the beneficiary.
+	 * @return The vesting schedules for the beneficiary.
+	 */
 	function beneficiarySchedules(address beneficiary) public view returns (Schedule[] memory) {
 		return _beneficiarySchedules[beneficiary];
 	}
 
+	/**
+	 * @notice Returns the vesting schedule for a `beneficiary` at `index`.
+	 * @dev Reverts if the `beneficiary` does not have a vesting schedule at `index`.
+	 * @param beneficiary The address of the beneficiary.
+	 * @param index The index of the vesting schedule.
+	 * @return The vesting schedule for the beneficiary at the given index.
+	 */
 	function beneficiarySchedule(
 		address beneficiary,
 		uint256 index
@@ -109,6 +161,13 @@ contract VestingVault is Ownable {
 		return schedules[index];
 	}
 
+	/**
+	 * @notice Amount of token that can be claimed from a vesting schedule at `index` of `beneficiary`.
+	 * @dev Reverts if the `beneficiary` does not have a vesting schedule at `index`.
+	 * @param beneficiary The address of the beneficiary.
+	 * @param index The index of the vesting schedule.
+	 * @return claimable The amount of token that can be claimed from a vesting schedule at `index` of `beneficiary`.
+	 */
 	function scheduleClaimable(
 		address beneficiary,
 		uint256 index
@@ -119,6 +178,12 @@ contract VestingVault is Ownable {
 		(claimable, ) = _scheduleClaimable(_beneficiarySchedules[beneficiary][index]);
 	}
 
+	/**
+	 * @notice Total amount of token that can be claimed by a `beneficiary`.
+	 * @dev Total amount of token that can be claimed by a `beneficiary`.
+	 * @param beneficiary The address of the beneficiary.
+	 * @return claimable The total amount of token that can be claimed by a `beneficiary`.
+	 */
 	function totalClaimable(address beneficiary) public view returns (uint256 claimable) {
 		Schedule[] memory schedules = _beneficiarySchedules[beneficiary];
 
@@ -131,8 +196,8 @@ contract VestingVault is Ownable {
 	// ====== Modifying functions ======
 
 	/**
-	 * @dev Releases vested tokens for the calling beneficiary.
-	 * Can only be called by a beneficiary.
+	 * @notice Releases vested tokens for the calling beneficiary.
+	 * @dev Reverts if the beneficiary does not have any vesting schedules or no tokens have been vested since last claim.
 	 */
 	function claim() public {
 		uint256 totalUnreleasedAmount = 0;
@@ -175,6 +240,12 @@ contract VestingVault is Ownable {
 
 	// ====== Internal functions ======
 
+	/**
+	 * @notice Deletes a vesting schedule for a `beneficiary` at `index`. Internal function.
+	 * @dev Reverts if the `beneficiary` does not have a vesting schedule at `index`.
+	 * @param beneficiary The address of the beneficiary.
+	 * @param index The index of the vesting schedule to be deleted.
+	 */
 	function _deleteSchedule(address beneficiary, uint256 index) internal {
 		Schedule[] storage schedules = _beneficiarySchedules[beneficiary];
 		if (index >= schedules.length) revert NoScheduleForBeneficiary(beneficiary, index);
@@ -185,6 +256,13 @@ contract VestingVault is Ownable {
 		emit ScheduleDeleted(beneficiary, index);
 	}
 
+	/**
+	 * @notice Calculates the amount of token that can be claimed from a vesting schedule and if the vesting schedule is fully paid.
+	 * @dev Calculates the amount of token that can be claimed from a vesting schedule and if the vesting schedule is fully paid.
+	 * @param schedule The vesting schedule.
+	 * @return claimable The amount of token that can be claimed from a vesting schedule.
+	 * @return fullyPaid True if the vesting schedule is fully paid.
+	 */
 	function _scheduleClaimable(
 		Schedule memory schedule
 	) internal view returns (uint256 claimable, bool fullyPaid) {
