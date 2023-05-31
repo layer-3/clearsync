@@ -10,7 +10,7 @@ import './src/tasks/accounts';
 import './src/tasks/activate';
 import './src/tasks/forceImport';
 import './src/tasks/sendBatchTransfer';
-import './src/tasks/ducky-game';
+import './src/tasks/duckyGame';
 
 let accounts;
 
