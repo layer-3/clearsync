@@ -5,6 +5,7 @@ import { task, types } from 'hardhat/config';
 
 import type { BatchTransfer, ERC20 } from '../../typechain-types';
 
+const ADDRESS_ZERO = "0x"+'0'.repeat(40);
 const MAX_BATCH_SIZE = 500;
 const DEFAULT_INTERVAL = 10; // minutes
 const addressRegex = /^0x[\dA-Fa-f]{40}$/;
@@ -13,7 +14,8 @@ interface TaskArgs {
   addressesPath: string;
   tokenAddress: string;
   batcherAddress: string;
-  amount: number;
+  amount: string;
+  tokenNative?: boolean;
   minBatchSize?: number;
   maxBatchSize?: number;
   minInterval?: number;
@@ -23,6 +25,7 @@ interface TaskArgs {
 task('sendBatchTransfer', 'Send batch transfer')
   .addParam('addressesPath', 'The path to the file with addresses')
   .addParam('tokenAddress', 'The token address')
+  .addParam('tokenNative', 'Whether the token is native (ETH)')
   .addParam('batcherAddress', 'The batcher address')
   .addParam('amount', 'The amount to send')
   .addOptionalParam('minBatchSize', 'The minimum batch size', undefined, types.int)
@@ -40,7 +43,7 @@ task('sendBatchTransfer', 'Send batch transfer')
     types.int,
   )
   .setAction(async (taskArgs: TaskArgs, { ethers }) => {
-    const { addressesPath, tokenAddress, batcherAddress, amount } = taskArgs;
+    const { addressesPath, tokenAddress, tokenNative, batcherAddress, amount } = taskArgs;
     const minBatchSize = taskArgs.minBatchSize ?? MAX_BATCH_SIZE;
     const maxBatchSize = taskArgs.maxBatchSize ?? MAX_BATCH_SIZE;
     const minInterval = taskArgs.minInterval ?? DEFAULT_INTERVAL;
@@ -70,7 +73,7 @@ task('sendBatchTransfer', 'Send batch transfer')
 
     const Token = (await ethers.getContractAt('ERC20', tokenAddress, sender)) as ERC20;
     const decimals = await Token.decimals();
-    const amountFormatted = amount * 10 ** decimals;
+    const amountFormatted = amount + "0".repeat(decimals);
     console.log(`Sending ${amountFormatted} tokens to each address`);
 
     const BatchTransfer = (await ethers.getContractAt(
@@ -88,7 +91,7 @@ task('sendBatchTransfer', 'Send batch transfer')
       console.log(`Sending batch of ${batchSize} addresses...`);
 
       const batchAddresses = addresses.slice(i, i + batchSize);
-      const tx = await BatchTransfer.batchTransfer(tokenAddress, batchAddresses, amountFormatted);
+      const tx = await BatchTransfer.batchTransfer(tokenNative ? ADDRESS_ZERO : tokenAddress, batchAddresses, amountFormatted);
       console.log(`${i + 1}. Transaction hash: ${tx.hash}`);
 
       const interval = Math.floor(Math.random() * (maxInterval - minInterval + 1) + minInterval);
@@ -115,7 +118,7 @@ async function parseAddressesFile(path: string): Promise<string[]> {
         return;
       }
 
-      if (address === '0x0000000000000000000000000000000000000000') return;
+      if (address === ADDRESS_ZERO) return;
 
       addresses.push(address);
     }).on('close', () => {
