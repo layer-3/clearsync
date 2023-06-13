@@ -14,7 +14,7 @@ interface TaskArgs {
   addressesPath: string;
   tokenAddress: string;
   batcherAddress: string;
-  amount: string;
+  amount: number;
   tokenNative?: boolean;
   minBatchSize?: number;
   maxBatchSize?: number;
@@ -25,9 +25,9 @@ interface TaskArgs {
 task('sendBatchTransfer', 'Send batch transfer')
   .addParam('addressesPath', 'The path to the file with addresses')
   .addParam('tokenAddress', 'The token address')
-  .addParam('tokenNative', 'Whether the token is native (ETH)')
   .addParam('batcherAddress', 'The batcher address')
   .addParam('amount', 'The amount to send')
+  .addFlag('tokenNative', 'Whether the token is native (ETH)')
   .addOptionalParam('minBatchSize', 'The minimum batch size', undefined, types.int)
   .addOptionalParam('maxBatchSize', 'The maximum batch size', undefined, types.int)
   .addOptionalParam(
@@ -73,14 +73,30 @@ task('sendBatchTransfer', 'Send batch transfer')
 
     const Token = (await ethers.getContractAt('ERC20', tokenAddress, sender)) as ERC20;
     const decimals = await Token.decimals();
-    const amountFormatted = amount + "0".repeat(decimals);
+    const amountFormatted = formatWithDecimals(amount.toString(), decimals);
     console.log(`Sending ${amountFormatted} tokens to each address`);
+
+    let tokenBalance = await Token.balanceOf(batcherAddress);
+    if (tokenNative) {
+      tokenBalance = await ethers.provider.getBalance(batcherAddress);
+    }
+
+    const expectedCost = formatWithDecimals((quantity * amount).toString(), decimals);
+    if (tokenBalance.lt(expectedCost)) {
+      throw new Error(
+        `Batcher address does not have enough tokens to send: ${tokenBalance.toString()} < ${expectedCost}`,
+      );
+    }
 
     const BatchTransfer = (await ethers.getContractAt(
       'BatchTransfer',
       batcherAddress,
       sender,
     )) as BatchTransfer;
+
+    if (await BatchTransfer.owner() !== sender.address) {
+      throw new Error('Sender is not the owner of the batcher contract');
+    }
 
     let i = 0;
     while (i < addresses.length) {
@@ -125,4 +141,14 @@ async function parseAddressesFile(path: string): Promise<string[]> {
       resolve(addresses);
     });
   });
+}
+
+function formatWithDecimals(value: string, decimals: number): string {
+  const pointIndex = value.indexOf('.');
+  if (pointIndex === -1) {
+    return value + '0'.repeat(decimals);
+  } else {
+    const length = value.length - pointIndex - 1;
+    return value.replace('.', '') + '0'.repeat(decimals - length);
+  }
 }
