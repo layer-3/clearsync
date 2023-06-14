@@ -3,7 +3,7 @@ pragma solidity 0.8.18;
 
 import '../duckies/ducklings/DucklingsV1.sol';
 
-contract BatchMint {
+contract BatchMinter {
 	DucklingsV1 public ducklings;
 
 	constructor(address _ducklings) {
