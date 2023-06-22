@@ -25,11 +25,6 @@ contract YellowTokenChildTunnel is FxBaseChildTunnel {
 		);
 
 		childYellowToken = YellowToken(childYellowToken_);
-		require(
-			childYellowToken.hasRole(childYellowToken.MINTER_ROLE(), address(this)),
-			'YellowTokenChild: INVALID_MINTER_ROLE'
-		);
-
 		rootYellowToken = rootYellowToken_;
 	}
 

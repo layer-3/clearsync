@@ -29,10 +29,6 @@ contract YellowTokenRootTunnel is FxBaseRootTunnel {
 
 		childYellowToken = childYellowToken_;
 		rootYellowToken = YellowToken(rootYellowToken_);
-		require(
-			rootYellowToken.hasRole(rootYellowToken.MINTER_ROLE(), address(this)),
-			'YellowTokenChild: INVALID_MINTER_ROLE'
-		);
 	}
 
 	// TODO: swap deposit and withdraw between root and child
