@@ -42,7 +42,10 @@ interface AddSchedulesArgs {
 
 task('addSchedules', 'Read from the file and add vesting schedules to the Vesting contract')
   .addParam('contract', 'The address of Vesting contract')
-  .addParam('src', 'Location of a .csv file with vesting schedules')
+  .addParam(
+    'src',
+    'Location of a .csv file with vesting schedules (beneficiary,amount,start,duration)',
+  )
   .setAction(async (taskArgs: AddSchedulesArgs, { ethers }) => {
     const Vesting = (await ethers.getContractAt('VestingVault', taskArgs.contract)) as VestingVault;
 
