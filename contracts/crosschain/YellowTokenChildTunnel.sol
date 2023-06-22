@@ -4,7 +4,7 @@ pragma solidity 0.8.18;
 import '@maticnetwork/fx-portal/contracts/tunnel/FxBaseChildTunnel.sol';
 import '../YellowToken.sol';
 
-contract YellowTokenChild is FxBaseChildTunnel {
+contract YellowTokenChildTunnel is FxBaseChildTunnel {
 	bytes32 public constant DEPOSIT = keccak256('DEPOSIT');
 	YellowToken public childYellowToken;
 	address public rootYellowToken;
