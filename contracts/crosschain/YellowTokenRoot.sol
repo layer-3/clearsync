@@ -31,6 +31,9 @@ contract YellowTokenRoot is FxBaseRootTunnel {
 		rootYellowToken = YellowToken(rootYellowToken_);
 	}
 
+	// TODO: swap deposit and withdraw between root and child
+	// so that when depositing on child to root, tokens are locked on child and minted on root
+	// and when withdrawing from root to child, tokens are burnt on root and unlocked on child
 	function deposit(address user, uint256 amount, bytes memory data) public {
 		// transfer from depositor to this contract
 		rootYellowToken.transferFrom(
