@@ -60,7 +60,7 @@ const config: HardhatUserConfig = {
       url: process.env.GOERLI_URL ?? '',
       accounts,
     },
-    polygon: {
+    matic: {
       url: process.env.POLYGON_URL ?? '',
       gasPrice: 2e11,
       accounts,
