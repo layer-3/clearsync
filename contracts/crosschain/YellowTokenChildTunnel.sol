@@ -5,7 +5,7 @@ import '@maticnetwork/fx-portal/contracts/tunnel/FxBaseChildTunnel.sol';
 import '../YellowToken.sol';
 
 contract YellowTokenChildTunnel is FxBaseChildTunnel {
-	bytes32 public constant DEPOSIT = keccak256('DEPOSIT');
+	bytes32 public constant WITHDRAW = keccak256('WITHDRAW');
 	YellowToken public childYellowToken;
 	address public rootYellowToken;
 
@@ -28,12 +28,12 @@ contract YellowTokenChildTunnel is FxBaseChildTunnel {
 		rootYellowToken = rootYellowToken_;
 	}
 
-	function withdraw(uint256 amount) public {
-		_withdraw(msg.sender, amount);
+	function deposit(uint256 amount) public {
+		_deposit(msg.sender, amount);
 	}
 
-	function withdrawTo(address receiver, uint256 amount) public {
-		_withdraw(receiver, amount);
+	function depositTo(address to, uint256 amount) public {
+		_deposit(to, amount);
 	}
 
 	//
@@ -48,52 +48,50 @@ contract YellowTokenChildTunnel is FxBaseChildTunnel {
 		// decode incoming data
 		(bytes32 syncType, bytes memory syncData) = abi.decode(data, (bytes32, bytes));
 
-		if (syncType == DEPOSIT) {
-			_syncDeposit(syncData);
+		if (syncType == WITHDRAW) {
+			_syncWithdraw(syncData);
 		} else {
 			revert('FxERC20ChildTunnel: INVALID_SYNC_TYPE');
 		}
 	}
 
-	function _syncDeposit(bytes memory syncData) internal {
-		(address depositor, address to, uint256 amount, bytes memory depositData) = abi.decode(
-			syncData,
-			(address, address, uint256, bytes)
-		);
+	function _syncWithdraw(bytes memory syncData) internal {
+		(address withdrawer, address receiver, uint256 amount, bytes memory depositData) = abi
+			.decode(syncData, (address, address, uint256, bytes));
 
 		// deposit tokens
-		childYellowToken.mint(to, amount);
+		childYellowToken.transfer(receiver, amount);
 
 		// call onTokenTransfer() on `to` with limit and ignore error
-		if (_isContract(to)) {
+		if (_isContract(receiver)) {
 			uint256 txGas = 2000000;
 			bool success = false;
 			bytes memory data = abi.encodeWithSignature(
 				'onTokenTransfer(address,address,address,address,uint256,bytes)',
 				rootYellowToken,
 				childYellowToken,
-				depositor,
-				to,
+				withdrawer,
+				receiver,
 				amount,
 				depositData
 			);
 			// solhint-disable-next-line security/no--assembly
 			assembly {
-				success := call(txGas, to, 0, add(data, 0x20), mload(data), 0, 0)
+				success := call(txGas, receiver, 0, add(data, 0x20), mload(data), 0, 0)
 			}
 		}
 
-		emit FxDeposit(to, amount);
+		emit FxWithdraw(receiver, amount);
 	}
 
-	function _withdraw(address receiver, uint256 amount) internal {
+	function _deposit(address to, uint256 amount) internal {
 		// withdraw tokens
-		childYellowToken.burnFrom(msg.sender, amount);
+		childYellowToken.transferFrom(msg.sender, address(this), amount);
 
 		// send message to root regarding token burn
-		_sendMessageToRoot(abi.encode(receiver, amount));
+		_sendMessageToRoot(abi.encode(to, amount));
 
-		emit FxWithdraw(receiver, amount);
+		emit FxDeposit(to, amount);
 	}
 
 	// check if address is contract

@@ -5,7 +5,7 @@ import '@maticnetwork/fx-portal/contracts/tunnel/FxBaseRootTunnel.sol';
 import '../YellowToken.sol';
 
 contract YellowTokenRootTunnel is FxBaseRootTunnel {
-	bytes32 public constant DEPOSIT = keccak256('DEPOSIT');
+	bytes32 public constant WITHDRAW = keccak256('WITHDRAW');
 
 	address public childYellowToken;
 	YellowToken public rootYellowToken;
@@ -31,39 +31,31 @@ contract YellowTokenRootTunnel is FxBaseRootTunnel {
 		rootYellowToken = YellowToken(rootYellowToken_);
 	}
 
-	// TODO: swap deposit and withdraw between root and child
-	// so that when depositing on child to root, tokens are locked on child and minted on root
-	// and when withdrawing from root to child, tokens are burnt on root and unlocked on child
-	function deposit(address user, uint256 amount, bytes memory data) public {
-		// transfer from depositor to this contract
-		rootYellowToken.transferFrom(
-			msg.sender, // depositor
-			address(this), // manager contract
-			amount
-		);
-
-		// DEPOSIT, encode(rootToken, depositor, user, amount, extra data)
-		bytes memory message = abi.encode(DEPOSIT, abi.encode(msg.sender, user, amount, data));
-		_sendMessageToChild(message);
-		emit FxDeposit(user, amount);
+	function withdraw(uint256 amount, bytes memory data) public {
+		_withdraw(msg.sender, amount, data);
 	}
 
-	// exit processor
+	function withdrawTo(address receiver, uint256 amount, bytes memory data) public {
+		_withdraw(receiver, amount, data);
+	}
+
+	function _withdraw(address receiver, uint256 amount, bytes memory data) internal {
+		// burn from withdrawer
+		rootYellowToken.burnFrom(receiver, amount);
+
+		// WITHDRAW, encode(withdrawer, receiver, amount, extra data)
+		bytes memory message = abi.encode(WITHDRAW, abi.encode(msg.sender, receiver, amount, data));
+		_sendMessageToChild(message);
+		emit FxWithdraw(receiver, amount);
+	}
+
+	// deposit processor
 	function _processMessageFromChild(bytes memory data) internal override {
 		(address to, uint256 amount) = abi.decode(data, (address, uint256));
 
-		// check if current balance for token is less than amount,
-		// mint remaining amount for this address
-		uint256 balanceOf = rootYellowToken.balanceOf(address(this));
-		if (balanceOf < amount) {
-			rootYellowToken.mint(address(this), amount - balanceOf);
-		}
+		// mint tokens
+		rootYellowToken.mint(to, amount);
 
-		// approve token transfer
-		rootYellowToken.approve(address(this), amount);
-
-		// transfer from tokens to
-		rootYellowToken.transferFrom(address(this), to, amount);
-		emit FxWithdraw(to, amount);
+		emit FxDeposit(to, amount);
 	}
 }
