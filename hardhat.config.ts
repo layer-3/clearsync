@@ -50,10 +50,17 @@ const config: HardhatUserConfig = {
   },
   networks: {
     hardhat: {
-      accounts: {
-        mnemonic: 'bring tumble anger wild frame you famous usage ramp federal captain company',
-        count: 100,
-      },
+      accounts: process.env.PRIVATE_KEY
+        ? [
+            {
+              privateKey: process.env.PRIVATE_KEY,
+              balance: '100000000000000000000000000',
+            },
+          ]
+        : {
+            mnemonic: 'bring tumble anger wild frame you famous usage ramp federal captain company',
+            count: 100,
+          },
     },
     ethereum: {
       url: process.env.ETHEREUM_URL ?? '',
