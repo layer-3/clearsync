@@ -87,7 +87,7 @@ task('depositToRoot', 'Deposit Yellow tokens from Polygon to Ethereum')
 
     const amount = taskArgs.amount * 10 ** (await YellowToken.decimals());
 
-    // // -------- Check allowance --------
+    // -------- Check allowance --------
 
     const approvalBN = await YellowToken.allowance(Account.address, YellowTokenChildTunnel.address);
     const approval = approvalBN.toNumber();
