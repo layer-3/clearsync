@@ -18,26 +18,14 @@ const isCheckpointed = async (network: PolygonNetwork, blockNum: number): Promis
 };
 
 const waitCheckpointed = async (network: PolygonNetwork, blockNum: number): Promise<void> => {
-  let isCheckpointedFlag = await isCheckpointed(network, blockNum);
+  let isCheckpointedFlag = false;
   let timeStr = new Date().toLocaleTimeString();
 
-  if (!isCheckpointedFlag) {
-    console.log(`[${timeStr}] Checkpoint status: not included, will check again in 1 min...`);
-
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
-    const interval = setInterval(async (): Promise<void> => {
-      isCheckpointedFlag = await isCheckpointed(network, blockNum);
-
-      timeStr = new Date().toLocaleTimeString();
-      if (isCheckpointedFlag) {
-        clearInterval(interval);
-      } else {
-        console.log(`[${timeStr}] Checkpoint status: not included, will check again in 1 min...`);
-      }
-    }, 60_000);
-
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    while (!isCheckpointedFlag) {
+  while (!isCheckpointedFlag) {
+    isCheckpointedFlag = await isCheckpointed(network, blockNum);
+    timeStr = new Date().toLocaleTimeString();
+    if (!isCheckpointedFlag) {
+      console.log(`[${timeStr}] Checkpoint status: not included, will check again in 1 min...`);
       await new Promise((resolve) => setTimeout(resolve, 60_000));
     }
   }
