@@ -13,6 +13,7 @@ import './src/tasks/forceImport';
 import './src/tasks/sendBatchTransfer';
 import './src/tasks/duckyGame';
 import './src/tasks/vesting';
+import './src/tasks/crosschain';
 
 let accounts;
 
