@@ -33,7 +33,7 @@ task(
     const ethereumNetwork = isMainnet ? 'ethereum' : 'goerli';
     const polygonNetwork = isMainnet ? 'matic' : 'mumbai';
 
-    console.log(`Running on ${ethereumNetwork} and ${polygonNetwork}`);
+    console.log(`Running on ${ethereumNetwork} and ${polygonNetwork}\n`);
 
     // -------- Deploy Yellow Token Root Tunnel --------
 
