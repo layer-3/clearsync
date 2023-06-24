@@ -11,6 +11,7 @@ import './src/tasks/activate';
 import './src/tasks/forceImport';
 import './src/tasks/sendBatchTransfer';
 import './src/tasks/duckyGame';
+import './src/tasks/vesting';
 
 let accounts;
 
