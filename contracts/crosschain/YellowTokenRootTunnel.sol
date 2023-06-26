@@ -41,7 +41,7 @@ contract YellowTokenRootTunnel is FxBaseRootTunnel {
 
 	function _withdraw(address receiver, uint256 amount, bytes memory data) internal {
 		// burn from withdrawer
-		rootYellowToken.burnFrom(receiver, amount);
+		rootYellowToken.burnFrom(msg.sender, amount);
 
 		// WITHDRAW, encode(withdrawer, receiver, amount, extra data)
 		bytes memory message = abi.encode(WITHDRAW, abi.encode(msg.sender, receiver, amount, data));
