@@ -1,6 +1,6 @@
 # Vesting tasks
 
-Before adding vesting schedules, you need to deploy the `Vesting` contract, see [Deploy a contract](../../scripts/README.md#deploy-any-contract) section.
+Before adding vesting schedules, you need to deploy the `Vesting` contract, see [Deploy a contract](../scripts/README.md#deploy-any-contract) section.
 
 ## Add vesting schedule
 
