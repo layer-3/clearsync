@@ -1,19 +1,25 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.18;
 
-import '@openzeppelin/contracts/access/Ownable.sol';
+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@layerzerolabs/solidity-examples/contracts/lzApp/NonblockingLzApp.sol';
 
-import '../YellowToken.sol';
+import '../interfaces/IERC20MintableBurnable.sol';
 
-contract DuckiesHomeBridge is Ownable, NonblockingLzApp {
+contract TokenBridge is NonblockingLzApp {
 	event BridgeOut(uint16 chainTo, address indexed sender, uint256 amount);
 	event BridgeIn(uint16 chainFrom, address indexed receiver, uint256 amount);
 
-	YellowToken duckiesContract;
+	IERC20MintableBurnable tokenContract;
+	bool public immutable isRootBridge;
 
-	constructor(address endpoint, address duckiesAddress) NonblockingLzApp(endpoint) {
-		duckiesContract = YellowToken(duckiesAddress);
+	constructor(
+		address endpoint,
+		address duckiesAddress,
+		bool isRootBridge_
+	) NonblockingLzApp(endpoint) {
+		tokenContract = IERC20MintableBurnable(duckiesAddress);
+		isRootBridge = isRootBridge_;
 	}
 
 	function _nonblockingLzReceive(
@@ -24,7 +30,12 @@ contract DuckiesHomeBridge is Ownable, NonblockingLzApp {
 	) internal override {
 		(address receiver, uint256 amount) = abi.decode(_payload, (address, uint256));
 
-		duckiesContract.transfer(receiver, amount);
+		if (isRootBridge) {
+			// NOTE: Bridge should have enough tokens as the only ability for token to appear on other chains is to be transferred to the bridge
+			tokenContract.transfer(receiver, amount);
+		} else {
+			tokenContract.mint(receiver, amount);
+		}
 	}
 
 	function estimateFee(
@@ -51,7 +62,11 @@ contract DuckiesHomeBridge is Ownable, NonblockingLzApp {
 		address receiver,
 		uint256 amount
 	) external payable {
-		duckiesContract.transferFrom(msg.sender, address(this), amount);
+		if (isRootBridge) {
+			tokenContract.transferFrom(msg.sender, address(this), amount);
+		} else {
+			tokenContract.burnFrom(msg.sender, amount);
+		}
 
 		_lzSend(
 			chainId, // chainId
