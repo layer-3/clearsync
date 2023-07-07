@@ -27,6 +27,7 @@ if (process.env.MNEMONIC) {
 
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY ?? '';
 const POLYGONSCAN_API_KEY = process.env.POLYGONSCAN_API_KEY ?? '';
+const BSCSCAN_API_KEY = process.env.BSCSCAN_API_KEY ?? '';
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -70,6 +71,14 @@ const config: HardhatUserConfig = {
       url: process.env.MUMBAI_URL ?? '',
       accounts,
     },
+    bsc: {
+      url: process.env.BSC_URL ?? '',
+      accounts,
+    },
+    'bsc-testnet': {
+      url: process.env.BSC_TESTNET_URL ?? '',
+      accounts,
+    },
   },
   docgen: {
     output: 'docs',
@@ -85,6 +94,8 @@ const config: HardhatUserConfig = {
       goerli: ETHERSCAN_API_KEY,
       polygon: POLYGONSCAN_API_KEY,
       polygonMumbai: POLYGONSCAN_API_KEY,
+      bsc: BSCSCAN_API_KEY,
+      bscTestnet: BSCSCAN_API_KEY,
     },
   },
 };
