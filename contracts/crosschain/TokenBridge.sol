@@ -10,7 +10,7 @@ contract TokenBridge is NonblockingLzApp {
 	event BridgeOut(uint16 chainTo, address indexed sender, uint256 amount);
 	event BridgeIn(uint16 chainFrom, address indexed receiver, uint256 amount);
 
-	IERC20MintableBurnable tokenContract;
+	IERC20MintableBurnable public tokenContract;
 	bool public immutable isRootBridge;
 
 	constructor(
