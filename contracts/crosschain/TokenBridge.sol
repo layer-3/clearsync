@@ -23,7 +23,7 @@ contract TokenBridge is NonblockingLzApp {
 	}
 
 	function _nonblockingLzReceive(
-		uint16, // _srcChainId
+		uint16 _srcChainId,
 		bytes memory, // _srcAddress
 		uint64, // _nonce
 		bytes memory _payload
@@ -36,6 +36,8 @@ contract TokenBridge is NonblockingLzApp {
 		} else {
 			tokenContract.mint(receiver, amount);
 		}
+
+		emit BridgeIn(_srcChainId, receiver, amount);
 	}
 
 	function estimateFees(
@@ -70,5 +72,7 @@ contract TokenBridge is NonblockingLzApp {
 			bytes(''), // adapterParams
 			msg.value // nativeFee
 		);
+
+		emit BridgeOut(chainId, msg.sender, amount);
 	}
 }
