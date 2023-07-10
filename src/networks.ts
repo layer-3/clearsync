@@ -1,0 +1,21 @@
+// name as defined in hardhat.config.ts
+export const networkIdToName = new Map<number, string>([
+  [1, 'ethereum'],
+  [5, 'goerli'],
+  [137, 'matic'],
+  [80_001, 'mumbai'],
+  [56, 'bsc'],
+  [97, 'bsc-testnet'],
+  [43_114, 'avalanche'],
+  [43_113, 'avalanche-fuji'],
+  [42_161, 'arbitrum'],
+  [421_613, 'arbitrum-goerli'],
+  [10, 'optimism'],
+  [420, 'optimism-goerli'],
+  [250, 'fantom'],
+  [4002, 'fantom-testnet'],
+  [1101, 'zkEVM'],
+  [1442, 'zkEVM-testnet'],
+  [324, 'zkSync'],
+  [280, 'zkSync-testnet'],
+]);
