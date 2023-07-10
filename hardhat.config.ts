@@ -5,6 +5,7 @@ import '@nomiclabs/hardhat-ethers';
 import '@openzeppelin/hardhat-upgrades';
 import type { HardhatUserConfig } from 'hardhat/config';
 import 'solidity-docgen';
+import 'hardhat-change-network';
 
 import './src/tasks/accounts';
 import './src/tasks/activate';
@@ -78,6 +79,54 @@ const config: HardhatUserConfig = {
     },
     'bsc-testnet': {
       url: process.env.BSC_TESTNET_URL ?? '',
+      accounts,
+    },
+    avalanche: {
+      url: process.env.AVALANCHE_URL ?? '',
+      accounts,
+    },
+    'avalanche-fuji': {
+      url: process.env.AVALANCHE_FUJI_URL ?? '',
+      accounts,
+    },
+    arbitrum: {
+      url: process.env.ARBITRUM_URL ?? '',
+      accounts,
+    },
+    'arbitrum-goerli': {
+      url: process.env.ARBITRUM_GOERLI_URL ?? '',
+      accounts,
+    },
+    optimism: {
+      url: process.env.OPTIMISM_URL ?? '',
+      accounts,
+    },
+    'optimism-goerli': {
+      url: process.env.OPTIMISM_GOERLI_URL ?? '',
+      accounts,
+    },
+    fantom: {
+      url: process.env.FANTOM_URL ?? '',
+      accounts,
+    },
+    'fantom-testnet': {
+      url: process.env.FANTOM_TESTNET_URL ?? '',
+      accounts,
+    },
+    zkEVM: {
+      url: process.env.ZKEVM_URL ?? '',
+      accounts,
+    },
+    'zkEVM-testnet': {
+      url: process.env.ZKEVM_TESTNET_URL ?? '',
+      accounts,
+    },
+    zkSync: {
+      url: process.env.ZKSYNC_URL ?? '',
+      accounts,
+    },
+    'zkSync-testnet': {
+      url: process.env.ZKSYNC_TESTNET_URL ?? '',
       accounts,
     },
   },
