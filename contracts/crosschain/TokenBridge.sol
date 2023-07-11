@@ -7,8 +7,8 @@ import '@layerzerolabs/solidity-examples/contracts/lzApp/NonblockingLzApp.sol';
 import '../interfaces/IERC20MintableBurnable.sol';
 
 contract TokenBridge is NonblockingLzApp {
-	event BridgeOut(uint16 chainTo, address indexed sender, uint256 amount);
-	event BridgeIn(uint16 chainFrom, address indexed receiver, uint256 amount);
+	event BridgeOut(uint16 chainTo, uint64 nonce, address indexed sender, uint256 amount);
+	event BridgeIn(uint16 chainFrom, uint64 nonce, address indexed receiver, uint256 amount);
 
 	IERC20MintableBurnable public tokenContract;
 	bool public immutable isRootBridge;
@@ -25,7 +25,7 @@ contract TokenBridge is NonblockingLzApp {
 	function _nonblockingLzReceive(
 		uint16 _srcChainId,
 		bytes memory, // _srcAddress
-		uint64, // _nonce
+		uint64 _nonce,
 		bytes memory _payload
 	) internal override {
 		(address receiver, uint256 amount) = abi.decode(_payload, (address, uint256));
@@ -37,7 +37,7 @@ contract TokenBridge is NonblockingLzApp {
 			tokenContract.mint(receiver, amount);
 		}
 
-		emit BridgeIn(_srcChainId, receiver, amount);
+		emit BridgeIn(_srcChainId, _nonce, receiver, amount);
 	}
 
 	function estimateFees(
@@ -80,6 +80,11 @@ contract TokenBridge is NonblockingLzApp {
 			msg.value // nativeFee
 		);
 
-		emit BridgeOut(chainId, msg.sender, amount);
+		emit BridgeOut(
+			chainId,
+			lzEndpoint.getOutboundNonce(chainId, address(this)),
+			msg.sender,
+			amount
+		);
 	}
 }
