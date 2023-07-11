@@ -1,6 +1,7 @@
 import '@nomicfoundation/hardhat-toolbox';
 import { task, types } from 'hardhat/config';
 import { formatEther } from 'ethers/lib/utils';
+import { constants } from 'ethers';
 
 import type { ERC20, TokenBridge, YellowToken } from '../../typechain-types';
 
@@ -122,7 +123,13 @@ task(
     console.log('Allowance is enough!\n');
 
     // calculate fee
-    const [nativeFeeBN] = await TokenBridge.estimateFees(remoteChainId, receiver, amount, '0x');
+    const [nativeFeeBN] = await TokenBridge.estimateFees(
+      remoteChainId,
+      receiver,
+      amount,
+      false,
+      '0x',
+    );
 
     console.log(
       `${formatEther(
@@ -140,9 +147,16 @@ task(
 
     // bridge tokens
     console.log('Bridging tokens');
-    const tx = await TokenBridge.bridge(remoteChainId, receiver, amount, {
-      value: nativeFeeBN,
-    });
+    const tx = await TokenBridge.bridge(
+      remoteChainId,
+      receiver,
+      amount,
+      constants.AddressZero,
+      '0x',
+      {
+        value: nativeFeeBN,
+      },
+    );
     await tx.wait();
 
     console.log(`'Bridge token' transaction was mined: ${tx.hash}`);

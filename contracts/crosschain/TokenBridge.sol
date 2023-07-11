@@ -44,6 +44,7 @@ contract TokenBridge is NonblockingLzApp {
 		uint16 _dstChainId,
 		address receiver,
 		uint256 amount,
+		bool payInZRO,
 		bytes calldata _adapterParams
 	) public view returns (uint nativeFee, uint zroFee) {
 		return
@@ -51,13 +52,19 @@ contract TokenBridge is NonblockingLzApp {
 				_dstChainId,
 				address(this),
 				abi.encode(receiver, amount),
-				false, // _payInZRO, ZRO fees are not supported yet
+				payInZRO,
 				_adapterParams
 			);
 	}
 
 	// NOTE: chainIds are proprietary to LayerZero protocol and can be found on their docs
-	function bridge(uint16 chainId, address receiver, uint256 amount) external payable {
+	function bridge(
+		uint16 chainId,
+		address receiver,
+		uint256 amount,
+		address zroPaymentAddress,
+		bytes calldata adapterParams
+	) external payable {
 		if (isRootBridge) {
 			tokenContract.transferFrom(msg.sender, address(this), amount);
 		} else {
@@ -68,8 +75,8 @@ contract TokenBridge is NonblockingLzApp {
 			chainId, // chainId
 			abi.encode(receiver, amount), // payload
 			payable(msg.sender), // refundAddress
-			address(0), // zroPaymentAddress, ZRO fees are not supported yet
-			bytes(''), // adapterParams
+			zroPaymentAddress, // zroPaymentAddress
+			adapterParams, // adapterParams
 			msg.value // nativeFee
 		);
 
