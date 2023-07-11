@@ -15,10 +15,10 @@ contract TokenBridge is NonblockingLzApp {
 
 	constructor(
 		address endpoint,
-		address duckiesAddress,
+		address tokenAddress,
 		bool isRootBridge_
 	) NonblockingLzApp(endpoint) {
-		tokenContract = IERC20MintableBurnable(duckiesAddress);
+		tokenContract = IERC20MintableBurnable(tokenAddress);
 		isRootBridge = isRootBridge_;
 	}
 
