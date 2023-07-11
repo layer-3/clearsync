@@ -158,4 +158,34 @@ describe('TokenBridge', function () {
       }),
     ).to.be.reverted;
   });
+
+  it('events are emitted', async () => {
+    // approve tokens for RootBridge
+    await RootToken.connect(Someone).approve(RootBridge.address, amount);
+
+    // bridge out
+    await expect(
+      RootBridge.bridge(chainId, Someone.address, amount, ZRO_PAYMENT_ADDRESS, ADAPTER_PARAMS, {
+        value: ethers.utils.parseEther('0.5'),
+      }),
+    )
+      .to.emit(RootBridge, 'BridgeOut')
+      .withArgs(chainId, 1, Someone.address, amount)
+      .to.emit(ChildBridge, 'BridgeIn')
+      .withArgs(chainId, 1, Someone.address, amount);
+
+    // approve tokens for ChildBridge
+    await ChildToken.connect(Someone).approve(ChildBridge.address, amount);
+
+    // bridge back
+    await expect(
+      ChildBridge.bridge(chainId, Someone.address, amount, ZRO_PAYMENT_ADDRESS, ADAPTER_PARAMS, {
+        value: ethers.utils.parseEther('0.5'),
+      }),
+    )
+      .to.emit(ChildBridge, 'BridgeOut')
+      .withArgs(chainId, 1, Someone.address, amount)
+      .to.emit(RootBridge, 'BridgeIn')
+      .withArgs(chainId, 1, Someone.address, amount);
+  });
 });
