@@ -1,6 +1,8 @@
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
-import { constants } from 'ethers';
+import { constants, utils } from 'ethers';
+
+import { ACCOUNT_MISSING_ROLE } from '../helpers/common';
 
 import type { LZEndpointMock, TokenBridge, YellowToken } from '../../typechain-types';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
@@ -8,14 +10,17 @@ import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 const ZRO_PAYMENT_ADDRESS = constants.AddressZero;
 const ADAPTER_PARAMS = '0x';
 
+const BRIDGER_ROLE = utils.id('BRIDGER_ROLE');
+
 describe('TokenBridge', function () {
   const chainId = 123;
 
-  const startRootBalance = 1000;
+  const startBalance = 1000;
   const amount = 100;
 
+  let Bridger: SignerWithAddress;
+  let OtherBridger: SignerWithAddress;
   let Someone: SignerWithAddress;
-  let Someother: SignerWithAddress;
 
   let LZEndpointMock: LZEndpointMock;
 
@@ -26,7 +31,7 @@ describe('TokenBridge', function () {
   let ChildBridge: TokenBridge;
 
   beforeEach(async () => {
-    [Someone, Someother] = await ethers.getSigners();
+    [Bridger, OtherBridger, Someone] = await ethers.getSigners();
 
     // create a LayerZero Endpoint mock for testing
     const LZEndpointMockFactory = await ethers.getContractFactory('LZEndpointMock');
@@ -38,10 +43,9 @@ describe('TokenBridge', function () {
     ChildToken = (await YellowTokenFactory.deploy('ChildToken', 'CTN', 1_000_000)) as YellowToken;
 
     // activate tokens
-    await RootToken.activate(startRootBalance, Someone.address);
-    await ChildToken.activate(startRootBalance, Someone.address);
-    // clean ChildToken balance
-    await ChildToken.connect(Someone).burn(startRootBalance);
+    await RootToken.activate(startBalance, Bridger.address);
+    // NOTE: active ChildToken with non-zero premint to ease testing of bridging to Root
+    await ChildToken.activate(startBalance, Bridger.address);
 
     // create Root and Child TokenBridges instances
     const TokenBridgeFactory = await ethers.getContractFactory('TokenBridge');
@@ -65,127 +69,179 @@ describe('TokenBridge', function () {
     // set each contracts source address so it can send to each other
     await RootBridge.setTrustedRemoteAddress(chainId, ChildBridge.address);
     await ChildBridge.setTrustedRemoteAddress(chainId, RootBridge.address);
+
+    // grant BridgerRole to OtherBridger
+    await RootBridge.grantRole(BRIDGER_ROLE, OtherBridger.address);
+    await ChildBridge.grantRole(BRIDGER_ROLE, OtherBridger.address);
   });
 
-  it('bridge out Root: tokens are locked on Root and minted on Child', async () => {
-    // initial balances
-    expect(await RootToken.balanceOf(Someone.address)).to.be.equal(startRootBalance);
-    expect(await ChildToken.balanceOf(Someone.address)).to.be.equal(0);
+  describe('success', () => {
+    it('bridge out Root: tokens are locked on Root and minted on Child', async () => {
+      // initial balances
+      expect(await RootToken.balanceOf(Bridger.address)).to.be.equal(startBalance);
+      expect(await ChildToken.balanceOf(Bridger.address)).to.be.equal(startBalance);
 
-    // approve tokens for RootBridge
-    await RootToken.connect(Someone).approve(RootBridge.address, amount);
+      // approve tokens for RootBridge
+      await RootToken.connect(Bridger).approve(RootBridge.address, amount);
 
-    // bridge out
-    await RootBridge.bridge(chainId, Someone.address, amount, ZRO_PAYMENT_ADDRESS, ADAPTER_PARAMS, {
-      value: ethers.utils.parseEther('0.5'),
+      // bridge out
+      await RootBridge.bridge(
+        chainId,
+        Bridger.address,
+        amount,
+        ZRO_PAYMENT_ADDRESS,
+        ADAPTER_PARAMS,
+        {
+          value: ethers.utils.parseEther('0.5'),
+        },
+      );
+
+      // decreased for Bridger, locked on RootBridge
+      expect(await RootToken.balanceOf(Bridger.address)).to.be.equal(startBalance - amount);
+      expect(await RootToken.balanceOf(RootBridge.address)).to.be.equal(amount);
+
+      // increased for Bridger, no balance on ChildBridge
+      expect(await ChildToken.balanceOf(Bridger.address)).to.be.equal(startBalance + amount);
+      expect(await ChildToken.balanceOf(ChildBridge.address)).to.be.equal(0);
     });
 
-    // decreased for Someone, locked on RootBridge
-    expect(await RootToken.balanceOf(Someone.address)).to.be.equal(startRootBalance - amount);
-    expect(await RootToken.balanceOf(RootBridge.address)).to.be.equal(amount);
+    it('bridge out Child: tokens are burned on Child and unlocked on Root', async () => {
+      // approve tokens for ChildBridge
+      await ChildToken.connect(Bridger).approve(ChildBridge.address, amount);
 
-    // increased for Someone, no balance on ChildBridge
-    expect(await ChildToken.balanceOf(Someone.address)).to.be.equal(amount);
-    expect(await ChildToken.balanceOf(ChildBridge.address)).to.be.equal(0);
-  });
+      // bridge back
+      await ChildBridge.bridge(
+        chainId,
+        Bridger.address,
+        amount,
+        ZRO_PAYMENT_ADDRESS,
+        ADAPTER_PARAMS,
+        {
+          value: ethers.utils.parseEther('0.5'),
+        },
+      );
 
-  it('bridge out Child: tokens are burned on Child and unlocked on Root', async () => {
-    // approve tokens for RootBridge
-    await RootToken.connect(Someone).approve(RootBridge.address, amount);
+      // increased for Bridger, no balance on RootBridge
+      expect(await RootToken.balanceOf(Bridger.address)).to.be.equal(startBalance);
+      expect(await RootToken.balanceOf(RootBridge.address)).to.be.equal(0);
 
-    // bridge out
-    await RootBridge.bridge(chainId, Someone.address, amount, ZRO_PAYMENT_ADDRESS, ADAPTER_PARAMS, {
-      value: ethers.utils.parseEther('0.5'),
+      // decreased for Bridger, no balance on ChildBridge
+      expect(await ChildToken.balanceOf(Bridger.address)).to.be.equal(startBalance - amount);
+      expect(await ChildToken.balanceOf(ChildBridge.address)).to.be.equal(0);
     });
 
-    // approve tokens for ChildBridge
-    await ChildToken.connect(Someone).approve(ChildBridge.address, amount);
+    it('can bridge to other account', async () => {
+      // approve tokens for RootBridge
+      await RootToken.connect(Bridger).approve(RootBridge.address, amount);
 
-    // bridge back
-    await ChildBridge.bridge(
-      chainId,
-      Someone.address,
-      amount,
-      ZRO_PAYMENT_ADDRESS,
-      ADAPTER_PARAMS,
-      {
-        value: ethers.utils.parseEther('0.5'),
-      },
-    );
+      // bridge out
+      await RootBridge.bridge(
+        chainId,
+        OtherBridger.address,
+        amount,
+        ZRO_PAYMENT_ADDRESS,
+        ADAPTER_PARAMS,
+        {
+          value: ethers.utils.parseEther('0.5'),
+        },
+      );
 
-    // increased for Someone, no balance on RootBridge
-    expect(await RootToken.balanceOf(Someone.address)).to.be.equal(startRootBalance);
-    expect(await RootToken.balanceOf(RootBridge.address)).to.be.equal(0);
+      // decreased for Bridger, locked on RootBridge
+      expect(await RootToken.balanceOf(Bridger.address)).to.be.equal(startBalance - amount);
+      expect(await RootToken.balanceOf(RootBridge.address)).to.be.equal(amount);
 
-    // decreased for Someone, no balance on ChildBridge
-    expect(await ChildToken.balanceOf(Someone.address)).to.be.equal(0);
-    expect(await ChildToken.balanceOf(ChildBridge.address)).to.be.equal(0);
+      // increased for Bridger, no balance on ChildBridge
+      expect(await ChildToken.balanceOf(OtherBridger.address)).to.be.equal(amount);
+      expect(await ChildToken.balanceOf(ChildBridge.address)).to.be.equal(0);
+    });
+
+    it('events are emitted', async () => {
+      // approve tokens for RootBridge
+      await RootToken.connect(Bridger).approve(RootBridge.address, amount);
+
+      // bridge out
+      await expect(
+        RootBridge.bridge(chainId, Bridger.address, amount, ZRO_PAYMENT_ADDRESS, ADAPTER_PARAMS, {
+          value: ethers.utils.parseEther('0.5'),
+        }),
+      )
+        .to.emit(RootBridge, 'BridgeOut')
+        .withArgs(chainId, 1, Bridger.address, amount)
+        .to.emit(ChildBridge, 'BridgeIn')
+        .withArgs(chainId, 1, Bridger.address, amount);
+
+      // approve tokens for ChildBridge
+      await ChildToken.connect(Bridger).approve(ChildBridge.address, amount);
+
+      // bridge back
+      await expect(
+        ChildBridge.bridge(chainId, Bridger.address, amount, ZRO_PAYMENT_ADDRESS, ADAPTER_PARAMS, {
+          value: ethers.utils.parseEther('0.5'),
+        }),
+      )
+        .to.emit(ChildBridge, 'BridgeOut')
+        .withArgs(chainId, 1, Bridger.address, amount)
+        .to.emit(RootBridge, 'BridgeIn')
+        .withArgs(chainId, 1, Bridger.address, amount);
+    });
   });
 
-  it('can bridge to other account', async () => {
-    // approve tokens for RootBridge
-    await RootToken.connect(Someone).approve(RootBridge.address, amount);
+  describe('revert', () => {
+    it('revert when bridging more than allowed', async () => {
+      // approve tokens for RootBridge
+      await RootToken.connect(Bridger).approve(RootBridge.address, amount);
 
-    // bridge out
-    await RootBridge.bridge(
-      chainId,
-      Someother.address,
-      amount,
-      ZRO_PAYMENT_ADDRESS,
-      ADAPTER_PARAMS,
-      {
-        value: ethers.utils.parseEther('0.5'),
-      },
-    );
+      // bridge out
+      await expect(
+        RootBridge.bridge(
+          chainId,
+          Bridger.address,
+          amount + 1,
+          ZRO_PAYMENT_ADDRESS,
+          ADAPTER_PARAMS,
+          {
+            value: ethers.utils.parseEther('0.5'),
+          },
+        ),
+      ).to.be.reverted;
+    });
 
-    // decreased for Someone, locked on RootBridge
-    expect(await RootToken.balanceOf(Someone.address)).to.be.equal(startRootBalance - amount);
-    expect(await RootToken.balanceOf(RootBridge.address)).to.be.equal(amount);
+    it('revert when bridging by not bridger', async () => {
+      // approve tokens for RootBridge
+      await RootToken.connect(Someone).approve(RootBridge.address, amount);
 
-    // increased for Someone, no balance on ChildBridge
-    expect(await ChildToken.balanceOf(Someother.address)).to.be.equal(amount);
-    expect(await ChildToken.balanceOf(ChildBridge.address)).to.be.equal(0);
-  });
+      // bridge out
+      await expect(
+        RootBridge.connect(Someone).bridge(
+          chainId,
+          Bridger.address,
+          amount,
+          ZRO_PAYMENT_ADDRESS,
+          ADAPTER_PARAMS,
+          {
+            value: ethers.utils.parseEther('0.5'),
+          },
+        ),
+      ).to.be.revertedWith(ACCOUNT_MISSING_ROLE(Someone.address, BRIDGER_ROLE));
+    });
 
-  it('revert when bridging more than allowed', async () => {
-    // approve tokens for RootBridge
-    await RootToken.connect(Someone).approve(RootBridge.address, amount);
+    it('revert when bridging to not bridger', async () => {
+      // approve tokens for RootBridge
+      await RootToken.connect(Bridger).approve(RootBridge.address, amount);
 
-    // bridge out
-    await expect(
-      RootBridge.bridge(chainId, Someone.address, amount + 1, ZRO_PAYMENT_ADDRESS, ADAPTER_PARAMS, {
-        value: ethers.utils.parseEther('0.5'),
-      }),
-    ).to.be.reverted;
-  });
-
-  it('events are emitted', async () => {
-    // approve tokens for RootBridge
-    await RootToken.connect(Someone).approve(RootBridge.address, amount);
-
-    // bridge out
-    await expect(
-      RootBridge.bridge(chainId, Someone.address, amount, ZRO_PAYMENT_ADDRESS, ADAPTER_PARAMS, {
-        value: ethers.utils.parseEther('0.5'),
-      }),
-    )
-      .to.emit(RootBridge, 'BridgeOut')
-      .withArgs(chainId, 1, Someone.address, amount)
-      .to.emit(ChildBridge, 'BridgeIn')
-      .withArgs(chainId, 1, Someone.address, amount);
-
-    // approve tokens for ChildBridge
-    await ChildToken.connect(Someone).approve(ChildBridge.address, amount);
-
-    // bridge back
-    await expect(
-      ChildBridge.bridge(chainId, Someone.address, amount, ZRO_PAYMENT_ADDRESS, ADAPTER_PARAMS, {
-        value: ethers.utils.parseEther('0.5'),
-      }),
-    )
-      .to.emit(ChildBridge, 'BridgeOut')
-      .withArgs(chainId, 1, Someone.address, amount)
-      .to.emit(RootBridge, 'BridgeIn')
-      .withArgs(chainId, 1, Someone.address, amount);
+      // bridge out; the tx is not reverted, but rather stored in the application state
+      await expect(
+        RootBridge.connect(Bridger).bridge(
+          chainId,
+          Someone.address,
+          amount,
+          ZRO_PAYMENT_ADDRESS,
+          ADAPTER_PARAMS,
+          {
+            value: ethers.utils.parseEther('0.5'),
+          },
+        ), // Note: event is emitted on the ChildBridge
+      ).to.emit(ChildBridge, 'MessageFailed');
+    });
   });
 });
