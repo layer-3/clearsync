@@ -19,8 +19,8 @@ contract TokenBridge is ITokenBridge, NonblockingLzApp, AccessControl {
 		address tokenAddress,
 		bool isRootBridge_
 	) NonblockingLzApp(endpoint) {
-		grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-		grantRole(BRIDGER_ROLE, msg.sender);
+		_grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+		_grantRole(BRIDGER_ROLE, msg.sender);
 
 		tokenContract = IERC20MintableBurnable(tokenAddress);
 		isRootBridge = isRootBridge_;
@@ -32,14 +32,9 @@ contract TokenBridge is ITokenBridge, NonblockingLzApp, AccessControl {
 		uint64 _nonce,
 		bytes memory _payload
 	) internal override {
-		(address sender, address receiver, uint256 amount) = abi.decode(
-			_payload,
-			(address, address, uint256)
-		);
+		(address receiver, uint256 amount) = abi.decode(_payload, (address, uint256));
 
-		if (!hasRole(BRIDGER_ROLE, sender)) {
-			revert BridgingUnauthorized(sender);
-		}
+		_checkRole(BRIDGER_ROLE, receiver);
 
 		if (isRootBridge) {
 			// NOTE: Bridge should have enough tokens as the only ability for token to appear on other chains is to be transferred to the bridge
@@ -84,7 +79,7 @@ contract TokenBridge is ITokenBridge, NonblockingLzApp, AccessControl {
 
 		_lzSend(
 			chainId, // chainId
-			abi.encode(msg.sender, receiver, amount), // payload
+			abi.encode(receiver, amount), // payload
 			payable(msg.sender), // refundAddress
 			zroPaymentAddress, // zroPaymentAddress
 			adapterParams, // adapterParams
