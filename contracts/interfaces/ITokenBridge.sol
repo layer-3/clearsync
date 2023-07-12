@@ -2,8 +2,6 @@
 pragma solidity 0.8.18;
 
 interface ITokenBridge {
-	error BridgingUnauthorized(address bridger);
-
 	event BridgeOut(uint16 chainTo, uint64 nonce, address indexed sender, uint256 amount);
 	event BridgeIn(uint16 chainFrom, uint64 nonce, address indexed receiver, uint256 amount);
 
