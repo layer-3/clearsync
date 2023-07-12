@@ -2,11 +2,29 @@
 pragma solidity 0.8.18;
 
 interface ITokenBridge {
-	event BridgeOut(uint16 chainTo, uint64 nonce, address indexed sender, uint256 amount);
-	event BridgeIn(uint16 chainFrom, uint64 nonce, address indexed receiver, uint256 amount);
+	error BridgingUnauthorized(address sender, address token);
+	error TokenAlreadySupported(address token);
+	error TokenNotSupported(address token);
+	error NoDstToken(address token, uint16 dstChainId);
+
+	event BridgeOut(
+		uint16 chainTo,
+		uint64 nonce,
+		address token,
+		address indexed sender,
+		uint256 amount
+	);
+	event BridgeIn(
+		uint16 chainFrom,
+		uint64 nonce,
+		address token,
+		address indexed receiver,
+		uint256 amount
+	);
 
 	function bridge(
 		uint16 chainId,
+		address token,
 		address receiver,
 		uint256 amount,
 		address zroPaymentAddress,

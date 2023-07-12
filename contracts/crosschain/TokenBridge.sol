@@ -11,75 +11,88 @@ import '../interfaces/IERC20MintableBurnable.sol';
 contract TokenBridge is ITokenBridge, NonblockingLzApp, AccessControl {
 	bytes32 public constant BRIDGER_ROLE = keccak256('BRIDGER_ROLE');
 
-	IERC20MintableBurnable public tokenContract;
-	bool public immutable isRootBridge;
+	mapping(address => bool) public supportedTokensLookup;
+	mapping(address => bool) public isRootBridgeLookup;
+	mapping(address => mapping(uint16 => address)) public dstTokenLookup;
 
-	constructor(
-		address endpoint,
-		address tokenAddress,
-		bool isRootBridge_
-	) NonblockingLzApp(endpoint) {
+	constructor(address endpoint) NonblockingLzApp(endpoint) {
 		_grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
 		_grantRole(BRIDGER_ROLE, msg.sender);
-
-		tokenContract = IERC20MintableBurnable(tokenAddress);
-		isRootBridge = isRootBridge_;
 	}
 
-	function _nonblockingLzReceive(
-		uint16 _srcChainId,
-		bytes memory, // _srcAddress
-		uint64 _nonce,
-		bytes memory _payload
-	) internal override {
-		(address receiver, uint256 amount) = abi.decode(_payload, (address, uint256));
+	// -------- Public / external --------
 
-		_checkRole(BRIDGER_ROLE, receiver);
+	function addToken(address token, bool isRootBridge) external onlyRole(DEFAULT_ADMIN_ROLE) {
+		if (supportedTokensLookup[token]) revert TokenAlreadySupported(token);
 
-		if (isRootBridge) {
-			// NOTE: Bridge should have enough tokens as the only ability for token to appear on other chains is to be transferred to the bridge
-			tokenContract.transfer(receiver, amount);
-		} else {
-			tokenContract.mint(receiver, amount);
-		}
-
-		emit BridgeIn(_srcChainId, _nonce, receiver, amount);
+		supportedTokensLookup[token] = true;
+		isRootBridgeLookup[token] = isRootBridge;
 	}
 
+	function removeToken(address token) external onlyRole(DEFAULT_ADMIN_ROLE) {
+		if (!supportedTokensLookup[token]) revert TokenNotSupported(token);
+
+		delete supportedTokensLookup[token];
+		delete isRootBridgeLookup[token];
+	}
+
+	function setDstToken(
+		address token,
+		uint16 dstChainId,
+		address dstToken
+	) external onlyRole(DEFAULT_ADMIN_ROLE) {
+		if (!supportedTokensLookup[token]) revert TokenNotSupported(token);
+
+		dstTokenLookup[token][dstChainId] = dstToken;
+	}
+
+	// does not check whether bridging is possible for supplied parameters
 	function estimateFees(
-		uint16 _dstChainId,
+		uint16 dstChainId,
+		address token,
 		address receiver,
 		uint256 amount,
 		bool payInZRO,
-		bytes calldata _adapterParams
+		bytes calldata adapterParams
 	) public view returns (uint nativeFee, uint zroFee) {
 		return
 			lzEndpoint.estimateFees(
-				_dstChainId,
+				dstChainId,
 				address(this),
-				abi.encode(receiver, amount),
+				abi.encode(token, receiver, amount),
 				payInZRO,
-				_adapterParams
+				adapterParams
 			);
 	}
 
 	// NOTE: chainIds are proprietary to LayerZero protocol and can be found on their docs
 	function bridge(
-		uint16 chainId,
+		uint16 dstChainId,
+		address token,
 		address receiver,
 		uint256 amount,
 		address zroPaymentAddress,
 		bytes calldata adapterParams
-	) external payable onlyRole(BRIDGER_ROLE) {
-		if (isRootBridge) {
+	) external payable {
+		if (!supportedTokensLookup[token]) revert TokenNotSupported(token);
+
+		address dstToken = dstTokenLookup[token][dstChainId];
+		if (dstToken == address(0)) revert NoDstToken(token, dstChainId);
+
+		if (!_isAuthorizedForBridging(msg.sender, token))
+			revert BridgingUnauthorized(msg.sender, token);
+
+		IERC20MintableBurnable tokenContract = IERC20MintableBurnable(token);
+
+		if (isRootBridgeLookup[token]) {
 			tokenContract.transferFrom(msg.sender, address(this), amount);
 		} else {
 			tokenContract.burnFrom(msg.sender, amount);
 		}
 
 		_lzSend(
-			chainId, // chainId
-			abi.encode(receiver, amount), // payload
+			dstChainId, // chainId
+			abi.encode(dstToken, receiver, amount), // payload
 			payable(msg.sender), // refundAddress
 			zroPaymentAddress, // zroPaymentAddress
 			adapterParams, // adapterParams
@@ -87,10 +100,49 @@ contract TokenBridge is ITokenBridge, NonblockingLzApp, AccessControl {
 		);
 
 		emit BridgeOut(
-			chainId,
-			lzEndpoint.getOutboundNonce(chainId, address(this)),
+			dstChainId,
+			lzEndpoint.getOutboundNonce(dstChainId, address(this)),
+			token,
 			msg.sender,
 			amount
 		);
+	}
+
+	// -------- Internal --------
+
+	// non-blocking logic override
+	function _nonblockingLzReceive(
+		uint16 srcChainId,
+		bytes memory, // srcAddress
+		uint64 nonce,
+		bytes memory payload
+	) internal override {
+		(address token, address receiver, uint256 amount) = abi.decode(
+			payload,
+			(address, address, uint256)
+		);
+
+		if (!supportedTokensLookup[token]) revert TokenNotSupported(token);
+
+		if (!_isAuthorizedForBridging(receiver, token))
+			revert BridgingUnauthorized(receiver, token);
+
+		IERC20MintableBurnable tokenContract = IERC20MintableBurnable(token);
+
+		if (isRootBridgeLookup[token]) {
+			// NOTE: Bridge should have enough tokens as the only ability for token to appear on other chains is to be transferred to the bridge
+			tokenContract.transfer(receiver, amount);
+		} else {
+			tokenContract.mint(receiver, amount);
+		}
+
+		emit BridgeIn(srcChainId, nonce, token, receiver, amount);
+	}
+
+	function _isAuthorizedForBridging(
+		address _address,
+		address token
+	) internal view returns (bool) {
+		return hasRole(BRIDGER_ROLE, _address) || hasRole(keccak256(abi.encode(token)), _address);
 	}
 }
