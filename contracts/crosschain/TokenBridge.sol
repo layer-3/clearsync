@@ -4,12 +4,10 @@ pragma solidity 0.8.18;
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@layerzerolabs/solidity-examples/contracts/lzApp/NonblockingLzApp.sol';
 
+import '../interfaces/ITokenBridge.sol';
 import '../interfaces/IERC20MintableBurnable.sol';
 
-contract TokenBridge is NonblockingLzApp {
-	event BridgeOut(uint16 chainTo, uint64 nonce, address indexed sender, uint256 amount);
-	event BridgeIn(uint16 chainFrom, uint64 nonce, address indexed receiver, uint256 amount);
-
+contract TokenBridge is ITokenBridge, NonblockingLzApp {
 	IERC20MintableBurnable public tokenContract;
 	bool public immutable isRootBridge;
 
