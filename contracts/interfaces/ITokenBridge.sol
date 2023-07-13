@@ -8,6 +8,10 @@ interface ITokenBridge {
 	error NoDstToken(address token, uint16 dstChainId);
 	error InvalidToken(address token);
 
+	event TokenAdded(address token, bool isRoot);
+	event TokenRemoved(address token);
+	event DstTokenSet(address token, uint16 dstChainId, address dstToken);
+
 	event BridgeOut(
 		uint16 chainTo,
 		uint64 nonce,
@@ -15,6 +19,7 @@ interface ITokenBridge {
 		address indexed sender,
 		uint256 amount
 	);
+
 	event BridgeIn(
 		uint16 chainFrom,
 		uint64 nonce,

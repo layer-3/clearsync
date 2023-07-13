@@ -35,12 +35,15 @@ contract TokenBridge is ITokenBridge, NonblockingLzApp, AccessControl {
 
 		tokenConfig.isSupported = true;
 		tokenConfig.isRoot = isRoot;
+
+		emit TokenAdded(token, isRoot);
 	}
 
 	function removeToken(address token) external onlyRole(DEFAULT_ADMIN_ROLE) {
 		if (!tokensLookup[token].isSupported) revert TokenNotSupported(token);
-
 		delete tokensLookup[token];
+
+		emit TokenRemoved(token);
 	}
 
 	function setDstToken(
@@ -49,10 +52,10 @@ contract TokenBridge is ITokenBridge, NonblockingLzApp, AccessControl {
 		address dstToken
 	) external onlyRole(DEFAULT_ADMIN_ROLE) {
 		TokenConfig storage tokenConfig = tokensLookup[token];
-
 		if (!tokenConfig.isSupported) revert TokenNotSupported(token);
-
 		tokenConfig.dstTokenLookup[dstChainId] = dstToken;
+
+		emit DstTokenSet(token, dstChainId, dstToken);
 	}
 
 	// does not check whether bridging is possible for supplied parameters
