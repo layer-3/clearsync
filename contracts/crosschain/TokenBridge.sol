@@ -11,9 +11,13 @@ import '../interfaces/IERC20MintableBurnable.sol';
 contract TokenBridge is ITokenBridge, NonblockingLzApp, AccessControl {
 	bytes32 public constant BRIDGER_ROLE = keccak256('BRIDGER_ROLE');
 
-	mapping(address => bool) public supportedTokensLookup;
-	mapping(address => bool) public isRootBridgeLookup;
-	mapping(address => mapping(uint16 => address)) public dstTokenLookup;
+	struct TokenConfig {
+		bool isSupported;
+		bool isRoot;
+		mapping(uint16 => address) dstTokenLookup;
+	}
+
+	mapping(address => TokenConfig) public tokensLookup;
 
 	constructor(address endpoint) NonblockingLzApp(endpoint) {
 		_grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -22,18 +26,19 @@ contract TokenBridge is ITokenBridge, NonblockingLzApp, AccessControl {
 
 	// -------- Public / external --------
 
-	function addToken(address token, bool isRootBridge) external onlyRole(DEFAULT_ADMIN_ROLE) {
-		if (supportedTokensLookup[token]) revert TokenAlreadySupported(token);
+	function addToken(address token, bool isRoot) external onlyRole(DEFAULT_ADMIN_ROLE) {
+		TokenConfig storage tokenConfig = tokensLookup[token];
 
-		supportedTokensLookup[token] = true;
-		isRootBridgeLookup[token] = isRootBridge;
+		if (tokenConfig.isSupported) revert TokenAlreadySupported(token);
+
+		tokenConfig.isSupported = true;
+		tokenConfig.isRoot = isRoot;
 	}
 
 	function removeToken(address token) external onlyRole(DEFAULT_ADMIN_ROLE) {
-		if (!supportedTokensLookup[token]) revert TokenNotSupported(token);
+		if (!tokensLookup[token].isSupported) revert TokenNotSupported(token);
 
-		delete supportedTokensLookup[token];
-		delete isRootBridgeLookup[token];
+		delete tokensLookup[token];
 	}
 
 	function setDstToken(
@@ -41,9 +46,11 @@ contract TokenBridge is ITokenBridge, NonblockingLzApp, AccessControl {
 		uint16 dstChainId,
 		address dstToken
 	) external onlyRole(DEFAULT_ADMIN_ROLE) {
-		if (!supportedTokensLookup[token]) revert TokenNotSupported(token);
+		TokenConfig storage tokenConfig = tokensLookup[token];
 
-		dstTokenLookup[token][dstChainId] = dstToken;
+		if (!tokenConfig.isSupported) revert TokenNotSupported(token);
+
+		tokenConfig.dstTokenLookup[dstChainId] = dstToken;
 	}
 
 	// does not check whether bridging is possible for supplied parameters
@@ -74,9 +81,11 @@ contract TokenBridge is ITokenBridge, NonblockingLzApp, AccessControl {
 		address zroPaymentAddress,
 		bytes calldata adapterParams
 	) external payable {
-		if (!supportedTokensLookup[token]) revert TokenNotSupported(token);
+		TokenConfig storage tokenConfig = tokensLookup[token];
 
-		address dstToken = dstTokenLookup[token][dstChainId];
+		if (!tokenConfig.isSupported) revert TokenNotSupported(token);
+
+		address dstToken = tokenConfig.dstTokenLookup[dstChainId];
 		if (dstToken == address(0)) revert NoDstToken(token, dstChainId);
 
 		if (!_isAuthorizedForBridging(msg.sender, token))
@@ -84,7 +93,7 @@ contract TokenBridge is ITokenBridge, NonblockingLzApp, AccessControl {
 
 		IERC20MintableBurnable tokenContract = IERC20MintableBurnable(token);
 
-		if (isRootBridgeLookup[token]) {
+		if (tokenConfig.isRoot) {
 			tokenContract.transferFrom(msg.sender, address(this), amount);
 		} else {
 			tokenContract.burnFrom(msg.sender, amount);
@@ -122,14 +131,16 @@ contract TokenBridge is ITokenBridge, NonblockingLzApp, AccessControl {
 			(address, address, uint256)
 		);
 
-		if (!supportedTokensLookup[token]) revert TokenNotSupported(token);
+		TokenConfig storage tokenConfig = tokensLookup[token];
+
+		if (!tokenConfig.isSupported) revert TokenNotSupported(token);
 
 		if (!_isAuthorizedForBridging(receiver, token))
 			revert BridgingUnauthorized(receiver, token);
 
 		IERC20MintableBurnable tokenContract = IERC20MintableBurnable(token);
 
-		if (isRootBridgeLookup[token]) {
+		if (tokenConfig.isRoot) {
 			// NOTE: Bridge should have enough tokens as the only ability for token to appear on other chains is to be transferred to the bridge
 			tokenContract.transfer(receiver, amount);
 		} else {
