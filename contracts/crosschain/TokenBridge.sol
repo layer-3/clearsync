@@ -27,6 +27,8 @@ contract TokenBridge is ITokenBridge, NonblockingLzApp, AccessControl {
 	// -------- Public / external --------
 
 	function addToken(address token, bool isRoot) external onlyRole(DEFAULT_ADMIN_ROLE) {
+		if (token == address(0)) revert InvalidToken(token);
+
 		TokenConfig storage tokenConfig = tokensLookup[token];
 
 		if (tokenConfig.isSupported) revert TokenAlreadySupported(token);

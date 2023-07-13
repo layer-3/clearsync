@@ -6,6 +6,7 @@ interface ITokenBridge {
 	error TokenAlreadySupported(address token);
 	error TokenNotSupported(address token);
 	error NoDstToken(address token, uint16 dstChainId);
+	error InvalidToken(address token);
 
 	event BridgeOut(
 		uint16 chainTo,
