@@ -1,7 +1,6 @@
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { constants, utils } from 'ethers';
-import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 
 import { ACCOUNT_MISSING_ROLE, encodeError } from '../helpers/common';
 
@@ -560,6 +559,15 @@ describe('TokenBridge', function () {
         // approve tokens for RootBridge
         await RootToken.connect(Bridger).approve(RootBridge.address, amount);
 
+        const path = (RootBridge.address + ChildBridge.address.slice(2)).toLowerCase();
+
+        const nonce = 1;
+
+        const payload = utils.defaultAbiCoder.encode(
+          ['address', 'address', 'uint256'],
+          [ChildToken.address, Someone.address, amount],
+        );
+
         const encodedError = encodeError(
           'BridgingUnauthorized(address,address)',
           Someone.address,
@@ -581,7 +589,7 @@ describe('TokenBridge', function () {
           ), // Note: event is emitted on the ChildBridge
         )
           .to.emit(ChildBridge, 'MessageFailed')
-          .withArgs(anyValue, anyValue, anyValue, anyValue, encodedError);
+          .withArgs(chainId, path, nonce, payload, encodedError);
       });
 
       it('revert when bridging to token bridger of other token', async () => {
@@ -593,6 +601,15 @@ describe('TokenBridge', function () {
 
         // approve tokens for RootBridge
         await RootToken.connect(Bridger).approve(RootBridge.address, amount);
+
+        const path = (RootBridge.address + ChildBridge.address.slice(2)).toLowerCase();
+
+        const nonce = 1;
+
+        const payload = utils.defaultAbiCoder.encode(
+          ['address', 'address', 'uint256'],
+          [ChildToken.address, Someone.address, amount],
+        );
 
         const encodedError = encodeError(
           'BridgingUnauthorized(address,address)',
@@ -615,7 +632,7 @@ describe('TokenBridge', function () {
           ),
         )
           .to.emit(ChildBridge, 'MessageFailed')
-          .withArgs(anyValue, anyValue, anyValue, anyValue, encodedError);
+          .withArgs(chainId, path, nonce, payload, encodedError);
       });
     });
   });
