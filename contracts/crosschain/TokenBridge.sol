@@ -24,7 +24,34 @@ contract TokenBridge is ITokenBridge, NonblockingLzApp, AccessControl {
 		_grantRole(BRIDGER_ROLE, msg.sender);
 	}
 
-	// -------- Public / external --------
+	// -------- View --------
+
+	function getDstToken(address token, uint16 dstChainId) external view returns (address) {
+		TokenConfig storage tokenConfig = tokensLookup[token];
+		if (!tokenConfig.isSupported) revert TokenNotSupported(token);
+		return tokenConfig.dstTokenLookup[dstChainId];
+	}
+
+	// does not check whether bridging is possible for supplied parameters
+	function estimateFees(
+		uint16 dstChainId,
+		address token,
+		address receiver,
+		uint256 amount,
+		bool payInZRO,
+		bytes calldata adapterParams
+	) public view returns (uint nativeFee, uint zroFee) {
+		return
+			lzEndpoint.estimateFees(
+				dstChainId,
+				address(this),
+				abi.encode(token, receiver, amount),
+				payInZRO,
+				adapterParams
+			);
+	}
+
+	// -------- Modify --------
 
 	function addToken(address token, bool isRoot) external onlyRole(DEFAULT_ADMIN_ROLE) {
 		if (token == address(0)) revert InvalidToken(token);
@@ -56,25 +83,6 @@ contract TokenBridge is ITokenBridge, NonblockingLzApp, AccessControl {
 		tokenConfig.dstTokenLookup[dstChainId] = dstToken;
 
 		emit DstTokenSet(token, dstChainId, dstToken);
-	}
-
-	// does not check whether bridging is possible for supplied parameters
-	function estimateFees(
-		uint16 dstChainId,
-		address token,
-		address receiver,
-		uint256 amount,
-		bool payInZRO,
-		bytes calldata adapterParams
-	) public view returns (uint nativeFee, uint zroFee) {
-		return
-			lzEndpoint.estimateFees(
-				dstChainId,
-				address(this),
-				abi.encode(token, receiver, amount),
-				payInZRO,
-				adapterParams
-			);
 	}
 
 	// NOTE: chainIds are proprietary to LayerZero protocol and can be found on their docs
