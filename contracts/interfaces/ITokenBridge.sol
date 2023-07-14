@@ -2,7 +2,7 @@
 pragma solidity 0.8.18;
 
 interface ITokenBridge {
-	error BridgingUnauthorized(address sender, address token);
+	error BridgingUnauthorized(address account, address token);
 	error TokenAlreadySupported(address token);
 	error TokenNotSupported(address token);
 	error NoDstToken(address token, uint16 dstChainId);
