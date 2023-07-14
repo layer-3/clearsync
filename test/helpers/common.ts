@@ -21,3 +21,21 @@ export function randomHex(size: number): string {
 export function randomBytes32(): string {
   return '0x' + randomHex(64);
 }
+
+export function encodeError(errorSignature: string, ...args: unknown[]): string {
+  const leftParenthesisIdx = errorSignature.indexOf('(');
+  const rightParenthesisIdx = errorSignature.indexOf(')');
+
+  if (
+    leftParenthesisIdx > rightParenthesisIdx ||
+    leftParenthesisIdx == -1 ||
+    rightParenthesisIdx == -1
+  ) {
+    throw new Error('Error signature must contain parenthesis');
+  }
+
+  const errorSelector = utils.id(errorSignature).slice(0, 10);
+  const types = errorSignature.slice(leftParenthesisIdx + 1, rightParenthesisIdx).split(',');
+  const encodedParams = utils.defaultAbiCoder.encode(types, args);
+  return errorSelector + encodedParams.slice(2);
+}
