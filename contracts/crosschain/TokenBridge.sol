@@ -2,78 +2,119 @@
 pragma solidity 0.8.18;
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import '@openzeppelin/contracts/access/AccessControl.sol';
 import '@layerzerolabs/solidity-examples/contracts/lzApp/NonblockingLzApp.sol';
 
+import '../interfaces/ITokenBridge.sol';
 import '../interfaces/IERC20MintableBurnable.sol';
 
-contract TokenBridge is NonblockingLzApp {
-	event BridgeOut(uint16 chainTo, uint64 nonce, address indexed sender, uint256 amount);
-	event BridgeIn(uint16 chainFrom, uint64 nonce, address indexed receiver, uint256 amount);
+contract TokenBridge is ITokenBridge, NonblockingLzApp, AccessControl {
+	bytes32 public constant BRIDGER_ROLE = keccak256('BRIDGER_ROLE');
 
-	IERC20MintableBurnable public tokenContract;
-	bool public immutable isRootBridge;
-
-	constructor(
-		address endpoint,
-		address tokenAddress,
-		bool isRootBridge_
-	) NonblockingLzApp(endpoint) {
-		tokenContract = IERC20MintableBurnable(tokenAddress);
-		isRootBridge = isRootBridge_;
+	struct TokenConfig {
+		bool isSupported;
+		bool isRoot;
+		mapping(uint16 => address) dstTokenLookup;
 	}
 
-	function _nonblockingLzReceive(
-		uint16 _srcChainId,
-		bytes memory, // _srcAddress
-		uint64 _nonce,
-		bytes memory _payload
-	) internal override {
-		(address receiver, uint256 amount) = abi.decode(_payload, (address, uint256));
+	mapping(address => TokenConfig) public tokensLookup;
 
-		if (isRootBridge) {
-			// NOTE: Bridge should have enough tokens as the only ability for token to appear on other chains is to be transferred to the bridge
-			tokenContract.transfer(receiver, amount);
-		} else {
-			tokenContract.mint(receiver, amount);
-		}
-
-		emit BridgeIn(_srcChainId, _nonce, receiver, amount);
+	constructor(address endpoint) NonblockingLzApp(endpoint) {
+		_grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+		_grantRole(BRIDGER_ROLE, msg.sender);
 	}
 
+	// -------- View --------
+
+	function getDstToken(address token, uint16 dstChainId) external view returns (address) {
+		TokenConfig storage tokenConfig = tokensLookup[token];
+		if (!tokenConfig.isSupported) revert TokenNotSupported(token);
+		return tokenConfig.dstTokenLookup[dstChainId];
+	}
+
+	// does not check whether bridging is possible for supplied parameters
 	function estimateFees(
-		uint16 _dstChainId,
+		uint16 dstChainId,
+		address token,
 		address receiver,
 		uint256 amount,
 		bool payInZRO,
-		bytes calldata _adapterParams
+		bytes calldata adapterParams
 	) public view returns (uint nativeFee, uint zroFee) {
 		return
 			lzEndpoint.estimateFees(
-				_dstChainId,
+				dstChainId,
 				address(this),
-				abi.encode(receiver, amount),
+				abi.encode(token, receiver, amount),
 				payInZRO,
-				_adapterParams
+				adapterParams
 			);
+	}
+
+	// -------- Modify --------
+
+	function addToken(address token, bool isRoot) external onlyRole(DEFAULT_ADMIN_ROLE) {
+		if (token == address(0)) revert InvalidToken(token);
+
+		TokenConfig storage tokenConfig = tokensLookup[token];
+
+		if (tokenConfig.isSupported) revert TokenAlreadySupported(token);
+
+		tokenConfig.isSupported = true;
+		tokenConfig.isRoot = isRoot;
+
+		emit TokenAdded(token, isRoot);
+	}
+
+	function removeToken(address token) external onlyRole(DEFAULT_ADMIN_ROLE) {
+		if (!tokensLookup[token].isSupported) revert TokenNotSupported(token);
+		delete tokensLookup[token];
+
+		emit TokenRemoved(token);
+	}
+
+	function setDstToken(
+		address token,
+		uint16 dstChainId,
+		address dstToken
+	) external onlyRole(DEFAULT_ADMIN_ROLE) {
+		TokenConfig storage tokenConfig = tokensLookup[token];
+		if (!tokenConfig.isSupported) revert TokenNotSupported(token);
+		tokenConfig.dstTokenLookup[dstChainId] = dstToken;
+
+		emit DstTokenSet(token, dstChainId, dstToken);
 	}
 
 	// NOTE: chainIds are proprietary to LayerZero protocol and can be found on their docs
 	function bridge(
-		uint16 chainId,
+		uint16 dstChainId,
+		address token,
 		address receiver,
 		uint256 amount,
 		address zroPaymentAddress,
 		bytes calldata adapterParams
 	) external payable {
-		if (isRootBridge) {
+		TokenConfig storage tokenConfig = tokensLookup[token];
+
+		if (!tokenConfig.isSupported) revert TokenNotSupported(token);
+
+		address dstToken = tokenConfig.dstTokenLookup[dstChainId];
+		if (dstToken == address(0)) revert NoDstToken(token, dstChainId);
+
+		if (!_isAuthorizedForBridging(msg.sender, token))
+			revert BridgingUnauthorized(msg.sender, token);
+
+		IERC20MintableBurnable tokenContract = IERC20MintableBurnable(token);
+
+		if (tokenConfig.isRoot) {
 			tokenContract.transferFrom(msg.sender, address(this), amount);
 		} else {
 			tokenContract.burnFrom(msg.sender, amount);
 		}
 
 		_lzSend(
-			chainId, // chainId
-			abi.encode(receiver, amount), // payload
+			dstChainId, // chainId
+			abi.encode(dstToken, receiver, amount), // payload
 			payable(msg.sender), // refundAddress
 			zroPaymentAddress, // zroPaymentAddress
 			adapterParams, // adapterParams
@@ -81,10 +122,51 @@ contract TokenBridge is NonblockingLzApp {
 		);
 
 		emit BridgeOut(
-			chainId,
-			lzEndpoint.getOutboundNonce(chainId, address(this)),
+			dstChainId,
+			lzEndpoint.getOutboundNonce(dstChainId, address(this)),
+			token,
 			msg.sender,
 			amount
 		);
+	}
+
+	// -------- Internal --------
+
+	// non-blocking logic override
+	function _nonblockingLzReceive(
+		uint16 srcChainId,
+		bytes memory, // srcAddress
+		uint64 nonce,
+		bytes memory payload
+	) internal override {
+		(address token, address receiver, uint256 amount) = abi.decode(
+			payload,
+			(address, address, uint256)
+		);
+
+		TokenConfig storage tokenConfig = tokensLookup[token];
+
+		if (!tokenConfig.isSupported) revert TokenNotSupported(token);
+
+		if (!_isAuthorizedForBridging(receiver, token))
+			revert BridgingUnauthorized(receiver, token);
+
+		IERC20MintableBurnable tokenContract = IERC20MintableBurnable(token);
+
+		if (tokenConfig.isRoot) {
+			// NOTE: Bridge should have enough tokens as the only ability for token to appear on other chains is to be transferred to the bridge
+			tokenContract.transfer(receiver, amount);
+		} else {
+			tokenContract.mint(receiver, amount);
+		}
+
+		emit BridgeIn(srcChainId, nonce, token, receiver, amount);
+	}
+
+	function _isAuthorizedForBridging(
+		address _address,
+		address token
+	) internal view returns (bool) {
+		return hasRole(BRIDGER_ROLE, _address) || hasRole(keccak256(abi.encode(token)), _address);
 	}
 }
