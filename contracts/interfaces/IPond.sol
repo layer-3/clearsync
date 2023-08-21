@@ -11,11 +11,11 @@ interface IPond {
 	event MythicUnlocked(address indexed account, uint256 indexed tokenId);
 
 	// view
-	function lockedMythicsOf(address account) external view returns (uint256[] memory);
+	function getLockedMythicsOf(address account) external view returns (uint256[] memory);
 
 	function isMythicLocked(uint256 tokenId) external view returns (bool);
 
-	function votingPowerOf(address account) external view returns (uint256);
+	function getVotingPowerOf(address account) external view returns (uint256);
 
 	// lock
 	function lockMythic(uint256 tokenId) external;
