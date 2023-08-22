@@ -16,12 +16,16 @@ interface IPond {
 	event MythicLocked(address indexed account, uint256 indexed tokenId);
 	event MythicUnlocked(address indexed account, uint256 indexed tokenId);
 
+	event YieldClaimed(address indexed account, uint256 amount);
+
 	// -------- View --------
 	function getLockedMythicsOf(address account) external view returns (uint256[] memory);
 
 	function isMythicLocked(uint256 tokenId) external view returns (bool);
 
 	function getVotingPowerOf(address account) external view returns (uint256);
+
+	function pendingYield(address account) external view returns (uint256);
 
 	// -------- Lock --------
 
