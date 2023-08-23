@@ -33,7 +33,7 @@ contract Pond is IPond, Ownable, ReentrancyGuard {
 	// TODO: merge these mappings into a struct
 	mapping(address => uint256[]) public lockedMythicsOf;
 	mapping(address => uint256) public cumulativeLockedRankOf;
-	mapping(address => uint256) public rewardPaidTo;
+	mapping(address => uint256) public rewardDebtOf;
 	mapping(address => mapping(uint256 => uint64)) public unlockableAt;
 
 	uint256 public cumulativeLockedRank;
@@ -95,7 +95,7 @@ contract Pond is IPond, Ownable, ReentrancyGuard {
 		return
 			(cumulativeLockedRankOf[account] * adjustedTokenPerShare) /
 			PRECISION_FACTOR -
-			rewardPaidTo[account];
+			rewardDebtOf[account];
 	}
 
 	// -------- Lock --------
@@ -119,19 +119,19 @@ contract Pond is IPond, Ownable, ReentrancyGuard {
 			);
 		}
 
+		_updateYieldParams();
 		_claimYield(account);
 
 		ducklings.transferFrom(account, address(this), tokenId);
 
-		uint64 _unlockableAt = uint64(block.timestamp) + lockupPeriodSeconds;
-		unlockableAt[account][tokenId] = _unlockableAt;
+		unlockableAt[account][tokenId] = uint64(block.timestamp) + lockupPeriodSeconds;
 		lockedMythicsOf[account].push(tokenId);
 
 		uint256 mythicRank = genome.getGene(uint8(IDuckyFamily.MythicGenes.UniqId));
 		cumulativeLockedRankOf[account] += mythicRank;
 		cumulativeLockedRank += mythicRank;
 
-		_updateAccRewardPerShare();
+		_postAccountChangeUpdate(account);
 
 		emit MythicLocked(account, tokenId);
 	}
@@ -149,6 +149,7 @@ contract Pond is IPond, Ownable, ReentrancyGuard {
 			revert NotUnlockable(tokenId);
 		}
 
+		_updateYieldParams();
 		_claimYield(account);
 
 		ducklings.transferFrom(address(this), account, tokenId);
@@ -161,16 +162,17 @@ contract Pond is IPond, Ownable, ReentrancyGuard {
 		cumulativeLockedRankOf[account] -= mythicRank;
 		cumulativeLockedRank -= mythicRank;
 
-		_updateAccRewardPerShare();
+		_postAccountChangeUpdate(account);
 
 		emit MythicUnlocked(account, tokenId);
 	}
 
 	// -------- Yield --------
 
-	/// @dev Does not affect cumulative locked rank, thus `accRewardPerShare` update is unnecessary.
 	function claimYield() external override nonReentrant {
+		_updateYieldParams();
 		_claimYield(msg.sender);
+		_postAccountChangeUpdate(msg.sender);
 	}
 
 	// -------- Internal --------
@@ -196,18 +198,19 @@ contract Pond is IPond, Ownable, ReentrancyGuard {
 			return;
 		}
 
-		uint256 yield = cumulativeLockedRankOf[account] * accRewardPerShare - rewardPaidTo[account];
+		uint256 yield = (cumulativeLockedRankOf[account] * accRewardPerShare) /
+			PRECISION_FACTOR -
+			rewardDebtOf[account];
 
 		if (yield > 0) {
 			rewardToken.transfer(account, yield);
-			rewardPaidTo[account] += yield;
 			emit YieldClaimed(account, yield);
 		}
 
 		lastClaimedAtBlock = block.number;
 	}
 
-	function _updateAccRewardPerShare() internal {
+	function _updateYieldParams() internal {
 		if (block.number <= lastClaimedAtBlock) {
 			return;
 		}
@@ -220,6 +223,12 @@ contract Pond is IPond, Ownable, ReentrancyGuard {
 		uint256 blocks = _getBlocksBetween(lastClaimedAtBlock, block.number);
 		uint256 reward = blocks * rewardPerBlock;
 		accRewardPerShare += (reward * PRECISION_FACTOR) / cumulativeLockedRank;
+	}
+
+	function _postAccountChangeUpdate(address account) internal {
+		rewardDebtOf[account] =
+			(cumulativeLockedRankOf[account] * accRewardPerShare) /
+			PRECISION_FACTOR;
 	}
 
 	function _getBlocksBetween(uint256 _from, uint256 _to) internal view returns (uint256) {
