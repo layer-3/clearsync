@@ -12,51 +12,59 @@ import './games/DuckyFamily/DuckyGenome.sol';
 import './games/Genome.sol';
 import '../interfaces/IDuckyFamily.sol';
 
+/**
+ * Terminology:
+ *
+ * Pool - locked Mythic tokens and a strategy of paying yield for them.
+ * Yield - reward for locking Mythic Ducklings in the Pool.
+ * (User) Share - the ratio of total rank of User-locked Mythic Ducklings to the total rank of all locked Mythic Ducklings.
+ */
+
 // TODO: add locking Duckies / LP tokens alongside Mythic
 contract Pond is IPond, Ownable, ReentrancyGuard {
 	using Genome for uint256;
 
 	IDucklings public immutable ducklings;
-	IERC20 public immutable rewardToken;
+	IERC20 public immutable yieldToken;
 
 	uint64 public lockupPeriodSeconds;
 	uint256 public powerPerMythic;
 
 	// Accrued reward token per locked mythic rank
-	uint256 public accRewardPerShare;
-	uint256 public rewardStartBlock;
-	uint256 public rewardEndBlock;
-	uint256 public lastClaimedAtBlock;
-	uint256 public rewardPerBlock;
+	uint256 public accrYieldPerShare;
+	uint256 public yieldStartBlock;
+	uint256 public yieldEndBlock;
+	uint256 public latestYieldBlock;
+	uint256 public yieldPerBlock;
 	uint256 public constant PRECISION_FACTOR = 10 ** 16;
 
 	struct UserInfo {
 		uint256[] lockedMythics; // Locked Mythic token IDs
-		uint256 cumulativeLockedRank; // Cumulative rank of locked Mythic
-		uint256 rewardDebt; // Reward debt
+		uint256 totalLockedRank; // Total rank of locked Mythic
 		mapping(uint256 => uint64) unlockableAt; // Un-lockable at timestamp
+		uint256 notApplicableYield; // Yield that was already paid or is not to be paid to the User (yield calculation specificity)
 	}
 
 	mapping(address => UserInfo) public userInfoOf;
 
-	uint256 public cumulativeLockedRank;
+	uint256 public totalLockedRank;
 
 	constructor(
 		IDucklings _ducklings,
-		IERC20 _rewardToken,
+		IERC20 _yieldToken,
 		uint256 _powerPerMythic,
-		uint256 _rewardStartBlock,
-		uint256 _rewardEndBlock,
-		uint256 _rewardPerBlock
+		uint256 _yieldStartBlock,
+		uint256 _yieldEndBlock,
+		uint256 _yieldPerBlock
 	) {
 		ducklings = _ducklings;
-		rewardToken = _rewardToken;
+		yieldToken = _yieldToken;
 		powerPerMythic = _powerPerMythic;
 
-		rewardStartBlock = _rewardStartBlock;
-		rewardEndBlock = _rewardEndBlock;
-		lastClaimedAtBlock = _rewardStartBlock;
-		rewardPerBlock = _rewardPerBlock;
+		yieldStartBlock = _yieldStartBlock;
+		yieldEndBlock = _yieldEndBlock;
+		latestYieldBlock = _yieldStartBlock;
+		yieldPerBlock = _yieldPerBlock;
 	}
 
 	// -------- Setters --------
@@ -84,21 +92,21 @@ contract Pond is IPond, Ownable, ReentrancyGuard {
 		return userInfoOf[user].lockedMythics.length * powerPerMythic;
 	}
 
-	function pendingYield(address user) external view override returns (uint256) {
-		if (block.number < rewardStartBlock) {
+	function getPendingYield(address user) external view override returns (uint256) {
+		if (block.number < yieldStartBlock) {
 			return 0;
 		}
 
-		uint256 blocks = _getBlocksBetween(lastClaimedAtBlock, block.number);
-		uint256 reward = blocks * rewardPerBlock;
-		uint256 adjustedTokenPerShare = accRewardPerShare +
+		uint256 blocks = _getBlocksBetween(latestYieldBlock, block.number);
+		uint256 reward = blocks * yieldPerBlock;
+		uint256 adjustedTokenPerShare = accrYieldPerShare +
 			(reward * PRECISION_FACTOR) /
-			cumulativeLockedRank;
+			totalLockedRank;
 
 		return
-			(userInfoOf[user].cumulativeLockedRank * adjustedTokenPerShare) /
+			(userInfoOf[user].totalLockedRank * adjustedTokenPerShare) /
 			PRECISION_FACTOR -
-			userInfoOf[user].rewardDebt;
+			userInfoOf[user].notApplicableYield;
 	}
 
 	// -------- Lock --------
@@ -123,7 +131,7 @@ contract Pond is IPond, Ownable, ReentrancyGuard {
 			);
 		}
 
-		_updateYieldParams();
+		_updatePool();
 		_claimYield(user);
 
 		ducklings.transferFrom(user, address(this), tokenId);
@@ -132,10 +140,10 @@ contract Pond is IPond, Ownable, ReentrancyGuard {
 		userInfo.lockedMythics.push(tokenId);
 
 		uint256 mythicRank = genome.getGene(uint8(IDuckyFamily.MythicGenes.UniqId));
-		userInfo.cumulativeLockedRank += mythicRank;
-		cumulativeLockedRank += mythicRank;
+		userInfo.totalLockedRank += mythicRank;
+		totalLockedRank += mythicRank;
 
-		_postAccountChangeUpdate(user);
+		_applyYieldAndShareChange(user);
 
 		emit MythicLocked(user, tokenId);
 	}
@@ -154,7 +162,7 @@ contract Pond is IPond, Ownable, ReentrancyGuard {
 			revert NotUnlockable(tokenId);
 		}
 
-		_updateYieldParams();
+		_updatePool();
 		_claimYield(user);
 
 		ducklings.transferFrom(address(this), user, tokenId);
@@ -164,10 +172,10 @@ contract Pond is IPond, Ownable, ReentrancyGuard {
 
 		uint256 genome = ducklings.getGenome(tokenId);
 		uint256 mythicRank = genome.getGene(uint8(IDuckyFamily.MythicGenes.UniqId));
-		userInfo.cumulativeLockedRank -= mythicRank;
-		cumulativeLockedRank -= mythicRank;
+		userInfo.totalLockedRank -= mythicRank;
+		totalLockedRank -= mythicRank;
 
-		_postAccountChangeUpdate(user);
+		_applyYieldAndShareChange(user);
 
 		emit MythicUnlocked(user, tokenId);
 	}
@@ -175,9 +183,9 @@ contract Pond is IPond, Ownable, ReentrancyGuard {
 	// -------- Yield --------
 
 	function claimYield() external override nonReentrant {
-		_updateYieldParams();
+		_updatePool();
 		_claimYield(msg.sender);
-		_postAccountChangeUpdate(msg.sender);
+		_applyYieldAndShareChange(msg.sender);
 	}
 
 	// -------- Internal --------
@@ -194,59 +202,57 @@ contract Pond is IPond, Ownable, ReentrancyGuard {
 		}
 	}
 
+	function _updatePool() internal {
+		if (block.number <= latestYieldBlock) {
+			return;
+		}
+
+		if (totalLockedRank == 0) {
+			latestYieldBlock = block.number;
+			return;
+		}
+
+		uint256 blocks = _getBlocksBetween(latestYieldBlock, block.number);
+		uint256 reward = blocks * yieldPerBlock;
+		accrYieldPerShare += (reward * PRECISION_FACTOR) / totalLockedRank;
+	}
+
 	function _claimYield(address user) internal {
 		if (
-			block.number < rewardStartBlock ||
-			rewardEndBlock < block.number ||
-			cumulativeLockedRank == 0
+			block.number < yieldStartBlock || yieldEndBlock < block.number || totalLockedRank == 0
 		) {
 			return;
 		}
 
 		UserInfo storage userInfo = userInfoOf[user];
-		uint256 yield = (userInfo.cumulativeLockedRank * accRewardPerShare) /
+		uint256 yield = (userInfo.totalLockedRank * accrYieldPerShare) /
 			PRECISION_FACTOR -
-			userInfo.rewardDebt;
+			userInfo.notApplicableYield;
 
 		if (yield > 0) {
-			rewardToken.transfer(user, yield);
+			yieldToken.transfer(user, yield);
 			emit YieldClaimed(user, yield);
 		}
 
-		lastClaimedAtBlock = block.number;
+		latestYieldBlock = block.number;
 	}
 
-	function _updateYieldParams() internal {
-		if (block.number <= lastClaimedAtBlock) {
-			return;
-		}
-
-		if (cumulativeLockedRank == 0) {
-			lastClaimedAtBlock = block.number;
-			return;
-		}
-
-		uint256 blocks = _getBlocksBetween(lastClaimedAtBlock, block.number);
-		uint256 reward = blocks * rewardPerBlock;
-		accRewardPerShare += (reward * PRECISION_FACTOR) / cumulativeLockedRank;
-	}
-
-	function _postAccountChangeUpdate(address user) internal {
+	function _applyYieldAndShareChange(address user) internal {
 		UserInfo storage userInfo = userInfoOf[user];
-		userInfo.rewardDebt =
-			(userInfo.cumulativeLockedRank * accRewardPerShare) /
+		userInfo.notApplicableYield =
+			(userInfo.totalLockedRank * accrYieldPerShare) /
 			PRECISION_FACTOR;
 	}
 
 	function _getBlocksBetween(uint256 _from, uint256 _to) internal view returns (uint256) {
-		uint256 _rewardEndBlock = rewardEndBlock;
+		uint256 _yieldEndBlock = yieldEndBlock;
 
-		if (_to <= _rewardEndBlock) {
+		if (_to <= _yieldEndBlock) {
 			return _to - _from;
-		} else if (_from >= _rewardEndBlock) {
+		} else if (_from >= _yieldEndBlock) {
 			return 0;
 		} else {
-			return _rewardEndBlock - _from;
+			return _yieldEndBlock - _from;
 		}
 	}
 }

@@ -25,7 +25,7 @@ interface IPond {
 
 	function getVotingPowerOf(address account) external view returns (uint256);
 
-	function pendingYield(address account) external view returns (uint256);
+	function getPendingYield(address account) external view returns (uint256);
 
 	// -------- Lock --------
 
