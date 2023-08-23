@@ -12,7 +12,7 @@ import './games/DuckyFamily/DuckyGenome.sol';
 import './games/Genome.sol';
 import '../interfaces/IDuckyFamily.sol';
 
-// TODO: add locking Duckies alongside Mythic
+// TODO: add locking Duckies / LP tokens alongside Mythic
 contract Pond is IPond, Ownable, ReentrancyGuard {
 	using Genome for uint256;
 
@@ -30,11 +30,14 @@ contract Pond is IPond, Ownable, ReentrancyGuard {
 	uint256 public rewardPerBlock;
 	uint256 public constant PRECISION_FACTOR = 10 ** 16;
 
-	// TODO: merge these mappings into a struct
-	mapping(address => uint256[]) public lockedMythicsOf;
-	mapping(address => uint256) public cumulativeLockedRankOf;
-	mapping(address => uint256) public rewardDebtOf;
-	mapping(address => mapping(uint256 => uint64)) public unlockableAt;
+	struct UserInfo {
+		uint256[] lockedMythics; // Locked Mythic token IDs
+		uint256 cumulativeLockedRank; // Cumulative rank of locked Mythic
+		uint256 rewardDebt; // Reward debt
+		mapping(uint256 => uint64) unlockableAt; // Un-lockable at timestamp
+	}
+
+	mapping(address => UserInfo) public userInfoOf;
 
 	uint256 public cumulativeLockedRank;
 
@@ -68,20 +71,20 @@ contract Pond is IPond, Ownable, ReentrancyGuard {
 
 	// -------- View --------
 
-	function getLockedMythicsOf(address account) external view override returns (uint256[] memory) {
-		return lockedMythicsOf[account];
+	function getLockedMythicsOf(address user) external view override returns (uint256[] memory) {
+		return userInfoOf[user].lockedMythics;
 	}
 
 	function isMythicLocked(uint256 tokenId) external view override returns (bool) {
-		return unlockableAt[msg.sender][tokenId] != 0;
+		return userInfoOf[msg.sender].unlockableAt[tokenId] != 0;
 	}
 
-	function getVotingPowerOf(address account) external view override returns (uint256) {
+	function getVotingPowerOf(address user) external view override returns (uint256) {
 		// TODO: discuss should the power depend on the rank
-		return lockedMythicsOf[account].length * powerPerMythic;
+		return userInfoOf[user].lockedMythics.length * powerPerMythic;
 	}
 
-	function pendingYield(address account) external view override returns (uint256) {
+	function pendingYield(address user) external view override returns (uint256) {
 		if (block.number < rewardStartBlock) {
 			return 0;
 		}
@@ -93,21 +96,22 @@ contract Pond is IPond, Ownable, ReentrancyGuard {
 			cumulativeLockedRank;
 
 		return
-			(cumulativeLockedRankOf[account] * adjustedTokenPerShare) /
+			(userInfoOf[user].cumulativeLockedRank * adjustedTokenPerShare) /
 			PRECISION_FACTOR -
-			rewardDebtOf[account];
+			userInfoOf[user].rewardDebt;
 	}
 
 	// -------- Lock --------
 
 	function lockMythic(uint256 tokenId) external override nonReentrant {
-		address account = msg.sender;
+		address user = msg.sender;
+		UserInfo storage userInfo = userInfoOf[user];
 
-		if (ducklings.ownerOf(tokenId) != account) {
+		if (ducklings.ownerOf(tokenId) != user) {
 			revert CallerNotOwner(tokenId);
 		}
 
-		if (unlockableAt[account][tokenId] != 0) {
+		if (userInfoOf[user].unlockableAt[tokenId] != 0) {
 			revert AlreadyLocked(tokenId);
 		}
 
@@ -120,26 +124,27 @@ contract Pond is IPond, Ownable, ReentrancyGuard {
 		}
 
 		_updateYieldParams();
-		_claimYield(account);
+		_claimYield(user);
 
-		ducklings.transferFrom(account, address(this), tokenId);
+		ducklings.transferFrom(user, address(this), tokenId);
 
-		unlockableAt[account][tokenId] = uint64(block.timestamp) + lockupPeriodSeconds;
-		lockedMythicsOf[account].push(tokenId);
+		userInfo.unlockableAt[tokenId] = uint64(block.timestamp) + lockupPeriodSeconds;
+		userInfo.lockedMythics.push(tokenId);
 
 		uint256 mythicRank = genome.getGene(uint8(IDuckyFamily.MythicGenes.UniqId));
-		cumulativeLockedRankOf[account] += mythicRank;
+		userInfo.cumulativeLockedRank += mythicRank;
 		cumulativeLockedRank += mythicRank;
 
-		_postAccountChangeUpdate(account);
+		_postAccountChangeUpdate(user);
 
-		emit MythicLocked(account, tokenId);
+		emit MythicLocked(user, tokenId);
 	}
 
 	function unlockMythic(uint256 tokenId) external override nonReentrant {
-		address account = msg.sender;
+		address user = msg.sender;
+		UserInfo storage userInfo = userInfoOf[user];
 
-		uint64 _unlockableAt = unlockableAt[account][tokenId];
+		uint64 _unlockableAt = userInfo.unlockableAt[tokenId];
 
 		if (_unlockableAt == 0) {
 			revert NotLocked(tokenId);
@@ -150,21 +155,21 @@ contract Pond is IPond, Ownable, ReentrancyGuard {
 		}
 
 		_updateYieldParams();
-		_claimYield(account);
+		_claimYield(user);
 
-		ducklings.transferFrom(address(this), account, tokenId);
+		ducklings.transferFrom(address(this), user, tokenId);
 
-		unlockableAt[account][tokenId] = 0;
-		_removeLockedMythicOf(account, tokenId);
+		userInfo.unlockableAt[tokenId] = 0;
+		_removeLockedMythicOf(user, tokenId);
 
 		uint256 genome = ducklings.getGenome(tokenId);
 		uint256 mythicRank = genome.getGene(uint8(IDuckyFamily.MythicGenes.UniqId));
-		cumulativeLockedRankOf[account] -= mythicRank;
+		userInfo.cumulativeLockedRank -= mythicRank;
 		cumulativeLockedRank -= mythicRank;
 
-		_postAccountChangeUpdate(account);
+		_postAccountChangeUpdate(user);
 
-		emit MythicUnlocked(account, tokenId);
+		emit MythicUnlocked(user, tokenId);
 	}
 
 	// -------- Yield --------
@@ -177,8 +182,8 @@ contract Pond is IPond, Ownable, ReentrancyGuard {
 
 	// -------- Internal --------
 
-	function _removeLockedMythicOf(address account, uint256 tokenId) internal {
-		uint256[] storage tokenIds = lockedMythicsOf[account];
+	function _removeLockedMythicOf(address user, uint256 tokenId) internal {
+		uint256[] storage tokenIds = userInfoOf[user].lockedMythics;
 		uint256 length = tokenIds.length;
 		for (uint256 i = 0; i < length; i++) {
 			if (tokenIds[i] == tokenId) {
@@ -189,7 +194,7 @@ contract Pond is IPond, Ownable, ReentrancyGuard {
 		}
 	}
 
-	function _claimYield(address account) internal {
+	function _claimYield(address user) internal {
 		if (
 			block.number < rewardStartBlock ||
 			rewardEndBlock < block.number ||
@@ -198,13 +203,14 @@ contract Pond is IPond, Ownable, ReentrancyGuard {
 			return;
 		}
 
-		uint256 yield = (cumulativeLockedRankOf[account] * accRewardPerShare) /
+		UserInfo storage userInfo = userInfoOf[user];
+		uint256 yield = (userInfo.cumulativeLockedRank * accRewardPerShare) /
 			PRECISION_FACTOR -
-			rewardDebtOf[account];
+			userInfo.rewardDebt;
 
 		if (yield > 0) {
-			rewardToken.transfer(account, yield);
-			emit YieldClaimed(account, yield);
+			rewardToken.transfer(user, yield);
+			emit YieldClaimed(user, yield);
 		}
 
 		lastClaimedAtBlock = block.number;
@@ -225,9 +231,10 @@ contract Pond is IPond, Ownable, ReentrancyGuard {
 		accRewardPerShare += (reward * PRECISION_FACTOR) / cumulativeLockedRank;
 	}
 
-	function _postAccountChangeUpdate(address account) internal {
-		rewardDebtOf[account] =
-			(cumulativeLockedRankOf[account] * accRewardPerShare) /
+	function _postAccountChangeUpdate(address user) internal {
+		UserInfo storage userInfo = userInfoOf[user];
+		userInfo.rewardDebt =
+			(userInfo.cumulativeLockedRank * accRewardPerShare) /
 			PRECISION_FACTOR;
 	}
 
