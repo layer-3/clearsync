@@ -18,10 +18,10 @@ import {
 } from '../helpers/MarginApp/signatures';
 import { singleAssetOutcome } from '../helpers/MarginApp/outcome';
 import { encodeSignedMarginCall, encodeSignedSwapCall } from '../helpers/MarginApp/encode';
-import { marginCallAppData, swapCallAppData } from '../helpers/MarginApp/ClearingApp';
+import { marginCallAppData, swapCallAppData } from '../helpers/MarginApp/clearingApp';
 
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import type { ClearingApp } from '../../typechain-types';
+import type { MarginAppV1 } from '../../typechain-types';
 import type {
   MarginCall,
   SignedMarginCall,
@@ -57,7 +57,7 @@ const SWAP_VERSION_NOT_EQUAL_TURN_NUM = 'swapCall.version != turnNum';
 const brokerAMargin = 100;
 const brokerBMargin = 100;
 
-describe('ClearingApp', () => {
+describe('MarginAppV1', () => {
   let BrokerA: SignerWithAddress;
   let BrokerB: SignerWithAddress;
   let Intermediary: SignerWithAddress;
@@ -71,13 +71,13 @@ describe('ClearingApp', () => {
   let testToken1Address: string;
   let testToken2Address: string;
 
-  let ClearingApp: ClearingApp;
+  let MarginAppV1: MarginAppV1;
 
-  // only one ClearingApp instance as it is stateless
+  // only one MarginApp instance as it is stateless
   before(async () => {
-    const ClearingAppFactory = await ethers.getContractFactory('ClearingApp');
-    ClearingApp = (await ClearingAppFactory.deploy()) as ClearingApp;
-    await ClearingApp.deployed();
+    const MarginAppV1Factory = await ethers.getContractFactory('MarginAppV1');
+    MarginAppV1 = (await MarginAppV1Factory.deploy()) as MarginAppV1;
+    await MarginAppV1.deployed();
 
     [BrokerA, BrokerB, Intermediary, BrokerC, BrokerD] = await ethers.getSigners();
 
@@ -109,7 +109,7 @@ describe('ClearingApp', () => {
       challengeDuration: 100,
       outcome: outcome,
       appData: '0x',
-      appDefinition: ClearingApp.address,
+      appDefinition: MarginAppV1.address,
     };
 
     fixedPartAIB = getFixedPart(baseStateAIB);
@@ -128,20 +128,20 @@ describe('ClearingApp', () => {
     });
 
     it('succeed when unanimously signed and turnNum = 0', async () => {
-      await ClearingApp.requireStateSupported(fixedPartAIB, [], preFundCandidate);
+      await MarginAppV1.requireStateSupported(fixedPartAIB, [], preFundCandidate);
     });
 
     it('revert when not unanimously signed', async () => {
       preFundCandidate.signedBy = signedBy([1, 2]);
       await expect(
-        ClearingApp.requireStateSupported(fixedPartAIB, [], preFundCandidate),
+        MarginAppV1.requireStateSupported(fixedPartAIB, [], preFundCandidate),
       ).to.be.revertedWith(NOT_UNANIMOUS_PROOF_0);
     });
 
     it('revert when turnNum != 0', async () => {
       preFundCandidate.variablePart.turnNum = 42;
       await expect(
-        ClearingApp.requireStateSupported(fixedPartAIB, [], preFundCandidate),
+        MarginAppV1.requireStateSupported(fixedPartAIB, [], preFundCandidate),
       ).to.be.revertedWith(NOT_FINAL_TURN_NUM_BIGG_3_PROOF_0);
     });
   });
@@ -156,21 +156,21 @@ describe('ClearingApp', () => {
       };
     });
     it('succeed when unanimously signed and turnNum = 1', async () => {
-      await ClearingApp.requireStateSupported(fixedPartAIB, [], postFundCandidate);
+      await MarginAppV1.requireStateSupported(fixedPartAIB, [], postFundCandidate);
     });
 
     it('revert when not unanimously signed', async () => {
       postFundCandidate.signedBy = signedBy([0, 2]);
 
       await expect(
-        ClearingApp.requireStateSupported(fixedPartAIB, [], postFundCandidate),
+        MarginAppV1.requireStateSupported(fixedPartAIB, [], postFundCandidate),
       ).to.be.revertedWith(NOT_UNANIMOUS_PROOF_0);
     });
 
     it('revert when turnNum != 1', async () => {
       postFundCandidate.variablePart.turnNum = 42;
       await expect(
-        ClearingApp.requireStateSupported(fixedPartAIB, [], postFundCandidate),
+        MarginAppV1.requireStateSupported(fixedPartAIB, [], postFundCandidate),
       ).to.be.revertedWith(NOT_FINAL_TURN_NUM_BIGG_3_PROOF_0);
     });
   });
@@ -227,7 +227,7 @@ describe('ClearingApp', () => {
 
     describe('succeed', () => {
       it('when supplied first margin', async () => {
-        await ClearingApp.requireStateSupported(
+        await MarginAppV1.requireStateSupported(
           fixedPartAIB,
           [recoveredPostFundState],
           marginCallCandidate,
@@ -243,7 +243,7 @@ describe('ClearingApp', () => {
           [BrokerA, BrokerB],
         );
 
-        await ClearingApp.requireStateSupported(
+        await MarginAppV1.requireStateSupported(
           fixedPartAIB,
           [recoveredPostFundState],
           marginCallCandidate,
@@ -255,7 +255,7 @@ describe('ClearingApp', () => {
       describe('postfund', () => {
         it('when postfund not supplied', async () => {
           await expect(
-            ClearingApp.requireStateSupported(fixedPartAIB, [], marginCallCandidate),
+            MarginAppV1.requireStateSupported(fixedPartAIB, [], marginCallCandidate),
           ).to.be.revertedWith(NOT_UNANIMOUS_PROOF_0);
         });
 
@@ -263,7 +263,7 @@ describe('ClearingApp', () => {
           recoveredPostFundState.variablePart.turnNum = 0;
 
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState],
               marginCallCandidate,
@@ -275,7 +275,7 @@ describe('ClearingApp', () => {
           recoveredPostFundState.signedBy = signedBy(0);
 
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState],
               marginCallCandidate,
@@ -289,7 +289,7 @@ describe('ClearingApp', () => {
           marginCallCandidate.signedBy = SIGNED_BY_NO_ONE;
 
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState],
               marginCallCandidate,
@@ -301,7 +301,7 @@ describe('ClearingApp', () => {
           marginCallCandidate.variablePart.turnNum = 1;
 
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState],
               marginCallCandidate,
@@ -318,7 +318,7 @@ describe('ClearingApp', () => {
           );
 
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState],
               marginCallCandidate,
@@ -330,7 +330,7 @@ describe('ClearingApp', () => {
           marginCallCandidate.variablePart.turnNum = 42;
 
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState],
               marginCallCandidate,
@@ -345,7 +345,7 @@ describe('ClearingApp', () => {
           ]);
 
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState],
               marginCallCandidate,
@@ -360,7 +360,7 @@ describe('ClearingApp', () => {
           ]);
 
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState],
               marginCallCandidate,
@@ -376,7 +376,7 @@ describe('ClearingApp', () => {
           );
 
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState],
               marginCallCandidate,
@@ -392,7 +392,7 @@ describe('ClearingApp', () => {
           );
 
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState],
               marginCallCandidate,
@@ -403,7 +403,7 @@ describe('ClearingApp', () => {
         it('when garbage encoded', async () => {
           marginCallCandidate.variablePart.appData = '0xdeadbeef';
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState],
               marginCallCandidate,
@@ -427,7 +427,7 @@ describe('ClearingApp', () => {
           ]);
 
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState],
               marginCallCandidate,
@@ -448,7 +448,7 @@ describe('ClearingApp', () => {
           ];
 
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState],
               marginCallCandidate,
@@ -464,7 +464,7 @@ describe('ClearingApp', () => {
           ]);
 
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState],
               marginCallCandidate,
@@ -479,7 +479,7 @@ describe('ClearingApp', () => {
           ]);
 
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState],
               marginCallCandidate,
@@ -586,7 +586,7 @@ describe('ClearingApp', () => {
     });
     describe('succeed', () => {
       it('when supplied first swap call', async () => {
-        await ClearingApp.requireStateSupported(
+        await MarginAppV1.requireStateSupported(
           fixedPartAIB,
           [recoveredPostFundState, recoveredMarginCallState],
           swapCallCandidate,
@@ -611,7 +611,7 @@ describe('ClearingApp', () => {
           BrokerB,
         ]);
 
-        await ClearingApp.requireStateSupported(
+        await MarginAppV1.requireStateSupported(
           fixedPartAIB,
           [recoveredPostFundState, recoveredMarginCallState],
           swapCallCandidate,
@@ -623,7 +623,7 @@ describe('ClearingApp', () => {
       describe('postfund', () => {
         it('when postfund not supplied', async () => {
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredMarginCallState],
               swapCallCandidate,
@@ -635,7 +635,7 @@ describe('ClearingApp', () => {
           recoveredPostFundState.variablePart.turnNum = 42;
 
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               swapCallCandidate,
@@ -647,7 +647,7 @@ describe('ClearingApp', () => {
           recoveredPostFundState.signedBy = signedBy(0);
 
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               swapCallCandidate,
@@ -659,7 +659,7 @@ describe('ClearingApp', () => {
       describe('pre swap margin call', () => {
         it('when margin call not supplied', async () => {
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState],
               swapCallCandidate,
@@ -671,7 +671,7 @@ describe('ClearingApp', () => {
           swapCallCandidate.signedBy = SIGNED_BY_NO_ONE;
 
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               swapCallCandidate,
@@ -683,7 +683,7 @@ describe('ClearingApp', () => {
           recoveredMarginCallState.variablePart.turnNum = 1;
 
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               swapCallCandidate,
@@ -696,7 +696,7 @@ describe('ClearingApp', () => {
           recoveredMarginCallState.variablePart.turnNum = 3;
 
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               swapCallCandidate,
@@ -711,7 +711,7 @@ describe('ClearingApp', () => {
           ]);
 
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               swapCallCandidate,
@@ -726,7 +726,7 @@ describe('ClearingApp', () => {
           ]);
 
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               swapCallCandidate,
@@ -742,7 +742,7 @@ describe('ClearingApp', () => {
           );
 
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               swapCallCandidate,
@@ -758,7 +758,7 @@ describe('ClearingApp', () => {
           );
 
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               swapCallCandidate,
@@ -770,7 +770,7 @@ describe('ClearingApp', () => {
           recoveredMarginCallState.variablePart.appData = '0xdeadbeef';
 
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               swapCallCandidate,
@@ -793,7 +793,7 @@ describe('ClearingApp', () => {
             ]);
 
             await expect(
-              ClearingApp.requireStateSupported(
+              MarginAppV1.requireStateSupported(
                 fixedPartAIB,
                 [recoveredPostFundState, recoveredMarginCallState],
                 swapCallCandidate,
@@ -814,7 +814,7 @@ describe('ClearingApp', () => {
             ];
 
             await expect(
-              ClearingApp.requireStateSupported(
+              MarginAppV1.requireStateSupported(
                 fixedPartAIB,
                 [recoveredPostFundState, recoveredMarginCallState],
                 swapCallCandidate,
@@ -830,7 +830,7 @@ describe('ClearingApp', () => {
             ]);
 
             await expect(
-              ClearingApp.requireStateSupported(
+              MarginAppV1.requireStateSupported(
                 fixedPartAIB,
                 [recoveredPostFundState, recoveredMarginCallState],
                 swapCallCandidate,
@@ -845,7 +845,7 @@ describe('ClearingApp', () => {
             ]);
 
             await expect(
-              ClearingApp.requireStateSupported(
+              MarginAppV1.requireStateSupported(
                 fixedPartAIB,
                 [recoveredPostFundState, recoveredMarginCallState],
                 swapCallCandidate,
@@ -860,7 +860,7 @@ describe('ClearingApp', () => {
           swapCallCandidate.signedBy = SIGNED_BY_NO_ONE;
 
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               swapCallCandidate,
@@ -872,7 +872,7 @@ describe('ClearingApp', () => {
           swapCallCandidate.variablePart.turnNum = 2;
 
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               swapCallCandidate,
@@ -888,7 +888,7 @@ describe('ClearingApp', () => {
           ]);
 
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               swapCallCandidate,
@@ -904,7 +904,7 @@ describe('ClearingApp', () => {
           ]);
 
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               swapCallCandidate,
@@ -917,7 +917,7 @@ describe('ClearingApp', () => {
           swapCallCandidate.variablePart.turnNum = 4;
 
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               swapCallCandidate,
@@ -933,7 +933,7 @@ describe('ClearingApp', () => {
           ]);
 
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               swapCallCandidate,
@@ -948,7 +948,7 @@ describe('ClearingApp', () => {
           ]);
 
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               swapCallCandidate,
@@ -963,7 +963,7 @@ describe('ClearingApp', () => {
           ]);
 
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               swapCallCandidate,
@@ -975,7 +975,7 @@ describe('ClearingApp', () => {
           swapCallCandidate.variablePart.appData = '0xdeadbeef';
 
           await expect(
-            ClearingApp.requireStateSupported(
+            MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               swapCallCandidate,
@@ -992,7 +992,7 @@ describe('ClearingApp', () => {
             ]);
 
             await expect(
-              ClearingApp.requireStateSupported(
+              MarginAppV1.requireStateSupported(
                 fixedPartAIB,
                 [recoveredPostFundState, recoveredMarginCallState],
                 swapCallCandidate,
@@ -1007,7 +1007,7 @@ describe('ClearingApp', () => {
             ]);
 
             await expect(
-              ClearingApp.requireStateSupported(
+              MarginAppV1.requireStateSupported(
                 fixedPartAIB,
                 [recoveredPostFundState, recoveredMarginCallState],
                 swapCallCandidate,
@@ -1022,7 +1022,7 @@ describe('ClearingApp', () => {
             ]);
 
             await expect(
-              ClearingApp.requireStateSupported(
+              MarginAppV1.requireStateSupported(
                 fixedPartAIB,
                 [recoveredPostFundState, recoveredMarginCallState],
                 swapCallCandidate,
@@ -1045,7 +1045,7 @@ describe('ClearingApp', () => {
             ]);
 
             await expect(
-              ClearingApp.requireStateSupported(
+              MarginAppV1.requireStateSupported(
                 fixedPartAIB,
                 [recoveredPostFundState, recoveredMarginCallState],
                 swapCallCandidate,
@@ -1066,7 +1066,7 @@ describe('ClearingApp', () => {
             ];
 
             await expect(
-              ClearingApp.requireStateSupported(
+              MarginAppV1.requireStateSupported(
                 fixedPartAIB,
                 [recoveredPostFundState, recoveredMarginCallState],
                 swapCallCandidate,
@@ -1082,7 +1082,7 @@ describe('ClearingApp', () => {
             ]);
 
             await expect(
-              ClearingApp.requireStateSupported(
+              MarginAppV1.requireStateSupported(
                 fixedPartAIB,
                 [recoveredPostFundState, recoveredMarginCallState],
                 swapCallCandidate,
@@ -1097,7 +1097,7 @@ describe('ClearingApp', () => {
             ]);
 
             await expect(
-              ClearingApp.requireStateSupported(
+              MarginAppV1.requireStateSupported(
                 fixedPartAIB,
                 [recoveredPostFundState, recoveredMarginCallState],
                 swapCallCandidate,
