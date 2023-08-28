@@ -43,6 +43,20 @@ const config: HardhatUserConfig = {
           },
         },
       },
+      {
+        version: '0.8.17',
+        settings: {
+          viaIR: true,
+          optimizer: {
+            enabled: true,
+            details: {
+              yulDetails: {
+                optimizerSteps: 'u',
+              },
+            },
+          },
+        },
+      },
     ],
   },
   typechain: {
