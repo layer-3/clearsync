@@ -15,10 +15,10 @@ import {
   signChannelIdAndMarginCall,
   signChannelIdAndSwapCall,
   signedBy,
-} from '../helpers/MarginApp/signatures';
-import { singleAssetOutcome } from '../helpers/MarginApp/outcome';
-import { encodeSignedMarginCall, encodeSignedSwapCall } from '../helpers/MarginApp/encode';
-import { marginCallAppData, swapCallAppData } from '../helpers/MarginApp/marginApp';
+} from '../../src/clearing/marginApp/signatures';
+import { singleAssetOutcome } from '../../src/clearing/marginApp/outcome';
+import { encodeSignedMarginCall, encodeSignedSwapCall } from '../../src/clearing/marginApp/encode';
+import { marginCallAppData, swapCallAppData } from '../../src/clearing/marginApp/marginApp';
 
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import type { MarginAppV1 } from '../../typechain-types';
@@ -27,7 +27,7 @@ import type {
   SignedMarginCall,
   SignedSwapCall,
   SwapCall,
-} from '../helpers/MarginApp/types';
+} from '../../src/clearing/marginApp/types';
 import type { Signature } from 'ethers';
 
 // TODO: suggest adding imports from explicit filepath as exports in nitro-protocol lib
