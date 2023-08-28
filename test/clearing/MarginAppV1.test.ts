@@ -18,7 +18,7 @@ import {
 } from '../helpers/MarginApp/signatures';
 import { singleAssetOutcome } from '../helpers/MarginApp/outcome';
 import { encodeSignedMarginCall, encodeSignedSwapCall } from '../helpers/MarginApp/encode';
-import { marginCallAppData, swapCallAppData } from '../helpers/MarginApp/clearingApp';
+import { marginCallAppData, swapCallAppData } from '../helpers/MarginApp/marginApp';
 
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import type { MarginAppV1 } from '../../typechain-types';
