@@ -1,0 +1,3 @@
+describe('Pond Voting Power', () => {
+  //
+});
