@@ -28,11 +28,11 @@ contract MarginAppV1 is IForceMoveApp {
 	 * @param proof Array of recovered variable parts which constitutes a support proof for the candidate.
 	 * @param candidate Recovered variable part the proof was supplied for.
 	 */
-	function requireStateSupported(
+	function stateIsSupported(
 		FixedPart calldata fixedPart,
 		RecoveredVariablePart[] calldata proof,
 		RecoveredVariablePart calldata candidate
-	) external pure override {
+	) external view override returns (bool, string memory) {
 		// This channel has only 4 states which can be supported:
 		// 0    prefund
 		// 1    postfund
@@ -49,14 +49,14 @@ contract MarginAppV1 is IForceMoveApp {
 				'!unanimous; |proof|=0'
 			);
 
-			if (candidate.variablePart.turnNum == 0) return; // prefund
-			if (candidate.variablePart.turnNum == 1) return; // postfund
+			if (candidate.variablePart.turnNum == 0) return (true, ''); // prefund
+			if (candidate.variablePart.turnNum == 1) return (true, ''); // postfund
 
 			// final
 			if (candidate.variablePart.turnNum >= 3) {
 				// final (note: there is a core protocol escape hatch for this, too, so it could be removed)
 				require(candidate.variablePart.isFinal, '!final; turnNum>=3 && |proof|=0');
-				return;
+				return (true, '');
 			}
 
 			revert('bad candidate turnNum; |proof|=0');
@@ -73,7 +73,7 @@ contract MarginAppV1 is IForceMoveApp {
 				candidate.variablePart.outcome
 			);
 			_requireValidMarginCall(fixedPart, candidate);
-			return;
+			return (true, '');
 		}
 
 		// state 2+ margin in settlement request is supported
@@ -101,7 +101,7 @@ contract MarginAppV1 is IForceMoveApp {
 				candidate.variablePart.outcome
 			);
 			_requireValidSettlementRequest(fixedPart, candidate);
-			return;
+			return (true, '');
 		}
 
 		revert('bad proof length');
