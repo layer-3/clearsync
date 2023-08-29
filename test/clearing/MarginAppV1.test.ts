@@ -45,17 +45,17 @@ const POSTFUND_NOT_UNANIMOUS = 'postfund !unanimous';
 const MARGIN_CALL_TURN_NUM_LESS_2 = 'marginCall.turnNum < 2';
 const NO_IDENTITY_PROOF_ON_MARGIN_CALL = 'no identity proof on margin call';
 const MARGIN_VERSION_NOT_EQUAL_TURN_NUM = 'marginCall.version != turnNum';
-const INCORRECT_LEADER_MARGIN = 'incorrect leader margin';
+const INCORRECT_INITIATOR_MARGIN = 'incorrect initiator margin';
 // const INCORRECT_FOLLOWER_MARGIN = 'incorrect follower margin'; // not used - other checks catch this
 const TOTAL_ALLOCATED_CANNOT_CHANGE = 'total allocated cannot change';
 const INCORRECT_NUMBER_OF_ASSETS = 'incorrect number of assets';
 const INCORRECT_NUMBER_OF_ALLOCATIONS = 'incorrect number of allocations';
 const DESTINATIONS_CANNOT_CHANGE = 'destinations cannot change';
-const INVALID_LEADER_SIGNATURE = 'invalid leader signature';
+const INVALID_INITIATOR_SIGNATURE = 'invalid initiator signature';
 const INVALID_FOLLOWER_SIGNATURE = 'invalid follower signature';
 const NO_IDENTITY_PROOF_ON_SETTLEMENT_REQUEST = 'no identity proof on settlement request';
 // const SETTLEMENT_CALL_TURN_NUM_LESS_3 = 'settlementRequest.turnNum < 3'; // not used - other checks catch this
-const FIRST_BROKER_NOT_LEADER = '1st broker not leader';
+const FIRST_BROKER_NOT_INITIATOR = '1st broker not initiator';
 const SECOND_BROKER_NOT_FOLLOWER = '2nd broker not follower';
 const SETTLEMENT_NOT_DIRECT_SUCCESSOR_OF_MARGIN =
   'settlementRequest not direct successor of marginCall';
@@ -358,10 +358,10 @@ describe('MarginAppV1', () => {
               [recoveredPostFundState],
               marginCallCandidate,
             ),
-          ).to.be.revertedWith(INCORRECT_LEADER_MARGIN);
+          ).to.be.revertedWith(INCORRECT_INITIATOR_MARGIN);
         });
 
-        it('when outcome != leader margin specified', async () => {
+        it('when outcome != initiator margin specified', async () => {
           marginCallCandidate.variablePart.outcome = singleAssetOutcome(testToken1Address, [
             // as outcome is different only for broker A, total sum has changed
             [brokerADestination, brokerAChangedMargin + 1],
@@ -393,7 +393,7 @@ describe('MarginAppV1', () => {
           ).to.be.revertedWith(TOTAL_ALLOCATED_CANNOT_CHANGE);
         });
 
-        it('when margin signed by not leader', async () => {
+        it('when margin signed by not initiator', async () => {
           marginCallCandidate.variablePart.appData = await marginCallAppData(
             channelIdAIB,
             marginCall,
@@ -751,10 +751,10 @@ describe('MarginAppV1', () => {
               [recoveredPostFundState, recoveredMarginCallState],
               settlementRequestCandidate,
             ),
-          ).to.be.revertedWith(INCORRECT_LEADER_MARGIN);
+          ).to.be.revertedWith(INCORRECT_INITIATOR_MARGIN);
         });
 
-        it('when outcome != leader margin specified', async () => {
+        it('when outcome != initiator margin specified', async () => {
           recoveredMarginCallState.variablePart.outcome = singleAssetOutcome(testToken1Address, [
             // as outcome is different only for broker A, total sum has changed
             [brokerADestination, brokerAMargin],
@@ -786,7 +786,7 @@ describe('MarginAppV1', () => {
           ).to.be.revertedWith(TOTAL_ALLOCATED_CANNOT_CHANGE);
         });
 
-        it('when margin signed by not leader', async () => {
+        it('when margin signed by not initiator', async () => {
           recoveredMarginCallState.variablePart.appData = await marginCallAppData(
             channelIdAIB,
             marginCall,
@@ -799,7 +799,7 @@ describe('MarginAppV1', () => {
               [recoveredPostFundState, recoveredMarginCallState],
               settlementRequestCandidate,
             ),
-          ).to.be.revertedWith(INVALID_LEADER_SIGNATURE);
+          ).to.be.revertedWith(INVALID_INITIATOR_SIGNATURE);
         });
 
         it('when margin signed by not follower', async () => {
@@ -962,7 +962,7 @@ describe('MarginAppV1', () => {
               [recoveredPostFundState, recoveredMarginCallState],
               settlementRequestCandidate,
             ),
-          ).to.be.revertedWith(FIRST_BROKER_NOT_LEADER);
+          ).to.be.revertedWith(FIRST_BROKER_NOT_INITIATOR);
         });
 
         it('when second broker is not participant', async () => {
@@ -1019,7 +1019,7 @@ describe('MarginAppV1', () => {
           ).to.be.revertedWith(SETTLEMENT_VERSION_NOT_EQUAL_TURN_NUM);
         });
 
-        it('when settlement signed by not leader', async () => {
+        it('when settlement signed by not initiator', async () => {
           settlementRequestCandidate.variablePart.appData = await settlementRequestAppData(
             channelIdAIB,
             settlementRequest,
@@ -1032,7 +1032,7 @@ describe('MarginAppV1', () => {
               [recoveredPostFundState, recoveredMarginCallState],
               settlementRequestCandidate,
             ),
-          ).to.be.revertedWith(INVALID_LEADER_SIGNATURE);
+          ).to.be.revertedWith(INVALID_INITIATOR_SIGNATURE);
         });
 
         it('when settlement signed by not follower', async () => {
@@ -1100,10 +1100,10 @@ describe('MarginAppV1', () => {
                 [recoveredPostFundState, recoveredMarginCallState],
                 settlementRequestCandidate,
               ),
-            ).to.be.revertedWith(INCORRECT_LEADER_MARGIN);
+            ).to.be.revertedWith(INCORRECT_INITIATOR_MARGIN);
           });
 
-          it('when outcome != adjusted leader margin specified', async () => {
+          it('when outcome != adjusted initiator margin specified', async () => {
             settlementRequestCandidate.variablePart.outcome = singleAssetOutcome(
               testToken1Address,
               [

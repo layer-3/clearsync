@@ -184,13 +184,14 @@ contract MarginAppV1 is IForceMoveApp {
 		// correct margin version
 		require(marginCall.version == variablePart.turnNum, 'marginCall.version != turnNum');
 
-		uint256 leaderIdx = uint256(IClearingTypes.MarginIndices.Leader);
+		uint256 initiatorIdx = uint256(IClearingTypes.MarginIndices.Initiator);
 		uint256 followerIdx = uint256(IClearingTypes.MarginIndices.Follower);
 
 		// correct outcome adjustments
 		require(
-			variablePart.outcome[0].allocations[leaderIdx].amount == marginCall.margin[leaderIdx],
-			'incorrect leader margin'
+			variablePart.outcome[0].allocations[initiatorIdx].amount ==
+				marginCall.margin[initiatorIdx],
+			'incorrect initiator margin'
 		);
 		require(
 			variablePart.outcome[0].allocations[followerIdx].amount ==
@@ -207,9 +208,9 @@ contract MarginAppV1 is IForceMoveApp {
 	) internal pure {
 		// brokers are participants
 		require(
-			settlementRequest.brokers[uint256(IClearingTypes.MarginIndices.Leader)] ==
+			settlementRequest.brokers[uint256(IClearingTypes.MarginIndices.Initiator)] ==
 				participants[0],
-			'1st broker not leader'
+			'1st broker not initiator'
 		);
 		require(
 			settlementRequest.brokers[uint256(IClearingTypes.MarginIndices.Follower)] ==
@@ -236,10 +237,13 @@ contract MarginAppV1 is IForceMoveApp {
 		Signature[2] memory sigs,
 		address[2] memory signers
 	) internal pure {
-		// correct leader signature
-		uint256 leaderIdx = uint256(IClearingTypes.MarginIndices.Leader);
-		address recoveredLeader = NitroUtils.recoverSigner(keccak256(signedData), sigs[leaderIdx]);
-		require(recoveredLeader == signers[leaderIdx], 'invalid leader signature'); // could be incorrect channelId or incorrect signature
+		// correct initiator signature
+		uint256 initiatorIdx = uint256(IClearingTypes.MarginIndices.Initiator);
+		address recoveredInitiator = NitroUtils.recoverSigner(
+			keccak256(signedData),
+			sigs[initiatorIdx]
+		);
+		require(recoveredInitiator == signers[initiatorIdx], 'invalid initiator signature'); // could be incorrect channelId or incorrect signature
 
 		// correct follower signature
 		uint256 followerIdx = uint256(IClearingTypes.MarginIndices.Follower);

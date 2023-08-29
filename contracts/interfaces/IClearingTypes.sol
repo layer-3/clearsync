@@ -8,7 +8,7 @@ import '@statechannels/nitro-protocol/contracts/interfaces/INitroTypes.sol';
  */
 interface IClearingTypes {
 	enum MarginIndices {
-		Leader,
+		Initiator,
 		Follower
 	}
 
