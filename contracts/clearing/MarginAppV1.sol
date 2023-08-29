@@ -208,7 +208,7 @@ contract MarginAppV1 is IForceMoveApp {
 		address[] memory participants,
 		VariablePart memory variablePart,
 		ISettlementTypes.SettlementRequest memory settlementRequest
-	) internal pure {
+	) internal view {
 		// brokers are participants
 		require(
 			settlementRequest.brokers[uint256(IMarginTypes.MarginIndices.Initiator)] ==
