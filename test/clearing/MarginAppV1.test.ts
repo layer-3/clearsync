@@ -46,7 +46,7 @@ const MARGIN_CALL_TURN_NUM_LESS_2 = 'marginCall.turnNum < 2';
 const NO_IDENTITY_PROOF_ON_MARGIN_CALL = 'no identity proof on margin call';
 const MARGIN_VERSION_NOT_EQUAL_TURN_NUM = 'marginCall.version != turnNum';
 const INCORRECT_LEADER_MARGIN = 'incorrect leader margin';
-const INCORRECT_FOLLOWER_MARGIN = 'incorrect follower margin';
+// const INCORRECT_FOLLOWER_MARGIN = 'incorrect follower margin'; // not used - other checks catch this
 const TOTAL_ALLOCATED_CANNOT_CHANGE = 'total allocated cannot change';
 const INCORRECT_NUMBER_OF_ASSETS = 'incorrect number of assets';
 const INCORRECT_NUMBER_OF_ALLOCATIONS = 'incorrect number of allocations';
@@ -54,7 +54,7 @@ const DESTINATIONS_CANNOT_CHANGE = 'destinations cannot change';
 const INVALID_LEADER_SIGNATURE = 'invalid leader signature';
 const INVALID_FOLLOWER_SIGNATURE = 'invalid follower signature';
 const NO_IDENTITY_PROOF_ON_SETTLEMENT_REQUEST = 'no identity proof on settlement request';
-const SETTLEMENT_CALL_TURN_NUM_LESS_3 = 'settlementRequest.turnNum < 3';
+// const SETTLEMENT_CALL_TURN_NUM_LESS_3 = 'settlementRequest.turnNum < 3'; // not used - other checks catch this
 const FIRST_BROKER_NOT_LEADER = '1st broker not leader';
 const SECOND_BROKER_NOT_FOLLOWER = '2nd broker not follower';
 const SETTLEMENT_NOT_DIRECT_SUCCESSOR_OF_MARGIN =
@@ -345,10 +345,11 @@ describe('MarginAppV1', () => {
           ).to.be.revertedWith(MARGIN_VERSION_NOT_EQUAL_TURN_NUM);
         });
 
-        it('when outcome != leader margin specified', async () => {
+        it('when outcome != margin specified', async () => {
           marginCallCandidate.variablePart.outcome = singleAssetOutcome(testToken1Address, [
-            [brokerADestination, brokerAMargin],
-            [brokerBDestination, brokerBChangedMargin],
+            // outcome is different from margin distribution, but the total amount is the same
+            [brokerADestination, marginCall.margin[0] - 42],
+            [brokerBDestination, marginCall.margin[1] + 42],
           ]);
 
           await expect(
@@ -360,10 +361,11 @@ describe('MarginAppV1', () => {
           ).to.be.revertedWith(INCORRECT_LEADER_MARGIN);
         });
 
-        it('when outcome != follower margin specified', async () => {
+        it('when outcome != leader margin specified', async () => {
           marginCallCandidate.variablePart.outcome = singleAssetOutcome(testToken1Address, [
-            [brokerADestination, brokerAChangedMargin],
-            [brokerBDestination, brokerBMargin],
+            // as outcome is different only for broker A, total sum has changed
+            [brokerADestination, brokerAChangedMargin + 1],
+            [brokerBDestination, brokerBChangedMargin],
           ]);
 
           await expect(
@@ -372,7 +374,23 @@ describe('MarginAppV1', () => {
               [recoveredPostFundState],
               marginCallCandidate,
             ),
-          ).to.be.revertedWith(INCORRECT_FOLLOWER_MARGIN);
+          ).to.be.revertedWith(TOTAL_ALLOCATED_CANNOT_CHANGE);
+        });
+
+        it('when outcome != follower margin specified', async () => {
+          marginCallCandidate.variablePart.outcome = singleAssetOutcome(testToken1Address, [
+            // as outcome is different only for broker B, total sum has changed
+            [brokerADestination, brokerAChangedMargin],
+            [brokerBDestination, brokerBChangedMargin + 1],
+          ]);
+
+          await expect(
+            MarginAppV1.requireStateSupported(
+              fixedPartAIB,
+              [recoveredPostFundState],
+              marginCallCandidate,
+            ),
+          ).to.be.revertedWith(TOTAL_ALLOCATED_CANNOT_CHANGE);
         });
 
         it('when margin signed by not leader', async () => {
@@ -433,7 +451,7 @@ describe('MarginAppV1', () => {
           );
           marginCallCandidate.variablePart.outcome = singleAssetOutcome(testToken1Address, [
             [brokerADestination, brokerAChangedMargin + 1],
-            [brokerBDestination, brokerBChangedMargin + 1],
+            [brokerBDestination, brokerBChangedMargin],
           ]);
 
           await expect(
@@ -720,10 +738,11 @@ describe('MarginAppV1', () => {
           ).to.be.revertedWith(MARGIN_VERSION_NOT_EQUAL_TURN_NUM);
         });
 
-        it('when outcome != leader margin specified', async () => {
+        it('when outcome != margin specified', async () => {
           recoveredMarginCallState.variablePart.outcome = singleAssetOutcome(testToken1Address, [
-            [brokerADestination, brokerAMargin],
-            [brokerBDestination, brokerBChangedMargin],
+            // outcome is different from margin distribution, but the total amount is the same
+            [brokerADestination, marginCall.margin[0] - 42],
+            [brokerBDestination, marginCall.margin[1] + 42],
           ]);
 
           await expect(
@@ -735,8 +754,25 @@ describe('MarginAppV1', () => {
           ).to.be.revertedWith(INCORRECT_LEADER_MARGIN);
         });
 
+        it('when outcome != leader margin specified', async () => {
+          recoveredMarginCallState.variablePart.outcome = singleAssetOutcome(testToken1Address, [
+            // as outcome is different only for broker A, total sum has changed
+            [brokerADestination, brokerAMargin],
+            [brokerBDestination, brokerBChangedMargin],
+          ]);
+
+          await expect(
+            MarginAppV1.requireStateSupported(
+              fixedPartAIB,
+              [recoveredPostFundState, recoveredMarginCallState],
+              settlementRequestCandidate,
+            ),
+          ).to.be.revertedWith(TOTAL_ALLOCATED_CANNOT_CHANGE);
+        });
+
         it('when outcome != follower margin specified', async () => {
           recoveredMarginCallState.variablePart.outcome = singleAssetOutcome(testToken1Address, [
+            // as outcome is different only for broker B, total sum has changed
             [brokerADestination, brokerAChangedMargin],
             [brokerBDestination, brokerBMargin],
           ]);
@@ -747,7 +783,7 @@ describe('MarginAppV1', () => {
               [recoveredPostFundState, recoveredMarginCallState],
               settlementRequestCandidate,
             ),
-          ).to.be.revertedWith(INCORRECT_FOLLOWER_MARGIN);
+          ).to.be.revertedWith(TOTAL_ALLOCATED_CANNOT_CHANGE);
         });
 
         it('when margin signed by not leader', async () => {
@@ -887,7 +923,20 @@ describe('MarginAppV1', () => {
           ).to.be.revertedWith(NO_IDENTITY_PROOF_ON_SETTLEMENT_REQUEST);
         });
 
-        it('when turnNum != 3+', async () => {
+        it('when turnNum != 3+ and marginCall turnNum = 1', async () => {
+          settlementRequestCandidate.variablePart.turnNum = 2;
+          marginCallVariablePart.turnNum = 1;
+
+          await expect(
+            MarginAppV1.requireStateSupported(
+              fixedPartAIB,
+              [recoveredPostFundState, recoveredMarginCallState],
+              settlementRequestCandidate,
+            ),
+          ).to.be.revertedWith(MARGIN_CALL_TURN_NUM_LESS_2);
+        });
+
+        it('when turnNum != 3+ and marginCall turnNum = 2', async () => {
           settlementRequestCandidate.variablePart.turnNum = 2;
 
           await expect(
@@ -896,7 +945,7 @@ describe('MarginAppV1', () => {
               [recoveredPostFundState, recoveredMarginCallState],
               settlementRequestCandidate,
             ),
-          ).to.be.revertedWith(SETTLEMENT_CALL_TURN_NUM_LESS_3);
+          ).to.be.revertedWith(SETTLEMENT_NOT_DIRECT_SUCCESSOR_OF_MARGIN);
         });
 
         it('when first broker is not participant', async () => {
@@ -934,7 +983,14 @@ describe('MarginAppV1', () => {
         });
 
         it('when settlement call is not a direct successor of margin call', async () => {
-          // .version = 3
+          // marginCall version = 2
+          adjustedMargin.version = 4;
+          settlementRequest.version = 4;
+          settlementRequestCandidate.variablePart.appData = await settlementRequestAppData(
+            channelIdAIB,
+            settlementRequest,
+            [BrokerA, BrokerB],
+          );
           settlementRequestCandidate.variablePart.turnNum = 4;
 
           await expect(
@@ -1028,12 +1084,13 @@ describe('MarginAppV1', () => {
             ).to.be.revertedWith(MARGIN_VERSION_NOT_EQUAL_TURN_NUM);
           });
 
-          it('when outcome != adjusted leader margin specified', async () => {
+          it('when outcome != adjusted margin specified', async () => {
             settlementRequestCandidate.variablePart.outcome = singleAssetOutcome(
               testToken1Address,
               [
-                [brokerADestination, brokerAChangedMargin],
-                [brokerBDestination, brokerBMargin],
+                // outcome is different from adjusted margin distribution, but the total amount is the same
+                [brokerADestination, adjustedMargin.margin[0] - 42],
+                [brokerBDestination, adjustedMargin.margin[1] + 42],
               ],
             );
 
@@ -1046,10 +1103,30 @@ describe('MarginAppV1', () => {
             ).to.be.revertedWith(INCORRECT_LEADER_MARGIN);
           });
 
+          it('when outcome != adjusted leader margin specified', async () => {
+            settlementRequestCandidate.variablePart.outcome = singleAssetOutcome(
+              testToken1Address,
+              [
+                // as outcome is different only for broker A, total sum has changed
+                [brokerADestination, brokerAChangedMargin],
+                [brokerBDestination, brokerBMargin],
+              ],
+            );
+
+            await expect(
+              MarginAppV1.requireStateSupported(
+                fixedPartAIB,
+                [recoveredPostFundState, recoveredMarginCallState],
+                settlementRequestCandidate,
+              ),
+            ).to.be.revertedWith(TOTAL_ALLOCATED_CANNOT_CHANGE);
+          });
+
           it('when outcome != adjusted follower margin specified', async () => {
             settlementRequestCandidate.variablePart.outcome = singleAssetOutcome(
               testToken1Address,
               [
+                // as outcome is different only for broker B, total sum has changed
                 [brokerADestination, brokerAMargin],
                 [brokerBDestination, brokerBChangedMargin],
               ],
@@ -1061,7 +1138,7 @@ describe('MarginAppV1', () => {
                 [recoveredPostFundState, recoveredMarginCallState],
                 settlementRequestCandidate,
               ),
-            ).to.be.revertedWith(INCORRECT_FOLLOWER_MARGIN);
+            ).to.be.revertedWith(TOTAL_ALLOCATED_CANNOT_CHANGE);
           });
         });
 

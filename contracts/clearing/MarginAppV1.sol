@@ -63,8 +63,15 @@ contract MarginAppV1 is IForceMoveApp {
 
 		// state 2+ requires postfund state to be supplied
 		if (proof.length == 1) {
+			// postfund checks
 			_requireProofOfUnanimousConsensusOnPostFund(proof[0], nParticipants);
-			_requireValidTransitionToMarginCall(fixedPart, proof[0], candidate);
+
+			// postfund - margin call checks
+			_requireValidOutcomeTransition(
+				proof[0].variablePart.outcome,
+				candidate.variablePart.outcome
+			);
+			_requireValidMarginCall(fixedPart, candidate);
 			return;
 		}
 
@@ -73,9 +80,26 @@ contract MarginAppV1 is IForceMoveApp {
 		// proof[1] - margin call preceding settlement request
 		// candidate - settlement request
 		if (proof.length == 2) {
+			// postfund checks
 			_requireProofOfUnanimousConsensusOnPostFund(proof[0], nParticipants);
-			_requireValidTransitionToMarginCall(fixedPart, proof[0], proof[1]);
-			_requireValidTransitionToSettlementRequest(fixedPart, proof[1], candidate);
+
+			// postfund - margin call checks
+			_requireValidOutcomeTransition(
+				proof[0].variablePart.outcome,
+				proof[1].variablePart.outcome
+			);
+			_requireValidMarginCall(fixedPart, proof[1]);
+
+			// margin call - settlement request checks
+			require(
+				proof[1].variablePart.turnNum + 1 == candidate.variablePart.turnNum,
+				'settlementRequest not direct successor of marginCall'
+			);
+			_requireValidOutcomeTransition(
+				proof[1].variablePart.outcome,
+				candidate.variablePart.outcome
+			);
+			_requireValidSettlementRequest(fixedPart, candidate);
 			return;
 		}
 
@@ -94,9 +118,8 @@ contract MarginAppV1 is IForceMoveApp {
 	}
 
 	// margin call in app data
-	function _requireValidTransitionToMarginCall(
+	function _requireValidMarginCall(
 		FixedPart memory fixedPart,
-		RecoveredVariablePart memory postFundState,
 		RecoveredVariablePart memory marginCallState
 	) internal pure {
 		uint8 nParticipants = uint8(fixedPart.participants.length);
@@ -114,33 +137,22 @@ contract MarginAppV1 is IForceMoveApp {
 			marginCallState.variablePart.appData,
 			(IMarginApp.SignedMarginCall)
 		);
-		_requireValidMarginCall(marginCallState.variablePart, sMC.marginCall);
+		_requireVariablePartFitsMarginCall(marginCallState.variablePart, sMC.marginCall);
 		_requireValidSigs(
 			abi.encode(NitroUtils.getChannelId(fixedPart), sMC.marginCall),
 			sMC.sigs,
 			[fixedPart.participants[0], fixedPart.participants[nParticipants - 1]]
 		);
-
-		_requireValidOutcomeTransition(
-			postFundState.variablePart.outcome,
-			marginCallState.variablePart.outcome
-		);
 	}
 
 	// settlement request in app data, margin call part of settlement request
-	function _requireValidTransitionToSettlementRequest(
+	function _requireValidSettlementRequest(
 		FixedPart memory fixedPart,
-		RecoveredVariablePart memory preSettlementMarginState,
 		RecoveredVariablePart memory settlementRequestState
 	) internal pure {
 		uint8 nParticipants = uint8(fixedPart.participants.length);
 
 		require(settlementRequestState.variablePart.turnNum >= 3, 'settlementRequest.turnNum < 3');
-		require(
-			preSettlementMarginState.variablePart.turnNum + 1 ==
-				settlementRequestState.variablePart.turnNum,
-			'settlementRequest not direct successor of marginCall'
-		);
 
 		// supplied state must be signed by either party
 		require(
@@ -163,14 +175,9 @@ contract MarginAppV1 is IForceMoveApp {
 			sSR.sigs,
 			[fixedPart.participants[0], fixedPart.participants[nParticipants - 1]]
 		);
-
-		_requireValidOutcomeTransition(
-			preSettlementMarginState.variablePart.outcome,
-			settlementRequestState.variablePart.outcome
-		);
 	}
 
-	function _requireValidMarginCall(
+	function _requireVariablePartFitsMarginCall(
 		VariablePart memory variablePart,
 		IMarginApp.MarginCall memory marginCall
 	) internal pure {
@@ -220,10 +227,7 @@ contract MarginAppV1 is IForceMoveApp {
 		// require(settlementRequest.chainId == NitroUtils.getChainID(), 'incorrect chainId');
 
 		// correct adjusted margin call, outcome
-		_requireValidMarginCall(variablePart, settlementRequest.adjustedMargin);
-
-		// this check is redundant as adjustedMargin.version is also compared to variablePart.turnNum in the above function
-		// require(settlementRequest.adjustedMargin.version == settlementRequest.version);
+		_requireVariablePartFitsMarginCall(variablePart, settlementRequest.adjustedMargin);
 	}
 
 	function _requireValidSigs(
