@@ -6,7 +6,7 @@ import '@statechannels/nitro-protocol/contracts/interfaces/INitroTypes.sol';
 /**
  * @notice Interface
  */
-interface IClearingTypes {
+interface IMarginTypes {
 	enum MarginIndices {
 		Initiator,
 		Follower
@@ -19,25 +19,6 @@ interface IClearingTypes {
 
 	struct SignedMarginCall {
 		MarginCall marginCall;
-		INitroTypes.Signature[2] sigs;
-	}
-
-	struct Liability {
-		address token;
-		uint256 amount;
-	}
-
-	struct SettlementRequest {
-		address[2] brokers;
-		Liability[][2] settlements;
-		uint64 version;
-		uint64 expire;
-		uint256 chainId;
-		MarginCall adjustedMargin;
-	}
-
-	struct SignedSettlementRequest {
-		SettlementRequest settlementRequest;
 		INitroTypes.Signature[2] sigs;
 	}
 }

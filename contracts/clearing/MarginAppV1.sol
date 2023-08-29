@@ -6,7 +6,8 @@ import '@statechannels/nitro-protocol/contracts/libraries/NitroUtils.sol';
 import '@statechannels/nitro-protocol/contracts/interfaces/INitroTypes.sol';
 import {ExitFormat as Outcome} from '@statechannels/exit-format/contracts/ExitFormat.sol';
 
-import '../interfaces/IClearingTypes.sol';
+import '../interfaces/IMarginTypes.sol';
+import '../interfaces/ISettlementTypes.sol';
 
 // NOTE: Attack:
 // Bob can submit a convenient candidate, when Alice in trouble (Way back machine attack)
@@ -133,9 +134,9 @@ contract MarginAppV1 is IForceMoveApp {
 			'no identity proof on margin call'
 		);
 
-		IClearingTypes.SignedMarginCall memory sMC = abi.decode(
+		IMarginTypes.SignedMarginCall memory sMC = abi.decode(
 			marginCallState.variablePart.appData,
-			(IClearingTypes.SignedMarginCall)
+			(IMarginTypes.SignedMarginCall)
 		);
 		_requireVariablePartFitsMarginCall(marginCallState.variablePart, sMC.marginCall);
 		_requireValidSigs(
@@ -161,9 +162,9 @@ contract MarginAppV1 is IForceMoveApp {
 			'no identity proof on settlement request'
 		);
 
-		IClearingTypes.SignedSettlementRequest memory sSR = abi.decode(
+		ISettlementTypes.SignedSettlementRequest memory sSR = abi.decode(
 			settlementRequestState.variablePart.appData,
-			(IClearingTypes.SignedSettlementRequest)
+			(ISettlementTypes.SignedSettlementRequest)
 		);
 		_requireValidSettlementRequest(
 			fixedPart.participants,
@@ -179,13 +180,13 @@ contract MarginAppV1 is IForceMoveApp {
 
 	function _requireVariablePartFitsMarginCall(
 		VariablePart memory variablePart,
-		IClearingTypes.MarginCall memory marginCall
+		IMarginTypes.MarginCall memory marginCall
 	) internal pure {
 		// correct margin version
 		require(marginCall.version == variablePart.turnNum, 'marginCall.version != turnNum');
 
-		uint256 initiatorIdx = uint256(IClearingTypes.MarginIndices.Initiator);
-		uint256 followerIdx = uint256(IClearingTypes.MarginIndices.Follower);
+		uint256 initiatorIdx = uint256(IMarginTypes.MarginIndices.Initiator);
+		uint256 followerIdx = uint256(IMarginTypes.MarginIndices.Follower);
 
 		// correct outcome adjustments
 		require(
@@ -204,16 +205,16 @@ contract MarginAppV1 is IForceMoveApp {
 	function _requireValidSettlementRequest(
 		address[] memory participants,
 		VariablePart memory variablePart,
-		IClearingTypes.SettlementRequest memory settlementRequest
+		ISettlementTypes.SettlementRequest memory settlementRequest
 	) internal pure {
 		// brokers are participants
 		require(
-			settlementRequest.brokers[uint256(IClearingTypes.MarginIndices.Initiator)] ==
+			settlementRequest.brokers[uint256(IMarginTypes.MarginIndices.Initiator)] ==
 				participants[0],
 			'1st broker not initiator'
 		);
 		require(
-			settlementRequest.brokers[uint256(IClearingTypes.MarginIndices.Follower)] ==
+			settlementRequest.brokers[uint256(IMarginTypes.MarginIndices.Follower)] ==
 				participants[participants.length - 1],
 			'2nd broker not follower'
 		);
@@ -238,7 +239,7 @@ contract MarginAppV1 is IForceMoveApp {
 		address[2] memory signers
 	) internal pure {
 		// correct initiator signature
-		uint256 initiatorIdx = uint256(IClearingTypes.MarginIndices.Initiator);
+		uint256 initiatorIdx = uint256(IMarginTypes.MarginIndices.Initiator);
 		address recoveredInitiator = NitroUtils.recoverSigner(
 			keccak256(signedData),
 			sigs[initiatorIdx]
@@ -246,7 +247,7 @@ contract MarginAppV1 is IForceMoveApp {
 		require(recoveredInitiator == signers[initiatorIdx], 'invalid initiator signature'); // could be incorrect channelId or incorrect signature
 
 		// correct follower signature
-		uint256 followerIdx = uint256(IClearingTypes.MarginIndices.Follower);
+		uint256 followerIdx = uint256(IMarginTypes.MarginIndices.Follower);
 		address recoveredFollower = NitroUtils.recoverSigner(
 			keccak256(signedData),
 			sigs[followerIdx]
