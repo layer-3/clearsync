@@ -17,6 +17,8 @@ import '../interfaces/ISettlementTypes.sol';
 // 2: Alice hire a WatchTower, which replicates Alice's states,
 // and challenge in the case of challenge event and missing heartbeat
 
+// TODO: change `revert` to `return (false, 'error')` in all require statements
+
 /**
  * @dev The MarginApp contract complies with the ForceMoveApp interface and allows payments to be made virtually from Initiator to Follower (participants[0] to participants[n+1], where n is the number of intermediaries).
  */
@@ -28,11 +30,11 @@ contract MarginAppV1 is IForceMoveApp {
 	 * @param proof Array of recovered variable parts which constitutes a support proof for the candidate.
 	 * @param candidate Recovered variable part the proof was supplied for.
 	 */
-	function requireStateSupported(
+	function stateIsSupported(
 		FixedPart calldata fixedPart,
 		RecoveredVariablePart[] calldata proof,
 		RecoveredVariablePart calldata candidate
-	) external pure override {
+	) external view override returns (bool, string memory) {
 		// This channel has only 4 states which can be supported:
 		// 0    prefund
 		// 1    postfund
@@ -49,14 +51,14 @@ contract MarginAppV1 is IForceMoveApp {
 				'!unanimous; |proof|=0'
 			);
 
-			if (candidate.variablePart.turnNum == 0) return; // prefund
-			if (candidate.variablePart.turnNum == 1) return; // postfund
+			if (candidate.variablePart.turnNum == 0) return (true, ''); // prefund
+			if (candidate.variablePart.turnNum == 1) return (true, ''); // postfund
 
 			// final
 			if (candidate.variablePart.turnNum >= 3) {
 				// final (note: there is a core protocol escape hatch for this, too, so it could be removed)
 				require(candidate.variablePart.isFinal, '!final; turnNum>=3 && |proof|=0');
-				return;
+				return (true, '');
 			}
 
 			revert('bad candidate turnNum; |proof|=0');
@@ -73,7 +75,7 @@ contract MarginAppV1 is IForceMoveApp {
 				candidate.variablePart.outcome
 			);
 			_requireValidMarginCall(fixedPart, candidate);
-			return;
+			return (true, '');
 		}
 
 		// state 2+ margin in settlement request is supported
@@ -101,7 +103,7 @@ contract MarginAppV1 is IForceMoveApp {
 				candidate.variablePart.outcome
 			);
 			_requireValidSettlementRequest(fixedPart, candidate);
-			return;
+			return (true, '');
 		}
 
 		revert('bad proof length');
@@ -150,7 +152,7 @@ contract MarginAppV1 is IForceMoveApp {
 	function _requireValidSettlementRequest(
 		FixedPart memory fixedPart,
 		RecoveredVariablePart memory settlementRequestState
-	) internal pure {
+	) internal view {
 		uint8 nParticipants = uint8(fixedPart.participants.length);
 
 		require(settlementRequestState.variablePart.turnNum >= 3, 'settlementRequest.turnNum < 3');
@@ -206,7 +208,7 @@ contract MarginAppV1 is IForceMoveApp {
 		address[] memory participants,
 		VariablePart memory variablePart,
 		ISettlementTypes.SettlementRequest memory settlementRequest
-	) internal pure {
+	) internal view {
 		// brokers are participants
 		require(
 			settlementRequest.brokers[uint256(IMarginTypes.MarginIndices.Initiator)] ==
@@ -225,9 +227,8 @@ contract MarginAppV1 is IForceMoveApp {
 			'settlementRequest.version != turnNum'
 		);
 
-		// FIXME: `NitroUtils.getChainID()` is view, but `requireStateSupported` is pure
 		// correct chainId
-		// require(settlementRequest.chainId == NitroUtils.getChainID(), 'incorrect chainId');
+		require(settlementRequest.chainId == block.chainid, 'incorrect chainId');
 
 		// correct adjusted margin call, outcome
 		_requireVariablePartFitsMarginCall(variablePart, settlementRequest.adjustedMargin);

@@ -6,7 +6,10 @@ export function singleAssetOutcome(asset: string, allocations: DestinationAmount
   return [
     {
       asset,
-      metadata: '0x',
+      assetMetadata: {
+        assetType: 0,
+        metadata: '0x',
+      },
       allocations: allocations.map((alloc) => ({
         destination: alloc[0],
         amount: alloc[1].toString(),
