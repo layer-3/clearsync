@@ -51,7 +51,7 @@
   "cSpell.enableFiletypes": ["javascript", "typescript", "solidity", "json", "markdown"],
   "cSpell.includeRegExpList": ["CStyleComment"],
   "cSpell.userWords": ["delegatecall", "keccak", "proxied", "reentrancy", "solhint", "struct"],
-  "cSpell.words": ["premint", "preminted", "preminting", "Structs"],
+  "cSpell.words": ["postfund", "prefund", "premint", "preminted", "preminting", "Structs"],
 
   // Todo highlight
   "todohighlight.isCaseSensitive": false,

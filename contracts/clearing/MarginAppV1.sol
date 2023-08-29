@@ -6,7 +6,8 @@ import '@statechannels/nitro-protocol/contracts/libraries/NitroUtils.sol';
 import '@statechannels/nitro-protocol/contracts/interfaces/INitroTypes.sol';
 import {ExitFormat as Outcome} from '@statechannels/exit-format/contracts/ExitFormat.sol';
 
-import '../interfaces/IMarginApp.sol';
+import '../interfaces/IMarginTypes.sol';
+import '../interfaces/ISettlementTypes.sol';
 
 // NOTE: Attack:
 // Bob can submit a convenient candidate, when Alice in trouble (Way back machine attack)
@@ -36,7 +37,7 @@ contract MarginAppV1 is IForceMoveApp {
 		// 0    prefund
 		// 1    postfund
 		// 2+   margin call
-		// 3+   swap call (requires explicit margin call to be agreed on before)
+		// 3+   settlement request (requires explicit margin call to be agreed on before)
 		// 3+   final
 
 		uint8 nParticipants = uint8(fixedPart.participants.length);
@@ -63,19 +64,43 @@ contract MarginAppV1 is IForceMoveApp {
 
 		// state 2+ requires postfund state to be supplied
 		if (proof.length == 1) {
+			// postfund checks
 			_requireProofOfUnanimousConsensusOnPostFund(proof[0], nParticipants);
-			_requireValidTransitionToMarginCall(fixedPart, proof[0], candidate);
+
+			// postfund - margin call checks
+			_requireValidOutcomeTransition(
+				proof[0].variablePart.outcome,
+				candidate.variablePart.outcome
+			);
+			_requireValidMarginCall(fixedPart, candidate);
 			return;
 		}
 
-		// state 2+ margin in swap call is supported
+		// state 2+ margin in settlement request is supported
 		// proof[0] - postfund
-		// proof[1] - margin call preceding swap call
-		// candidate - swap call
+		// proof[1] - margin call preceding settlement request
+		// candidate - settlement request
 		if (proof.length == 2) {
+			// postfund checks
 			_requireProofOfUnanimousConsensusOnPostFund(proof[0], nParticipants);
-			_requireValidTransitionToMarginCall(fixedPart, proof[0], proof[1]);
-			_requireValidTransitionToSwapCall(fixedPart, proof[1], candidate);
+
+			// postfund - margin call checks
+			_requireValidOutcomeTransition(
+				proof[0].variablePart.outcome,
+				proof[1].variablePart.outcome
+			);
+			_requireValidMarginCall(fixedPart, proof[1]);
+
+			// margin call - settlement request checks
+			require(
+				proof[1].variablePart.turnNum + 1 == candidate.variablePart.turnNum,
+				'settlementRequest not direct successor of marginCall'
+			);
+			_requireValidOutcomeTransition(
+				proof[1].variablePart.outcome,
+				candidate.variablePart.outcome
+			);
+			_requireValidSettlementRequest(fixedPart, candidate);
 			return;
 		}
 
@@ -94,9 +119,8 @@ contract MarginAppV1 is IForceMoveApp {
 	}
 
 	// margin call in app data
-	function _requireValidTransitionToMarginCall(
+	function _requireValidMarginCall(
 		FixedPart memory fixedPart,
-		RecoveredVariablePart memory postFundState,
 		RecoveredVariablePart memory marginCallState
 	) internal pure {
 		uint8 nParticipants = uint8(fixedPart.participants.length);
@@ -110,75 +134,65 @@ contract MarginAppV1 is IForceMoveApp {
 			'no identity proof on margin call'
 		);
 
-		IMarginApp.SignedMarginCall memory sMC = abi.decode(
+		IMarginTypes.SignedMarginCall memory sMC = abi.decode(
 			marginCallState.variablePart.appData,
-			(IMarginApp.SignedMarginCall)
+			(IMarginTypes.SignedMarginCall)
 		);
-		_requireValidMarginCall(marginCallState.variablePart, sMC.marginCall);
+		_requireVariablePartFitsMarginCall(marginCallState.variablePart, sMC.marginCall);
 		_requireValidSigs(
 			abi.encode(NitroUtils.getChannelId(fixedPart), sMC.marginCall),
 			sMC.sigs,
 			[fixedPart.participants[0], fixedPart.participants[nParticipants - 1]]
 		);
-
-		_requireValidOutcomeTransition(
-			postFundState.variablePart.outcome,
-			marginCallState.variablePart.outcome
-		);
 	}
 
-	// swap call in app data, margin call part of swap call
-	function _requireValidTransitionToSwapCall(
+	// settlement request in app data, margin call part of settlement request
+	function _requireValidSettlementRequest(
 		FixedPart memory fixedPart,
-		RecoveredVariablePart memory preSwapMarginState,
-		RecoveredVariablePart memory swapCallState
+		RecoveredVariablePart memory settlementRequestState
 	) internal pure {
 		uint8 nParticipants = uint8(fixedPart.participants.length);
 
-		require(swapCallState.variablePart.turnNum >= 3, 'swapCall.turnNum < 3');
-		require(
-			preSwapMarginState.variablePart.turnNum + 1 == swapCallState.variablePart.turnNum,
-			'swapCall not direct successor of marginCall'
-		);
+		require(settlementRequestState.variablePart.turnNum >= 3, 'settlementRequest.turnNum < 3');
 
 		// supplied state must be signed by either party
 		require(
-			NitroUtils.isClaimedSignedBy(swapCallState.signedBy, 0) ||
-				NitroUtils.isClaimedSignedBy(swapCallState.signedBy, nParticipants - 1),
-			'no identity proof on swap call'
+			NitroUtils.isClaimedSignedBy(settlementRequestState.signedBy, 0) ||
+				NitroUtils.isClaimedSignedBy(settlementRequestState.signedBy, nParticipants - 1),
+			'no identity proof on settlement request'
 		);
 
-		IMarginApp.SignedSwapCall memory sSC = abi.decode(
-			swapCallState.variablePart.appData,
-			(IMarginApp.SignedSwapCall)
+		ISettlementTypes.SignedSettlementRequest memory sSR = abi.decode(
+			settlementRequestState.variablePart.appData,
+			(ISettlementTypes.SignedSettlementRequest)
 		);
-		_requireValidSwapCall(fixedPart.participants, swapCallState.variablePart, sSC.swapCall);
+		_requireValidSettlementRequest(
+			fixedPart.participants,
+			settlementRequestState.variablePart,
+			sSR.settlementRequest
+		);
 		_requireValidSigs(
-			abi.encode(NitroUtils.getChannelId(fixedPart), sSC.swapCall),
-			sSC.sigs,
+			abi.encode(NitroUtils.getChannelId(fixedPart), sSR.settlementRequest),
+			sSR.sigs,
 			[fixedPart.participants[0], fixedPart.participants[nParticipants - 1]]
-		);
-
-		_requireValidOutcomeTransition(
-			preSwapMarginState.variablePart.outcome,
-			swapCallState.variablePart.outcome
 		);
 	}
 
-	function _requireValidMarginCall(
+	function _requireVariablePartFitsMarginCall(
 		VariablePart memory variablePart,
-		IMarginApp.MarginCall memory marginCall
+		IMarginTypes.MarginCall memory marginCall
 	) internal pure {
 		// correct margin version
 		require(marginCall.version == variablePart.turnNum, 'marginCall.version != turnNum');
 
-		uint256 leaderIdx = uint256(IMarginApp.MarginIndices.Leader);
-		uint256 followerIdx = uint256(IMarginApp.MarginIndices.Follower);
+		uint256 initiatorIdx = uint256(IMarginTypes.MarginIndices.Initiator);
+		uint256 followerIdx = uint256(IMarginTypes.MarginIndices.Follower);
 
 		// correct outcome adjustments
 		require(
-			variablePart.outcome[0].allocations[leaderIdx].amount == marginCall.margin[leaderIdx],
-			'incorrect leader margin'
+			variablePart.outcome[0].allocations[initiatorIdx].amount ==
+				marginCall.margin[initiatorIdx],
+			'incorrect initiator margin'
 		);
 		require(
 			variablePart.outcome[0].allocations[followerIdx].amount ==
@@ -187,35 +201,36 @@ contract MarginAppV1 is IForceMoveApp {
 		);
 	}
 
-	// check signed swap call and included margin call
-	function _requireValidSwapCall(
+	// check signed settlement request and included margin call
+	function _requireValidSettlementRequest(
 		address[] memory participants,
 		VariablePart memory variablePart,
-		IMarginApp.SwapCall memory swapCall
+		ISettlementTypes.SettlementRequest memory settlementRequest
 	) internal pure {
 		// brokers are participants
 		require(
-			swapCall.brokers[uint256(IMarginApp.MarginIndices.Leader)] == participants[0],
-			'1st broker not leader'
+			settlementRequest.brokers[uint256(IMarginTypes.MarginIndices.Initiator)] ==
+				participants[0],
+			'1st broker not initiator'
 		);
 		require(
-			swapCall.brokers[uint256(IMarginApp.MarginIndices.Follower)] ==
+			settlementRequest.brokers[uint256(IMarginTypes.MarginIndices.Follower)] ==
 				participants[participants.length - 1],
 			'2nd broker not follower'
 		);
 
-		// correct swap version
-		require(swapCall.version == variablePart.turnNum, 'swapCall.version != turnNum');
+		// correct settlement version
+		require(
+			settlementRequest.version == variablePart.turnNum,
+			'settlementRequest.version != turnNum'
+		);
 
 		// FIXME: `NitroUtils.getChainID()` is view, but `requireStateSupported` is pure
 		// correct chainId
-		// require(swapCall.chainId == NitroUtils.getChainID(), 'incorrect chainId');
+		// require(settlementRequest.chainId == NitroUtils.getChainID(), 'incorrect chainId');
 
 		// correct adjusted margin call, outcome
-		_requireValidMarginCall(variablePart, swapCall.adjustedMargin);
-
-		// this check is redundant as adjustedMargin.version is also compared to variablePart.turnNum in the above function
-		// require(swapCall.adjustedMargin.version == swapCall.version);
+		_requireVariablePartFitsMarginCall(variablePart, settlementRequest.adjustedMargin);
 	}
 
 	function _requireValidSigs(
@@ -223,13 +238,16 @@ contract MarginAppV1 is IForceMoveApp {
 		Signature[2] memory sigs,
 		address[2] memory signers
 	) internal pure {
-		// correct leader signature
-		uint256 leaderIdx = uint256(IMarginApp.MarginIndices.Leader);
-		address recoveredLeader = NitroUtils.recoverSigner(keccak256(signedData), sigs[leaderIdx]);
-		require(recoveredLeader == signers[leaderIdx], 'invalid leader signature'); // could be incorrect channelId or incorrect signature
+		// correct initiator signature
+		uint256 initiatorIdx = uint256(IMarginTypes.MarginIndices.Initiator);
+		address recoveredInitiator = NitroUtils.recoverSigner(
+			keccak256(signedData),
+			sigs[initiatorIdx]
+		);
+		require(recoveredInitiator == signers[initiatorIdx], 'invalid initiator signature'); // could be incorrect channelId or incorrect signature
 
 		// correct follower signature
-		uint256 followerIdx = uint256(IMarginApp.MarginIndices.Follower);
+		uint256 followerIdx = uint256(IMarginTypes.MarginIndices.Follower);
 		address recoveredFollower = NitroUtils.recoverSigner(
 			keccak256(signedData),
 			sigs[followerIdx]
