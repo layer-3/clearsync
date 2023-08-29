@@ -6,7 +6,7 @@ import '@statechannels/nitro-protocol/contracts/interfaces/INitroTypes.sol';
 /**
  * @notice Interface
  */
-interface IMarginApp {
+interface IClearingTypes {
 	enum MarginIndices {
 		Leader,
 		Follower
@@ -40,12 +40,4 @@ interface IMarginApp {
 		SettlementRequest settlementRequest;
 		INitroTypes.Signature[2] sigs;
 	}
-
-	/**
-	 * @notice Settlement the Leader and Follower assets atomically.
-	 * It will result in a valid margin adjustment in the channel.
-	 * @param sSR SignedSettlementRequest struct.
-	 * @param channelID Id of the channel settlement is being performed in.
-	 */
-	function settle(SignedSettlementRequest calldata sSR, bytes32 channelID) external payable;
 }
