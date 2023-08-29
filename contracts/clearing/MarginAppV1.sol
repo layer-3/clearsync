@@ -75,7 +75,7 @@ contract MarginAppV1 is IForceMoveApp {
 		if (proof.length == 2) {
 			_requireProofOfUnanimousConsensusOnPostFund(proof[0], nParticipants);
 			_requireValidTransitionToMarginCall(fixedPart, proof[0], proof[1]);
-			_requireValidTransitionTosettlementRequest(fixedPart, proof[1], candidate);
+			_requireValidTransitionToSettlementRequest(fixedPart, proof[1], candidate);
 			return;
 		}
 
@@ -128,7 +128,7 @@ contract MarginAppV1 is IForceMoveApp {
 	}
 
 	// settlement request in app data, margin call part of settlement request
-	function _requireValidTransitionTosettlementRequest(
+	function _requireValidTransitionToSettlementRequest(
 		FixedPart memory fixedPart,
 		RecoveredVariablePart memory preSettlementMarginState,
 		RecoveredVariablePart memory settlementRequestState
