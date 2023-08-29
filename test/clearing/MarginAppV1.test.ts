@@ -60,6 +60,7 @@ const SECOND_BROKER_NOT_FOLLOWER = '2nd broker not follower';
 const SETTLEMENT_NOT_DIRECT_SUCCESSOR_OF_MARGIN =
   'settlementRequest not direct successor of marginCall';
 const SETTLEMENT_VERSION_NOT_EQUAL_TURN_NUM = 'settlementRequest.version != turnNum';
+const INCORRECT_CHAIN_ID = 'incorrect chainId';
 
 const brokerAMargin = 100;
 const brokerBMargin = 100;
@@ -110,7 +111,6 @@ describe('MarginAppV1', () => {
     baseStateAIB = {
       turnNum: 0,
       isFinal: false,
-      chainId: '31113',
       channelNonce: '0x0',
       participants: [BrokerA.address, Intermediary.address, BrokerB.address],
       challengeDuration: 100,
@@ -135,20 +135,20 @@ describe('MarginAppV1', () => {
     });
 
     it('succeed when unanimously signed and turnNum = 0', async () => {
-      await MarginAppV1.requireStateSupported(fixedPartAIB, [], preFundCandidate);
+      await MarginAppV1.stateIsSupported(fixedPartAIB, [], preFundCandidate);
     });
 
     it('revert when not unanimously signed', async () => {
       preFundCandidate.signedBy = signedBy([1, 2]);
       await expect(
-        MarginAppV1.requireStateSupported(fixedPartAIB, [], preFundCandidate),
+        MarginAppV1.stateIsSupported(fixedPartAIB, [], preFundCandidate),
       ).to.be.revertedWith(NOT_UNANIMOUS_PROOF_0);
     });
 
     it('revert when turnNum != 0', async () => {
       preFundCandidate.variablePart.turnNum = 42;
       await expect(
-        MarginAppV1.requireStateSupported(fixedPartAIB, [], preFundCandidate),
+        MarginAppV1.stateIsSupported(fixedPartAIB, [], preFundCandidate),
       ).to.be.revertedWith(NOT_FINAL_TURN_NUM_BIGG_3_PROOF_0);
     });
   });
@@ -163,21 +163,21 @@ describe('MarginAppV1', () => {
       };
     });
     it('succeed when unanimously signed and turnNum = 1', async () => {
-      await MarginAppV1.requireStateSupported(fixedPartAIB, [], postFundCandidate);
+      await MarginAppV1.stateIsSupported(fixedPartAIB, [], postFundCandidate);
     });
 
     it('revert when not unanimously signed', async () => {
       postFundCandidate.signedBy = signedBy([0, 2]);
 
       await expect(
-        MarginAppV1.requireStateSupported(fixedPartAIB, [], postFundCandidate),
+        MarginAppV1.stateIsSupported(fixedPartAIB, [], postFundCandidate),
       ).to.be.revertedWith(NOT_UNANIMOUS_PROOF_0);
     });
 
     it('revert when turnNum != 1', async () => {
       postFundCandidate.variablePart.turnNum = 42;
       await expect(
-        MarginAppV1.requireStateSupported(fixedPartAIB, [], postFundCandidate),
+        MarginAppV1.stateIsSupported(fixedPartAIB, [], postFundCandidate),
       ).to.be.revertedWith(NOT_FINAL_TURN_NUM_BIGG_3_PROOF_0);
     });
   });
@@ -234,7 +234,7 @@ describe('MarginAppV1', () => {
 
     describe('succeed', () => {
       it('when supplied first margin', async () => {
-        await MarginAppV1.requireStateSupported(
+        await MarginAppV1.stateIsSupported(
           fixedPartAIB,
           [recoveredPostFundState],
           marginCallCandidate,
@@ -250,7 +250,7 @@ describe('MarginAppV1', () => {
           [BrokerA, BrokerB],
         );
 
-        await MarginAppV1.requireStateSupported(
+        await MarginAppV1.stateIsSupported(
           fixedPartAIB,
           [recoveredPostFundState],
           marginCallCandidate,
@@ -262,7 +262,7 @@ describe('MarginAppV1', () => {
       describe('postfund', () => {
         it('when postfund not supplied', async () => {
           await expect(
-            MarginAppV1.requireStateSupported(fixedPartAIB, [], marginCallCandidate),
+            MarginAppV1.stateIsSupported(fixedPartAIB, [], marginCallCandidate),
           ).to.be.revertedWith(NOT_UNANIMOUS_PROOF_0);
         });
 
@@ -270,7 +270,7 @@ describe('MarginAppV1', () => {
           recoveredPostFundState.variablePart.turnNum = 0;
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState],
               marginCallCandidate,
@@ -282,7 +282,7 @@ describe('MarginAppV1', () => {
           recoveredPostFundState.signedBy = signedBy(0);
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState],
               marginCallCandidate,
@@ -296,7 +296,7 @@ describe('MarginAppV1', () => {
           marginCallCandidate.signedBy = SIGNED_BY_NO_ONE;
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState],
               marginCallCandidate,
@@ -308,7 +308,7 @@ describe('MarginAppV1', () => {
           marginCallCandidate.variablePart.turnNum = 1;
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState],
               marginCallCandidate,
@@ -325,7 +325,7 @@ describe('MarginAppV1', () => {
           );
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState],
               marginCallCandidate,
@@ -337,7 +337,7 @@ describe('MarginAppV1', () => {
           marginCallCandidate.variablePart.turnNum = 42;
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState],
               marginCallCandidate,
@@ -353,7 +353,7 @@ describe('MarginAppV1', () => {
           ]);
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState],
               marginCallCandidate,
@@ -369,7 +369,7 @@ describe('MarginAppV1', () => {
           ]);
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState],
               marginCallCandidate,
@@ -385,7 +385,7 @@ describe('MarginAppV1', () => {
           ]);
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState],
               marginCallCandidate,
@@ -401,7 +401,7 @@ describe('MarginAppV1', () => {
           );
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState],
               marginCallCandidate,
@@ -417,7 +417,7 @@ describe('MarginAppV1', () => {
           );
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState],
               marginCallCandidate,
@@ -431,7 +431,7 @@ describe('MarginAppV1', () => {
         it.skip('when garbage encoded', async () => {
           marginCallCandidate.variablePart.appData = '0xdeadbeef';
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState],
               marginCallCandidate,
@@ -455,7 +455,7 @@ describe('MarginAppV1', () => {
           ]);
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState],
               marginCallCandidate,
@@ -476,7 +476,7 @@ describe('MarginAppV1', () => {
           ];
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState],
               marginCallCandidate,
@@ -492,7 +492,7 @@ describe('MarginAppV1', () => {
           ]);
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState],
               marginCallCandidate,
@@ -507,7 +507,7 @@ describe('MarginAppV1', () => {
           ]);
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState],
               marginCallCandidate,
@@ -587,7 +587,7 @@ describe('MarginAppV1', () => {
         ],
         version: 3,
         expire: Math.round(Date.now() / 1000) + 3600,
-        chainId: 31_113,
+        chainId: 31_337,
         adjustedMargin,
       };
 
@@ -616,7 +616,7 @@ describe('MarginAppV1', () => {
     });
     describe('succeed', () => {
       it('when supplied first settlement call', async () => {
-        await MarginAppV1.requireStateSupported(
+        await MarginAppV1.stateIsSupported(
           fixedPartAIB,
           [recoveredPostFundState, recoveredMarginCallState],
           settlementRequestCandidate,
@@ -642,7 +642,7 @@ describe('MarginAppV1', () => {
           [BrokerA, BrokerB],
         );
 
-        await MarginAppV1.requireStateSupported(
+        await MarginAppV1.stateIsSupported(
           fixedPartAIB,
           [recoveredPostFundState, recoveredMarginCallState],
           settlementRequestCandidate,
@@ -654,7 +654,7 @@ describe('MarginAppV1', () => {
       describe('postfund', () => {
         it('when postfund not supplied', async () => {
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredMarginCallState],
               settlementRequestCandidate,
@@ -666,7 +666,7 @@ describe('MarginAppV1', () => {
           recoveredPostFundState.variablePart.turnNum = 42;
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               settlementRequestCandidate,
@@ -678,7 +678,7 @@ describe('MarginAppV1', () => {
           recoveredPostFundState.signedBy = signedBy(0);
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               settlementRequestCandidate,
@@ -693,7 +693,7 @@ describe('MarginAppV1', () => {
         // this will be fixed when migrated to ethers v6
         it.skip('when margin call not supplied', async () => {
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState],
               settlementRequestCandidate,
@@ -705,7 +705,7 @@ describe('MarginAppV1', () => {
           settlementRequestCandidate.signedBy = SIGNED_BY_NO_ONE;
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               settlementRequestCandidate,
@@ -717,7 +717,7 @@ describe('MarginAppV1', () => {
           recoveredMarginCallState.variablePart.turnNum = 1;
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               settlementRequestCandidate,
@@ -730,7 +730,7 @@ describe('MarginAppV1', () => {
           recoveredMarginCallState.variablePart.turnNum = 3;
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               settlementRequestCandidate,
@@ -746,7 +746,7 @@ describe('MarginAppV1', () => {
           ]);
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               settlementRequestCandidate,
@@ -762,7 +762,7 @@ describe('MarginAppV1', () => {
           ]);
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               settlementRequestCandidate,
@@ -778,7 +778,7 @@ describe('MarginAppV1', () => {
           ]);
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               settlementRequestCandidate,
@@ -794,7 +794,7 @@ describe('MarginAppV1', () => {
           );
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               settlementRequestCandidate,
@@ -810,7 +810,7 @@ describe('MarginAppV1', () => {
           );
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               settlementRequestCandidate,
@@ -825,7 +825,7 @@ describe('MarginAppV1', () => {
           recoveredMarginCallState.variablePart.appData = '0xdeadbeef';
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               settlementRequestCandidate,
@@ -848,7 +848,7 @@ describe('MarginAppV1', () => {
             ]);
 
             await expect(
-              MarginAppV1.requireStateSupported(
+              MarginAppV1.stateIsSupported(
                 fixedPartAIB,
                 [recoveredPostFundState, recoveredMarginCallState],
                 settlementRequestCandidate,
@@ -869,7 +869,7 @@ describe('MarginAppV1', () => {
             ];
 
             await expect(
-              MarginAppV1.requireStateSupported(
+              MarginAppV1.stateIsSupported(
                 fixedPartAIB,
                 [recoveredPostFundState, recoveredMarginCallState],
                 settlementRequestCandidate,
@@ -885,7 +885,7 @@ describe('MarginAppV1', () => {
             ]);
 
             await expect(
-              MarginAppV1.requireStateSupported(
+              MarginAppV1.stateIsSupported(
                 fixedPartAIB,
                 [recoveredPostFundState, recoveredMarginCallState],
                 settlementRequestCandidate,
@@ -900,7 +900,7 @@ describe('MarginAppV1', () => {
             ]);
 
             await expect(
-              MarginAppV1.requireStateSupported(
+              MarginAppV1.stateIsSupported(
                 fixedPartAIB,
                 [recoveredPostFundState, recoveredMarginCallState],
                 settlementRequestCandidate,
@@ -915,7 +915,7 @@ describe('MarginAppV1', () => {
           settlementRequestCandidate.signedBy = SIGNED_BY_NO_ONE;
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               settlementRequestCandidate,
@@ -928,7 +928,7 @@ describe('MarginAppV1', () => {
           marginCallVariablePart.turnNum = 1;
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               settlementRequestCandidate,
@@ -940,7 +940,7 @@ describe('MarginAppV1', () => {
           settlementRequestCandidate.variablePart.turnNum = 2;
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               settlementRequestCandidate,
@@ -957,7 +957,7 @@ describe('MarginAppV1', () => {
           );
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               settlementRequestCandidate,
@@ -974,7 +974,7 @@ describe('MarginAppV1', () => {
           );
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               settlementRequestCandidate,
@@ -994,7 +994,7 @@ describe('MarginAppV1', () => {
           settlementRequestCandidate.variablePart.turnNum = 4;
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               settlementRequestCandidate,
@@ -1011,7 +1011,7 @@ describe('MarginAppV1', () => {
           );
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               settlementRequestCandidate,
@@ -1027,7 +1027,7 @@ describe('MarginAppV1', () => {
           );
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               settlementRequestCandidate,
@@ -1043,12 +1043,29 @@ describe('MarginAppV1', () => {
           );
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               settlementRequestCandidate,
             ),
           ).to.be.revertedWith(INVALID_FOLLOWER_SIGNATURE);
+        });
+
+        it('when incorrect chain id', async () => {
+          settlementRequest.chainId = 42;
+          settlementRequestVariablePart.appData = await settlementRequestAppData(
+            channelIdAIB,
+            settlementRequest,
+            [BrokerA, BrokerB],
+          );
+
+          await expect(
+            MarginAppV1.stateIsSupported(
+              fixedPartAIB,
+              [recoveredPostFundState, recoveredMarginCallState],
+              settlementRequestCandidate,
+            ),
+          ).to.be.revertedWith(INCORRECT_CHAIN_ID);
         });
 
         // MarginAppV1 fails to decode appData as SettlementRequest, but the revert is swallowed
@@ -1058,7 +1075,7 @@ describe('MarginAppV1', () => {
           settlementRequestCandidate.variablePart.appData = '0xdeadbeef';
 
           await expect(
-            MarginAppV1.requireStateSupported(
+            MarginAppV1.stateIsSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
               settlementRequestCandidate,
@@ -1076,7 +1093,7 @@ describe('MarginAppV1', () => {
             );
 
             await expect(
-              MarginAppV1.requireStateSupported(
+              MarginAppV1.stateIsSupported(
                 fixedPartAIB,
                 [recoveredPostFundState, recoveredMarginCallState],
                 settlementRequestCandidate,
@@ -1095,7 +1112,7 @@ describe('MarginAppV1', () => {
             );
 
             await expect(
-              MarginAppV1.requireStateSupported(
+              MarginAppV1.stateIsSupported(
                 fixedPartAIB,
                 [recoveredPostFundState, recoveredMarginCallState],
                 settlementRequestCandidate,
@@ -1114,7 +1131,7 @@ describe('MarginAppV1', () => {
             );
 
             await expect(
-              MarginAppV1.requireStateSupported(
+              MarginAppV1.stateIsSupported(
                 fixedPartAIB,
                 [recoveredPostFundState, recoveredMarginCallState],
                 settlementRequestCandidate,
@@ -1133,7 +1150,7 @@ describe('MarginAppV1', () => {
             );
 
             await expect(
-              MarginAppV1.requireStateSupported(
+              MarginAppV1.stateIsSupported(
                 fixedPartAIB,
                 [recoveredPostFundState, recoveredMarginCallState],
                 settlementRequestCandidate,
@@ -1160,7 +1177,7 @@ describe('MarginAppV1', () => {
             );
 
             await expect(
-              MarginAppV1.requireStateSupported(
+              MarginAppV1.stateIsSupported(
                 fixedPartAIB,
                 [recoveredPostFundState, recoveredMarginCallState],
                 settlementRequestCandidate,
@@ -1181,7 +1198,7 @@ describe('MarginAppV1', () => {
             ];
 
             await expect(
-              MarginAppV1.requireStateSupported(
+              MarginAppV1.stateIsSupported(
                 fixedPartAIB,
                 [recoveredPostFundState, recoveredMarginCallState],
                 settlementRequestCandidate,
@@ -1200,7 +1217,7 @@ describe('MarginAppV1', () => {
             );
 
             await expect(
-              MarginAppV1.requireStateSupported(
+              MarginAppV1.stateIsSupported(
                 fixedPartAIB,
                 [recoveredPostFundState, recoveredMarginCallState],
                 settlementRequestCandidate,
@@ -1218,7 +1235,7 @@ describe('MarginAppV1', () => {
             );
 
             await expect(
-              MarginAppV1.requireStateSupported(
+              MarginAppV1.stateIsSupported(
                 fixedPartAIB,
                 [recoveredPostFundState, recoveredMarginCallState],
                 settlementRequestCandidate,

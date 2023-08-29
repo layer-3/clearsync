@@ -17,6 +17,8 @@ import '../interfaces/ISettlementTypes.sol';
 // 2: Alice hire a WatchTower, which replicates Alice's states,
 // and challenge in the case of challenge event and missing heartbeat
 
+// TODO: change `revert` to `return (false, 'error')` in all require statements
+
 /**
  * @dev The MarginApp contract complies with the ForceMoveApp interface and allows payments to be made virtually from Initiator to Follower (participants[0] to participants[n+1], where n is the number of intermediaries).
  */
@@ -150,7 +152,7 @@ contract MarginAppV1 is IForceMoveApp {
 	function _requireValidSettlementRequest(
 		FixedPart memory fixedPart,
 		RecoveredVariablePart memory settlementRequestState
-	) internal pure {
+	) internal view {
 		uint8 nParticipants = uint8(fixedPart.participants.length);
 
 		require(settlementRequestState.variablePart.turnNum >= 3, 'settlementRequest.turnNum < 3');
@@ -225,9 +227,8 @@ contract MarginAppV1 is IForceMoveApp {
 			'settlementRequest.version != turnNum'
 		);
 
-		// FIXME: `NitroUtils.getChainID()` is view, but `requireStateSupported` is pure
 		// correct chainId
-		// require(settlementRequest.chainId == NitroUtils.getChainID(), 'incorrect chainId');
+		require(settlementRequest.chainId == block.chainid, 'incorrect chainId');
 
 		// correct adjusted margin call, outcome
 		_requireVariablePartFitsMarginCall(variablePart, settlementRequest.adjustedMargin);
