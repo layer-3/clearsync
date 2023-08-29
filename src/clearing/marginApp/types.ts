@@ -15,16 +15,16 @@ export interface Liability {
   amount: number;
 }
 
-export interface SwapCall {
+export interface SettlementRequest {
   brokers: [string, string];
-  swaps: [Liability[], Liability[]];
+  settlements: [Liability[], Liability[]];
   version: number;
   expire: number;
   chainId: number;
   adjustedMargin: MarginCall;
 }
 
-export interface SignedSwapCall {
-  swapCall: SwapCall;
+export interface SignedSettlementRequest {
+  settlementRequest: SettlementRequest;
   sigs: [Signature, Signature];
 }

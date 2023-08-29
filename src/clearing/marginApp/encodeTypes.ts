@@ -32,12 +32,12 @@ export const LiabilityTy = {
   ],
 } as ParamType;
 
-export const swapCallTy = {
-  name: 'swapCall',
+export const settlementRequestTy = {
+  name: 'settlementRequest',
   type: 'tuple',
   components: [
     { name: 'brokers', type: 'address[2]' },
-    { ...LiabilityTy, type: 'tuple[][2]', name: 'swaps' },
+    { ...LiabilityTy, type: 'tuple[][2]', name: 'settlements' },
     { name: 'version', type: 'uint64' },
     { name: 'expire', type: 'uint64' },
     { name: 'chainId', type: 'uint256' },
@@ -45,7 +45,7 @@ export const swapCallTy = {
   ],
 } as ParamType;
 
-export const signedSwapCallTy = {
+export const signedSettlementRequestTy = {
   type: 'tuple',
-  components: [swapCallTy, signaturesTy],
+  components: [settlementRequestTy, signaturesTy],
 } as ParamType;

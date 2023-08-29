@@ -13,20 +13,26 @@ import { Outcome, convertAddressToBytes32, getChannelId } from '@statechannels/n
 import {
   SIGNED_BY_NO_ONE,
   signChannelIdAndMarginCall,
-  signChannelIdAndSwapCall,
+  signChannelIdAndSettlementRequest,
   signedBy,
 } from '../../src/clearing/marginApp/signatures';
 import { singleAssetOutcome } from '../../src/clearing/marginApp/outcome';
-import { encodeSignedMarginCall, encodeSignedSwapCall } from '../../src/clearing/marginApp/encode';
-import { marginCallAppData, swapCallAppData } from '../../src/clearing/marginApp/marginApp';
+import {
+  encodeSignedMarginCall,
+  encodeSignedSettlementRequest,
+} from '../../src/clearing/marginApp/encode';
+import {
+  marginCallAppData,
+  settlementRequestAppData,
+} from '../../src/clearing/marginApp/marginApp';
 
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import type { MarginAppV1 } from '../../typechain-types';
 import type {
   MarginCall,
+  SettlementRequest,
   SignedMarginCall,
-  SignedSwapCall,
-  SwapCall,
+  SignedSettlementRequest,
 } from '../../src/clearing/marginApp/types';
 import type { Signature } from 'ethers';
 
@@ -47,12 +53,13 @@ const INCORRECT_NUMBER_OF_ALLOCATIONS = 'incorrect number of allocations';
 const DESTINATIONS_CANNOT_CHANGE = 'destinations cannot change';
 const INVALID_LEADER_SIGNATURE = 'invalid leader signature';
 const INVALID_FOLLOWER_SIGNATURE = 'invalid follower signature';
-const NO_IDENTITY_PROOF_ON_SWAP_CALL = 'no identity proof on swap call';
-const SWAP_CALL_TURN_NUM_LESS_3 = 'swapCall.turnNum < 3';
+const NO_IDENTITY_PROOF_ON_SETTLEMENT_REQUEST = 'no identity proof on settlement request';
+const SETTLEMENT_CALL_TURN_NUM_LESS_3 = 'settlementRequest.turnNum < 3';
 const FIRST_BROKER_NOT_LEADER = '1st broker not leader';
 const SECOND_BROKER_NOT_FOLLOWER = '2nd broker not follower';
-const SWAP_NOT_DIRECT_SUCCESSOR_OF_MARGIN = 'swapCall not direct successor of marginCall';
-const SWAP_VERSION_NOT_EQUAL_TURN_NUM = 'swapCall.version != turnNum';
+const SETTLEMENT_NOT_DIRECT_SUCCESSOR_OF_MARGIN =
+  'settlementRequest not direct successor of marginCall';
+const SETTLEMENT_VERSION_NOT_EQUAL_TURN_NUM = 'settlementRequest.version != turnNum';
 
 const brokerAMargin = 100;
 const brokerBMargin = 100;
@@ -490,14 +497,14 @@ describe('MarginAppV1', () => {
     });
   });
 
-  describe('swap call', () => {
+  describe('settlement call', () => {
     const delta = 5;
     const brokerAChangedMargin = brokerAMargin + delta;
     const brokerBChangedMargin = brokerBMargin - delta;
 
     let postFundVariablePart: VariablePart;
     let marginCallVariablePart: VariablePart;
-    let swapCallVariablePart: VariablePart;
+    let settlementRequestVariablePart: VariablePart;
 
     let recoveredPostFundState: RecoveredVariablePart;
 
@@ -506,9 +513,9 @@ describe('MarginAppV1', () => {
     let recoveredMarginCallState: RecoveredVariablePart;
 
     let adjustedMargin: MarginCall;
-    let swapCall: SwapCall;
-    let signedSwapCall: SignedSwapCall;
-    let swapCallCandidate: RecoveredVariablePart;
+    let settlementRequest: SettlementRequest;
+    let signedSettlementRequest: SignedSettlementRequest;
+    let settlementRequestCandidate: RecoveredVariablePart;
 
     beforeEach(async () => {
       postFundVariablePart = getVariablePart(baseStateAIB);
@@ -550,10 +557,10 @@ describe('MarginAppV1', () => {
         margin: [brokerAMargin, brokerBMargin],
       };
 
-      swapCall = {
+      settlementRequest = {
         brokers: [BrokerA.address, BrokerB.address],
-        // TODO: do we need any checks on swaps?
-        swaps: [
+        // TODO: do we need any checks on settlements?
+        settlements: [
           [{ token: ethers.Wallet.createRandom().address, amount: 42 }],
           [{ token: ethers.Wallet.createRandom().address, amount: 42 }],
         ],
@@ -563,37 +570,39 @@ describe('MarginAppV1', () => {
         adjustedMargin,
       };
 
-      signedSwapCall = {
-        swapCall,
-        sigs: (await signChannelIdAndSwapCall([BrokerA, BrokerB], channelIdAIB, swapCall)) as [
-          Signature,
-          Signature,
-        ],
+      signedSettlementRequest = {
+        settlementRequest,
+        sigs: (await signChannelIdAndSettlementRequest(
+          [BrokerA, BrokerB],
+          channelIdAIB,
+          settlementRequest,
+        )) as [Signature, Signature],
       };
 
-      swapCallVariablePart = getVariablePart(baseStateAIB);
-      swapCallVariablePart.turnNum = 3;
-      swapCallVariablePart.appData = encodeSignedSwapCall(signedSwapCall);
-      swapCallVariablePart.outcome = singleAssetOutcome(testToken1Address, [
+      settlementRequestVariablePart = getVariablePart(baseStateAIB);
+      settlementRequestVariablePart.turnNum = 3;
+      settlementRequestVariablePart.appData =
+        encodeSignedSettlementRequest(signedSettlementRequest);
+      settlementRequestVariablePart.outcome = singleAssetOutcome(testToken1Address, [
         [brokerADestination, brokerAMargin],
         [brokerBDestination, brokerBMargin],
       ]);
 
-      swapCallCandidate = {
+      settlementRequestCandidate = {
         signedBy: signedBy(0),
-        variablePart: swapCallVariablePart,
+        variablePart: settlementRequestVariablePart,
       };
     });
     describe('succeed', () => {
-      it('when supplied first swap call', async () => {
+      it('when supplied first settlement call', async () => {
         await MarginAppV1.requireStateSupported(
           fixedPartAIB,
           [recoveredPostFundState, recoveredMarginCallState],
-          swapCallCandidate,
+          settlementRequestCandidate,
         );
       });
 
-      it('when supplied swap call with higher version', async () => {
+      it('when supplied settlement call with higher version', async () => {
         marginCall.version = 42;
         recoveredMarginCallState.variablePart.turnNum = 42;
         recoveredMarginCallState.variablePart.appData = await marginCallAppData(
@@ -604,17 +613,18 @@ describe('MarginAppV1', () => {
 
         adjustedMargin.version = 43;
 
-        swapCall.version = 43;
-        swapCallCandidate.variablePart.turnNum = 43;
-        swapCallCandidate.variablePart.appData = await swapCallAppData(channelIdAIB, swapCall, [
-          BrokerA,
-          BrokerB,
-        ]);
+        settlementRequest.version = 43;
+        settlementRequestCandidate.variablePart.turnNum = 43;
+        settlementRequestCandidate.variablePart.appData = await settlementRequestAppData(
+          channelIdAIB,
+          settlementRequest,
+          [BrokerA, BrokerB],
+        );
 
         await MarginAppV1.requireStateSupported(
           fixedPartAIB,
           [recoveredPostFundState, recoveredMarginCallState],
-          swapCallCandidate,
+          settlementRequestCandidate,
         );
       });
     });
@@ -626,7 +636,7 @@ describe('MarginAppV1', () => {
             MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredMarginCallState],
-              swapCallCandidate,
+              settlementRequestCandidate,
             ),
           ).to.be.reverted;
         });
@@ -638,7 +648,7 @@ describe('MarginAppV1', () => {
             MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
-              swapCallCandidate,
+              settlementRequestCandidate,
             ),
           ).to.be.revertedWith(POSTFUND_TURN_NUM_NOT_EQUAL_1);
         });
@@ -650,33 +660,33 @@ describe('MarginAppV1', () => {
             MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
-              swapCallCandidate,
+              settlementRequestCandidate,
             ),
           ).to.be.revertedWith(POSTFUND_NOT_UNANIMOUS);
         });
       });
 
-      describe('pre swap margin call', () => {
+      describe('pre settlement margin call', () => {
         it('when margin call not supplied', async () => {
           await expect(
             MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState],
-              swapCallCandidate,
+              settlementRequestCandidate,
             ),
           ).to.be.reverted;
         });
 
         it('when not signed', async () => {
-          swapCallCandidate.signedBy = SIGNED_BY_NO_ONE;
+          settlementRequestCandidate.signedBy = SIGNED_BY_NO_ONE;
 
           await expect(
             MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
-              swapCallCandidate,
+              settlementRequestCandidate,
             ),
-          ).to.be.revertedWith(NO_IDENTITY_PROOF_ON_SWAP_CALL);
+          ).to.be.revertedWith(NO_IDENTITY_PROOF_ON_SETTLEMENT_REQUEST);
         });
 
         it('when turnNum != 2+', async () => {
@@ -686,7 +696,7 @@ describe('MarginAppV1', () => {
             MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
-              swapCallCandidate,
+              settlementRequestCandidate,
             ),
           ).to.be.revertedWith(MARGIN_CALL_TURN_NUM_LESS_2);
         });
@@ -699,7 +709,7 @@ describe('MarginAppV1', () => {
             MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
-              swapCallCandidate,
+              settlementRequestCandidate,
             ),
           ).to.be.revertedWith(MARGIN_VERSION_NOT_EQUAL_TURN_NUM);
         });
@@ -714,7 +724,7 @@ describe('MarginAppV1', () => {
             MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
-              swapCallCandidate,
+              settlementRequestCandidate,
             ),
           ).to.be.revertedWith(INCORRECT_LEADER_MARGIN);
         });
@@ -729,7 +739,7 @@ describe('MarginAppV1', () => {
             MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
-              swapCallCandidate,
+              settlementRequestCandidate,
             ),
           ).to.be.revertedWith(INCORRECT_FOLLOWER_MARGIN);
         });
@@ -745,7 +755,7 @@ describe('MarginAppV1', () => {
             MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
-              swapCallCandidate,
+              settlementRequestCandidate,
             ),
           ).to.be.revertedWith(INVALID_LEADER_SIGNATURE);
         });
@@ -761,7 +771,7 @@ describe('MarginAppV1', () => {
             MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
-              swapCallCandidate,
+              settlementRequestCandidate,
             ),
           ).to.be.revertedWith(INVALID_FOLLOWER_SIGNATURE);
         });
@@ -773,7 +783,7 @@ describe('MarginAppV1', () => {
             MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
-              swapCallCandidate,
+              settlementRequestCandidate,
             ),
           ).to.be.reverted;
         });
@@ -796,7 +806,7 @@ describe('MarginAppV1', () => {
               MarginAppV1.requireStateSupported(
                 fixedPartAIB,
                 [recoveredPostFundState, recoveredMarginCallState],
-                swapCallCandidate,
+                settlementRequestCandidate,
               ),
             ).to.be.revertedWith(TOTAL_ALLOCATED_CANNOT_CHANGE);
           });
@@ -817,7 +827,7 @@ describe('MarginAppV1', () => {
               MarginAppV1.requireStateSupported(
                 fixedPartAIB,
                 [recoveredPostFundState, recoveredMarginCallState],
-                swapCallCandidate,
+                settlementRequestCandidate,
               ),
             ).to.be.revertedWith(INCORRECT_NUMBER_OF_ASSETS);
           });
@@ -833,7 +843,7 @@ describe('MarginAppV1', () => {
               MarginAppV1.requireStateSupported(
                 fixedPartAIB,
                 [recoveredPostFundState, recoveredMarginCallState],
-                swapCallCandidate,
+                settlementRequestCandidate,
               ),
             ).to.be.revertedWith(INCORRECT_NUMBER_OF_ALLOCATIONS);
           });
@@ -848,184 +858,196 @@ describe('MarginAppV1', () => {
               MarginAppV1.requireStateSupported(
                 fixedPartAIB,
                 [recoveredPostFundState, recoveredMarginCallState],
-                swapCallCandidate,
+                settlementRequestCandidate,
               ),
             ).to.be.revertedWith(DESTINATIONS_CANNOT_CHANGE);
           });
         });
       });
 
-      describe('swap call', () => {
+      describe('settlement call', () => {
         it('when not signed', async () => {
-          swapCallCandidate.signedBy = SIGNED_BY_NO_ONE;
+          settlementRequestCandidate.signedBy = SIGNED_BY_NO_ONE;
 
           await expect(
             MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
-              swapCallCandidate,
+              settlementRequestCandidate,
             ),
-          ).to.be.revertedWith(NO_IDENTITY_PROOF_ON_SWAP_CALL);
+          ).to.be.revertedWith(NO_IDENTITY_PROOF_ON_SETTLEMENT_REQUEST);
         });
 
         it('when turnNum != 3+', async () => {
-          swapCallCandidate.variablePart.turnNum = 2;
+          settlementRequestCandidate.variablePart.turnNum = 2;
 
           await expect(
             MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
-              swapCallCandidate,
+              settlementRequestCandidate,
             ),
-          ).to.be.revertedWith(SWAP_CALL_TURN_NUM_LESS_3);
+          ).to.be.revertedWith(SETTLEMENT_CALL_TURN_NUM_LESS_3);
         });
 
         it('when first broker is not participant', async () => {
-          swapCall.brokers = [BrokerC.address, BrokerB.address];
-          swapCallCandidate.variablePart.appData = await swapCallAppData(channelIdAIB, swapCall, [
-            BrokerA,
-            BrokerB,
-          ]);
+          settlementRequest.brokers = [BrokerC.address, BrokerB.address];
+          settlementRequestCandidate.variablePart.appData = await settlementRequestAppData(
+            channelIdAIB,
+            settlementRequest,
+            [BrokerA, BrokerB],
+          );
 
           await expect(
             MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
-              swapCallCandidate,
+              settlementRequestCandidate,
             ),
           ).to.be.revertedWith(FIRST_BROKER_NOT_LEADER);
         });
 
         it('when second broker is not participant', async () => {
-          swapCall.brokers = [BrokerA.address, BrokerD.address];
-          swapCallCandidate.variablePart.appData = await swapCallAppData(channelIdAIB, swapCall, [
-            BrokerA,
-            BrokerB,
-          ]);
+          settlementRequest.brokers = [BrokerA.address, BrokerD.address];
+          settlementRequestCandidate.variablePart.appData = await settlementRequestAppData(
+            channelIdAIB,
+            settlementRequest,
+            [BrokerA, BrokerB],
+          );
 
           await expect(
             MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
-              swapCallCandidate,
+              settlementRequestCandidate,
             ),
           ).to.be.revertedWith(SECOND_BROKER_NOT_FOLLOWER);
         });
 
-        it('when swap call is not a direct successor of margin call', async () => {
+        it('when settlement call is not a direct successor of margin call', async () => {
           // .version = 3
-          swapCallCandidate.variablePart.turnNum = 4;
+          settlementRequestCandidate.variablePart.turnNum = 4;
 
           await expect(
             MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
-              swapCallCandidate,
+              settlementRequestCandidate,
             ),
-          ).to.be.revertedWith(SWAP_NOT_DIRECT_SUCCESSOR_OF_MARGIN);
+          ).to.be.revertedWith(SETTLEMENT_NOT_DIRECT_SUCCESSOR_OF_MARGIN);
         });
 
         it('when version != turnNum', async () => {
-          swapCall.version = 4;
-          swapCallCandidate.variablePart.appData = await swapCallAppData(channelIdAIB, swapCall, [
-            BrokerA,
-            BrokerB,
-          ]);
+          settlementRequest.version = 4;
+          settlementRequestCandidate.variablePart.appData = await settlementRequestAppData(
+            channelIdAIB,
+            settlementRequest,
+            [BrokerA, BrokerB],
+          );
 
           await expect(
             MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
-              swapCallCandidate,
+              settlementRequestCandidate,
             ),
-          ).to.be.revertedWith(SWAP_VERSION_NOT_EQUAL_TURN_NUM);
+          ).to.be.revertedWith(SETTLEMENT_VERSION_NOT_EQUAL_TURN_NUM);
         });
 
-        it('when swap signed by not leader', async () => {
-          swapCallCandidate.variablePart.appData = await swapCallAppData(channelIdAIB, swapCall, [
-            BrokerC,
-            BrokerB,
-          ]);
+        it('when settlement signed by not leader', async () => {
+          settlementRequestCandidate.variablePart.appData = await settlementRequestAppData(
+            channelIdAIB,
+            settlementRequest,
+            [BrokerC, BrokerB],
+          );
 
           await expect(
             MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
-              swapCallCandidate,
+              settlementRequestCandidate,
             ),
           ).to.be.revertedWith(INVALID_LEADER_SIGNATURE);
         });
 
-        it('when swap signed by not follower', async () => {
-          swapCallCandidate.variablePart.appData = await swapCallAppData(channelIdAIB, swapCall, [
-            BrokerA,
-            BrokerD,
-          ]);
+        it('when settlement signed by not follower', async () => {
+          settlementRequestCandidate.variablePart.appData = await settlementRequestAppData(
+            channelIdAIB,
+            settlementRequest,
+            [BrokerA, BrokerD],
+          );
 
           await expect(
             MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
-              swapCallCandidate,
+              settlementRequestCandidate,
             ),
           ).to.be.revertedWith(INVALID_FOLLOWER_SIGNATURE);
         });
 
         it('when garbage encoded', async () => {
-          swapCallCandidate.variablePart.appData = '0xdeadbeef';
+          settlementRequestCandidate.variablePart.appData = '0xdeadbeef';
 
           await expect(
             MarginAppV1.requireStateSupported(
               fixedPartAIB,
               [recoveredPostFundState, recoveredMarginCallState],
-              swapCallCandidate,
+              settlementRequestCandidate,
             ),
           ).to.be.reverted;
         });
 
         describe('adjusted margin', () => {
-          it('when margin.version != swapCall.version', async () => {
-            swapCall.adjustedMargin.version = 42;
-            swapCallCandidate.variablePart.appData = await swapCallAppData(channelIdAIB, swapCall, [
-              BrokerA,
-              BrokerB,
-            ]);
+          it('when margin.version != settlementRequest.version', async () => {
+            settlementRequest.adjustedMargin.version = 42;
+            settlementRequestCandidate.variablePart.appData = await settlementRequestAppData(
+              channelIdAIB,
+              settlementRequest,
+              [BrokerA, BrokerB],
+            );
 
             await expect(
               MarginAppV1.requireStateSupported(
                 fixedPartAIB,
                 [recoveredPostFundState, recoveredMarginCallState],
-                swapCallCandidate,
+                settlementRequestCandidate,
               ),
             ).to.be.revertedWith(MARGIN_VERSION_NOT_EQUAL_TURN_NUM);
           });
 
           it('when outcome != adjusted leader margin specified', async () => {
-            swapCallCandidate.variablePart.outcome = singleAssetOutcome(testToken1Address, [
-              [brokerADestination, brokerAChangedMargin],
-              [brokerBDestination, brokerBMargin],
-            ]);
+            settlementRequestCandidate.variablePart.outcome = singleAssetOutcome(
+              testToken1Address,
+              [
+                [brokerADestination, brokerAChangedMargin],
+                [brokerBDestination, brokerBMargin],
+              ],
+            );
 
             await expect(
               MarginAppV1.requireStateSupported(
                 fixedPartAIB,
                 [recoveredPostFundState, recoveredMarginCallState],
-                swapCallCandidate,
+                settlementRequestCandidate,
               ),
             ).to.be.revertedWith(INCORRECT_LEADER_MARGIN);
           });
 
           it('when outcome != adjusted follower margin specified', async () => {
-            swapCallCandidate.variablePart.outcome = singleAssetOutcome(testToken1Address, [
-              [brokerADestination, brokerAMargin],
-              [brokerBDestination, brokerBChangedMargin],
-            ]);
+            settlementRequestCandidate.variablePart.outcome = singleAssetOutcome(
+              testToken1Address,
+              [
+                [brokerADestination, brokerAMargin],
+                [brokerBDestination, brokerBChangedMargin],
+              ],
+            );
 
             await expect(
               MarginAppV1.requireStateSupported(
                 fixedPartAIB,
                 [recoveredPostFundState, recoveredMarginCallState],
-                swapCallCandidate,
+                settlementRequestCandidate,
               ),
             ).to.be.revertedWith(INCORRECT_FOLLOWER_MARGIN);
           });
@@ -1033,28 +1055,32 @@ describe('MarginAppV1', () => {
 
         describe('outcome', () => {
           it('when outcome sum has changed', async () => {
-            swapCall.adjustedMargin.margin = [brokerAMargin + 1, brokerBMargin + 1];
+            settlementRequest.adjustedMargin.margin = [brokerAMargin + 1, brokerBMargin + 1];
 
-            swapCallCandidate.variablePart.appData = await swapCallAppData(channelIdAIB, swapCall, [
-              BrokerA,
-              BrokerB,
-            ]);
-            swapCallCandidate.variablePart.outcome = singleAssetOutcome(testToken1Address, [
-              [brokerADestination, brokerAMargin + 1],
-              [brokerBDestination, brokerBMargin + 1],
-            ]);
+            settlementRequestCandidate.variablePart.appData = await settlementRequestAppData(
+              channelIdAIB,
+              settlementRequest,
+              [BrokerA, BrokerB],
+            );
+            settlementRequestCandidate.variablePart.outcome = singleAssetOutcome(
+              testToken1Address,
+              [
+                [brokerADestination, brokerAMargin + 1],
+                [brokerBDestination, brokerBMargin + 1],
+              ],
+            );
 
             await expect(
               MarginAppV1.requireStateSupported(
                 fixedPartAIB,
                 [recoveredPostFundState, recoveredMarginCallState],
-                swapCallCandidate,
+                settlementRequestCandidate,
               ),
             ).to.be.revertedWith(TOTAL_ALLOCATED_CANNOT_CHANGE);
           });
 
           it('when outcome with several assets', async () => {
-            swapCallCandidate.variablePart.outcome = [
+            settlementRequestCandidate.variablePart.outcome = [
               ...singleAssetOutcome(testToken1Address, [
                 [brokerADestination, brokerAMargin],
                 [brokerBDestination, brokerBMargin],
@@ -1069,38 +1095,44 @@ describe('MarginAppV1', () => {
               MarginAppV1.requireStateSupported(
                 fixedPartAIB,
                 [recoveredPostFundState, recoveredMarginCallState],
-                swapCallCandidate,
+                settlementRequestCandidate,
               ),
             ).to.be.revertedWith(INCORRECT_NUMBER_OF_ASSETS);
           });
 
           it('when more than 2 allocations', async () => {
-            swapCallCandidate.variablePart.outcome = singleAssetOutcome(testToken1Address, [
-              [brokerADestination, brokerAMargin],
-              [brokerBDestination, brokerBMargin],
-              [intermediaryDestination, brokerAMargin],
-            ]);
+            settlementRequestCandidate.variablePart.outcome = singleAssetOutcome(
+              testToken1Address,
+              [
+                [brokerADestination, brokerAMargin],
+                [brokerBDestination, brokerBMargin],
+                [intermediaryDestination, brokerAMargin],
+              ],
+            );
 
             await expect(
               MarginAppV1.requireStateSupported(
                 fixedPartAIB,
                 [recoveredPostFundState, recoveredMarginCallState],
-                swapCallCandidate,
+                settlementRequestCandidate,
               ),
             ).to.be.revertedWith(INCORRECT_NUMBER_OF_ALLOCATIONS);
           });
 
           it('when destination changed', async () => {
-            swapCallCandidate.variablePart.outcome = singleAssetOutcome(testToken1Address, [
-              [brokerADestination, brokerAMargin],
-              [intermediaryDestination, brokerBMargin],
-            ]);
+            settlementRequestCandidate.variablePart.outcome = singleAssetOutcome(
+              testToken1Address,
+              [
+                [brokerADestination, brokerAMargin],
+                [intermediaryDestination, brokerBMargin],
+              ],
+            );
 
             await expect(
               MarginAppV1.requireStateSupported(
                 fixedPartAIB,
                 [recoveredPostFundState, recoveredMarginCallState],
-                swapCallCandidate,
+                settlementRequestCandidate,
               ),
             ).to.be.revertedWith(DESTINATIONS_CANNOT_CHANGE);
           });

@@ -1,8 +1,8 @@
 import { Signature, utils } from 'ethers';
 
-import { encodeChannelIdAndMarginCall, encodeChannelIdAndSwapCall } from './encode';
+import { encodeChannelIdAndMarginCall, encodeChannelIdAndSettlementRequest } from './encode';
 
-import type { MarginCall, SwapCall } from './types';
+import type { MarginCall, SettlementRequest } from './types';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 export async function signEncoded(
@@ -26,13 +26,15 @@ export async function signChannelIdAndMarginCall(
   );
 }
 
-export async function signChannelIdAndSwapCall(
+export async function signChannelIdAndSettlementRequest(
   signers: SignerWithAddress[],
   channelId: string,
-  swapCall: SwapCall,
+  settlementRequest: SettlementRequest,
 ): Promise<Signature[]> {
   return Promise.all(
-    signers.map((signer) => signEncoded(signer, encodeChannelIdAndSwapCall(channelId, swapCall))),
+    signers.map((signer) =>
+      signEncoded(signer, encodeChannelIdAndSettlementRequest(channelId, settlementRequest)),
+    ),
   );
 }
 

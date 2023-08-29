@@ -1,8 +1,18 @@
 import { utils } from 'ethers';
 
-import { marginCallTy, signedMarginCallTy, signedSwapCallTy, swapCallTy } from './encodeTypes';
+import {
+  marginCallTy,
+  settlementRequestTy,
+  signedMarginCallTy,
+  signedSettlementRequestTy,
+} from './encodeTypes';
 
-import type { MarginCall, SignedMarginCall, SignedSwapCall, SwapCall } from './types';
+import type {
+  MarginCall,
+  SettlementRequest,
+  SignedMarginCall,
+  SignedSettlementRequest,
+} from './types';
 
 export function encodeMarginCall(marginCall: MarginCall): string {
   return utils.defaultAbiCoder.encode([marginCallTy], [marginCall]);
@@ -26,21 +36,32 @@ export function encodeChannelIdAndSignedMarginCall(
   );
 }
 
-export function encodeSwapCall(swapCall: SwapCall): string {
-  return utils.defaultAbiCoder.encode([swapCallTy], [swapCall]);
+export function encodeSettlementRequest(settlementRequest: SettlementRequest): string {
+  return utils.defaultAbiCoder.encode([settlementRequestTy], [settlementRequest]);
 }
 
-export function encodeChannelIdAndSwapCall(channelId: string, swapCall: SwapCall): string {
-  return utils.defaultAbiCoder.encode(['bytes32', swapCallTy], [channelId, swapCall]);
-}
-
-export function encodeSignedSwapCall(signedSwapCall: SignedSwapCall): string {
-  return utils.defaultAbiCoder.encode([signedSwapCallTy], [signedSwapCall]);
-}
-
-export function encodeChannelIdAndSignedSwapCall(
+export function encodeChannelIdAndSettlementRequest(
   channelId: string,
-  signedSwapCall: SignedSwapCall,
+  settlementRequest: SettlementRequest,
 ): string {
-  return utils.defaultAbiCoder.encode(['bytes32', signedSwapCallTy], [channelId, signedSwapCall]);
+  return utils.defaultAbiCoder.encode(
+    ['bytes32', settlementRequestTy],
+    [channelId, settlementRequest],
+  );
+}
+
+export function encodeSignedSettlementRequest(
+  signedSettlementRequest: SignedSettlementRequest,
+): string {
+  return utils.defaultAbiCoder.encode([signedSettlementRequestTy], [signedSettlementRequest]);
+}
+
+export function encodeChannelIdAndSignedSettlementRequest(
+  channelId: string,
+  signedSettlementRequest: SignedSettlementRequest,
+): string {
+  return utils.defaultAbiCoder.encode(
+    ['bytes32', signedSettlementRequestTy],
+    [channelId, signedSettlementRequest],
+  );
 }

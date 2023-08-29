@@ -36,7 +36,7 @@ contract MarginAppV1 is IForceMoveApp {
 		// 0    prefund
 		// 1    postfund
 		// 2+   margin call
-		// 3+   swap call (requires explicit margin call to be agreed on before)
+		// 3+   settlement request (requires explicit margin call to be agreed on before)
 		// 3+   final
 
 		uint8 nParticipants = uint8(fixedPart.participants.length);
@@ -68,14 +68,14 @@ contract MarginAppV1 is IForceMoveApp {
 			return;
 		}
 
-		// state 2+ margin in swap call is supported
+		// state 2+ margin in settlement request is supported
 		// proof[0] - postfund
-		// proof[1] - margin call preceding swap call
-		// candidate - swap call
+		// proof[1] - margin call preceding settlement request
+		// candidate - settlement request
 		if (proof.length == 2) {
 			_requireProofOfUnanimousConsensusOnPostFund(proof[0], nParticipants);
 			_requireValidTransitionToMarginCall(fixedPart, proof[0], proof[1]);
-			_requireValidTransitionToSwapCall(fixedPart, proof[1], candidate);
+			_requireValidTransitionTosettlementRequest(fixedPart, proof[1], candidate);
 			return;
 		}
 
@@ -127,41 +127,46 @@ contract MarginAppV1 is IForceMoveApp {
 		);
 	}
 
-	// swap call in app data, margin call part of swap call
-	function _requireValidTransitionToSwapCall(
+	// settlement request in app data, margin call part of settlement request
+	function _requireValidTransitionTosettlementRequest(
 		FixedPart memory fixedPart,
-		RecoveredVariablePart memory preSwapMarginState,
-		RecoveredVariablePart memory swapCallState
+		RecoveredVariablePart memory preSettlementMarginState,
+		RecoveredVariablePart memory settlementRequestState
 	) internal pure {
 		uint8 nParticipants = uint8(fixedPart.participants.length);
 
-		require(swapCallState.variablePart.turnNum >= 3, 'swapCall.turnNum < 3');
+		require(settlementRequestState.variablePart.turnNum >= 3, 'settlementRequest.turnNum < 3');
 		require(
-			preSwapMarginState.variablePart.turnNum + 1 == swapCallState.variablePart.turnNum,
-			'swapCall not direct successor of marginCall'
+			preSettlementMarginState.variablePart.turnNum + 1 ==
+				settlementRequestState.variablePart.turnNum,
+			'settlementRequest not direct successor of marginCall'
 		);
 
 		// supplied state must be signed by either party
 		require(
-			NitroUtils.isClaimedSignedBy(swapCallState.signedBy, 0) ||
-				NitroUtils.isClaimedSignedBy(swapCallState.signedBy, nParticipants - 1),
-			'no identity proof on swap call'
+			NitroUtils.isClaimedSignedBy(settlementRequestState.signedBy, 0) ||
+				NitroUtils.isClaimedSignedBy(settlementRequestState.signedBy, nParticipants - 1),
+			'no identity proof on settlement request'
 		);
 
-		IMarginApp.SignedSwapCall memory sSC = abi.decode(
-			swapCallState.variablePart.appData,
-			(IMarginApp.SignedSwapCall)
+		IMarginApp.SignedSettlementRequest memory sSR = abi.decode(
+			settlementRequestState.variablePart.appData,
+			(IMarginApp.SignedSettlementRequest)
 		);
-		_requireValidSwapCall(fixedPart.participants, swapCallState.variablePart, sSC.swapCall);
+		_requireValidSettlementRequest(
+			fixedPart.participants,
+			settlementRequestState.variablePart,
+			sSR.settlementRequest
+		);
 		_requireValidSigs(
-			abi.encode(NitroUtils.getChannelId(fixedPart), sSC.swapCall),
-			sSC.sigs,
+			abi.encode(NitroUtils.getChannelId(fixedPart), sSR.settlementRequest),
+			sSR.sigs,
 			[fixedPart.participants[0], fixedPart.participants[nParticipants - 1]]
 		);
 
 		_requireValidOutcomeTransition(
-			preSwapMarginState.variablePart.outcome,
-			swapCallState.variablePart.outcome
+			preSettlementMarginState.variablePart.outcome,
+			settlementRequestState.variablePart.outcome
 		);
 	}
 
@@ -187,35 +192,38 @@ contract MarginAppV1 is IForceMoveApp {
 		);
 	}
 
-	// check signed swap call and included margin call
-	function _requireValidSwapCall(
+	// check signed settlement request and included margin call
+	function _requireValidSettlementRequest(
 		address[] memory participants,
 		VariablePart memory variablePart,
-		IMarginApp.SwapCall memory swapCall
+		IMarginApp.SettlementRequest memory settlementRequest
 	) internal pure {
 		// brokers are participants
 		require(
-			swapCall.brokers[uint256(IMarginApp.MarginIndices.Leader)] == participants[0],
+			settlementRequest.brokers[uint256(IMarginApp.MarginIndices.Leader)] == participants[0],
 			'1st broker not leader'
 		);
 		require(
-			swapCall.brokers[uint256(IMarginApp.MarginIndices.Follower)] ==
+			settlementRequest.brokers[uint256(IMarginApp.MarginIndices.Follower)] ==
 				participants[participants.length - 1],
 			'2nd broker not follower'
 		);
 
-		// correct swap version
-		require(swapCall.version == variablePart.turnNum, 'swapCall.version != turnNum');
+		// correct settlement version
+		require(
+			settlementRequest.version == variablePart.turnNum,
+			'settlementRequest.version != turnNum'
+		);
 
 		// FIXME: `NitroUtils.getChainID()` is view, but `requireStateSupported` is pure
 		// correct chainId
-		// require(swapCall.chainId == NitroUtils.getChainID(), 'incorrect chainId');
+		// require(settlementRequest.chainId == NitroUtils.getChainID(), 'incorrect chainId');
 
 		// correct adjusted margin call, outcome
-		_requireValidMarginCall(variablePart, swapCall.adjustedMargin);
+		_requireValidMarginCall(variablePart, settlementRequest.adjustedMargin);
 
 		// this check is redundant as adjustedMargin.version is also compared to variablePart.turnNum in the above function
-		// require(swapCall.adjustedMargin.version == swapCall.version);
+		// require(settlementRequest.adjustedMargin.version == settlementRequest.version);
 	}
 
 	function _requireValidSigs(
