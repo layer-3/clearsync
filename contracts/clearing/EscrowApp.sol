@@ -26,15 +26,15 @@ contract EscrowApp is IForceMoveApp {
 			'!unanimous'
 		);
 
-        // TODO: state 2+ requires postfund state to be supplied
+		// TODO: state 2+ requires postfund state to be supplied
 		// if (proof.length == 1) {
 		// 	// postfund checks
 		// 	_requireProofOfUnanimousConsensusOnPostFund(proof[0], nParticipants);
-        // }
+		// }
 
-        if candidate.variablePart.turnNum == 2 {
-            require(candidate.variablePart.isFinal == true, '!final; turnNum==2')
-        }
+		if (candidate.variablePart.turnNum == 2) {
+			require(candidate.variablePart.isFinal == true, '!final; turnNum==2');
+		}
 
 		return (true, '');
 	}
