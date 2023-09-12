@@ -15,7 +15,7 @@ import type { TestERC20, VestingVault } from '../../typechain-types';
 const TOKEN_CAP = 100_000_000_000_000;
 const TOKEN_DECIMALS = 8;
 const NOW = Math.floor(Date.now() / 1000);
-const TIME_DIFF = 600 * 10; // 10 minutes
+const TIME_DIFF = 10_000; // 10_000 sec in future of simulated blockchain time. Should be enough to run all test files.
 const VESTING_1_START = NOW + TIME_DIFF;
 
 const VESTING_1_AMOUNT = ethers.utils.parseUnits('100', TOKEN_DECIMALS);
