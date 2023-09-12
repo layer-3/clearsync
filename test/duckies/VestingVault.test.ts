@@ -15,7 +15,7 @@ import type { TestERC20, VestingVault } from '../../typechain-types';
 const TOKEN_CAP = 100_000_000_000_000;
 const TOKEN_DECIMALS = 8;
 const NOW = Math.floor(Date.now() / 1000);
-const TIME_DIFF = 60 * 10; // 10 minutes
+const TIME_DIFF = 10_000; // 10_000 sec in future of simulated blockchain time. Should be enough to run all test files.
 const VESTING_1_START = NOW + TIME_DIFF;
 
 const VESTING_1_AMOUNT = ethers.utils.parseUnits('100', TOKEN_DECIMALS);
@@ -47,7 +47,7 @@ describe('Vesting', function () {
     snapshot = await takeSnapshot();
 
     const TestERC20Factory = await ethers.getContractFactory('TestERC20');
-    ERC20 = (await TestERC20Factory.deploy('TestToken', 'TTK', TOKEN_CAP)) as TestERC20;
+    ERC20 = (await TestERC20Factory.deploy('TestToken', 'TTK', 8, TOKEN_CAP)) as TestERC20;
     await ERC20.deployed();
 
     const VestingVaultFactory = await ethers.getContractFactory('VestingVault');

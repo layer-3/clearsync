@@ -4,8 +4,8 @@ import { ethers, upgrades } from 'hardhat';
 
 import { ACCOUNT_MISSING_ROLE, randomBytes32 } from '../helpers/common';
 import { connectGroup } from '../helpers/connect';
-import { encodeRewardParams, RewardParams, VoucherAction } from '../helpers/TreasureVault';
-import { signVoucher, signVouchers, Voucher } from '../helpers/voucher';
+import { RewardParams, VoucherAction, encodeRewardParams } from '../helpers/TreasureVault';
+import { Voucher, signVoucher, signVouchers } from '../helpers/voucher';
 
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import type { TestERC20, TreasureVault } from '../../typechain-types';
@@ -54,8 +54,6 @@ describe('TreasureVault', () => {
     encodedParams: '0x',
   };
 
-  let someoneVoucher: Voucher;
-
   before(async () => {
     [TreasureVaultAdmin, Issuer, Someone, Someother, Referrer, TreasuryGuy] =
       await ethers.getSigners();
@@ -66,6 +64,7 @@ describe('TreasureVault', () => {
     Token = (await TestERC20Factory.deploy(
       'Partner',
       'PARTNER',
+      8,
       TOKEN_CAP,
     )) as unknown as TestERC20;
     await Token.deployed();
@@ -90,12 +89,7 @@ describe('TreasureVault', () => {
     await Token.mint(TreasureVault.address, TOKEN_DEPOSITED_TO_VAULT);
 
     VoucherBase.target = TreasureVault.address;
-    VoucherBase.expire = Math.round(Date.now() / 1000) + 600; // 10 mins from now
-
-    someoneVoucher = {
-      ...VoucherBase,
-      beneficiary: Someone.address,
-    };
+    VoucherBase.expire = Math.round(Date.now() / 1000) + 10_000; // 10_000 sec in future of simulated blockchain time. Should be enough to run all test files.
   });
 
   describe('initialize', () => {
@@ -450,6 +444,7 @@ describe('TreasureVault', () => {
       Token2 = (await TestERC20Factory.deploy(
         'Partner2',
         'PARTNER2',
+        8,
         TOKEN_CAP,
       )) as unknown as TestERC20;
       await Token2.deployed();
