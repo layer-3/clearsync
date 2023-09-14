@@ -15,7 +15,7 @@ describe('EscrowApp', () => {
 
       it('revert when another asset added');
 
-      it('revert when allocation amount has changed');
+      it('revert when asset allocation amount has changed');
 
       it('revert when 3 distinct destinations');
 
