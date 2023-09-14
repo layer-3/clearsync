@@ -6,9 +6,6 @@ import '@statechannels/nitro-protocol/contracts/libraries/NitroUtils.sol';
 import '@statechannels/nitro-protocol/contracts/interfaces/INitroTypes.sol';
 import {ExitFormat as Outcome} from '@statechannels/exit-format/contracts/ExitFormat.sol';
 
-import '../interfaces/IMarginTypes.sol';
-import '../interfaces/ISettlementTypes.sol';
-
 // NOTE: Attack:
 // Bob can submit a convenient candidate, when Alice in trouble (Way back machine attack)
 
@@ -34,23 +31,21 @@ contract MarginAppV1 is IForceMoveApp {
 		FixedPart calldata fixedPart,
 		RecoveredVariablePart[] calldata proof,
 		RecoveredVariablePart calldata candidate
-	) external view override returns (bool, string memory) {
-		// This channel has only 4 states which can be supported:
+	) external pure override returns (bool, string memory) {
+		// This channel has only 5 states which can be supported:
 		// 0    prefund
 		// 1    postfund
 		// 2+   margin call
-		// 3+   settlement request (requires explicit margin call to be agreed on before)
+		// TODO: 3+   settlement request (requires explicit margin call to be agreed on before)
 		// 3+   final
 
 		uint8 nParticipants = uint8(fixedPart.participants.length);
+		require(nParticipants == 2, 'only 2 participants supported');
+
+		require(NitroUtils.getClaimedSignersNum(candidate.signedBy) == nParticipants, '!unanimous');
 
 		// states 0,1,3+:
 		if (proof.length == 0) {
-			require(
-				NitroUtils.getClaimedSignersNum(candidate.signedBy) == nParticipants,
-				'!unanimous; |proof|=0'
-			);
-
 			if (candidate.variablePart.turnNum == 0) return (true, ''); // prefund
 			if (candidate.variablePart.turnNum == 1) return (true, ''); // postfund
 
@@ -66,200 +61,31 @@ contract MarginAppV1 is IForceMoveApp {
 
 		// state 2+ requires postfund state to be supplied
 		if (proof.length == 1) {
+			require(candidate.variablePart.turnNum >= 2, 'turnNum<2 && |proof|=1');
+
 			// postfund checks
-			_requireProofOfUnanimousConsensusOnPostFund(proof[0], nParticipants);
-
-			// postfund - margin call checks
-			_requireValidOutcomeTransition(
-				proof[0].variablePart.outcome,
-				candidate.variablePart.outcome
-			);
-			_requireValidMarginCall(fixedPart, candidate);
-			return (true, '');
-		}
-
-		// state 2+ margin in settlement request is supported
-		// proof[0] - postfund
-		// proof[1] - margin call preceding settlement request
-		// candidate - settlement request
-		if (proof.length == 2) {
-			// postfund checks
-			_requireProofOfUnanimousConsensusOnPostFund(proof[0], nParticipants);
-
-			// postfund - margin call checks
-			_requireValidOutcomeTransition(
-				proof[0].variablePart.outcome,
-				proof[1].variablePart.outcome
-			);
-			_requireValidMarginCall(fixedPart, proof[1]);
-
-			// margin call - settlement request checks
+			require(proof[0].variablePart.turnNum == 1, 'postfund.turnNum != 1');
 			require(
-				proof[1].variablePart.turnNum + 1 == candidate.variablePart.turnNum,
-				'settlementRequest not direct successor of marginCall'
+				NitroUtils.getClaimedSignersNum(proof[0].signedBy) == nParticipants,
+				'postfund !unanimous'
 			);
+
+			// postfund - margin call checks
 			_requireValidOutcomeTransition(
-				proof[1].variablePart.outcome,
+				proof[0].variablePart.outcome,
 				candidate.variablePart.outcome
 			);
-			_requireValidSettlementRequest(fixedPart, candidate);
 			return (true, '');
 		}
 
 		revert('bad proof length');
 	}
 
-	function _requireProofOfUnanimousConsensusOnPostFund(
-		RecoveredVariablePart memory rVP,
-		uint256 numParticipants
-	) internal pure {
-		require(rVP.variablePart.turnNum == 1, 'postfund.turnNum != 1');
-		require(
-			NitroUtils.getClaimedSignersNum(rVP.signedBy) == numParticipants,
-			'postfund !unanimous'
-		);
-	}
-
-	// margin call in app data
-	function _requireValidMarginCall(
-		FixedPart memory fixedPart,
-		RecoveredVariablePart memory marginCallState
-	) internal pure {
-		uint8 nParticipants = uint8(fixedPart.participants.length);
-
-		require(marginCallState.variablePart.turnNum >= 2, 'marginCall.turnNum < 2');
-
-		// supplied state must be signed by either party
-		require(
-			NitroUtils.isClaimedSignedBy(marginCallState.signedBy, 0) ||
-				NitroUtils.isClaimedSignedBy(marginCallState.signedBy, nParticipants - 1),
-			'no identity proof on margin call'
-		);
-
-		IMarginTypes.SignedMarginCall memory sMC = abi.decode(
-			marginCallState.variablePart.appData,
-			(IMarginTypes.SignedMarginCall)
-		);
-		_requireVariablePartFitsMarginCall(marginCallState.variablePart, sMC.marginCall);
-		_requireValidSigs(
-			abi.encode(NitroUtils.getChannelId(fixedPart), sMC.marginCall),
-			sMC.sigs,
-			[fixedPart.participants[0], fixedPart.participants[nParticipants - 1]]
-		);
-	}
-
-	// settlement request in app data, margin call part of settlement request
-	function _requireValidSettlementRequest(
-		FixedPart memory fixedPart,
-		RecoveredVariablePart memory settlementRequestState
-	) internal view {
-		uint8 nParticipants = uint8(fixedPart.participants.length);
-
-		require(settlementRequestState.variablePart.turnNum >= 3, 'settlementRequest.turnNum < 3');
-
-		// supplied state must be signed by either party
-		require(
-			NitroUtils.isClaimedSignedBy(settlementRequestState.signedBy, 0) ||
-				NitroUtils.isClaimedSignedBy(settlementRequestState.signedBy, nParticipants - 1),
-			'no identity proof on settlement request'
-		);
-
-		ISettlementTypes.SignedSettlementRequest memory sSR = abi.decode(
-			settlementRequestState.variablePart.appData,
-			(ISettlementTypes.SignedSettlementRequest)
-		);
-		_requireValidSettlementRequest(
-			fixedPart.participants,
-			settlementRequestState.variablePart,
-			sSR.settlementRequest
-		);
-		_requireValidSigs(
-			abi.encode(NitroUtils.getChannelId(fixedPart), sSR.settlementRequest),
-			sSR.sigs,
-			[fixedPart.participants[0], fixedPart.participants[nParticipants - 1]]
-		);
-	}
-
-	function _requireVariablePartFitsMarginCall(
-		VariablePart memory variablePart,
-		IMarginTypes.MarginCall memory marginCall
-	) internal pure {
-		// correct margin version
-		require(marginCall.version == variablePart.turnNum, 'marginCall.version != turnNum');
-
-		uint256 initiatorIdx = uint256(IMarginTypes.MarginIndices.Initiator);
-		uint256 followerIdx = uint256(IMarginTypes.MarginIndices.Follower);
-
-		// correct outcome adjustments
-		require(
-			variablePart.outcome[0].allocations[initiatorIdx].amount ==
-				marginCall.margin[initiatorIdx],
-			'incorrect initiator margin'
-		);
-		require(
-			variablePart.outcome[0].allocations[followerIdx].amount ==
-				marginCall.margin[followerIdx],
-			'incorrect follower margin'
-		);
-	}
-
-	// check signed settlement request and included margin call
-	function _requireValidSettlementRequest(
-		address[] memory participants,
-		VariablePart memory variablePart,
-		ISettlementTypes.SettlementRequest memory settlementRequest
-	) internal view {
-		// brokers are participants
-		require(
-			settlementRequest.brokers[uint256(IMarginTypes.MarginIndices.Initiator)] ==
-				participants[0],
-			'1st broker not initiator'
-		);
-		require(
-			settlementRequest.brokers[uint256(IMarginTypes.MarginIndices.Follower)] ==
-				participants[participants.length - 1],
-			'2nd broker not follower'
-		);
-
-		// correct settlement version
-		require(
-			settlementRequest.version == variablePart.turnNum,
-			'settlementRequest.version != turnNum'
-		);
-
-		// correct chainId
-		require(settlementRequest.chainId == block.chainid, 'incorrect chainId');
-
-		// correct adjusted margin call, outcome
-		_requireVariablePartFitsMarginCall(variablePart, settlementRequest.adjustedMargin);
-	}
-
-	function _requireValidSigs(
-		bytes memory signedData,
-		Signature[2] memory sigs,
-		address[2] memory signers
-	) internal pure {
-		// correct initiator signature
-		uint256 initiatorIdx = uint256(IMarginTypes.MarginIndices.Initiator);
-		address recoveredInitiator = NitroUtils.recoverSigner(
-			keccak256(signedData),
-			sigs[initiatorIdx]
-		);
-		require(recoveredInitiator == signers[initiatorIdx], 'invalid initiator signature'); // could be incorrect channelId or incorrect signature
-
-		// correct follower signature
-		uint256 followerIdx = uint256(IMarginTypes.MarginIndices.Follower);
-		address recoveredFollower = NitroUtils.recoverSigner(
-			keccak256(signedData),
-			sigs[followerIdx]
-		);
-		require(recoveredFollower == signers[followerIdx], 'invalid follower signature'); // could be incorrect channelId or incorrect signature
-	}
-
 	function _requireValidOutcomeTransition(
 		Outcome.SingleAssetExit[] memory oldOutcome,
 		Outcome.SingleAssetExit[] memory newOutcome
 	) internal pure {
+		// TODO: change to support 2 collateral assets
 		// only 1 collateral asset (USDT)
 		require(oldOutcome.length == 1 && newOutcome.length == 1, 'incorrect number of assets');
 
