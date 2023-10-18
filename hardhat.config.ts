@@ -70,6 +70,17 @@ const config: HardhatUserConfig = {
         count: 100,
       },
     },
+    localdev: {
+      url: process.env.LOCALDEV_URL ?? 'http://localhost:8545',
+      accounts: {
+        mnemonic: 'true delay boil mobile pact hat sight hazard wood alley exercise visit',
+        count: 100,
+      },
+    },
+    kayenuat: {
+      url: process.env.KAYENUAT_URL ?? '',
+      accounts,
+    },
     ethereum: {
       url: process.env.ETHEREUM_URL ?? '',
       accounts,
