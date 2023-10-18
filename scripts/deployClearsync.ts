@@ -5,10 +5,9 @@ import { type Signer, utils } from 'ethers';
 
 import type { TestERC20 } from '../typechain-types';
 
-const DEPLOYED_CONTRACTS_FILEPATH = './scripts/deployedContracts.json';
-const CONFIG_FILEPATH = './scripts/config.json';
+const INFO_OUTPUT_FILEPATH = (stage: string): string => `./config/${stage}.info.json`;
+const CONFIG_FILEPATH = (stage: string): string => `./config/${stage}.config.json`;
 const MINT_AMOUNT = 1_000_000;
-const TOKEN_LIST_FILEPATH = './scripts/tokenList.json';
 
 async function main(): Promise<void> {
   const deployerPrivKey = process.env.DEPLOYER_PRIV_KEY;
@@ -16,6 +15,15 @@ async function main(): Promise<void> {
   if (!deployerPrivKey || ethers.utils.isHexString(deployerPrivKey, 64)) {
     throw new Error('invalid DEPLOYER_PRIV_KEY');
   }
+
+  let stage = process.env.STAGE;
+
+  if (!stage) {
+    console.log('no STAGE env var, defaulting to testnet');
+    stage = 'testnet';
+  }
+
+  console.log('deploying to stage:', stage);
 
   const deployer = new ethers.Wallet(deployerPrivKey, ethers.provider);
   const deployerSigner = deployer.connect(ethers.provider);
@@ -26,10 +34,13 @@ async function main(): Promise<void> {
 
   console.log('working on chainId:', chainId);
 
-  await deployYNContracts(deployerSigner, DEPLOYED_CONTRACTS_FILEPATH);
+  // create a file
+  writeFileSync(INFO_OUTPUT_FILEPATH(stage), '{}');
 
-  const config: Config = readConfig(CONFIG_FILEPATH);
-  await deployAndMintTokens(deployerSigner, config, TOKEN_LIST_FILEPATH);
+  await deployYNContracts(deployerSigner, INFO_OUTPUT_FILEPATH(stage));
+
+  const config: Config = readConfig(CONFIG_FILEPATH(stage));
+  await deployAndMintTokens(deployerSigner, config, INFO_OUTPUT_FILEPATH(stage));
 }
 
 interface TokenConfig {
@@ -63,6 +74,11 @@ function readConfig(filepath: string): Config {
   return config;
 }
 
+interface Info {
+  deployedContracts: YNDeployedContracts;
+  tokenList: TokenList;
+}
+
 interface YNDeployedContracts {
   adjudicator: string;
   clearingApp: string;
@@ -88,8 +104,10 @@ async function deployYNContracts(deployer: Signer, filepath: string): Promise<vo
     escrowApp: EscrowApp.address,
   };
 
-  // write deployedContracts to json file
-  const json = JSON.stringify(deployedContracts);
+  // read, modify and write info file
+  const info: Info = JSON.parse(readFileSync(filepath, 'utf8')) as Info;
+  info.deployedContracts = deployedContracts;
+  const json = JSON.stringify(info);
   writeFileSync(filepath, json);
   console.log('contracts deployed, addresses written to', filepath);
 }
@@ -147,13 +165,14 @@ async function deployAndMintTokens(
     }
   }
 
-  // write token addresses to json file
-  const tokenList: TokenList = {
+  // read, modify and write info file
+  const info: Info = JSON.parse(readFileSync(filepath, 'utf8')) as Info;
+  info.tokenList = {
     name: 'Yellow Network test tokens',
     timestamp: new Date().toISOString(),
     tokens: tokens,
   };
-  const json = JSON.stringify(tokenList);
+  const json = JSON.stringify(info);
   writeFileSync(filepath, json);
   console.log('tokens deployed, balances minted');
   console.log('tokenList written to', filepath);
