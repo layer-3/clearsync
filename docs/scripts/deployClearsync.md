@@ -1,4 +1,4 @@
-# Deploy contracts for ClearPort
+# Deploy Clearsync contracts
 
 This script performs several operations:
 
@@ -32,7 +32,7 @@ The script expects a configuration file `clearsync/scripts/config.json`:
 ## Usage
 
 ```bash
-DEPLOYER_PRIV_KEY="0x..." npx hardhat run scripts/setupClearport.ts --network <network_name>
+DEPLOYER_PRIV_KEY="0x..." npx hardhat run scripts/deployClearsync.ts --network <network_name>
 ```
 
 > `<network_name>` name must be specified in `hardhat.config.ts` file.
