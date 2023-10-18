@@ -8,7 +8,14 @@ This script performs several operations:
 
 ## Configuration
 
-The script expects a configuration file `clearsync/scripts/config.json`:
+The scripts expects two environment variables:
+
+- `MNEMONIC` - mnemonic phrase of the deployer account
+- `STAGE` - stage of the deployment, one of `testnet`, `canarynet`, `mainnet`
+
+> Note: in `mainnet` stage only the `YellowAdjudicator`, `ClearingApp`, `EscrowApp` are deployed, and not the tokens.
+
+The script also expects a configuration file `clearsync/config/<stage>.config.json`:
 
 ```ts
 {
@@ -32,7 +39,7 @@ The script expects a configuration file `clearsync/scripts/config.json`:
 ## Usage
 
 ```bash
-DEPLOYER_PRIV_KEY="0x..." npx hardhat run scripts/deployClearsync.ts --network <network_name>
+DEPLOYER_PRIV_KEY="0x..." STAGE=<stage> npx hardhat run scripts/deployClearsync.ts --network <network_name>
 ```
 
 > `<network_name>` name must be specified in `hardhat.config.ts` file.
@@ -41,30 +48,31 @@ When running the script, you will see `deployerAddress` output to the console al
 
 ## Output
 
-After deploying `YellowAdjudicator`, `ClearingApp` and `EscrowApp`, the script will save their addresses in a json file of a format:
+The result of deploying contracts and tokens is saved to `config/<stage>.info.json` file, and is in a format:
 
 ```ts
-{
+interface Info {
+  deployedContracts: DeployedContracts;
+  tokenList: TokenList;
+}
+
+interface DeployedContracts {
   adjudicator: string;
   clearingApp: string;
   escrowApp: string;
-}
-```
-
-After deploying and minting tokens, the script will save information about them in a `Uniswap token list` format:
-
-```ts
-interface Token {
-  chainId: number;
-  address: string;
-  name: string;
-  symbol: string;
-  decimals: number;
 }
 
 interface TokenList {
   name: string;
   timestamp: string;
   tokens: Token[];
+}
+
+interface Token {
+  chainId: number;
+  address: string;
+  name: string;
+  symbol: string;
+  decimals: number;
 }
 ```

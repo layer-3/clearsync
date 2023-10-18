@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 
 import { ethers } from 'hardhat';
-import { type Signer, utils } from 'ethers';
+import { type Signer, Wallet, utils } from 'ethers';
 
 import type { TestERC20 } from '../typechain-types';
 
@@ -10,37 +10,52 @@ const CONFIG_FILEPATH = (stage: string): string => `./config/${stage}.config.jso
 const MINT_AMOUNT = 1_000_000;
 
 async function main(): Promise<void> {
-  const deployerPrivKey = process.env.DEPLOYER_PRIV_KEY;
+  const [Deployer, stage] = setup();
 
-  if (!deployerPrivKey || ethers.utils.isHexString(deployerPrivKey, 64)) {
-    throw new Error('invalid DEPLOYER_PRIV_KEY');
+  console.log('deployer:', Deployer.address);
+
+  const { chainId } = await ethers.provider.getNetwork();
+  console.log('working on chainId:', chainId);
+
+  // create an empty file
+  writeFileSync(INFO_OUTPUT_FILEPATH(stage), '{}');
+
+  await deployYNContracts(Deployer, INFO_OUTPUT_FILEPATH(stage));
+
+  if (stage != 'mainnet') {
+    const config: Config = readConfig(CONFIG_FILEPATH(stage));
+    await deployAndMintTokens(Deployer, config, INFO_OUTPUT_FILEPATH(stage));
+  }
+}
+
+type stage = 'testnet' | 'canarynet' | 'mainnet';
+
+function setup(): [Wallet, stage] {
+  const mnemonic = process.env.MNEMONIC;
+
+  if (!mnemonic || ethers.utils.isValidMnemonic(mnemonic)) {
+    throw new Error('invalid MNEMONIC');
   }
 
-  let stage = process.env.STAGE;
+  const Deployer = ethers.Wallet.fromMnemonic(mnemonic).connect(ethers.provider);
 
-  if (!stage) {
+  const stageStr = process.env.STAGE;
+  let stage: stage;
+
+  if (!stageStr) {
     console.log('no STAGE env var, defaulting to testnet');
     stage = 'testnet';
   }
 
+  if (stageStr && !['testnet', 'canarynet', 'mainnet'].includes(stageStr)) {
+    throw new Error(`invalid STAGE env var: ${stageStr}`);
+  }
+
+  stage = stageStr as stage;
+
   console.log('deploying to stage:', stage);
 
-  const deployer = new ethers.Wallet(deployerPrivKey, ethers.provider);
-  const deployerSigner = deployer.connect(ethers.provider);
-
-  console.log('deployer:', deployer.address);
-
-  const { chainId } = await ethers.provider.getNetwork();
-
-  console.log('working on chainId:', chainId);
-
-  // create a file
-  writeFileSync(INFO_OUTPUT_FILEPATH(stage), '{}');
-
-  await deployYNContracts(deployerSigner, INFO_OUTPUT_FILEPATH(stage));
-
-  const config: Config = readConfig(CONFIG_FILEPATH(stage));
-  await deployAndMintTokens(deployerSigner, config, INFO_OUTPUT_FILEPATH(stage));
+  return [Deployer, stage];
 }
 
 interface TokenConfig {
