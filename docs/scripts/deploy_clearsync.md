@@ -32,7 +32,7 @@ The script also expects a configuration file `clearsync/config/<stage>.config.js
 }
 ```
 
-`allocationAddresses` is a list of addresses to mint tokens to. Can be empty, in which signer account addresses from selected network specified in `hardhat.config.ts` will be used.
+`allocationAddresses` is a list of addresses to mint tokens to. Can be empty, in which case signer account addresses from selected network specified in `hardhat.config.ts` will be used (10 max).
 
 `tokens` is a list of ERC20 tokens to deploy and mint. Can be empty.
 
