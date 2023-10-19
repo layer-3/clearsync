@@ -167,9 +167,7 @@ async function deployAndMintTokens(
   config: Config,
   filepath: string,
 ): Promise<void> {
-  const tokLength = config.tokens.length;
-
-  if (tokLength === 0) {
+  if (config.tokens.length === 0) {
     console.log('no tokens to deploy');
     return;
   }
@@ -218,7 +216,7 @@ async function deployAndMintTokens(
   const json = JSON.stringify(info);
   writeFileSync(filepath, json);
   console.log(
-    `${tokLength} tokens deployed, balances minted to ${config.allocationAddresses.length} addresses`,
+    `${config.tokens.length} tokens deployed, balances minted to ${config.allocationAddresses.length} addresses`,
   );
   console.log('tokenList written to', filepath);
 }
