@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 
 import { ethers } from 'hardhat';
-import { type Signer, Wallet, utils } from 'ethers';
+import { type Signer, utils } from 'ethers';
 
 import type { TestERC20 } from '../typechain-types';
 
@@ -10,9 +10,9 @@ const CONFIG_FILEPATH = (stage: string): string => `./config/${stage}.config.jso
 const MINT_AMOUNT = 1_000_000;
 
 async function main(): Promise<void> {
-  const [Deployer, stage] = setup();
+  const [Deployer, stage] = await setup();
 
-  console.log('deployer:', Deployer.address);
+  console.log('deployer:', await Deployer.getAddress());
 
   const { chainId } = await ethers.provider.getNetwork();
   console.log('working on chainId:', chainId);
@@ -22,22 +22,28 @@ async function main(): Promise<void> {
 
   await deployYNContracts(Deployer, INFO_OUTPUT_FILEPATH(stage));
 
-  if (stage != 'mainnet') {
-    const config: Config = readConfig(CONFIG_FILEPATH(stage));
+  if (stage == 'testnet') {
+    const config: Config = await readConfig(CONFIG_FILEPATH(stage));
     await deployAndMintTokens(Deployer, config, INFO_OUTPUT_FILEPATH(stage));
   }
 }
 
 type stage = 'testnet' | 'canarynet' | 'mainnet';
 
-function setup(): [Wallet, stage] {
+async function setup(): Promise<[Signer, stage]> {
   const mnemonic = process.env.MNEMONIC;
 
-  if (!mnemonic || ethers.utils.isValidMnemonic(mnemonic)) {
+  let Deployer: Signer;
+
+  if (!mnemonic) {
+    // first Signer is deployer by default
+    console.log('no MNEMONIC env var, defaulting to first network account');
+    [Deployer] = await ethers.getSigners();
+  } else if (ethers.utils.isValidMnemonic(mnemonic)) {
+    Deployer = ethers.Wallet.fromMnemonic(mnemonic).connect(ethers.provider);
+  } else {
     throw new Error('invalid MNEMONIC');
   }
-
-  const Deployer = ethers.Wallet.fromMnemonic(mnemonic).connect(ethers.provider);
 
   const stageStr = process.env.STAGE;
   let stage: stage;
@@ -69,7 +75,7 @@ interface Config {
   tokens: TokenConfig[];
 }
 
-function readConfig(filepath: string): Config {
+async function readConfig(filepath: string): Promise<Config> {
   const config = JSON.parse(readFileSync(filepath, 'utf8')) as Config;
 
   for (const [i, token] of config.tokens.entries()) {
@@ -79,12 +85,27 @@ function readConfig(filepath: string): Config {
   }
   console.log(`${config.tokens.length} tokens read from config`);
 
-  for (const address of config.allocationAddresses) {
-    if (!ethers.utils.isAddress(address)) {
-      throw new Error(`invalid allocationAddress: ${address}`);
+  if (config.allocationAddresses.length > 0) {
+    for (const address of config.allocationAddresses) {
+      if (!ethers.utils.isAddress(address)) {
+        throw new Error(`invalid allocationAddress: ${address}`);
+      }
     }
+    console.log(`${config.allocationAddresses.length} allocationAddresses read from config`);
+  } else {
+    // if no allocation addresses, take 10 network accounts
+    console.log(`no allocationAddresses found in the config, defaulting to 10 network accounts`);
+    let accounts = await ethers.getSigners();
+    if (accounts.length > 10) {
+      accounts = accounts.slice(0, 10);
+    }
+
+    console.log(`using ${accounts.length} found signer accounts in the network`);
+
+    config.allocationAddresses = await Promise.all(
+      accounts.map(async (account) => await account.getAddress()),
+    );
   }
-  console.log(`${config.allocationAddresses.length} allocationAddresses read from config`);
 
   return config;
 }
@@ -146,6 +167,13 @@ async function deployAndMintTokens(
   config: Config,
   filepath: string,
 ): Promise<void> {
+  const tokLength = config.tokens.length;
+
+  if (tokLength === 0) {
+    console.log('no tokens to deploy');
+    return;
+  }
+
   const { chainId } = await ethers.provider.getNetwork();
 
   // deploy tokens
@@ -189,7 +217,9 @@ async function deployAndMintTokens(
   };
   const json = JSON.stringify(info);
   writeFileSync(filepath, json);
-  console.log('tokens deployed, balances minted');
+  console.log(
+    `${tokLength} tokens deployed, balances minted to ${config.allocationAddresses.length} addresses`,
+  );
   console.log('tokenList written to', filepath);
 }
 

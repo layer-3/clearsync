@@ -10,7 +10,7 @@ This script performs several operations:
 
 The scripts expects two environment variables:
 
-- `MNEMONIC` - mnemonic phrase of the deployer account
+- `MNEMONIC` - mnemonic phrase of the deployer account. Can be `undefined`, in which case the deployer account will be the first account from selected network specified in `hardhat.config.ts`.
 - `STAGE` - stage of the deployment, one of `testnet`, `canarynet`, `mainnet`
 
 > Note: in `mainnet` stage only the `YellowAdjudicator`, `ClearingApp`, `EscrowApp` are deployed, and not the tokens.
@@ -32,9 +32,9 @@ The script also expects a configuration file `clearsync/config/<stage>.config.js
 }
 ```
 
-`allocationAddresses` is a list of addresses to mint tokens to.
+`allocationAddresses` is a list of addresses to mint tokens to. Can be empty, in which signer account addresses from selected network specified in `hardhat.config.ts` will be used.
 
-`tokens` is a list of ERC20 tokens to deploy and mint.
+`tokens` is a list of ERC20 tokens to deploy and mint. Can be empty.
 
 ## Usage
 
