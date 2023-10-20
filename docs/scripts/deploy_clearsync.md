@@ -99,8 +99,14 @@ etherscan: {
   },
 ```
 
-To verify the contract code on supported network, run:
+To verify the code of Yellow Network infrastructure contracts, run:
 
 ```bash
-npx hardhat verify --network <network_name> <deployed_address> --contract 'path/to/contract/<file_name>.sol:<contract_name>' [deployment arguments separated by space]
+npx hardhat verify --network <network_name> <deployed_address> --contract 'contracts/clearing/<file_name>.sol:<contract_name>'
+```
+
+To verify the code of test ERC20 contracts, run:
+
+```bash
+npx hardhat verify --network <network_name> <deployed_address> --contract 'contracts/test/TestERC20.sol:TestERC20' <erc20_name> <erc20_symbol> <erc20_decimals> <erc20_cap>
 ```
