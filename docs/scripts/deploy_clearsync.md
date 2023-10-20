@@ -76,3 +76,31 @@ interface Token {
   decimals: number;
 }
 ```
+
+## Contract code verification
+
+Before verifying contracts on a local or private chain, make sure `hardhat verify` plugin is configurred correctly in the `hardhat.config.ts`:
+
+```ts
+etherscan: {
+    apiKey: {
+      ...
+    },
+    customChains: [
+      {
+        network: 'network_name',
+        chainId: 42,
+        urls: {
+          apiURL: 'https://my.nodescan/api/',
+          browserURL: 'https://my.nodescan/',
+        },
+      },
+    ],
+  },
+```
+
+To verify the contract code on supported network, run:
+
+```bash
+npx hardhat verify --network <network_name> <deployed_address> --contract 'path/to/contract/<file_name>.sol:<contract_name>' [deployment arguments separated by space]
+```

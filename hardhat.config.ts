@@ -175,6 +175,16 @@ const config: HardhatUserConfig = {
       bsc: BSCSCAN_API_KEY,
       bscTestnet: BSCSCAN_API_KEY,
     },
+    customChains: [
+      {
+        network: 'kayenuat',
+        chainId: 828_282,
+        urls: {
+          apiURL: 'https://ethnodescan.v4.uat.opendax.app/api/',
+          browserURL: 'https://ethnodescan.v4.uat.opendax.app/',
+        },
+      },
+    ],
   },
 };
 
