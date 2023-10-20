@@ -73,13 +73,16 @@ const config: HardhatUserConfig = {
     localdev: {
       url: process.env.LOCALDEV_URL ?? 'http://localhost:8545',
       accounts: {
-        mnemonic: 'true delay boil mobile pact hat sight hazard wood alley exercise visit',
-        count: 100,
+        mnemonic: process.env.MNEMONIC ?? '',
+        count: 10,
       },
     },
     kayenuat: {
       url: process.env.KAYENUAT_URL ?? '',
-      accounts,
+      accounts: {
+        mnemonic: process.env.MNEMONIC ?? '',
+        count: 10,
+      },
     },
     ethereum: {
       url: process.env.ETHEREUM_URL ?? '',
