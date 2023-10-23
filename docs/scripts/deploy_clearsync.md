@@ -10,7 +10,7 @@ This script performs several operations:
 
 The scripts expects two environment variables:
 
-- `MNEMONIC` - mnemonic phrase of the deployer account
+- `MNEMONIC` - mnemonic phrase of the deployer account. Can be `undefined`, in which case the deployer account will be the first account from selected network specified in `hardhat.config.ts`.
 - `STAGE` - stage of the deployment, one of `testnet`, `canarynet`, `mainnet`
 
 > Note: in `mainnet` stage only the `YellowAdjudicator`, `ClearingApp`, `EscrowApp` are deployed, and not the tokens.
@@ -32,9 +32,9 @@ The script also expects a configuration file `clearsync/config/<stage>.config.js
 }
 ```
 
-`allocationAddresses` is a list of addresses to mint tokens to.
+`allocationAddresses` is a list of addresses to mint tokens to. Can be empty, in which case signer account addresses from selected network specified in `hardhat.config.ts` will be used (10 max).
 
-`tokens` is a list of ERC20 tokens to deploy and mint.
+`tokens` is a list of ERC20 tokens to deploy and mint. Can be empty.
 
 ## Usage
 
@@ -75,4 +75,38 @@ interface Token {
   symbol: string;
   decimals: number;
 }
+```
+
+## Contract code verification
+
+Before verifying contracts on a local or private chain, make sure `hardhat verify` plugin is configurred correctly in the `hardhat.config.ts`:
+
+```ts
+etherscan: {
+    apiKey: {
+      ...
+    },
+    customChains: [
+      {
+        network: 'network_name',
+        chainId: 42,
+        urls: {
+          apiURL: 'https://my.nodescan/api/',
+          browserURL: 'https://my.nodescan/',
+        },
+      },
+    ],
+  },
+```
+
+To verify the code of Yellow Network infrastructure contracts, run:
+
+```bash
+npx hardhat verify --network <network_name> <deployed_address> --contract 'contracts/clearing/<file_name>.sol:<contract_name>'
+```
+
+To verify the code of test ERC20 contracts, run:
+
+```bash
+npx hardhat verify --network <network_name> <deployed_address> --contract 'contracts/test/TestERC20.sol:TestERC20' <erc20_name> <erc20_symbol> <erc20_decimals> <erc20_cap>
 ```
