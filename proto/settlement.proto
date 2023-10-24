@@ -1,0 +1,95 @@
+syntax = "proto3";
+
+import "core.proto";
+import "state.proto";
+
+option go_package = "github.com/layer-3/clearport/proto";
+
+// Service definition
+
+service SettlementService {
+  rpc Prepare(PrepareRequest) returns (PrepareResponse);
+  rpc Update(SettlementStateUpdate) returns (StateConfirmation);
+  rpc Finalize(FinalizeRequest) returns (FinalizeResponse);
+}
+
+// SettlementStateUpdate - proposed new state
+
+enum SettlementType {
+  SETTLEMENT_TYPE_UNSPECIFIED = 0;
+  SETTLEMENT_TYPE_AVAILABLE = 1;
+  SETTLEMENT_TYPE_FORCE = 2;
+}
+
+message Asset {
+  string symbol = 1;
+  uint64 chain_id = 2;
+  core.Address address = 3;
+  uint32 decimals = 4;
+}
+
+message Liability {
+  Asset asset = 1;
+  string amount = 2;
+}
+
+message SettlementLedger {
+  repeated Liability initiator_entries = 1;
+  repeated Liability responder_entries = 2;
+  core.MarginCall next_margin = 3;
+}
+
+enum SettlementState {
+  SETTLEMENT_STATE_UNSPECIFIED = 0;
+  SETTLEMENT_STATE_PROPOSED = 1;
+  SETTLEMENT_STATE_ACCEPTED = 2;
+  SETTLEMENT_STATE_INITIATED = 3;
+  SETTLEMENT_STATE_PREPARED = 4;
+  SETTLEMENT_STATE_EXECUTED = 5;
+  SETTLEMENT_STATE_COMPLETED = 6;
+  SETTLEMENT_STATE_FAILED = 7;
+  SETTLEMENT_STATE_REJECTED = 8;
+}
+
+enum SettlementPaymentMethod {
+  SETTLEMENT_PAYMENT_METHOD_UNSPECIFIED = 0;
+  SETTLEMENT_PAYMENT_METHOD_ESCROW = 1;
+  SETTLEMENT_PAYMENT_METHOD_MOCK = 2;
+}
+
+message Settlement {
+  string cid = 1;
+  SettlementType type = 2;
+  SettlementState state = 3;
+  SettlementLedger ledger = 4;
+  uint64 psm_turn_num = 5;
+  SettlementPaymentMethod payment_method = 6;
+  repeated string markets = 7;
+  uint64 chain_id = 8;
+}
+
+message PrepareRequest {
+  Settlement settlement = 2;
+}
+
+message PrepareResponse {
+  SettlementState state = 1;
+  repeated string markets = 2;
+}
+
+message SettlementStateUpdate {
+  string cid = 1;
+  SettlementState to_state = 2;
+}
+
+message StateConfirmation {
+  SettlementState state = 1;
+}
+
+message FinalizeRequest {
+  string cid = 1;
+}
+
+message FinalizeResponse {
+  SettlementState state = 1;
+}

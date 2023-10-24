@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+import "core.proto";
+import "state.proto";
+
+option go_package = "github.com/layer-3/clearport/proto";
+
+// Escrow Service definition
+// In the protocol, Client is the Initiator, Server is the Follower
+// Initiator start with turnNum = 0 prefunding stage.
+service EscrowChannel {
+  rpc Prefund(EscrowState) returns (EscrowState);   // turnNum = 0
+  rpc Postfund(EscrowState) returns (EscrowState);  // turnNum = 1
+  rpc Execute(EscrowState) returns (EscrowState);   // turnNum = 2
+  rpc Finalize(EscrowState) returns (EscrowState);  // isFinal State
+}
+
+// Message Trading Channel state definition
+message EscrowState {
+  bytes channel_id = 1;
+  core.State state = 2;
+  bytes state_hash = 3;
+  repeated core.Signature state_hash_sigs = 4;
+
+  // TODO: Find how to correction bind TradeChannel,
+  // Settlements and EscrowChannels
+  // Keep in mind that and EscrowChannels
+  // is a type of settlement options.
+  uint64 settlement_id = 5;
+}

@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package core;
+
+import "core.proto";
+import "exit.proto";
+
+option go_package = "github.com/layer-3/clearport/proto";
+
+message State {
+  repeated core.Address participants = 1;
+  uint64 channel_nonce = 2;
+  core.Address app_definition = 3;
+  uint32 challenge_duration = 4;
+  bytes app_data = 5;
+  outcome.Exit outcome = 6;
+  uint64 turn_num = 7;
+  bool is_final = 8;
+}
+
+message MarginCall {
+  uint64 version = 1;
+  repeated Decimal amounts = 2;
+}
+
+message SignedMarginCall {
+  MarginCall margin_call = 1;
+  repeated Signature sigs = 2;
+}

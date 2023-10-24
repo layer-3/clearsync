@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package core;
+
+option go_package = "github.com/layer-3/clearport/proto";
+
+// Represent Decimal as a string
+// Can be changed to 2 numbers
+// Due to compatibility issues we may need
+// To create a new Decimal type compatible with ExitFormat
+message Decimal {
+  string value = 1;
+}
+
+/**
+ * A 42-character hexadecimal address
+ * derived from the last 20 bytes of the public key
+ */
+message Address {
+  string value = 1;
+}
+
+/**
+ * A 132-character hexadecimal string
+ */
+message Signature {
+  uint32 v = 1;
+  bytes r = 2;  // 32 bytes
+  bytes s = 3;  // 32 bytes
+}

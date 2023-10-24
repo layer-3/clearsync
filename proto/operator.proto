@@ -1,0 +1,138 @@
+syntax = "proto3";
+
+import "auth.proto";
+import "core.proto";
+
+option go_package = "github.com/layer-3/clearport/proto";
+
+// protolint:disable MAX_LINE_LENGTH
+service Operator {
+  rpc GetVersion(VersionRequest) returns (VersionResponse);
+  rpc GetIdentityAddress(GetIdentityAddressRequest) returns (GetIdentityAddressResponse);
+  rpc GetChallenge(GetChallengeRequest) returns (GetChallengeResponse);
+  rpc Authenticate(AuthenticateRequest) returns (AuthenticateResponse);
+
+  rpc OpenChannel(OpenChannelRequest) returns (OpenChannelResponse);
+  rpc GetChannelJwt(GetJwtRequest) returns (GetJwtResponse);
+  rpc RecordTrade(TradeRequest) returns (TradeResponse);
+  rpc RequestSettlement(SettlementRequest) returns (SettlementResponse);
+
+  //   rpc GetPosition() returns ();
+  //   rpc SettleChannel() returns ();
+  rpc CloseChannel(CloseChannelRequest) returns (CloseChannelResponse);
+
+  rpc SubscribeChannelsEvents(SubscribeRequest) returns (stream ChannelNotification);
+}
+
+message VersionRequest {
+}
+
+message VersionResponse {
+  string version = 1;
+}
+
+message GetIdentityAddressRequest {
+}
+
+message GetIdentityAddressResponse {
+  core.Address address = 1;
+}
+
+message GetChallengeRequest {
+}
+
+message GetChallengeResponse {
+  string challenge = 1;
+}
+
+message AuthenticateRequest {
+  string challenge = 1;
+  string signature = 2;
+}
+
+message AuthenticateResponse {
+  string jwt = 1;
+}
+
+enum Direction {
+  DIRECTION_UNSPECIFIED = 0;
+  DIRECTION_BUY = 1;
+  DIRECTION_SELL = 2;
+}
+
+message Market {
+  string base =1;
+  string quote = 2;
+}
+
+message Trade {
+  string channel_id = 1;
+  string external_id = 2;
+  Market market = 3;
+  Direction direction = 4;
+  core.Decimal amount = 5;
+  core.Decimal price = 6;
+  int64 executed_at = 7;
+}
+
+message TradeRequest {
+  Trade trade = 1;
+}
+
+message TradeResponse {
+  Trade trade = 1;
+}
+
+
+message OpenChannelRequest {
+  auth.Peer peer = 1;
+  string margin_deposit = 2;
+}
+
+message OpenChannelResponse{
+  string channel_id = 1;
+}
+
+message GetJwtRequest {
+  string channel_id = 1;
+}
+
+message GetJwtResponse {
+  string jwt = 1;
+}
+
+message CloseChannelRequest {
+  string channel_id = 1;
+}
+
+message CloseChannelResponse {
+}
+
+message SubscribeRequest {
+}
+
+message ChannelNotification {
+  string channel_id = 1;
+  string notification_type = 2; // "channel_opened", "channel_closed", "channel_settled", "margin_updated"
+  string channel_status = 3; // "opening", "open", "settling", "closing", "closed"
+  string my_role = 4; // "initiator" or "follower"
+  auth.Peer peer = 5;
+  string margin_deposit = 6;
+  string initiator_margin_balance = 7; // margin updates will be reflected here
+  string follower_margin_balance = 8; // margin updates will be reflected here
+}
+
+enum PaymentMethod {
+  PAYMENT_METHOD_UNSPECIFIED = 0;
+  PAYMENT_METHOD_ESCROW = 1;
+}
+
+message SettlementRequest {
+  string channel_id = 1;
+  PaymentMethod payment_method = 2;
+  uint64 chain_id = 3;
+  repeated Market markets = 4;
+}
+
+message SettlementResponse {
+}

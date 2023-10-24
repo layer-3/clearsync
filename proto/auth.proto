@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package auth;
+
+option go_package = "github.com/layer-3/clearport/proto";
+
+service Auth {
+  rpc GetChallenge(ChallengeRequest) returns (ChallengeResponse);
+  rpc Authenticate(SignedChallenge) returns (AuthToken);
+  rpc TokenRefresh(AuthToken) returns (AuthToken);
+  rpc Signout(AuthToken) returns (SignoutResponse);
+}
+
+message Peer {
+  string url = 1;
+  string name = 2;
+  string address = 3;
+}
+
+message ChallengeRequest {
+  Peer client = 1;
+}
+
+// Server signs the client's challenge
+message ChallengeResponse {
+  Peer server = 1;
+  string server_challenge = 2;
+}
+
+// This should be signed with the client's private key
+message SignedChallenge {
+  Peer client = 1;
+  bytes signed_server_challenge = 2;
+}
+
+// AuthToken can be attached in headers
+message AuthToken {
+  string token = 1;
+}
+
+message SignoutResponse {
+}

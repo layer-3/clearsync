@@ -11,3 +11,6 @@ artifacts
 
 # OpenZeppelin
 .openzeppelin/unknown-*.json
+
+# Proto
+*.pb.go

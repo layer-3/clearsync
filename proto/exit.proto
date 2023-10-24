@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package outcome;
+
+import "core.proto";
+
+option go_package = "github.com/layer-3/clearport/proto";
+
+enum AssetType {
+  ASSET_TYPE_UNSPECIFIED = 0;
+  ASSET_TYPE_ERC721 = 1;
+  ASSET_TYPE_ERC1155 = 2;
+  ASSET_TYPE_QUALIFIED = 3;
+}
+
+enum AllocationType {
+  ALLOCATION_TYPE_UNSPECIFIED = 0;
+  ALLOCATION_TYPE_WITHDRAW_HELPER = 1;
+  ALLOCATION_TYPE_GUARANTEE = 2;
+}
+
+message Allocation {
+  bytes destination = 1;    // bytes32 in solidity
+  uint64 amount = 2;        // Assuming this fits within a uint64
+  AllocationType allocation_type = 3;
+  bytes metadata = 4;
+}
+
+message AssetMetadata {
+  AssetType asset_type = 1;
+  bytes metadata = 2;
+}
+
+message SingleAssetExit {
+  // Either the zero address (implying the native token)
+  // or the address of an ERC20 contract
+  core.Address asset = 1; 
+  AssetMetadata asset_metadata = 2;
+  repeated Allocation allocations = 3;
+}
+
+message Exit {
+  repeated SingleAssetExit single_asset_exits = 1;
+}

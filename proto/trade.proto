@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+import "core.proto";
+import "state.proto";
+
+option go_package = "github.com/layer-3/clearport/proto";
+
+// Service definition
+// In the protocol, Client is the Initiator, Server is the Follower
+// Initiator start with turnNum = 0 prefunding stage.
+service TradeChannel {
+  rpc Prefund(TradeState) returns (TradeState); // turnNum = 0
+  rpc Postfund(TradeState) returns (TradeState); // turnNum = 1
+  rpc UpdateMargin(core.SignedMarginCall) returns (core.SignedMarginCall);
+  // TODO: Message protocol to be defined
+  // Find how to bind with Settlement SVC
+  rpc RequestSettlement(TradeState) returns (TradeState);
+  rpc Finalize(TradeState) returns (TradeState); // isFinal State
+}
+
+// Message Trading Channel state definition
+message TradeState {
+  bytes channel_id = 1;
+  core.State state = 2;
+  bytes state_hash = 3;
+  repeated core.Signature state_hash_sigs = 4;
+
+  core.Decimal safety = 5;
+  core.SignedMarginCall margin_call = 6;
+}
