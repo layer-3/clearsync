@@ -26,7 +26,7 @@ TOOLS_PATH=../tmp
 # Vars
 PROTO_DIR := .
 PROTO_SRC := $(sort $(wildcard $(PROTO_DIR)/*.proto))
-PROTO_GO_DIR := .
+PROTO_GO_DIR := ../pkg/proto
 DOCS_DIR := ../docs/grpc
 
 default: proto

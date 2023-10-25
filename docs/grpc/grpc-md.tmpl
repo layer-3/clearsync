@@ -1,0 +1,79 @@
+# gRPC Protocol Documentation
+{{- range .Files}}
+{{- $file_name := .Name}}
+
+This file describes the content of {{.Name}}.
+
+{{ .Description}}
+
+{{- range .Services}}
+### {{.Name}}
+
+{{.Description}}
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+{{ range .Methods -}}
+  | {{.Name}} | [{{.RequestFullType}}]({{if contains "." .RequestFullType}}{{splitList "." .RequestFullType | first}}.proto.md#{{splitList "." .RequestFullType | last | lower}}{{else}}#{{lower .RequestFullType}}{{end}}){{if .RequestStreaming}} stream{{end}} | [{{.ResponseFullType}}]({{if contains "." .ResponseFullType}}{{splitList "." .ResponseFullType | first}}.proto.md#{{splitList "." .ResponseFullType | last | lower}}{{else}}#{{lower .ResponseFullType}}{{end}}){{if .ResponseStreaming}} stream{{end}} | {{nobr .Description}} |
+{{ end}}
+{{ end}} <!-- end services -->
+
+{{range .Messages}}
+
+### {{.LongName}}
+{{.Description}}
+
+{{if .HasFields}}
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+{{range .Fields -}}
+{{- $typeRef := .FullType}}
+{{- if contains "." .FullType}}
+  {{- $typeRef = printf "car%s" .FullType | anchor}}
+{{- end -}}
+  | {{.Name}} | [{{.FullType}}]({{if contains "." .FullType}}{{splitList "." .FullType | first}}.proto.md#{{splitList "." .FullType | last | lower}}{{else}}#{{lower .FullType}}{{end}}) | {{if (index .Options "deprecated"|default false)}}**Deprecated.** {{end}}{{nobr .Description}}{{if .DefaultValue}} Default: {{.DefaultValue}}{{end}} |
+{{end}}
+{{end}}
+
+{{if .HasExtensions}}
+| Extension | Type | Base | Number | Description |
+| --------- | ---- | ---- | ------ | ----------- |
+{{range .Extensions -}}
+  | {{.Name}} | {{.LongType}} | {{.ContainingLongType}} | {{.Number}} | {{nobr .Description}}{{if .DefaultValue}} Default: {{.DefaultValue}}{{end}} |
+{{end}}
+{{end}}
+
+{{end}} <!-- end messages -->
+
+{{range .Enums}}
+
+### {{.LongName}}
+{{.Description}}
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+{{range .Values -}}
+  | {{.Name}} | {{.Number}} | {{nobr .Description}} |
+{{end}}
+
+{{end}} <!-- end enums -->
+
+{{if .HasExtensions}}
+
+### File-level Extensions
+| Extension | Type | Base | Number | Description |
+| --------- | ---- | ---- | ------ | ----------- |
+{{range .Extensions -}}
+  | {{.Name}} | {{.LongType}} | {{.ContainingLongType}} | {{.Number}} | {{nobr .Description}}{{if .DefaultValue}} Default: `{{.DefaultValue}}`{{end}} |
+{{end}}
+{{end}} <!-- end HasExtensions -->
+
+{{end}}
+
+## Scalar Value Types
+
+| .proto Type | Notes | C++ | Java | Python | Go | C# | PHP | Ruby |
+| ----------- | ----- | --- | ---- | ------ | -- | -- | --- | ---- |
+{{range .Scalars -}}
+  | <a name="{{.ProtoType | anchor}}" /> {{.ProtoType}} | {{.Notes}} | {{.CppType}} | {{.JavaType}} | {{.PythonType}} | {{.GoType}} | {{.CSharp}} | {{.PhpType}} | {{.RubyType}} |
+{{end}}

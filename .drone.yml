@@ -1,0 +1,62 @@
+---
+kind: pipeline
+type: docker
+name: "Bindings"
+
+clone:
+  disable: true
+
+steps:
+  - name: Clone
+    image: alpine/git
+    commands:
+      - git clone https://github.com/$DRONE_REPO .
+      - git checkout ${DRONE_SOURCE_BRANCH:-${DRONE_BRANCH}}
+
+  - name: GRPC
+    image: golang:1.21
+    pull: if-not-exists
+    commands:
+      - apt update && apt install -y zip
+      - make proto
+
+  - name: Hardhat compile
+    image: node:18.15
+    pull: if-not-exists
+    commands:
+      - make -C contracts compile
+
+  - name: SC
+    image: golang:1.21
+    pull: if-not-exists
+    commands:
+      - make -C contracts bindings
+
+  - name: Publish
+    image: alpine/git:v2.32.0
+    pull: if-not-exists
+    environment:
+      GITHUB_API_KEY:
+        from_secret: github_api_key
+      GITHUB_API_USER:
+        from_secret: github_api_user
+    commands:
+      - git diff --exit-code --quiet && exit 78 # Skip if no changes
+      - git remote add authenticated-origin https://$GITHUB_API_USER:$GITHUB_API_KEY@github.com/$DRONE_REPO
+      - git fetch --tags authenticated-origin
+      - git tag --sort=-committerdate | head -n 1 | awk -F. '{OFS="."; $NF+=1; print $0}' > .tags
+      - git add .
+      - git commit -m "Update bindings to $$(cat .tags)" --author "Kite Bot <kite-bot@heliostech.fr>"
+      - git tag $$(cat .tags)
+      - git push authenticated-origin HEAD:${DRONE_SOURCE_BRANCH:-${DRONE_BRANCH}}
+      - git push authenticated-origin --tags
+    when:
+      event:
+        - push
+
+trigger:
+  event:
+    - pull_request
+    - push
+  branch:
+    - master
