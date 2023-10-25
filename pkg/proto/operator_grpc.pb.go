@@ -24,10 +24,9 @@ type OperatorClient interface {
 	Authenticate(ctx context.Context, in *AuthenticateRequest, opts ...grpc.CallOption) (*AuthenticateResponse, error)
 	OpenChannel(ctx context.Context, in *OpenChannelRequest, opts ...grpc.CallOption) (*OpenChannelResponse, error)
 	GetChannelJwt(ctx context.Context, in *GetJwtRequest, opts ...grpc.CallOption) (*GetJwtResponse, error)
+	GetPositions(ctx context.Context, in *GetPositionsRequest, opts ...grpc.CallOption) (*GetPositionsResponse, error)
 	RecordTrade(ctx context.Context, in *TradeRequest, opts ...grpc.CallOption) (*TradeResponse, error)
 	RequestSettlement(ctx context.Context, in *SettlementRequest, opts ...grpc.CallOption) (*SettlementResponse, error)
-	// rpc GetPosition() returns ();
-	// rpc SettleChannel() returns ();
 	CloseChannel(ctx context.Context, in *CloseChannelRequest, opts ...grpc.CallOption) (*CloseChannelResponse, error)
 	SubscribeChannelsEvents(ctx context.Context, in *SubscribeRequest, opts ...grpc.CallOption) (Operator_SubscribeChannelsEventsClient, error)
 }
@@ -94,6 +93,15 @@ func (c *operatorClient) GetChannelJwt(ctx context.Context, in *GetJwtRequest, o
 	return out, nil
 }
 
+func (c *operatorClient) GetPositions(ctx context.Context, in *GetPositionsRequest, opts ...grpc.CallOption) (*GetPositionsResponse, error) {
+	out := new(GetPositionsResponse)
+	err := c.cc.Invoke(ctx, "/Operator/GetPositions", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *operatorClient) RecordTrade(ctx context.Context, in *TradeRequest, opts ...grpc.CallOption) (*TradeResponse, error) {
 	out := new(TradeResponse)
 	err := c.cc.Invoke(ctx, "/Operator/RecordTrade", in, out, opts...)
@@ -137,7 +145,7 @@ func (c *operatorClient) SubscribeChannelsEvents(ctx context.Context, in *Subscr
 }
 
 type Operator_SubscribeChannelsEventsClient interface {
-	Recv() (*ChannelNotification, error)
+	Recv() (*Notification, error)
 	grpc.ClientStream
 }
 
@@ -145,8 +153,8 @@ type operatorSubscribeChannelsEventsClient struct {
 	grpc.ClientStream
 }
 
-func (x *operatorSubscribeChannelsEventsClient) Recv() (*ChannelNotification, error) {
-	m := new(ChannelNotification)
+func (x *operatorSubscribeChannelsEventsClient) Recv() (*Notification, error) {
+	m := new(Notification)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -163,10 +171,9 @@ type OperatorServer interface {
 	Authenticate(context.Context, *AuthenticateRequest) (*AuthenticateResponse, error)
 	OpenChannel(context.Context, *OpenChannelRequest) (*OpenChannelResponse, error)
 	GetChannelJwt(context.Context, *GetJwtRequest) (*GetJwtResponse, error)
+	GetPositions(context.Context, *GetPositionsRequest) (*GetPositionsResponse, error)
 	RecordTrade(context.Context, *TradeRequest) (*TradeResponse, error)
 	RequestSettlement(context.Context, *SettlementRequest) (*SettlementResponse, error)
-	// rpc GetPosition() returns ();
-	// rpc SettleChannel() returns ();
 	CloseChannel(context.Context, *CloseChannelRequest) (*CloseChannelResponse, error)
 	SubscribeChannelsEvents(*SubscribeRequest, Operator_SubscribeChannelsEventsServer) error
 	mustEmbedUnimplementedOperatorServer()
@@ -193,6 +200,9 @@ func (UnimplementedOperatorServer) OpenChannel(context.Context, *OpenChannelRequ
 }
 func (UnimplementedOperatorServer) GetChannelJwt(context.Context, *GetJwtRequest) (*GetJwtResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetChannelJwt not implemented")
+}
+func (UnimplementedOperatorServer) GetPositions(context.Context, *GetPositionsRequest) (*GetPositionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetPositions not implemented")
 }
 func (UnimplementedOperatorServer) RecordTrade(context.Context, *TradeRequest) (*TradeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RecordTrade not implemented")
@@ -327,6 +337,24 @@ func _Operator_GetChannelJwt_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Operator_GetPositions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPositionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OperatorServer).GetPositions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Operator/GetPositions",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OperatorServer).GetPositions(ctx, req.(*GetPositionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Operator_RecordTrade_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(TradeRequest)
 	if err := dec(in); err != nil {
@@ -390,7 +418,7 @@ func _Operator_SubscribeChannelsEvents_Handler(srv interface{}, stream grpc.Serv
 }
 
 type Operator_SubscribeChannelsEventsServer interface {
-	Send(*ChannelNotification) error
+	Send(*Notification) error
 	grpc.ServerStream
 }
 
@@ -398,7 +426,7 @@ type operatorSubscribeChannelsEventsServer struct {
 	grpc.ServerStream
 }
 
-func (x *operatorSubscribeChannelsEventsServer) Send(m *ChannelNotification) error {
+func (x *operatorSubscribeChannelsEventsServer) Send(m *Notification) error {
 	return x.ServerStream.SendMsg(m)
 }
 
@@ -432,6 +460,10 @@ var Operator_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetChannelJwt",
 			Handler:    _Operator_GetChannelJwt_Handler,
+		},
+		{
+			MethodName: "GetPositions",
+			Handler:    _Operator_GetPositions_Handler,
 		},
 		{
 			MethodName: "RecordTrade",

@@ -9,9 +9,9 @@ This file describes the content of settlement.proto.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| Prepare | [PrepareRequest](#preparerequest) | [PrepareResponse](#prepareresponse) |  |
-| Update | [SettlementStateUpdate](#settlementstateupdate) | [StateConfirmation](#stateconfirmation) |  |
-| Finalize | [FinalizeRequest](#finalizerequest) | [FinalizeResponse](#finalizeresponse) |  |
+| Prepare | [settlement.PrepareRequest](settlement.proto.md#preparerequest) | [settlement.PrepareResponse](settlement.proto.md#prepareresponse) |  |
+| Update | [settlement.SettlementStateUpdate](settlement.proto.md#settlementstateupdate) | [settlement.StateConfirmation](settlement.proto.md#stateconfirmation) |  |
+| Finalize | [settlement.FinalizeRequest](settlement.proto.md#finalizerequest) | [settlement.FinalizeResponse](settlement.proto.md#finalizeresponse) |  |
 
  <!-- end services -->
 
@@ -54,7 +54,7 @@ This file describes the content of settlement.proto.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- |
-| state | [SettlementState](#settlementstate) |  |
+| state | [settlement.SettlementState](settlement.proto.md#settlementstate) |  |
 
 
 
@@ -68,7 +68,7 @@ This file describes the content of settlement.proto.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- |
-| asset | [Asset](#asset) |  |
+| asset | [settlement.Asset](settlement.proto.md#asset) |  |
 | amount | [string](#string) |  |
 
 
@@ -83,7 +83,7 @@ This file describes the content of settlement.proto.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- |
-| settlement | [Settlement](#settlement) |  |
+| settlement | [settlement.Settlement](settlement.proto.md#settlement) |  |
 
 
 
@@ -97,7 +97,7 @@ This file describes the content of settlement.proto.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- |
-| state | [SettlementState](#settlementstate) |  |
+| state | [settlement.SettlementState](settlement.proto.md#settlementstate) |  |
 | markets | [string](#string) |  |
 
 
@@ -113,11 +113,11 @@ This file describes the content of settlement.proto.
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | cid | [string](#string) |  |
-| type | [SettlementType](#settlementtype) |  |
-| state | [SettlementState](#settlementstate) |  |
-| ledger | [SettlementLedger](#settlementledger) |  |
+| type | [settlement.SettlementType](settlement.proto.md#settlementtype) |  |
+| state | [settlement.SettlementState](settlement.proto.md#settlementstate) |  |
+| ledger | [settlement.SettlementLedger](settlement.proto.md#settlementledger) |  |
 | psm_turn_num | [uint64](#uint64) |  |
-| payment_method | [SettlementPaymentMethod](#settlementpaymentmethod) |  |
+| payment_method | [settlement.PaymentMethod](settlement.proto.md#paymentmethod) |  |
 | markets | [string](#string) |  |
 | chain_id | [uint64](#uint64) |  |
 
@@ -133,8 +133,8 @@ This file describes the content of settlement.proto.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- |
-| initiator_entries | [Liability](#liability) |  |
-| responder_entries | [Liability](#liability) |  |
+| initiator_entries | [settlement.Liability](settlement.proto.md#liability) |  |
+| responder_entries | [settlement.Liability](settlement.proto.md#liability) |  |
 | next_margin | [core.MarginCall](core.proto.md#margincall) |  |
 
 
@@ -150,7 +150,7 @@ This file describes the content of settlement.proto.
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | cid | [string](#string) |  |
-| to_state | [SettlementState](#settlementstate) |  |
+| to_state | [settlement.SettlementState](settlement.proto.md#settlementstate) |  |
 
 
 
@@ -164,7 +164,7 @@ This file describes the content of settlement.proto.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- |
-| state | [SettlementState](#settlementstate) |  |
+| state | [settlement.SettlementState](settlement.proto.md#settlementstate) |  |
 
 
 
@@ -174,14 +174,14 @@ This file describes the content of settlement.proto.
 
 
 
-### SettlementPaymentMethod
+### PaymentMethod
 
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| SETTLEMENT_PAYMENT_METHOD_UNSPECIFIED | 0 |  |
-| SETTLEMENT_PAYMENT_METHOD_ESCROW | 1 |  |
-| SETTLEMENT_PAYMENT_METHOD_MOCK | 2 |  |
+| PAYMENT_METHOD_UNSPECIFIED | 0 |  |
+| PAYMENT_METHOD_ESCROW | 1 |  |
+| PAYMENT_METHOD_MOCK | 2 |  |
 
 
 

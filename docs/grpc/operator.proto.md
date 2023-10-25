@@ -15,10 +15,11 @@ protolint:disable MAX_LINE_LENGTH
 | Authenticate | [AuthenticateRequest](#authenticaterequest) | [AuthenticateResponse](#authenticateresponse) |  |
 | OpenChannel | [OpenChannelRequest](#openchannelrequest) | [OpenChannelResponse](#openchannelresponse) |  |
 | GetChannelJwt | [GetJwtRequest](#getjwtrequest) | [GetJwtResponse](#getjwtresponse) |  |
+| GetPositions | [GetPositionsRequest](#getpositionsrequest) | [GetPositionsResponse](#getpositionsresponse) |  |
 | RecordTrade | [TradeRequest](#traderequest) | [TradeResponse](#traderesponse) |  |
 | RequestSettlement | [SettlementRequest](#settlementrequest) | [SettlementResponse](#settlementresponse) |  |
-| CloseChannel | [CloseChannelRequest](#closechannelrequest) | [CloseChannelResponse](#closechannelresponse) | rpc GetPosition() returns (); rpc SettleChannel() returns (); |
-| SubscribeChannelsEvents | [SubscribeRequest](#subscriberequest) | [ChannelNotification](#channelnotification) stream |  |
+| CloseChannel | [CloseChannelRequest](#closechannelrequest) | [CloseChannelResponse](#closechannelresponse) |  |
+| SubscribeChannelsEvents | [SubscribeRequest](#subscriberequest) | [Notification](#notification) stream |  |
 
  <!-- end services -->
 
@@ -46,27 +47,6 @@ protolint:disable MAX_LINE_LENGTH
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | jwt | [string](#string) |  |
-
-
-
-
-
-
-
-### ChannelNotification
-
-
-
-| Field | Type | Description |
-| ----- | ---- | ----------- |
-| channel_id | [string](#string) |  |
-| notification_type | [string](#string) | "channel_opened", "channel_closed", "channel_settled", "margin_updated" |
-| channel_status | [string](#string) | "opening", "open", "settling", "closing", "closed" |
-| my_role | [string](#string) | "initiator" or "follower" |
-| peer | [auth.Peer](auth.proto.md#peer) |  |
-| margin_deposit | [string](#string) |  |
-| initiator_margin_balance | [string](#string) | margin updates will be reflected here |
-| follower_margin_balance | [string](#string) | margin updates will be reflected here |
 
 
 
@@ -171,6 +151,35 @@ protolint:disable MAX_LINE_LENGTH
 
 
 
+### GetPositionsRequest
+
+
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| channel_id | [string](#string) |  |
+
+
+
+
+
+
+
+### GetPositionsResponse
+
+
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| channel_id | [string](#string) |  |
+| positions | [Position](#position) |  |
+
+
+
+
+
+
+
 ### Market
 
 
@@ -179,6 +188,22 @@ protolint:disable MAX_LINE_LENGTH
 | ----- | ---- | ----------- |
 | base | [string](#string) |  |
 | quote | [string](#string) |  |
+
+
+
+
+
+
+
+### Notification
+
+
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| stream_notification | [StreamNotification](#streamnotification) |  |
+| settlement_notification | [SettlementNotification](#settlementnotification) |  |
+| position_notification | [PositionNotification](#positionnotification) |  |
 
 
 
@@ -215,6 +240,56 @@ protolint:disable MAX_LINE_LENGTH
 
 
 
+### Position
+
+
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| channel_id | [string](#string) |  |
+| market | [Market](#market) |  |
+| direction | [Direction](#direction) |  |
+| amount | [string](#string) |  |
+| cost | [string](#string) |  |
+| market_value | [string](#string) |  |
+| pnl | [string](#string) |  |
+| status | [PositionStatus](#positionstatus) |  |
+
+
+
+
+
+
+
+### PositionNotification
+
+
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| position | [Position](#position) |  |
+
+
+
+
+
+
+
+### SettlementNotification
+
+
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| channel_id | [string](#string) |  |
+| settlement_state | [settlement.SettlementState](settlement.proto.md#settlementstate) |  |
+
+
+
+
+
+
+
 ### SettlementRequest
 
 
@@ -222,7 +297,7 @@ protolint:disable MAX_LINE_LENGTH
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | channel_id | [string](#string) |  |
-| payment_method | [PaymentMethod](#paymentmethod) |  |
+| payment_method | [settlement.PaymentMethod](settlement.proto.md#paymentmethod) |  |
 | chain_id | [uint64](#uint64) |  |
 | markets | [Market](#market) |  |
 
@@ -234,6 +309,28 @@ protolint:disable MAX_LINE_LENGTH
 
 ### SettlementResponse
 
+
+
+
+
+
+
+
+### StreamNotification
+
+
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| channel_id | [string](#string) |  |
+| notification_type | [NotificationType](#notificationtype) |  |
+| channel_status | [ChannelStatus](#channelstatus) |  |
+| my_role | [ProtocolIndex](#protocolindex) |  |
+| peer | [auth.Peer](auth.proto.md#peer) |  |
+| margin_deposit | [string](#string) |  |
+| initiator_margin_balance | [string](#string) | margin updates will be reflected here |
+| follower_margin_balance | [string](#string) | margin updates will be reflected here |
+| turn_num | [uint64](#uint64) |  |
 
 
 
@@ -323,6 +420,21 @@ protolint:disable MAX_LINE_LENGTH
 
 
 
+### ChannelStatus
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| CHANNEL_STATUS_UNSPECIFIED | 0 |  |
+| CHANNEL_STATUS_OPENING | 1 |  |
+| CHANNEL_STATUS_OPEN | 2 |  |
+| CHANNEL_STATUS_SETTLING | 3 |  |
+| CHANNEL_STATUS_CLOSING | 4 |  |
+| CHANNEL_STATUS_CLOSED | 5 |  |
+
+
+
+
 ### Direction
 
 
@@ -335,13 +447,43 @@ protolint:disable MAX_LINE_LENGTH
 
 
 
-### PaymentMethod
+### NotificationType
 
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| PAYMENT_METHOD_UNSPECIFIED | 0 |  |
-| PAYMENT_METHOD_ESCROW | 1 |  |
+| NOTIFICATION_TYPE_UNSPECIFIED | 0 |  |
+| NOTIFICATION_TYPE_CHANNEL_OPENING | 1 |  |
+| NOTIFICATION_TYPE_CHANNEL_OPENED | 2 |  |
+| NOTIFICATION_TYPE_CHANNEL_CLOSED | 3 |  |
+| NOTIFICATION_TYPE_CHANNEL_SETTLED | 4 |  |
+| NOTIFICATION_TYPE_MARGIN_UPDATED | 5 |  |
+
+
+
+
+### PositionStatus
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| POSITION_STATUS_UNSPECIFIED | 0 |  |
+| POSITION_STATUS_OPEN | 1 |  |
+| POSITION_STATUS_IN_SETTLEMENT | 2 |  |
+| POSITION_STATUS_SETTLED | 3 |  |
+| POSITION_STATUS_CLOSED | 4 |  |
+
+
+
+
+### ProtocolIndex
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PROTOCOL_INDEX_UNSPECIFIED | 0 |  |
+| PROTOCOL_INDEX_INITIATOR | 1 |  |
+| PROTOCOL_INDEX_RESPONDER | 2 |  |
 
 
  <!-- end enums -->

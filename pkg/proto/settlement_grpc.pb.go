@@ -33,7 +33,7 @@ func NewSettlementServiceClient(cc grpc.ClientConnInterface) SettlementServiceCl
 
 func (c *settlementServiceClient) Prepare(ctx context.Context, in *PrepareRequest, opts ...grpc.CallOption) (*PrepareResponse, error) {
 	out := new(PrepareResponse)
-	err := c.cc.Invoke(ctx, "/SettlementService/Prepare", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/settlement.SettlementService/Prepare", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func (c *settlementServiceClient) Prepare(ctx context.Context, in *PrepareReques
 
 func (c *settlementServiceClient) Update(ctx context.Context, in *SettlementStateUpdate, opts ...grpc.CallOption) (*StateConfirmation, error) {
 	out := new(StateConfirmation)
-	err := c.cc.Invoke(ctx, "/SettlementService/Update", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/settlement.SettlementService/Update", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func (c *settlementServiceClient) Update(ctx context.Context, in *SettlementStat
 
 func (c *settlementServiceClient) Finalize(ctx context.Context, in *FinalizeRequest, opts ...grpc.CallOption) (*FinalizeResponse, error) {
 	out := new(FinalizeResponse)
-	err := c.cc.Invoke(ctx, "/SettlementService/Finalize", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/settlement.SettlementService/Finalize", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +104,7 @@ func _SettlementService_Prepare_Handler(srv interface{}, ctx context.Context, de
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/SettlementService/Prepare",
+		FullMethod: "/settlement.SettlementService/Prepare",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SettlementServiceServer).Prepare(ctx, req.(*PrepareRequest))
@@ -122,7 +122,7 @@ func _SettlementService_Update_Handler(srv interface{}, ctx context.Context, dec
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/SettlementService/Update",
+		FullMethod: "/settlement.SettlementService/Update",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SettlementServiceServer).Update(ctx, req.(*SettlementStateUpdate))
@@ -140,7 +140,7 @@ func _SettlementService_Finalize_Handler(srv interface{}, ctx context.Context, d
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/SettlementService/Finalize",
+		FullMethod: "/settlement.SettlementService/Finalize",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SettlementServiceServer).Finalize(ctx, req.(*FinalizeRequest))
@@ -152,7 +152,7 @@ func _SettlementService_Finalize_Handler(srv interface{}, ctx context.Context, d
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var SettlementService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "SettlementService",
+	ServiceName: "settlement.SettlementService",
 	HandlerType: (*SettlementServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
