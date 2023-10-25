@@ -15,5 +15,4 @@ config/*.info.json
 .openzeppelin/unknown-*.json
 
 # Proto
-*.pb.go
 tmp
