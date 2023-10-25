@@ -1,11 +1,8 @@
-default: proto compile-contracts bindings
+default: proto sc
 
-compile-contracts:
-	make -C pkg/contracts compile-contracts
-
-bindings:
-	make -C pkg/contracts deps
-	make -C pkg/contracts bindings
+sc:
+	make -C pkg/sc compile
+	make -C pkg/sc bindings
 
 .PHONY: proto
 proto:

@@ -20,6 +20,18 @@ steps:
       - apt update && apt install -y zip
       - make proto
 
+  - name: Hardhat compile
+    image: node:18.15
+    pull: if-not-exists
+    commands:
+      - make -C pkg/sc compile
+
+  - name: SC
+    image: golang:1.21
+    pull: if-not-exists
+    commands:
+      - make -C pkg/sc bindings
+
   - name: Publish
     image: alpine/git:v2.32.0
     pull: if-not-exists
