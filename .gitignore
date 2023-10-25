@@ -4,13 +4,16 @@ coverage
 coverage.json
 typechain
 typechain-types
+.tags
 
 #Hardhat files
 cache
 artifacts
+config/*.info.json
 
 # OpenZeppelin
 .openzeppelin/unknown-*.json
 
 # Proto
 *.pb.go
+tmp

@@ -1,0 +1,40 @@
+---
+kind: pipeline
+type: docker
+name: "Bindings"
+
+steps:
+  - name: GRPC
+    image: golang:1.21
+    pull: if-not-exists
+    commands:
+      - apt update && apt install -y zip
+      - make proto
+
+  - name: Publish
+    image: alpine/git:v2.32.0
+    pull: if-not-exists
+    environment:
+      GITHUB_API_KEY:
+        from_secret: github_api_key
+      GITHUB_API_USER:
+        from_secret: github_api_user
+    commands:
+      - git diff --exit-code --quiet && exit 78 # Skip if no changes
+      - git config --global user.name "Kite Bot"
+      - git config --global user.email "kite-bot@heliostech.fr"
+      - git remote add authenticated-origin https://$GITHUB_API_USER:$GITHUB_API_KEY@github.com/$DRONE_REPO
+      - git fetch --tags authenticated-origin
+      - git tag --sort=-committerdate | head -n 1 | awk -F. '{OFS="."; $NF+=1; print $0}' > .tags
+      - git add .
+      - git commit -m "Update bindings to $$(cat .tags)"
+      - git tag $$(cat .tags)
+      - git push authenticated-origin HEAD:$DRONE_BRANCH
+      - git push authenticated-origin --tags
+
+trigger:
+  event:
+    - pull_request
+    - push
+  branch:
+    - master
