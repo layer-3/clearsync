@@ -24,13 +24,13 @@ steps:
     image: node:18.15
     pull: if-not-exists
     commands:
-      - make -C pkg/sc compile
+      - make -C contracts compile
 
   - name: SC
     image: golang:1.21
     pull: if-not-exists
     commands:
-      - make -C pkg/sc bindings
+      - make -C contracts bindings
 
   - name: Publish
     image: alpine/git:v2.32.0

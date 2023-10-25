@@ -9,6 +9,7 @@ typechain-types
 #Hardhat files
 cache
 artifacts
+!pkg/artifacts
 config/*.info.json
 
 # OpenZeppelin

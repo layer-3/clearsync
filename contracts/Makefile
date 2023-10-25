@@ -1,23 +1,24 @@
 OS = $(shell uname -o | tr A-Z a-z)
 ARCH = $(shell uname -m)
 
-ROOT_DIR = ../..
-BIN_DIR = ../../tmp/bin
-CACHE_DIR = ../../tmp/cache
+ROOT_DIR = ..
+BIN_DIR = ../tmp/bin
+CACHE_DIR = ../tmp/cache
+GO_PKG_DIR = ../pkg
 
 JQ_BIN = ${BIN_DIR}/gojq
 ABIGEN_BIN = ${BIN_DIR}/abigen
 ABIGEN_VERSION ?= 1.12.2
 
 BINDINGS = \
-	itoken/ierc20.go \
-	iadjudicator/iyellow_adjudicator.go \
-	test_erc20/test_erc20.go \
-	adjudicator/yellow_adjudicator.go \
-	yellow_token/yellow_token.go \
-	consensus_app/consensus_app.go \
-	margin_app/margin_app_v1.go \
-	escrow_app/escrow_app.go
+	abi/itoken/ierc20.go \
+	abi/iadjudicator/iyellow_adjudicator.go \
+	artifacts/test_erc20/test_erc20.go \
+	artifacts/adjudicator/yellow_adjudicator.go \
+	artifacts/yellow_token/yellow_token.go \
+	artifacts/consensus_app/consensus_app.go \
+	artifacts/margin_app/margin_app_v1.go \
+	artifacts/escrow_app/escrow_app.go
 
 default: deps solc bindings
 
@@ -61,14 +62,14 @@ define gen_binding
 		--type ${STRUCT_NAME} \
 		--out $(1)/$(3).go
 endef
-${BINDINGS}: ${ABIGEN_BIN} ${JQ_BIN} compile
+${BINDINGS:%=${GO_PKG_DIR}/%}: ${ABIGEN_BIN} ${JQ_BIN} compile
 	$(eval VALUES = $(shell echo $@ | sed -r 's#((.*/)?(.*))/(.*).go#\1 \3 \4#'))
 	$(eval PKG_PATH = $(word 1,${VALUES}))
 	$(eval PKG = $(word 2,${VALUES}))
 	$(eval FILE_NAME = $(word 3,${VALUES}))
 	$(call gen_binding,${PKG_PATH},${PKG},${FILE_NAME})
 
-bindings: ${BINDINGS}
+bindings: ${BINDINGS:%=${GO_PKG_DIR}/%}
 
 clean-bin:
 	rm -rf ${ABIGEN_BIN}
