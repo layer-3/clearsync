@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+package settlement;
+
 import "core.proto";
 import "state.proto";
 
@@ -51,10 +53,10 @@ enum SettlementState {
   SETTLEMENT_STATE_REJECTED = 8;
 }
 
-enum SettlementPaymentMethod {
-  SETTLEMENT_PAYMENT_METHOD_UNSPECIFIED = 0;
-  SETTLEMENT_PAYMENT_METHOD_ESCROW = 1;
-  SETTLEMENT_PAYMENT_METHOD_MOCK = 2;
+enum PaymentMethod {
+  PAYMENT_METHOD_UNSPECIFIED = 0;
+  PAYMENT_METHOD_ESCROW = 1;
+  PAYMENT_METHOD_MOCK = 2;
 }
 
 message Settlement {
@@ -63,7 +65,7 @@ message Settlement {
   SettlementState state = 3;
   SettlementLedger ledger = 4;
   uint64 psm_turn_num = 5;
-  SettlementPaymentMethod payment_method = 6;
+  PaymentMethod payment_method = 6;
   repeated string markets = 7;
   uint64 chain_id = 8;
 }

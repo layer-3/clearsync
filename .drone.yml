@@ -38,6 +38,9 @@ steps:
       - git tag $$(cat .tags)
       - git push authenticated-origin HEAD:${DRONE_SOURCE_BRANCH:-${DRONE_BRANCH}}
       - git push authenticated-origin --tags
+    when:
+      event:
+        - push
 
 trigger:
   event:

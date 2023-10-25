@@ -2,6 +2,7 @@ syntax = "proto3";
 
 import "auth.proto";
 import "core.proto";
+import "settlement.proto";
 
 option go_package = "github.com/layer-3/clearport/proto";
 
@@ -14,14 +15,12 @@ service Operator {
 
   rpc OpenChannel(OpenChannelRequest) returns (OpenChannelResponse);
   rpc GetChannelJwt(GetJwtRequest) returns (GetJwtResponse);
+  rpc GetPositions(GetPositionsRequest) returns (GetPositionsResponse);
   rpc RecordTrade(TradeRequest) returns (TradeResponse);
   rpc RequestSettlement(SettlementRequest) returns (SettlementResponse);
-
-  //   rpc GetPosition() returns ();
-  //   rpc SettleChannel() returns ();
   rpc CloseChannel(CloseChannelRequest) returns (CloseChannelResponse);
 
-  rpc SubscribeChannelsEvents(SubscribeRequest) returns (stream ChannelNotification);
+  rpc SubscribeChannelsEvents(SubscribeRequest) returns (stream Notification);
 }
 
 message VersionRequest {
@@ -46,7 +45,7 @@ message GetChallengeResponse {
 }
 
 message AuthenticateRequest {
-  string callenge = 1;
+  string challenge = 1;
   string signature = 2;
 }
 
@@ -58,6 +57,14 @@ enum Direction {
   DIRECTION_UNSPECIFIED = 0;
   DIRECTION_BUY = 1;
   DIRECTION_SELL = 2;
+}
+
+enum PositionStatus {
+  POSITION_STATUS_UNSPECIFIED = 0;
+  POSITION_STATUS_OPEN = 1;
+  POSITION_STATUS_IN_SETTLEMENT = 2;
+  POSITION_STATUS_SETTLED = 3;
+  POSITION_STATUS_CLOSED = 4;
 }
 
 message Market {
@@ -73,6 +80,17 @@ message Trade {
   core.Decimal amount = 5;
   core.Decimal price = 6;
   int64 executed_at = 7;
+}
+
+message Position {
+  string channel_id = 1;
+  Market market = 2;
+  Direction direction = 3;
+  string amount = 4;
+  string cost = 5;
+  string market_value = 6;
+  string pnl = 7;
+  PositionStatus status = 8;
 }
 
 message TradeRequest {
@@ -111,28 +129,75 @@ message CloseChannelResponse {
 message SubscribeRequest {
 }
 
-message ChannelNotification {
+
+message Notification {
+  oneof notification {
+    StreamNotification stream_notification = 1;
+    SettlementNotification settlement_notification = 2;
+    PositionNotification position_notification = 3;
+  }
+}
+
+enum NotificationType {
+  NOTIFICATION_TYPE_UNSPECIFIED = 0;
+  NOTIFICATION_TYPE_CHANNEL_OPENING = 1;
+  NOTIFICATION_TYPE_CHANNEL_OPENED = 2;
+  NOTIFICATION_TYPE_CHANNEL_CLOSED = 3;
+  NOTIFICATION_TYPE_CHANNEL_SETTLED = 4;
+  NOTIFICATION_TYPE_MARGIN_UPDATED = 5;
+}
+
+enum ChannelStatus {
+  CHANNEL_STATUS_UNSPECIFIED = 0;
+  CHANNEL_STATUS_OPENING = 1;
+  CHANNEL_STATUS_OPEN = 2;
+  CHANNEL_STATUS_SETTLING = 3;
+  CHANNEL_STATUS_CLOSING = 4;
+  CHANNEL_STATUS_CLOSED = 5;
+}
+
+enum ProtocolIndex {
+  PROTOCOL_INDEX_UNSPECIFIED = 0;
+  PROTOCOL_INDEX_INITIATOR = 1;
+  PROTOCOL_INDEX_RESPONDER = 2;
+}
+
+message StreamNotification {
   string channel_id = 1;
-  string notification_type = 2; // "channel_opened", "channel_closed", "channel_settled", "margin_updated"
-  string channel_status = 3; // "opening", "open", "settling", "closing", "closed"
-  string my_role = 4; // "initiator" or "follower"
+  NotificationType notification_type = 2;
+  ChannelStatus channel_status = 3;
+  ProtocolIndex my_role = 4;
   auth.Peer peer = 5;
   string margin_deposit = 6;
   string initiator_margin_balance = 7; // margin updates will be reflected here
   string follower_margin_balance = 8; // margin updates will be reflected here
+  uint64 turn_num = 9;
 }
 
-enum PaymentMethod {
-  PAYMENT_METHOD_UNSPECIFIED = 0;
-  PAYMENT_METHOD_ESCROW = 1;
+message SettlementNotification {
+  string channel_id = 1;
+  settlement.SettlementState settlement_state = 2;
+}
+
+message PositionNotification {
+  Position position = 1;
 }
 
 message SettlementRequest {
   string channel_id = 1;
-  PaymentMethod payment_method = 2;
+  settlement.PaymentMethod payment_method = 2;
   uint64 chain_id = 3;
   repeated Market markets = 4;
 }
 
 message SettlementResponse {
+}
+
+message GetPositionsRequest {
+  string channel_id = 1;
+}
+
+message GetPositionsResponse {
+  string channel_id = 1;
+  repeated Position positions = 2;
 }
