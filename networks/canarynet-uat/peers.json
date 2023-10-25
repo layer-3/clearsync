@@ -1,8 +1,8 @@
 [
     {
         "url": "http://localhost:50081/",
-        "name": "localhost.eth",
-        "address": "0xd5e099c71b797516c10ed0f0d895f429c2781142",
+        "name": "localhost.ynt",
+        "address": "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3",
         "packages": [
             {
               "name": "retail",
@@ -18,8 +18,8 @@
     },
     {
         "url": "https://api.kayen.io/",
-        "name": "kayen.eth",
-        "address": "0xd5e099c71b797516c10ed0f0d895f429c2781142",
+        "name": "kayen.ynt",
+        "address": "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3",
         "packages": [
             {
               "name": "retail",
