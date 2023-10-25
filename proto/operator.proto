@@ -46,7 +46,7 @@ message GetChallengeResponse {
 }
 
 message AuthenticateRequest {
-  string challenge = 1;
+  string callenge = 1;
   string signature = 2;
 }
 
