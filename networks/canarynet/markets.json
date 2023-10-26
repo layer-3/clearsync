@@ -8,5 +8,6 @@
     "spot://LINK/USD",
     "spot://AAVE/USD",
     "spot://GRT/USD",
-    "spot://SHIB/USD"
+    "spot://SHIB/USD",
+    "spot://BTC/USDT"
 ]
