@@ -1,0 +1,742 @@
+asyncapi: 2.0.0
+
+info:
+  title: Operator API
+  version: 1.0.0
+  description: |
+    What you can do with the Operator API
+
+  # license:
+  #   name: Apache 2.0
+  #   url: https://www.apache.org/licenses/LICENSE-2.0
+
+servers:
+  private:
+    url: not.deployed.yet
+    protocol: wss
+    description: |
+      The private server is used for internal communication between the Operator and the Operator API.
+      It is not exposed to the public.
+
+channels:
+  /:
+    publish:
+      description: |
+        Send a message to the Operator API.
+      operationId: handleMessage
+      message:
+        oneOf:
+          - $ref: '#/components/messages/authenticate'
+          - $ref: '#/components/messages/getChannelJwt'
+          - $ref: '#/components/messages/openChannel'
+          - $ref: '#/components/messages/recordTrade'
+          - $ref: '#/components/messages/subscribeNotifications'
+          - $ref: '#/components/messages/closeChannel'
+          - $ref: '#/components/messages/getPositions'
+          - $ref: '#/components/messages/requestSettlement'
+    subscribe:
+      description: |
+        Receive a message from the Operator API.
+      operationId: respondOrNotify
+      message:
+        oneOf:
+          - $ref: '#/components/messages/version'
+          - $ref: '#/components/messages/identityAddress'
+          - $ref: '#/components/messages/challenge'
+          - $ref: '#/components/messages/authenticated'
+          - $ref: '#/components/messages/jwt'
+          - $ref: '#/components/messages/openingChannel'
+          - $ref: '#/components/messages/recordedTrade'
+          - $ref: '#/components/messages/streamNotification'
+          - $ref: '#/components/messages/settlementNotification'
+          - $ref: '#/components/messages/positionNotification'
+          - $ref: '#/components/messages/closeChannel'
+          - $ref: '#/components/messages/positions'
+          - $ref: '#/components/messages/requestedSettlement'
+          - $ref: '#/components/messages/error'
+
+components:
+  messages:
+    version:
+      summary: Receive the API version
+      description: Receive the API version from the Operator API.
+      payload:
+        $ref: '#/components/schemas/versionPayload'
+      examples:
+        - payload:
+            event: version
+            reqid: 1
+            data:
+              version: "1.0.0"
+    identityAddress:
+      summary: Receive an identity address
+      description: Receive an identity address from the Operator API.
+      payload:
+        $ref: '#/components/schemas/identityAddressPayload'
+      examples:
+        - payload:
+            event: identity_address
+            reqid: 1
+            data:
+              address: "0x55608cdbde2ff4183a81e62da096fa863d8f910d"
+    challenge:
+      summary: Receive an auth challenge response
+      description: Response to an auth challenge from the Operator API.
+      payload:
+        $ref: '#/components/schemas/challengePayload'
+      examples:
+        - payload:
+            event: challenge
+            reqid: 1
+            data:
+              challenge: "4ffc0b7f-c93c-4b99-bfa7-7c9886c7fdd2"
+    authenticate:
+      summary: Authenticate with the Operator API
+      description: Authenticate with the Operator API.
+      payload:
+        $ref: '#/components/schemas/authenticatePayload'
+      examples:
+        - payload:
+            event: authenticate
+            reqid: 1
+            data:
+              challenge: "4ffc0b7f-c93c-4b99-bfa7-7c9886c7fdd2"
+              signature: "0x8e62e91f99b86caa46ea56c4286545d7b63f0e5121c37d319d9bd46076acad4b14cef0e5ffca060c0378ef6135a2ef5efd6617555ee84f6d0890dd5aa5534e011c"
+    authenticated:
+      summary: Successfully authenticated
+      description: Successfully authenticated with the Operator API.
+      payload:
+        $ref: '#/components/schemas/authenticatedPayload'
+      examples:
+        - payload:
+            event: authenticate
+            reqid: 1
+    getChannelJwt:
+      summary: Request a JWT for access to Finex
+      description: Request a JWT for a channel from the Operator API.
+      payload:
+        $ref: '#/components/schemas/channelJwtPayload'
+      examples:
+        - payload:
+            event: channel_jwt
+            reqid: 1
+            data:
+              channel_id: "0x55608cdbde2ff4183a81e62da096fa863d8f910d29d17826124fccc9bcc11f62"
+    jwt:
+      summary: Receive a JWT
+      description: Respond with a JWT to the Operator.
+      payload:
+        $ref: '#/components/schemas/jwtPayload'
+      examples:
+        - payload:
+            event: channel_jwt
+            reqid: 1
+            data:
+              jwt: "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJkb21haW4iOiJzb21lLmRvbWFpbi5jb20iLCJlbWFpbCI6InNvbWVAZW1haWwuY29tIn0.1YXe-ffi3lCr_hLa4585_TIXhGLxMhfA2M8uhpnJVQQQgfTKAaN1VASvaV7NhhSQly2gJfzNrTYecyQJQMKe4Q"
+    openChannel:
+      summary: Open a channel
+      description: Open a channel with a peer.
+      payload:
+        $ref: '#/components/schemas/openChannelPayload'
+      examples:
+        - payload:
+            event: open_channel
+            reqid: 1
+            data:
+              peer:
+                address: "0x55608cdbde2ff4183a81e62da096fa863d8f910d"
+                url: "https://example.com"
+                name: "Alice"
+              margin_deposit: "10000"
+    openingChannel:
+      summary: Receive a channel opening response
+      description: Receive a channel opening response from the Operator API.
+      payload:
+        $ref: '#/components/schemas/openingChannelPayload'
+      examples:
+        - payload:
+            event: open_channel
+            reqid: 1
+            data:
+              channel_id: "0x55608cdbde2ff4183a81e62da096fa863d8f910d29d17826124fccc9bcc11f62"
+    closeChannel:
+      summary: Close a channel
+      description: Close a channel with a peer.
+      payload:
+        $ref: '#/components/schemas/closeChannelPayload'
+      examples:
+        - payload:
+            event: close_channel
+            reqid: 1
+            data:
+              channel_id: "0x55608cdbde2ff4183a81e62da096fa863d8f910d29d17826124fccc9bcc11f62"
+    closingChannel:
+      summary: Receive a channel closing response
+      description: Receive a channel closing response from the Operator API.
+      payload:
+        $ref: '#/components/schemas/closingChannelPayload'
+      examples:
+        - payload:
+            event: close_channel
+            reqid: 1
+            data:
+              channel_id: "0x55608cdbde2ff4183a81e62da096fa863d8f910d29d17826124fccc9bcc11f62"
+    recordTrade:
+      summary: Record a trade
+      description: Record a trade in the system.
+      payload:
+        $ref: '#/components/schemas/recordTradePayload'
+      examples:
+        - payload:
+            event: record_trade
+            reqid: 1
+            data:
+              channel_id: "0x55608cdbde2ff4183a81e62da096fa863d8f910d29d17826124fccc9bcc11f62"
+              external_id: "123"
+              market: "ETH/USD"
+              direction: "buy"
+              amount: "100"
+              price: "1000"
+              executed_at: 1590000000
+    recordedTrade:
+      summary: Recorded a trade
+      description: Recorded a trade in the system.
+      payload:
+        $ref: '#/components/schemas/recordedTradePayload'
+      examples:
+        - payload:
+            event: record_trade
+            reqid: 1
+            data:
+              channel_id: "0x55608cdbde2ff4183a81e62da096fa863d8f910d29d17826124fccc9bcc11f62"
+              external_id: "123"
+    subscribeNotifications:
+      summary: Subscribe to notifications
+      description: Subscribe to notifications from the Operator API.
+      payload:
+        $ref: '#/components/schemas/subscribeNotificationsPayload'
+      examples:
+        - payload:
+            event: subscribe_notifications
+            reqid: 1
+    streamNotification:
+      summary: Receive a stream update notification
+      description: Receive a stream update notification from the Operator API.
+      payload:
+        $ref: '#/components/schemas/streamNotificationPayload'
+      examples:
+        - payload:
+            event: stream_notification
+            reqid: 1
+            data:
+              channel_id: "0x55608cdbde2ff4183a81e62da096fa863d8f910d29d17826124fccc9bcc11f62"
+              action: channelOpened
+              channel_status: opened
+              my_role: Initiator
+              peer:
+                address: "0x55608cdbde2ff4183a81e62da096fa863d8f910d"
+                url: "https://example.com"
+                name: "Alice"
+              margin_deposit: "10000"
+              initiator_margin_balance: "0"
+              follower_margin_balance: "0"
+    settlementNotification:
+      summary: Receive a settlement update notification
+      description: Receive a settlement update notification from the Operator API.
+      payload:
+        $ref: '#/components/schemas/settlementNotificationPayload'
+      examples:
+        - payload:
+            event: settlement_notification
+            reqid: 1
+            data:
+              channel_id: "0x55608cdbde2ff4183a81e62da096fa863d8f910d29d17826124fccc9bcc11f62"
+              settlement_state: proposed
+    positionNotification:
+      summary: Receive a position update notification
+      description: Receive a position update notification from the Operator API.
+      payload:
+        $ref: '#/components/schemas/positionNotificationPayload'
+      examples:
+        - payload:
+            event: position_notification
+            reqid: 1
+            data:
+              channel_id: "0x55608cdbde2ff4183a81e62da096fa863d8f910d29d17826124fccc9bcc11f62"
+    error:
+      summary: Receive an error
+      description: Receive an error from the Operator API.
+      payload:
+        $ref: '#/components/schemas/errorPayload'
+      examples:
+        - payload:
+            event: error
+            reqid: 1
+            data:
+              error: "Invalid signature"
+    getPositions:
+      summary: Request for positions
+      description: Fetches list of all positions by channel
+      payload:
+        $ref: '#/components/schemas/getPositionsPayload'
+      examples:
+        - payload:
+            event: positions
+            reqid: 1
+            data:
+              channel_id: "0x55608cdbde2ff4183a81e62da096fa863d8f910d29d17826124fccc9bcc11f62"
+    positions:
+      summary: List of positions
+      description: Contains a list of all positions by requested channel id
+      payload:
+        $ref: '#/components/schemas/positionsPayload'
+      examples:
+        - payload:
+            event: positions
+            reqid: 1
+            data:
+              channel_id: "0x55608cdbde2ff4183a81e62da096fa863d8f910d29d17826124fccc9bcc11f62"
+              positions:
+                - position:
+                    channel_id: "0x55608cdbde2ff4183a81e62da096fa863d8f910d29d17826124fccc9bcc11f62"
+                    market: WBTC/USDT
+                    direction: buy
+                    amount: "1.2"
+                    cost: "36789"
+                    market_value: "35467"
+                    pnl: "-1322"
+                    status: open
+                - position:
+                    channel_id: "0x55608cdbde2ff4183a81e62da096fa863d8f910d29d17826124fccc9bcc11f62"
+                    market: ETH/USDT
+                    direction: sell
+                    amount: "1.5"
+                    cost: "3678.9"
+                    market_value: "3546.7"
+                    pnl: "132.2"
+                    status: open
+    requestSettlement:
+      summary: Request Settlement
+      description: Initiates a settlement request
+      payload:
+        $ref: '#/components/schemas/requestSettlementPayload'
+      examples:
+        - payload:
+            event: request_settlement
+            reqid: 1
+            data:
+              channel_id: "0x55608cdbde2ff4183a81e62da096fa863d8f910d29d17826124fccc9bcc11f62"
+              payment_method: "escrow"
+              chain_id: 1
+              markets:
+                - WBTC/USDT
+                - WETH/USDT
+    requestedSettlement:
+      summary: Requested Settlement
+      description: Response to a settlement request
+      payload:
+        $ref: '#/components/schemas/requestedSettlementPayload'
+      examples:
+        - payload:
+            event: request_settlement
+            reqid: 1
+  schemas:
+    versionPayload:
+      type: object
+      properties:
+        event:
+          type: string
+          const: version
+        reqid:
+          $ref: '#/components/schemas/reqid'
+        data:
+          type: object
+          properties:
+            version:
+              type: string
+    identityAddressPayload:
+      type: object
+      properties:
+        event:
+          type: string
+          const: identity_address
+        reqid:
+          $ref: '#/components/schemas/reqid'
+        data:
+          type: object
+          properties:
+            address:
+              type: string
+    challengePayload:
+      type: object
+      properties:
+        event:
+          type: string
+          const: challenge
+        reqid:
+          $ref: '#/components/schemas/reqid'
+        data:
+          type: object
+          properties:
+            challenge:
+              type: string
+    authenticatePayload:
+      type: object
+      properties:
+        event:
+          type: string
+          const: authenticate
+        reqid:
+          $ref: '#/components/schemas/reqid'
+        data:
+          type: object
+          properties:
+            challenge:
+              type: string
+            signature:
+              description: A signature of the challenge using the private key of the peer.
+              type: string
+    authenticatedPayload:
+      type: object
+      properties:
+        event:
+          type: string
+          const: authenticate
+        reqid:
+          $ref: '#/components/schemas/reqid'
+    channelJwtPayload:
+      type: object
+      properties:
+        event:
+          type: string
+          const: channel_jwt
+        reqid:
+          $ref: '#/components/schemas/reqid'
+        data:
+          type: object
+          properties:
+            channel_id:
+              $ref: '#/components/schemas/channelId'
+    jwtPayload:
+      type: object
+      properties:
+        event:
+          type: string
+          const: channel_jwt
+        reqid:
+          $ref: '#/components/schemas/reqid'
+        data:
+          type: object
+          properties:
+            jwt:
+              type: string
+    openChannelPayload:
+      type: object
+      properties:
+        event:
+          type: string
+          const: open_channel
+        reqid:
+          $ref: '#/components/schemas/reqid'
+        data:
+          type: object
+          properties:
+            peer:
+              $ref: '#/components/schemas/peer'
+            margin_deposit:
+              $ref: '#/components/schemas/decimal'
+    openingChannelPayload:
+      type: object
+      properties:
+        event:
+          type: string
+          const: open_channel
+        reqid:
+          $ref: '#/components/schemas/reqid'
+        data:
+          type: object
+          properties:
+            channel_id:
+              $ref: '#/components/schemas/channelId'
+    closeChannelPayload:
+      type: object
+      properties:
+        event:
+          type: string
+          const: close_channel
+        reqid:
+          $ref: '#/components/schemas/reqid'
+        data:
+          type: object
+          properties:
+            channel_id:
+              $ref: '#/components/schemas/channelId'
+    closingChannelPayload:
+      type: object
+      properties:
+        event:
+          type: string
+          const: close_channel
+        reqid:
+          $ref: '#/components/schemas/reqid'
+        data:
+          type: object
+          properties:
+            channel_id:
+              $ref: '#/components/schemas/channelId'
+    recordTradePayload: 
+      type: object
+      properties:
+        event:
+          type: string
+          const: record_trade
+        reqid:
+          $ref: '#/components/schemas/reqid'
+        data:
+          $ref: '#/components/schemas/trade'
+    recordedTradePayload:
+      type: object
+      properties:
+        event:
+          type: string
+          const: record_trade
+        reqid:
+          $ref: '#/components/schemas/reqid'
+        data:
+          type: object
+          properties:
+            channel_id:
+              $ref: '#/components/schemas/channelId'
+            external_id:
+              type: string
+    subscribeNotificationsPayload:
+      type: object
+      properties:
+        event:
+          type: string
+          const: subscribe_notifications
+        reqid:
+          $ref: '#/components/schemas/reqid'
+    streamNotificationPayload:
+      type: object
+      properties:
+        event:
+          type: string
+          const: stream_notification
+        reqid:
+          $ref: '#/components/schemas/reqid'
+        data:
+          $ref: '#/components/schemas/streamNotification'
+    settlementNotificationPayload:
+      type: object
+      properties:
+        event:
+          type: string
+          const: settlement_notification
+        reqid:
+          $ref: '#/components/schemas/reqid'
+        data:
+          $ref: '#/components/schemas/settlementNotification'
+    positionNotificationPayload:
+      type: object
+      properties:
+        event:
+          type: string
+          const: position_notification
+        reqid:
+          $ref: '#/components/schemas/reqid'
+        data:
+          $ref: '#/components/schemas/positionNotification'
+    errorPayload:
+      type: object
+      properties:
+        event:
+          type: string
+          const: error
+        reqid:
+          $ref: '#/components/schemas/reqid'
+        data:
+          type: object
+          properties:
+            error:
+              type: string
+    getPositionsPayload:
+      type: object
+      properties:
+        event:
+          type: string
+          const: positions
+        reqid:
+          $ref: '#/components/schemas/reqid'
+        data:
+          type: object
+          properties:
+            channel_id:
+              type: string
+    positionsPayload:
+      type: object
+      properties:
+        event:
+          type: string
+          const: positions
+        reqid:
+          $ref: '#/components/schemas/reqid'
+        data:
+          type: object
+          properties:
+            channel_id:
+              $ref: '#/components/schemas/decimal'
+            positions:
+              type: array
+              item:
+                type:
+                  ref: '#/components/schemas/position'
+    requestSettlementPayload:
+      type: object
+      properties:
+        event:
+          type: string
+          const: request_settlement
+        reqid:
+          $ref: '#/components/schemas/reqid'
+        data:
+          type: object
+          properties:
+            channel_id:
+              $ref: '#/components/schemas/channelId'
+            payment_method:
+              type: string
+              enum:
+                - escrow
+                - mock
+            chain_id:
+              type: integer
+              format: int64
+            markets:
+              type: array
+              items:
+                $ref: '#/components/schemas/market'
+    requestedSettlementPayload:
+      type: object
+      properties:
+        event:
+          type: string
+          const: request_settlement
+        reqid:
+          $ref: '#/components/schemas/reqid'
+    streamNotification:
+      type: object
+      properties:
+        channel_id:
+          $ref: '#/components/schemas/channelId'
+        action:
+          type: string
+          enum:
+            - channelOpened
+            - channelClosed
+            - channelSettled
+            - marginUpdated
+        channel_status:
+          type: string
+          enum:
+            - opening
+            - opened
+            - settling
+            - closing
+            - closed
+        my_role:
+          type: string
+          enum:
+            - Initiator
+            - Responder
+        peer:
+          $ref: '#/components/schemas/peer'
+        margin_deposit:
+          $ref: '#/components/schemas/decimal'
+        initiator_margin_balance:
+          $ref: '#/components/schemas/decimal'
+        follower_margin_balance:
+          $ref: '#/components/schemas/decimal'
+    settlementNotification:
+      type: object
+      properties:
+        channel_id:
+          $ref: '#/components/schemas/channelId'
+        state:
+          type: string
+          enum:
+            - proposed
+            - accepted
+            - initiated
+            - prepared
+            - executed
+            - completed
+            - failed
+            - rejected
+    positionNotification:
+      $ref: '#/components/schemas/position'
+    peer:
+      type: object
+      properties:
+        address:
+          type: string
+        url:
+          type: string
+        name:
+          type: string
+    trade:
+      type: object
+      properties:
+        channel_id:
+          $ref: '#/components/schemas/decimal'
+        external_id:
+          type: string
+        market:
+          $ref: '#/components/schemas/market'
+        direction:
+          type: string
+          enum:
+            - buy
+            - sell
+        amount:
+          $ref: '#/components/schemas/decimal'
+        price:
+          $ref: '#/components/schemas/decimal'
+        executed_at:
+          type: integer
+          format: int64
+    position:
+      type: object
+      properties:
+        channel_id:
+          type: string
+        market:
+          ref: '#/components/schemas/market'
+        direction:
+          type: string
+          enum:
+            - buy
+            - sell
+        amount:
+          $ref: '#/components/schemas/decimal'
+        cost:
+          $ref: '#/components/schemas/decimal'
+        market_value:
+          $ref: '#/components/schemas/decimal'
+        pnl:
+          $ref: '#/components/schemas/decimal'
+        status:
+          type: string
+    channelId:
+      type: string
+      description: Hexadecimal representation of channel ID (length should be 32 bytes).
+    market:
+      type: string
+      description: Market name in format `<BASE>/<QUOTE>`.
+    decimal:
+      type: string
+      description: A decimal string of arbitrary precision.
+    reqid:
+      type: integer
+      description: client originated ID reflected in response message.
+  

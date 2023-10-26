@@ -20,6 +20,19 @@ steps:
       - apt update && apt install -y zip
       - make proto
 
+  - name: WS
+    image: node:18.15
+    pull: if-not-exists
+    commands:
+      - npm install @asyncapi/cli -g
+      - asyncapi validate config/ws/asyncapi.yaml
+      - asyncapi generate \
+        fromTemplate config/ws/asyncapi.yaml \
+        @asyncapi/markdown-template@1.2.1 \
+        -o docs/ws \
+        --force-write \
+        -p outFilename=operator.md
+
   - name: Hardhat compile
     image: node:18.15
     pull: if-not-exists
