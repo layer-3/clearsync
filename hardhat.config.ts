@@ -10,8 +10,6 @@ import 'hardhat-change-network';
 import './src/tasks/accounts';
 import './src/tasks/activate';
 import './src/tasks/forceImport';
-import './src/tasks/sendBatchTransfer';
-import './src/tasks/duckyGame';
 import './src/tasks/vesting';
 import './src/tasks/bridge';
 
