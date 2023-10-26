@@ -2,12 +2,7 @@
   "name": "clearsync-project",
   "scripts": {
     "lint": "npx eslint \"./\" && prettier '**/*.{json,sol,md}' -c && solhint 'contracts/**/*.sol'",
-    "lint:fix": "eslint '**/*.{js,ts}' --fix && prettier '**/*.{json,sol,md}' --write && solhint 'contracts/**/*.sol' --fix",
-    "bench:game-mint": "REPORT_GAS=true npx hardhat test 'test/benchmarks/DuckyFamilyV1/benchmark_mint.test.ts'",
-    "bench:game-meld": "REPORT_GAS=true npx hardhat test 'test/benchmarks/DuckyFamilyV1/benchmark_meld.test.ts'",
-    "test:DuckyGenome": "hardhat test test/duckies/games/DuckyFamily/DG*.test.ts",
-    "test:DuckyFamily": "hardhat test test/duckies/games/DuckyFamily/DF*.test.ts",
-    "test:game": "hardhat test test/duckies/games/*.ts test/duckies/games/DuckyFamily/*.test.ts"
+    "lint:fix": "eslint '**/*.{js,ts}' --fix && prettier '**/*.{json,sol,md}' --write && solhint 'contracts/**/*.sol' --fix"
   },
   "devDependencies": {
     "@layerzerolabs/solidity-examples": "^0.0.13",
