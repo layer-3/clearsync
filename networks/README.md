@@ -7,7 +7,7 @@ and real value locked to have a better feedback on vulnerabilities.
 
 The development flow is expected to be the following: Localnet -> Stagenet -> Canarynet -> Mainnet
 
-Note: the localnet expects a locally deployed blockchain node, and stagenet connecting to the private node with limited access.
+Note: the localnet expects a locally deployed blockchain node with generated new assets address each time, and stagenet connecting to the private node with limited access.
 
 ## Localnet
 
