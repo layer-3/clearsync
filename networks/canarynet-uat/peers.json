@@ -17,7 +17,7 @@
           ]
     },
     {
-        "url": "https://api.kayen.io/",
+        "url": "http://clearport.v4.uat.opendax.app:30051",
         "name": "kayen.ynt",
         "address": "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3",
         "packages": [
