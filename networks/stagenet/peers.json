@@ -1,0 +1,36 @@
+[
+    {
+        "url": "http://localhost:50081/",
+        "name": "localhost.ynt",
+        "address": "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3",
+        "packages": [
+            {
+              "name": "retail",
+              "margin": [5, 100],
+              "safety": "5.5"
+            },
+            {
+              "name": "prime",
+              "margin": [100, 1000],
+              "safety": "3.5"
+            }
+          ]
+    },
+    {
+        "url": "http://clearport.v4.uat.opendax.app:30051",
+        "name": "kayen.ynt",
+        "address": "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3",
+        "packages": [
+            {
+              "name": "retail",
+              "margin": [5, 100],
+              "safety": "5.5"
+            },
+            {
+              "name": "prime",
+              "margin": [100, 1000],
+              "safety": "3.5"
+            }
+          ]
+    }
+]
