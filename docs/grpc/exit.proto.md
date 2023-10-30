@@ -13,7 +13,7 @@ This file describes the content of exit.proto.
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | destination | [bytes](#bytes) | bytes32 in solidity |
-| amount | [uint64](#uint64) | Assuming this fits within a uint64 |
+| amount | [string](#string) | big.Int cast to string |
 | allocation_type | [outcome.AllocationType](outcome.proto.md#allocationtype) |  |
 | metadata | [bytes](#bytes) |  |
 

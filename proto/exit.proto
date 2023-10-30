@@ -21,7 +21,7 @@ enum AllocationType {
 
 message Allocation {
   bytes destination = 1;    // bytes32 in solidity
-  uint64 amount = 2;        // Assuming this fits within a uint64
+  string amount = 2;        // big.Int cast to string
   AllocationType allocation_type = 3;
   bytes metadata = 4;
 }
