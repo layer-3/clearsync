@@ -53,46 +53,6 @@ message AuthenticateResponse {
   string jwt = 1;
 }
 
-enum Direction {
-  DIRECTION_UNSPECIFIED = 0;
-  DIRECTION_BUY = 1;
-  DIRECTION_SELL = 2;
-}
-
-enum PositionStatus {
-  POSITION_STATUS_UNSPECIFIED = 0;
-  POSITION_STATUS_OPEN = 1;
-  POSITION_STATUS_IN_SETTLEMENT = 2;
-  POSITION_STATUS_SETTLED = 3;
-  POSITION_STATUS_CLOSED = 4;
-}
-
-message Market {
-  string base =1;
-  string quote = 2;
-}
-
-message Trade {
-  string channel_id = 1;
-  string external_id = 2;
-  Market market = 3;
-  Direction direction = 4;
-  core.Decimal amount = 5;
-  core.Decimal price = 6;
-  int64 executed_at = 7;
-}
-
-message Position {
-  string channel_id = 1;
-  Market market = 2;
-  Direction direction = 3;
-  string amount = 4;
-  string cost = 5;
-  string market_value = 6;
-  string pnl = 7;
-  PositionStatus status = 8;
-}
-
 message TradeRequest {
   Trade trade = 1;
 }
@@ -100,7 +60,6 @@ message TradeRequest {
 message TradeResponse {
   Trade trade = 1;
 }
-
 
 message OpenChannelRequest {
   auth.Peer peer = 1;
@@ -129,7 +88,6 @@ message CloseChannelResponse {
 message SubscribeRequest {
 }
 
-
 message Notification {
   oneof notification {
     StreamNotification stream_notification = 1;
@@ -154,12 +112,6 @@ enum ChannelStatus {
   CHANNEL_STATUS_SETTLING = 3;
   CHANNEL_STATUS_CLOSING = 4;
   CHANNEL_STATUS_CLOSED = 5;
-}
-
-enum ProtocolIndex {
-  PROTOCOL_INDEX_UNSPECIFIED = 0;
-  PROTOCOL_INDEX_INITIATOR = 1;
-  PROTOCOL_INDEX_RESPONDER = 2;
 }
 
 message StreamNotification {
