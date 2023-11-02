@@ -51,8 +51,8 @@ message Trade {
   string external_id = 2;
   Market market = 3;
   Direction direction = 4;
-  core.Decimal amount = 5;
-  core.Decimal price = 6;
+  Decimal amount = 5;
+  Decimal price = 6;
   int64 executed_at = 7;
 }
 

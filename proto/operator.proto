@@ -54,11 +54,11 @@ message AuthenticateResponse {
 }
 
 message TradeRequest {
-  Trade trade = 1;
+  core.Trade trade = 1;
 }
 
 message TradeResponse {
-  Trade trade = 1;
+  core.Trade trade = 1;
 }
 
 message OpenChannelRequest {
@@ -118,9 +118,9 @@ message StreamNotification {
   string channel_id = 1;
   NotificationType notification_type = 2;
   ChannelStatus channel_status = 3;
-  ProtocolIndex my_role = 4;
+  core.ProtocolIndex my_role = 4;
   auth.Peer peer = 5;
-  MarginLimitType margin_limit_type = 6;
+  core.MarginLimitType margin_limit_type = 6;
   string margin_deposit = 7;
   string initiator_margin_balance = 8; // margin updates will be reflected here
   string follower_margin_balance = 9; // margin updates will be reflected here
@@ -133,14 +133,14 @@ message SettlementNotification {
 }
 
 message PositionNotification {
-  Position position = 1;
+  core.Position position = 1;
 }
 
 message SettlementRequest {
   string channel_id = 1;
   settlement.PaymentMethod payment_method = 2;
   uint64 chain_id = 3;
-  repeated Market markets = 4;
+  repeated core.Market markets = 4;
 }
 
 message SettlementResponse {
@@ -152,5 +152,5 @@ message GetPositionsRequest {
 
 message GetPositionsResponse {
   string channel_id = 1;
-  repeated Position positions = 2;
+  repeated core.Position positions = 2;
 }
