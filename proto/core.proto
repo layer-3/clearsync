@@ -28,3 +28,56 @@ message Signature {
   bytes r = 2;  // 32 bytes
   bytes s = 3;  // 32 bytes
 }
+
+enum ProtocolIndex {
+  PROTOCOL_INDEX_UNSPECIFIED = 0;
+  PROTOCOL_INDEX_INITIATOR = 1;
+  PROTOCOL_INDEX_RESPONDER = 2;
+}
+
+message Market {
+  string base =1;
+  string quote = 2;
+}
+
+enum Direction {
+  DIRECTION_UNSPECIFIED = 0;
+  DIRECTION_BUY = 1;
+  DIRECTION_SELL = 2;
+}
+
+message Trade {
+  string channel_id = 1;
+  string external_id = 2;
+  Market market = 3;
+  Direction direction = 4;
+  Decimal amount = 5;
+  Decimal price = 6;
+  int64 executed_at = 7;
+}
+
+enum PositionStatus {
+  POSITION_STATUS_UNSPECIFIED = 0;
+  POSITION_STATUS_OPEN = 1;
+  POSITION_STATUS_IN_SETTLEMENT = 2;
+  POSITION_STATUS_SETTLED = 3;
+  POSITION_STATUS_CLOSED = 4;
+}
+
+message Position {
+  string channel_id = 1;
+  Market market = 2;
+  Direction direction = 3;
+  string amount = 4;
+  string cost = 5;
+  string market_value = 6;
+  string pnl = 7;
+  PositionStatus status = 8;
+}
+
+enum MarginLimitType {
+  MARGIN_LIMIT_TYPE_UNSPECIFIED = 0;
+  MARGIN_LIMIT_TYPE_NONE = 1;
+  MARGIN_LIMIT_TYPE_SOFT = 2;
+  MARGIN_LIMIT_TYPE_HARD = 3;
+}

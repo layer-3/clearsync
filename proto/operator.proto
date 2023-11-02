@@ -53,54 +53,13 @@ message AuthenticateResponse {
   string jwt = 1;
 }
 
-enum Direction {
-  DIRECTION_UNSPECIFIED = 0;
-  DIRECTION_BUY = 1;
-  DIRECTION_SELL = 2;
-}
-
-enum PositionStatus {
-  POSITION_STATUS_UNSPECIFIED = 0;
-  POSITION_STATUS_OPEN = 1;
-  POSITION_STATUS_IN_SETTLEMENT = 2;
-  POSITION_STATUS_SETTLED = 3;
-  POSITION_STATUS_CLOSED = 4;
-}
-
-message Market {
-  string base =1;
-  string quote = 2;
-}
-
-message Trade {
-  string channel_id = 1;
-  string external_id = 2;
-  Market market = 3;
-  Direction direction = 4;
-  core.Decimal amount = 5;
-  core.Decimal price = 6;
-  int64 executed_at = 7;
-}
-
-message Position {
-  string channel_id = 1;
-  Market market = 2;
-  Direction direction = 3;
-  string amount = 4;
-  string cost = 5;
-  string market_value = 6;
-  string pnl = 7;
-  PositionStatus status = 8;
-}
-
 message TradeRequest {
-  Trade trade = 1;
+  core.Trade trade = 1;
 }
 
 message TradeResponse {
-  Trade trade = 1;
+  core.Trade trade = 1;
 }
-
 
 message OpenChannelRequest {
   auth.Peer peer = 1;
@@ -129,7 +88,6 @@ message CloseChannelResponse {
 message SubscribeRequest {
 }
 
-
 message Notification {
   oneof notification {
     StreamNotification stream_notification = 1;
@@ -156,22 +114,17 @@ enum ChannelStatus {
   CHANNEL_STATUS_CLOSED = 5;
 }
 
-enum ProtocolIndex {
-  PROTOCOL_INDEX_UNSPECIFIED = 0;
-  PROTOCOL_INDEX_INITIATOR = 1;
-  PROTOCOL_INDEX_RESPONDER = 2;
-}
-
 message StreamNotification {
   string channel_id = 1;
   NotificationType notification_type = 2;
   ChannelStatus channel_status = 3;
-  ProtocolIndex my_role = 4;
+  core.ProtocolIndex my_role = 4;
   auth.Peer peer = 5;
-  string margin_deposit = 6;
-  string initiator_margin_balance = 7; // margin updates will be reflected here
-  string follower_margin_balance = 8; // margin updates will be reflected here
-  uint64 turn_num = 9;
+  core.MarginLimitType margin_limit_type = 6;
+  string margin_deposit = 7;
+  string initiator_margin_balance = 8; // margin updates will be reflected here
+  string follower_margin_balance = 9; // margin updates will be reflected here
+  uint64 turn_num = 10;
 }
 
 message SettlementNotification {
@@ -180,14 +133,14 @@ message SettlementNotification {
 }
 
 message PositionNotification {
-  Position position = 1;
+  core.Position position = 1;
 }
 
 message SettlementRequest {
   string channel_id = 1;
   settlement.PaymentMethod payment_method = 2;
   uint64 chain_id = 3;
-  repeated Market markets = 4;
+  repeated core.Market markets = 4;
 }
 
 message SettlementResponse {
@@ -199,5 +152,5 @@ message GetPositionsRequest {
 
 message GetPositionsResponse {
   string channel_id = 1;
-  repeated Position positions = 2;
+  repeated core.Position positions = 2;
 }
