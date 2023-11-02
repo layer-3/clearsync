@@ -38,6 +38,42 @@ To create a new Decimal type compatible with ExitFormat
 
 
 
+### Market
+
+
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| base | [string](#string) |  |
+| quote | [string](#string) |  |
+
+
+
+
+
+
+
+### Position
+
+
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| channel_id | [string](#string) |  |
+| market | [core.Market](core.proto.md#market) |  |
+| direction | [core.Direction](core.proto.md#direction) |  |
+| amount | [string](#string) |  |
+| cost | [string](#string) |  |
+| market_value | [string](#string) |  |
+| pnl | [string](#string) |  |
+| status | [core.PositionStatus](core.proto.md#positionstatus) |  |
+
+
+
+
+
+
+
 ### Signature
 A 132-character hexadecimal string
 
@@ -52,7 +88,78 @@ A 132-character hexadecimal string
 
 
 
+
+
+### Trade
+
+
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| channel_id | [string](#string) |  |
+| external_id | [string](#string) |  |
+| market | [core.Market](core.proto.md#market) |  |
+| direction | [core.Direction](core.proto.md#direction) |  |
+| amount | [core.Decimal](core.proto.md#decimal) |  |
+| price | [core.Decimal](core.proto.md#decimal) |  |
+| executed_at | [int64](#int64) |  |
+
+
+
+
+
  <!-- end messages -->
+
+
+
+### Direction
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| DIRECTION_UNSPECIFIED | 0 |  |
+| DIRECTION_BUY | 1 |  |
+| DIRECTION_SELL | 2 |  |
+
+
+
+
+### MarginLimitType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| MARGIN_LIMIT_TYPE_UNSPECIFIED | 0 |  |
+| MARGIN_LIMIT_TYPE_NONE | 1 |  |
+| MARGIN_LIMIT_TYPE_SOFT | 2 |  |
+| MARGIN_LIMIT_TYPE_HARD | 3 |  |
+
+
+
+
+### PositionStatus
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| POSITION_STATUS_UNSPECIFIED | 0 |  |
+| POSITION_STATUS_OPEN | 1 |  |
+| POSITION_STATUS_IN_SETTLEMENT | 2 |  |
+| POSITION_STATUS_SETTLED | 3 |  |
+| POSITION_STATUS_CLOSED | 4 |  |
+
+
+
+
+### ProtocolIndex
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PROTOCOL_INDEX_UNSPECIFIED | 0 |  |
+| PROTOCOL_INDEX_INITIATOR | 1 |  |
+| PROTOCOL_INDEX_RESPONDER | 2 |  |
+
 
  <!-- end enums -->
 

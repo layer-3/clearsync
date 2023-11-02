@@ -172,22 +172,7 @@ protolint:disable MAX_LINE_LENGTH
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | channel_id | [string](#string) |  |
-| positions | [Position](#position) |  |
-
-
-
-
-
-
-
-### Market
-
-
-
-| Field | Type | Description |
-| ----- | ---- | ----------- |
-| base | [string](#string) |  |
-| quote | [string](#string) |  |
+| positions | [core.Position](core.proto.md#position) |  |
 
 
 
@@ -240,34 +225,13 @@ protolint:disable MAX_LINE_LENGTH
 
 
 
-### Position
-
-
-
-| Field | Type | Description |
-| ----- | ---- | ----------- |
-| channel_id | [string](#string) |  |
-| market | [Market](#market) |  |
-| direction | [Direction](#direction) |  |
-| amount | [string](#string) |  |
-| cost | [string](#string) |  |
-| market_value | [string](#string) |  |
-| pnl | [string](#string) |  |
-| status | [PositionStatus](#positionstatus) |  |
-
-
-
-
-
-
-
 ### PositionNotification
 
 
 
 | Field | Type | Description |
 | ----- | ---- | ----------- |
-| position | [Position](#position) |  |
+| position | [core.Position](core.proto.md#position) |  |
 
 
 
@@ -299,7 +263,7 @@ protolint:disable MAX_LINE_LENGTH
 | channel_id | [string](#string) |  |
 | payment_method | [settlement.PaymentMethod](settlement.proto.md#paymentmethod) |  |
 | chain_id | [uint64](#uint64) |  |
-| markets | [Market](#market) |  |
+| markets | [core.Market](core.proto.md#market) |  |
 
 
 
@@ -325,8 +289,9 @@ protolint:disable MAX_LINE_LENGTH
 | channel_id | [string](#string) |  |
 | notification_type | [NotificationType](#notificationtype) |  |
 | channel_status | [ChannelStatus](#channelstatus) |  |
-| my_role | [ProtocolIndex](#protocolindex) |  |
+| my_role | [core.ProtocolIndex](core.proto.md#protocolindex) |  |
 | peer | [auth.Peer](auth.proto.md#peer) |  |
+| margin_limit_type | [core.MarginLimitType](core.proto.md#marginlimittype) |  |
 | margin_deposit | [string](#string) |  |
 | initiator_margin_balance | [string](#string) | margin updates will be reflected here |
 | follower_margin_balance | [string](#string) | margin updates will be reflected here |
@@ -347,33 +312,13 @@ protolint:disable MAX_LINE_LENGTH
 
 
 
-### Trade
-
-
-
-| Field | Type | Description |
-| ----- | ---- | ----------- |
-| channel_id | [string](#string) |  |
-| external_id | [string](#string) |  |
-| market | [Market](#market) |  |
-| direction | [Direction](#direction) |  |
-| amount | [core.Decimal](core.proto.md#decimal) |  |
-| price | [core.Decimal](core.proto.md#decimal) |  |
-| executed_at | [int64](#int64) |  |
-
-
-
-
-
-
-
 ### TradeRequest
 
 
 
 | Field | Type | Description |
 | ----- | ---- | ----------- |
-| trade | [Trade](#trade) |  |
+| trade | [core.Trade](core.proto.md#trade) |  |
 
 
 
@@ -387,7 +332,7 @@ protolint:disable MAX_LINE_LENGTH
 
 | Field | Type | Description |
 | ----- | ---- | ----------- |
-| trade | [Trade](#trade) |  |
+| trade | [core.Trade](core.proto.md#trade) |  |
 
 
 
@@ -435,18 +380,6 @@ protolint:disable MAX_LINE_LENGTH
 
 
 
-### Direction
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| DIRECTION_UNSPECIFIED | 0 |  |
-| DIRECTION_BUY | 1 |  |
-| DIRECTION_SELL | 2 |  |
-
-
-
-
 ### NotificationType
 
 
@@ -458,32 +391,6 @@ protolint:disable MAX_LINE_LENGTH
 | NOTIFICATION_TYPE_CHANNEL_CLOSED | 3 |  |
 | NOTIFICATION_TYPE_CHANNEL_SETTLED | 4 |  |
 | NOTIFICATION_TYPE_MARGIN_UPDATED | 5 |  |
-
-
-
-
-### PositionStatus
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| POSITION_STATUS_UNSPECIFIED | 0 |  |
-| POSITION_STATUS_OPEN | 1 |  |
-| POSITION_STATUS_IN_SETTLEMENT | 2 |  |
-| POSITION_STATUS_SETTLED | 3 |  |
-| POSITION_STATUS_CLOSED | 4 |  |
-
-
-
-
-### ProtocolIndex
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| PROTOCOL_INDEX_UNSPECIFIED | 0 |  |
-| PROTOCOL_INDEX_INITIATOR | 1 |  |
-| PROTOCOL_INDEX_RESPONDER | 2 |  |
 
 
  <!-- end enums -->
