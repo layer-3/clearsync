@@ -168,10 +168,11 @@ message StreamNotification {
   ChannelStatus channel_status = 3;
   ProtocolIndex my_role = 4;
   auth.Peer peer = 5;
-  string margin_deposit = 6;
-  string initiator_margin_balance = 7; // margin updates will be reflected here
-  string follower_margin_balance = 8; // margin updates will be reflected here
-  uint64 turn_num = 9;
+  MarginLimitType margin_limit_type = 6;
+  string margin_deposit = 7;
+  string initiator_margin_balance = 8; // margin updates will be reflected here
+  string follower_margin_balance = 9; // margin updates will be reflected here
+  uint64 turn_num = 10;
 }
 
 message SettlementNotification {

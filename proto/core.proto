@@ -28,3 +28,9 @@ message Signature {
   bytes r = 2;  // 32 bytes
   bytes s = 3;  // 32 bytes
 }
+
+enum MarginLimitType {
+  MARGIN_LIMIT_TYPE_NONE = 0;
+  MARGIN_LIMIT_TYPE_SOFT = 1;
+  MARGIN_LIMIT_TYPE_HARD = 2;
+}
