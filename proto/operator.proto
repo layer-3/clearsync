@@ -17,6 +17,7 @@ service Operator {
   rpc GetChannelJwt(GetJwtRequest) returns (GetJwtResponse);
   rpc GetPositions(GetPositionsRequest) returns (GetPositionsResponse);
   rpc RecordTrade(TradeRequest) returns (TradeResponse);
+  rpc RecordTrades(TradesRequest) returns (TradesResponse);
   rpc RequestSettlement(SettlementRequest) returns (SettlementResponse);
   rpc CloseChannel(CloseChannelRequest) returns (CloseChannelResponse);
 
@@ -59,6 +60,14 @@ message TradeRequest {
 
 message TradeResponse {
   core.Trade trade = 1;
+}
+
+// Maximum number of trades per request is 6765
+message TradesRequest {
+  repeated core.Trade trades = 1;
+}
+
+message TradesResponse {
 }
 
 message OpenChannelRequest {
