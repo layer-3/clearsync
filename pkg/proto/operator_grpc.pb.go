@@ -26,6 +26,7 @@ type OperatorClient interface {
 	GetChannelJwt(ctx context.Context, in *GetJwtRequest, opts ...grpc.CallOption) (*GetJwtResponse, error)
 	GetPositions(ctx context.Context, in *GetPositionsRequest, opts ...grpc.CallOption) (*GetPositionsResponse, error)
 	RecordTrade(ctx context.Context, in *TradeRequest, opts ...grpc.CallOption) (*TradeResponse, error)
+	RecordTrades(ctx context.Context, in *TradesRequest, opts ...grpc.CallOption) (*TradesResponse, error)
 	RequestSettlement(ctx context.Context, in *SettlementRequest, opts ...grpc.CallOption) (*SettlementResponse, error)
 	CloseChannel(ctx context.Context, in *CloseChannelRequest, opts ...grpc.CallOption) (*CloseChannelResponse, error)
 	SubscribeChannelsEvents(ctx context.Context, in *SubscribeRequest, opts ...grpc.CallOption) (Operator_SubscribeChannelsEventsClient, error)
@@ -111,6 +112,15 @@ func (c *operatorClient) RecordTrade(ctx context.Context, in *TradeRequest, opts
 	return out, nil
 }
 
+func (c *operatorClient) RecordTrades(ctx context.Context, in *TradesRequest, opts ...grpc.CallOption) (*TradesResponse, error) {
+	out := new(TradesResponse)
+	err := c.cc.Invoke(ctx, "/Operator/RecordTrades", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *operatorClient) RequestSettlement(ctx context.Context, in *SettlementRequest, opts ...grpc.CallOption) (*SettlementResponse, error) {
 	out := new(SettlementResponse)
 	err := c.cc.Invoke(ctx, "/Operator/RequestSettlement", in, out, opts...)
@@ -173,6 +183,7 @@ type OperatorServer interface {
 	GetChannelJwt(context.Context, *GetJwtRequest) (*GetJwtResponse, error)
 	GetPositions(context.Context, *GetPositionsRequest) (*GetPositionsResponse, error)
 	RecordTrade(context.Context, *TradeRequest) (*TradeResponse, error)
+	RecordTrades(context.Context, *TradesRequest) (*TradesResponse, error)
 	RequestSettlement(context.Context, *SettlementRequest) (*SettlementResponse, error)
 	CloseChannel(context.Context, *CloseChannelRequest) (*CloseChannelResponse, error)
 	SubscribeChannelsEvents(*SubscribeRequest, Operator_SubscribeChannelsEventsServer) error
@@ -206,6 +217,9 @@ func (UnimplementedOperatorServer) GetPositions(context.Context, *GetPositionsRe
 }
 func (UnimplementedOperatorServer) RecordTrade(context.Context, *TradeRequest) (*TradeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RecordTrade not implemented")
+}
+func (UnimplementedOperatorServer) RecordTrades(context.Context, *TradesRequest) (*TradesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RecordTrades not implemented")
 }
 func (UnimplementedOperatorServer) RequestSettlement(context.Context, *SettlementRequest) (*SettlementResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RequestSettlement not implemented")
@@ -373,6 +387,24 @@ func _Operator_RecordTrade_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Operator_RecordTrades_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TradesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OperatorServer).RecordTrades(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Operator/RecordTrades",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OperatorServer).RecordTrades(ctx, req.(*TradesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Operator_RequestSettlement_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SettlementRequest)
 	if err := dec(in); err != nil {
@@ -468,6 +500,10 @@ var Operator_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RecordTrade",
 			Handler:    _Operator_RecordTrade_Handler,
+		},
+		{
+			MethodName: "RecordTrades",
+			Handler:    _Operator_RecordTrades_Handler,
 		},
 		{
 			MethodName: "RequestSettlement",

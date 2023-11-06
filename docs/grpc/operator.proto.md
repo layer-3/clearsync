@@ -17,6 +17,7 @@ protolint:disable MAX_LINE_LENGTH
 | GetChannelJwt | [GetJwtRequest](#getjwtrequest) | [GetJwtResponse](#getjwtresponse) |  |
 | GetPositions | [GetPositionsRequest](#getpositionsrequest) | [GetPositionsResponse](#getpositionsresponse) |  |
 | RecordTrade | [TradeRequest](#traderequest) | [TradeResponse](#traderesponse) |  |
+| RecordTrades | [TradesRequest](#tradesrequest) | [TradesResponse](#tradesresponse) |  |
 | RequestSettlement | [SettlementRequest](#settlementrequest) | [SettlementResponse](#settlementresponse) |  |
 | CloseChannel | [CloseChannelRequest](#closechannelrequest) | [CloseChannelResponse](#closechannelresponse) |  |
 | SubscribeChannelsEvents | [SubscribeRequest](#subscriberequest) | [Notification](#notification) stream |  |
@@ -333,6 +334,29 @@ protolint:disable MAX_LINE_LENGTH
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | trade | [core.Trade](core.proto.md#trade) |  |
+
+
+
+
+
+
+
+### TradesRequest
+Maximum number of trades per request is 6765
+
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| trades | [core.Trade](core.proto.md#trade) |  |
+
+
+
+
+
+
+
+### TradesResponse
+
 
 
 
