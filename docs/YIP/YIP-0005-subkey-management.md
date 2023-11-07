@@ -12,7 +12,7 @@ End User MUST be able to set expiration time of the subkey, revoke issued subkey
 
 ## Decision
 
-Certainly! A lightweight certification protocol for your scenario could utilize JSON Web Tokens (JWT), which are compact, URL-safe means of representing claims to be transferred between two parties. JWTs can include metadata and are digitally signed using a key pair. Here's a simplified example of how Alice can use JWTs to certify the `clearport` subkey:
+A lightweight certification protocol should utilize JSON Web Tokens (JWT), which are compact, URL-safe means of representing claims to be transferred between two parties. JWTs can include metadata and are digitally signed using a key pair. Below a simplified example of how Alice can use JWTs to certify the `clearport` subkey.
 
 ### Certification Protocol Overview
 
@@ -72,6 +72,13 @@ def revoke_subkey(subkey_id)
 end
 
 ```
+
+### Opening State Channels
+
+1. Pre-Authorization `turnNum=0` would contain in the `appData` the information to verify
+2. Both parties fetch from the `Adjudicator.LookUp(0xParticipantAddress) => ipfs://certificate_location.json`
+3. If certificate value post parties signs Post-Authorization step.
+4. Parties can move on funding steps.
 
 ## Consequences
 
