@@ -9,6 +9,10 @@ Proposed
 As Yellow Clearing Network is based on the concept of trading channels, it is necessary to have a payment method interface that enables the swap during the settlement to be performed.
 The swap and the following Post-Settlement Margin state checkpoint (more in the YIP about the Settlement) form the 2-step commit, meaning that the swap cannot happen without the margin update, which removes the collateral for the funds being swapped, and vice versa.
 
+### Related YIPs
+
+- [0006 - Settlement](./YIP-0006-settlement.md)
+
 ## Decision
 
 ### Payment method functionality
@@ -48,10 +52,10 @@ type PaymentMethod interface {
   Revert(clearingId ChannelID) error
   // Parties confirm that the assets are swapped, but not yet delivered
   Finalize(clearingId ChannelID) error
-  // Withdraw swapped assets without counter-party confirmation if any error occurs after the swap
-  ForceFinalize(clearingId ChannelID) error
   // Retrieve the assets
   Withdraw(clearingId ChannelID) error
+  // Withdraw swapped assets without counter-party confirmation if any error occurs after the swap
+  ForceWithdraw(clearingId ChannelID) error
   // Subscribe and invoke `handler` when a specified `role` has fully withdrawn the funds from the Payment
   SubscribeOnWithdraw(clearingCid ChannelID, role ProtocolIndex, handler func() error) error
 }

@@ -10,8 +10,8 @@ One of the first payment methods should be simple enough to introduce to the pub
 
 ### Related YIPs
 
-- TODO: settlement YIP
-- [0006 - Payment Method](./YIP-0006-payment-method.md)
+- [0006 - Settlement](./YIP-0006-settlement.md)
+- [0007 - Payment Method](./YIP-0007-payment-method.md)
 - TODO: channel applications YIP
 
 ## Decision
