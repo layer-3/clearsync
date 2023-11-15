@@ -11,7 +11,7 @@ The swap and the following Post-Settlement Margin state checkpoint (more in the 
 
 ### Related YIPs
 
-- [0006 - Settlement](./YIP-0006-settlement.md)
+- [0007 - Settlement](./YIP-0007-settlement.md)
 
 ## Decision
 

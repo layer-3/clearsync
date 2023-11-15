@@ -10,6 +10,10 @@ Settlement is an important part of the trading process. It is the final step of 
 
 In the context of Yellow Network, several consequent settlements can be performed on the same trading channel, which gives more flexibility to the traders and reduces operation fees.
 
+### Related YIPs
+
+- [0006 - Margin Zones](./YIP-0006-margin-zones.md)
+
 ## Decision
 
 The main role of settlement is for parties to safely exchange the assets they have agreed to trade, and to update their margin by excluding the collateral covering the assets being traded.
@@ -91,7 +95,7 @@ In other words, by proposing a forced settlement, the initiator states that if t
 There are 2 main use-cases for Forced Settlement:
 
 - **"Urgent settle all"** initiated by the Initiator when they want to settle all markets as soon as possible, e.g. when they can no longer be online.
-- **"System precaution"** created by the system when the margin transitions to the red zone (TODO: margin zone YIP)
+- **"System precaution"** created by the system when the margin transitions to the red zone (see [Margin Zones YIP](./YIP-0006-margin-zones.md)), so that the channel is not left undercollateralized.
 
 If the Forced Settlement is rejected by the Responder, the Clearport on the Initiator side is going to challenge and close the channel automatically.
 
