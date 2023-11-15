@@ -1,4 +1,4 @@
-# 0006 - Payment Method
+# 0008 - Payment Method
 
 ## Status
 
