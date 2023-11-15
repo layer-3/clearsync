@@ -41,9 +41,9 @@ This YIP does not specify the party initiating the delivery of the swapped funds
 
 ```go
 type PaymentMethod interface {
-  // Make sure that a payment method is ready, validate input
+  // Make sure that a payment method is ready, acquire the assets from each party
   Initiate(clearingId ChannelID, settlementLedger SettlementLedger, peer Peer) error
-  // Acquire the assets from each party
+  // Parties agree that assets are deposited and ready to be swapped
   Prepare(clearingId ChannelID) error
   // Swap the assets
   Execute(clearingId ChannelID) error
@@ -60,6 +60,15 @@ type PaymentMethod interface {
   SubscribeOnWithdraw(clearingCid ChannelID, role ProtocolIndex, handler func() error) error
 }
 ```
+
+### Discarded interface
+
+The alternative approach is related to an unhappy case: use `ForceFinalize` instead of `ForceWithdraw`, with a consequent `Withdraw` call, so that
+
+- `ForceFinalize` is called when the counterparty disagree on `Finalize` as well, but it only performs the checks that the swap happened
+- `Withdraw` will deliver the assets to the party (parties) in both happy and unhappy scenarios.
+
+However, this approach is discarded as the described logic of `Withdraw` blends the happy and unhappy flows, which makes it harder to understand and maintain.
 
 ## Consequences
 
