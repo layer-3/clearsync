@@ -118,4 +118,4 @@ The settlement flow is as follows:
 
 ## Consequences
 
-TODO:
+Margin zones hugely affect the trading process, so they should be accounted.
