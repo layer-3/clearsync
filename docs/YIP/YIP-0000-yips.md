@@ -29,7 +29,7 @@ The format of an YIP shall follow the [template by Michael Nygard](https://githu
 >
 > #### Status
 >
-> What is the status, such as proposed, accepted, rejected, deprecated, superseded, etc.?
+> What is the status, such as in progress, proposed, accepted, rejected, deprecated, superseded, etc.?
 >
 > #### Context
 >
@@ -53,7 +53,7 @@ The word _shall_ indicates mandatory requirements strictly to be followed in ord
 
 Note that the word _must_ is deprecated and shall not be used when stating mandatory requirements; _must_ is used only to describe unavoidable situations. The word _will_ is deprecated and shall not be used when stating mandatory requirements; _will_ is only used in statements of fact.
 
-The word _should_ indicates that among several possibilities, one is recommended as particularly suitablewithout mentioning or excluding others; or that a certain course of action is preferred but not necessarilyrequired (_should_ equals _is recommended that_).
+The word _should_ indicates that among several possibilities, one is recommended as particularly suitable without mentioning or excluding others; or that a certain course of action is preferred but not necessarily required (_should_ equals _is recommended that_).
 
 The word _may_ is used to indicate a course of action permissible within the limits of the standard (_may_ equals _is permitted to_).
 
