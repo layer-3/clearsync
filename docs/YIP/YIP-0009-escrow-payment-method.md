@@ -49,6 +49,11 @@ To operate, the escrow payment method must store the following data:
 
 ## Consequences
 
+1. Escrow payment method shall implement the Payment method interface [YIP 0008 - Payment Method](./YIP-0008-payment-method.md).
+2. Escrow payment method shall guarantee the atomicity of the swap.
+
+### Reflections
+
 As the escrow payment method store its data in-memory and its functions are almost always invoked by the Initiator, when the Responder invoke `SubscribeForWithdraw`, there is not enough data to create an event subscription.
 
 The lack of data is caused by the fact that incoming channel requests (open, update, close) are handled by the escrow channel application (YIP link), which stores data about channel.

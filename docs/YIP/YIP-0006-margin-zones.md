@@ -56,3 +56,11 @@ Therefore, if a post-settlement margin calculation transitions to the yellow zon
 If the PSM calculation transitions to the red zone, the settlement is automatically interrupted and a new automatic one is prepared by the Clearport.
 
 ## Consequences
+
+1. Margin zone limits shall be defined in the application configuration.
+2. Clearport shall notify other components that the margin zone has changed.
+3. Clearport shall disallow adding new trades if the margin is in the yellow or red zone.
+4. Clearport shall initiate automatic settlement if the margin is in the red zone.
+5. Clearport shall implement at least one, and should implement several market selection algorithm for automatic settlement, which may be one of the described in this document or a custom one(s).
+6. Clearport shall disallow proposing settlement if the post-settlement margin calculation for selected markets is in the yellow or red zone.
+7. Clearport shall interrupt ongoing settlement if the current post-settlement margin calculation is in the red zone, and start a new settlement according to these rules.

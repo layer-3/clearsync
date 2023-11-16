@@ -72,6 +72,14 @@ However, this approach is discarded as the described logic of `Withdraw` blends 
 
 ## Consequences
 
+1. Clearport (and Settlement specifically) shall use the Payment method interface to conduct swaps.
+2. Clearport shall invoke `Revert` if any error occurs prior to the swap.
+3. Clearport shall invoke `ForceWithdraw` if any error occurs after the swap.
+4. Clearport should invoke `SubscribeOnWithdraw` to be notified when the swapped assets are delivered.
+5. Clearport should notify other components that the swapped assets are delivered.
+
+### Reflections
+
 Implemented interface seems to be too specific for an escrow payment method, so it should be generalized to be more flexible and allow other payment methods to be implemented.
 
 Proposed generalized interface:
