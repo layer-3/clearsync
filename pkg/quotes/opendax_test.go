@@ -7,17 +7,13 @@ import (
 	"net/http"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/layer-3/neodax/finex/models/market"
-	"github.com/layer-3/neodax/finex/models/trade"
-	"github.com/layer-3/neodax/finex/pkg/cache"
-	"github.com/layer-3/neodax/finex/pkg/event"
-	"github.com/layer-3/neodax/finex/pkg/websocket/client"
-	"github.com/layer-3/neodax/finex/pkg/websocket/protocol"
+	protocol "github.com/layer-3/clearsync/pkg/quotes/opendax_protocol"
 )
 
 type ODAPIMockMsg struct {
@@ -40,7 +36,7 @@ type ODDialerFailMock struct {
 	m                  []ODAPIMockMsg
 }
 
-func (dialer *ODDialerSuccessMock) Dial(_ string, _ http.Header) (client.WSTransport, *http.Response, error) {
+func (dialer *ODDialerSuccessMock) Dial(_ string, _ http.Header) (WSTransport, *http.Response, error) {
 	select {
 	case dialer.connRetryAttempted <- true:
 	default:
@@ -49,7 +45,7 @@ func (dialer *ODDialerSuccessMock) Dial(_ string, _ http.Header) (client.WSTrans
 	return &ODAPIMock{messages: dialer.m}, &http.Response{}, nil
 }
 
-func (dialer *ODDialerFailMock) Dial(_ string, _ http.Header) (client.WSTransport, *http.Response, error) {
+func (dialer *ODDialerFailMock) Dial(_ string, _ http.Header) (WSTransport, *http.Response, error) {
 	select {
 	case dialer.connRetryAttempted <- true: // return error on the first try
 		return &ODAPIMock{messages: dialer.m}, &http.Response{}, errors.New("cannot connect")
@@ -58,23 +54,19 @@ func (dialer *ODDialerFailMock) Dial(_ string, _ http.Header) (client.WSTranspor
 	}
 }
 
-func (m *ODMarketsMock) Get(id, typ string) (market.Market, error) {
-	return market.Market{}, nil
+func (m *ODMarketsMock) Get(id, typ string) (Market, error) {
+	return Market{}, nil
 }
 
-func (m *ODMarketsMock) GetActive() (map[cache.MarketKey]market.Market, error) {
-	return map[cache.MarketKey]market.Market{
-		{ID: "btcusd", Type: "spot"}: {Symbol: "btcusd", BaseUnit: "btc", QuoteUnit: "usd"},
-		{ID: "ethusd", Type: "spot"}: {Symbol: "ethusd", BaseUnit: "eth", QuoteUnit: "usd"},
+func (m *ODMarketsMock) GetActive() ([]Market, error) {
+	return []Market{
+		{BaseUnit: "btc", QuoteUnit: "usd"},
+		{BaseUnit: "eth", QuoteUnit: "usd"},
 	}, nil
 }
 
 func (m *ODMarketsMock) GetActiveWithFormat() ([]interface{}, error) {
 	return nil, errors.New("cannot get active markets")
-}
-
-func (m *ODMarketsMock) SubscribeUpdates() chan cache.MarketUpdateNotification {
-	return make(chan cache.MarketUpdateNotification, 1)
 }
 
 func (c *ODAPIMock) ReadMessage() (messageType int, p []byte, err error) {
@@ -100,8 +92,6 @@ func (c *ODAPIMock) Close() error {
 }
 
 func TestOpendax_parseOpendaxMsg(t *testing.T) {
-	opendax := &Opendax{}
-
 	t.Run("Successful test", func(t *testing.T) {
 		message := protocol.Msg{
 			ReqID:  1,
@@ -112,19 +102,18 @@ func TestOpendax_parseOpendaxMsg(t *testing.T) {
 		byteMsg, err := message.Encode()
 		require.NoError(t, err)
 
-		tradeEvent, err := opendax.parseOpendaxMsg(byteMsg)
+		tradeEvent, err := parseOpendaxMsg(byteMsg)
 		require.NoError(t, err)
 
 		number, _ := decimal.NewFromString("1")
-		expVal := &trade.Event{
-			ID:        1,
+		expVal := &TradeEvent{
 			Market:    "btcusd",
 			Price:     number,
 			Amount:    number,
 			Total:     number,
-			TakerType: "OrderBid",
-			CreatedAt: 1,
-			Source:    "Opendax",
+			TakerType: TakerTypeBuy,
+			CreatedAt: time.Unix(1, 0),
+			Source:    DriverOpendax,
 		}
 		assert.Equal(t, expVal, tradeEvent)
 	})
@@ -134,7 +123,7 @@ func TestOpendax_parseOpendaxMsg(t *testing.T) {
 		byteMsg, err := json.Marshal(trade)
 		require.NoError(t, err)
 
-		_, err = opendax.parseOpendaxMsg(byteMsg)
+		_, err = parseOpendaxMsg(byteMsg)
 		require.EqualError(t, errors.New("could not parse message: json: cannot unmarshal string into Go value of type []interface {}"), err.Error())
 	})
 
@@ -148,19 +137,15 @@ func TestOpendax_parseOpendaxMsg(t *testing.T) {
 		byteMsg, err := trade.Encode()
 		require.NoError(t, err)
 
-		_, err = opendax.parseOpendaxMsg(byteMsg)
+		_, err = parseOpendaxMsg(byteMsg)
 		require.Error(t, err)
 	})
 }
 
 func TestOpendax_marketSubscribe(t *testing.T) {
-	opendax := &Opendax{
-		marketCache: &ODMarketsMock{},
-		conn:        &ODAPIMock{},
-	}
-	marketList, err := opendax.marketCache.GetActive()
-	require.NoError(t, err)
-	opendax.marketSubscribe(marketList)
+	opendax := &Opendax{conn: &ODAPIMock{}}
+	markets := []Market{{BaseUnit: "btc", QuoteUnit: "usdt"}}
+	opendax.marketSubscribe(markets)
 }
 
 func TestOpendax_Subscribe(t *testing.T) {
@@ -169,7 +154,7 @@ func TestOpendax_Subscribe(t *testing.T) {
 			conn: &ODAPIMock{messages: []ODAPIMockMsg{{}}},
 		}
 
-		err := client.Subscribe("btc", "usdt")
+		err := client.Subscribe(Market{BaseUnit: "btc", QuoteUnit: "usdt"})
 		require.NoError(t, err)
 	})
 
@@ -178,23 +163,15 @@ func TestOpendax_Subscribe(t *testing.T) {
 			conn: &ODAPIMock{messages: []ODAPIMockMsg{}},
 		}
 
-		err := client.Subscribe("btc", "usdt")
+		err := client.Subscribe(Market{BaseUnit: "btc", QuoteUnit: "usdt"})
 		require.Error(t, err)
 	})
 }
 
-func TestOpendax_Close(t *testing.T) {
+func TestOpendax_Stop(t *testing.T) {
 	client := Opendax{conn: &ODAPIMock{}}
-	err := client.Close()
+	err := client.Stop()
 	require.NoError(t, err)
-}
-
-func TestOpendax_IsConnected(t *testing.T) {
-	client := &Opendax{
-		mu:          sync.RWMutex{},
-		isConnected: true,
-	}
-	require.True(t, client.IsConnected())
 }
 
 func TestOpendax_Connect(t *testing.T) {
@@ -231,14 +208,13 @@ func TestOpendax_Connect(t *testing.T) {
 	})
 }
 
-// FIXME: update test
-// func TestOpendax_Start(t *testing.T) {
-// 	t.Run("No active markets error", func(t *testing.T) {
-// 		client := &Opendax{marketCache: &MarketsMockError{}}
-// 		err := client.Start()
-// 		require.Error(t, err)
-// 	})
-// }
+func TestOpendax_Start(t *testing.T) {
+	t.Run("No active markets error", func(t *testing.T) {
+		client := &Opendax{}
+		err := client.Start([]Market{})
+		require.Error(t, err)
+	})
+}
 
 func TestOpendax_receiveOpendaxMsg(t *testing.T) {
 	mock := ODMarketsMock{}
@@ -281,6 +257,7 @@ func TestOpendax_receiveOpendaxMsg(t *testing.T) {
 		rawMsg, err := update.Encode()
 		require.NoError(t, err)
 
+		outbox := make(chan TradeEvent, 1)
 		client := &Opendax{
 			conn: &ODAPIMock{
 				messages: []ODAPIMockMsg{{m: rawMsg}},
@@ -288,8 +265,7 @@ func TestOpendax_receiveOpendaxMsg(t *testing.T) {
 			dialer:      &ODDialerSuccessMock{},
 			isConnected: true,
 			period:      0,
-			outbox:      make(chan trade.Event, 1),
-			output:      make(chan<- event.Event, 1),
+			outbox:      outbox,
 		}
 
 		go func() {
@@ -298,7 +274,7 @@ func TestOpendax_receiveOpendaxMsg(t *testing.T) {
 
 		for {
 			select {
-			case tradeEvent := <-client.outbox:
+			case tradeEvent := <-outbox:
 				require.NotNil(t, tradeEvent)
 				return
 			default:
@@ -307,36 +283,3 @@ func TestOpendax_receiveOpendaxMsg(t *testing.T) {
 		}
 	})
 }
-
-// FIXME: update test
-// func TestOpendax_Init(t *testing.T) {
-// 	dialer := &ODDialerSuccessMock{connRetryAttempted: make(chan bool, 1)}
-// 	marketCache := &cache.MarketCache{}
-// 	outbox := make(chan trade.Event)
-// 	output := make(chan<- event.Event)
-// 	quoteFeed := config.QuoteFeed{
-// 		URL:    "whatever",
-// 		Period: 0,
-// 	}
-//
-// 	client := &Opendax{
-// 		conn:        nil,
-// 		url:         "",
-// 		mu:          sync.RWMutex{},
-// 		period:      0,
-// 		reqId:       0,
-// 		isConnected: false,
-// 	}
-//
-// 	err := client.Init(marketCache, outbox, output, quoteFeed, dialer)
-// 	require.NoError(t, err)
-// 	require.True(t, <-dialer.connRetryAttempted)
-//
-// 	require.Equal(t, quoteFeed.URL, client.url)
-// 	require.Equal(t, outbox, client.outbox)
-// 	require.Equal(t, output, client.output)
-// 	require.Equal(t, marketCache, client.marketCache)
-// 	require.Equal(t, time.Duration(0), client.period)
-// 	require.Equal(t, uint64(1), client.reqId)
-// 	require.Equal(t, dialer, client.dialer)
-// }

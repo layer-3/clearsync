@@ -3,76 +3,61 @@ package quotes
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/ipfs/go-log/v2"
-
-	"github.com/layer-3/neodax/finex/models/trade"
-	"github.com/layer-3/neodax/finex/pkg/cache"
-	"github.com/layer-3/neodax/finex/pkg/config"
-	"github.com/layer-3/neodax/finex/pkg/event"
-	"github.com/layer-3/neodax/finex/pkg/websocket/client"
-	"github.com/layer-3/neodax/finex/pkg/websocket/protocol"
+	"github.com/shopspring/decimal"
 )
 
 var logger = log.Logger("quotes")
 
-const (
-	DriverBinance  = "binance"
-	DriverKraken   = "kraken"
-	DriverOpendax  = "opendax"
-	DriverBitfaker = "bitfaker"
-)
-
-// TODO: remove Finex models dependency
 type Driver interface {
-	Init(markets cache.Market, outbox chan trade.Event, output chan<- event.Event, config config.QuoteFeed, dialer client.WSDialer) error
-	Start() error
-	Subscribe(base, quote string) error
-	Close() error
+	Subscribe(market Market) error
+	Start(markets []Market) error
+	Stop() error
 }
 
-func DriverFromName(name string) (Driver, error) {
-	switch name {
-	case DriverBinance:
-		return &Binance{}, nil
-	case DriverKraken:
-		return &Kraken{}, nil
-	case DriverOpendax:
-		return &Opendax{}, nil
-	case DriverBitfaker:
-		return &Bitfaker{}, nil
-	default:
-		return nil, fmt.Errorf("unknown driver %s", name)
+func NewDriver(config QuotesConfig, outbox chan<- TradeEvent) (Driver, error) {
+	allDrivers := map[DriverType]Driver{
+		DriverBinance:  NewBinance(config, outbox),
+		DriverKraken:   NewKraken(config, outbox),
+		DriverOpendax:  NewOpendax(config, outbox),
+		DriverBitfaker: NewBitfaker(config, outbox),
 	}
+
+	driver, ok := allDrivers[config.Driver]
+	if !ok {
+		return nil, fmt.Errorf("invalid driver type: %v", config.Driver.String())
+	}
+	return driver, nil
 }
 
-func GetRoutingEvent(trade trade.Event) (*event.Event, error) {
-	tradeMsg := protocol.NewEvent(
-		protocol.EventPublic,
-		protocol.EventTrade,
-		[]interface{}{
-			trade.Market,
-			trade.ID,
-			trade.Price,
-			trade.Amount,
-			trade.Total,
-			trade.CreatedAt,
-			trade.TakerType,
-			trade.Source,
-		},
-	)
+type QuotesConfig struct {
+	URL          string             `yaml:"url" env:"FINEX_QUOTES_URL" env-default:"wss://alpha.yellow.org/api/v1/finex/ws"`
+	Driver       DriverType         `yaml:"driver" env:"FINEX_QUOTES_DRIVER" env-default:"opendax"`
+	APIKey       string             `yaml:"api_key" env:"FINEX_QUOTES_API_KEY"`
+	Period       time.Duration      `yaml:"period" env:"FINEX_QUOTES_RECONNECT_PERIOD" env-default:"5s"`
+	TradeSampler TradeSamplerConfig `yaml:"trade_sampler"`
+}
 
-	encodedMsg, err := tradeMsg.Encode()
-	if err != nil {
-		logger.Error(err.Error())
-		return nil, err
-	}
+type TradeSamplerConfig struct {
+	Enabled           bool
+	DefaultPercentage int
+}
 
-	event, err := event.EventFromRoutingKey("public."+trade.Market+".trades", encodedMsg)
-	if err != nil {
-		logger.Error(err.Error())
-		return nil, err
-	}
+type Market struct {
+	BaseUnit  string // e.g. `usdt`
+	QuoteUnit string // e.g. `btc`
+}
 
-	return event, nil
+// TradeEvent is a generic container
+// for trades received from providers.
+type TradeEvent struct {
+	Source    DriverType
+	Market    string // e.g. `btcusdt`
+	Price     decimal.Decimal
+	Amount    decimal.Decimal
+	Total     decimal.Decimal
+	TakerType TakerType
+	CreatedAt time.Time
 }

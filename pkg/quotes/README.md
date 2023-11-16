@@ -4,26 +4,25 @@ The Quotes Service is a centralized system responsible for recording and dissemi
 from various trading platforms.
 
 Available drivers:
-- binance
-- kraken
-- opendax
-- bitfaker
+- Binance
+- Kraken
+- Opendax
+- Bitfaker
 
 ## Interface to connect
 
 ```
 type Driver interface {
-	Init(markets cache.Market, outbox chan trade.Event, output chan<- event.Event, config config.QuoteFeed, dialer client.WSDialer) error
-	Start() error
-	Subscribe(base, quote string) error
-	Close() error
+	Subscribe(market Market) error
+	Start(markets []Market) error
+	Stop() error
 }
 ```
 
 ## Type of price source
 
 | Top Tier CEX | Altcoins CEX | FIAT       | DEX         |
-| ------------ | ------------ | ---------- | ----------- |
+|--------------|--------------|------------|-------------|
 | BitFinex     | Gate         | UpBit      | Sushi       |
 | OKX          | MEXC         | Kraken     | PancakeSwap |
 | Binance      | KuCoin       | Coinbase   | Uniswap     |
@@ -53,5 +52,5 @@ index_price = EMA20(price x ( trade_size x weight / active_weights ))
 
 ## TODO:
 
-- remove Finex dependencies
-- add specs or amendments to current interface
+- [x] remove Finex dependencies
+- [ ] add specs or amendments to current interface

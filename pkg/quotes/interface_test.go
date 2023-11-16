@@ -1,51 +1,55 @@
 package quotes
 
 import (
-	"errors"
 	"testing"
 
-	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/layer-3/neodax/finex/models/trade"
 )
 
-func TestDriverFromName(t *testing.T) {
-	t.Run("Bitfaker", func(t *testing.T) {
-		priceFeeds, err := DriverFromName("bitfaker")
+func TestNewDriver(t *testing.T) {
+	t.Run(DriverBinance.String(), func(t *testing.T) {
+		config := QuotesConfig{Driver: DriverBinance}
+		outbox := make(chan<- TradeEvent, 1)
+
+		priceFeeds, err := NewDriver(config, outbox)
 		require.NoError(t, err)
-		assert.Equal(t, &Bitfaker{}, priceFeeds)
+		assert.Equal(t, NewBinance(config, outbox), priceFeeds)
 	})
 
-	t.Run("Opendax", func(t *testing.T) {
-		priceFeeds, err := DriverFromName("opendax")
+	t.Run(DriverKraken.String(), func(t *testing.T) {
+		config := QuotesConfig{Driver: DriverKraken}
+		outbox := make(chan<- TradeEvent, 1)
+
+		priceFeeds, err := NewDriver(config, outbox)
 		require.NoError(t, err)
-		assert.Equal(t, &Opendax{}, priceFeeds)
+		assert.Equal(t, NewKraken(config, outbox), priceFeeds)
 	})
 
-	t.Run("Unknown", func(t *testing.T) {
-		dialer, err := DriverFromName("test")
-		require.EqualError(t, errors.New("unknown driver test"), err.Error())
-		assert.Nil(t, dialer)
-	})
-}
+	t.Run(DriverBitfaker.String(), func(t *testing.T) {
+		config := QuotesConfig{Driver: DriverBitfaker}
+		outbox := make(chan<- TradeEvent, 1)
 
-func TestGetRoutingEvent(t *testing.T) {
-	t.Run("Successful test", func(t *testing.T) {
-		tradeEvent := trade.Event{
-			ID:        0,
-			Market:    "btcusd",
-			Price:     decimal.Decimal{},
-			Amount:    decimal.Decimal{},
-			Total:     decimal.Decimal{},
-			TakerType: "",
-			CreatedAt: 0,
-			Source:    "",
-		}
-
-		routingEvent, err := GetRoutingEvent(tradeEvent)
+		priceFeeds, err := NewDriver(config, outbox)
 		require.NoError(t, err)
-		require.NotNil(t, routingEvent)
+		assert.Equal(t, NewBitfaker(config, outbox), priceFeeds)
+	})
+
+	t.Run(DriverOpendax.String(), func(t *testing.T) {
+		config := QuotesConfig{Driver: DriverOpendax}
+		outbox := make(chan<- TradeEvent, 1)
+
+		priceFeeds, err := NewDriver(config, outbox)
+		require.NoError(t, err)
+		assert.Equal(t, NewOpendax(config, outbox), priceFeeds)
+	})
+
+	t.Run("Unknown driver", func(t *testing.T) {
+		priceFeeds, err := NewDriver(
+			QuotesConfig{Driver: DriverType{"wtf"}},
+			make(chan<- TradeEvent, 1),
+		)
+		require.Error(t, err)
+		assert.Nil(t, priceFeeds)
 	})
 }

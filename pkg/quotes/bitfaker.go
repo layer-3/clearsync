@@ -1,72 +1,72 @@
 package quotes
 
 import (
-	"fmt"
+	"errors"
+	"sync"
 	"time"
 
 	"github.com/shopspring/decimal"
-
-	"github.com/layer-3/neodax/finex/models/market"
-	"github.com/layer-3/neodax/finex/models/trade"
-	"github.com/layer-3/neodax/finex/pkg/cache"
-	"github.com/layer-3/neodax/finex/pkg/config"
-	"github.com/layer-3/neodax/finex/pkg/event"
-	"github.com/layer-3/neodax/finex/pkg/websocket/client"
 )
 
 type Bitfaker struct {
-	outbox       chan trade.Event
-	output       chan<- event.Event
-	markets      []string
-	marketCache  cache.Market
+	mu           sync.RWMutex
+	outbox       chan<- TradeEvent
+	markets      []Market
 	period       time.Duration
 	tradeSampler *TradeSampler
 }
 
-func (b *Bitfaker) Init(markets cache.Market, outbox chan trade.Event, output chan<- event.Event, config config.QuoteFeed, dialer client.WSDialer) error {
-	b.outbox = outbox
-	b.output = output
-	b.markets = make([]string, 0)
-	b.marketCache = markets
-	b.period = 5 * time.Second
-	b.tradeSampler = NewTradeSampler(config.TradeSampler)
-	return nil
+func NewBitfaker(config QuotesConfig, outbox chan<- TradeEvent) *Bitfaker {
+	return &Bitfaker{
+		outbox:       outbox,
+		markets:      make([]Market, 0),
+		period:       5 * time.Second,
+		tradeSampler: NewTradeSampler(config.TradeSampler),
+	}
 }
 
-func (b *Bitfaker) Start() error {
-	func() {
+func (b *Bitfaker) Start(markets []Market) error {
+	if len(markets) == 0 {
+		return errors.New("no markets specified")
+	}
+
+	for _, m := range markets {
+		if err := b.Subscribe(m); err != nil {
+			return err
+		}
+	}
+
+	go func() {
 		for {
-			markets, _ := b.marketCache.GetActive()
-			for _, v := range markets {
+			b.mu.RLock()
+			for _, v := range b.markets {
 				b.createTradeEvent(v)
 			}
-
+			b.mu.RUnlock()
 			<-time.After(b.period)
 		}
 	}()
 	return nil
 }
 
-func (b *Bitfaker) Subscribe(base, quote string) error {
-	b.markets = append(b.markets, fmt.Sprintf("%s%s", base, quote))
+func (b *Bitfaker) Subscribe(market Market) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	b.markets = append(b.markets, market)
 	return nil
 }
 
-func (b *Bitfaker) createTradeEvent(market market.Market) {
-	tr := trade.Event{
-		Market: market.Symbol,
+func (b *Bitfaker) createTradeEvent(m Market) {
+	tr := TradeEvent{
+		Market: m.BaseUnit + m.QuoteUnit,
 		Price:  decimal.NewFromFloat(2.213),
-		Source: "Bitfaker",
+		Source: DriverBitfaker,
 	}
 
 	b.outbox <- tr
-	event, err := GetRoutingEvent(tr)
-	if err != nil {
-		logger.Warn(err)
-	}
-	b.output <- *event
 }
 
-func (b *Bitfaker) Close() error {
+func (b *Bitfaker) Stop() error {
 	return nil
 }

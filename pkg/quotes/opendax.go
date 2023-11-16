@@ -9,22 +9,14 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/shopspring/decimal"
 
-	"github.com/layer-3/neodax/finex/models/market"
-	"github.com/layer-3/neodax/finex/models/trade"
-	"github.com/layer-3/neodax/finex/pkg/cache"
-	"github.com/layer-3/neodax/finex/pkg/config"
-	"github.com/layer-3/neodax/finex/pkg/event"
-	"github.com/layer-3/neodax/finex/pkg/websocket/client"
-	"github.com/layer-3/neodax/finex/pkg/websocket/protocol"
+	protocol "github.com/layer-3/clearsync/pkg/quotes/opendax_protocol"
 )
 
 type Opendax struct {
-	conn        client.WSTransport
-	dialer      client.WSDialer
+	conn        WSTransport
+	dialer      WSDialer
 	url         string
-	marketCache cache.Market
-	outbox      chan trade.Event
-	output      chan<- event.Event
+	outbox      chan<- TradeEvent
 	mu          sync.RWMutex
 	period      time.Duration
 	reqId       uint64
@@ -36,19 +28,18 @@ type TradeResponse struct {
 	Market    string
 	Price     decimal.Decimal
 	Amount    decimal.Decimal
-	TakerType trade.TakerType
+	TakerType TakerType
 	CreatedAt int64
 }
 
-func (o *Opendax) Init(markets cache.Market, outbox chan trade.Event, output chan<- event.Event, config config.QuoteFeed, dialer client.WSDialer) error {
-	o.url = config.URL
-	o.outbox = outbox
-	o.output = output
-	o.marketCache = markets
-	o.period = time.Duration(config.Period) * time.Second
-	o.reqId = 1
-	o.dialer = dialer
-	return nil
+func NewOpendax(config QuotesConfig, outbox chan<- TradeEvent) *Opendax {
+	return &Opendax{
+		url:    config.URL,
+		outbox: outbox,
+		period: time.Duration(config.Period) * time.Second,
+		reqId:  1,
+		dialer: WSDialWrapper{},
+	}
 }
 
 func (o *Opendax) Connect() {
@@ -62,25 +53,17 @@ func (o *Opendax) Connect() {
 		if err == nil {
 			return
 		} else {
-			logger.Warnf("Websocket.Dial: can't connect to opendax, reason: %s", err.Error())
+			logger.Warnf("Websocket.Dial: can't connect to Opendax, reason: %s", err.Error())
 		}
 
 		time.Sleep(o.period)
 	}
 }
 
-func (o *Opendax) IsConnected() bool {
-	o.mu.Lock()
-	defer o.mu.Unlock()
-
-	return o.isConnected
-}
-
-func (o *Opendax) Subscribe(base, quote string) error {
+func (o *Opendax) Subscribe(market Market) error {
 	// Opendax resource [market].[trades]
-	resource := fmt.Sprintf("%s%s.trades", base, quote)
-
-	message := client.SubscribePublic(o.reqId, resource)
+	resource := fmt.Sprintf("%s%s.trades", market.BaseUnit, market.QuoteUnit)
+	message := protocol.NewSubscribeMessage(o.reqId, resource)
 	o.reqId++
 
 	byteMsg, err := message.Encode()
@@ -89,14 +72,14 @@ func (o *Opendax) Subscribe(base, quote string) error {
 		return err
 	}
 
-	err = o.conn.WriteMessage(websocket.TextMessage, byteMsg)
-	if err != nil {
+	o.reqId++
+
+	if err := o.conn.WriteMessage(websocket.TextMessage, byteMsg); err != nil {
 		logger.Warn(err)
 		return err
 	}
 
-	_, _, err = o.conn.ReadMessage()
-	if err != nil {
+	if _, _, err := o.conn.ReadMessage(); err != nil {
 		logger.Warn(err)
 		return err
 	}
@@ -104,43 +87,50 @@ func (o *Opendax) Subscribe(base, quote string) error {
 	return nil
 }
 
-func (o *Opendax) marketSubscribe(marketList map[cache.MarketKey]market.Market) {
-	for _, marketModel := range marketList {
-
-		err := o.Subscribe(marketModel.BaseUnit, marketModel.QuoteUnit)
-		if err != nil {
-			logger.Infof("market %s doesn't exist in opendax", marketModel.Symbol)
-		}
-
-		logger.Infof("quotes service connected to Opendax %s market", marketModel.Symbol)
+func (o *Opendax) Start(markets []Market) error {
+	if len(markets) == 0 {
+		return errors.New("no markets specified")
 	}
-}
-func (o *Opendax) Start() error {
+
 	o.Connect()
-
-	marketList, err := o.marketCache.GetActive()
-	if err != nil {
-		logger.Warn(err.Error())
-		return err
-	}
-
-	o.marketSubscribe(marketList)
-	o.receiveOpendaxMsg(marketList)
+	o.marketSubscribe(markets)
+	o.receiveOpendaxMsg(markets)
 	return nil
 }
 
-func (o *Opendax) receiveOpendaxMsg(marketList map[cache.MarketKey]market.Market) {
+func (o *Opendax) Stop() error {
+	o.mu.Lock()
+	if o.conn != nil {
+		o.conn = nil
+	}
+
+	o.isConnected = false
+	o.mu.Unlock()
+	return nil
+}
+
+func (o *Opendax) marketSubscribe(markets []Market) {
+	for _, m := range markets {
+		symbol := m.BaseUnit + m.QuoteUnit
+		if err := o.Subscribe(m); err != nil {
+			logger.Infof("market %s doesn't exist in Opendax", symbol)
+		}
+		logger.Infof("quotes service connected to Opendax %s market", symbol)
+	}
+}
+
+func (o *Opendax) receiveOpendaxMsg(markets []Market) {
 	for {
-		if o.IsConnected() {
+		if o.isConnected {
 			_, message, err := o.conn.ReadMessage()
 			if err != nil {
 				logger.Warn("Error reading from connection", err)
 				o.Connect()
-				o.marketSubscribe(marketList)
+				o.marketSubscribe(markets)
 				continue
 			}
 
-			trEvent, err := o.parseOpendaxMsg(message)
+			trEvent, err := parseOpendaxMsg(message)
 			if err != nil {
 				logger.Warn(err)
 				continue
@@ -150,50 +140,66 @@ func (o *Opendax) receiveOpendaxMsg(marketList map[cache.MarketKey]market.Market
 			if trEvent.Market == "" || trEvent.Price == decimal.Zero {
 				continue
 			}
-
-			event, err := GetRoutingEvent(*trEvent)
-			if err != nil {
-				logger.Warn(err)
-				continue
-			}
 			o.outbox <- *trEvent
-			o.output <- *event
 		}
 	}
 }
 
-func (o *Opendax) parseOpendaxMsg(message []byte) (*trade.Event, error) {
+func parseOpendaxMsg(message []byte) (*TradeEvent, error) {
 	if message == nil {
-		return &trade.Event{}, nil
+		return &TradeEvent{}, nil
 	}
-	parsedMsg, err := protocol.Parse(message)
+	parsedMsg, err := protocol.ParseRaw(message)
 	if err != nil {
 		return nil, err
 	}
 
-	tr, err := client.Parse(parsedMsg)
-	if err == errors.New(client.ParseError) || parsedMsg.Method == protocol.MethodSubscribe || parsedMsg.Method == protocol.EventSystem {
-		return &trade.Event{}, nil
+	tradeEvent, err := convertToTrade(parsedMsg.Args)
+	if errors.Is(err, errors.New(protocol.ParseError)) || parsedMsg.Method == protocol.MethodSubscribe || parsedMsg.
+		Method == protocol.EventSystem {
+		return &TradeEvent{}, nil
 	}
 	if err != nil {
 		return nil, err
-	}
-
-	tradeEvent, ok := tr.(*trade.Event)
-	if !ok {
-		return nil, errors.New("error parsing opendax message")
 	}
 
 	return tradeEvent, nil
 }
 
-func (o *Opendax) Close() error {
-	o.mu.Lock()
-	if o.conn != nil {
-		o.conn = nil
-	}
+func convertToTrade(args []interface{}) (*TradeEvent, error) {
+	it := protocol.NewArgIterator(args)
 
-	o.isConnected = false
-	o.mu.Unlock()
-	return nil
+	market := it.NextString()
+	_ = it.NextUint64() // trade id
+	price := it.NextDecimal()
+	amount := it.NextDecimal()
+	total := it.NextDecimal()
+	ts := it.NextTimestamp()
+	tSide := it.NextString()
+	takerSide, err := recognizeSide(tSide)
+	if err != nil {
+		return nil, err
+	}
+	_ = it.NextString() // trade source
+
+	return &TradeEvent{
+		Source:    DriverOpendax,
+		Market:    market,
+		Price:     price,
+		Amount:    amount,
+		Total:     total,
+		CreatedAt: time.Unix(ts, 0),
+		TakerType: takerSide,
+	}, it.Err()
+}
+
+func recognizeSide(side string) (TakerType, error) {
+	switch side {
+	case protocol.OrderSideSell:
+		return TakerTypeSell, nil
+	case protocol.OrderSideBuy:
+		return TakerTypeBuy, nil
+	default:
+		return TakerTypeUnknown, errors.New("order side invalid: " + side)
+	}
 }

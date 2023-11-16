@@ -2,9 +2,6 @@ package quotes
 
 import (
 	"math/rand"
-
-	"github.com/layer-3/neodax/finex/models/trade"
-	"github.com/layer-3/neodax/finex/pkg/config"
 )
 
 type TradeSampler struct {
@@ -12,14 +9,14 @@ type TradeSampler struct {
 	defaultPercentage int
 }
 
-func NewTradeSampler(conf config.TradeSampler) *TradeSampler {
+func NewTradeSampler(conf TradeSamplerConfig) *TradeSampler {
 	return &TradeSampler{
 		enabled:           conf.Enabled,
 		defaultPercentage: conf.DefaultPercentage,
 	}
 }
 
-func (ts *TradeSampler) Allow(trade trade.Event) bool {
+func (ts *TradeSampler) Allow(trade TradeEvent) bool {
 	if !ts.enabled {
 		return true
 	}
@@ -28,7 +25,6 @@ func (ts *TradeSampler) Allow(trade trade.Event) bool {
 		return true
 	}
 
-	logger.Debugf("skipping trade: %v", trade)
-
+	logger.Debugw("skipping trade", "trade", trade)
 	return false
 }
