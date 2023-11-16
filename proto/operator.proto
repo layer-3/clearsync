@@ -102,6 +102,7 @@ message Notification {
     StreamNotification stream_notification = 1;
     SettlementNotification settlement_notification = 2;
     PositionNotification position_notification = 3;
+    ErrorNotification error_notification = 4;
   }
 }
 
@@ -146,6 +147,13 @@ message PositionNotification {
   core.Position position = 1;
 }
 
+message ErrorNotification {
+  string code = 1;
+  string msg = 2;
+  string err = 3;
+  ErrorMetadata metadata = 4;
+}
+
 message SettlementRequest {
   string channel_id = 1;
   settlement.PaymentMethod payment_method = 2;
@@ -163,4 +171,9 @@ message GetPositionsRequest {
 message GetPositionsResponse {
   string channel_id = 1;
   repeated core.Position positions = 2;
+}
+
+message ErrorMetadata {
+  string channel_id = 1;
+  string tx_id = 2;
 }

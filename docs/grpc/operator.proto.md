@@ -78,6 +78,38 @@ protolint:disable MAX_LINE_LENGTH
 
 
 
+### ErrorMetadata
+
+
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| channel_id | [string](#string) |  |
+| tx_id | [string](#string) |  |
+
+
+
+
+
+
+
+### ErrorNotification
+
+
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| code | [string](#string) |  |
+| msg | [string](#string) |  |
+| err | [string](#string) |  |
+| metadata | [ErrorMetadata](#errormetadata) |  |
+
+
+
+
+
+
+
 ### GetChallengeRequest
 
 
@@ -190,6 +222,7 @@ protolint:disable MAX_LINE_LENGTH
 | stream_notification | [StreamNotification](#streamnotification) |  |
 | settlement_notification | [SettlementNotification](#settlementnotification) |  |
 | position_notification | [PositionNotification](#positionnotification) |  |
+| error_notification | [ErrorNotification](#errornotification) |  |
 
 
 
