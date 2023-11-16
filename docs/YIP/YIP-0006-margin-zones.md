@@ -45,16 +45,6 @@ This proposal does not define an algorithm for Clearport to select markets for a
 > The difference between the last two is that the _"Move to green ..."_ changes the margin distribution less. For example, before the settlement the margin disrtibution was `[93, 7]` with the green zone at 15 and higher,
 > the _"Move to center ..."_ market selection algorithm can change the margin to be `[52, 48]`, and the _"Move to green ..."_ to `[83, 17]`.
 
-### Restrictions on post-settlement margin zone
-
-As the yellow and red zones are undesirable, the settlement should not result in the post-settlement margin in these zones.
-
-This means that Clearpost should be able to identify the zone of the post-settlement margin when users select markets and disallow settling if the resulting zones are yellow and red.
-
-It is worth noting that the post-settlement margin is calculated periodically during the settlement to allow participants to agree on the margin distribution which indeed resembles the market.
-Therefore, if a post-settlement margin calculation transitions to the yellow zone during the settlement process, the users are notified that the current settlement should be accelerated and a new one should be prepared soon after the current is completed.
-If the PSM calculation transitions to the red zone, the settlement is automatically interrupted and a new automatic one is prepared by the Clearport.
-
 ## Consequences
 
 1. Margin zone limits shall be defined in the application configuration.
@@ -62,5 +52,3 @@ If the PSM calculation transitions to the red zone, the settlement is automatica
 3. Clearport shall disallow adding new trades if the margin is in the yellow or red zone.
 4. Clearport shall initiate automatic settlement if the margin is in the red zone.
 5. Clearport shall implement at least one, and should implement several market selection algorithm for automatic settlement, which may be one of the described in this document or a custom one(s).
-6. Clearport shall disallow proposing settlement if the post-settlement margin calculation for selected markets is in the yellow or red zone.
-7. Clearport shall interrupt ongoing settlement if the current post-settlement margin calculation is in the red zone, and start a new settlement according to these rules.
