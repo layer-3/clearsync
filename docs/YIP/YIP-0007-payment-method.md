@@ -1,4 +1,4 @@
-# 0008 - Payment Method
+# 00087 - Payment Method
 
 ## Status
 
@@ -7,11 +7,6 @@ Proposed
 ## Context
 
 As Yellow Clearing Network is based on the concept of trading channels, it is necessary to have a payment method interface that enables the swap during the settlement to be performed.
-The swap and the following Post-Settlement Margin state checkpoint (more in the YIP about the Settlement) form the 2-step commit, meaning that the swap cannot happen without the margin update, which removes the collateral for the funds being swapped, and vice versa.
-
-### Related YIPs
-
-- [0007 - Settlement](./YIP-0007-settlement.md)
 
 ## Decision
 

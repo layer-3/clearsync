@@ -1,4 +1,4 @@
-# 0007 - Settlement
+# 0008 - Settlement
 
 ## Status
 
@@ -13,6 +13,7 @@ In the context of Yellow Network, several consequent settlements can be performe
 ### Related YIPs
 
 - [0006 - Margin Zones](./YIP-0006-margin-zones.md)
+- [0007 - Payment Method](./YIP-0007-payment-method.md)
 
 ## Decision
 
