@@ -45,11 +45,27 @@ What is the change that we're proposing and/or doing?
 What becomes easier or more difficult to do because of this change?
 ```
 
-#### Consensus process
+### Standard language e.g. shall, should, may and can
+
+Mandatory requirements set within an Yellow Improvement Proposals are clearly distinguished by using specific standard verbs — specifically, shall, should, may, and can.
+
+_Shall_, _should_, _may_ and _can_ are defined in [6.4.7](https://standards.ieee.org/about/policies/opman/sect6.html#6.4.7) of the _IEEE SA Standards Board Operations Manual_.
+
+The word _shall_ indicates mandatory requirements strictly to be followed in order to conform to the standard and from which no deviation is permitted (_shall_ equals _is required to_).
+
+Note that the word _must_ is deprecated and shall not be used when stating mandatory requirements; _must_ is used only to describe unavoidable situations. The word _will_ is deprecated and shall not be used when stating mandatory requirements; _will_ is only used in statements of fact.
+
+The word _should_ indicates that among several possibilities, one is recommended as particularly suitablewithout mentioning or excluding others; or that a certain course of action is preferred but not necessarilyrequired (_should_ equals _is recommended that_).
+
+The word _may_ is used to indicate a course of action permissible within the limits of the standard (_may_ equals _is permitted to_).
+
+The word _can_ is used for statements of possibility and capability, whether material, physical, or causal (_can_ equals _is able to_).
+
+### Consensus process
+
 After opening pull request, author should ask for review from other team members.
 
 Then, add the topic of specific YIP to the Architectural call agenda, discuss it and make a decision/vote.
-
 
 ## Consequences
 
