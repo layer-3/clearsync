@@ -10,8 +10,8 @@ One of the first payment methods should be simple enough to introduce to the pub
 
 ### Related YIPs
 
-- [0007 - Settlement](./YIP-0006-settlement.md)
-- [0008 - Payment Method](./YIP-0007-payment-method.md)
+- [0007 - Payment Method](./YIP-0007-payment-method.md)
+- [0008 - Settlement](./YIP-0008-settlement.md)
 - TODO: channel applications YIP
 
 ## Decision
@@ -34,7 +34,7 @@ The table below describes the state channel protocol (SCP) logic used in the pay
 
 Note:
 
-1. The PSM state checkpoint (link to Settlement YIP), which guarantees 2-step commit, is performed after `Execute` and before `Finalize`. If it fails, the `Revert` is called.
+1. The PSM state checkpoint ([YIP 0008 - Settlement](./YIP-0008-settlement.md)), which guarantees 2-step commit, is performed after `Execute` and before `Finalize`. If it fails, the `Revert` is called.
 2. In `Finalize` both parties must agree the swapped state was signed and PSMS checkpoint was performed. The channel is not concluded in this step to unblock the underlying clearing channel and allow performing margin calls or settlements.
 3. The logic of withdrawing the assets without counter-party confirmation if any error after the swap happened is extracted to a `ForceWithdraw` (and not put to `Finalize`) to emphasize the unhappy path the settlement is now undertaking.
    The counter-party of the `ForceWithdraw` invoker will be seen as malicious and will be punished by the protocol.
@@ -49,7 +49,7 @@ To operate, the escrow payment method must store the following data:
 
 ## Consequences
 
-1. Escrow payment method shall implement the Payment method interface [YIP 0008 - Payment Method](./YIP-0008-payment-method.md).
+1. Escrow payment method shall implement the Payment method interface [YIP 0007 - Payment Method](./YIP-0007-payment-method.md).
 2. Escrow payment method shall guarantee the atomicity of the swap.
 
 ### Reflections
