@@ -12,38 +12,36 @@ The Yellow Improvement Proposal (YIP) system is being introduced as an essential
 
 We will record decisions about architecture and other important decisions in clearsync repository.
 
-YIPs are numbered by the order in which they were committed\*\*, not by the order in which they were decided. An YIP with a greater number overrides an YIP with a lesser number.
+YIPs are numbered by the order in which they were **committed**, not by the order in which they were decided. An YIP with a greater number overrides an YIP with a lesser number.
 
-Meta-(YIPs) are encouraged.\*\* A meta-YIP records a decision about the YIP process itself -- such as a decision about the format, length or style of YIPs. This YIP is a meta YIP.
+**Meta-(YIPs) are encouraged**. A meta-YIP records a decision about the YIP process itself -- such as a decision about the format, length or style of YIPs. This YIP is a meta YIP.
 
-The format of an YIP shall follow the [template by Michael Nygard](https://github.com/joelparkerhenderson/architecture-decision-record/blob/main/templates/decision-record-template-by-michael-nygard/index.md)\*\* following the [suggestion](https://github.com/joelparkerhenderson/architecture-decision-record#suggestions-for-writing-good-adrs) of Joel Parker Henderson:
+The format of an YIP shall follow the [template by Michael Nygard](https://github.com/joelparkerhenderson/architecture-decision-record/blob/main/templates/decision-record-template-by-michael-nygard/index.md) following the [suggestion](https://github.com/joelparkerhenderson/architecture-decision-record#suggestions-for-writing-good-adrs) of Joel Parker Henderson:
 
-```bash
-# Decision record template by Michael Nygard
-
-This is the template in [Documenting architecture decisions - Michael Nygard](http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions).
-You can use [adr-tools](https://github.com/npryce/adr-tools) for managing the YIP files.
-
-In each YIP file, write these sections:
-
-# Title
-
-## Status
-
-What is the status, such as proposed, accepted, rejected, deprecated, superseded, etc.?
-
-## Context
-
-What is the issue that we're seeing that is motivating this decision or change?
-
-## Decision
-
-What is the change that we're proposing and/or doing?
-
-## Consequences
-
-What becomes easier or more difficult to do because of this change?
-```
+> ### Decision record template by Michael Nygard
+>
+> This is the template in [Documenting architecture decisions - Michael Nygard](http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions).
+> You can use [adr-tools](https://github.com/npryce/adr-tools) for managing the YIP files.
+>
+> In each YIP file, write these sections:
+>
+> ### Title
+>
+> #### Status
+>
+> What is the status, such as proposed, accepted, rejected, deprecated, superseded, etc.?
+>
+> #### Context
+>
+> What is the issue that we're seeing that is motivating this decision or change?
+>
+> #### Decision
+>
+> What is the change that we're proposing and/or doing?
+>
+> #### Consequences
+>
+> What becomes easier or more difficult to do because of this change?
 
 ### Standard language e.g. shall, should, may and can
 
