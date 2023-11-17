@@ -40,7 +40,7 @@ compile: ${ROOT_DIR}/artifacts
 
 # <go_file>_GO = <struct_name> <path_to_artifact>
 ierc20_GO = IERC20 @openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol/IERC20Metadata.json
-iyellow_adjudicator_GO = IYellowAdjudicator @statechannels/nitro-protocol/contracts/interfaces/INitroAdjudicator.sol/INitroAdjudicator.json
+iyellow_adjudicator_GO = IYellowAdjudicator contracts/interfaces/IYellowAdjudicator.sol/IYellowAdjudicator.json
 
 test_erc20_GO = TestERC20 contracts/test/TestERC20.sol/TestERC20.json
 yellow_adjudicator_GO = YellowAdjudicator contracts/clearing/YellowAdjudicator.sol/YellowAdjudicator.json
