@@ -20,6 +20,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+// Package merkletree implements a high-performance Merkle Tree in Go.
+// It supports parallel execution for enhanced performance and
+// offers compatibility with OpenZeppelin through sorted sibling pairs.
 package merkletree
 
 import (
@@ -481,13 +484,6 @@ func (m *MerkleTree) updateProofPairs(buffer [][]byte, idx, batch, step int) {
 	for i := start; i < end; i++ {
 		m.Proofs[i].Siblings = append(m.Proofs[i].Siblings, buffer[idx])
 	}
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }
 
 // generateLeaves generates the leaves slice from the data blocks.

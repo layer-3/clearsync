@@ -11,27 +11,27 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v3
-      with:
-        go-version-file: './go.mod'
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: './go.mod'
 
-    - name: Build
-      run: make build
+      - name: Build
+        run: make build
 
-    - name: Test
-      run: make test_race
+      - name: Test
+        run: make test_race
 
-    - name: Run golangci-lint
-      uses: golangci/golangci-lint-action@v3.2.0
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v3
 
-    - name: Run coverage
-      run: make test_ci_coverage
+      - name: Run coverage
+        run: make test_ci_coverage
 
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-      
-#     - name: Codacy Analysis CLI
-#       uses: codacy/codacy-analysis-cli-action@v4.1.0
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+
+      - name: Codacy Analysis CLI
+        uses: codacy/codacy-analysis-cli-action@master

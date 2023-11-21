@@ -1,6 +1,6 @@
 // MIT License
 //
-// Copyright (c) 2022 Tommy TIAN
+// Copyright (c) 2023 Tommy TIAN
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -32,6 +32,7 @@ import (
 	"testing"
 
 	"github.com/agiledragon/gomonkey/v2"
+
 	"github.com/txaty/go-merkletree/mock"
 )
 

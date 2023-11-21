@@ -3,6 +3,7 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/txaty/go-merkletree.svg)](https://pkg.go.dev/github.com/txaty/go-merkletree)
 [![Go Report Card](https://goreportcard.com/badge/github.com/txaty/go-merkletree)](https://goreportcard.com/report/github.com/txaty/go-merkletree)
 [![codecov](https://codecov.io/gh/txaty/go-merkletree/branch/main/graph/badge.svg?token=M02CIBSXFR)](https://codecov.io/gh/txaty/go-merkletree)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/3a9bb5ff5cb64dcf83903ca998a9144d)](https://app.codacy.com/gh/txaty/go-merkletree/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 
 High performance Golang Merkle Tree, supporting parallelization and OpenZeppelin sibling-sorting.
 
@@ -53,14 +54,14 @@ DisableLeafHashing bool
 To define a new Hash function:
 
 ```go
-func NewHashFunc(data []byte) ([]byte, error) {
+func myHashFunc(data []byte) ([]byte, error) {
     sha256Func := sha256.New()
     sha256Func.Write(data)
     return sha256Func.Sum(nil), nil
 }
 ```
 
-> **Important Notice:** please make sure the hash function used by paralleled algorithms is concurrent-safe.
+> **Important Notice:** please make sure the hash functions used by paralleled algorithms are __concurrent-safe__.
 
 ## Example
 
@@ -166,16 +167,14 @@ handleError(err)
 
 Setup:
 
-| CPU            | Memory | OS           | Hash Function |
-|----------------|--------|--------------|---------------|
-| Intel i7-9750H | 16GB   | Ubuntu 20.04 | SHA256        |
+|      CPU       | Memory |      OS      | Hash Function |
+|:--------------:|:------:|:------------:|:-------------:|
+| Intel i7-9750H |  16GB  | Ubuntu 20.04 |    SHA256     |
 
-Two tasks were performed:
+Benchmark tasks:
 
-- Proof generation for all the blocks: at the end we can obtain the Merkle Root and the proofs of all the data blocks.
-- Proof verification: verify a single proof.
-
-Benchmark implementation can be found in [txaty/merkle-tree-bench](https://github.com/txaty/merkle-tree-bench).
+1. Proof generation for all the blocks: at the end we can obtain the Merkle Root and the proofs of all the data blocks.
+2. Proof verification: verify a single proof.
 
 <table>
 <tbody>
@@ -190,20 +189,23 @@ Benchmark implementation can be found in [txaty/merkle-tree-bench](https://githu
 </td></tr>
 </tbody></table>
 
-> **_Note:_** The size of each data block is determined by the tree depth, which is represented on the x-axis of the
-> figures. The y-axis is shown using a logarithmic scale to better visualize the range of values. Please note that the
-> real time difference between the data points will be larger than what is visualized on the figure due to the
-> logarithmic
-> scale.
+> **_Note:_** Please note that the size of each data block is determined by the tree depth,
+> which is represented on the x-axis of the figures.
+> In order to better visualize the full range of values, the y-axis is shown using a logarithmic scale.
+> However, it's important to keep in mind that the real time difference between data points
+> will be larger than what is depicted on the figure due to the logarithmic scale.
+
+Benchmark implementation can be found in [txaty/merkle-tree-bench](https://github.com/txaty/merkle-tree-bench).
 
 ## Dependencies
 
 This project requires the following dependencies:
 
-- [gool](https://github.com/txaty/gool) - a generic goroutine pool. Please make sure your Golang version supports
-  generics.
-- [gomonkey](https://github.com/agiledragon/gomonkey) - a Go library for monkey patching in unit tests. It may have
-  permission-denied issues on Apple Silicon MacBooks. But it will not affect the use of the Merkle Tree library.
+- [gool](https://github.com/txaty/gool) - a generics goroutine pool. Before running the code, make sure that your Golang
+  version supports generics.
+- [gomonkey](https://github.com/agiledragon/gomonkey) - a Go library that allows you to monkey patch in unit tests.
+  Please note that this library may have permission-denied issues on Apple Silicon MacBooks. However, this will not
+  affect the use of the Merkle Tree library.
 
 ## License
 
