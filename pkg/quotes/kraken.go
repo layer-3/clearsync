@@ -15,6 +15,7 @@ import (
 )
 
 type Kraken struct {
+	url         string
 	conn        WSTransport
 	dialer      WSDialer
 	retryPeriod time.Duration
@@ -25,10 +26,11 @@ type Kraken struct {
 	mu           sync.RWMutex
 }
 
-func NewKraken(config QuotesConfig, outbox chan<- TradeEvent) *Kraken {
+func NewKraken(config Config, outbox chan<- TradeEvent) *Kraken {
 	return &Kraken{
+		url:          "wss://ws.kraken.com/v2",
 		dialer:       WSDialWrapper{},
-		retryPeriod:  config.Period,
+		retryPeriod:  config.ReconnectPeriod,
 		tradeSampler: NewTradeSampler(config.TradeSampler),
 		outbox:       outbox,
 	}
@@ -109,7 +111,7 @@ func (k *Kraken) connect() error {
 
 	var err error
 	for {
-		k.conn, _, err = k.dialer.Dial("wss://ws.kraken.com/v2", nil)
+		k.conn, _, err = k.dialer.Dial(k.url, nil)
 		if err != nil {
 			logger.Error(err)
 			time.Sleep(k.retryPeriod)

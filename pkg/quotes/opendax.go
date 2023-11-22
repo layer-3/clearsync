@@ -32,11 +32,11 @@ type TradeResponse struct {
 	CreatedAt int64
 }
 
-func NewOpendax(config QuotesConfig, outbox chan<- TradeEvent) *Opendax {
+func NewOpendax(config Config, outbox chan<- TradeEvent) *Opendax {
 	return &Opendax{
 		url:    config.URL,
 		outbox: outbox,
-		period: time.Duration(config.Period) * time.Second,
+		period: time.Duration(config.ReconnectPeriod) * time.Second,
 		reqId:  1,
 		dialer: WSDialWrapper{},
 	}

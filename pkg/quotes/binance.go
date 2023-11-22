@@ -18,7 +18,7 @@ type Binance struct {
 	outbox       chan<- TradeEvent
 }
 
-func NewBinance(config QuotesConfig, outbox chan<- TradeEvent) *Binance {
+func NewBinance(config Config, outbox chan<- TradeEvent) *Binance {
 	binance.WebsocketKeepalive = true
 	return &Binance{
 		streams:      make(map[string]chan struct{}),

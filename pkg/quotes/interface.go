@@ -17,12 +17,13 @@ type Driver interface {
 	Stop() error
 }
 
-func NewDriver(config QuotesConfig, outbox chan<- TradeEvent) (Driver, error) {
+func NewDriver(config Config, outbox chan<- TradeEvent) (Driver, error) {
 	allDrivers := map[DriverType]Driver{
-		DriverBinance:  NewBinance(config, outbox),
-		DriverKraken:   NewKraken(config, outbox),
-		DriverOpendax:  NewOpendax(config, outbox),
-		DriverBitfaker: NewBitfaker(config, outbox),
+		DriverBinance:   NewBinance(config, outbox),
+		DriverKraken:    NewKraken(config, outbox),
+		DriverOpendax:   NewOpendax(config, outbox),
+		DriverBitfaker:  NewBitfaker(config, outbox),
+		DriverUniswapV3: NewUniswapV3(config, outbox),
 	}
 
 	driver, ok := allDrivers[config.Driver]
@@ -32,22 +33,22 @@ func NewDriver(config QuotesConfig, outbox chan<- TradeEvent) (Driver, error) {
 	return driver, nil
 }
 
-type QuotesConfig struct {
-	URL          string             `yaml:"url" env:"FINEX_QUOTES_URL" env-default:"wss://alpha.yellow.org/api/v1/finex/ws"`
-	Driver       DriverType         `yaml:"driver" env:"FINEX_QUOTES_DRIVER" env-default:"opendax"`
-	APIKey       string             `yaml:"api_key" env:"FINEX_QUOTES_API_KEY"`
-	Period       time.Duration      `yaml:"period" env:"FINEX_QUOTES_RECONNECT_PERIOD" env-default:"5s"`
-	TradeSampler TradeSamplerConfig `yaml:"trade_sampler"`
+type Config struct {
+	URL             string             `yaml:"url" env:"QUOTES_URL" env-default:"wss://alpha.yellow.org/api/v1/finex/ws"`
+	Driver          DriverType         `yaml:"driver" env:"QUOTES_DRIVER" env-default:"binance"`
+	APIKey          string             `yaml:"api_key" env:"QUOTES_API_KEY"`
+	ReconnectPeriod time.Duration      `yaml:"period" env:"QUOTES_RECONNECT_PERIOD" env-default:"5s"`
+	TradeSampler    TradeSamplerConfig `yaml:"trade_sampler"`
 }
 
 type TradeSamplerConfig struct {
-	Enabled           bool
-	DefaultPercentage int
+	Enabled           bool `yaml:"enabled" env:"QUOTES_TRADE_SAMPLER_ENABLED"`
+	DefaultPercentage int  `yaml:"default_percentage" env:"QUOTES_TRADE_SAMPLER_DEFAULT_PERCENTAGE"`
 }
 
 type Market struct {
-	BaseUnit  string // e.g. `usdt`
-	QuoteUnit string // e.g. `btc`
+	BaseUnit  string // e.g. `btc` in `btcusdt`
+	QuoteUnit string // e.g. `usdt` in `btcusdt`
 }
 
 // TradeEvent is a generic container

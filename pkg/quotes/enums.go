@@ -11,14 +11,15 @@ func (d *DriverType) String() string {
 }
 
 var (
-	DriverBinance  = DriverType{"binance"}
-	DriverKraken   = DriverType{"kraken"}
-	DriverOpendax  = DriverType{"opendax"}
-	DriverBitfaker = DriverType{"bitfaker"}
+	DriverBinance   = DriverType{"binance"}
+	DriverKraken    = DriverType{"kraken"}
+	DriverOpendax   = DriverType{"opendax"}
+	DriverBitfaker  = DriverType{"bitfaker"}
+	DriverUniswapV3 = DriverType{"uniswap_v3"}
 )
 
 // TakerType is enum that represents
-// the side of taker in trade.
+// the side of taker in a trade.
 type TakerType struct {
 	slug string
 }

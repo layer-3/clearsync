@@ -9,7 +9,7 @@ import (
 
 func TestNewDriver(t *testing.T) {
 	t.Run(DriverBinance.String(), func(t *testing.T) {
-		config := QuotesConfig{Driver: DriverBinance}
+		config := Config{Driver: DriverBinance}
 		outbox := make(chan<- TradeEvent, 1)
 
 		priceFeeds, err := NewDriver(config, outbox)
@@ -18,7 +18,7 @@ func TestNewDriver(t *testing.T) {
 	})
 
 	t.Run(DriverKraken.String(), func(t *testing.T) {
-		config := QuotesConfig{Driver: DriverKraken}
+		config := Config{Driver: DriverKraken}
 		outbox := make(chan<- TradeEvent, 1)
 
 		priceFeeds, err := NewDriver(config, outbox)
@@ -27,7 +27,7 @@ func TestNewDriver(t *testing.T) {
 	})
 
 	t.Run(DriverBitfaker.String(), func(t *testing.T) {
-		config := QuotesConfig{Driver: DriverBitfaker}
+		config := Config{Driver: DriverBitfaker}
 		outbox := make(chan<- TradeEvent, 1)
 
 		priceFeeds, err := NewDriver(config, outbox)
@@ -36,7 +36,7 @@ func TestNewDriver(t *testing.T) {
 	})
 
 	t.Run(DriverOpendax.String(), func(t *testing.T) {
-		config := QuotesConfig{Driver: DriverOpendax}
+		config := Config{Driver: DriverOpendax}
 		outbox := make(chan<- TradeEvent, 1)
 
 		priceFeeds, err := NewDriver(config, outbox)
@@ -46,7 +46,7 @@ func TestNewDriver(t *testing.T) {
 
 	t.Run("Unknown driver", func(t *testing.T) {
 		priceFeeds, err := NewDriver(
-			QuotesConfig{Driver: DriverType{"wtf"}},
+			Config{Driver: DriverType{"wtf"}},
 			make(chan<- TradeEvent, 1),
 		)
 		require.Error(t, err)
