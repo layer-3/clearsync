@@ -38,7 +38,7 @@ func (m *MerkleTree) generateProofs() (err error) {
 	buffer, bufferSize := initBuffer(m.Leaves)
 	for step := 0; step < m.Depth; step++ {
 		bufferSize = fixOddNumOfNodes(buffer, bufferSize, step)
-		updateProofs(m.Proofs, buffer, bufferSize, step)
+		m.updateProofs(buffer, bufferSize, step)
 		for idx := 0; idx < bufferSize; idx += 2 {
 			leftIdx := idx << step
 			rightIdx := min(leftIdx+(1<<step), len(buffer)-1)
@@ -62,19 +62,21 @@ func (m *MerkleTree) generateProofsParallel() (err error) {
 		// Limit the number of workers to the previous level length.
 		numRoutines = min(numRoutines, bufferSize)
 		bufferSize = fixOddNumOfNodes(buffer, bufferSize, step)
-		updateProofsParallel(m.Proofs, buffer, bufferSize, step, m.NumLeaves)
-		var (
-			eg             = new(errgroup.Group)
-			hashFunc       = m.HashFunc
-			concatHashFunc = m.concatHashFunc
-		)
+		m.updateProofsParallel(buffer, bufferSize, step)
+		eg := new(errgroup.Group)
 		for startIdx := 0; startIdx < numRoutines; startIdx++ {
 			startIdx := startIdx << 1
 			eg.Go(func() error {
-				return workerProofGen(
-					hashFunc, concatHashFunc,
-					buffer, bufferSize, numRoutines, startIdx, step,
-				)
+				var err error
+				for i := startIdx; i < bufferSize; i += numRoutines << 1 {
+					leftIdx := i << step
+					rightIdx := min(leftIdx+(1<<step), len(buffer)-1)
+					buffer[leftIdx], err = m.HashFunc(m.concatHashFunc(buffer[leftIdx], buffer[rightIdx]))
+					if err != nil {
+						return err
+					}
+				}
+				return nil
 			})
 		}
 		if err = eg.Wait(); err != nil {
@@ -84,22 +86,6 @@ func (m *MerkleTree) generateProofsParallel() (err error) {
 	}
 	m.Root = buffer[0]
 	return
-}
-
-func workerProofGen(
-	hashFunc TypeHashFunc, concatHashFunc typeConcatHashFunc,
-	buffer [][]byte, bufferSize, numRoutine, startIdx, step int,
-) error {
-	var err error
-	for i := startIdx; i < bufferSize; i += numRoutine << 1 {
-		leftIdx := i << step
-		rightIdx := min(leftIdx+(1<<step), len(buffer)-1)
-		buffer[leftIdx], err = hashFunc(concatHashFunc(buffer[leftIdx], buffer[rightIdx]))
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // initProofs initializes the MerkleTree's Proofs with the appropriate size and depth.
@@ -145,26 +131,26 @@ func fixOddNumOfNodes(buffer [][]byte, bufferSize, step int) int {
 }
 
 // updateProofs updates the proofs for all the leaves while constructing the Merkle Tree.
-func updateProofs(proofs []*Proof, buffer [][]byte, bufferSize, step int) {
+func (m *MerkleTree) updateProofs(buffer [][]byte, bufferSize, step int) {
 	batch := 1 << step
 	for i := 0; i < bufferSize; i += 2 {
-		updateProofInTwoBatches(proofs, buffer, i, batch, step)
+		updateProofInTwoBatches(m.Proofs, buffer, i, batch, step)
 	}
 }
 
 // updateProofsParallel updates the proofs for all the leaves while constructing the Merkle Tree in parallel.
-func updateProofsParallel(proofs []*Proof, buffer [][]byte, bufferLength, step, numRoutines int) {
+func (m *MerkleTree) updateProofsParallel(buffer [][]byte, bufferLength, step int) {
 	var (
 		batch = 1 << step
 		wg    sync.WaitGroup
 	)
-	numRoutines = min(numRoutines, bufferLength)
+	numRoutines := min(m.NumRoutines, bufferLength)
 	wg.Add(numRoutines)
 	for startIdx := 0; startIdx < numRoutines; startIdx++ {
 		go func(startIdx int) {
 			defer wg.Done()
 			for i := startIdx; i < bufferLength; i += numRoutines << 1 {
-				updateProofInTwoBatches(proofs, buffer, i, batch, step)
+				updateProofInTwoBatches(m.Proofs, buffer, i, batch, step)
 			}
 		}(startIdx << 1)
 	}

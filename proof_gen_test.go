@@ -28,6 +28,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"sync/atomic"
 	"testing"
 
 	"github.com/agiledragon/gomonkey/v2"
@@ -343,17 +344,8 @@ func TestMerkleTree_proofGen(t *testing.T) {
 	}
 }
 
-func dummyBuffer(size int) [][]byte {
-	buffer := make([][]byte, size)
-	for i := 0; i < size; i++ {
-		buffer[i] = []byte(fmt.Sprintf("dummy_buffer_%d", i))
-	}
-	return buffer
-}
-
 func TestMerkleTree_proofGenParallel(t *testing.T) {
-	patches := gomonkey.NewPatches()
-	defer patches.Reset()
+	var hashFuncCounter atomic.Uint32
 	type args struct {
 		config *Config
 		blocks []DataBlock
@@ -361,20 +353,22 @@ func TestMerkleTree_proofGenParallel(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		mock    func()
 		wantErr bool
 	}{
 		{
-			name: "test_workerProofGen_err",
+			name: "test_goroutine_err",
 			args: args{
 				config: &Config{
-					HashFunc:      mockHashFunc,
+					HashFunc: func(data []byte) ([]byte, error) {
+						if hashFuncCounter.Load() == 9 {
+							return nil, errors.New("test_goroutine_err")
+						}
+						hashFuncCounter.Add(1)
+						return mockHashFunc(data)
+					},
 					RunInParallel: true,
 				},
-				blocks: mockDataBlocks(5),
-			},
-			mock: func() {
-				patches.ApplyFuncReturn(workerProofGen, errors.New("test_workerProofGen_err"))
+				blocks: mockDataBlocks(4),
 			},
 			wantErr: true,
 		},
@@ -386,66 +380,8 @@ func TestMerkleTree_proofGenParallel(t *testing.T) {
 				t.Errorf("New() error = %v", err)
 				return
 			}
-			if tt.mock != nil {
-				tt.mock()
-			}
-			defer patches.Reset()
 			if err := m.generateProofsParallel(); (err != nil) != tt.wantErr {
 				t.Errorf("generateProofsParallel() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func Test_workerProofGen(t *testing.T) {
-	patches := gomonkey.NewPatches()
-	defer patches.Reset()
-	type args struct {
-		hashFunc       TypeHashFunc
-		concatHashFunc typeConcatHashFunc
-		buffer         [][]byte
-		bufferSize     int
-		numRoutine     int
-		startIdx       int
-		step           int
-	}
-	tests := []struct {
-		name    string
-		args    args
-		mock    func()
-		wantErr bool
-	}{
-		{
-			name: "test_hash_func_err",
-			args: args{
-				hashFunc:       mockHashFunc,
-				concatHashFunc: concatHash,
-				buffer:         dummyBuffer(8),
-				bufferSize:     8,
-				numRoutine:     4,
-				startIdx:       0,
-				step:           0,
-			},
-			mock: func() {
-				patches.ApplyFunc(mockHashFunc,
-					func([]byte) ([]byte, error) {
-						return nil, errors.New("test_hash_func_err")
-					})
-			},
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.mock != nil {
-				tt.mock()
-			}
-			defer patches.Reset()
-			if err := workerProofGen(
-				tt.args.hashFunc, tt.args.concatHashFunc,
-				tt.args.buffer, tt.args.bufferSize, tt.args.numRoutine, tt.args.startIdx, tt.args.step,
-			); (err != nil) != tt.wantErr {
-				t.Errorf("workerProofGen() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
