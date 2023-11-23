@@ -20,6 +20,9 @@ coverage.*
 # Dependency directories (remove the comment below to include it)
 vendor/
 
+# Go fuzzing data
+testdata/
+
 # IDEs
 .idea/
 .vscode/

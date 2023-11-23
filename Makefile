@@ -1,4 +1,4 @@
-.PHONY: test test_race test_with_mock test_ci_coverage format bench report_bench cpu_report mem_report build
+.PHONY: test test_race test_with_mock test_fuzz test_ci_coverage format bench report_bench cpu_report mem_report build
 
 COVER_OUT := coverage.out
 COVER_HTML := coverage.html
@@ -9,6 +9,9 @@ test_with_mock: COVER_OPTS = -race -gcflags=all=-l -covermode atomic
 
 test test_race test_with_mock:
 	go test -v $(COVER_OPTS) -coverprofile=$(COVER_OUT) && go tool cover -html=$(COVER_OUT) -o $(COVER_HTML) && go tool cover -func=$(COVER_OUT) -o $(COVER_OUT)
+
+test_fuzz:
+	go test -v -race -fuzz=FuzzMerkleTreeNew -fuzztime=30m -run ^FuzzMerkleTreeNew$
 
 test_ci_coverage:
 	go test -race -gcflags=all=-l -coverprofile=coverage.txt -covermode=atomic
