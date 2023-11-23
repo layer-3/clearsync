@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Approved
 
 ## Context
 
@@ -41,6 +41,6 @@ Quantity precision allows up to 8 decimals. Anything exceeding this shall be rou
 ## Consequences
 
 1. All API outputting prices shall be truncated and formation using five (5) significant figures
-3. All API input shall return an error for orders where prices or amount are lower in precision
-4. All frontend and UI clients shall truncate order price input to five (5) significant figures
-5. Backend and UI pkgs shall support easy change of significant figures in range of 5 - 8.
+2. All API input shall return an error for orders where prices or amounts exceed 18 and 8 precision respectfully
+3. All frontend and UI clients shall truncate order price input to five (5) significant figures
+4. Backend and UI pkgs shall support easy change of significant figures in range of 5 - 8.
