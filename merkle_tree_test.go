@@ -34,7 +34,7 @@ import (
 func mockDataBlocks(num int) []DataBlock {
 	blocks := make([]DataBlock, num)
 	for i := 0; i < num; i++ {
-		byteLen := rand.Intn(1 << 15)
+		byteLen := max(32, rand.Intn(1<<15))
 		block := &mock.DataBlock{
 			Data: make([]byte, byteLen),
 		}

@@ -4,6 +4,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/txaty/go-merkletree)](https://goreportcard.com/report/github.com/txaty/go-merkletree)
 [![codecov](https://codecov.io/gh/txaty/go-merkletree/branch/main/graph/badge.svg?token=M02CIBSXFR)](https://codecov.io/gh/txaty/go-merkletree)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/3a9bb5ff5cb64dcf83903ca998a9144d)](https://app.codacy.com/gh/txaty/go-merkletree/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+[![MIT license](https://img.shields.io/badge/license-MIT-brightgreen.svg)](https://opensource.org/licenses/MIT)
 
 High performance Golang Merkle Tree, supporting parallelization and OpenZeppelin sibling-sorting.
 
@@ -167,9 +168,9 @@ handleError(err)
 
 Setup:
 
-|      CPU       | Memory |      OS      | Hash Function |
-|:--------------:|:------:|:------------:|:-------------:|
-| Intel i7-9750H |  16GB  | Ubuntu 20.04 |    SHA256     |
+|  AWS EC2   |   CPU   | Memory |        OS        | Hash Function | Go Version |
+|:----------:|:-------:|:------:|:----------------:|:-------------:|:----------:|
+| c5.4xlarge | 16 Core |  32GB  | Ubuntu 22.04 LTS |    SHA256     |   1.21.4   |
 
 Benchmark tasks:
 
@@ -180,7 +181,7 @@ Benchmark tasks:
 <tbody>
 <tr><td>
 
-![Proof Generation](asset/proof_gen.png)
+![Proof Generation All](asset/proof_gen_all.png)
 
 </td><td>
 
@@ -201,12 +202,11 @@ Benchmark implementation can be found in [txaty/merkle-tree-bench](https://githu
 
 This project requires the following dependencies:
 
-- [gool](https://github.com/txaty/gool) - a generics goroutine pool. Before running the code, make sure that your Golang
-  version supports generics.
+- [golang.org/x/sync](golang.org/x/sync) - `errgroup` in this package is used to handle errors from goroutines.
 - [gomonkey](https://github.com/agiledragon/gomonkey) - a Go library that allows you to monkey patch in unit tests.
   Please note that this library may have permission-denied issues on Apple Silicon MacBooks. However, this will not
   affect the use of the Merkle Tree library.
 
 ## License
 
-MIT License
+Released under the [MIT License](https://github.com/txaty/go-merkletree/blob/master/LICENSE).

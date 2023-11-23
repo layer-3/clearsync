@@ -26,6 +26,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"reflect"
+	"sync/atomic"
 	"testing"
 )
 
@@ -147,6 +148,7 @@ func TestMerkleTreeNew_modeProofGenAndTreeBuild(t *testing.T) {
 }
 
 func TestMerkleTreeNew_modeProofGenAndTreeBuildParallel(t *testing.T) {
+	var hashFuncCounter atomic.Uint32
 	type args struct {
 		blocks []DataBlock
 		config *Config
@@ -221,12 +223,13 @@ func TestMerkleTreeNew_modeProofGenAndTreeBuildParallel(t *testing.T) {
 		{
 			name: "test_tree_build_hash_func_error",
 			args: args{
-				blocks: mockDataBlocks(100),
+				blocks: mockDataBlocks(5),
 				config: &Config{
 					HashFunc: func(block []byte) ([]byte, error) {
-						if len(block) == 64 {
+						if hashFuncCounter.Load() >= 5 {
 							return nil, fmt.Errorf("hash func error")
 						}
+						hashFuncCounter.Add(1)
 						sha256Func := sha256.New()
 						sha256Func.Write(block)
 						return sha256Func.Sum(nil), nil

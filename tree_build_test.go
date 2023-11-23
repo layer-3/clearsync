@@ -277,6 +277,24 @@ func TestMerkleTreeNew_modeTreeBuildParallel(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "test_hash_func_error_when_computing_nodes_parallel",
+			args: args{
+				blocks: mockDataBlocks(4),
+				config: &Config{
+					HashFunc: func(block []byte) ([]byte, error) {
+						if hashFuncCounter.Load() == 5 {
+							return nil, fmt.Errorf("hash func error")
+						}
+						hashFuncCounter.Add(1)
+						sha256Func := sha256.New()
+						sha256Func.Write(block)
+						return sha256Func.Sum(nil), nil
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
 			name: "test_hash_func_error_when_computing_root_parallel",
 			args: args{
 				blocks: mockDataBlocks(4),
@@ -299,6 +317,7 @@ func TestMerkleTreeNew_modeTreeBuildParallel(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			hashFuncCounter.Store(0)
 			m, err := New(tt.args.config, tt.args.blocks)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Build() error = %v, wantErr %v", err, tt.wantErr)
