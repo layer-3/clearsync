@@ -337,8 +337,8 @@ func TestMerkleTree_proofGen(t *testing.T) {
 				tt.mock()
 			}
 			defer patches.Reset()
-			if err := m.generateProofs(); (err != nil) != tt.wantErr {
-				t.Errorf("generateProofs() error = %v, wantErr %v", err, tt.wantErr)
+			if err := m.proofGen(); (err != nil) != tt.wantErr {
+				t.Errorf("proofGen() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -380,8 +380,8 @@ func TestMerkleTree_proofGenParallel(t *testing.T) {
 				t.Errorf("New() error = %v", err)
 				return
 			}
-			if err := m.generateProofsParallel(); (err != nil) != tt.wantErr {
-				t.Errorf("generateProofsParallel() error = %v, wantErr %v", err, tt.wantErr)
+			if err := m.proofGenParallel(); (err != nil) != tt.wantErr {
+				t.Errorf("proofGenParallel() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

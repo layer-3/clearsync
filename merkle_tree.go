@@ -162,10 +162,10 @@ func New(config *Config, blocks []DataBlock) (m *MerkleTree, err error) {
 	// Generate proofs in ModeProofGen.
 	if m.Mode == ModeProofGen {
 		if m.RunInParallel {
-			err = m.generateProofsParallel()
+			err = m.proofGenParallel()
 			return
 		}
-		err = m.generateProofs()
+		err = m.proofGen()
 		return
 	}
 	// Initialize the leafMap for ModeTreeBuild and ModeProofGenAndTreeBuild.

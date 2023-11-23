@@ -31,9 +31,9 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// generateProofs constructs the Merkle Tree and generates the Merkle proofs for each leaf.
+// proofGen constructs the Merkle Tree and generates the Merkle proofs for each leaf.
 // It returns an error if there is an issue during the generation process.
-func (m *MerkleTree) generateProofs() (err error) {
+func (m *MerkleTree) proofGen() (err error) {
 	m.initProofs()
 	buffer, bufferSize := initBuffer(m.Leaves)
 	for step := 0; step < m.Depth; step++ {
@@ -53,8 +53,8 @@ func (m *MerkleTree) generateProofs() (err error) {
 	return
 }
 
-// generateProofsParallel generates proofs concurrently for the MerkleTree.
-func (m *MerkleTree) generateProofsParallel() (err error) {
+// proofGenParallel generates proofs concurrently for the MerkleTree.
+func (m *MerkleTree) proofGenParallel() (err error) {
 	m.initProofs()
 	buffer, bufferSize := initBuffer(m.Leaves)
 	numRoutines := m.NumRoutines
