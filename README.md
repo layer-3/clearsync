@@ -62,8 +62,8 @@ func myHashFunc(data []byte) ([]byte, error) {
 }
 ```
 
-> **Critical Advisory:** It's essential to ensure that the hash functions employed by parallel algorithms are *
-*concurrent-safe**.
+> **Critical Advisory:** It's essential to ensure that the hash functions employed by parallel algorithms are
+*concurrent-safe*.
 > `DefaultHashFunc`, which is the default hash function used for tasks executed sequentially in this library, does NOT
 > offer concurrent-safety, given its re-utilization of the same SHA256 digest.
 
