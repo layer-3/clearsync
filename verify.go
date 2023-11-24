@@ -20,9 +20,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// Package merkletree implements a high-performance Merkle Tree in Go.
-// It supports parallel execution for enhanced performance and
-// offers compatibility with OpenZeppelin through sorted sibling pairs.
 package merkletree
 
 import "bytes"
