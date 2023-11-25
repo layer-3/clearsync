@@ -47,6 +47,7 @@ func (m *MerkleTree) Proof(dataBlock DataBlock) (*Proof, error) {
 	m.leafMapMu.Lock()
 	idx, ok := m.leafMap[string(leaf)]
 	m.leafMapMu.Unlock()
+
 	if !ok {
 		return nil, ErrProofInvalidDataBlock
 	}
@@ -56,6 +57,7 @@ func (m *MerkleTree) Proof(dataBlock DataBlock) (*Proof, error) {
 		path     uint32
 		siblings = make([][]byte, m.Depth)
 	)
+
 	for i := 0; i < m.Depth; i++ {
 		if idx&1 == 1 {
 			siblings[i] = m.nodes[i][idx-1]
@@ -63,8 +65,10 @@ func (m *MerkleTree) Proof(dataBlock DataBlock) (*Proof, error) {
 			path += 1 << i
 			siblings[i] = m.nodes[i][idx+1]
 		}
+
 		idx >>= 1
 	}
+
 	return &Proof{
 		Path:     path,
 		Siblings: siblings,

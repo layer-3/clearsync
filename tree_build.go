@@ -22,17 +22,23 @@
 
 package merkletree
 
-import "golang.org/x/sync/errgroup"
+import (
+	"fmt"
+
+	"golang.org/x/sync/errgroup"
+)
 
 // treeBuild builds the Merkle Tree and stores all the nodes.
 func (m *MerkleTree) treeBuild() (err error) {
 	finishMap := make(chan struct{})
 	go m.workerBuildLeafMap(finishMap)
 	m.initNodes()
+
 	for i := 0; i < m.Depth-1; i++ {
 		m.nodes[i] = appendNodeIfOdd(m.nodes[i])
 		numNodes := len(m.nodes[i])
 		m.nodes[i+1] = make([][]byte, numNodes>>1)
+
 		for j := 0; j < numNodes; j += 2 {
 			if m.nodes[i+1][j>>1], err = m.HashFunc(
 				m.concatHashFunc(m.nodes[i][j], m.nodes[i][j+1]),
@@ -41,28 +47,34 @@ func (m *MerkleTree) treeBuild() (err error) {
 			}
 		}
 	}
+
 	if m.Root, err = m.HashFunc(m.concatHashFunc(
 		m.nodes[m.Depth-1][0], m.nodes[m.Depth-1][1],
 	)); err != nil {
 		return
 	}
+
 	<-finishMap
+
 	return
 }
 
 // treeBuildParallel builds the Merkle Tree and stores all the nodes in parallel.
-func (m *MerkleTree) treeBuildParallel() (err error) {
+func (m *MerkleTree) treeBuildParallel() error {
 	finishMap := make(chan struct{})
 	go m.workerBuildLeafMap(finishMap)
 	m.initNodes()
+
 	for i := 0; i < m.Depth-1; i++ {
 		m.nodes[i] = appendNodeIfOdd(m.nodes[i])
 		numNodes := len(m.nodes[i])
 		m.nodes[i+1] = make([][]byte, numNodes>>1)
 		numRoutines := min(m.NumRoutines, numNodes)
 		eg := new(errgroup.Group)
+
 		for startIdx := 0; startIdx < numRoutines; startIdx++ {
 			startIdx := startIdx
+
 			eg.Go(func() error {
 				for j := startIdx << 1; j < numNodes; j += numRoutines << 1 {
 					newHash, err := m.HashFunc(m.concatHashFunc(
@@ -73,25 +85,32 @@ func (m *MerkleTree) treeBuildParallel() (err error) {
 					}
 					m.nodes[i+1][j>>1] = newHash
 				}
+
 				return nil
 			})
 		}
-		if err = eg.Wait(); err != nil {
-			return
+
+		if err := eg.Wait(); err != nil {
+			return fmt.Errorf("treeBuildParallel: %w", err)
 		}
 	}
+
+	var err error
 	if m.Root, err = m.HashFunc(m.concatHashFunc(
 		m.nodes[m.Depth-1][0], m.nodes[m.Depth-1][1],
 	)); err != nil {
-		return
+		return err
 	}
+
 	<-finishMap
-	return
+
+	return nil
 }
 
 func (m *MerkleTree) workerBuildLeafMap(finishChan chan struct{}) {
 	m.leafMapMu.Lock()
 	defer m.leafMapMu.Unlock()
+
 	for i := 0; i < m.NumLeaves; i++ {
 		m.leafMap[string(m.Leaves[i])] = i
 	}
@@ -108,7 +127,10 @@ func appendNodeIfOdd(buffer [][]byte) [][]byte {
 	if len(buffer)&1 == 0 {
 		return buffer
 	}
+
 	appendNode := buffer[len(buffer)-1]
+
 	buffer = append(buffer, appendNode)
+
 	return buffer
 }

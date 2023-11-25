@@ -22,7 +22,11 @@
 
 package merkletree
 
-import "golang.org/x/sync/errgroup"
+import (
+	"fmt"
+
+	"golang.org/x/sync/errgroup"
+)
 
 // computeLeafNodes compute the leaf nodes from the data blocks.
 func (m *MerkleTree) computeLeafNodes(blocks []DataBlock) ([][]byte, error) {
@@ -32,11 +36,13 @@ func (m *MerkleTree) computeLeafNodes(blocks []DataBlock) ([][]byte, error) {
 		disableLeafHashing = m.DisableLeafHashing
 		err                error
 	)
+
 	for i := 0; i < m.NumLeaves; i++ {
 		if leaves[i], err = dataBlockToLeaf(blocks[i], hashFunc, disableLeafHashing); err != nil {
 			return nil, err
 		}
 	}
+
 	return leaves, nil
 }
 
@@ -50,9 +56,12 @@ func (m *MerkleTree) computeLeafNodesParallel(blocks []DataBlock) ([][]byte, err
 		disableLeafHashing = m.DisableLeafHashing
 		eg                 = new(errgroup.Group)
 	)
+
 	numRoutines = min(numRoutines, lenLeaves)
+
 	for startIdx := 0; startIdx < numRoutines; startIdx++ {
 		startIdx := startIdx
+
 		eg.Go(func() error {
 			var err error
 			for i := startIdx; i < lenLeaves; i += numRoutines {
@@ -60,12 +69,15 @@ func (m *MerkleTree) computeLeafNodesParallel(blocks []DataBlock) ([][]byte, err
 					return err
 				}
 			}
+
 			return nil
 		})
 	}
+
 	if err := eg.Wait(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("computeLeafNodesParallel: %w", err)
 	}
+
 	return leaves, nil
 }
 
@@ -74,13 +86,16 @@ func (m *MerkleTree) computeLeafNodesParallel(blocks []DataBlock) ([][]byte, err
 func dataBlockToLeaf(block DataBlock, hashFunc TypeHashFunc, disableLeafHashing bool) ([]byte, error) {
 	blockBytes, err := block.Serialize()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("dataBlockToLeaf: %w", err)
 	}
+
 	if disableLeafHashing {
 		// copy the value so that the original byte slice is not modified
 		leaf := make([]byte, len(blockBytes))
 		copy(leaf, blockBytes)
+
 		return leaf, nil
 	}
+
 	return hashFunc(blockBytes)
 }

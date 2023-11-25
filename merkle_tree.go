@@ -118,16 +118,6 @@ func New(config *Config, blocks []DataBlock) (m *MerkleTree, err error) {
 		Depth:     bits.Len(uint(len(blocks) - 1)),
 	}
 
-	// Initialize the hash function.
-	if m.HashFunc == nil {
-		if m.RunInParallel {
-			// Use a concurrent safe hash function for parallel execution.
-			m.HashFunc = DefaultHashFuncParallel
-		} else {
-			m.HashFunc = DefaultHashFunc
-		}
-	}
-
 	// Hash concatenation function initialization.
 	if m.concatHashFunc == nil {
 		if m.SortSiblingPairs {
@@ -137,69 +127,106 @@ func New(config *Config, blocks []DataBlock) (m *MerkleTree, err error) {
 		}
 	}
 
-	// Configure parallelization settings.
-	if m.RunInParallel {
-		// Set NumRoutines to the number of CPU cores if not specified or invalid.
-		if m.NumRoutines <= 0 {
-			m.NumRoutines = runtime.NumCPU()
-		}
-		if m.Leaves, err = m.computeLeafNodesParallel(blocks); err != nil {
-			return nil, err
-		}
-	} else {
-		// Generate leaves without parallelization.
-		if m.Leaves, err = m.computeLeafNodes(blocks); err != nil {
-			return nil, err
-		}
-	}
-
 	// Perform actions based on the configured mode.
 	// Set the mode to ModeProofGen by default if not specified.
 	if m.Mode == 0 {
 		m.Mode = ModeProofGen
 	}
 
-	// Generate proofs in ModeProofGen.
-	if m.Mode == ModeProofGen {
-		if m.RunInParallel {
-			err = m.proofGenParallel()
-			return
+	if m.RunInParallel {
+		if err := m.newParallel(blocks); err != nil {
+			return nil, err
 		}
-		err = m.proofGen()
-		return
+
+		return m, nil
 	}
+
+	if err := m.new(blocks); err != nil {
+		return nil, err
+	}
+
+	return m, nil
+}
+
+func (m *MerkleTree) new(blocks []DataBlock) error {
+	// Initialize the hash function.
+	if m.HashFunc == nil {
+		m.HashFunc = DefaultHashFunc
+	}
+
+	// Generate leaves.
+	var err error
+	m.Leaves, err = m.computeLeafNodes(blocks)
+
+	if err != nil {
+		return err
+	}
+
+	if m.Mode == ModeProofGen {
+		return m.proofGen()
+	}
+
 	// Initialize the leafMap for ModeTreeBuild and ModeProofGenAndTreeBuild.
 	m.leafMap = make(map[string]int)
 
-	// Build the tree in ModeTreeBuild.
 	if m.Mode == ModeTreeBuild {
-		if m.RunInParallel {
-			err = m.treeBuildParallel()
-			return
-		}
-		err = m.treeBuild()
-		return
+		return m.treeBuild()
 	}
 
 	// Build the tree and generate proofs in ModeProofGenAndTreeBuild.
 	if m.Mode == ModeProofGenAndTreeBuild {
-		if m.RunInParallel {
-			err = m.proofGenAndTreeBuildParallel()
-			return
-		}
-		err = m.proofGenAndTreeBuild()
-		return
+		return m.proofGenAndTreeBuild()
 	}
 
 	// Return an error if the configuration mode is invalid.
-	return nil, ErrInvalidConfigMode
+	return ErrInvalidConfigMode
+}
+
+func (m *MerkleTree) newParallel(blocks []DataBlock) error {
+	// Initialize the hash function.
+	if m.HashFunc == nil {
+		m.HashFunc = DefaultHashFuncParallel
+	}
+
+	// Set NumRoutines to the number of CPU cores if not specified or invalid.
+	if m.NumRoutines <= 0 {
+		m.NumRoutines = runtime.NumCPU()
+	}
+
+	// Generate leaves.
+	var err error
+	m.Leaves, err = m.computeLeafNodesParallel(blocks)
+
+	if err != nil {
+		return err
+	}
+
+	if m.Mode == ModeProofGen {
+		return m.proofGenParallel()
+	}
+
+	// Initialize the leafMap for ModeTreeBuild and ModeProofGenAndTreeBuild.
+	m.leafMap = make(map[string]int)
+
+	if m.Mode == ModeTreeBuild {
+		return m.treeBuildParallel()
+	}
+
+	// Build the tree and generate proofs in ModeProofGenAndTreeBuild.
+	if m.Mode == ModeProofGenAndTreeBuild {
+		return m.proofGenAndTreeBuildParallel()
+	}
+
+	// Return an error if the configuration mode is invalid.
+	return ErrInvalidConfigMode
 }
 
 // concatHash concatenates two byte slices, b1 and b2.
-func concatHash(b1 []byte, b2 []byte) []byte {
+func concatHash(b1, b2 []byte) []byte {
 	result := make([]byte, len(b1)+len(b2))
 	copy(result, b1)
 	copy(result[len(b1):], b2)
+
 	return result
 }
 
@@ -207,9 +234,10 @@ func concatHash(b1 []byte, b2 []byte) []byte {
 // The function ensures that the smaller byte slice (in terms of lexicographic order)
 // is placed before the larger one. This is used for compatibility with OpenZeppelin's
 // Merkle Proof verification implementation.
-func concatSortHash(b1 []byte, b2 []byte) []byte {
+func concatSortHash(b1, b2 []byte) []byte {
 	if bytes.Compare(b1, b2) < 0 {
 		return concatHash(b1, b2)
 	}
+
 	return concatHash(b2, b1)
 }

@@ -37,12 +37,15 @@ func Verify(dataBlock DataBlock, proof *Proof, root []byte, config *Config) (boo
 	if dataBlock == nil {
 		return false, ErrDataBlockIsNil
 	}
+
 	if proof == nil {
 		return false, ErrProofIsNil
 	}
+
 	if config == nil {
 		config = new(Config)
 	}
+
 	if config.HashFunc == nil {
 		config.HashFunc = DefaultHashFunc
 	}
@@ -63,17 +66,22 @@ func Verify(dataBlock DataBlock, proof *Proof, root []byte, config *Config) (boo
 	// Copy the slice so that the original leaf won't be modified.
 	result := make([]byte, len(leaf))
 	copy(result, leaf)
+
 	path := proof.Path
+
 	for _, sib := range proof.Siblings {
 		if path&1 == 1 {
 			result, err = config.HashFunc(concatFunc(result, sib))
 		} else {
 			result, err = config.HashFunc(concatFunc(sib, result))
 		}
+
 		if err != nil {
 			return false, err
 		}
+
 		path >>= 1
 	}
+
 	return bytes.Equal(result, root), nil
 }

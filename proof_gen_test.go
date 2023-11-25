@@ -244,11 +244,22 @@ func TestMerkleTreeNew_modeProofGen(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "invalid_mode",
+			name: "test_invalid_mode",
 			args: args{
 				blocks: mockDataBlocks(100),
 				config: &Config{
 					Mode: 5,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "test_invalid_mode_parallel",
+			args: args{
+				blocks: mockDataBlocks(100),
+				config: &Config{
+					Mode:          5,
+					RunInParallel: true,
 				},
 			},
 			wantErr: true,

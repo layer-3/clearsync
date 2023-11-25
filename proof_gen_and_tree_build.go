@@ -28,7 +28,9 @@ func (m *MerkleTree) proofGenAndTreeBuild() error {
 	if err := m.treeBuild(); err != nil {
 		return err
 	}
+
 	m.computeAllProofsFromTree()
+
 	return nil
 }
 
@@ -36,17 +38,21 @@ func (m *MerkleTree) proofGenAndTreeBuildParallel() error {
 	if err := m.treeBuildParallel(); err != nil {
 		return err
 	}
+
 	m.computeAllProofsFromTreeParallel()
+
 	return nil
 }
 
 func (m *MerkleTree) computeAllProofsFromTree() {
 	m.initProofs()
+
 	for step := 0; step < len(m.nodes); step++ {
 		var (
 			batch    = 1 << step
 			nodeSize = len(m.nodes[step])
 		)
+
 		for nodeIdx := 0; nodeIdx < nodeSize; nodeIdx += 2 {
 			updateProofInTwoBatchesFromTree(m.Proofs, m.nodes[step], nodeIdx, batch, step)
 		}
@@ -55,6 +61,7 @@ func (m *MerkleTree) computeAllProofsFromTree() {
 
 func (m *MerkleTree) computeAllProofsFromTreeParallel() {
 	m.initProofs()
+
 	for step := 0; step < len(m.nodes); step++ {
 		var (
 			batch    = 1 << step
@@ -64,9 +71,11 @@ func (m *MerkleTree) computeAllProofsFromTreeParallel() {
 		// Limit the number of workers to the previous level length.
 		numRoutines := min(m.NumRoutines, nodeSize)
 		wg.Add(numRoutines)
+
 		for startIdx := 0; startIdx < numRoutines; startIdx++ {
 			go func(startIdx int) {
 				defer wg.Done()
+
 				for nodeIdx := startIdx; nodeIdx < nodeSize; nodeIdx += numRoutines << 1 {
 					updateProofInTwoBatchesFromTree(m.Proofs, m.nodes[step], nodeIdx, batch, step)
 				}
@@ -79,12 +88,15 @@ func (m *MerkleTree) computeAllProofsFromTreeParallel() {
 func updateProofInTwoBatchesFromTree(proofs []*Proof, buffer [][]byte, idx, batch, step int) {
 	start := idx * batch
 	end := min(start+batch, len(proofs))
+
 	for i := start; i < end; i++ {
 		proofs[i].Path += 1 << step
 		proofs[i].Siblings = append(proofs[i].Siblings, buffer[idx+1])
 	}
+
 	start += batch
 	end = min(start+batch, len(proofs))
+
 	for i := start; i < end; i++ {
 		proofs[i].Siblings = append(proofs[i].Siblings, buffer[idx])
 	}

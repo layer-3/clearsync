@@ -23,6 +23,7 @@
 package merkletree
 
 import (
+	"fmt"
 	"sync"
 
 	"golang.org/x/sync/errgroup"
@@ -33,36 +34,46 @@ import (
 func (m *MerkleTree) proofGen() (err error) {
 	m.initProofs()
 	buffer, bufferSize := initBuffer(m.Leaves)
+
 	for step := 0; step < m.Depth; step++ {
 		bufferSize = fixOddNumOfNodes(buffer, bufferSize, step)
 		m.updateProofs(buffer, bufferSize, step)
+
 		for idx := 0; idx < bufferSize; idx += 2 {
 			leftIdx := idx << step
 			rightIdx := min(leftIdx+(1<<step), len(buffer)-1)
 			buffer[leftIdx], err = m.HashFunc(m.concatHashFunc(buffer[leftIdx], buffer[rightIdx]))
+
 			if err != nil {
 				return
 			}
 		}
+
 		bufferSize >>= 1
 	}
+
 	m.Root = buffer[0]
+
 	return
 }
 
 // proofGenParallel generates proofs concurrently for the MerkleTree.
-func (m *MerkleTree) proofGenParallel() (err error) {
+func (m *MerkleTree) proofGenParallel() error {
 	m.initProofs()
 	buffer, bufferSize := initBuffer(m.Leaves)
 	numRoutines := m.NumRoutines
+
 	for step := 0; step < m.Depth; step++ {
 		// Limit the number of workers to the previous level length.
 		numRoutines = min(numRoutines, bufferSize)
 		bufferSize = fixOddNumOfNodes(buffer, bufferSize, step)
 		m.updateProofsParallel(buffer, bufferSize, step)
+
 		eg := new(errgroup.Group)
-		for startIdx := 0; startIdx < numRoutines; startIdx++ {
-			startIdx := startIdx << 1
+
+		for workerIdx := 0; workerIdx < numRoutines; workerIdx++ {
+			startIdx := workerIdx << 1
+
 			eg.Go(func() error {
 				var err error
 				for i := startIdx; i < bufferSize; i += numRoutines << 1 {
@@ -73,16 +84,21 @@ func (m *MerkleTree) proofGenParallel() (err error) {
 						return err
 					}
 				}
+
 				return nil
 			})
 		}
-		if err = eg.Wait(); err != nil {
-			return
+
+		if err := eg.Wait(); err != nil {
+			return fmt.Errorf("proofGenParallel: %w", err)
 		}
+
 		bufferSize >>= 1
 	}
+
 	m.Root = buffer[0]
-	return
+
+	return nil
 }
 
 // initProofs initializes the MerkleTree's Proofs with the appropriate size and depth.
@@ -97,18 +113,18 @@ func (m *MerkleTree) initProofs() {
 
 // initBuffer initializes the buffer with the leaves and returns the buffer size.
 // If the number of leaves is odd, the buffer size is increased by 1.
-func initBuffer(leaves [][]byte) ([][]byte, int) {
-	var (
-		numLeaves = len(leaves)
-		buffer    [][]byte
-	)
+func initBuffer(leaves [][]byte) (buffer [][]byte, numLeaves int) {
+	numLeaves = len(leaves)
+
 	// If the number of leaves is odd, make initial buffer size even by adding 1.
 	if numLeaves&1 == 1 {
 		buffer = make([][]byte, numLeaves+1)
 	} else {
 		buffer = make([][]byte, numLeaves)
 	}
+
 	copy(buffer, leaves)
+
 	return buffer, numLeaves
 }
 
@@ -119,11 +135,13 @@ func fixOddNumOfNodes(buffer [][]byte, bufferSize, step int) int {
 	if bufferSize&1 == 0 {
 		return bufferSize
 	}
+
 	// Determine the node to append.
 	appendNodeIndex := (bufferSize - 1) << step
 	// The appended node will be put at the end of the buffer.
 	buffer[len(buffer)-1] = buffer[appendNodeIndex]
 	bufferSize++
+
 	return bufferSize
 }
 
@@ -141,11 +159,14 @@ func (m *MerkleTree) updateProofsParallel(buffer [][]byte, bufferLength, step in
 		batch = 1 << step
 		wg    sync.WaitGroup
 	)
+
 	numRoutines := min(m.NumRoutines, bufferLength)
 	wg.Add(numRoutines)
+
 	for startIdx := 0; startIdx < numRoutines; startIdx++ {
 		go func(startIdx int) {
 			defer wg.Done()
+
 			for i := startIdx; i < bufferLength; i += numRoutines << 1 {
 				updateProofInTwoBatches(m.Proofs, buffer, i, batch, step)
 			}
@@ -159,13 +180,16 @@ func updateProofInTwoBatches(proofs []*Proof, buffer [][]byte, idx, batch, step 
 	start := idx * batch
 	end := min(start+batch, len(proofs))
 	siblingNodeIdx := min((idx+1)<<step, len(buffer)-1)
+
 	for i := start; i < end; i++ {
 		proofs[i].Path += 1 << step
 		proofs[i].Siblings = append(proofs[i].Siblings, buffer[siblingNodeIdx])
 	}
+
 	start += batch
 	end = min(start+batch, len(proofs))
 	siblingNodeIdx = min(idx<<step, len(buffer)-1)
+
 	for i := start; i < end; i++ {
 		proofs[i].Siblings = append(proofs[i].Siblings, buffer[siblingNodeIdx])
 	}
