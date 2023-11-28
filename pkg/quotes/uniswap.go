@@ -242,11 +242,10 @@ var priceX96 = decimal.NewFromInt(2).Pow(decimal.NewFromInt(96))
 // See the math explained at https://blog.uniswap.org/uniswap-v3-math-primer
 func (swap *uniswapSwap) price() decimal.Decimal {
 	ten := decimal.NewFromInt(10)
-	maxDecimals0 := ten.Pow(swap.Token0.Decimals)
-	maxDecimals1 := ten.Pow(swap.Token1.Decimals)
+	decimals := swap.Token1.Decimals.Sub(swap.Token0.Decimals)
 
 	numerator := swap.SqrtPriceX96.Div(priceX96).Pow(decimal.NewFromInt(2))
-	denominator := maxDecimals1.Div(maxDecimals0)
+	denominator := ten.Pow(decimals)
 	return numerator.Div(denominator)
 }
 
