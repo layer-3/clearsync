@@ -99,7 +99,8 @@ This requires just a tick value and a one-shot formula.
 To convert from tick t, to price, take 1.0001^t to get the corresponding price.
 
 ```
-price0 = (1.0001^tick) / (10^(decimal1-decimal0))
+price  = 1.0001^tick
+price0 = price / (10^(decimal1-decimal0))
 price1 = 1 / price0
 ```
 
