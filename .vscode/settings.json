@@ -13,7 +13,7 @@
 
   // Markdown
   "[markdown]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.defaultFormatter": "darkriszty.markdown-table-prettify",
     "editor.tabSize": 2,
     "editor.wordWrap": "off",
 
