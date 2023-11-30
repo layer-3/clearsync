@@ -14,7 +14,7 @@ func TestNewDriver(t *testing.T) {
 
 		priceFeeds, err := NewDriver(config, outbox)
 		require.NoError(t, err)
-		assert.Equal(t, NewBinance(config, outbox), priceFeeds)
+		assert.Equal(t, newBinance(config, outbox), priceFeeds)
 	})
 
 	t.Run(DriverKraken.String(), func(t *testing.T) {
@@ -23,7 +23,7 @@ func TestNewDriver(t *testing.T) {
 
 		priceFeeds, err := NewDriver(config, outbox)
 		require.NoError(t, err)
-		assert.Equal(t, NewKraken(config, outbox), priceFeeds)
+		assert.Equal(t, newKraken(config, outbox), priceFeeds)
 	})
 
 	t.Run(DriverBitfaker.String(), func(t *testing.T) {
@@ -32,7 +32,7 @@ func TestNewDriver(t *testing.T) {
 
 		priceFeeds, err := NewDriver(config, outbox)
 		require.NoError(t, err)
-		assert.Equal(t, NewBitfaker(config, outbox), priceFeeds)
+		assert.Equal(t, newBitfaker(config, outbox), priceFeeds)
 	})
 
 	t.Run(DriverOpendax.String(), func(t *testing.T) {
@@ -41,7 +41,7 @@ func TestNewDriver(t *testing.T) {
 
 		priceFeeds, err := NewDriver(config, outbox)
 		require.NoError(t, err)
-		assert.Equal(t, NewOpendax(config, outbox), priceFeeds)
+		assert.Equal(t, newOpendax(config, outbox), priceFeeds)
 	})
 
 	t.Run("Unknown driver", func(t *testing.T) {

@@ -14,7 +14,7 @@ func TestNewTradeSampler(t *testing.T) {
 		DefaultPercentage: defaultPercentage,
 	}
 
-	tradeSampler := NewTradeSampler(conf)
+	tradeSampler := newTradeSampler(conf)
 	require.Equal(t, tradeSampler.defaultPercentage, defaultPercentage)
 	require.False(t, tradeSampler.enabled)
 }
@@ -25,7 +25,7 @@ func TestTradeSampler_Allow(t *testing.T) {
 			Enabled:           false,
 			DefaultPercentage: 0,
 		}
-		ts := NewTradeSampler(conf)
+		ts := newTradeSampler(conf)
 
 		require.True(t, ts.Allow(TradeEvent{}))
 	})
@@ -35,7 +35,7 @@ func TestTradeSampler_Allow(t *testing.T) {
 			Enabled:           true,
 			DefaultPercentage: 200, // should be greater than rand.Intn(100)
 		}
-		ts := NewTradeSampler(conf)
+		ts := newTradeSampler(conf)
 
 		require.True(t, ts.Allow(TradeEvent{}))
 	})
@@ -45,7 +45,7 @@ func TestTradeSampler_Allow(t *testing.T) {
 			Enabled:           true,
 			DefaultPercentage: 0,
 		}
-		ts := NewTradeSampler(conf)
+		ts := newTradeSampler(conf)
 
 		require.False(t, ts.Allow(TradeEvent{}))
 	})

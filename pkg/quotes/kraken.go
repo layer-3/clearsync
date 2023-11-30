@@ -14,34 +14,34 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type Kraken struct {
+type kraken struct {
 	url         string
-	conn        WSTransport
-	dialer      WSDialer
+	conn        wsTransport
+	dialer      wsDialer
 	retryPeriod time.Duration
 	isConnected bool
 
-	tradeSampler *TradeSampler
+	tradeSampler *tradeSampler
 	outbox       chan<- TradeEvent
 	mu           sync.RWMutex
 }
 
-func NewKraken(config Config, outbox chan<- TradeEvent) *Kraken {
-  url :="wss://ws.kraken.com/v2" 
-  if config.URL != "" {
-    url = config.URL
-  }
+func newKraken(config Config, outbox chan<- TradeEvent) *kraken {
+	url := "wss://ws.kraken.com/v2"
+	if config.URL != "" {
+		url = config.URL
+	}
 
-	return &Kraken{
+	return &kraken{
 		url:          url,
-		dialer:       WSDialWrapper{},
+		dialer:       wsDialWrapper{},
 		retryPeriod:  config.ReconnectPeriod,
-		tradeSampler: NewTradeSampler(config.TradeSampler),
+		tradeSampler: newTradeSampler(config.TradeSampler),
 		outbox:       outbox,
 	}
 }
 
-func (k *Kraken) Start(markets []Market) error {
+func (k *kraken) Start(markets []Market) error {
 	if len(markets) == 0 {
 		return errors.New("no markets specified")
 	}
@@ -69,7 +69,7 @@ type subscriptionParams struct {
 	Symbol   []string `json:"symbol"`
 }
 
-func (k *Kraken) Subscribe(market Market) error {
+func (k *kraken) Subscribe(market Market) error {
 	k.mu.RLock()
 	defer k.mu.RUnlock()
 
@@ -97,7 +97,7 @@ func (k *Kraken) Subscribe(market Market) error {
 	return nil
 }
 
-func (k *Kraken) Stop() error {
+func (k *kraken) Stop() error {
 	k.mu.Lock()
 	defer k.mu.Unlock()
 
@@ -110,7 +110,7 @@ func (k *Kraken) Stop() error {
 	return conn.Close()
 }
 
-func (k *Kraken) connect() error {
+func (k *kraken) connect() error {
 	k.mu.Lock()
 	defer k.mu.Unlock()
 
@@ -128,7 +128,7 @@ func (k *Kraken) connect() error {
 	}
 }
 
-func (k *Kraken) subscribe(markets []Market) error {
+func (k *kraken) subscribe(markets []Market) error {
 	availablePairs, err := getKrakenPairs()
 	if err != nil {
 		return err
@@ -153,20 +153,20 @@ func (k *Kraken) subscribe(markets []Market) error {
 	return nil
 }
 
-type KrakenEvent[T KrakenStatus | KrakenTrade] struct {
+type krakenEvent[T krakenStatus | krakenTrade] struct {
 	Channel string `json:"channel"`
 	Type    string `json:"type"`
 	Data    []T    `json:"data"`
 }
 
-type KrakenStatus struct {
+type krakenStatus struct {
 	ApiVersion   string `json:"api_version"`
 	ConnectionId uint64 `json:"connection_id"`
 	System       string `json:"system"`
 	Version      string `json:"version"`
 }
 
-type KrakenTrade struct {
+type krakenTrade struct {
 	OrdType   string    `json:"ord_type"`
 	Price     float64   `json:"price"`
 	Qty       float64   `json:"qty"`
@@ -176,7 +176,7 @@ type KrakenTrade struct {
 	TradeId   int       `json:"trade_id"`
 }
 
-type KrakenResult struct {
+type krakenResult struct {
 	Method string `json:"method"`
 	Result struct {
 		Channel  string `json:"channel"`
@@ -188,7 +188,7 @@ type KrakenResult struct {
 	TimeOut time.Time `json:"time_out"`
 }
 
-func (k *Kraken) listen() {
+func (k *kraken) listen() {
 	for {
 		if !k.isConnected {
 			<-time.After(k.retryPeriod)
@@ -219,19 +219,19 @@ func (k *Kraken) listen() {
 	}
 }
 
-func (k *Kraken) parseMessage(rawMsg []byte) ([]TradeEvent, error) {
-	var ticker KrakenEvent[KrakenTrade]
+func (k *kraken) parseMessage(rawMsg []byte) ([]TradeEvent, error) {
+	var ticker krakenEvent[krakenTrade]
 	if err := json.Unmarshal(rawMsg, &ticker); err == nil && ticker.Channel != "heartbeat" {
 		return buildKrakenEvents(ticker.Data), nil
 	}
 
-	var status KrakenEvent[KrakenStatus]
+	var status krakenEvent[krakenStatus]
 	if err := json.Unmarshal(rawMsg, &status); err == nil && ticker.Channel != "heartbeat" {
 		// TODO: Handle KrakenEvent[KrakenStatus]
 		return nil, nil
 	}
 
-	var result KrakenResult
+	var result krakenResult
 	if err := json.Unmarshal(rawMsg, &result); err != nil {
 		return nil, err
 	}
@@ -305,7 +305,7 @@ func getKrakenPairs() (map[string]krakenPair, error) {
 	return pairs.Result, nil
 }
 
-func buildKrakenEvents(trades []KrakenTrade) []TradeEvent {
+func buildKrakenEvents(trades []krakenTrade) []TradeEvent {
 	var events []TradeEvent
 	for _, tr := range trades {
 		price := decimal.NewFromFloat(tr.Price)

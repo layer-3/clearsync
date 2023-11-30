@@ -15,7 +15,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type UniswapV3 struct {
+type uniswapV3 struct {
 	url        string
 	outbox     chan<- TradeEvent
 	windowSize time.Duration
@@ -24,13 +24,13 @@ type UniswapV3 struct {
 	streams map[Market]chan struct{}
 }
 
-func NewUniswapV3(config Config, outbox chan<- TradeEvent) *UniswapV3 {
-  url :="https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3" 
-  if config.URL != "" {
-    url = config.URL
-  }
+func newUniswapV3(config Config, outbox chan<- TradeEvent) *uniswapV3 {
+	url := "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3"
+	if config.URL != "" {
+		url = config.URL
+	}
 
-	return &UniswapV3{
+	return &uniswapV3{
 		url:        url,
 		outbox:     outbox,
 		windowSize: 2 * time.Second,
@@ -39,7 +39,7 @@ func NewUniswapV3(config Config, outbox chan<- TradeEvent) *UniswapV3 {
 	}
 }
 
-func (u *UniswapV3) Subscribe(market Market) error {
+func (u *uniswapV3) Subscribe(market Market) error {
 	symbol := market.BaseUnit + market.QuoteUnit
 	exists, err := u.isMarketAvailable(market)
 	if err != nil {
@@ -91,7 +91,7 @@ func (u *UniswapV3) Subscribe(market Market) error {
 	return nil
 }
 
-func (u *UniswapV3) Start(markets []Market) error {
+func (u *uniswapV3) Start(markets []Market) error {
 	if len(markets) == 0 {
 		return errors.New("no markets specified")
 	}
@@ -110,7 +110,7 @@ func (u *UniswapV3) Start(markets []Market) error {
 	return nil
 }
 
-func (u *UniswapV3) Stop() error {
+func (u *uniswapV3) Stop() error {
 	u.mu.Lock()
 	defer u.mu.Unlock()
 
@@ -130,7 +130,7 @@ const tokenTemplate = `query {
  }
 }`
 
-func (u *UniswapV3) isMarketAvailable(m Market) (bool, error) {
+func (u *uniswapV3) isMarketAvailable(m Market) (bool, error) {
 	query := fmt.Sprintf(tokenTemplate,
 		strings.ToUpper(m.BaseUnit),
 		strings.ToUpper(m.QuoteUnit),
@@ -165,7 +165,7 @@ const swapsTemplate = `query {
   }
 }`
 
-func (u *UniswapV3) fetchSwaps(m Market, from, to time.Time) ([]uniswapSwap, error) {
+func (u *uniswapV3) fetchSwaps(m Market, from, to time.Time) ([]uniswapSwap, error) {
 	query := fmt.Sprintf(swapsTemplate,
 		from.Unix(),
 		to.Unix(),

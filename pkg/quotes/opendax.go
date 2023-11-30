@@ -12,9 +12,9 @@ import (
 	protocol "github.com/layer-3/clearsync/pkg/quotes/opendax_protocol"
 )
 
-type Opendax struct {
-	conn        WSTransport
-	dialer      WSDialer
+type opendax struct {
+	conn        wsTransport
+	dialer      wsDialer
 	url         string
 	outbox      chan<- TradeEvent
 	mu          sync.RWMutex
@@ -23,7 +23,7 @@ type Opendax struct {
 	isConnected bool
 }
 
-type TradeResponse struct {
+type tradeResponse struct {
 	ID        uint64
 	Market    string
 	Price     decimal.Decimal
@@ -32,22 +32,22 @@ type TradeResponse struct {
 	CreatedAt int64
 }
 
-func NewOpendax(config Config, outbox chan<- TradeEvent) *Opendax {
-  url := "wss://alpha.yellow.org/api/v1/finex/ws"
-  if config.URL != "" {
-    url = config.URL
-  }
+func newOpendax(config Config, outbox chan<- TradeEvent) *opendax {
+	url := "wss://alpha.yellow.org/api/v1/finex/ws"
+	if config.URL != "" {
+		url = config.URL
+	}
 
-	return &Opendax{
+	return &opendax{
 		url:    url,
 		outbox: outbox,
 		period: time.Duration(config.ReconnectPeriod) * time.Second,
 		reqId:  1,
-		dialer: WSDialWrapper{},
+		dialer: wsDialWrapper{},
 	}
 }
 
-func (o *Opendax) Connect() {
+func (o *opendax) Connect() {
 	for {
 		wsConn, _, err := o.dialer.Dial(o.url, nil)
 		o.mu.Lock()
@@ -65,7 +65,7 @@ func (o *Opendax) Connect() {
 	}
 }
 
-func (o *Opendax) Subscribe(market Market) error {
+func (o *opendax) Subscribe(market Market) error {
 	// Opendax resource [market].[trades]
 	resource := fmt.Sprintf("%s%s.trades", market.BaseUnit, market.QuoteUnit)
 	message := protocol.NewSubscribeMessage(o.reqId, resource)
@@ -92,7 +92,7 @@ func (o *Opendax) Subscribe(market Market) error {
 	return nil
 }
 
-func (o *Opendax) Start(markets []Market) error {
+func (o *opendax) Start(markets []Market) error {
 	if len(markets) == 0 {
 		return errors.New("no markets specified")
 	}
@@ -103,7 +103,7 @@ func (o *Opendax) Start(markets []Market) error {
 	return nil
 }
 
-func (o *Opendax) Stop() error {
+func (o *opendax) Stop() error {
 	o.mu.Lock()
 	if o.conn != nil {
 		o.conn = nil
@@ -114,7 +114,7 @@ func (o *Opendax) Stop() error {
 	return nil
 }
 
-func (o *Opendax) marketSubscribe(markets []Market) {
+func (o *opendax) marketSubscribe(markets []Market) {
 	for _, m := range markets {
 		symbol := m.BaseUnit + m.QuoteUnit
 		if err := o.Subscribe(m); err != nil {
@@ -124,7 +124,7 @@ func (o *Opendax) marketSubscribe(markets []Market) {
 	}
 }
 
-func (o *Opendax) receiveOpendaxMsg(markets []Market) {
+func (o *opendax) receiveOpendaxMsg(markets []Market) {
 	for {
 		if o.isConnected {
 			_, message, err := o.conn.ReadMessage()

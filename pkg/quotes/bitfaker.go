@@ -8,24 +8,24 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type Bitfaker struct {
+type bitfaker struct {
 	mu           sync.RWMutex
 	outbox       chan<- TradeEvent
 	markets      []Market
 	period       time.Duration
-	tradeSampler *TradeSampler
+	tradeSampler *tradeSampler
 }
 
-func NewBitfaker(config Config, outbox chan<- TradeEvent) *Bitfaker {
-	return &Bitfaker{
+func newBitfaker(config Config, outbox chan<- TradeEvent) *bitfaker {
+	return &bitfaker{
 		outbox:       outbox,
 		markets:      make([]Market, 0),
 		period:       5 * time.Second,
-		tradeSampler: NewTradeSampler(config.TradeSampler),
+		tradeSampler: newTradeSampler(config.TradeSampler),
 	}
 }
 
-func (b *Bitfaker) Start(markets []Market) error {
+func (b *bitfaker) Start(markets []Market) error {
 	if len(markets) == 0 {
 		return errors.New("no markets specified")
 	}
@@ -49,7 +49,7 @@ func (b *Bitfaker) Start(markets []Market) error {
 	return nil
 }
 
-func (b *Bitfaker) Subscribe(market Market) error {
+func (b *bitfaker) Subscribe(market Market) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
@@ -57,7 +57,7 @@ func (b *Bitfaker) Subscribe(market Market) error {
 	return nil
 }
 
-func (b *Bitfaker) createTradeEvent(m Market) {
+func (b *bitfaker) createTradeEvent(m Market) {
 	tr := TradeEvent{
 		Market: m.BaseUnit + m.QuoteUnit,
 		Price:  decimal.NewFromFloat(2.213),
@@ -67,6 +67,6 @@ func (b *Bitfaker) createTradeEvent(m Market) {
 	b.outbox <- tr
 }
 
-func (b *Bitfaker) Stop() error {
+func (b *bitfaker) Stop() error {
 	return nil
 }

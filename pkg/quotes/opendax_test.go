@@ -36,7 +36,7 @@ type ODDialerFailMock struct {
 	m                  []ODAPIMockMsg
 }
 
-func (dialer *ODDialerSuccessMock) Dial(_ string, _ http.Header) (WSTransport, *http.Response, error) {
+func (dialer *ODDialerSuccessMock) Dial(_ string, _ http.Header) (wsTransport, *http.Response, error) {
 	select {
 	case dialer.connRetryAttempted <- true:
 	default:
@@ -45,7 +45,7 @@ func (dialer *ODDialerSuccessMock) Dial(_ string, _ http.Header) (WSTransport, *
 	return &ODAPIMock{messages: dialer.m}, &http.Response{}, nil
 }
 
-func (dialer *ODDialerFailMock) Dial(_ string, _ http.Header) (WSTransport, *http.Response, error) {
+func (dialer *ODDialerFailMock) Dial(_ string, _ http.Header) (wsTransport, *http.Response, error) {
 	select {
 	case dialer.connRetryAttempted <- true: // return error on the first try
 		return &ODAPIMock{messages: dialer.m}, &http.Response{}, errors.New("cannot connect")
@@ -143,14 +143,14 @@ func TestOpendax_parseOpendaxMsg(t *testing.T) {
 }
 
 func TestOpendax_marketSubscribe(t *testing.T) {
-	opendax := &Opendax{conn: &ODAPIMock{}}
+	opendax := &opendax{conn: &ODAPIMock{}}
 	markets := []Market{{BaseUnit: "btc", QuoteUnit: "usdt"}}
 	opendax.marketSubscribe(markets)
 }
 
 func TestOpendax_Subscribe(t *testing.T) {
 	t.Run("Successful test", func(t *testing.T) {
-		client := &Opendax{
+		client := &opendax{
 			conn: &ODAPIMock{messages: []ODAPIMockMsg{{}}},
 		}
 
@@ -159,7 +159,7 @@ func TestOpendax_Subscribe(t *testing.T) {
 	})
 
 	t.Run("Fail test", func(t *testing.T) {
-		client := &Opendax{
+		client := &opendax{
 			conn: &ODAPIMock{messages: []ODAPIMockMsg{}},
 		}
 
@@ -169,7 +169,7 @@ func TestOpendax_Subscribe(t *testing.T) {
 }
 
 func TestOpendax_Stop(t *testing.T) {
-	client := Opendax{conn: &ODAPIMock{}}
+	client := opendax{conn: &ODAPIMock{}}
 	err := client.Stop()
 	require.NoError(t, err)
 }
@@ -177,7 +177,7 @@ func TestOpendax_Stop(t *testing.T) {
 func TestOpendax_Connect(t *testing.T) {
 	t.Run("Successful case", func(t *testing.T) {
 		connMock := &ODDialerSuccessMock{connRetryAttempted: make(chan bool, 1)}
-		client := Opendax{
+		client := opendax{
 			conn:        nil,
 			mu:          sync.RWMutex{},
 			period:      0,
@@ -193,7 +193,7 @@ func TestOpendax_Connect(t *testing.T) {
 
 	t.Run("Fail case", func(t *testing.T) {
 		connMock := &ODDialerFailMock{connRetryAttempted: make(chan bool, 1)}
-		client := Opendax{
+		client := opendax{
 			conn:        nil,
 			mu:          sync.RWMutex{},
 			period:      0,
@@ -210,7 +210,7 @@ func TestOpendax_Connect(t *testing.T) {
 
 func TestOpendax_Start(t *testing.T) {
 	t.Run("No active markets error", func(t *testing.T) {
-		client := &Opendax{}
+		client := &opendax{}
 		err := client.Start([]Market{})
 		require.Error(t, err)
 	})
@@ -222,7 +222,7 @@ func TestOpendax_receiveOpendaxMsg(t *testing.T) {
 
 	t.Run("Error reading from connection", func(t *testing.T) {
 		dialer := ODDialerFailMock{connRetryAttempted: make(chan bool, 1)}
-		client := &Opendax{
+		client := &opendax{
 			conn:        &ODAPIMock{messages: []ODAPIMockMsg{}},
 			dialer:      &dialer,
 			isConnected: true,
@@ -258,7 +258,7 @@ func TestOpendax_receiveOpendaxMsg(t *testing.T) {
 		require.NoError(t, err)
 
 		outbox := make(chan TradeEvent, 1)
-		client := &Opendax{
+		client := &opendax{
 			conn: &ODAPIMock{
 				messages: []ODAPIMockMsg{{m: rawMsg}},
 			},

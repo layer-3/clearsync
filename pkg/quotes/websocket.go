@@ -6,18 +6,18 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type WSTransport interface {
+type wsTransport interface {
 	ReadMessage() (messageType int, p []byte, err error)
 	WriteMessage(messageType int, data []byte) error
 	Close() error
 }
 
-type WSDialer interface {
-	Dial(url string, header http.Header) (WSTransport, *http.Response, error)
+type wsDialer interface {
+	Dial(url string, header http.Header) (wsTransport, *http.Response, error)
 }
 
-type WSDialWrapper struct{}
+type wsDialWrapper struct{}
 
-func (WSDialWrapper) Dial(url string, header http.Header) (WSTransport, *http.Response, error) {
+func (wsDialWrapper) Dial(url string, header http.Header) (wsTransport, *http.Response, error) {
 	return websocket.DefaultDialer.Dial(url, header)
 }

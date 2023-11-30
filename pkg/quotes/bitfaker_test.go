@@ -13,7 +13,7 @@ import (
 func TestBitfaker_Subscribe(t *testing.T) {
 	t.Run("Single market", func(t *testing.T) {
 		ch := make(chan TradeEvent)
-		client := Bitfaker{outbox: ch}
+		client := bitfaker{outbox: ch}
 
 		m := Market{BaseUnit: "btc", QuoteUnit: "usd"}
 		err := client.Subscribe(m)
@@ -25,7 +25,7 @@ func TestBitfaker_Subscribe(t *testing.T) {
 
 	t.Run("Multiple markets", func(t *testing.T) {
 		outbox := make(chan TradeEvent)
-		client := Bitfaker{outbox: outbox}
+		client := bitfaker{outbox: outbox}
 
 		market1 := Market{BaseUnit: "btc", QuoteUnit: "usd"}
 		err := client.Subscribe(market1)
@@ -42,8 +42,8 @@ func TestBitfaker_Subscribe(t *testing.T) {
 
 func TestBitfaker_Start(t *testing.T) {
 	outbox := make(chan TradeEvent, 1)
-	sampl := TradeSampler{enabled: false, defaultPercentage: 0.0}
-	client := Bitfaker{outbox: outbox, period: 0 * time.Second, tradeSampler: &sampl}
+	sampl := tradeSampler{enabled: false, defaultPercentage: 0.0}
+	client := bitfaker{outbox: outbox, period: 0 * time.Second, tradeSampler: &sampl}
 	market := Market{BaseUnit: "btc", QuoteUnit: "usd"}
 
 	var wg sync.WaitGroup
@@ -65,7 +65,7 @@ func TestBitfaker_Start(t *testing.T) {
 
 func TestCreateTradeEvent(t *testing.T) {
 	outbox := make(chan TradeEvent)
-	client := Bitfaker{outbox: outbox}
+	client := bitfaker{outbox: outbox}
 
 	go func() { client.createTradeEvent(Market{BaseUnit: "btc", QuoteUnit: "usd"}) }()
 

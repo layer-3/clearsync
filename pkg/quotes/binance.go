@@ -6,28 +6,28 @@ import (
 	"sync"
 	"time"
 
-	"github.com/adshao/go-binance/v2"
+	gobinance "github.com/adshao/go-binance/v2"
 	"github.com/shopspring/decimal"
 )
 
-type Binance struct {
+type binance struct {
 	mu      sync.Mutex
 	streams map[string]chan struct{}
 
-	tradeSampler *TradeSampler
+	tradeSampler *tradeSampler
 	outbox       chan<- TradeEvent
 }
 
-func NewBinance(config Config, outbox chan<- TradeEvent) *Binance {
-	binance.WebsocketKeepalive = true
-	return &Binance{
+func newBinance(config Config, outbox chan<- TradeEvent) *binance {
+	gobinance.WebsocketKeepalive = true
+	return &binance{
 		streams:      make(map[string]chan struct{}),
-		tradeSampler: NewTradeSampler(config.TradeSampler),
+		tradeSampler: newTradeSampler(config.TradeSampler),
 		outbox:       outbox,
 	}
 }
 
-func (b *Binance) Start(markets []Market) error {
+func (b *binance) Start(markets []Market) error {
 	if len(markets) == 0 {
 		return errors.New("no markets specified")
 	}
@@ -45,13 +45,13 @@ func (b *Binance) Start(markets []Market) error {
 	return nil
 }
 
-func (b *Binance) Subscribe(m Market) error {
+func (b *binance) Subscribe(m Market) error {
 	pair := strings.ToUpper(m.BaseUnit) + strings.ToUpper(m.QuoteUnit)
 	handleErr := func(err error) {
 		logger.Errorf("error for Binance market %s: %v", pair, err)
 	}
 
-	doneCh, stopCh, err := binance.WsTradeServe(pair, b.handleTrade, handleErr)
+	doneCh, stopCh, err := gobinance.WsTradeServe(pair, b.handleTrade, handleErr)
 	if err != nil {
 		return err
 	}
@@ -78,7 +78,7 @@ func (b *Binance) Subscribe(m Market) error {
 	return nil
 }
 
-func (b *Binance) Stop() error {
+func (b *binance) Stop() error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
@@ -91,7 +91,7 @@ func (b *Binance) Stop() error {
 	return nil
 }
 
-func (b *Binance) handleTrade(event *binance.WsTradeEvent) {
+func (b *binance) handleTrade(event *gobinance.WsTradeEvent) {
 	tradeEvent, err := buildBinanceEvent(event)
 	if err != nil {
 		logger.Error(err)
@@ -105,7 +105,7 @@ func (b *Binance) handleTrade(event *binance.WsTradeEvent) {
 	b.outbox <- tradeEvent
 }
 
-func buildBinanceEvent(tr *binance.WsTradeEvent) (TradeEvent, error) {
+func buildBinanceEvent(tr *gobinance.WsTradeEvent) (TradeEvent, error) {
 	price, err := decimal.NewFromString(tr.Price)
 	if err != nil {
 		logger.Warn(err)

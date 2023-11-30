@@ -4,19 +4,19 @@ import (
 	"math/rand"
 )
 
-type TradeSampler struct {
+type tradeSampler struct {
 	enabled           bool
 	defaultPercentage int
 }
 
-func NewTradeSampler(conf TradeSamplerConfig) *TradeSampler {
-	return &TradeSampler{
+func newTradeSampler(conf TradeSamplerConfig) *tradeSampler {
+	return &tradeSampler{
 		enabled:           conf.Enabled,
 		defaultPercentage: conf.DefaultPercentage,
 	}
 }
 
-func (ts *TradeSampler) Allow(trade TradeEvent) bool {
+func (ts *tradeSampler) Allow(trade TradeEvent) bool {
 	if !ts.enabled {
 		return true
 	}
