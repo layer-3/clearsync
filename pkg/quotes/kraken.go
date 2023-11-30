@@ -27,8 +27,13 @@ type Kraken struct {
 }
 
 func NewKraken(config Config, outbox chan<- TradeEvent) *Kraken {
+  url :="wss://ws.kraken.com/v2" 
+  if config.URL != "" {
+    url = config.URL
+  }
+
 	return &Kraken{
-		url:          "wss://ws.kraken.com/v2",
+		url:          url,
 		dialer:       WSDialWrapper{},
 		retryPeriod:  config.ReconnectPeriod,
 		tradeSampler: NewTradeSampler(config.TradeSampler),

@@ -33,8 +33,13 @@ type TradeResponse struct {
 }
 
 func NewOpendax(config Config, outbox chan<- TradeEvent) *Opendax {
+  url := "wss://alpha.yellow.org/api/v1/finex/ws"
+  if config.URL != "" {
+    url = config.URL
+  }
+
 	return &Opendax{
-		url:    config.URL,
+		url:    url,
 		outbox: outbox,
 		period: time.Duration(config.ReconnectPeriod) * time.Second,
 		reqId:  1,

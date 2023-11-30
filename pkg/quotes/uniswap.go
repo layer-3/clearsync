@@ -24,9 +24,14 @@ type UniswapV3 struct {
 	streams map[Market]chan struct{}
 }
 
-func NewUniswapV3(_ Config, outbox chan<- TradeEvent) *UniswapV3 {
+func NewUniswapV3(config Config, outbox chan<- TradeEvent) *UniswapV3 {
+  url :="https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3" 
+  if config.URL != "" {
+    url = config.URL
+  }
+
 	return &UniswapV3{
-		url:        "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3",
+		url:        url,
 		outbox:     outbox,
 		windowSize: 2 * time.Second,
 
