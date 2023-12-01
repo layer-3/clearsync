@@ -6,19 +6,22 @@ Proposed
 
 ## Context
 
-Clearing process become more and more complex as the protocol evolves. The clearing state machine (CSM) is a good candidate to encapsulate the logic of the clearing process. And make sure that we handle (or reject to handle) all the possible events of the clearing process.
+Clearing process is becoming more and more complex as the protocol evolves. The clearing state machine (CSM) is a good candidate to encapsulate the logic of the clearing process and to make sure that all the possible events of the clearing process are handled.
 
 ## Decision
 
-Create a state machine that handles the clearing process using prepared framework.
+Create a state machine that handles the clearing process using [YIP 0010 - State machine framework](./YIP-0010-state-machine-framework.md).
+There are two state machines, one for the initiator and one for the responder. The state machines are almost identical, but there are some differences in the actions that are executed and in the transitions.
 
-NOTE: PSMC stands for Post Settlement Margin Call
+### Vocabulary and abbreviations
 
-NOTE: SMC stands for Settlement Margin Call
+**PSMC** - Post Settlement Margin Call
 
-NOTE: SSM stands for Settlement State Machine
+**SMC** - Settlement Margin Call
 
-### CSM diagram
+**SSM** - Settlement State Machine
+
+### Initiator CSM diagram
 
 ```mermaid
 ---
@@ -26,6 +29,10 @@ title: Clearing Initiator State Machine
 ---
 
 stateDiagram-v2
+    classDef waiting stroke-dasharray:5
+
+    class Accepted, InitiatorFunded, PreOperationalChallenged, Operational, ActiveSettlement, ExecutedSettlement, Challenged, ReadyToConclude, ReadyToWithdraw waiting
+
     [*] --> DefaultState
     DefaultState --> Instantiating: Instantiate
 
@@ -42,36 +49,106 @@ stateDiagram-v2
     
     PreOperationalChallenging --> PreOperationalChallenged: Challenged
 
-    PreOperationalChallenged --> ReadyToWithdraw: TimeoutedChallenge
+    PreOperationalChallenged --> ReadyToWithdraw: TimeoutChallenge
 
     Funded --> Operational: AgreedOnPostfund
     Funded --> Challenging: Failed
 
-    Operational --> ActiveSettlement: PerepareSettlement
+    Operational --> ActiveSettlement: PrepareSettlement
     Operational --> Finalizing: Finalize
-    Operational --> IssuingMarginCall: IssueMarginCall
+    Operational --> ProcessingMarginCall: ProcessMarginCall
     Operational --> Challenging: Challenging
     
-    IssuingMarginCall --> Operational: MoveToOperational
-    IssuingMarginCall --> Challenging: Challenge
+    ProcessingMarginCall --> Operational: MoveToOperational
+    ProcessingMarginCall --> Challenging: Challenge
 
-    ActiveSettlement --> IssuingPSMC: IssuePSMC
-    ActiveSettlement --> IssuingSMC: IssueMarginCall
+    ActiveSettlement --> ProcessingPSMC: ProcessPSMC
+    ActiveSettlement --> ProcessingSMC: ProcessMarginCall
     ActiveSettlement --> Operational: FailedSettlement
 
-    IssuingSMC --> ActiveSettlement: MoveToActiveSettlement
-    IssuingSMC --> Challenging: Challenge
+    ProcessingSMC --> ActiveSettlement: MoveToActiveSettlement
+    ProcessingSMC --> Challenging: Challenge
 
-    IssuingPSMC --> IssuedPSMC: IssuedPSMC
-    IssuingPSMC --> ActiveSettlement: MoveToActiveSettlement
+    ProcessingPSMC --> ExecutedSettlement: ExecutedSettlement
+    ProcessingPSMC --> ActiveSettlement: MoveToActiveSettlement
 
-    IssuedPSMC --> Operational: FinalizedSettlement
-    IssuedPSMC --> Operational: FailedSettlement
+    ExecutedSettlement --> Operational: FinalizedSettlement
+    ExecutedSettlement --> Operational: FailedSettlement
 
     Challenging --> Challenged: Challenged
 
     Challenged --> Operational: ClearedChallenge
-    Challenged --> ReadyToWithdraw: TimeoutedChallenge
+    Challenged --> ReadyToWithdraw: TimeoutChallenge
+    
+    Finalizing --> ReadyToConclude: ReadyToConclude
+    Finalizing --> Challenging: Challenge
+    Finalizing --> Operational: MoveToOperational
+
+    ReadyToConclude --> Final: MoveToFinal
+    ReadyToWithdraw --> Final: MoveToFinal
+
+    Final --> [*]
+```
+
+### Responder CSM diagram
+
+```mermaid
+---
+title: Clearing Responder State Machine
+---
+
+stateDiagram-v2
+    classDef waiting stroke-dasharray:5
+
+    class Accepted, InitiatorFunded, Funded, PreOperationalChallenged, Operational, ActiveSettlement, ExecutedSettlement, Challenged, ReadyToConclude, ReadyToWithdraw waiting
+
+    [*] --> DefaultState
+    DefaultState --> Instantiating: Instantiate
+
+    Instantiating --> Accepted: Accepted
+    Instantiating --> Failed: Failed
+
+    Accepted --> InitiatorFunded: InitiatorFunded
+    Accepted --> Failed: Failed
+    Accepted --> Failed: InitiatorFundingTimeout
+
+    InitiatorFunded --> Funded: ResponderFunded
+    InitiatorFunded --> Failed: Failed
+    InitiatorFunded --> Failed: ResponderFundingTimeout
+    
+    PreOperationalChallenging --> PreOperationalChallenged: Challenged
+
+    PreOperationalChallenged --> ReadyToWithdraw: TimeoutChallenge
+
+    Funded --> Operational: AgreedOnPostfund
+    Funded --> Challenging: Failed
+    Funded --> Challenging: PostfundProcessingTimeout
+
+    Operational --> ActiveSettlement: PrepareSettlement
+    Operational --> Finalizing: Finalize
+    Operational --> ProcessingMarginCall: ProcessMarginCall
+    Operational --> Challenging: Challenging
+    
+    ProcessingMarginCall --> Operational: MoveToOperational
+    ProcessingMarginCall --> Challenging: Challenge
+
+    ActiveSettlement --> ProcessingPSMC: ProcessPSMC
+    ActiveSettlement --> ProcessingSMC: ProcessMarginCall
+    ActiveSettlement --> Operational: FailedSettlement
+
+    ProcessingSMC --> ActiveSettlement: MoveToActiveSettlement
+    ProcessingSMC --> Challenging: Challenge
+
+    ProcessingPSMC --> ExecutedSettlement: ExecutedSettlement
+    ProcessingPSMC --> ActiveSettlement: MoveToActiveSettlement
+
+    ExecutedSettlement --> Operational: FinalizedSettlement
+    ExecutedSettlement --> Operational: FailedSettlement
+
+    Challenging --> Challenged: Challenged
+
+    Challenged --> Operational: ClearedChallenge
+    Challenged --> ReadyToWithdraw: TimeoutChallenge
     
     Finalizing --> ReadyToConclude: ReadyToConclude
     Finalizing --> Challenging: Challenge
@@ -95,31 +172,38 @@ No action
 
 ##### Transitions
 
-| Event       | State         | Description                                                                                                              |
-|-------------|---------------|--------------------------------------------------------------------------------------------------------------------------|
-| Instantiate | Instantiating | External call that starts clearing process. Should be call only after creation of ClearStream inside persistence storage |                                                                                                                      |   |   |
+| Event       | State         | Description                                                                                                                 |
+|-------------|---------------|-----------------------------------------------------------------------------------------------------------------------------|
+| Instantiate | Instantiating | External event that starts clearing process. Should be emitted only after creation of ClearStream inside persistent storage |
 
 #### Instantiating
 
 The first state of active clearing process, mostly focused on validation and issuing prefund state
 
-##### Action
+##### Initiator Action
 
 1. Updates state in Storage
 2. Notifies user about state update
-3. Checks for sufficient requirements for channel openning
+3. Checks for sufficient requirements for channel opening
 4. Issues prefund nitro state
+
+##### Responder Action
+
+1. Updates state in Storage
+2. Notifies user about state update
+3. Checks for sufficient requirements for channel opening
+4. Countersigns prefund nitro state
 
 ##### Transitions
 
-| Event    | State    | Description                                                         |
-|----------|----------|---------------------------------------------------------------------|
-| Accepted | Accepted | Internal call that continues clearing process                       |
-| Failed   | Failed   | Internal call that could occur on any error during action execution |
+| Event    | State    | Description                                                          |
+|----------|----------|----------------------------------------------------------------------|
+| Accepted | Accepted | Internal event that continues clearing process                       |
+| Failed   | Failed   | Internal event that could occur on any error during action execution |
 
 #### Failed
 
-One of possible final states, occurs only before funds were deposited on any error that happend
+One of possible final states, occurs only before funds were deposited on any error that happened
 
 ##### Action
 
@@ -134,61 +218,78 @@ No transitions
 
 Indicates that peers agreed on prefund nitro state and channel is ready for funding
 
-##### Action
+##### Initiator Action
 
 1. Updates state in Storage
 2. Notifies user about state update
-3. Launch `InitiatorFundingTimeout` timer
+3. Launches `InitiatorFundingTimeout` timer
+4. Funds (if auto fund is ON)
+
+##### Responder Action
+
+1. Updates state in Storage
+2. Notifies user about state update
+3. Launches `InitiatorFundingTimeout` timer
 
 ##### Transitions
 
-| Event                   | State           | Description                                                                                                                          |
-|-------------------------|-----------------|--------------------------------------------------------------------------------------------------------------------------------------|
-| InitiatorFunded         | InitiatorFunded | External call that indicates that Initiator fulfilled his part of the deal by funding channel                                        |
-| Failed                  | Failed          | Internal call that could occur on any error during action execution                                                                  |
-| InitiatorFundingTimeout | Failed          | External call that indicates that Initiator haven't fulfilled his part of the deal on time, so there is no need to keep channel open |
+| Event                   | State           | Description                                                                                                                           |
+|-------------------------|-----------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| InitiatorFunded         | InitiatorFunded | External event that indicates that Initiator fulfilled his part of the deal by funding channel                                        |
+| Failed                  | Failed          | Internal event that could occur on any error during action execution                                                                  |
+| InitiatorFundingTimeout | Failed          | External event that indicates that Initiator haven't fulfilled his part of the deal on time, so there is no need to keep channel open |
 
 #### InitiatorFunded
 
 Indicates that Initiator funded channel, and now it's Responder's turn
 
-##### Action
+##### Initiator Action
 
 1. Updates state in Storage
 2. Notifies user about state update
-3. Kill `InitiatorFundingTimeout` timer
-4. Launch `ResponderFundingTimeout` timer
+3. Removes `InitiatorFundingTimeout` timer
+4. Launches `ResponderFundingTimeout` timer
+
+##### Responder Action
+
+1. Updates state in Storage
+2. Notifies user about state update
+3. Removes `InitiatorFundingTimeout` timer
+4. Funds (if auto fund is ON)
+5. Launches `NoPostfundTimeout` timer
 
 ##### Transitions
 
-| Event                   | State                     | Description                                                                                                                                     |
-|-------------------------|---------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
-| ResponderFunded         | Funded                    | External call that indicates that Responde fulfilled  his part of the deal by funding channel                                                   |
-| Failed                  | PreOperationalChallenging | Internal call that could occur on any error during action execution                                                                             |
-| ResponderFundingTimeout | PreOperationalChallenging | External call that indicates that Responder haven't fulfilled his part of the deal on time, so Initiator calls Challenge to retrieve his assets |
+| Side | Event                   | State                     | Description                                                                                                                                      |
+|------|-------------------------|---------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+| IR   | ResponderFunded         | Funded                    | External event that indicates that Responder fulfilled his part of the deal by funding channel                                                   |
+| I    | Failed                  | PreOperationalChallenging | Internal event that could occur on any error during action execution, so Initiator calls Challenge to retrieve his assets                        |
+| R    | Failed                  | Failed                    | Internal event that could occur on any error during action execution                                                                             |
+| I    | ResponderFundingTimeout | PreOperationalChallenging | External event that indicates that Responder haven't fulfilled his part of the deal on time, so Initiator calls Challenge to retrieve his assets |
+| R    | ResponderFundingTimeout | Failed                    | External event that indicates that Responder haven't fulfilled his part of the deal on time                                                      |
 
 #### PreOperationalChallenging
 
-Indicates the will of one party to force move the channel before Postfund was sign
+Indicates the will of one party to forcefully close the channel before Postfund was sign
 
 ##### Action
 
 1. Updates state in Storage
 2. Notifies user about state update
-3. Kills `ResponderFundingTimeout` timer
+3. Removes `ResponderFundingTimeout` timer
 4. Starts Challenge with Prefund State
 
 ##### Transitions
 
-| Event      | State                    | Description                                                          |
-|------------|--------------------------|----------------------------------------------------------------------|
-| Challenged | PreOperationalChallenged | Internal call that indicates that Peer succesfully started challenge |
+| Event      | State                    | Description                                                            |
+|------------|--------------------------|------------------------------------------------------------------------|
+| Challenged | PreOperationalChallenged | Internal event that indicates that Peer successfully started challenge |
 
 #### PreOperationalChallenged
 
 There is active challenge, that was called before postfund was signed
 
-NOTE: Since only one state was signed, this type of Challenge cannot be cleared and will be timeouted in any case
+NOTE: Since only one state was signed, this type of Challenge cannot be cleared and will timeout whatsoever
 
 ##### Action
 
@@ -198,88 +299,116 @@ NOTE: Since only one state was signed, this type of Challenge cannot be cleared 
 
 ##### Transitions
 
-| Event              | State           | Description                                                                                         |
-|--------------------|-----------------|-----------------------------------------------------------------------------------------------------|
-| TimeoutedChallenge | ReadyToWithdraw | External call that indicates that Challenge timeout expired and now channel is ready to be defunded |
+| Event            | State           | Description                                                                                          |
+|------------------|-----------------|------------------------------------------------------------------------------------------------------|
+| TimeoutChallenge | ReadyToWithdraw | External event that indicates that Challenge timeout expired and now channel is ready to be defunded |
 
 #### Funded
 
 Clearing channel was funded by both sides and now it's time to sign postfund
 
-NOTE: there are two types of errors: the one that happened before issuing posrfund state
-and those that were ocurred after. In first case we could transition to `PreOperationalChallenging`, but
-in the second case Responder could clear timeout with postfund state, so let's keep only one possible transition 
-to the `Challenging` state here
+NOTE: there are two types of errors: ones that happened before issuing postfund state
+and after. In the first case we could transition to `PreOperationalChallenging`, but
+in the second case Responder could clear timeout with postfund state, so only one possible transition 
+to the `Challenging` state is possible
 
-##### Action
+##### Initiator Action
 
 1. Updates state in Storage
 2. Notifies user about state update
-3. Kills `ResponderFundingTimeout` timer
+3. Removes `ResponderFundingTimeout` timer
 4. Issues postfund nitro state
-5. Notifies user about succesfull channel opening
+5. Notifies user about successful channel opening
+
+##### Responder Action
+
+1. Updates state in Storage
+2. Notifies user about state update
+3. Removes `NoPostfundTimeout` timer
+4. Countersigns postfund nitro state
+5. Notifies user about successful channel opening
 
 ##### Transitions
 
-| Event            | State       | Description                                                                 |
-|------------------|-------------|-----------------------------------------------------------------------------|
-| AgreedOnPostfund | Operational | Internal call that indicates that postfund was succesfully signed and saved |
-| Failed           | Challenging | Internal call that could occur on any error during action execution         |
+| Event            | State       | Description                                                                   |
+|------------------|-------------|-------------------------------------------------------------------------------|
+| AgreedOnPostfund | Operational | Internal event that indicates that postfund was successfully signed and saved |
+| Failed           | Challenging | Internal event that could occur on any error during action execution          |
 
 #### Operational
 
 Clearing channel has no other tasks, but existing
 
-##### Action
+##### Initiator Action
 
 1. Updates state in Storage
 
+##### Responder Action
+
+1. Updates state in Storage
+2. Launches `NoMarginCallsTimeout` timer
+
 ##### Transitions
 
-| Event              | State             | Description                                                                                               |
-|--------------------|-------------------|-----------------------------------------------------------------------------------------------------------|
-| PerepareSettlement | ActiveSettlement  | External call that comes from the settlement state machine, indicates that settlement process was started |
-| Finalize           | Finalizing        | External call that comes from the user request to gracefuly close the clearing channel                    |
-| IssueMarginCall    | IssuingMarginCall | External call that comes from the reactor(?) system and intending to issue new margin call                |
-| Challenging        | Challenging       | External call that request to forcefuly close the clearing channel                                        |
+| Event             | State                | Description                                                                                                |
+|-------------------|----------------------|------------------------------------------------------------------------------------------------------------|
+| PrepareSettlement | ActiveSettlement     | External event that comes from the settlement state machine, indicates that settlement process was started |
+| Finalize          | Finalizing           | External event that comes from the user request to gracefully close the clearing channel                   |
+| ProcessMarginCall | ProcessingMarginCall | External event that comes from the reactor(?) system and intending to issue new margin call                |
+| Challenging       | Challenging          | External event that request to forcefully close the clearing channel                                       |
 
-#### IssuingMarginCall
+#### ProcessingMarginCall
 
-Clearing channel is in process of issuing new margin call (aka nitro state)
+Clearing channel is processing new margin call (aka nitro state). For the Initiator it
+means that he should issue new state, for the Responder -- that he should countresign it
 
-##### Action
+##### Initiator Action
 
 1. Issues nitro state update
 2. Checks and updates `StateSyncFailure` amount
 
+##### Responder Action
+
+1. Validates nitro state 
+2. Countersigns nitro state update
+3. Removes `NoMarginCallsTimeout` timer
+4. Checks and updates `StateSyncFailure` amount  
+
 ##### Transitions
 
-| Event             | State       | Description                                                                                                           |
-|-------------------|-------------|-----------------------------------------------------------------------------------------------------------------------|
-| MoveToOperational | Operational | Internal call that indicates that margin call was agreed or refused but `StateSyncFailure` amount is still acceptable |
-| Challenging       | Challenging | Internal call that indicates that margin call was refused and `StateSyncFailure` amount is unacceptable               |
+| Event             | State       | Description                                                                                                            |
+|-------------------|-------------|------------------------------------------------------------------------------------------------------------------------|
+| MoveToOperational | Operational | Internal event that indicates that margin call was agreed or refused but `StateSyncFailure` amount is still acceptable |
+| Challenging       | Challenging | Internal event that indicates that margin call was refused and `StateSyncFailure` amount is unacceptable               |
 
 #### ActiveSettlement
 
 Clearing process is currently in the middle of settlement, but `PostSettlementState` wasn't signed yet
 
-##### Action
+##### Initiator Action
 
 1. Updates state in Storage
 2. Notifies user about state update
 3. If something went wrong -- notifies SSM about failure
 
+##### Responder Action
+
+1. Updates state in Storage
+2. Notifies user about state update
+3. Removes `NoMarginCallsTimeout` timer
+4. If something went wrong -- notifies SSM about failure
+
 ##### Transitions
 
-| Event            | State       | Description                                                                                                                |
-|------------------|-------------|----------------------------------------------------------------------------------------------------------------------------|
-| IssuePSMC        | IssuingPSMC | External call from the SSM that indicates that it's time to stop margin calls and send PSMC                                |
-| IssueMarginCall  | IssuingSMC  | External call from the reactor(?) system and intending to issue new margin call                                            |
-| FailedSettlement | Operational | External call from the SSM that indicates that Settlement Failed for some reason and CSM could return to Operational state |
+| Event             | State          | Description                                                                                                                 |
+|-------------------|----------------|-----------------------------------------------------------------------------------------------------------------------------|
+| ProcessPSMC       | ProcessingPSMC | External event from the SSM that indicates that it's time to stop processing margin calls                                   |
+| ProcessMarginCall | ProcessingSMC  | External event from the reactor(?) system and intending to issue new margin call                                            |
+| FailedSettlement  | Operational    | External event from the SSM that indicates that Settlement Failed for some reason and CSM could return to Operational state |
 
-#### IssuingSMC
+#### ProcessingSMC
 
-Clearing channel is in process of issuing new margin call (aka nitro state) and process of settlement
+Clearing channel is processing new margin call (aka nitro state) and processing settlement simultaneously
 
 ##### Action
 
@@ -287,34 +416,49 @@ Clearing channel is in process of issuing new margin call (aka nitro state) and 
 2. Checks and updates `StateSyncFailure` amount
 3. In case of `Challenge` notifies SSM about failure
 
+##### Responder Action
+
+1. Validates nitro state 
+2. Countersigns nitro state update
+3. Removes `NoMarginCallsTimeout` timer
+4. Checks and updates `StateSyncFailure` amount 
+
 ##### Transitions
 
-| Event                  | State            | Description                                                                                                           |
-|------------------------|------------------|-----------------------------------------------------------------------------------------------------------------------|
-| MoveToActiveSettlement | ActiveSettlement | Internal call that indicates that margin call was agreed or refused but `StateSyncFailure` amount is still acceptable |
-| Challenging            | Challenging      | Internal call that indicates that margin call was refused and `StateSyncFailure` amount is unacceptable               |
+| Event                  | State            | Description                                                                                                            |
+|------------------------|------------------|------------------------------------------------------------------------------------------------------------------------|
+| MoveToActiveSettlement | ActiveSettlement | Internal event that indicates that margin call was agreed or refused but `StateSyncFailure` amount is still acceptable |
+| Challenging            | Challenging      | Internal event that indicates that margin call was refused and `StateSyncFailure` amount is unacceptable               |
 
-#### IssuingPSMC
+#### ProcessingPSMC
 
-Clearing channel is in process of issuing new margin call (aka nitro state) and process of settlement
+Clearing channel is processing new margin call (aka nitro state) and processing settlement simultaneously
 
-##### Action
+##### Initiator Action
 
 1. Updates state in Storage
 2. Issues nitro state with PSMC turn number
 3. In case of failure notifies SSM about it
 
+##### Initiator Action
+
+1. Updates state in Storage
+2. Validates nitro state with PSMC turn number
+3. Countersigns nitro state with PSMC turn number
+4. Removes `NoMarginCallsTimeout` timer
+5. In case of failure notifies SSM about it
+
 ##### Transitions
 
-| Event                  | State            | Description                                                                                                             |
-|------------------------|------------------|-------------------------------------------------------------------------------------------------------------------------|
-| IssuedPSMC             | IssuedPSMC       | Internal call that indicates that PSMC was agreed                                                                       |
-| MoveToActiveSettlement | ActiveSettlement | Internal call that indicates that PSMC was refused or some other error happened, so it moves back to `ActiveSettlement` |
+| Event                  | State              | Description                                                                                                              |
+|------------------------|--------------------|--------------------------------------------------------------------------------------------------------------------------|
+| ExecutedSettlement     | ExecutedSettlement | Internal event that indicates that PSMC was agreed                                                                       |
+| MoveToActiveSettlement | ActiveSettlement   | Internal event that indicates that PSMC was refused or some other error happened, so it moves back to `ActiveSettlement` |
 
-#### IssuedPSMC
+#### ExecutedSettlement
 
 PSMC was signed, so it's time to wait for the settlement finalization. In this case we
-cannot issue new margin calls until settlement will finalize
+cannot process new margin calls until settlement will finalize
 
 ##### Action
 
@@ -324,14 +468,14 @@ cannot issue new margin calls until settlement will finalize
 
 ##### Transitions
 
-| Event               | State       | Description                                                       |
-|---------------------|-------------|-------------------------------------------------------------------|
-| FinalizedSettlement | Operational | External call from the SSM that indicates that settlement failed  |
-| FailedSettlement    | Operational | External call from the SSM that indicates that settlement succeed |
+| Event               | State       | Description                                                        |
+|---------------------|-------------|--------------------------------------------------------------------|
+| FinalizedSettlement | Operational | External event from the SSM that indicates that settlement failed  |
+| FailedSettlement    | Operational | External event from the SSM that indicates that settlement succeed |
 
 #### Challenging
 
-Indicates the will of one party to force move the channel
+Indicates the will of one party to forcefully close the channel
 
 ##### Action
 
@@ -341,9 +485,9 @@ Indicates the will of one party to force move the channel
 
 ##### Transitions
 
-| Event      | State      | Description                                                          |
-|------------|------------|----------------------------------------------------------------------|
-| Challenged | Challenged | Internal call that indicates that Peer succesfully started challenge |
+| Event      | State      | Description                                                            |
+|------------|------------|------------------------------------------------------------------------|
+| Challenged | Challenged | Internal event that indicates that Peer successfully started challenge |
 
 #### Challenged
 
@@ -357,29 +501,39 @@ There is active challenge
 
 ##### Transitions
 
-| Event              | State           | Description                                                                                         |
-|--------------------|-----------------|-----------------------------------------------------------------------------------------------------|
-| ClearedChallenge   | Operational     | External call that Challenge was cleared on blockchain and now it could return back to operational  |
-| TimeoutedChallenge | ReadyToWithdraw | External call that indicates that Challenge timeout expired and now channel is ready to be defunded |
+| Event            | State           | Description                                                                                          |
+|------------------|-----------------|------------------------------------------------------------------------------------------------------|
+| ClearedChallenge | Operational     | External event that Challenge was cleared on blockchain and now it could return back to operational  |
+| TimeoutChallenge | ReadyToWithdraw | External event that indicates that Challenge timeout expired and now channel is ready to be defunded |
 
 #### Finalizing
 
-Issues final clearing state
+Processes final clearing state
 
-##### Action
+##### Initiator Action
 
 1. Updates state in Storage
 2. Notifies user about state update
 3. Issues final clearing state
 4. Checks and updates `StateSyncFailure` amount
 
+##### Responder Action
+
+1. Updates state in Storage
+2. Notifies user about state update
+3. Removes `NoMarginCallsTimeout` timer
+4. Validates final clearing state
+5. Countersigns final clearing state
+6. Checks and updates `StateSyncFailure` amount
+7. Calls `ConcludeAndWithdraw` method on blockchain
+   
 ##### Transitions
 
-| Event             | State           | Description                                                                                        |
-|-------------------|-----------------|----------------------------------------------------------------------------------------------------|
-| ReadyToConclude   | ReadyToConclude | Internal call that indicates that final state was successfully signed                              |
-| Challenge         | Challenging     | Internal call that indicates that final state wasn't signed and `StateSyncFailure` is unacceptable |
-| MoveToOperational | Operational     | Internal call that indicates that final state wasn't signed and `StateSyncFailure` is acceptable   |
+| Event             | State           | Description                                                                                         |
+|-------------------|-----------------|-----------------------------------------------------------------------------------------------------|
+| ReadyToConclude   | ReadyToConclude | Internal event that indicates that final state was successfully signed                              |
+| Challenge         | Challenging     | Internal event that indicates that final state wasn't signed and `StateSyncFailure` is unacceptable |
+| MoveToOperational | Operational     | Internal event that indicates that final state wasn't signed and `StateSyncFailure` is acceptable   |
 
 #### ReadyToConclude
 
@@ -392,9 +546,9 @@ Waits for the event from the blockchain about concluding channel
 
 ##### Transitions
 
-| Event       | State | Description                                                                             |
-|-------------|-------|-----------------------------------------------------------------------------------------|
-| MoveToFinal | Final | External call from reactor system that indicates that channel was succesfully concluded |
+| Event       | State | Description                                                                               |
+|-------------|-------|-------------------------------------------------------------------------------------------|
+| MoveToFinal | Final | External event from reactor system that indicates that channel was successfully concluded |
 
 #### ReadyToWithdraw
 
@@ -407,9 +561,9 @@ Waits for the event from the blockchain about defunding channel
 
 ##### Transitions
 
-| Event       | State | Description                                                                             |
-|-------------|-------|-----------------------------------------------------------------------------------------|
-| MoveToFinal | Final | External call from reactor system that indicates that channel was succesfully withdrawn |
+| Event       | State | Description                                                                               |
+|-------------|-------|-------------------------------------------------------------------------------------------|
+| MoveToFinal | Final | External event from reactor system that indicates that channel was successfully withdrawn |
 
 #### Final
 
@@ -445,24 +599,37 @@ No transitions
    something goes, when cannot do anything. There are some cases what we could possibly do,
    but I (M) suggest method: retry and panic
 
-4. During `IssuingMarginCall` state we may not save the state because it's useless for the recovery,
-   it may look like call of the function throught the state machine and not a state, but it will be so 
-   much easier to syncronize our system if we will accept it as a state machine state. I(M)'d called it
+4. During `ProcessingMarginCall` state we may not save the state because it's useless for the recovery,
+   it may look like call of the function thought the state machine and not a state, but it will be so 
+   much easier to synchronize our system if we will accept it as a state machine state. I(M)'d called it
    `in-memory-state`.
 
 5. During `ActiveSettlement` we notify user about settlement start, but probably we will notify about it from 
    the settlement sm as well. It's a tiny UI/UX thing but still.
 
-6. `ActiveSettlement` and `IssuedPSMC` -- This state hardly depends on settlement state machine, either settlement will succeed or it will fail
+6. `ActiveSettlement` and `ExecutedSettlement` -- This state hardly depends on settlement state machine, either settlement will succeed or it will fail
    SSM should return state of clearing state machine back to operational. But for some reason it could not happen and CSM will stuck
    We could add `NonOperationalTimeout`, that will return system back to `Operational` no matter what. but we don't know about time 
    limits, it could be 1 minute, 1 hour or even 1 day
 
 7. During `Funded` state we could come across situation when Initiator issues postfund, Responder receives it and signs, 
-   but keeps it to himself. Initiator decides to clear challenge with perfund state and Responder clears challenge with postfunded
+   but keeps it to himself. Initiator decides to clear challenge with prefund state and Responder clears challenge with postfunded
    state. At this case we need to retrieve postfund state from the blockchain
 
-8. `IssuedPSMC` -- need to think more about edge cases.
+8. `ExecutedSettlement` -- need to think more about edge cases.
+
+9. Add `Rejected` event
+
+10. Do we need `InitiatorFundingTimeout` on `Initiator` side and `ResponderFundingTimeout` on `Responder` side?
+
+11. For now we have internal transition from `Challenging` to `Challenged` state. But maybe we should 
+    add the third state `ChallengeRegistered` that will come from the blockchain and will indicate that
+    challenge was registered on the blockchain. It will be more clear and we will have more control over
+    the challenge process (from both Self-issued and Peer-issued challenges)
+
+12. Responder should withdraw from channel in case of Challenge. But there is no suitable state for it.
+    In theory we could do that inside reactor, but it feels like a hack. Maybe we should add `Withdraw` state
+    + what about auto defunding?
 
 ## Consequences
 
