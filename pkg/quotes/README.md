@@ -8,6 +8,7 @@ Available drivers:
 - Kraken
 - Opendax
 - Bitfaker
+- Uniswap V3
 
 ## Interface to connect
 
@@ -36,7 +37,7 @@ For candle sticks, Recent trade, tickers last price is calculated as follows:
 last_price = price
 ```
 
-## Market Price
+## Index Price
 
 Used mainly in risk management for portfolio evaluation:
 
