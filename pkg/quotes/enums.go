@@ -1,6 +1,11 @@
 package quotes
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+
+	"gopkg.in/yaml.v3"
+)
 
 // DriverType is enum that represents
 // all available quotes providers.
@@ -20,7 +25,7 @@ var (
 	DriverUniswapV3 = DriverType{"uniswap_v3"}
 )
 
-func ToDriverType(raw string) (*DriverType, error) {
+func ToDriverType(raw string) (DriverType, error) {
 	allDrivers := map[string]DriverType{
 		DriverBinance.String():   DriverBinance,
 		DriverKraken.String():    DriverKraken,
@@ -31,9 +36,47 @@ func ToDriverType(raw string) (*DriverType, error) {
 
 	driver, ok := allDrivers[raw]
 	if !ok {
-		return nil, fmt.Errorf("invalid driver type: %v", raw)
+		return DriverType{}, fmt.Errorf("invalid driver type: %v", raw)
 	}
-	return &driver, nil
+	return driver, nil
+}
+
+func (t DriverType) MarshalJSON() ([]byte, error) {
+	return json.Marshal(t.slug)
+}
+
+func (t *DriverType) UnmarshalJSON(raw []byte) error {
+	var rawParsed string
+	if err := json.Unmarshal(raw, &rawParsed); err != nil {
+		return err
+	}
+
+	typ, err := ToDriverType(rawParsed)
+	if err != nil {
+		return err
+	}
+
+	*t = typ
+	return nil
+}
+
+func (t DriverType) MarshalYAML() (any, error) {
+	return t.slug, nil
+}
+
+func (t *DriverType) UnmarshalYAML(value *yaml.Node) error {
+	var raw string
+	if err := value.Decode(&raw); err != nil {
+		return err
+	}
+
+	typ, err := ToDriverType(raw)
+	if err != nil {
+		return err
+	}
+
+	*t = typ
+	return nil
 }
 
 // TakerType is enum that represents
@@ -52,7 +95,7 @@ var (
 	TakerTypeSell    = TakerType{"buy"}
 )
 
-func ToTakerType(raw string) (*TakerType, error) {
+func ToTakerType(raw string) (TakerType, error) {
 	allTypes := map[string]TakerType{
 		TakerTypeUnknown.String(): TakerTypeUnknown,
 		TakerTypeBuy.String():     TakerTypeBuy,
@@ -61,7 +104,45 @@ func ToTakerType(raw string) (*TakerType, error) {
 
 	typ, ok := allTypes[raw]
 	if !ok {
-		return nil, fmt.Errorf("invalid taker type: %v", raw)
+		return TakerType{}, fmt.Errorf("invalid taker type: %v", raw)
 	}
-	return &typ, nil
+	return typ, nil
+}
+
+func (t TakerType) MarshalJSON() ([]byte, error) {
+	return json.Marshal(t.slug)
+}
+
+func (t *TakerType) UnmarshalJSON(raw []byte) error {
+	var rawParsed string
+	if err := json.Unmarshal(raw, &rawParsed); err != nil {
+		return err
+	}
+
+	typ, err := ToTakerType(rawParsed)
+	if err != nil {
+		return err
+	}
+
+	*t = typ
+	return nil
+}
+
+func (t TakerType) MarshalYAML() (any, error) {
+	return t.slug, nil
+}
+
+func (t *TakerType) UnmarshalYAML(value *yaml.Node) error {
+	var raw string
+	if err := value.Decode(&raw); err != nil {
+		return err
+	}
+
+	typ, err := ToTakerType(raw)
+	if err != nil {
+		return err
+	}
+
+	*t = typ
+	return nil
 }
