@@ -135,8 +135,8 @@ stateDiagram-v2
     PreOperationalChallengeRegistered --> ReadyToWithdraw: TimeoutChallenge
 
     Funded --> Operational: AgreedOnPostfund
-    Funded --> Challenging: Failed
-    Funded --> Challenging: PostfundProcessingTimeout
+    Funded --> PreOperationalChallenging: Failed
+    Funded --> PreOperationalChallenging: PostfundProcessingTimeout
 
     Operational --> ActiveSettlement: PrepareSettlement
     Operational --> Finalizing: Finalize
