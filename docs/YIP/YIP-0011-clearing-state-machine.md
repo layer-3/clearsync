@@ -31,7 +31,7 @@ title: Clearing Initiator State Machine
 stateDiagram-v2
     classDef waiting stroke-dasharray:5
 
-    class Accepted, InitiatorFunded, PreOperationalChallenged, Operational, ActiveSettlement, ExecutedSettlement, Challenged, ReadyToConclude, ReadyToWithdraw waiting
+    class Accepted, InitiatorFunded, PreOperationalChallenged, PreOperationalChallengeRegistered, Operational, ActiveSettlement, ExecutedSettlement, Challenged, ChallengeRegistered, ReadyToConclude, ReadyToWithdraw waiting
 
     [*] --> DefaultState
     DefaultState --> Instantiating: Instantiate
@@ -42,14 +42,18 @@ stateDiagram-v2
     Accepted --> InitiatorFunded: InitiatorFunded
     Accepted --> Failed: Failed
     Accepted --> Failed: InitiatorFundingTimeout
+    Accepted --> PreOperationalChallengeRegistered: ChallengeRegistered
 
     InitiatorFunded --> Funded: ResponderFunded
     InitiatorFunded --> PreOperationalChallenging: Failed
     InitiatorFunded --> PreOperationalChallenging: ResponderFundingTimeout
+    InitiatorFunded --> PreOperationalChallengeRegistered: ChallengeRegistered
     
     PreOperationalChallenging --> PreOperationalChallenged: Challenged
 
-    PreOperationalChallenged --> ReadyToWithdraw: TimeoutChallenge
+    PreOperationalChallenged --> PreOperationalChallengeRegistered: ChallengeRegistered
+    
+    PreOperationalChallengeRegistered --> ReadyToWithdraw: TimeoutChallenge
 
     Funded --> Operational: AgreedOnPostfund
     Funded --> Challenging: Failed
@@ -58,6 +62,7 @@ stateDiagram-v2
     Operational --> Finalizing: Finalize
     Operational --> ProcessingMarginCall: ProcessMarginCall
     Operational --> Challenging: Challenging
+    Operational --> ChallengeRegistered: ChallengeRegistered
     
     ProcessingMarginCall --> Operational: MoveToOperational
     ProcessingMarginCall --> Challenging: Challenge
@@ -65,6 +70,7 @@ stateDiagram-v2
     ActiveSettlement --> ProcessingPSMC: ProcessPSMC
     ActiveSettlement --> ProcessingSMC: ProcessMarginCall
     ActiveSettlement --> Operational: FailedSettlement
+    ActiveSettlement --> ChallengeRegistered: ChallengeRegistered
 
     ProcessingSMC --> ActiveSettlement: MoveToActiveSettlement
     ProcessingSMC --> Challenging: Challenge
@@ -74,15 +80,19 @@ stateDiagram-v2
 
     ExecutedSettlement --> Operational: FinalizedSettlement
     ExecutedSettlement --> Operational: FailedSettlement
+    ExecutedSettlement --> ChallengeRegistered: ChallengeRegistered
 
     Challenging --> Challenged: Challenged
 
-    Challenged --> Operational: ClearedChallenge
-    Challenged --> ReadyToWithdraw: TimeoutChallenge
+    Challenged --> ChallengeRegistered: ChallengeRegistered
+
+    ChallengeRegistered --> Operational: ClearedChallenge
+    ChallengeRegistered --> ReadyToWithdraw: TimeoutChallenge
     
     Finalizing --> ReadyToConclude: ReadyToConclude
     Finalizing --> Challenging: Challenge
     Finalizing --> Operational: MoveToOperational
+    Finalizing --> ChallengeRegistered: ChallengeRegistered
 
     ReadyToConclude --> Final: MoveToFinal
     ReadyToWithdraw --> Final: MoveToFinal
@@ -100,7 +110,7 @@ title: Clearing Responder State Machine
 stateDiagram-v2
     classDef waiting stroke-dasharray:5
 
-    class Accepted, InitiatorFunded, Funded, PreOperationalChallenged, Operational, ActiveSettlement, ExecutedSettlement, Challenged, ReadyToConclude, ReadyToWithdraw waiting
+    class Accepted, InitiatorFunded, Funded, PreOperationalChallenged, PreOperationalChallengeRegistered, Operational, ActiveSettlement, ExecutedSettlement, Challenged, ChallengeRegistered, ReadyToConclude, ReadyToWithdraw waiting
 
     [*] --> DefaultState
     DefaultState --> Instantiating: Instantiate
@@ -111,14 +121,18 @@ stateDiagram-v2
     Accepted --> InitiatorFunded: InitiatorFunded
     Accepted --> Failed: Failed
     Accepted --> Failed: InitiatorFundingTimeout
+    Accepted --> PreOperationalChallengeRegistered: ChallengeRegistered
 
     InitiatorFunded --> Funded: ResponderFunded
     InitiatorFunded --> Failed: Failed
     InitiatorFunded --> Failed: ResponderFundingTimeout
+    InitiatorFunded --> PreOperationalChallengeRegistered: ChallengeRegistered
     
     PreOperationalChallenging --> PreOperationalChallenged: Challenged
 
-    PreOperationalChallenged --> ReadyToWithdraw: TimeoutChallenge
+    PreOperationalChallenged --> PreOperationalChallengeRegistered: ChallengeRegistered
+    
+    PreOperationalChallengeRegistered --> ReadyToWithdraw: TimeoutChallenge
 
     Funded --> Operational: AgreedOnPostfund
     Funded --> Challenging: Failed
@@ -128,6 +142,7 @@ stateDiagram-v2
     Operational --> Finalizing: Finalize
     Operational --> ProcessingMarginCall: ProcessMarginCall
     Operational --> Challenging: Challenging
+    Operational --> ChallengeRegistered: ChallengeRegistered
     
     ProcessingMarginCall --> Operational: MoveToOperational
     ProcessingMarginCall --> Challenging: Challenge
@@ -135,6 +150,7 @@ stateDiagram-v2
     ActiveSettlement --> ProcessingPSMC: ProcessPSMC
     ActiveSettlement --> ProcessingSMC: ProcessMarginCall
     ActiveSettlement --> Operational: FailedSettlement
+    ActiveSettlement --> ChallengeRegistered: ChallengeRegistered
 
     ProcessingSMC --> ActiveSettlement: MoveToActiveSettlement
     ProcessingSMC --> Challenging: Challenge
@@ -144,15 +160,19 @@ stateDiagram-v2
 
     ExecutedSettlement --> Operational: FinalizedSettlement
     ExecutedSettlement --> Operational: FailedSettlement
+    ExecutedSettlement --> ChallengeRegistered: ChallengeRegistered
 
     Challenging --> Challenged: Challenged
 
-    Challenged --> Operational: ClearedChallenge
-    Challenged --> ReadyToWithdraw: TimeoutChallenge
+    Challenged --> ChallengeRegistered: ChallengeRegistered
+
+    ChallengeRegistered --> Operational: ClearedChallenge
+    ChallengeRegistered --> ReadyToWithdraw: TimeoutChallenge
     
     Finalizing --> ReadyToConclude: ReadyToConclude
     Finalizing --> Challenging: Challenge
     Finalizing --> Operational: MoveToOperational
+    Finalizing --> ChallengeRegistered: ChallengeRegistered
 
     ReadyToConclude --> Final: MoveToFinal
     ReadyToWithdraw --> Final: MoveToFinal
@@ -233,11 +253,12 @@ Indicates that peers agreed on prefund nitro state and channel is ready for fund
 
 ##### Transitions
 
-| Event                   | State           | Description                                                                                                                           |
-|-------------------------|-----------------|---------------------------------------------------------------------------------------------------------------------------------------|
-| InitiatorFunded         | InitiatorFunded | External event that indicates that Initiator fulfilled his part of the deal by funding channel                                        |
-| Failed                  | Failed          | Internal event that could occur on any error during action execution                                                                  |
-| InitiatorFundingTimeout | Failed          | External event that indicates that Initiator haven't fulfilled his part of the deal on time, so there is no need to keep channel open |
+| Event                   | State                             | Description                                                                                                                           |
+|-------------------------|-----------------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| InitiatorFunded         | InitiatorFunded                   | External event that indicates that Initiator fulfilled his part of the deal by funding channel                                        |
+| Failed                  | Failed                            | Internal event that could occur on any error during action execution                                                                  |
+| InitiatorFundingTimeout | Failed                            | External event that indicates that Initiator haven't fulfilled his part of the deal on time, so there is no need to keep channel open |
+| ChallengeRegistered     | PreOperationalChallengeRegistered | External event that indicates Challenge was started on blockchain                                                                     |
 
 #### InitiatorFunded
 
@@ -260,13 +281,15 @@ Indicates that Initiator funded channel, and now it's Responder's turn
 
 ##### Transitions
 
-| Side | Event                   | State                     | Description                                                                                                                                      |
-|------|-------------------------|---------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| IR   | ResponderFunded         | Funded                    | External event that indicates that Responder fulfilled his part of the deal by funding channel                                                   |
-| I    | Failed                  | PreOperationalChallenging | Internal event that could occur on any error during action execution, so Initiator calls Challenge to retrieve his assets                        |
-| R    | Failed                  | Failed                    | Internal event that could occur on any error during action execution                                                                             |
-| I    | ResponderFundingTimeout | PreOperationalChallenging | External event that indicates that Responder haven't fulfilled his part of the deal on time, so Initiator calls Challenge to retrieve his assets |
-| R    | ResponderFundingTimeout | Failed                    | External event that indicates that Responder haven't fulfilled his part of the deal on time                                                      |
+| Side | Event                   | State                             | Description                                                                                                                                      |
+|------|-------------------------|-----------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+| IR   | ResponderFunded         | Funded                            | External event that indicates that Responder fulfilled his part of the deal by funding channel                                                   |
+| I    | Failed                  | PreOperationalChallenging         | Internal event that could occur on any error during action execution, so Initiator calls Challenge to retrieve his assets                        |
+| R    | Failed                  | Failed                            | Internal event that could occur on any error during action execution                                                                             |
+| I    | ResponderFundingTimeout | PreOperationalChallenging         | External event that indicates that Responder haven't fulfilled his part of the deal on time, so Initiator calls Challenge to retrieve his assets |
+| R    | ResponderFundingTimeout | Failed                            | External event that indicates that Responder haven't fulfilled his part of the deal on time                                                      |
+| IR   | ChallengeRegistered     | PreOperationalChallengeRegistered | External event that indicates Challenge was started on blockchain                                                                                |
+
 
 #### PreOperationalChallenging
 
@@ -288,6 +311,21 @@ Indicates the will of one party to forcefully close the channel before Postfund 
 #### PreOperationalChallenged
 
 There is active challenge, that was called before postfund was signed
+
+##### Action
+
+1. Updates state in Storage
+2. Notifies user about state update
+
+##### Transitions
+
+| Event               | State                             | Description                                                               |
+|---------------------|-----------------------------------|---------------------------------------------------------------------------|
+| ChallengeRegistered | PreOperationalChallengeRegistered | External event that indicates that Challenge was registered on blockchain |
+
+#### PreOperationalChallengeRegistered
+
+There is challenge, that was registered on blockchain before postfund was signed
 
 NOTE: Since only one state was signed, this type of Challenge cannot be cleared and will timeout whatsoever
 
@@ -350,12 +388,13 @@ Clearing channel has no other tasks, but existing
 
 ##### Transitions
 
-| Event             | State                | Description                                                                                                |
-|-------------------|----------------------|------------------------------------------------------------------------------------------------------------|
-| PrepareSettlement | ActiveSettlement     | External event that comes from the settlement state machine, indicates that settlement process was started |
-| Finalize          | Finalizing           | External event that comes from the user request to gracefully close the clearing channel                   |
-| ProcessMarginCall | ProcessingMarginCall | External event that comes from the reactor(?) system and intending to issue new margin call                |
-| Challenging       | Challenging          | External event that request to forcefully close the clearing channel                                       |
+| Event               | State                | Description                                                                                                |
+|---------------------|----------------------|------------------------------------------------------------------------------------------------------------|
+| PrepareSettlement   | ActiveSettlement     | External event that comes from the settlement state machine, indicates that settlement process was started |
+| Finalize            | Finalizing           | External event that comes from the user request to gracefully close the clearing channel                   |
+| ProcessMarginCall   | ProcessingMarginCall | External event that comes from the reactor(?) system and intending to issue new margin call                |
+| Challenging         | Challenging          | External event that request to forcefully close the clearing channel                                       |
+| ChallengeRegistered | ChallengeRegistered  | External event that indicates that Challenge was started on blockchain                                     |
 
 #### ProcessingMarginCall
 
@@ -400,11 +439,12 @@ Clearing process is currently in the middle of settlement, but `PostSettlementSt
 
 ##### Transitions
 
-| Event             | State          | Description                                                                                                                 |
-|-------------------|----------------|-----------------------------------------------------------------------------------------------------------------------------|
-| ProcessPSMC       | ProcessingPSMC | External event from the SSM that indicates that it's time to stop processing margin calls                                   |
-| ProcessMarginCall | ProcessingSMC  | External event from the reactor(?) system and intending to issue new margin call                                            |
-| FailedSettlement  | Operational    | External event from the SSM that indicates that Settlement Failed for some reason and CSM could return to Operational state |
+| Event               | State               | Description                                                                                                                 |
+|---------------------|---------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| ProcessPSMC         | ProcessingPSMC      | External event from the SSM that indicates that it's time to stop processing margin calls                                   |
+| ProcessMarginCall   | ProcessingSMC       | External event from the reactor(?) system and intending to issue new margin call                                            |
+| FailedSettlement    | Operational         | External event from the SSM that indicates that Settlement Failed for some reason and CSM could return to Operational state |
+| ChallengeRegistered | ChallengeRegistered | External event that indicates that Challenge was started on blockchain                                                      |
 
 #### ProcessingSMC
 
@@ -468,10 +508,11 @@ cannot process new margin calls until settlement will finalize
 
 ##### Transitions
 
-| Event               | State       | Description                                                        |
-|---------------------|-------------|--------------------------------------------------------------------|
-| FinalizedSettlement | Operational | External event from the SSM that indicates that settlement failed  |
-| FailedSettlement    | Operational | External event from the SSM that indicates that settlement succeed |
+| Event               | State               | Description                                                            |
+|---------------------|---------------------|------------------------------------------------------------------------|
+| FinalizedSettlement | Operational         | External event from the SSM that indicates that settlement failed      |
+| FailedSettlement    | Operational         | External event from the SSM that indicates that settlement succeed     |
+| ChallengeRegistered | ChallengeRegistered | External event that indicates that Challenge was started on blockchain |
 
 #### Challenging
 
@@ -492,6 +533,21 @@ Indicates the will of one party to forcefully close the channel
 #### Challenged
 
 There is active challenge
+
+##### Action
+
+1. Updates state in Storage
+2. Notifies user about state update
+
+##### Transitions
+
+| Event               | State               | Description                                                               |
+|---------------------|---------------------|---------------------------------------------------------------------------|
+| ChallengeRegistered | ChallengeRegistered | External event that indicates that Challenge was registered on blockchain |
+
+#### ChallengeRegistered
+
+There is challenge, that was registered on blockchain
 
 ##### Action
 
@@ -529,11 +585,12 @@ Processes final clearing state
    
 ##### Transitions
 
-| Event             | State           | Description                                                                                         |
-|-------------------|-----------------|-----------------------------------------------------------------------------------------------------|
-| ReadyToConclude   | ReadyToConclude | Internal event that indicates that final state was successfully signed                              |
-| Challenge         | Challenging     | Internal event that indicates that final state wasn't signed and `StateSyncFailure` is unacceptable |
-| MoveToOperational | Operational     | Internal event that indicates that final state wasn't signed and `StateSyncFailure` is acceptable   |
+| Event               | State               | Description                                                                                         |
+|---------------------|---------------------|-----------------------------------------------------------------------------------------------------|
+| ReadyToConclude     | ReadyToConclude     | Internal event that indicates that final state was successfully signed                              |
+| Challenge           | Challenging         | Internal event that indicates that final state wasn't signed and `StateSyncFailure` is unacceptable |
+| MoveToOperational   | Operational         | Internal event that indicates that final state wasn't signed and `StateSyncFailure` is acceptable   |
+| ChallengeRegistered | ChallengeRegistered | External event that indicates that Challenge was registered on blockchain                           |
 
 #### ReadyToConclude
 
@@ -630,6 +687,8 @@ No transitions
 12. Responder should withdraw from channel in case of Challenge. But there is no suitable state for it.
     In theory we could do that inside reactor, but it feels like a hack. Maybe we should add `Withdraw` state
     + what about auto defunding?
+
+13. What to do with Challenge during Settlement or what to do with Settlement during Challenge?
 
 ## Consequences
 
