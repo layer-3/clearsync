@@ -6,7 +6,7 @@ Proposed
 
 ## Context
 
-Both trading channel and settlement include a lot of operational states and logic. With the continuous growth of the code base and complexity of the protocol, it becomes harder to maintain and extend the code,
+Both clearing channel and settlement include a lot of operational states and logic. With the continuous growth of the code base and complexity of the protocol, it becomes harder to maintain and extend the code,
 and to make sure that all the edge cases are covered and no security vulnerabilities are introduced.
 
 For this reason, we need to develop simple, but yet extensible framework that allows to create, configure and operate state machines.
@@ -15,13 +15,13 @@ For this reason, we need to develop simple, but yet extensible framework that al
 
 The state machine framework should stem from the automata theory, given its robustness, proven correctness and wide adoption.
 
-Moreover, given the reactive nature of the trading and settlement protocols, meaning that the workflow starts with one event, which leads to other event generated and so on. The pushdown automaton is the best candidate for the described logic.
+Moreover, given the reactive nature of the clearing and settlement protocols, meaning that the workflow starts with one event, which leads to other event generated and so on. The pushdown automaton is the best candidate for the described logic.
 
 ### Vocabulary
 
 **Automata theory** - is the study of abstract machines and automata, as well as the computational problems that can be solved using them. It is a theory in theoretical computer science with close connections to mathematical logic.
 
-**Automaton** (comes from the Greek word "αὐτόματος", which means "self-acting, self-willed, self-moving") - is an abstract self-propelled computing device which follows a predetermined sequence of operations automatically.
+**Automaton** - is an abstract self-propelled computing device which follows a predetermined sequence of operations automatically.
 
 **State** represents the step of an automaton execution. In the context of this YIP we will only consider automata with finite number of states, which are called finite automaton (FA) or finite state machines (FSM).
 
@@ -31,7 +31,7 @@ Moreover, given the reactive nature of the trading and settlement protocols, mea
 
 **Transition** - is a function that maps a state and an input symbol to the next state.
 
-**Initiat states** - is a set of states that the automaton can be in before any input.
+**Initial states** - is a set of states that the automaton can be in before any input.
 
 **Final states** - is a set of states that the automaton can be in after the input is processed.
 
@@ -51,7 +51,7 @@ The term "pushdown" refers to the fact that the stack can be regarded as being "
 
 ### State machine framework
 
-The state machine framework shall be implemented as a library that can be used by the trading and settlement protocols.
+The state machine framework shall be implemented as a library that can be used by the clearing and settlement protocols.
 
 #### State machine framework vocabulary
 
@@ -71,7 +71,7 @@ The framework shall implement a pushdown automaton with the following properties
 
 - The **alphabet** is a set of events that can be triggered by the protocol, e.g. Deposit, Challenge etc.
 - The **states** are the operational states of the protocol, e.g. Created, Deposited, Challenged etc.
-- The automaton is **incomplete**, because the flow of the trading and settlement protocols is mostly linear, and there are no transitions for all the states and all the events.
+- The automaton is **incomplete**, because the flow of the clearing and settlement protocols is mostly linear, and there are no transitions for all the states and all the events.
 - The automaton is **deterministic**, because there is at most one transition for every state and every event.
 - The automaton starts the run with only 1 _external_ event.
 - The stack of the automaton has a fixed size of 1. This means, that transition can result in either no or 1 event pushed to the stack.
