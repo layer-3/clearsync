@@ -1,4 +1,4 @@
-# 0003 - Pre-Trade risk checks
+# 0003 - Pre-Trade risk checks vol.1
 
 ## Status
 
@@ -11,8 +11,6 @@ https://www.b2bits.com/trading_solutions/pre-trade-risk-check-solutions
 
 
 ## Decision
-
-**Pre-Trade risk checks vol.1**
 
 ### Definitions
 
@@ -27,7 +25,7 @@ Trading channel's ```buying power``` is equal to ```collateral * margin - locked
 ### Open orders cancellation when buying power goes below zero
 
 - If the buying power goes below zero (for example, position losses), Neodax starts cancelling open orders until the buying power is recovered.
-Cancellation starts with orders with the smallest locked amount in quote currency and contunues until the buying power is more or equal to zero.
+Cancellation starts with the oldest orders, and contunues until the buying power is more or equal to zero.
 
 ## Consequences
 
