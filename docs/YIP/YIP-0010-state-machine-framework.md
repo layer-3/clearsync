@@ -173,3 +173,40 @@ func (sm *StateMachine) ProcessEvent(event Event) error {
   return sm.run(event)
 }
 ```
+
+### Improvements
+
+The state machine framework can be improved by adding the following features:
+
+#### `Reset()`
+
+The state machine can be reset to the initial state by calling the `Reset()` method.
+This enables the state machine to be reused for multiple runs.
+
+```go
+func (sm *StateMachine) Reset() {
+  sm.CurrentState = sm.InitialState
+  sm.nextEvent = NilEvent
+}
+```
+
+#### Passing event to state action
+
+The state action can be passed the event that triggered the transition to the state.
+This allows to implement more complex logic in the state action, e.g. to check the validity of the event.
+
+```go
+type Action func(event Event) (Event, error)
+```
+
+#### Using a stack of events instead of a single event
+
+The state machine can be extended to use a stack of events instead of a single `Next` event.
+This allows other go-routines to push events to the state machine, which will be processed after the current event is processed.
+
+```go
+type StateMachine struct {
+  // ...
+  nextEvents *Stack
+}
+```
