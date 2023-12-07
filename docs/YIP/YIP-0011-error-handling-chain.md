@@ -15,7 +15,7 @@ This proposal describes how the errors should be handled in the protocol.
 
 **Handling chain** - is a sequence of handlers that are executed one after another. In the context of error handling chain, the next handler is executed is the previous one failed to handle the error.
 
-This way, the behaviour after an error handler failed is consistent across the protocol.
+This way, the behavior after an error handler failed is consistent across the protocol.
 
 ### Handler impact
 
@@ -52,4 +52,4 @@ Initiator initiates finalizing the channel, but it fails. The error handling cha
 ## Consequences
 
 - The protocol shall implement the error handling chain as described in this proposal.
-- Error handlers chain should contain all levels described above (if possible).
+- Error handling chains for different errors should contain all levels described above (if possible).
