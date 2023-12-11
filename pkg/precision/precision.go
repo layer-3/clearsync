@@ -1,8 +1,6 @@
 package precision
 
 import (
-	"math"
-
 	"github.com/shopspring/decimal"
 )
 
@@ -24,11 +22,21 @@ func ToSignificant(input decimal.Decimal, sigDigits int32, maxScale int32) decim
 		// If the number of integral digits is greater than significant digits,
 		// round the number to a scale that maintains the significant digits in the integral part.
 		roundedValue := input.RoundBank(0)
-		multiplier := decimal.NewFromInt(int64(math.Pow10(int(-adjustedScale))))
+		ten := decimal.NewFromInt(10)
+		multiplier := ten.Pow(decimal.NewFromInt32(-adjustedScale))
 		return roundedValue.DivRound(multiplier, 0).Mul(multiplier)
 	} else if adjustedScale > maxScale {
 		adjustedScale = maxScale
 	}
 
 	return input.RoundBank(adjustedScale)
+}
+
+func IsValid(input decimal.Decimal, sigDigits int32, maxScale int32) bool {
+	if input.IsNegative() {
+		return false
+	}
+
+	result := ToSignificant(input, sigDigits, maxScale)
+	return result.Equal(input)
 }

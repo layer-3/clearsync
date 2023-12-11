@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/shopspring/decimal"
+	"github.com/stretchr/testify/require"
 )
 
 func TestToSignificant(t *testing.T) {
@@ -136,6 +137,81 @@ func BenchmarkToSignificant_IntegralPartSizeGreaterThanSignificantDigits(b *test
 
 	for i := 0; i < b.N; i++ {
 		ToSignificant(d, 5, 18)
+	}
+}
+
+func TestIsValid(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		input  decimal.Decimal
+		expect bool
+	}{
+		{
+			input:  newFromString("0.0"),
+			expect: true,
+		}, {
+			input:  decimal.NewFromFloat(math.SmallestNonzeroFloat64),
+			expect: false,
+		}, {
+			input:  newFromString("0.0000000000000004"),
+			expect: true,
+		}, {
+			input:  newFromString("0.0001"),
+			expect: true,
+		}, {
+			input:  newFromString("0.000103456"),
+			expect: false,
+		}, {
+			input:  newFromString("0.012344789"),
+			expect: false,
+		}, {
+			input:  newFromString("0.001023499"),
+			expect: false,
+		}, {
+			input:  newFromString("0.012345928"),
+			expect: false,
+		}, {
+			input:  newFromString("0.001023499"),
+			expect: false,
+		}, {
+			input:  newFromString("0.012345"),
+			expect: true,
+		}, {
+			input:  newFromString("1.00000234"),
+			expect: false,
+		}, {
+			input:  newFromString("1.0002"),
+			expect: true,
+		}, {
+			input:  newFromString("2"),
+			expect: true,
+		}, {
+			input:  newFromString("100006"),
+			expect: false,
+		}, {
+			input:  newFromString("12345"),
+			expect: true,
+		}, {
+			input:  newFromString("222.222222"),
+			expect: false,
+		}, {
+			input:  newFromString("2222022.2202"),
+			expect: false,
+		}, {
+			input:  newFromString("218166.0002"),
+			expect: false,
+		},
+	}
+
+	for _, test := range tests {
+		tt := test
+		t.Run(fmt.Sprintf("%s -> %t", tt.input, tt.expect), func(t *testing.T) {
+			t.Parallel()
+
+			isValid := IsValid(tt.input, 5, 18)
+			require.Equal(t, tt.expect, isValid)
+		})
 	}
 }
 
