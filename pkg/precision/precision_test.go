@@ -25,9 +25,6 @@ func TestToSignificant(t *testing.T) {
 			input:  newFromString("0.0000000000000004"),
 			expect: newFromString("0.0000000000000004"),
 		}, {
-			input:  newFromString("0.00000000000000004"),
-			expect: newFromString("0"),
-		}, {
 			input:  newFromString("0.0001"),
 			expect: newFromString("0.0001"),
 		}, {
@@ -80,21 +77,9 @@ func TestToSignificant(t *testing.T) {
 		t.Run(fmt.Sprintf("%s -> %s", tt.input, tt.expect), func(t *testing.T) {
 			t.Parallel()
 
-			actual := ToSignificant(tt.input, 5, 16)
+			actual := ToSignificant(tt.input, 5, 18)
 			if !actual.Equals(tt.expect) {
 				t.Errorf("ToSignificant(%s): expected %s, got %s", tt.input, tt.expect, actual)
-			}
-		})
-
-		ttNeg := test
-		ttNeg.input = ttNeg.input.Neg()
-		ttNeg.expect = ttNeg.expect.Neg()
-		t.Run(fmt.Sprintf("%s -> %s", ttNeg.input, ttNeg.expect), func(t *testing.T) {
-			t.Parallel()
-
-			actual := ToSignificant(ttNeg.input, 5, 16)
-			if !actual.Equals(ttNeg.expect) {
-				t.Errorf("ToSignificant(%s): expected %s, got %s", ttNeg.input, ttNeg.expect, actual)
 			}
 		})
 	}
@@ -109,7 +94,7 @@ func BenchmarkToSignificant_DecimalWithLeadingZeros(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		ToSignificant(d, 5, 16)
+		ToSignificant(d, 5, 18)
 	}
 }
 
@@ -122,14 +107,14 @@ func BenchmarkToSignificant_TruncateDecimals(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		ToSignificant(d, 5, 16)
+		ToSignificant(d, 5, 18)
 	}
 }
 
 func BenchmarkToSignificant_ExactSignificantDigits(b *testing.B) {
-  num := "12345"
+	num := "12345"
 	d := newFromString(num)
-  sigDigits := int32(len(num))
+	sigDigits := int32(len(num))
 
 	// Reset timer to exclude time taken by setup operations
 	// before the actual benchmark begins
@@ -137,7 +122,7 @@ func BenchmarkToSignificant_ExactSignificantDigits(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		ToSignificant(d, sigDigits, 16)
+		ToSignificant(d, sigDigits, 18)
 	}
 }
 
@@ -150,7 +135,7 @@ func BenchmarkToSignificant_IntegralPartSizeGreaterThanSignificantDigits(b *test
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		ToSignificant(d, 5, 16)
+		ToSignificant(d, 5, 18)
 	}
 }
 

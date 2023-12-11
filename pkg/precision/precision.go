@@ -11,7 +11,7 @@ func ToSignificant(input decimal.Decimal, sigDigits int32, maxScale int32) decim
 		return input
 	}
 
-	integralDigits := int32(len(input.Abs().Coefficient().String()))
+	integralDigits := int32(len(input.Coefficient().String()))
 	scale := input.Exponent()
 	if scale > 0 {
 		scale = 0
