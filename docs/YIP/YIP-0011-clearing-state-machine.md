@@ -31,7 +31,7 @@ title: Clearing Initiator State Machine
 stateDiagram-v2
     classDef waiting stroke-dasharray:5
 
-    class Accepted, InitiatorFunded, PreOperationalChallenged, PreOperationalChallengeRegistered, Operational, ActiveSettlement, ExecutedSettlement, Challenged, ChallengeRegistered, ReadyToConclude, ReadyToWithdraw waiting
+    class Accepted, InitiatorFunded, PendingPreOpChallengeRegistered, PreOpChallengeRegistered, Operational, ActiveSettlement, ExecutedSettlement, Challenged, ChallengeRegistered, ReadyToConclude, ReadyToWithdraw waiting
 
     [*] --> DefaultState
     DefaultState --> Instantiating: Instantiate
@@ -42,20 +42,20 @@ stateDiagram-v2
     Accepted --> InitiatorFunded: InitiatorFunded
     Accepted --> Failed: Failed
     Accepted --> Failed: InitiatorFundingTimeout
-    Accepted --> PreOperationalChallengeRegistered: ChallengeRegistered
+    Accepted --> PreOpChallengeRegistered: ChallengeRegistered
 
     InitiatorFunded --> Funded: ResponderFunded
-    InitiatorFunded --> PreOperationalChallenging: Failed
-    InitiatorFunded --> PreOperationalChallenging: ResponderFundingTimeout
-    InitiatorFunded --> PreOperationalChallengeRegistered: ChallengeRegistered
+    InitiatorFunded --> PreOpChallenging: Failed
+    InitiatorFunded --> PreOpChallenging: ResponderFundingTimeout
+    InitiatorFunded --> PreOpChallengeRegistered: ChallengeRegistered
     
-    PreOperationalChallenging --> PreOperationalChallenged: Challenged
+    PreOpChallenging --> PendingPreOpChallengeRegistered: Challenged
 
-    PreOperationalChallenged --> PreOperationalChallengeRegistered: ChallengeRegistered
+    PendingPreOpChallengeRegistered --> PreOpChallengeRegistered: ChallengeRegistered
     
-    PreOperationalChallengeRegistered --> ReadyToWithdraw: TimeoutChallenge
+    PreOpChallengeRegistered --> ReadyToWithdraw: ChallengeTimeout
 
-    Funded --> Operational: AgreedOnPostfund
+    Funded --> Operational: PostfundAgreed
     Funded --> Challenging: Failed
 
     Operational --> ActiveSettlement: PrepareSettlement
@@ -86,8 +86,8 @@ stateDiagram-v2
 
     Challenged --> ChallengeRegistered: ChallengeRegistered
 
-    ChallengeRegistered --> Operational: ClearedChallenge
-    ChallengeRegistered --> ReadyToWithdraw: TimeoutChallenge
+    ChallengeRegistered --> Operational: ChallengeCleared
+    ChallengeRegistered --> ReadyToWithdraw: ChallengeTimeout
     
     Finalizing --> ReadyToConclude: ReadyToConclude
     Finalizing --> Challenging: Challenge
@@ -110,7 +110,7 @@ title: Clearing Responder State Machine
 stateDiagram-v2
     classDef waiting stroke-dasharray:5
 
-    class Accepted, InitiatorFunded, Funded, PreOperationalChallenged, PreOperationalChallengeRegistered, Operational, ActiveSettlement, ExecutedSettlement, Challenged, ChallengeRegistered, ReadyToConclude, ReadyToWithdraw waiting
+    class Accepted, InitiatorFunded, Funded, PreOpChallenging, PendingPreOpChallengeRegistered, PreOpChallengeRegistered, Operational, ActiveSettlement, ExecutedSettlement, Challenging, PendingChallengeRegistered, ChallengeRegistered, ReadyToConclude, ReadyToWithdraw waiting
 
     [*] --> DefaultState
     DefaultState --> Instantiating: Instantiate
@@ -121,22 +121,22 @@ stateDiagram-v2
     Accepted --> InitiatorFunded: InitiatorFunded
     Accepted --> Failed: Failed
     Accepted --> Failed: InitiatorFundingTimeout
-    Accepted --> PreOperationalChallengeRegistered: ChallengeRegistered
+    Accepted --> PreOpChallengeRegistered: ChallengeRegistered
 
     InitiatorFunded --> Funded: ResponderFunded
     InitiatorFunded --> Failed: Failed
     InitiatorFunded --> Failed: ResponderFundingTimeout
-    InitiatorFunded --> PreOperationalChallengeRegistered: ChallengeRegistered
+    InitiatorFunded --> PreOpChallengeRegistered: ChallengeRegistered
     
-    PreOperationalChallenging --> PreOperationalChallenged: Challenged
+    PreOpChallenging --> PendingPreOpChallengeRegistered: PendingChallengeRegistered
 
-    PreOperationalChallenged --> PreOperationalChallengeRegistered: ChallengeRegistered
+    PendingPreOpChallengeRegistered --> PreOpChallengeRegistered: ChallengeRegistered
     
-    PreOperationalChallengeRegistered --> ReadyToWithdraw: TimeoutChallenge
+    PreOpChallengeRegistered --> ReadyToWithdraw: ChallengeTimeout
 
-    Funded --> Operational: AgreedOnPostfund
-    Funded --> PreOperationalChallenging: Failed
-    Funded --> PreOperationalChallenging: PostfundProcessingTimeout
+    Funded --> Operational: PostfundAgreed
+    Funded --> PreOpChallenging: Failed
+    Funded --> PreOpChallenging: PostfundProcessingTimeout
 
     Operational --> ActiveSettlement: PrepareSettlement
     Operational --> Finalizing: Finalize
@@ -162,12 +162,12 @@ stateDiagram-v2
     ExecutedSettlement --> Operational: FailedSettlement
     ExecutedSettlement --> ChallengeRegistered: ChallengeRegistered
 
-    Challenging --> Challenged: Challenged
+    Challenging --> PendingChallengeRegistered: Challenged
 
-    Challenged --> ChallengeRegistered: ChallengeRegistered
+    PendingChallengeRegistered --> ChallengeRegistered: ChallengeRegistered
 
-    ChallengeRegistered --> Operational: ClearedChallenge
-    ChallengeRegistered --> ReadyToWithdraw: TimeoutChallenge
+    ChallengeRegistered --> Operational: ChallengeCleared
+    ChallengeRegistered --> ReadyToWithdraw: ChallengeTimeout
     
     Finalizing --> ReadyToConclude: ReadyToConclude
     Finalizing --> Challenging: Challenge
@@ -258,7 +258,7 @@ Indicates that peers agreed on prefund nitro state and channel is ready for fund
 | InitiatorFunded         | InitiatorFunded                   | External event that indicates that Initiator fulfilled his part of the deal by funding channel                                        |
 | Failed                  | Failed                            | Internal event that could occur on any error during action execution                                                                  |
 | InitiatorFundingTimeout | Failed                            | External event that indicates that Initiator haven't fulfilled his part of the deal on time, so there is no need to keep channel open |
-| ChallengeRegistered     | PreOperationalChallengeRegistered | External event that indicates Challenge was started on blockchain                                                                     |
+| ChallengeRegistered     | PreOpChallengeRegistered | External event that indicates Challenge was started on blockchain                                                                     |
 
 #### InitiatorFunded
 
@@ -284,14 +284,14 @@ Indicates that Initiator funded channel, and now it's Responder's turn
 | Side | Event                   | State                             | Description                                                                                                                                      |
 |------|-------------------------|-----------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
 | IR   | ResponderFunded         | Funded                            | External event that indicates that Responder fulfilled his part of the deal by funding channel                                                   |
-| I    | Failed                  | PreOperationalChallenging         | Internal event that could occur on any error during action execution, so Initiator calls Challenge to retrieve his assets                        |
+| I    | Failed                  | PreOpChallenging         | Internal event that could occur on any error during action execution, so Initiator calls Challenge to retrieve his assets                        |
 | R    | Failed                  | Failed                            | Internal event that could occur on any error during action execution                                                                             |
-| I    | ResponderFundingTimeout | PreOperationalChallenging         | External event that indicates that Responder haven't fulfilled his part of the deal on time, so Initiator calls Challenge to retrieve his assets |
+| I    | ResponderFundingTimeout | PreOpChallenging         | External event that indicates that Responder haven't fulfilled his part of the deal on time, so Initiator calls Challenge to retrieve his assets |
 | R    | ResponderFundingTimeout | Failed                            | External event that indicates that Responder haven't fulfilled his part of the deal on time                                                      |
-| IR   | ChallengeRegistered     | PreOperationalChallengeRegistered | External event that indicates Challenge was started on blockchain                                                                                |
+| IR   | ChallengeRegistered     | PreOpChallengeRegistered | External event that indicates Challenge was started on blockchain                                                                                |
 
 
-#### PreOperationalChallenging
+#### PreOpChallenging
 
 Indicates the will of one party to forcefully close the channel before Postfund was sign
 
@@ -306,9 +306,9 @@ Indicates the will of one party to forcefully close the channel before Postfund 
 
 | Event      | State                    | Description                                                            |
 |------------|--------------------------|------------------------------------------------------------------------|
-| Challenged | PreOperationalChallenged | Internal event that indicates that Peer successfully started challenge |
+| Challenged | PendingPreOpChallengeRegistered | Internal event that indicates that Peer successfully started challenge |
 
-#### PreOperationalChallenged
+#### PendingPreOpChallengeRegistered
 
 There is active challenge, that was called before postfund was signed
 
@@ -321,9 +321,9 @@ There is active challenge, that was called before postfund was signed
 
 | Event               | State                             | Description                                                               |
 |---------------------|-----------------------------------|---------------------------------------------------------------------------|
-| ChallengeRegistered | PreOperationalChallengeRegistered | External event that indicates that Challenge was registered on blockchain |
+| ChallengeRegistered | PreOpChallengeRegistered | External event that indicates that Challenge was registered on blockchain |
 
-#### PreOperationalChallengeRegistered
+#### PreOpChallengeRegistered
 
 There is challenge, that was registered on blockchain before postfund was signed
 
@@ -339,15 +339,15 @@ NOTE: Since only one state was signed, this type of Challenge cannot be cleared 
 
 | Event            | State           | Description                                                                                          |
 |------------------|-----------------|------------------------------------------------------------------------------------------------------|
-| TimeoutChallenge | ReadyToWithdraw | External event that indicates that Challenge timeout expired and now channel is ready to be defunded |
+| ChallengeTimeout | ReadyToWithdraw | External event that indicates that Challenge timeout expired and now channel is ready to be defunded |
 
 #### Funded
 
 Clearing channel was funded by both sides and now it's time to sign postfund
 
 NOTE: there are two types of errors: ones that happened before issuing postfund state
-and after. In the first case we could transition to `PreOperationalChallenging`, but
-in the second case Responder could clear timeout with postfund state, so only one possible transition 
+and after. In the first case we could transition to `PreOpChallenging`, but
+in the second case Responder could clear timeout with postfund state, so only one possible transition
 to the `Challenging` state is possible
 
 ##### Initiator Action
@@ -370,7 +370,7 @@ to the `Challenging` state is possible
 
 | Event            | State       | Description                                                                   |
 |------------------|-------------|-------------------------------------------------------------------------------|
-| AgreedOnPostfund | Operational | Internal event that indicates that postfund was successfully signed and saved |
+| PostfundAgreed | Operational | Internal event that indicates that postfund was successfully signed and saved |
 | Failed           | Challenging | Internal event that could occur on any error during action execution          |
 
 #### Operational
@@ -408,7 +408,7 @@ means that he should issue new state, for the Responder -- that he should countr
 
 ##### Responder Action
 
-1. Validates nitro state 
+1. Validates nitro state
 2. Countersigns nitro state update
 3. Removes `NoMarginCallsTimeout` timer
 4. Checks and updates `StateSyncFailure` amount  
@@ -458,10 +458,10 @@ Clearing channel is processing new margin call (aka nitro state) and processing 
 
 ##### Responder Action
 
-1. Validates nitro state 
+1. Validates nitro state
 2. Countersigns nitro state update
 3. Removes `NoMarginCallsTimeout` timer
-4. Checks and updates `StateSyncFailure` amount 
+4. Checks and updates `StateSyncFailure` amount
 
 ##### Transitions
 
@@ -528,9 +528,9 @@ Indicates the will of one party to forcefully close the channel
 
 | Event      | State      | Description                                                            |
 |------------|------------|------------------------------------------------------------------------|
-| Challenged | Challenged | Internal event that indicates that Peer successfully started challenge |
+| Challenged | PendingChallengeRegistered | Internal event that indicates that Peer successfully started challenge |
 
-#### Challenged
+#### PendingChallengeRegistered
 
 There is active challenge
 
@@ -559,8 +559,8 @@ There is challenge, that was registered on blockchain
 
 | Event            | State           | Description                                                                                          |
 |------------------|-----------------|------------------------------------------------------------------------------------------------------|
-| ClearedChallenge | Operational     | External event that Challenge was cleared on blockchain and now it could return back to operational  |
-| TimeoutChallenge | ReadyToWithdraw | External event that indicates that Challenge timeout expired and now channel is ready to be defunded |
+| ChallengeCleared | Operational     | External event that Challenge was cleared on blockchain and now it could return back to operational  |
+| ChallengeTimeout | ReadyToWithdraw | External event that indicates that Challenge timeout expired and now channel is ready to be defunded |
 
 #### Finalizing
 
@@ -582,7 +582,7 @@ Processes final clearing state
 5. Countersigns final clearing state
 6. Checks and updates `StateSyncFailure` amount
 7. Calls `ConcludeAndWithdraw` method on blockchain
-   
+
 ##### Transitions
 
 | Event               | State               | Description                                                                                         |
@@ -636,40 +636,41 @@ Clearing channel was closed and defunded. GZ
 No transitions
 
 ### Questions to resolve
+
 1. Before signing postfund we have `Failed` events, which occurs on any error that happens during the Action execution.
-   I(M) suggest using *some kind of retry thing* that will try to perform Action fixed amount of time (5) and only then 
+   I(M) suggest using *some kind of retry thing* that will try to perform Action fixed amount of time (5) and only then
    system will give up and emit Failed event
 
 2. At any moment of clearing we could receive event about Challenge from counterparty side.
    Malicious Challenges (turn num < last signed turn num) could be handled without state machine
-   
-   BUT we may somehow handle Challenge spam, e.g. my peer sended me 5 malicious challenges in last 
+
+   BUT we may somehow handle Challenge spam, e.g. my peer sended me 5 malicious challenges in last
    10 minutes -- the guy is crazy and I want to close the deal
-   
-   BUT (x2) non-malicious challenges (turn num == last signed turn num) should change state of clearing SM 
-   
+
+   BUT (x2) non-malicious challenges (turn num == last signed turn num) should change state of clearing SM
+
    BUT (x3) we could reuse corresponding `...Challenged` state, and it will look relatively nice
 
    M: Is it hell to handle? Hell, yeah
 
-3. If during `PreOperationalChallenging` or `Challenging` (actually it could be applied to any *failed* case) 
+3. If during `PreOpChallenging` or `Challenging` (actually it could be applied to any *failed* case)
    something goes, when cannot do anything. There are some cases what we could possibly do,
    but I (M) suggest method: retry and panic
 
 4. During `ProcessingMarginCall` state we may not save the state because it's useless for the recovery,
-   it may look like call of the function thought the state machine and not a state, but it will be so 
+   it may look like call of the function thought the state machine and not a state, but it will be so
    much easier to synchronize our system if we will accept it as a state machine state. I(M)'d called it
    `in-memory-state`.
 
-5. During `ActiveSettlement` we notify user about settlement start, but probably we will notify about it from 
+5. During `ActiveSettlement` we notify user about settlement start, but probably we will notify about it from
    the settlement sm as well. It's a tiny UI/UX thing but still.
 
 6. `ActiveSettlement` and `ExecutedSettlement` -- This state hardly depends on settlement state machine, either settlement will succeed or it will fail
    SSM should return state of clearing state machine back to operational. But for some reason it could not happen and CSM will stuck
-   We could add `NonOperationalTimeout`, that will return system back to `Operational` no matter what. but we don't know about time 
+   We could add `NonOperationalTimeout`, that will return system back to `Operational` no matter what. but we don't know about time
    limits, it could be 1 minute, 1 hour or even 1 day
 
-7. During `Funded` state we could come across situation when Initiator issues postfund, Responder receives it and signs, 
+7. During `Funded` state we could come across situation when Initiator issues postfund, Responder receives it and signs,
    but keeps it to himself. Initiator decides to clear challenge with prefund state and Responder clears challenge with postfunded
    state. At this case we need to retrieve postfund state from the blockchain
 
@@ -679,16 +680,11 @@ No transitions
 
 10. Do we need `InitiatorFundingTimeout` on `Initiator` side and `ResponderFundingTimeout` on `Responder` side?
 
-11. For now we have internal transition from `Challenging` to `Challenged` state. But maybe we should 
-    add the third state `ChallengeRegistered` that will come from the blockchain and will indicate that
-    challenge was registered on the blockchain. It will be more clear and we will have more control over
-    the challenge process (from both Self-issued and Peer-issued challenges)
-
-12. Responder should withdraw from channel in case of Challenge. But there is no suitable state for it.
+11. Responder should withdraw from channel in case of Challenge. But there is no suitable state for it.
     In theory we could do that inside reactor, but it feels like a hack. Maybe we should add `Withdraw` state
     + what about auto defunding?
 
-13. What to do with Challenge during Settlement or what to do with Settlement during Challenge?
+12. What to do with Challenge during Settlement or what to do with Settlement during Challenge?
 
 ## Consequences
 
