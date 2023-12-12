@@ -13,6 +13,42 @@ Furthermore, the EOA is required to have sufficient ETH to pay for the gas fees.
 Thus, to fund a channel, the user must have sufficient native token balance to pay for the gas fees and to sign and submit 2 transactions per ERC20 token to deposit.
 This means that to fund an escrow channel to settle 20 ERC20 tokens, the user must sign and submit 40 transactions, which is a very cumbersome and not user-friendly process.
 
+### ERC-4337
+
+ERC-4337 introduces a new account abstraction layer to Ethereum, enabling more flexible account management. Here's a technical yet concise overview of the roles of UserOperations, Bundler, and Paymaster, followed by a sequence diagram for a user operation:
+
+1. **UserOperations**: This represents an operation (like a transaction) initiated by the user. Instead of sending a traditional Ethereum transaction, users create a `UserOperation` object. This object includes details like the intended action (e.g., token transfer), the user's signature, and any operation-specific parameters.
+
+2. **Bundler**: Bundlers collect these `UserOperations` from users. They are responsible for aggregating multiple operations into a single transaction and submitting it to the Ethereum network. Bundlers play a crucial role in managing these operations efficiently, optimizing for factors like gas costs.
+
+3. **Paymaster**: The Paymaster is a contract that agrees to pay for the gas fees of certain UserOperations. When a Bundler includes a UserOperation in a bundle, the Paymaster contract ensures that the gas fees are covered, typically in exchange for some form of compensation from the user. This setup allows users to perform operations without needing ETH for gas fees directly.
+
+#### Sequence Diagram for a User Operation in ERC-4337
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant UserOperation
+    participant Bundler
+    participant Ethereum Network
+    participant Paymaster
+
+    User->>UserOperation: Create operation with action details
+    UserOperation->>User: Sign operation
+    User->>Bundler: Send signed UserOperation
+    Bundler->>Paymaster: Request gas fee coverage for UserOperation
+    Paymaster->>Bundler: Approve and provide fee
+    Bundler->>Ethereum Network: Submit bundled UserOperations
+    Ethereum Network->>User: Execute operation
+    Ethereum Network->>Paymaster: Deduct gas fee
+```
+
+In this flow:
+
+- The user creates and signs a `UserOperation`.
+- The Bundler receives the signed operation, interacts with the Paymaster to cover gas fees, and then submits the operation bundled with others to the Ethereum network.
+- The Ethereum network executes the operation, and the Paymaster's contract is charged for the gas fees.
+
 ## Decision
 
 ### Abstract
