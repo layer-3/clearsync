@@ -7,7 +7,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-func Convert(input decimal.Decimal, sigDigits, maxPrecision int32) decimal.Decimal {
+func ToSignificant(input decimal.Decimal, sigDigits, maxPrecision int32) decimal.Decimal {
 	if input.Equal(decimal.Zero) {
 		return input
 	}

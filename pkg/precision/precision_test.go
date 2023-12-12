@@ -15,7 +15,7 @@ const (
 	maxPrecision int32 = 18
 )
 
-func TestConvert(t *testing.T) {
+func TestToSignificant(t *testing.T) {
 	t.Parallel()
 
 	var tests = []struct {
@@ -84,7 +84,7 @@ func TestConvert(t *testing.T) {
 		t.Run(fmt.Sprintf("%s -> %s", tt.input, tt.expect), func(t *testing.T) {
 			t.Parallel()
 
-			actual := Convert(tt.input, sigDigits, maxPrecision)
+			actual := ToSignificant(tt.input, sigDigits, maxPrecision)
 			require.True(t, tt.expect.Equals(actual))
 		})
 	}
@@ -137,7 +137,7 @@ func TestValidate(t *testing.T) {
 	})
 }
 
-func BenchmarkConvert_DecimalWithLeadingZeros(b *testing.B) {
+func BenchmarkToSignificant_DecimalWithLeadingZeros(b *testing.B) {
 	d := newFromString("0.000123456")
 
 	// Reset timer to exclude time taken by setup operations
@@ -146,11 +146,11 @@ func BenchmarkConvert_DecimalWithLeadingZeros(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		Convert(d, sigDigits, maxPrecision)
+		ToSignificant(d, sigDigits, maxPrecision)
 	}
 }
 
-func BenchmarkConvert_TruncateDecimals(b *testing.B) {
+func BenchmarkToSignificant_TruncateDecimals(b *testing.B) {
 	d := newFromString("1.00000000234")
 
 	// Reset timer to exclude time taken by setup operations
@@ -159,11 +159,11 @@ func BenchmarkConvert_TruncateDecimals(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		Convert(d, sigDigits, maxPrecision)
+		ToSignificant(d, sigDigits, maxPrecision)
 	}
 }
 
-func BenchmarkConvert_ExactSignificantDigits(b *testing.B) {
+func BenchmarkToSignificant_ExactSignificantDigits(b *testing.B) {
 	d := newFromString("12345678")
 	if int32(len(d.String())) != sigDigits {
 		panic("expected number of digits to be equal to number of significant digits")
@@ -175,11 +175,11 @@ func BenchmarkConvert_ExactSignificantDigits(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		Convert(d, sigDigits, maxPrecision)
+		ToSignificant(d, sigDigits, maxPrecision)
 	}
 }
 
-func BenchmarkConvert_IntegralPartSizeGreaterThanSignificantDigits(b *testing.B) {
+func BenchmarkToSignificant_IntegralPartSizeGreaterThanSignificantDigits(b *testing.B) {
 	d := newFromString("1000000060")
 	if integralPart := strings.Split(d.String(), ".")[0]; int32(len(integralPart)) <= sigDigits {
 		panic("expected number of digits to be greater than number of significant digits")
@@ -191,7 +191,7 @@ func BenchmarkConvert_IntegralPartSizeGreaterThanSignificantDigits(b *testing.B)
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		Convert(d, sigDigits, maxPrecision)
+		ToSignificant(d, sigDigits, maxPrecision)
 	}
 }
 
