@@ -159,18 +159,7 @@ func TestValidate(t *testing.T) {
 		t.Parallel()
 
 		input := newFromString("-12345")
-		err := Validate(input, sigDigits, maxPrecision)
-		require.Error(t, err)
-	})
-
-	t.Run("Should return error if number of significant digits is greater than allowed", func(t *testing.T) {
-		t.Parallel()
-
-		input := newFromString("1234567890")
-		digits := int32(len(input.Coefficient().String()))
-		require.Greater(t, digits, sigDigits)
-
-		err := Validate(input, sigDigits, maxPrecision)
+		err := Validate(input, maxPrecision)
 		require.Error(t, err)
 	})
 
@@ -181,7 +170,7 @@ func TestValidate(t *testing.T) {
 		precision := int32(math.Abs(float64(input.Exponent())))
 		require.Greater(t, precision, maxPrecision)
 
-		err := Validate(input, sigDigits, maxPrecision)
+		err := Validate(input, maxPrecision)
 		require.Error(t, err)
 	})
 
@@ -194,7 +183,7 @@ func TestValidate(t *testing.T) {
 		require.LessOrEqual(t, digits, sigDigits)
 		require.LessOrEqual(t, precision, maxPrecision)
 
-		err := Validate(input, sigDigits, maxPrecision)
+		err := Validate(input, maxPrecision)
 		require.NoError(t, err)
 	})
 }
@@ -212,7 +201,7 @@ func BenchmarkValidate_SuccessfulCase(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		Validate(d, sigDigits, maxPrecision)
+		Validate(d, maxPrecision)
 	}
 }
 

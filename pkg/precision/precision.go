@@ -29,7 +29,7 @@ func ToSignificant(input decimal.Decimal, sigDigits int32) decimal.Decimal {
 	return decimal.NewFromBigInt(coef, input.Exponent()-adjustedDigits)
 }
 
-func Validate(input decimal.Decimal, sigDigits, maxPrecision int32) error {
+func Validate(input decimal.Decimal, maxPrecision int32) error {
 	if input.IsNegative() {
 		return errors.New("input must not be negative")
 	}
@@ -41,11 +41,6 @@ func Validate(input decimal.Decimal, sigDigits, maxPrecision int32) error {
 
 	if precision > maxPrecision {
 		return fmt.Errorf("input must not exceed max precision (allowed: %d; actual: %d)", maxPrecision, precision)
-	}
-
-	integralDigits := int32(len(input.Coefficient().String()))
-	if integralDigits > sigDigits {
-		return fmt.Errorf("input must not exceed max number of significant digits (allowed: %d; actual: %d)", sigDigits, int32(integralDigits))
 	}
 
 	return nil
