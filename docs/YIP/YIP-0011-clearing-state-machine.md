@@ -31,7 +31,7 @@ title: Clearing Initiator State Machine
 stateDiagram-v2
     classDef waiting stroke-dasharray:5
 
-    class Accepted, InitiatorFunded, PendingPreOpChallengeRegistered, PreOpChallengeRegistered, Operational, ActiveSettlement, ExecutedSettlement, Challenged, ChallengeRegistered, ReadyToConclude, ReadyToWithdraw waiting
+    class Accepted, InitiatorFunded, PendingPreOpChallengeRegistered, PreOpChallengeRegistered, Operational, ActiveSettlement, ExecutedSettlement, Challenged, ChallengeRegistered, Concluding, Withdrawing waiting
 
     [*] --> DefaultState
     DefaultState --> Instantiating: Instantiate
@@ -53,7 +53,7 @@ stateDiagram-v2
 
     PendingPreOpChallengeRegistered --> PreOpChallengeRegistered: ChallengeRegistered
     
-    PreOpChallengeRegistered --> ReadyToWithdraw: ChallengeTimeout
+    PreOpChallengeRegistered --> Withdrawing: ChallengeTimeout
 
     Funded --> Operational: PostfundAgreed
     Funded --> Challenging: Failed
@@ -87,15 +87,14 @@ stateDiagram-v2
     Challenged --> ChallengeRegistered: ChallengeRegistered
 
     ChallengeRegistered --> Operational: ChallengeCleared
-    ChallengeRegistered --> ReadyToWithdraw: ChallengeTimeout
+    ChallengeRegistered --> Withdrawing: ChallengeTimeout
     
-    Finalizing --> ReadyToConclude: ReadyToConclude
+    Finalizing --> Concluding: Concluding
     Finalizing --> Challenging: Challenge
     Finalizing --> Operational: MoveToOperational
-    Finalizing --> ChallengeRegistered: ChallengeRegistered
 
-    ReadyToConclude --> Final: MoveToFinal
-    ReadyToWithdraw --> Final: MoveToFinal
+    Concluding --> Final: MoveToFinal
+    Withdrawing --> Final: MoveToFinal
 
     Final --> [*]
 ```
@@ -110,7 +109,7 @@ title: Clearing Responder State Machine
 stateDiagram-v2
     classDef waiting stroke-dasharray:5
 
-    class Accepted, InitiatorFunded, Funded, PreOpChallenging, PendingPreOpChallengeRegistered, PreOpChallengeRegistered, Operational, ActiveSettlement, ExecutedSettlement, Challenging, PendingChallengeRegistered, ChallengeRegistered, ReadyToConclude, ReadyToWithdraw waiting
+    class Accepted, InitiatorFunded, Funded, PreOpChallenging, PendingPreOpChallengeRegistered, PreOpChallengeRegistered, Operational, ActiveSettlement, ExecutedSettlement, Challenging, PendingChallengeRegistered, ChallengeRegistered, Concluding, Withdrawing waiting
 
     [*] --> DefaultState
     DefaultState --> Instantiating: Instantiate
@@ -132,7 +131,7 @@ stateDiagram-v2
 
     PendingPreOpChallengeRegistered --> PreOpChallengeRegistered: ChallengeRegistered
     
-    PreOpChallengeRegistered --> ReadyToWithdraw: ChallengeTimeout
+    PreOpChallengeRegistered --> Withdrawing: ChallengeTimeout
 
     Funded --> Operational: PostfundAgreed
     Funded --> PreOpChallenging: Failed
@@ -167,15 +166,14 @@ stateDiagram-v2
     PendingChallengeRegistered --> ChallengeRegistered: ChallengeRegistered
 
     ChallengeRegistered --> Operational: ChallengeCleared
-    ChallengeRegistered --> ReadyToWithdraw: ChallengeTimeout
+    ChallengeRegistered --> Withdrawing: ChallengeTimeout
     
-    Finalizing --> ReadyToConclude: ReadyToConclude
+    Finalizing --> Concluding: Concluding
     Finalizing --> Challenging: Challenge
     Finalizing --> Operational: MoveToOperational
-    Finalizing --> ChallengeRegistered: ChallengeRegistered
 
-    ReadyToConclude --> Final: MoveToFinal
-    ReadyToWithdraw --> Final: MoveToFinal
+    Withdrawing --> Final: MoveToFinal
+    Concluding --> Final: MoveToFinal
 
     Final --> [*]
 ```
@@ -339,7 +337,7 @@ NOTE: Since only one state was signed, this type of Challenge cannot be cleared 
 
 | Event            | State           | Description                                                                                          |
 |------------------|-----------------|------------------------------------------------------------------------------------------------------|
-| ChallengeTimeout | ReadyToWithdraw | External event that indicates that Challenge timeout expired and now channel is ready to be defunded |
+| ChallengeTimeout | Withdrawing | External event that indicates that Challenge timeout expired and now channel is ready to be defunded |
 
 #### Funded
 
@@ -560,7 +558,7 @@ There is challenge, that was registered on blockchain
 | Event            | State           | Description                                                                                          |
 |------------------|-----------------|------------------------------------------------------------------------------------------------------|
 | ChallengeCleared | Operational     | External event that Challenge was cleared on blockchain and now it could return back to operational  |
-| ChallengeTimeout | ReadyToWithdraw | External event that indicates that Challenge timeout expired and now channel is ready to be defunded |
+| ChallengeTimeout | Withdrawing | External event that indicates that Challenge timeout expired and now channel is ready to be defunded |
 
 #### Finalizing
 
@@ -587,12 +585,11 @@ Processes final clearing state
 
 | Event               | State               | Description                                                                                         |
 |---------------------|---------------------|-----------------------------------------------------------------------------------------------------|
-| ReadyToConclude     | ReadyToConclude     | Internal event that indicates that final state was successfully signed                              |
+| Concluding     | Concluding     | Internal event that indicates that final state was successfully signed                              |
 | Challenge           | Challenging         | Internal event that indicates that final state wasn't signed and `StateSyncFailure` is unacceptable |
 | MoveToOperational   | Operational         | Internal event that indicates that final state wasn't signed and `StateSyncFailure` is acceptable   |
-| ChallengeRegistered | ChallengeRegistered | External event that indicates that Challenge was registered on blockchain                           |
 
-#### ReadyToConclude
+#### Concluding
 
 Waits for the event from the blockchain about concluding channel
 
@@ -607,7 +604,7 @@ Waits for the event from the blockchain about concluding channel
 |-------------|-------|-------------------------------------------------------------------------------------------|
 | MoveToFinal | Final | External event from reactor system that indicates that channel was successfully concluded |
 
-#### ReadyToWithdraw
+#### Withdrawing
 
 Waits for the event from the blockchain about defunding channel
 
