@@ -3,6 +3,7 @@ package precision
 import (
 	"fmt"
 	"math"
+	"math/big"
 	"strings"
 	"testing"
 
@@ -27,7 +28,10 @@ func TestToSignificant(t *testing.T) {
 			expect: newFromString("0.0"),
 		}, {
 			input:  decimal.NewFromFloat(math.SmallestNonzeroFloat64),
-			expect: newFromString("0.0"),
+			expect: decimal.NewFromFloat(math.SmallestNonzeroFloat64),
+		}, {
+			input:  decimal.NewFromFloat(math.MaxFloat64),
+			expect: decimal.NewFromBigInt(big.NewInt(17976931), 301),
 		}, {
 			input:  newFromString("0.0000000000000004"),
 			expect: newFromString("0.0000000000000004"),
@@ -36,16 +40,16 @@ func TestToSignificant(t *testing.T) {
 			expect: newFromString("0.0001"),
 		}, {
 			input:  newFromString("0.100103456123"),
-			expect: newFromString("0.10010346"),
+			expect: newFromString("0.10010345"),
 		}, {
 			input:  newFromString("0.012345678999"),
-			expect: newFromString("0.012345679"),
+			expect: newFromString("0.012345678"),
 		}, {
 			input:  newFromString("0.001234023499"),
-			expect: newFromString("0.0012340235"),
+			expect: newFromString("0.0012340234"),
 		}, {
 			input:  newFromString("0.012345678928"),
-			expect: newFromString("0.012345679"),
+			expect: newFromString("0.012345678"),
 		}, {
 			input:  newFromString("0.100001023499"),
 			expect: newFromString("0.10000102"),
@@ -63,7 +67,7 @@ func TestToSignificant(t *testing.T) {
 			expect: newFromString("2"),
 		}, {
 			input:  newFromString("1000000060"),
-			expect: newFromString("1000000100"),
+			expect: newFromString("1000000000"),
 		}, {
 			input:  newFromString("12345"),
 			expect: newFromString("12345"),
@@ -84,9 +88,67 @@ func TestToSignificant(t *testing.T) {
 		t.Run(fmt.Sprintf("%s -> %s", tt.input, tt.expect), func(t *testing.T) {
 			t.Parallel()
 
-			actual := ToSignificant(tt.input, sigDigits, maxPrecision)
-			require.True(t, tt.expect.Equals(actual))
+			actual := ToSignificant(tt.input, sigDigits)
+			require.True(t, tt.expect.Equals(actual), "expected: %s; actual: %s", tt.expect, actual)
 		})
+	}
+}
+
+func BenchmarkToSignificant_DecimalWithLeadingZeros(b *testing.B) {
+	d := newFromString("0.000123456")
+
+	// Reset timer to exclude time taken by setup operations
+	// before the actual benchmark begins
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		ToSignificant(d, sigDigits)
+	}
+}
+
+func BenchmarkToSignificant_TruncateDecimals(b *testing.B) {
+	d := newFromString("1.00000000234")
+
+	// Reset timer to exclude time taken by setup operations
+	// before the actual benchmark begins
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		ToSignificant(d, sigDigits)
+	}
+}
+
+func BenchmarkToSignificant_ExactSignificantDigits(b *testing.B) {
+	d := newFromString("12345678")
+	if int32(len(d.String())) != sigDigits {
+		panic("expected number of digits to be equal to number of significant digits")
+	}
+
+	// Reset timer to exclude time taken by setup operations
+	// before the actual benchmark begins
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		ToSignificant(d, sigDigits)
+	}
+}
+
+func BenchmarkToSignificant_IntegralPartSizeGreaterThanSignificantDigits(b *testing.B) {
+	d := newFromString("1000000060")
+	if integralPart := strings.Split(d.String(), ".")[0]; int32(len(integralPart)) <= sigDigits {
+		panic("expected number of digits to be greater than number of significant digits")
+	}
+
+	// Reset timer to exclude time taken by setup operations
+	// before the actual benchmark begins
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		ToSignificant(d, sigDigits)
 	}
 }
 
@@ -137,8 +199,12 @@ func TestValidate(t *testing.T) {
 	})
 }
 
-func BenchmarkToSignificant_DecimalWithLeadingZeros(b *testing.B) {
-	d := newFromString("0.000123456")
+func BenchmarkValidate_SuccessfulCase(b *testing.B) {
+	d := newFromString("1.2345")
+	digits := int32(len(d.Coefficient().String()))
+	precision := int32(math.Abs(float64(d.Exponent())))
+	require.LessOrEqual(b, digits, sigDigits)
+	require.LessOrEqual(b, precision, maxPrecision)
 
 	// Reset timer to exclude time taken by setup operations
 	// before the actual benchmark begins
@@ -146,52 +212,7 @@ func BenchmarkToSignificant_DecimalWithLeadingZeros(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		ToSignificant(d, sigDigits, maxPrecision)
-	}
-}
-
-func BenchmarkToSignificant_TruncateDecimals(b *testing.B) {
-	d := newFromString("1.00000000234")
-
-	// Reset timer to exclude time taken by setup operations
-	// before the actual benchmark begins
-	b.ReportAllocs()
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		ToSignificant(d, sigDigits, maxPrecision)
-	}
-}
-
-func BenchmarkToSignificant_ExactSignificantDigits(b *testing.B) {
-	d := newFromString("12345678")
-	if int32(len(d.String())) != sigDigits {
-		panic("expected number of digits to be equal to number of significant digits")
-	}
-
-	// Reset timer to exclude time taken by setup operations
-	// before the actual benchmark begins
-	b.ReportAllocs()
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		ToSignificant(d, sigDigits, maxPrecision)
-	}
-}
-
-func BenchmarkToSignificant_IntegralPartSizeGreaterThanSignificantDigits(b *testing.B) {
-	d := newFromString("1000000060")
-	if integralPart := strings.Split(d.String(), ".")[0]; int32(len(integralPart)) <= sigDigits {
-		panic("expected number of digits to be greater than number of significant digits")
-	}
-
-	// Reset timer to exclude time taken by setup operations
-	// before the actual benchmark begins
-	b.ReportAllocs()
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		ToSignificant(d, sigDigits, maxPrecision)
+		Validate(d, sigDigits, maxPrecision)
 	}
 }
 

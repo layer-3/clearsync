@@ -3,32 +3,30 @@ package precision
 import (
 	"errors"
 	"fmt"
+	"math/big"
 
 	"github.com/shopspring/decimal"
 )
 
-func ToSignificant(input decimal.Decimal, sigDigits, maxPrecision int32) decimal.Decimal {
+var ten = decimal.NewFromInt(10)
+
+// ToSignificant truncates coefficient of any decimal.Decimal
+// to a significant number of digits while preserving exponent.
+// The input number is assumed to be non-negative.
+func ToSignificant(input decimal.Decimal, sigDigits int32) decimal.Decimal {
 	if input.Equal(decimal.Zero) {
 		return input
 	}
 
-	integralDigits := int32(len(input.Coefficient().String()))
-	precision := input.Exponent()
-	if precision <= 0 {
-		precision = -precision
+	coef := input.Coefficient()
+	adjustedDigits := sigDigits - int32(len(coef.String()))
+	if adjustedDigits >= 0 {
+		return input
 	}
 
-	adjustedPrecision := sigDigits - (integralDigits - precision)
-	if adjustedPrecision < 0 {
-		// If the number of integral digits is greater than significant digits,
-		// round the number to a scale that maintains the significant digits in the integral part.
-		multiplier := decimal.NewFromInt(10).Pow(decimal.NewFromInt32(-adjustedPrecision))
-		return input.DivRound(multiplier, 0).Mul(multiplier)
-	} else if adjustedPrecision > maxPrecision {
-		adjustedPrecision = maxPrecision
-	}
-
-	return input.RoundBank(adjustedPrecision)
+	divisor := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(-adjustedDigits)), nil)
+	coef.QuoRem(coef, divisor, new(big.Int))
+	return decimal.NewFromBigInt(coef, input.Exponent()-adjustedDigits)
 }
 
 func Validate(input decimal.Decimal, sigDigits, maxPrecision int32) error {
