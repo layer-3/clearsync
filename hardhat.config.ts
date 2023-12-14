@@ -11,7 +11,7 @@ import './src/tasks/activate';
 
 const accounts = {
   mnemonic:
-    process.env.SIGNER_MNEMONIC ??
+    process.env['SIGNER_MNEMONIC'] ??
     'clown border solid resource camp medal angle success achieve impulse beach inherit busy track hazard',
 };
 
@@ -50,16 +50,16 @@ const config: HardhatUserConfig = {
     },
   },
   docgen: {
-    output: 'docs',
+    // output: 'docs',
     pages: 'files',
   },
   gasReporter: {
-    enabled: process.env.REPORT_GAS !== undefined,
+    enabled: process.env['REPORT_GAS'] !== undefined,
     currency: 'USD',
   },
   etherscan: {
     apiKey: {
-      polygon: process.env.POLYGONSCAN_API_KEY,
+      polygon: process.env['POLYGONSCAN_API_KEY'] || '',
     },
   },
 };
