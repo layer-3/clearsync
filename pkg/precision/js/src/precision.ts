@@ -23,6 +23,10 @@ export function toSignificant(input: string, sigDigits: number): string {
         output += char;
     }
 
+    return appendZeros(input, output);
+}
+
+function appendZeros(input: string, output: string): string {
     const dotIndex = input.indexOf('.');
     if (dotIndex != -1 && output.length < dotIndex) {
         const zerosToAppend = dotIndex - output.length;
