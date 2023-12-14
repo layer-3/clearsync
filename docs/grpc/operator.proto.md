@@ -222,8 +222,8 @@ protolint:disable MAX_LINE_LENGTH
 | stream_notification | [StreamNotification](#streamnotification) |  |
 | settlement_notification | [SettlementNotification](#settlementnotification) |  |
 | position_notification | [PositionNotification](#positionnotification) |  |
-| transaction_notification | [TransactionNotification](#transactionnotification) |  |
 | error_notification | [ErrorNotification](#errornotification) |  |
+| transaction_notification | [TransactionNotification](#transactionnotification) |  |
 
 
 
