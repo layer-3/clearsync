@@ -57,6 +57,8 @@ stateDiagram-v2
 
     Funded --> Operational: PostfundAgreed
     Funded --> Challenging: Failed
+    Funded --> Funded: ProcessMarginCall
+    Funded --> PreOpChallengeRegistered: ChallengeRegistered
 
     Operational --> ActiveSettlement: PrepareSettlement
     Operational --> Finalizing: Finalize
@@ -134,6 +136,8 @@ stateDiagram-v2
     PreOpChallengeRegistered --> Withdrawing: ChallengeTimeout
 
     Funded --> Operational: PostfundAgreed
+    Funded --> Funded: ProcessMarginCall
+    Funded --> PreOpChallengeRegistered: ChallengeRegistered
     Funded --> PreOpChallenging: Failed
     Funded --> PreOpChallenging: PostfundProcessingTimeout
 
@@ -251,11 +255,11 @@ Indicates that peers agreed on prefund nitro state and channel is ready for fund
 
 ##### Transitions
 
-| Event                   | State                             | Description                                                                                                                           |
-|-------------------------|-----------------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
-| InitiatorFunded         | InitiatorFunded                   | External event that indicates that Initiator fulfilled his part of the deal by funding channel                                        |
-| Failed                  | Failed                            | Internal event that could occur on any error during action execution                                                                  |
-| InitiatorFundingTimeout | Failed                            | External event that indicates that Initiator haven't fulfilled his part of the deal on time, so there is no need to keep channel open |
+| Event                   | State                    | Description                                                                                                                           |
+|-------------------------|--------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| InitiatorFunded         | InitiatorFunded          | External event that indicates that Initiator fulfilled his part of the deal by funding channel                                        |
+| Failed                  | Failed                   | Internal event that could occur on any error during action execution                                                                  |
+| InitiatorFundingTimeout | Failed                   | External event that indicates that Initiator haven't fulfilled his part of the deal on time, so there is no need to keep channel open |
 | ChallengeRegistered     | PreOpChallengeRegistered | External event that indicates Challenge was started on blockchain                                                                     |
 
 #### InitiatorFunded
@@ -279,13 +283,13 @@ Indicates that Initiator funded channel, and now it's Responder's turn
 
 ##### Transitions
 
-| Side | Event                   | State                             | Description                                                                                                                                      |
-|------|-------------------------|-----------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| IR   | ResponderFunded         | Funded                            | External event that indicates that Responder fulfilled his part of the deal by funding channel                                                   |
+| Side | Event                   | State                    | Description                                                                                                                                      |
+|------|-------------------------|--------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+| IR   | ResponderFunded         | Funded                   | External event that indicates that Responder fulfilled his part of the deal by funding channel                                                   |
 | I    | Failed                  | PreOpChallenging         | Internal event that could occur on any error during action execution, so Initiator calls Challenge to retrieve his assets                        |
-| R    | Failed                  | Failed                            | Internal event that could occur on any error during action execution                                                                             |
+| R    | Failed                  | Failed                   | Internal event that could occur on any error during action execution                                                                             |
 | I    | ResponderFundingTimeout | PreOpChallenging         | External event that indicates that Responder haven't fulfilled his part of the deal on time, so Initiator calls Challenge to retrieve his assets |
-| R    | ResponderFundingTimeout | Failed                            | External event that indicates that Responder haven't fulfilled his part of the deal on time                                                      |
+| R    | ResponderFundingTimeout | Failed                   | External event that indicates that Responder haven't fulfilled his part of the deal on time                                                      |
 | IR   | ChallengeRegistered     | PreOpChallengeRegistered | External event that indicates Challenge was started on blockchain                                                                                |
 
 
@@ -302,8 +306,8 @@ Indicates the will of one party to forcefully close the channel before Postfund 
 
 ##### Transitions
 
-| Event      | State                    | Description                                                            |
-|------------|--------------------------|------------------------------------------------------------------------|
+| Event      | State                           | Description                                                            |
+|------------|---------------------------------|------------------------------------------------------------------------|
 | Challenged | PendingPreOpChallengeRegistered | Internal event that indicates that Peer successfully started challenge |
 
 #### PendingPreOpChallengeRegistered
@@ -317,8 +321,8 @@ There is active challenge, that was called before postfund was signed
 
 ##### Transitions
 
-| Event               | State                             | Description                                                               |
-|---------------------|-----------------------------------|---------------------------------------------------------------------------|
+| Event               | State                    | Description                                                               |
+|---------------------|--------------------------|---------------------------------------------------------------------------|
 | ChallengeRegistered | PreOpChallengeRegistered | External event that indicates that Challenge was registered on blockchain |
 
 #### PreOpChallengeRegistered
@@ -335,8 +339,8 @@ NOTE: Since only one state was signed, this type of Challenge cannot be cleared 
 
 ##### Transitions
 
-| Event            | State           | Description                                                                                          |
-|------------------|-----------------|------------------------------------------------------------------------------------------------------|
+| Event            | State       | Description                                                                                          |
+|------------------|-------------|------------------------------------------------------------------------------------------------------|
 | ChallengeTimeout | Withdrawing | External event that indicates that Challenge timeout expired and now channel is ready to be defunded |
 
 #### Funded
@@ -366,10 +370,12 @@ to the `Challenging` state is possible
 
 ##### Transitions
 
-| Event            | State       | Description                                                                   |
-|------------------|-------------|-------------------------------------------------------------------------------|
-| PostfundAgreed | Operational | Internal event that indicates that postfund was successfully signed and saved |
-| Failed           | Challenging | Internal event that could occur on any error during action execution          |
+| Event               | State                    | Description                                                                   |
+|---------------------|--------------------------|-------------------------------------------------------------------------------|
+| PostfundAgreed      | Operational              | Internal event that indicates that postfund was successfully signed and saved |
+| Failed              | Challenging              | Internal event that could occur on any error during action execution          |
+| ProcessMarginCall   | Funded                   | External event that gives an ability to process one more postfund call        |
+| ChallengeRegistered | PreOpChallengeRegistered | External event that indicates that Challenge was started on blockchain        |
 
 #### Operational
 
@@ -524,8 +530,8 @@ Indicates the will of one party to forcefully close the channel
 
 ##### Transitions
 
-| Event      | State      | Description                                                            |
-|------------|------------|------------------------------------------------------------------------|
+| Event      | State                      | Description                                                            |
+|------------|----------------------------|------------------------------------------------------------------------|
 | Challenged | PendingChallengeRegistered | Internal event that indicates that Peer successfully started challenge |
 
 #### PendingChallengeRegistered
@@ -555,9 +561,9 @@ There is challenge, that was registered on blockchain
 
 ##### Transitions
 
-| Event            | State           | Description                                                                                          |
-|------------------|-----------------|------------------------------------------------------------------------------------------------------|
-| ChallengeCleared | Operational     | External event that Challenge was cleared on blockchain and now it could return back to operational  |
+| Event            | State       | Description                                                                                          |
+|------------------|-------------|------------------------------------------------------------------------------------------------------|
+| ChallengeCleared | Operational | External event that Challenge was cleared on blockchain and now it could return back to operational  |
 | ChallengeTimeout | Withdrawing | External event that indicates that Challenge timeout expired and now channel is ready to be defunded |
 
 #### Finalizing
@@ -583,11 +589,11 @@ Processes final clearing state
 
 ##### Transitions
 
-| Event               | State               | Description                                                                                         |
-|---------------------|---------------------|-----------------------------------------------------------------------------------------------------|
-| Concluding     | Concluding     | Internal event that indicates that final state was successfully signed                              |
-| Challenge           | Challenging         | Internal event that indicates that final state wasn't signed and `StateSyncFailure` is unacceptable |
-| MoveToOperational   | Operational         | Internal event that indicates that final state wasn't signed and `StateSyncFailure` is acceptable   |
+| Event             | State       | Description                                                                                         |
+|-------------------|-------------|-----------------------------------------------------------------------------------------------------|
+| Concluding        | Concluding  | Internal event that indicates that final state was successfully signed                              |
+| Challenge         | Challenging | Internal event that indicates that final state wasn't signed and `StateSyncFailure` is unacceptable |
+| MoveToOperational | Operational | Internal event that indicates that final state wasn't signed and `StateSyncFailure` is acceptable   |
 
 #### Concluding
 
