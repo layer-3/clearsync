@@ -102,8 +102,8 @@ message Notification {
     StreamNotification stream_notification = 1;
     SettlementNotification settlement_notification = 2;
     PositionNotification position_notification = 3;
-    TransactionNotification transaction_notification = 4;
-    ErrorNotification error_notification = 5;
+    ErrorNotification error_notification = 4;
+    TransactionNotification transaction_notification = 5;
   }
 }
 
