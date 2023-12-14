@@ -222,6 +222,7 @@ protolint:disable MAX_LINE_LENGTH
 | stream_notification | [StreamNotification](#streamnotification) |  |
 | settlement_notification | [SettlementNotification](#settlementnotification) |  |
 | position_notification | [PositionNotification](#positionnotification) |  |
+| transaction_notification | [TransactionNotification](#transactionnotification) |  |
 | error_notification | [ErrorNotification](#errornotification) |  |
 
 
@@ -390,6 +391,21 @@ Maximum number of trades per request is 6765
 
 ### TradesResponse
 
+
+
+
+
+
+
+
+### TransactionNotification
+
+
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| to | [string](#string) |  |
+| data | [string](#string) |  |
 
 
 
