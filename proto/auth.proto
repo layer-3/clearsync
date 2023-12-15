@@ -14,7 +14,8 @@ service Auth {
 message Peer {
   string url = 1;
   string name = 2;
-  string address = 3;
+  string participant_address = 4;
+  string wallet_address = 5;
 }
 
 message ChallengeRequest {
