@@ -46,7 +46,7 @@ It is crucial for maintaining standard price precision in trading scenarios.
 #### Example
 
 ```go
-result := ToSignificant(decimal.NewFromFloat(123.456), 4) // Returns 123.4
+result := ToSignificant(decimal.newFromString("123.456"), 4) // Returns 123.4
 ```
 
 ### `Validate` function
@@ -66,7 +66,7 @@ checks that the input is non-negative and its precision does not exceed a specif
 #### Example
 
 ```go
-err := Validate(decimal.NewFromFloat(1.234), 3) // Returns nil, as the precision is within the limit.
+err := Validate(decimal.newFromString("1.234"), 3) // Returns nil, as the precision is within the limit.
 ```
 
 ## Usage
