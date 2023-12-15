@@ -205,6 +205,19 @@ func BenchmarkValidate_SuccessfulCase(b *testing.B) {
 	}
 }
 
+func BenchmarkValidate_UnsuccessfulCase(b *testing.B) {
+	d := newFromString("1.234523452345234523452345")
+
+	// Reset timer to exclude time taken by setup operations
+	// before the actual benchmark begins
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		Validate(d, maxPrecision)
+	}
+}
+
 func newFromString(num string) decimal.Decimal {
 	d, err := decimal.NewFromString(num)
 	if err != nil {

@@ -29,8 +29,6 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-var ten = decimal.NewFromInt(10)
-
 // ToSignificant truncates coefficient of any decimal.Decimal
 // to a significant number of digits while preserving exponent.
 // The input number is assumed to be non-negative.
