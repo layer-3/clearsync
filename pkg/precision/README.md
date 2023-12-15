@@ -1,8 +1,12 @@
 # Precision Package
 
-The `precision` package implements functionality for handling the precision of asset prices and quantities following the YIP-0001 - Asset Price Precision specification.
+The `precision` package implements functionality for handling the precision of asset prices and quantities following the
+YIP-0001 - Asset Price Precision specification.
 
-This package includes functions to ensure that asset prices and quantities are represented with the appropriate level of significant digits and precision, aligning with global standards for price-point (PIP) representation in financial markets.
+This package includes functions to ensure that asset prices and quantities are represented with the appropriate level of
+significant digits and precision, aligning with global standards for price-point (PIP) representation in financial
+markets.
+
 ## Installation
 
 To use this package, you can install it using `go get`:
@@ -17,16 +21,17 @@ Import the package into your Go code:
 
 ```go
 import (
-	"github.com/shopspring/decimal"
-	"github.com/layer-3/clearsync/pkg/precision"
+    "github.com/shopspring/decimal"
+    "github.com/layer-3/clearsync/pkg/precision"
 )
 ```
 
 ## Key Features
 
-### ToSignificant
+### `ToSignificant` function
 
-The `ToSignificant` function truncates a decimal number to a specified number of significant digits as per the YIP-0001 specification for price representation.
+The `ToSignificant` function truncates a decimal number to a specified number of significant digits as per the YIP-0001
+specification for price representation.
 It is crucial for maintaining standard price precision in trading scenarios.
 
 #### Parameters
@@ -44,9 +49,10 @@ It is crucial for maintaining standard price precision in trading scenarios.
 result := ToSignificant(decimal.NewFromFloat(123.456), 4) // Returns 123.4
 ```
 
-### Validate
+### `Validate` function
 
-The `Validate` function ensures that a given decimal number adheres to precision rules specified in the YIP-0001. It checks that the input is non-negative and its precision does not exceed a specified limit.
+The `Validate` function ensures that a given decimal number adheres to precision rules specified in the YIP-0001. It
+checks that the input is non-negative and its precision does not exceed a specified limit.
 
 #### Parameters
 
@@ -69,8 +75,8 @@ Import the package into your Go code:
 
 ```go
 import (
-	"github.com/shopspring/decimal"
-	"github.com/layer-3/clearsync/pkg/precision"
+    "github.com/shopspring/decimal"
+    "github.com/layer-3/clearsync/pkg/precision"
 )
 ```
 
@@ -78,7 +84,7 @@ Feel free to adjust the information or add more details as needed!
 
 ## Benchmark Results
 
-### ToSignificant Benchmark
+### `ToSignificant` Benchmark
 
 ```sh
 goos: darwin
@@ -91,12 +97,13 @@ BenchmarkToSignificant_ExactSignificantDigits-10                          	 7927
 BenchmarkToSignificant_IntegralPartSizeGreaterThanSignificantDigits-10    	 4253004	       291.8 ns/op	     168 B/op	       9 allocs/op
 ```
 
-### Validate Benchmark
+### `Validate` Benchmark
+
 ```sh
 goos: darwin
 goarch: amd64
 pkg: github.com/layer-3/clearsync/pkg/precision
 cpu: VirtualApple @ 2.50GHz
 BenchmarkValidate_SuccessfulCase-10                                       	490919691	         2.388 ns/op	       0 B/op	       0 allocs/op
-BenchmarkValidate_UnsuccessfulCase-10                                     	 8283324	       143.4 ns/op	      80 B/op	       2 allocs/op
+BenchmarkValidate_UnsuccessfulCase-10                                     	  8283324	         143.4 ns/op	      80 B/op	       2 allocs/op
 ```
