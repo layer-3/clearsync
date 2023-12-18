@@ -69,7 +69,8 @@ Server signs the client's challenge
 | ----- | ---- | ----------- |
 | url | [string](#string) |  |
 | name | [string](#string) |  |
-| address | [string](#string) |  |
+| participant_address | [string](#string) |  |
+| wallet_address | [string](#string) |  |
 
 
 
