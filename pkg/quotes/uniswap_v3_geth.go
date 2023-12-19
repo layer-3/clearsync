@@ -38,13 +38,17 @@ type uniswapV3Geth struct {
 	assets  sync.Map
 }
 
-func newUniswapV3Geth(config Config, outbox chan<- TradeEvent) *uniswapV3Geth {
+func newUniswapV3Geth(config Config, outbox chan<- TradeEvent) Driver {
 	return &uniswapV3Geth{
 		once:      newOnce(),
 		url:       config.URL,
 		assetsURL: config.AssetsURL,
 		outbox:    outbox,
 	}
+}
+
+func (u *uniswapV3Geth) Name() DriverType {
+	return DriverUniswapV3Geth
 }
 
 func (u *uniswapV3Geth) Start() error {

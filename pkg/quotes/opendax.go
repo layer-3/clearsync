@@ -28,7 +28,7 @@ type opendax struct {
 	streams sync.Map
 }
 
-func newOpendax(config Config, outbox chan<- TradeEvent) *opendax {
+func newOpendax(config Config, outbox chan<- TradeEvent) Driver {
 	url := "wss://alpha.yellow.org/api/v1/finex/ws"
 	if config.URL != "" {
 		url = config.URL
@@ -42,6 +42,10 @@ func newOpendax(config Config, outbox chan<- TradeEvent) *opendax {
 		reqID:  atomic.Uint64{},
 		dialer: &wsDialWrapper{},
 	}
+}
+
+func (o *opendax) Name() DriverType {
+	return DriverOpendax
 }
 
 func (o *opendax) Start() error {

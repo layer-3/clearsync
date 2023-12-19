@@ -33,7 +33,7 @@ type kraken struct {
 	outbox         chan<- TradeEvent
 }
 
-func newKraken(config Config, outbox chan<- TradeEvent) *kraken {
+func newKraken(config Config, outbox chan<- TradeEvent) Driver {
 	url := "wss://ws.kraken.com"
 	if config.URL != "" {
 		url = config.URL
@@ -113,6 +113,10 @@ type krakenSubscriptionParams struct {
 	// Available variants: book|ohlc|openOrders|ownTrades|spread|ticker|trade|*
 	// * for all available channels depending on the connected environment
 	Name string `json:"name"`
+}
+
+func (k *kraken) Name() DriverType {
+	return DriverKraken
 }
 
 func (k *kraken) Subscribe(market Market) error {

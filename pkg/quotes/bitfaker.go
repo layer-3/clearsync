@@ -18,7 +18,7 @@ type bitfaker struct {
 	tradeSampler tradeSampler
 }
 
-func newBitfaker(config Config, outbox chan<- TradeEvent) *bitfaker {
+func newBitfaker(config Config, outbox chan<- TradeEvent) Driver {
 	return &bitfaker{
 		once:         newOnce(),
 		streams:      make([]Market, 0),
@@ -27,6 +27,10 @@ func newBitfaker(config Config, outbox chan<- TradeEvent) *bitfaker {
 		period:       5 * time.Second,
 		tradeSampler: *newTradeSampler(config.TradeSampler),
 	}
+}
+
+func (b *bitfaker) Name() DriverType {
+	return DriverBitfaker
 }
 
 func (b *bitfaker) Start() error {

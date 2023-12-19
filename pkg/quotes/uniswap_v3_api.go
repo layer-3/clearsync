@@ -25,7 +25,7 @@ type uniswapV3Api struct {
 	streams    sync.Map
 }
 
-func newUniswapV3Api(config Config, outbox chan<- TradeEvent) *uniswapV3Api {
+func newUniswapV3Api(config Config, outbox chan<- TradeEvent) Driver {
 	url := "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3"
 	if config.URL != "" {
 		url = config.URL
@@ -37,6 +37,10 @@ func newUniswapV3Api(config Config, outbox chan<- TradeEvent) *uniswapV3Api {
 		outbox:     outbox,
 		windowSize: 2 * time.Second,
 	}
+}
+
+func (u *uniswapV3Api) Name() DriverType {
+	return DriverUniswapV3Api
 }
 
 func (u *uniswapV3Api) Start() error {
