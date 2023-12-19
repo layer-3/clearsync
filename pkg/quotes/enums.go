@@ -18,6 +18,7 @@ func (d *DriverType) String() string {
 }
 
 var (
+	DriverIndex     = DriverType{"index"}
 	DriverBinance   = DriverType{"binance"}
 	DriverKraken    = DriverType{"kraken"}
 	DriverOpendax   = DriverType{"opendax"}
@@ -32,6 +33,7 @@ func ToDriverType(raw string) (DriverType, error) {
 		DriverOpendax.String():   DriverOpendax,
 		DriverBitfaker.String():  DriverBitfaker,
 		DriverUniswapV3.String(): DriverUniswapV3,
+		DriverIndex.String():     DriverIndex,
 	}
 
 	driver, ok := allDrivers[raw]
