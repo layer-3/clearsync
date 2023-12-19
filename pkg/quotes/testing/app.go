@@ -1,5 +1,5 @@
 // App for testing quotes drivers.
-// Set your driver here or as a console argument: `go run . binance`
+// Set your driver here or as a console argument: `go run . index`
 package main
 
 import (
@@ -8,13 +8,17 @@ import (
 	_ "net/http/pprof"
 	"os"
 
+	"github.com/ipfs/go-log/v2"
 	"github.com/layer-3/clearsync/pkg/quotes"
 )
+
+var logger = log.Logger("testing-app")
 
 func main() {
 	go func() {
 		http.ListenAndServe("localhost:8080", nil)
 	}()
+	log.SetLogLevel("*", "info")
 
 	driverType := quotes.DriverBinance
 	if len(os.Args) == 2 {

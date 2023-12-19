@@ -33,7 +33,8 @@ type kraken struct {
 	outbox         chan<- TradeEvent
 }
 
-func newKraken(config KrakenConfig, outbox chan<- TradeEvent) *kraken {
+func newKraken(config Config, outbox chan<- TradeEvent) Driver {
+	cnf := config.(KrakenConfig)
 	limiter := &wsDialWrapper{}
 
 	// Set rate limit to 1 req/sec
@@ -43,10 +44,10 @@ func newKraken(config KrakenConfig, outbox chan<- TradeEvent) *kraken {
 
 	return &kraken{
 		once:         newOnce(),
-		url:          config.URL,
+		url:          cnf.URL,
 		dialer:       limiter,
-		retryPeriod:  config.ReconnectPeriod,
-		tradeSampler: *newTradeSampler(config.TradeSampler),
+		retryPeriod:  cnf.ReconnectPeriod,
+		tradeSampler: *newTradeSampler(cnf.TradeSampler),
 		outbox:       outbox,
 	}
 }
@@ -113,6 +114,10 @@ type krakenSubscriptionParams struct {
 	// Available variants: book|ohlc|openOrders|ownTrades|spread|ticker|trade|*
 	// * for all available channels depending on the connected environment
 	Name string `json:"name"`
+}
+
+func (k *kraken) Name() DriverType {
+	return DriverKraken
 }
 
 func (k *kraken) Subscribe(market Market) error {

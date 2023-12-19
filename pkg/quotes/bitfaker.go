@@ -18,15 +18,20 @@ type bitfaker struct {
 	tradeSampler tradeSampler
 }
 
-func newBitfaker(config BitfakerConfig, outbox chan<- TradeEvent) *bitfaker {
+func newBitfaker(config Config, outbox chan<- TradeEvent) Driver {
+	cnf := config.(BitfakerConfig)
 	return &bitfaker{
 		once:         newOnce(),
 		streams:      make([]Market, 0),
 		outbox:       outbox,
 		stopCh:       make(chan struct{}, 1),
-		period:       config.Period,
-		tradeSampler: *newTradeSampler(config.TradeSampler),
+		period:       cnf.Period,
+		tradeSampler: *newTradeSampler(cnf.TradeSampler),
 	}
+}
+
+func (b *bitfaker) Name() DriverType {
+	return DriverBitfaker
 }
 
 func (b *bitfaker) Start() error {

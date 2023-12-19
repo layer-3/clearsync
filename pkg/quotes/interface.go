@@ -4,6 +4,7 @@ package quotes
 import "fmt"
 
 type Driver interface {
+	Name() DriverType
 	Start() error
 	Stop() error
 	Subscribe(market Market) error
@@ -29,4 +30,5 @@ func NewDriver(config Config, outbox chan<- TradeEvent) (Driver, error) {
 	default:
 		return nil, fmt.Errorf("driver is not supported: %s", config.Driver)
 	}
+	return driver(config, outbox), nil
 }

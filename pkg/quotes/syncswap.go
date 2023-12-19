@@ -31,15 +31,20 @@ type syncswap struct {
 	assets  sync.Map
 }
 
-func newSyncswap(config SyncswapConfig, outbox chan<- TradeEvent) Driver {
+func newSyncswap(config Config, outbox chan<- TradeEvent) Driver {
+	cnf := config.(SyncswapConfig)
 	return &syncswap{
 		once:                      newOnce(),
-		url:                       config.URL,
-		assetsURL:                 config.AssetsURL,
-		classicPoolFactoryAddress: config.ClassicPoolFactoryAddress,
+		url:                       cnf.URL,
+		assetsURL:                 cnf.AssetsURL,
+		classicPoolFactoryAddress: cnf.ClassicPoolFactoryAddress,
 
 		outbox: outbox,
 	}
+}
+
+func (s *syncswap) Name() DriverType {
+	return DriverSyncswap
 }
 
 func (s *syncswap) Start() error {
