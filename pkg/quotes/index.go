@@ -92,20 +92,29 @@ func (a *IndexAggregator) indexPrice(event TradeEvent) TradeEvent {
 		lastEMA = event.Price
 	}
 
-	fmt.Println("currentEma            :", lastEMA)
+	// TODO: delete
 	fmt.Println("eventPrice            :", event.Price)
 
+	// Calculate an EMA based on new price
 	newEMA := EMA20(lastEMA, event.Price)
 
-	// TODO: fix weights logic
-	// weight := a.activeWeights[event.Source]
+	// Get difference between new and previous values
+	delta := lastEMA.Sub(newEMA)
+
+	weight := a.activeWeights[event.Source]
+	// Influence ema based on amount change multiplied by weight
+	weightedNewEMA := lastEMA.Add(delta.Mul(weight))
+	// TODO: find the way to include trade amount in this logic
+
+	// Initial weights logic that didn't work:
 	// newEMA := EMA20(lastEMA, event.Price.Mul(event.Amount.Mul(weight).Div(a.totalWeights())))
 
 	if time.Now().Unix() >= timestamp+5 { // 5 seconds for testing
-		a.prices.UpdateEMA(event.Market, newEMA)
+		fmt.Println("\n\n\n\n\n\n\n\n\n\n\n\n\nupdate EMA")
+		a.prices.UpdateEMA(event.Market, weightedNewEMA)
 	}
 
-	event.Price = newEMA
+	event.Price = weightedNewEMA
 	event.Source = DriverIndex
 
 	return event

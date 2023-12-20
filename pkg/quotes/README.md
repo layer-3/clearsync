@@ -60,7 +60,6 @@ index_price = EMA20(price x ( trade_size x weight / active_weights ))
 	```UpdateEMA(market string, newValue decimal.Decimal)```
 - The value is updated once per minute with the price at that moment.
 - Each new EMA depends on the previous EMA.
-- When the value goes through 20 iterations (20 minutes), it reaches its full accuracy.
 
 ## How Uniswap adapter calculates swap price
 
