@@ -19,7 +19,7 @@ type opendax struct {
 	outbox      chan<- TradeEvent
 	mu          sync.RWMutex
 	period      time.Duration
-	reqId       uint64
+	reqID       uint64
 	isConnected bool
 }
 
@@ -42,7 +42,7 @@ func newOpendax(config Config, outbox chan<- TradeEvent) *opendax {
 		url:    url,
 		outbox: outbox,
 		period: time.Duration(config.ReconnectPeriod) * time.Second,
-		reqId:  1,
+		reqID:  1,
 		dialer: wsDialWrapper{},
 	}
 }
@@ -68,28 +68,19 @@ func (o *opendax) Connect() {
 func (o *opendax) Subscribe(market Market) error {
 	// Opendax resource [market].[trades]
 	resource := fmt.Sprintf("%s%s.trades", market.BaseUnit, market.QuoteUnit)
-	message := protocol.NewSubscribeMessage(o.reqId, resource)
-	o.reqId++
+	message := protocol.NewSubscribeMessage(o.reqID, resource)
+	o.reqID++
 
-	byteMsg, err := message.Encode()
-	if err != nil {
-		logger.Warn(err)
-		return err
-	}
+	return o.writeOpendaxMsg(message)
+}
 
-	o.reqId++
+func (o *opendax) Unsubscribe(market Market) error {
+	// Opendax resource [market].[trades]
+	resource := fmt.Sprintf("%s%s.trades", market.BaseUnit, market.QuoteUnit)
+	message := protocol.NewUnsubscribeMessage(o.reqID, resource)
+	o.reqID++
 
-	if err := o.conn.WriteMessage(websocket.TextMessage, byteMsg); err != nil {
-		logger.Warn(err)
-		return err
-	}
-
-	if _, _, err := o.conn.ReadMessage(); err != nil {
-		logger.Warn(err)
-		return err
-	}
-
-	return nil
+	return o.writeOpendaxMsg(message)
 }
 
 func (o *opendax) Start(markets []Market) error {
@@ -111,6 +102,25 @@ func (o *opendax) Stop() error {
 
 	o.isConnected = false
 	o.mu.Unlock()
+	return nil
+}
+
+func (o *opendax) writeOpendaxMsg(message *protocol.Msg) error {
+	byteMsg, err := message.Encode()
+	if err != nil {
+		logger.Warn(err)
+		return err
+	}
+
+	if err := o.conn.WriteMessage(websocket.TextMessage, byteMsg); err != nil {
+		logger.Warn(err)
+		return err
+	}
+
+	if _, _, err := o.conn.ReadMessage(); err != nil {
+		logger.Warn(err)
+		return err
+	}
 	return nil
 }
 

@@ -91,6 +91,21 @@ func (u *uniswapV3) Subscribe(market Market) error {
 	return nil
 }
 
+func (u *uniswapV3) Unsubscribe(market Market) error {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+
+	stopCh, ok := u.streams[market]
+	if !ok {
+		return fmt.Errorf("market %s not found", market)
+	}
+
+	stopCh <- struct{}{}
+	close(stopCh)
+	delete(u.streams, market)
+	return nil
+}
+
 func (u *uniswapV3) Start(markets []Market) error {
 	if len(markets) == 0 {
 		return errors.New("no markets specified")
@@ -130,10 +145,10 @@ const tokenTemplate = `query {
  }
 }`
 
-func (u *uniswapV3) isMarketAvailable(m Market) (bool, error) {
+func (u *uniswapV3) isMarketAvailable(market Market) (bool, error) {
 	query := fmt.Sprintf(tokenTemplate,
-		strings.ToUpper(m.BaseUnit),
-		strings.ToUpper(m.QuoteUnit),
+		strings.ToUpper(market.BaseUnit),
+		strings.ToUpper(market.QuoteUnit),
 	)
 
 	pools, err := runGraphqlRequest[uniswapPools](u.url, query)
@@ -165,12 +180,12 @@ const swapsTemplate = `query {
   }
 }`
 
-func (u *uniswapV3) fetchSwaps(m Market, from, to time.Time) ([]uniswapSwap, error) {
+func (u *uniswapV3) fetchSwaps(market Market, from, to time.Time) ([]uniswapSwap, error) {
 	query := fmt.Sprintf(swapsTemplate,
 		from.Unix(),
 		to.Unix(),
-		strings.ToUpper(m.BaseUnit),
-		strings.ToUpper(m.QuoteUnit),
+		strings.ToUpper(market.BaseUnit),
+		strings.ToUpper(market.QuoteUnit),
 	)
 
 	swaps, err := runGraphqlRequest[uniswapSwaps](u.url, query)

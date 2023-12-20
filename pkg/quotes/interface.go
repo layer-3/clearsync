@@ -13,6 +13,7 @@ var logger = log.Logger("quotes")
 
 type Driver interface {
 	Subscribe(market Market) error
+	Unsubscribe(market Market) error
 	Start(markets []Market) error
 	Stop() error
 }
