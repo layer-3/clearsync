@@ -2,6 +2,7 @@ package quotes
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -57,9 +58,29 @@ func (b *bitfaker) Subscribe(market Market) error {
 	return nil
 }
 
-func (b *bitfaker) createTradeEvent(m Market) {
+func (b *bitfaker) Unsubscribe(market Market) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	index := -1
+	for i, m := range b.markets {
+		if market == m {
+			index = i
+			break
+		}
+	}
+
+	if index == -1 {
+		return fmt.Errorf("market %s not found", market)
+	}
+
+	b.markets = append(b.markets[:index], b.markets[index+1:]...)
+	return nil
+}
+
+func (b *bitfaker) createTradeEvent(market Market) {
 	tr := TradeEvent{
-		Market: m.BaseUnit + m.QuoteUnit,
+		Market: market.BaseUnit + market.QuoteUnit,
 		Price:  decimal.NewFromFloat(2.213),
 		Source: DriverBitfaker,
 	}

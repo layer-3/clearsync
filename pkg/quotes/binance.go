@@ -2,6 +2,7 @@ package quotes
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -45,8 +46,8 @@ func (b *binance) Start(markets []Market) error {
 	return nil
 }
 
-func (b *binance) Subscribe(m Market) error {
-	pair := strings.ToUpper(m.BaseUnit) + strings.ToUpper(m.QuoteUnit)
+func (b *binance) Subscribe(market Market) error {
+	pair := strings.ToUpper(market.BaseUnit) + strings.ToUpper(market.QuoteUnit)
 	handleErr := func(err error) {
 		logger.Errorf("error for Binance market %s: %v", pair, err)
 	}
@@ -61,7 +62,7 @@ func (b *binance) Subscribe(m Market) error {
 			select {
 			case <-doneCh:
 				for {
-					if err := b.Subscribe(m); err == nil {
+					if err := b.Subscribe(market); err == nil {
 						break
 					}
 				}
@@ -75,6 +76,22 @@ func (b *binance) Subscribe(m Market) error {
 	b.streams[pair] = stopCh
 
 	logger.Infof("subscribed to Binance %s market", strings.ToUpper(pair))
+	return nil
+}
+
+func (b *binance) Unsubscribe(market Market) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	pair := strings.ToUpper(market.BaseUnit) + strings.ToUpper(market.QuoteUnit)
+	stopCh, ok := b.streams[pair]
+	if !ok {
+		return fmt.Errorf("market %s not found", pair)
+	}
+
+	stopCh <- struct{}{}
+	close(stopCh)
+	delete(b.streams, pair)
 	return nil
 }
 

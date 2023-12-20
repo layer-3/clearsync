@@ -82,19 +82,20 @@ func (k *kraken) Subscribe(market Market) error {
 			Symbol:   []string{pair},
 		},
 	}
+	return k.writeConn(subMsg)
+}
 
-	payload, err := json.Marshal(subMsg)
-	if err != nil {
-		return fmt.Errorf("error marshalling subscription message: %v", err)
+func (k *kraken) Unsubscribe(market Market) error {
+	pair := fmt.Sprintf("%s/%s", strings.ToUpper(market.BaseUnit), strings.ToUpper(market.QuoteUnit))
+	unsubMsg := subscribeMessage{
+		Method: "unsubscribe",
+		Params: subscriptionParams{
+			Channel:  "trade",
+			Snapshot: true,
+			Symbol:   []string{pair},
+		},
 	}
-
-	for !k.isConnected {
-	}
-
-	if err := k.conn.WriteMessage(websocket.TextMessage, payload); err != nil {
-		return fmt.Errorf("error writing subscription message: %v", err)
-	}
-	return nil
+	return k.writeConn(unsubMsg)
 }
 
 func (k *kraken) Stop() error {
@@ -108,6 +109,21 @@ func (k *kraken) Stop() error {
 		return nil
 	}
 	return conn.Close()
+}
+
+func (k *kraken) writeConn(msg subscribeMessage) error {
+	payload, err := json.Marshal(msg)
+	if err != nil {
+		return fmt.Errorf("error marshalling subscription message: %v", err)
+	}
+
+	for !k.isConnected {
+	}
+
+	if err := k.conn.WriteMessage(websocket.TextMessage, payload); err != nil {
+		return fmt.Errorf("error writing subscription message: %v", err)
+	}
+	return nil
 }
 
 func (k *kraken) connect() error {

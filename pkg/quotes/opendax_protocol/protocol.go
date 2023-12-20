@@ -25,6 +25,7 @@ const (
 
 	MethodAuth               = "authenticate"
 	MethodSubscribe          = "subscribe"
+	MethodUnsubscribe        = "unsubscribe"
 	MethodListOrders         = "list_orders"
 	MethodListOrdersByUUIDS  = "list_orders_by_uuids"
 	MethodListOrderTrades    = "list_order_trades"

@@ -33,9 +33,21 @@ type Msg struct {
 
 func NewSubscribeMessage(reqID uint64, topics ...interface{}) *Msg {
 	return &Msg{
-		ReqID:  reqID,
 		Type:   Request,
+		ReqID:  reqID,
 		Method: MethodSubscribe,
+		Args: []interface{}{
+			"public",
+			topics,
+		},
+	}
+}
+
+func NewUnsubscribeMessage(reqID uint64, topics ...interface{}) *Msg {
+	return &Msg{
+		Type:   Request,
+		ReqID:  reqID,
+		Method: MethodUnsubscribe,
 		Args: []interface{}{
 			"public",
 			topics,

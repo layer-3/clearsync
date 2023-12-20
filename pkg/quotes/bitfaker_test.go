@@ -12,7 +12,7 @@ import (
 
 func TestBitfaker_Subscribe(t *testing.T) {
 	t.Run("Single market", func(t *testing.T) {
-		ch := make(chan TradeEvent)
+		ch := make(chan TradeEvent, 16)
 		client := bitfaker{outbox: ch}
 
 		m := Market{BaseUnit: "btc", QuoteUnit: "usd"}
@@ -24,7 +24,7 @@ func TestBitfaker_Subscribe(t *testing.T) {
 	})
 
 	t.Run("Multiple markets", func(t *testing.T) {
-		outbox := make(chan TradeEvent)
+		outbox := make(chan TradeEvent, 16)
 		client := bitfaker{outbox: outbox}
 
 		market1 := Market{BaseUnit: "btc", QuoteUnit: "usd"}
@@ -40,6 +40,51 @@ func TestBitfaker_Subscribe(t *testing.T) {
 	})
 }
 
+func TestBitfaker_Unsubscribe(t *testing.T) {
+	t.Run("Unsubscribe from multiple markets", func(t *testing.T) {
+		ch := make(chan TradeEvent, 16)
+		client := bitfaker{outbox: ch}
+
+		market1 := Market{BaseUnit: "btc", QuoteUnit: "usd"}
+		market2 := Market{BaseUnit: "eth", QuoteUnit: "usd"}
+		client.Subscribe(market1)
+		client.Subscribe(market2)
+
+		err := client.Unsubscribe(market1)
+		require.NoError(t, err)
+		err = client.Unsubscribe(market2)
+		require.NoError(t, err)
+
+		assert.NotContains(t, client.markets, market1)
+		assert.NotContains(t, client.markets, market2)
+	})
+
+	t.Run("Unsubscribe from a market not subscribed to", func(t *testing.T) {
+		ch := make(chan TradeEvent, 16)
+		client := bitfaker{outbox: ch}
+
+		market := Market{BaseUnit: "xrp", QuoteUnit: "usd"}
+		err := client.Unsubscribe(market)
+
+		require.Error(t, err)
+	})
+
+	t.Run("No effect on other subscriptions after unsubscribing", func(t *testing.T) {
+		ch := make(chan TradeEvent, 16)
+		client := bitfaker{outbox: ch}
+
+		market1 := Market{BaseUnit: "btc", QuoteUnit: "usd"}
+		market2 := Market{BaseUnit: "eth", QuoteUnit: "usd"}
+		client.Subscribe(market1)
+		client.Subscribe(market2)
+
+		client.Unsubscribe(market1)
+
+		assert.NotContains(t, client.markets, market1)
+		assert.Contains(t, client.markets, market2)
+	})
+}
+
 func TestBitfaker_Start(t *testing.T) {
 	outbox := make(chan TradeEvent, 1)
 	sampl := tradeSampler{enabled: false, defaultPercentage: 0.0}
@@ -50,7 +95,7 @@ func TestBitfaker_Start(t *testing.T) {
 	wg.Add(2)
 	go func() {
 		err := client.Start([]Market{market})
-		require.Nil(t, err)
+		require.NoError(t, err)
 		wg.Done()
 	}()
 	go func() {
