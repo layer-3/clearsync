@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/shopspring/decimal"
 
+	"github.com/layer-3/clearsync/pkg/precision"
 	protocol "github.com/layer-3/clearsync/pkg/quotes/opendax_protocol"
 )
 
@@ -176,7 +177,7 @@ func convertToTrade(args []interface{}) (*TradeEvent, error) {
 
 	market := it.NextString()
 	_ = it.NextUint64() // trade id
-	price := it.NextDecimal()
+	price := precision.ToSignificant(it.NextDecimal(), 8)
 	amount := it.NextDecimal()
 	total := it.NextDecimal()
 	ts := it.NextTimestamp()

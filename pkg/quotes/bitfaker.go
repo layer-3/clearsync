@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/shopspring/decimal"
+
+	"github.com/layer-3/clearsync/pkg/precision"
 )
 
 type bitfaker struct {
@@ -60,7 +62,7 @@ func (b *bitfaker) Subscribe(market Market) error {
 func (b *bitfaker) createTradeEvent(m Market) {
 	tr := TradeEvent{
 		Market: m.BaseUnit + m.QuoteUnit,
-		Price:  decimal.NewFromFloat(2.213),
+		Price:  precision.ToSignificant(decimal.NewFromFloat(2.213), 8),
 		Source: DriverBitfaker,
 	}
 

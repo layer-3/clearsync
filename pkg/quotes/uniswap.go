@@ -13,6 +13,8 @@ import (
 	"time"
 
 	"github.com/shopspring/decimal"
+
+	"github.com/layer-3/clearsync/pkg/precision"
 )
 
 type uniswapV3 struct {
@@ -68,7 +70,7 @@ func (u *uniswapV3) Subscribe(market Market) error {
 				}
 
 				for _, swap := range swaps {
-					price := swap.price()
+					price := precision.ToSignificant(swap.price(), 8)
 					createdAt, err := swap.time()
 					if err != nil {
 						logger.Warnf("failed to get swap timestamp: %s", err)

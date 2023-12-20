@@ -105,7 +105,7 @@ func TestOpendax_parseOpendaxMsg(t *testing.T) {
 		tradeEvent, err := parseOpendaxMsg(byteMsg)
 		require.NoError(t, err)
 
-		number, _ := decimal.NewFromString("1")
+		number := decimal.RequireFromString("1")
 		expVal := &TradeEvent{
 			Market:    "btcusd",
 			Price:     number,

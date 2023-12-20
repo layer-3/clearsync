@@ -8,6 +8,8 @@ import (
 
 	gobinance "github.com/adshao/go-binance/v2"
 	"github.com/shopspring/decimal"
+
+	"github.com/layer-3/clearsync/pkg/precision"
 )
 
 type binance struct {
@@ -128,7 +130,7 @@ func buildBinanceEvent(tr *gobinance.WsTradeEvent) (TradeEvent, error) {
 	return TradeEvent{
 		Source:    DriverBinance,
 		Market:    strings.ToLower(tr.Symbol),
-		Price:     price,
+		Price:     precision.ToSignificant(price, 8),
 		Amount:    amount,
 		Total:     price.Mul(amount),
 		TakerType: takerType,

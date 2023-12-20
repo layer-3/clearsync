@@ -12,6 +12,8 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/shopspring/decimal"
+
+	"github.com/layer-3/clearsync/pkg/precision"
 )
 
 type kraken struct {
@@ -308,7 +310,7 @@ func getKrakenPairs() (map[string]krakenPair, error) {
 func buildKrakenEvents(trades []krakenTrade) []TradeEvent {
 	var events []TradeEvent
 	for _, tr := range trades {
-		price := decimal.NewFromFloat(tr.Price)
+		price := precision.ToSignificant(decimal.NewFromFloat(tr.Price), 8)
 		amount := decimal.NewFromFloat(tr.Qty)
 
 		takerType := TakerTypeBuy
