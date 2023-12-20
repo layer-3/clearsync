@@ -14,3 +14,5 @@ func TestOpendax_EMA(t *testing.T) {
 		_ = EMA(decimal.Zero, decimal.Zero, 5)
 	})
 }
+
+// (WIP)

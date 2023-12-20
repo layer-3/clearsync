@@ -4,6 +4,7 @@ The Quotes Service is a centralized system responsible for recording and dissemi
 from various trading platforms.
 
 Available drivers:
+- Index Price
 - Binance
 - Kraken
 - Opendax
@@ -20,7 +21,7 @@ type Driver interface {
 }
 ```
 
-## Type of price source
+## Types of price sources
 
 | Top Tier CEX | Altcoins CEX | FIAT       | DEX         |
 |--------------|--------------|------------|-------------|
@@ -41,11 +42,25 @@ last_price = price
 
 Used mainly in risk management for portfolio evaluation:
 
+(WIP, draft)
+
+Is aggregated from multiple sources.
+
 ```
 index_price = EMA20(price x ( trade_size x weight / active_weights ))
-# active_weight being the sum of weight where this market exists (ex: KuCoin:5 + uniswap:50)
-# EMA20 is likely 20 at 1 min scale
 ```
+
+*active_weight* being the sum of weight where this market exists (ex: KuCoin:5 + uniswap:50)
+
+*Price cache*
+
+- Price cache stores the last EMA for a market.
+- Price cache has 2 methods:
+  ```GetEMA(market string) (decimal.Decimal, int64)``` and
+	```UpdateEMA(market string, newValue decimal.Decimal)```
+- The value is updated once per minute with the price at that moment.
+- Each new EMA depends on the previous EMA.
+- When the value goes through 20 iterations (20 minutes), it reaches its full accuracy.
 
 ## How Uniswap adapter calculates swap price
 

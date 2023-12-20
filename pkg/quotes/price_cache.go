@@ -6,13 +6,18 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+type PriceCache interface {
+	GetEMA(market string) (decimal.Decimal, int64)     // Returns last EMA for a market
+	UpdateEMA(market string, newValue decimal.Decimal) // Replaces the last EMA for a market with a new value
+}
+
 type PricesCache struct {
 	prices map[string]emaRecord
 }
 
 type emaRecord struct {
-	amount    decimal.Decimal
-	timestamp int64
+	amount    decimal.Decimal // Last EMA value
+	timestamp int64           // Timestamp is used to update the last ema value in a specific period of time (1 minute)
 }
 
 // NewPricesCache initializes new cache for ema prices for markets.
