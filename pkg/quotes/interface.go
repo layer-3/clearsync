@@ -13,6 +13,7 @@ import (
 var logger = log.Logger("quotes")
 
 type Driver interface {
+	Name() DriverType
 	Start() error
 	Stop() error
 	Subscribe(market Market) error

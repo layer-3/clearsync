@@ -8,15 +8,17 @@ import (
 )
 
 type IndexAggregator struct {
+	weightsMap    map[DriverType]decimal.Decimal
+	activeWeights map[DriverType]decimal.Decimal
+
 	drivers []Driver
-	weights map[DriverType]decimal.Decimal
 	prices  PriceCache
 
 	aggregated chan TradeEvent
 	outbox     chan<- TradeEvent
 }
 
-func NewIndex(driverConfigs []Config, weights map[DriverType]decimal.Decimal, outbox chan<- TradeEvent) (*IndexAggregator, error) {
+func NewIndex(driverConfigs []Config, weightsMap map[DriverType]decimal.Decimal, outbox chan<- TradeEvent) (*IndexAggregator, error) {
 	aggregated := make(chan TradeEvent, 128)
 
 	drivers := []Driver{}
@@ -29,11 +31,12 @@ func NewIndex(driverConfigs []Config, weights map[DriverType]decimal.Decimal, ou
 	}
 
 	return &IndexAggregator{
-		prices:     NewPricesCache(),
-		weights:    weights,
-		drivers:    drivers,
-		outbox:     outbox,
-		aggregated: aggregated,
+		prices:        NewPricesCache(),
+		weightsMap:    weightsMap,
+		activeWeights: make(map[DriverType]decimal.Decimal),
+		drivers:       drivers,
+		outbox:        outbox,
+		aggregated:    aggregated,
 	}, nil
 }
 
@@ -51,6 +54,7 @@ func (a *IndexAggregator) Start(markets []Market) error {
 			if err := d.Start(markets); err != nil {
 				logger.Warn(err.Error())
 			}
+			a.activeWeights[d.Name()] = a.weightsMap[d.Name()]
 		}(d)
 	}
 	go func() {
@@ -87,16 +91,17 @@ func (a *IndexAggregator) indexPrice(event TradeEvent) TradeEvent {
 	if lastEMA == decimal.Zero {
 		lastEMA = event.Price
 	}
-	// weight := a.weights[event.Source]
 
 	fmt.Println("currentEma            :", lastEMA)
 	fmt.Println("eventPrice            :", event.Price)
+
 	newEMA := EMA20(lastEMA, event.Price)
 
 	// TODO: fix weights logic
-	// newEMA := EMA20(lastEMA, event.Price.Mul(event.Amount.Mul(weight).Div(a.activeWeights())))
+	// weight := a.activeWeights[event.Source]
+	// newEMA := EMA20(lastEMA, event.Price.Mul(event.Amount.Mul(weight).Div(a.totalWeights())))
 
-	if time.Now().Unix() >= timestamp+5 {
+	if time.Now().Unix() >= timestamp+5 { // 5 seconds for testing
 		a.prices.UpdateEMA(event.Market, newEMA)
 	}
 
@@ -106,9 +111,9 @@ func (a *IndexAggregator) indexPrice(event TradeEvent) TradeEvent {
 	return event
 }
 
-func (a *IndexAggregator) activeWeights() decimal.Decimal {
+func (a *IndexAggregator) totalWeights() decimal.Decimal {
 	total := decimal.Zero
-	for _, w := range a.weights {
+	for _, w := range a.activeWeights {
 		total = total.Add(w)
 	}
 	return total

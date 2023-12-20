@@ -26,6 +26,10 @@ func newBinance(config Config, outbox chan<- TradeEvent) *binance {
 	}
 }
 
+func (b *binance) Name() DriverType {
+	return DriverBinance
+}
+
 func (b *binance) Start() error {
 	b.once.Start(func() {})
 	return nil

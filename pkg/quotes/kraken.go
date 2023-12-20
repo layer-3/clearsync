@@ -85,6 +85,10 @@ type subscriptionParams struct {
 	Symbol   []string `json:"symbol"`
 }
 
+func (k *kraken) Name() DriverType {
+	return DriverKraken
+}
+
 func (k *kraken) Subscribe(market Market) error {
 	if _, ok := k.streams.Load(market); ok {
 		return fmt.Errorf("%s: %w", market, ErrAlreadySubbed)

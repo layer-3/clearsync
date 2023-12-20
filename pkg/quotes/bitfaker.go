@@ -28,6 +28,10 @@ func newBitfaker(config Config, outbox chan<- TradeEvent) *bitfaker {
 	}
 }
 
+func (b *bitfaker) Name() DriverType {
+	return DriverBitfaker
+}
+
 func (b *bitfaker) Start() error {
 	b.once.Start(func() {
 		go func() {

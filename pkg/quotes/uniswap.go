@@ -36,6 +36,10 @@ func newUniswapV3(config Config, outbox chan<- TradeEvent) *uniswapV3 {
 	}
 }
 
+func (u *uniswapV3) Name() DriverType {
+	return DriverUniswapV3
+}
+
 func (u *uniswapV3) Start() error {
 	u.once.Start(func() {})
 	return nil

@@ -41,6 +41,10 @@ func newOpendax(config Config, outbox chan<- TradeEvent) *opendax {
 	}
 }
 
+func (o *opendax) Name() DriverType {
+	return DriverOpendax
+}
+
 func (o *opendax) Start() error {
 	o.once.Start(func() {
 		o.connect()
