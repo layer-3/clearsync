@@ -1,43 +1,38 @@
 package quotes
 
 import (
-	"time"
+	"sync"
 
 	"github.com/shopspring/decimal"
 )
 
 type PriceCache interface {
-	GetEMA(market string) (decimal.Decimal, int64)     // Returns last EMA for a market
+	GetEMA(market string) decimal.Decimal              // Returns last EMA for a market
 	UpdateEMA(market string, newValue decimal.Decimal) // Replaces the last EMA for a market with a new value
 }
 
 type PricesCache struct {
-	prices map[string]emaRecord
-}
-
-type emaRecord struct {
-	amount    decimal.Decimal // Last EMA value
-	timestamp int64           // Timestamp is used to update the last ema value in a specific period of time (1 minute)
+	prices map[string]decimal.Decimal
+	mu     sync.RWMutex
 }
 
 // NewPricesCache initializes new cache for ema prices for markets.
 func NewPricesCache() *PricesCache {
 	cache := new(PricesCache)
-	cache.prices = make(map[string]emaRecord, 0)
+	cache.prices = make(map[string]decimal.Decimal, 0)
 
 	return cache
 }
 
-func (p *PricesCache) GetEMA(market string) (decimal.Decimal, int64) {
+func (p *PricesCache) GetEMA(market string) decimal.Decimal {
 	cached, ok := p.prices[market]
 	if ok {
-		return cached.amount, cached.timestamp
+		return cached
 	}
-	return decimal.Zero, 0
+	return decimal.Zero
 }
 func (p *PricesCache) UpdateEMA(market string, newValue decimal.Decimal) {
-	p.prices[market] = emaRecord{
-		amount:    newValue,
-		timestamp: time.Now().Unix(),
-	}
+	p.mu.Lock()
+	p.prices[market] = newValue
+	p.mu.Unlock()
 }

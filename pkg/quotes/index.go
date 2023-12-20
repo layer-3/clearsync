@@ -2,7 +2,6 @@ package quotes
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/shopspring/decimal"
 )
@@ -87,7 +86,7 @@ func (a *IndexAggregator) Stop() error {
 }
 
 func (a *IndexAggregator) indexPrice(event TradeEvent) TradeEvent {
-	lastEMA, timestamp := a.prices.GetEMA(event.Market)
+	lastEMA := a.prices.GetEMA(event.Market)
 	if lastEMA == decimal.Zero {
 		lastEMA = event.Price
 	}
@@ -104,16 +103,14 @@ func (a *IndexAggregator) indexPrice(event TradeEvent) TradeEvent {
 	weight := a.activeWeights[event.Source]
 	// Influence ema based on amount change multiplied by weight
 	weightedNewEMA := lastEMA.Add(delta.Mul(weight))
-	// TODO: find the way to include trade amount in this logic
+
+	// TODO: fix weights impact!
+	// find the way to include trade amount in this logic
 
 	// Initial weights logic that didn't work:
 	// newEMA := EMA20(lastEMA, event.Price.Mul(event.Amount.Mul(weight).Div(a.totalWeights())))
 
-	if time.Now().Unix() >= timestamp+5 { // 5 seconds for testing
-		fmt.Println("\n\n\n\n\n\n\n\n\n\n\n\n\nupdate EMA")
-		a.prices.UpdateEMA(event.Market, weightedNewEMA)
-	}
-
+	a.prices.UpdateEMA(event.Market, newEMA)
 	event.Price = weightedNewEMA
 	event.Source = DriverIndex
 
