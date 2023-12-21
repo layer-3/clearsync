@@ -102,7 +102,7 @@ func Validate(input decimal.Decimal, maxPrecision int32) error {
 		return errors.New("input must not be negative")
 	}
 
-	precision := int32(input.Exponent())
+	precision := input.Exponent()
 	if precision < 0 {
 		precision = -precision
 	}
