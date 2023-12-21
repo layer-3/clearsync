@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -19,17 +20,8 @@ type opendax struct {
 	outbox      chan<- TradeEvent
 	mu          sync.RWMutex
 	period      time.Duration
-	reqID       uint64
+	reqID       atomic.Uint64
 	isConnected bool
-}
-
-type tradeResponse struct {
-	ID        uint64
-	Market    string
-	Price     decimal.Decimal
-	Amount    decimal.Decimal
-	TakerType TakerType
-	CreatedAt int64
 }
 
 func newOpendax(config Config, outbox chan<- TradeEvent) *opendax {
@@ -41,8 +33,8 @@ func newOpendax(config Config, outbox chan<- TradeEvent) *opendax {
 	return &opendax{
 		url:    url,
 		outbox: outbox,
-		period: time.Duration(config.ReconnectPeriod) * time.Second,
-		reqID:  1,
+		period: config.ReconnectPeriod * time.Second,
+		reqID:  atomic.Uint64{},
 		dialer: wsDialWrapper{},
 	}
 }
@@ -68,8 +60,8 @@ func (o *opendax) Connect() {
 func (o *opendax) Subscribe(market Market) error {
 	// Opendax resource [market].[trades]
 	resource := fmt.Sprintf("%s%s.trades", market.BaseUnit, market.QuoteUnit)
-	message := protocol.NewSubscribeMessage(o.reqID, resource)
-	o.reqID++
+	message := protocol.NewSubscribeMessage(o.reqID.Load(), resource)
+	o.reqID.Add(1)
 
 	return o.writeOpendaxMsg(message)
 }
@@ -77,8 +69,8 @@ func (o *opendax) Subscribe(market Market) error {
 func (o *opendax) Unsubscribe(market Market) error {
 	// Opendax resource [market].[trades]
 	resource := fmt.Sprintf("%s%s.trades", market.BaseUnit, market.QuoteUnit)
-	message := protocol.NewUnsubscribeMessage(o.reqID, resource)
-	o.reqID++
+	message := protocol.NewUnsubscribeMessage(o.reqID.Load(), resource)
+	o.reqID.Add(1)
 
 	return o.writeOpendaxMsg(message)
 }
