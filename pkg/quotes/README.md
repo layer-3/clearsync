@@ -50,7 +50,7 @@ priceWeightEMA = EMA20((Volume)*(Price)*(DriverWeight/activeWeights))
 weightEMA = EMA20(Volume*(DriverWeight/activeWeights))
 ```
 
-*active_weight* is the sum of weight where this market exists (ex: KuCoin:5 + uniswap:50)
+*activeWeight* is the sum of weight where this market exists (ex: KuCoin:5 + uniswap:50)
 
 *EMA cache*
 

@@ -51,11 +51,11 @@ func Test_EMA20(t *testing.T) {
 func Test_IndexAggregator(t *testing.T) {
 	t.Run("Successful test", func(t *testing.T) {
 		ag := &IndexAggregator{
-			emaCache:      NewEMAsCache(),
-			weightsMap:    DefaultWeightsMap,
-			activeWeights: make(map[DriverType]decimal.Decimal),
+			emaCache:   NewEMAsCache(),
+			weightsMap: DefaultWeightsMap,
+			weights:    make(map[DriverType]decimal.Decimal),
 		}
-		ag.activeWeights[DriverBinance] = decimal.NewFromInt(3)
+		ag.weights[DriverBinance] = decimal.NewFromInt(3)
 
 		var decimalPrices []decimal.Decimal
 		var decimalAmounts []decimal.Decimal
@@ -82,3 +82,5 @@ func Test_IndexAggregator(t *testing.T) {
 		require.Equal(t, exp, result)
 	})
 }
+
+// TODO: add a test with multiple drivers when active weights is fully implemented.

@@ -5,8 +5,8 @@ import (
 )
 
 type IndexAggregator struct {
-	weightsMap    map[DriverType]decimal.Decimal
-	activeWeights map[DriverType]decimal.Decimal
+	weightsMap map[DriverType]decimal.Decimal
+	weights    map[DriverType]decimal.Decimal
 
 	drivers  []Driver
 	emaCache EMACache
@@ -15,6 +15,7 @@ type IndexAggregator struct {
 	outbox     chan<- TradeEvent
 }
 
+// NewIndexAggregator creates a new instance of IndexAggregator.
 func NewIndexAggregator(driverConfigs []Config, weightsMap map[DriverType]decimal.Decimal, outbox chan<- TradeEvent) (*IndexAggregator, error) {
 	aggregated := make(chan TradeEvent, 128)
 
@@ -28,12 +29,12 @@ func NewIndexAggregator(driverConfigs []Config, weightsMap map[DriverType]decima
 	}
 
 	return &IndexAggregator{
-		emaCache:      NewEMAsCache(),
-		weightsMap:    weightsMap,
-		activeWeights: make(map[DriverType]decimal.Decimal),
-		drivers:       drivers,
-		outbox:        outbox,
-		aggregated:    aggregated,
+		emaCache:   NewEMAsCache(),
+		weightsMap: weightsMap,
+		weights:    make(map[DriverType]decimal.Decimal),
+		drivers:    drivers,
+		outbox:     outbox,
+		aggregated: aggregated,
 	}, nil
 }
 
@@ -51,7 +52,7 @@ func (a *IndexAggregator) Start(markets []Market) error {
 			if err := d.Start(markets); err != nil {
 				logger.Warn(err.Error())
 			}
-			a.activeWeights[d.Name()] = a.weightsMap[d.Name()]
+			a.weights[d.Name()] = a.weightsMap[d.Name()]
 		}(d)
 	}
 	go func() {
@@ -83,20 +84,21 @@ func (a *IndexAggregator) Stop() error {
 	return nil
 }
 
+// indexPrice returns indexPrice based on Weighted Exponential Moving Average of last 20 trades.
 func (a *IndexAggregator) indexPrice(event TradeEvent) TradeEvent {
-	driverWeight := a.activeWeights[event.Source]
+	driverWeight := a.weights[event.Source]
 	priceWeightEMA, weightEMA := a.emaCache.Get(event.Market)
 
 	// To start the procedure (before we've got trades) we generate the initial values:
 	if priceWeightEMA == decimal.Zero || weightEMA == decimal.Zero {
-		priceWeightEMA = event.Price.Mul(event.Amount).Mul(driverWeight).Div(a.totalWeights())
-		weightEMA = event.Amount.Mul(driverWeight).Div(a.totalWeights())
+		priceWeightEMA = event.Price.Mul(event.Amount).Mul(driverWeight).Div(a.activeWeights())
+		weightEMA = event.Amount.Mul(driverWeight).Div(a.activeWeights())
 	}
 
-	// Volume-weighted Exponential Moving Average (V-EMA)
+	// Weighted Exponential Moving Average:
 	// https://www.financialwisdomforum.org/gummy-stuff/EMA.htm
-	newPriceWeightEMA := EMA20(priceWeightEMA, event.Price.Mul(event.Amount).Mul(driverWeight).Div(a.totalWeights()))
-	newWeightEMA := EMA20(weightEMA, event.Amount.Mul(driverWeight).Div(a.totalWeights()))
+	newPriceWeightEMA := EMA20(priceWeightEMA, event.Price.Mul(event.Amount).Mul(driverWeight).Div(a.activeWeights()))
+	newWeightEMA := EMA20(weightEMA, event.Amount.Mul(driverWeight).Div(a.activeWeights()))
 
 	newEMA := newPriceWeightEMA.Div(newWeightEMA)
 	a.emaCache.Update(event.Market, newPriceWeightEMA, newWeightEMA)
@@ -107,28 +109,38 @@ func (a *IndexAggregator) indexPrice(event TradeEvent) TradeEvent {
 	return event
 }
 
-func (a *IndexAggregator) totalWeights() decimal.Decimal {
+// activeWeights is the sum of weight where a market exists (ex: KuCoin:5 + uniswap:50).
+func (a *IndexAggregator) activeWeights() decimal.Decimal {
 	total := decimal.Zero
-	for _, w := range a.activeWeights {
+	for _, w := range a.weights {
 		total = total.Add(w)
 	}
 	return total
+	// TODO:
+	// Add a method ActiveMarkets() []string for each driver.
+	// Modify emaCache to store weightsMap for each market.
+	// Modify totalWeights to fetch a weightsMap for the specific market and return activeWeights for that market.
+	// func (a *IndexAggregator) activeWeights(market string) decimal.Decimal.
 }
 
+// EMA20 returns Exponential Moving Average for 20 intervals based on previous EMA, and current price.
 func EMA20(lastEMA, newPrice decimal.Decimal) decimal.Decimal {
 	return EMA(lastEMA, newPrice, 20)
 }
 
+// EMA returns Exponential Moving Average based on previous EMA, current price and the number of intervals.
 func EMA(previousEMA, price decimal.Decimal, intervals int32) decimal.Decimal {
 	if intervals <= 0 {
 		return decimal.Zero
 	}
 
-	alpha := alpha(intervals)
-	return alpha.Mul(price.Sub(previousEMA)).Add(previousEMA)
+	smoothing := smoothing(intervals)
+	// EMA = ((price − previous EMA) × smoothing constant) + (previous EMA).
+	return smoothing.Mul(price.Sub(previousEMA)).Add(previousEMA)
 }
 
-func alpha(intervals int32) decimal.Decimal {
+// smoothing returns a smothing constant which equals 2 ÷ (number of periods + 1).
+func smoothing(intervals int32) decimal.Decimal {
 	smoothingFactor := decimal.NewFromInt(2)
 	alpha := smoothingFactor.Div(decimal.NewFromInt32(intervals).Add(decimal.NewFromInt(1)))
 	return alpha
