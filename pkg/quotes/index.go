@@ -15,7 +15,7 @@ type IndexAggregator struct {
 	outbox     chan<- TradeEvent
 }
 
-func NewIndex(driverConfigs []Config, weightsMap map[DriverType]decimal.Decimal, outbox chan<- TradeEvent) (*IndexAggregator, error) {
+func NewIndexAggregator(driverConfigs []Config, weightsMap map[DriverType]decimal.Decimal, outbox chan<- TradeEvent) (*IndexAggregator, error) {
 	aggregated := make(chan TradeEvent, 128)
 
 	drivers := []Driver{}
@@ -89,10 +89,8 @@ func (a *IndexAggregator) indexPrice(event TradeEvent) TradeEvent {
 
 	// To start the procedure (before we've got trades) we generate the initial values:
 	if priceWeightEMA == decimal.Zero || weightEMA == decimal.Zero {
-		// priceWeightEMA = (1 - α) x Price x Volume x DriverWeight
-		priceWeightEMA = decimal.NewFromInt(1).Sub(alpha(20)).Mul(event.Price.Mul(event.Amount).Mul(driverWeight).Div(a.totalWeights()))
-		// weightEMA = (1 - α) x Volume x DriverWeight
-		weightEMA = decimal.NewFromInt(1).Sub(alpha(20)).Mul(event.Amount.Mul(driverWeight).Div(a.totalWeights()))
+		priceWeightEMA = event.Price.Mul(event.Amount).Mul(driverWeight).Div(a.totalWeights())
+		weightEMA = event.Amount.Mul(driverWeight).Div(a.totalWeights())
 	}
 
 	// Volume-weighted Exponential Moving Average (V-EMA)
@@ -127,8 +125,7 @@ func EMA(previousEMA, price decimal.Decimal, intervals int32) decimal.Decimal {
 	}
 
 	alpha := alpha(intervals)
-	// ema = (α x Price) + (previousEMA x (1 - α))
-	return alpha.Mul(price).Add(previousEMA.Mul(decimal.NewFromInt(1).Sub(alpha)))
+	return alpha.Mul(price.Sub(previousEMA)).Add(previousEMA)
 }
 
 func alpha(intervals int32) decimal.Decimal {

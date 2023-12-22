@@ -18,7 +18,7 @@ func main() {
 	}
 	outbox := make(chan quotes.TradeEvent, 128)
 
-	indexAggregator, err := quotes.NewIndex(driverConfigs, quotes.DefaultWeightsMap, outbox)
+	indexAggregator, err := quotes.NewIndexAggregator(driverConfigs, quotes.DefaultWeightsMap, outbox)
 	if err != nil {
 		panic(err)
 	}
@@ -33,7 +33,6 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println("Reading from outbox:")
 	for e := range outbox {
 		fmt.Printf("market: %s, price: %.5f, amount: %s\n", e.Market, e.Price.InexactFloat64(), e.Amount.String())
 	}
