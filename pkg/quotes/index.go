@@ -8,8 +8,8 @@ type IndexAggregator struct {
 	weightsMap    map[DriverType]decimal.Decimal
 	activeWeights map[DriverType]decimal.Decimal
 
-	drivers []Driver
-	prices  PriceCache
+	drivers  []Driver
+	emaCache EMACache
 
 	aggregated chan TradeEvent
 	outbox     chan<- TradeEvent
@@ -28,7 +28,7 @@ func NewIndex(driverConfigs []Config, weightsMap map[DriverType]decimal.Decimal,
 	}
 
 	return &IndexAggregator{
-		prices:        NewPricesCache(),
+		emaCache:      NewEMAsCache(),
 		weightsMap:    weightsMap,
 		activeWeights: make(map[DriverType]decimal.Decimal),
 		drivers:       drivers,
@@ -85,9 +85,9 @@ func (a *IndexAggregator) Stop() error {
 
 func (a *IndexAggregator) indexPrice(event TradeEvent) TradeEvent {
 	driverWeight := a.activeWeights[event.Source]
-	priceWeightEMA, weightEMA := a.prices.GetEMA(event.Market)
+	priceWeightEMA, weightEMA := a.emaCache.Get(event.Market)
 
-	// To start the procedure (before we've got trades) we generate initial values:
+	// To start the procedure (before we've got trades) we generate the initial values:
 	if priceWeightEMA == decimal.Zero || weightEMA == decimal.Zero {
 		// priceWeightEMA = (1 - α) x Price x Volume x DriverWeight
 		priceWeightEMA = decimal.NewFromInt(1).Sub(alpha(20)).Mul(event.Price.Mul(event.Amount).Mul(driverWeight).Div(a.totalWeights()))
@@ -101,7 +101,7 @@ func (a *IndexAggregator) indexPrice(event TradeEvent) TradeEvent {
 	newWeightEMA := EMA20(weightEMA, event.Amount.Mul(driverWeight).Div(a.totalWeights()))
 
 	newEMA := newPriceWeightEMA.Div(newWeightEMA)
-	a.prices.UpdateEMA(event.Market, newPriceWeightEMA, newWeightEMA)
+	a.emaCache.Update(event.Market, newPriceWeightEMA, newWeightEMA)
 
 	event.Price = newEMA
 	event.Source = DriverIndex

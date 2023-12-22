@@ -40,26 +40,29 @@ last_price = price
 
 ## Index Price
 
-Used mainly in risk management for portfolio evaluation:
-
-(WIP, draft)
-
-Is aggregated from multiple sources.
+Used mainly in risk management for portfolio evaluation, and is aggregated from multiple sources.
 
 ```
-index_price = EMA20(price x ( trade_size x weight / active_weights ))
+index_price = priceWeightEMA/weightEMA
+
+priceWeightEMA = EMA20((Volume)*(Price)*(DriverWeight/activeWeights))
+
+weightEMA = EMA20(Volume*(DriverWeight/activeWeights))
 ```
 
-*active_weight* being the sum of weight where this market exists (ex: KuCoin:5 + uniswap:50)
+*active_weight* is the sum of weight where this market exists (ex: KuCoin:5 + uniswap:50)
 
-*Price cache*
+*EMA cache*
 
-- Price cache stores the last EMA for a market.
-- Price cache has 2 methods:
-  ```GetEMA(market string) (decimal.Decimal, int64)``` and
-	```UpdateEMA(market string, newValue decimal.Decimal)```
-- The value is updated once per minute with the price at that moment.
-- Each new EMA depends on the previous EMA.
+```
+type EMACache interface {
+	Get(market string) (decimal.Decimal, decimal.Decimal)      // Returns priceWeight and weight EMAs for a market
+	Update(market string, priceWeight, weight decimal.Decimal) // Updates priceWeight and weight EMAs for a market with a new value
+}
+```
+
+- EMA cache stores previous priceWeight and weight EMAs.
+
 
 ## How Uniswap adapter calculates swap price
 
