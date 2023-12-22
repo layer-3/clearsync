@@ -1,8 +1,6 @@
 package quotes
 
 import (
-	"fmt"
-
 	"github.com/shopspring/decimal"
 )
 
@@ -86,32 +84,26 @@ func (a *IndexAggregator) Stop() error {
 }
 
 func (a *IndexAggregator) indexPrice(event TradeEvent) TradeEvent {
-	lastEMA := a.prices.GetEMA(event.Market)
-	if lastEMA == decimal.Zero {
-		lastEMA = event.Price
+	driverWeight := a.activeWeights[event.Source]
+	priceWeightEMA, weightEMA := a.prices.GetEMA(event.Market)
+
+	// To start the procedure (before we've got trades) we generate initial values:
+	if priceWeightEMA == decimal.Zero || weightEMA == decimal.Zero {
+		// priceWeightEMA = (1 - α) x Price x Volume x DriverWeight
+		priceWeightEMA = decimal.NewFromInt(1).Sub(alpha(20)).Mul(event.Price.Mul(event.Amount).Mul(driverWeight).Div(a.totalWeights()))
+		// weightEMA = (1 - α) x Volume x DriverWeight
+		weightEMA = decimal.NewFromInt(1).Sub(alpha(20)).Mul(event.Amount.Mul(driverWeight).Div(a.totalWeights()))
 	}
 
-	// TODO: delete
-	fmt.Println("eventPrice            :", event.Price)
+	// Volume-weighted Exponential Moving Average (V-EMA)
+	// https://www.financialwisdomforum.org/gummy-stuff/EMA.htm
+	newPriceWeightEMA := EMA20(priceWeightEMA, event.Price.Mul(event.Amount).Mul(driverWeight).Div(a.totalWeights()))
+	newWeightEMA := EMA20(weightEMA, event.Amount.Mul(driverWeight).Div(a.totalWeights()))
 
-	// Calculate an EMA based on new price
-	newEMA := EMA20(lastEMA, event.Price)
+	newEMA := newPriceWeightEMA.Div(newWeightEMA)
+	a.prices.UpdateEMA(event.Market, newPriceWeightEMA, newWeightEMA)
 
-	// Get difference between new and previous values
-	delta := lastEMA.Sub(newEMA)
-
-	weight := a.activeWeights[event.Source]
-	// Influence ema based on amount change multiplied by weight
-	weightedNewEMA := lastEMA.Add(delta.Mul(weight))
-
-	// TODO: fix weights impact!
-	// find the way to include trade amount in this logic
-
-	// Initial weights logic that didn't work:
-	// newEMA := EMA20(lastEMA, event.Price.Mul(event.Amount.Mul(weight).Div(a.totalWeights())))
-
-	a.prices.UpdateEMA(event.Market, newEMA)
-	event.Price = weightedNewEMA
+	event.Price = newEMA
 	event.Source = DriverIndex
 
 	return event
@@ -129,11 +121,18 @@ func EMA20(lastEMA, newPrice decimal.Decimal) decimal.Decimal {
 	return EMA(lastEMA, newPrice, 20)
 }
 
-func EMA(lastEMA, newPrice decimal.Decimal, intervals int) decimal.Decimal {
+func EMA(previousEMA, price decimal.Decimal, intervals int32) decimal.Decimal {
 	if intervals <= 0 {
 		return decimal.Zero
 	}
+
+	alpha := alpha(intervals)
+	// ema = (α x Price) + (previousEMA x (1 - α))
+	return alpha.Mul(price).Add(previousEMA.Mul(decimal.NewFromInt(1).Sub(alpha)))
+}
+
+func alpha(intervals int32) decimal.Decimal {
 	smoothingFactor := decimal.NewFromInt(2)
-	alpha := smoothingFactor.Div(decimal.NewFromInt32(int32(intervals)).Add(decimal.NewFromInt(1)))
-	return alpha.Mul(newPrice.Sub(lastEMA)).Add(lastEMA)
+	alpha := smoothingFactor.Div(decimal.NewFromInt32(intervals).Add(decimal.NewFromInt(1)))
+	return alpha
 }
