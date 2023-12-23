@@ -21,7 +21,7 @@ For the Clearport to be able to avoid undercollateralized trades, the margin sho
 
 - **Green** zone (default) - the margin distribution is enough for both parties to cover possible price changes that they have performed.
 - **Yellow** zone - the margin distribution shifts the bigger part of a margin for one party, meaning the other one can become undercollaterallized if the market moves against them.
-  When the margin transitions to the _yellow zone_, users can no longer create trades and are adviced to perform settlement to move margin to a _green zone_. Note, that parties can select what markets to settle themselves.
+  When the margin transitions to the _yellow zone_, users can no longer create trades and are advised to perform settlement to move margin to a _green zone_. Note, that parties can select what markets to settle themselves.
 - **Red** zone - the margin is almost depleted for one of the parties, meaning if the market continues to move against them, they will become undercollaterallized soon.
   When the margin transitions to the _red zone_, users also are not able to create trades, and an automatic settlement is created by the Clearport to move margin to a _green zone_.
   Note, that there can be several approaches for Clearport to select the markets to settle.
@@ -42,7 +42,7 @@ This proposal does not define an algorithm for Clearport to select markets for a
 - **Move to center with the least amount of most impactful** - the Clearport selects the least amount of the markets with the highest net impact, such that after settlement margin would be the closest to 50/50.
 - **Move to green with the least amount of most impactful** - alike the previous, but the resulting margin is shifted more to the red zone it was before.
 
-> The difference between the last two is that the _"Move to green ..."_ changes the margin distribution less. For example, before the settlement the margin disrtibution was `[93, 7]` with the green zone at 15 and higher,
+> The difference between the last two is that the _"Move to green ..."_ changes the margin distribution less. For example, before the settlement the margin distribution was `[93, 7]` with the green zone at 15 and higher,
 > the _"Move to center ..."_ market selection algorithm can change the margin to be `[52, 48]`, and the _"Move to green ..."_ to `[83, 17]`.
 
 ## Consequences

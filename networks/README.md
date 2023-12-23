@@ -13,14 +13,14 @@ Note: the localnet expects a locally deployed blockchain node with generated new
 
 Local Development Network
 
-Blockchain: Yellow Local Netowrk
+Blockchain: Yellow Local Network
 Safety token: $DUCKIES
 
 ## Stagenet
 
 Yellow Stage Netwok 
 
-Blockchain: Yellow Private Netowrk
+Blockchain: Yellow Private Network
 Safety token: $DUCKIES
 
 ## Canarynet
