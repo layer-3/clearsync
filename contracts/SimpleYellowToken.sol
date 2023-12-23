@@ -8,23 +8,19 @@ import '@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol';
  * All the supply is minted to the deployer.
  */
 contract SimpleYellowToken is ERC20Permit {
-	/// @dev Token maximum supply
-	uint256 public immutable TOKEN_SUPPLY_CAP;
-
 	/**
 	 * @dev Simple constructor, passing arguments to ERC20Permit and ERC20 constructors.
-	 * Mints the supply cap to the deployer.
+	 * Mints the supply to the deployer.
 	 * @param name Name of the Token.
 	 * @param symbol Symbol of the Token.
-	 * @param supplyCap Maximum supply of the Token.
+	 * @param supply Maximum supply of the Token.
 	 */
 	constructor(
 		string memory name,
 		string memory symbol,
-		uint256 supplyCap
+		uint256 supply
 	) ERC20Permit(name) ERC20(name, symbol) {
-		TOKEN_SUPPLY_CAP = supplyCap;
-		_mint(msg.sender, supplyCap);
+		_mint(msg.sender, supply);
 	}
 
 	/**
@@ -34,13 +30,5 @@ contract SimpleYellowToken is ERC20Permit {
 	 */
 	function decimals() public pure override returns (uint8) {
 		return 8;
-	}
-
-	/**
-	 * @notice Return the cap on the token's total supply.
-	 * @return uint256 Token supply cap.
-	 */
-	function cap() external view returns (uint256) {
-		return TOKEN_SUPPLY_CAP;
 	}
 }

@@ -6,7 +6,7 @@ import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import type { SimpleYellowToken } from '../typechain-types';
 
 const DECIMALS = 8;
-const TOKEN_SUPPLY_CAP = 10_000_000_000;
+const TOKEN_SUPPLY = 10_000_000_000;
 
 describe('SimpleYellowToken', function () {
   let Deployer: SignerWithAddress;
@@ -17,7 +17,7 @@ describe('SimpleYellowToken', function () {
     const Token = (await TokenFactory.connect(Deployer).deploy(
       'Canary',
       'CANARY',
-      TOKEN_SUPPLY_CAP,
+      TOKEN_SUPPLY,
     )) as SimpleYellowToken;
 
     return { Token };
@@ -41,12 +41,8 @@ describe('SimpleYellowToken', function () {
       expect(await Token.decimals()).to.equal(DECIMALS);
     });
 
-    it('Correct supply cap', async () => {
-      expect(await Token.cap()).to.equal(TOKEN_SUPPLY_CAP);
-    });
-
-    it('Supply cap minted to deployer', async () => {
-      expect(await Token.balanceOf(Deployer.address)).to.equal(TOKEN_SUPPLY_CAP);
+    it('Supply minted to deployer', async () => {
+      expect(await Token.balanceOf(Deployer.address)).to.equal(TOKEN_SUPPLY);
     });
   });
 });
