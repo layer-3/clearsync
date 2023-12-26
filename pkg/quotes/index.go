@@ -45,12 +45,6 @@ func (a *IndexAggregator) Start(markets []Market) error {
 
 	for _, d := range a.drivers {
 		go func(d Driver) {
-			markets := make([]Market, 0, len(markets))
-			for _, m := range markets {
-				market := Market{BaseUnit: m.BaseUnit, QuoteUnit: m.QuoteUnit}
-				markets = append(markets, market)
-			}
-
 			if err := d.Start(markets); err != nil {
 				logger.Warn(err.Error())
 			}
