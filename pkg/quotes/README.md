@@ -52,17 +52,20 @@ weightEMA = EMA20(Volume*(DriverWeight/activeWeights))
 
 *activeWeight* is the sum of weight where this market exists (ex: KuCoin:5 + uniswap:50)
 
-*EMA cache*
+*PriceCache*
 
 ```
-type EMACache interface {
-	Get(market string) (decimal.Decimal, decimal.Decimal)      // Returns priceWeight and weight EMAs for a market
-	Update(market string, priceWeight, weight decimal.Decimal) // Updates priceWeight and weight EMAs for a market with a new value
+type PriceCache interface {
+	Get(market string) (decimal.Decimal, decimal.Decimal)                         // Returns priceWeight and weight EMAs for a market
+	Update(driver DriverType, market string, priceWeight, weight decimal.Decimal) // Updates priceWeight and weight EMAs for a market with a new value
+	ActiveWeights(market string) decimal.Decimal                                  // Returns the sum of active driver weights for the market.
 }
 ```
 
-- EMA cache stores previous priceWeight and weight EMAs.
-
+- PriceCache stores previous priceWeight and weight EMAs.
+- It also stores a map of active drivers for a market. By default, no drivers are active. 
+  When the cache receives the first price, it makes the source driver active for the market.
+	This approach solves a problem when different drivers may support different markets.
 
 ## How Uniswap adapter calculates swap price
 

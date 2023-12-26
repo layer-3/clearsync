@@ -9,7 +9,7 @@ import (
 type PriceInterface interface {
 	Get(market string) (decimal.Decimal, decimal.Decimal)
 	Update(driver DriverType, market string, priceWeight, weight decimal.Decimal)
-	ActiveDrivers(market string) decimal.Decimal
+	ActiveWeights(market string) decimal.Decimal
 }
 
 type PriceCache struct {
@@ -59,8 +59,8 @@ func (p *PriceCache) Update(driver DriverType, market string, priceWeight, weigh
 	p.market[market] = &price{priceWeight: priceWeight, weight: weight, activeDrivers: map[DriverType]bool{driver: true}}
 }
 
-// ActiveDrivers returns the sum of active driver weights for the market).
-func (p *PriceCache) ActiveDrivers(market string) decimal.Decimal {
+// ActiveWeights returns the sum of active driver weights for the market.
+func (p *PriceCache) ActiveWeights(market string) decimal.Decimal {
 	_, ok := p.market[market]
 	if ok {
 		count := decimal.Zero

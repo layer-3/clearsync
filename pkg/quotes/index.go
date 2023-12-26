@@ -103,7 +103,7 @@ func (a *IndexAggregator) indexPrice(event TradeEvent) TradeEvent {
 	driverWeight := a.weights[event.Source]
 	priceWeightEMA, weightEMA := a.priceCache.Get(event.Market)
 
-	activeWeights := a.priceCache.ActiveDrivers(event.Market)
+	activeWeights := a.priceCache.ActiveWeights(event.Market)
 	if activeWeights == decimal.Zero {
 		activeWeights = driverWeight
 	}
