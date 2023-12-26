@@ -13,9 +13,9 @@ type PriceInterface interface {
 }
 
 type PriceCache struct {
-	weightsMap map[DriverType]decimal.Decimal
-	market     map[string]*price
-	mu         sync.RWMutex
+	weights map[DriverType]decimal.Decimal
+	market  map[string]*price
+	mu      sync.RWMutex
 }
 
 // price contains priceWeight and weight EMAs, and list of active drivers for the market.
@@ -30,7 +30,7 @@ func NewPriceCache(weightsMap map[DriverType]decimal.Decimal) *PriceCache {
 	cache := new(PriceCache)
 	cache.market = make(map[string]*price, 0)
 	cache.market = make(map[string]*price, 0)
-	cache.weightsMap = weightsMap
+	cache.weights = weightsMap
 
 	return cache
 }
@@ -66,7 +66,7 @@ func (p *PriceCache) ActiveWeights(market string) decimal.Decimal {
 		count := decimal.Zero
 		for driver, active := range p.market[market].activeDrivers {
 			if active == true {
-				weight, ok := p.weightsMap[driver]
+				weight, ok := p.weights[driver]
 				if ok {
 					count.Add(weight)
 				}

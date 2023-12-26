@@ -5,8 +5,7 @@ import (
 )
 
 type IndexAggregator struct {
-	weightsMap map[DriverType]decimal.Decimal
-	weights    map[DriverType]decimal.Decimal
+	weights map[DriverType]decimal.Decimal
 
 	drivers    []Driver
 	priceCache PriceInterface
@@ -30,8 +29,7 @@ func NewIndexAggregator(driverConfigs []Config, weightsMap map[DriverType]decima
 
 	return &IndexAggregator{
 		priceCache: NewPriceCache(weightsMap),
-		weightsMap: weightsMap,
-		weights:    make(map[DriverType]decimal.Decimal),
+		weights:    weightsMap,
 		drivers:    drivers,
 		outbox:     outbox,
 		aggregated: aggregated,
@@ -56,7 +54,6 @@ func (a *IndexAggregator) Start(markets []Market) error {
 			if err := d.Start(markets); err != nil {
 				logger.Warn(err.Error())
 			}
-			a.weights[d.Name()] = a.weightsMap[d.Name()]
 		}(d)
 	}
 	go func() {

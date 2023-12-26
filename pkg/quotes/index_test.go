@@ -52,8 +52,7 @@ func Test_IndexAggregator(t *testing.T) {
 	t.Run("Successful test", func(t *testing.T) {
 		ag := &IndexAggregator{
 			priceCache: NewPriceCache(DefaultWeightsMap),
-			weightsMap: DefaultWeightsMap,
-			weights:    make(map[DriverType]decimal.Decimal),
+			weights:    DefaultWeightsMap,
 		}
 		ag.weights[DriverBinance] = decimal.NewFromInt(3)
 
