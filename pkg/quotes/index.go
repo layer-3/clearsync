@@ -8,8 +8,8 @@ type IndexAggregator struct {
 	weightsMap map[DriverType]decimal.Decimal
 	weights    map[DriverType]decimal.Decimal
 
-	drivers  []Driver
-	emaCache EMACache
+	drivers    []Driver
+	priceCache PriceInterface
 
 	aggregated chan TradeEvent
 	outbox     chan<- TradeEvent
@@ -29,7 +29,7 @@ func NewIndexAggregator(driverConfigs []Config, weightsMap map[DriverType]decima
 	}
 
 	return &IndexAggregator{
-		emaCache:   NewEMAsCache(),
+		priceCache: NewPriceCache(weightsMap),
 		weightsMap: weightsMap,
 		weights:    make(map[DriverType]decimal.Decimal),
 		drivers:    drivers,
@@ -101,40 +101,31 @@ func (a *IndexAggregator) Stop() error {
 // indexPrice returns indexPrice based on Weighted Exponential Moving Average of last 20 trades.
 func (a *IndexAggregator) indexPrice(event TradeEvent) TradeEvent {
 	driverWeight := a.weights[event.Source]
-	priceWeightEMA, weightEMA := a.emaCache.Get(event.Market)
+	priceWeightEMA, weightEMA := a.priceCache.Get(event.Market)
+
+	activeWeights := a.priceCache.ActiveDrivers(event.Market)
+	if activeWeights == decimal.Zero {
+		activeWeights = driverWeight
+	}
 
 	// To start the procedure (before we've got trades) we generate the initial values:
 	if priceWeightEMA == decimal.Zero || weightEMA == decimal.Zero {
-		priceWeightEMA = event.Price.Mul(event.Amount).Mul(driverWeight).Div(a.activeWeights())
-		weightEMA = event.Amount.Mul(driverWeight).Div(a.activeWeights())
+		priceWeightEMA = event.Price.Mul(event.Amount).Mul(driverWeight).Div(activeWeights)
+		weightEMA = event.Amount.Mul(driverWeight).Div(activeWeights)
 	}
 
 	// Weighted Exponential Moving Average:
 	// https://www.financialwisdomforum.org/gummy-stuff/EMA.htm
-	newPriceWeightEMA := EMA20(priceWeightEMA, event.Price.Mul(event.Amount).Mul(driverWeight).Div(a.activeWeights()))
-	newWeightEMA := EMA20(weightEMA, event.Amount.Mul(driverWeight).Div(a.activeWeights()))
+	newPriceWeightEMA := EMA20(priceWeightEMA, event.Price.Mul(event.Amount).Mul(driverWeight).Div(activeWeights))
+	newWeightEMA := EMA20(weightEMA, event.Amount.Mul(driverWeight).Div(activeWeights))
 
 	newEMA := newPriceWeightEMA.Div(newWeightEMA)
-	a.emaCache.Update(event.Market, newPriceWeightEMA, newWeightEMA)
+	a.priceCache.Update(event.Source, event.Market, newPriceWeightEMA, newWeightEMA)
 
 	event.Price = newEMA
 	event.Source = DriverIndex
 
 	return event
-}
-
-// activeWeights is the sum of weight where a market exists (ex: KuCoin:5 + uniswap:50).
-func (a *IndexAggregator) activeWeights() decimal.Decimal {
-	total := decimal.Zero
-	for _, w := range a.weights {
-		total = total.Add(w)
-	}
-	return total
-	// TODO:
-	// Add a method ActiveMarkets() []string for each driver.
-	// Modify emaCache to store weightsMap for each market.
-	// Modify totalWeights to fetch a weightsMap for the specific market and return activeWeights for that market.
-	// func (a *IndexAggregator) activeWeights(market string) decimal.Decimal.
 }
 
 // EMA20 returns Exponential Moving Average for 20 intervals based on previous EMA, and current price.

@@ -51,7 +51,7 @@ func Test_EMA20(t *testing.T) {
 func Test_IndexAggregator(t *testing.T) {
 	t.Run("Successful test", func(t *testing.T) {
 		ag := &IndexAggregator{
-			emaCache:   NewEMAsCache(),
+			priceCache: NewPriceCache(DefaultWeightsMap),
 			weightsMap: DefaultWeightsMap,
 			weights:    make(map[DriverType]decimal.Decimal),
 		}
