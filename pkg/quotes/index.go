@@ -38,6 +38,10 @@ func NewIndexAggregator(driverConfigs []Config, weightsMap map[DriverType]decima
 	}, nil
 }
 
+func (a *IndexAggregator) Name() DriverType {
+	return DriverIndex
+}
+
 func (a *IndexAggregator) Start(markets []Market) error {
 	logger.Info("starting index quotes service")
 
@@ -67,6 +71,16 @@ func (a *IndexAggregator) Start(markets []Market) error {
 func (a *IndexAggregator) Subscribe(m Market) error {
 	for _, d := range a.drivers {
 		err := d.Subscribe(m)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (a *IndexAggregator) Unsubscribe(m Market) error {
+	for _, d := range a.drivers {
+		err := d.Unsubscribe(m)
 		if err != nil {
 			return err
 		}

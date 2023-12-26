@@ -6,6 +6,10 @@ import (
 	"github.com/layer-3/clearsync/pkg/quotes"
 )
 
+type driver struct {
+	driverInterface quotes.Driver
+}
+
 // Usage example of quotes package
 func main() {
 	driverConfigs := []quotes.Config{
@@ -23,12 +27,15 @@ func main() {
 		panic(err)
 	}
 
-	err = indexAggregator.Start([]quotes.Market{{BaseUnit: "btc", QuoteUnit: "usdt"}})
+	// Test the driver's interface
+	d := driver{driverInterface: indexAggregator}
+
+	err = d.driverInterface.Start([]quotes.Market{{BaseUnit: "btc", QuoteUnit: "usdt"}})
 	if err != nil {
 		panic(err)
 	}
 
-	err = indexAggregator.Subscribe(quotes.Market{BaseUnit: "btc", QuoteUnit: "usdt"})
+	err = d.driverInterface.Subscribe(quotes.Market{BaseUnit: "btc", QuoteUnit: "usdt"})
 	if err != nil {
 		panic(err)
 	}
