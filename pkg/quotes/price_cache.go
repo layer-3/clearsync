@@ -37,6 +37,9 @@ func NewPriceCache(weightsMap map[DriverType]decimal.Decimal) *PriceCache {
 
 // Get returns the price record for the market from cache.
 func (p *PriceCache) Get(market string) (decimal.Decimal, decimal.Decimal) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
 	cached, ok := p.market[market]
 	if ok {
 		return cached.priceWeight, cached.weight
@@ -61,6 +64,9 @@ func (p *PriceCache) Update(driver DriverType, market string, priceWeight, weigh
 
 // ActiveWeights returns the sum of active driver weights for the market.
 func (p *PriceCache) ActiveWeights(market string) decimal.Decimal {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
 	_, ok := p.market[market]
 	if ok {
 		count := decimal.Zero
