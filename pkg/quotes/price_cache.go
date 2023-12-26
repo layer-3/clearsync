@@ -22,7 +22,7 @@ type PriceCache struct {
 type price struct {
 	priceWeight   decimal.Decimal
 	weight        decimal.Decimal
-	activeDrivers map[DriverType]bool
+	driversActive map[DriverType]bool
 }
 
 // NewPriceCache initializes new cache for ema prices for markets.
@@ -53,10 +53,10 @@ func (p *PriceCache) Update(driver DriverType, market string, priceWeight, weigh
 	if ok {
 		p.market[market].priceWeight = priceWeight
 		p.market[market].weight = weight
-		p.market[market].activeDrivers[driver] = true
+		p.market[market].driversActive[driver] = true
 		return
 	}
-	p.market[market] = &price{priceWeight: priceWeight, weight: weight, activeDrivers: map[DriverType]bool{driver: true}}
+	p.market[market] = &price{priceWeight: priceWeight, weight: weight, driversActive: map[DriverType]bool{driver: true}}
 }
 
 // ActiveWeights returns the sum of active driver weights for the market.
@@ -64,11 +64,11 @@ func (p *PriceCache) ActiveWeights(market string) decimal.Decimal {
 	_, ok := p.market[market]
 	if ok {
 		count := decimal.Zero
-		for driver, active := range p.market[market].activeDrivers {
+		for driver, active := range p.market[market].driversActive {
 			if active == true {
 				weight, ok := p.weights[driver]
 				if ok {
-					count.Add(weight)
+					count = count.Add(weight)
 				}
 			}
 		}
