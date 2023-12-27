@@ -10,16 +10,16 @@ import (
 
 type bitfaker struct {
 	mu           sync.RWMutex
-	outbox       chan<- TradeEvent
 	markets      []Market
+	outbox       chan<- TradeEvent
 	period       time.Duration
 	tradeSampler tradeSampler
 }
 
 func newBitfaker(config Config, outbox chan<- TradeEvent) *bitfaker {
 	return &bitfaker{
-		outbox:       outbox,
 		markets:      make([]Market, 0),
+		outbox:       outbox,
 		period:       5 * time.Second,
 		tradeSampler: *newTradeSampler(config.TradeSampler),
 	}

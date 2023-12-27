@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -17,11 +16,9 @@ import (
 
 type kraken struct {
 	conn        wsTransport
-	connMu      sync.Mutex
 	dialer      wsDialer
 	url         string
 	retryPeriod time.Duration
-	isConnected atomic.Bool
 
 	availablePairs sync.Map
 	streams        sync.Map
@@ -119,9 +116,6 @@ func (k *kraken) Unsubscribe(market Market) error {
 }
 
 func (k *kraken) Stop() error {
-	k.connMu.Lock()
-	defer k.connMu.Unlock()
-
 	conn := k.conn
 	k.conn = nil
 
@@ -132,15 +126,12 @@ func (k *kraken) Stop() error {
 }
 
 func (k *kraken) writeConn(msg subscribeMessage) error {
-	k.connMu.Lock()
-	defer k.connMu.Unlock()
-
 	payload, err := json.Marshal(msg)
 	if err != nil {
 		return fmt.Errorf("error marshalling subscription message: %v", err)
 	}
 
-	for !k.isConnected.Load() {
+	for !k.conn.IsConnected() {
 	}
 
 	if err := k.conn.WriteMessage(websocket.TextMessage, payload); err != nil {
@@ -150,10 +141,7 @@ func (k *kraken) writeConn(msg subscribeMessage) error {
 }
 
 func (k *kraken) connect() error {
-	k.connMu.Lock()
-	defer k.connMu.Unlock()
-
-	if k.conn != nil {
+	if k.conn != nil && k.conn.IsConnected() {
 		return errors.New("already connected")
 	}
 
@@ -166,7 +154,6 @@ func (k *kraken) connect() error {
 			continue
 		}
 
-		k.isConnected.Store(true)
 		return nil
 	}
 }
@@ -208,19 +195,12 @@ type krakenResult struct {
 
 func (k *kraken) listen() {
 	for {
-		if !k.isConnected.Load() {
+		if k.conn == nil || !k.conn.IsConnected() {
 			<-time.After(k.retryPeriod)
 			continue
 		}
 
-		k.connMu.Lock()
-		conn := k.conn
-		k.connMu.Unlock()
-		if conn == nil {
-			continue
-		}
-
-		_, rawMsg, err := conn.ReadMessage()
+		_, rawMsg, err := k.conn.ReadMessage()
 		if err != nil {
 			logger.Errorf("error reading Kraken message: %v", err)
 		}

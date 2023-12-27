@@ -14,11 +14,9 @@ import (
 )
 
 type opendax struct {
-	connMu      sync.RWMutex
-	conn        wsTransport
-	dialer      wsDialer
-	isConnected atomic.Bool
-	url         string
+	conn   wsTransport
+	dialer wsDialer
+	url    string
 
 	outbox  chan<- TradeEvent
 	period  time.Duration
@@ -86,31 +84,27 @@ func (o *opendax) Start() error {
 }
 
 func (o *opendax) Stop() error {
-	o.connMu.Lock()
-	defer o.connMu.Unlock()
-
-	if o.conn != nil {
-		o.conn = nil
+	if o.conn == nil {
+		return nil
 	}
 
-	o.isConnected.Store(false)
+	if err := o.conn.Close(); err != nil {
+		return err
+	}
+
+	o.conn = nil
 	return nil
 }
 
 func (o *opendax) connect() {
 	for {
-		wsConn, _, err := o.dialer.Dial(o.url, nil)
-		o.connMu.Lock()
-		o.conn = wsConn
-		o.connMu.Unlock()
-		o.isConnected.Store(err == nil)
-
+		var err error
+		o.conn, _, err = o.dialer.Dial(o.url, nil)
 		if err == nil {
 			return
-		} else {
-			logger.Warnf("Websocket.Dial: can't connect to Opendax, reason: %s", err.Error())
 		}
 
+		logger.Warnf("Websocket.Dial: can't connect to Opendax, reason: %s", err.Error())
 		time.Sleep(o.period)
 	}
 }
@@ -122,16 +116,12 @@ func (o *opendax) writeOpendaxMsg(message *protocol.Msg) error {
 		return err
 	}
 
-	o.connMu.RLock()
-	conn := o.conn
-	o.connMu.RUnlock()
-
-	if err := conn.WriteMessage(websocket.TextMessage, byteMsg); err != nil {
+	if err := o.conn.WriteMessage(websocket.TextMessage, byteMsg); err != nil {
 		logger.Warn(err)
 		return err
 	}
 
-	if _, _, err := conn.ReadMessage(); err != nil {
+	if _, _, err := o.conn.ReadMessage(); err != nil {
 		logger.Warn(err)
 		return err
 	}
@@ -140,15 +130,11 @@ func (o *opendax) writeOpendaxMsg(message *protocol.Msg) error {
 
 func (o *opendax) readOpendaxMsg() {
 	for {
-		if !o.isConnected.Load() {
+		if !o.conn.IsConnected() {
 			continue
 		}
 
-		o.connMu.RLock()
-		conn := o.conn
-		o.connMu.RUnlock()
-
-		_, message, err := conn.ReadMessage()
+		_, message, err := o.conn.ReadMessage()
 		if err != nil {
 			logger.Warn("Error reading from connection", err)
 
