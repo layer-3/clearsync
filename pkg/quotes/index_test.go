@@ -51,12 +51,15 @@ func Test_EMA20(t *testing.T) {
 
 func Test_IndexAggregator(t *testing.T) {
 	t.Run("Successful test", func(t *testing.T) {
-		ag := &IndexAggregator{
-			priceCache: NewPriceCache(DefaultWeightsMap),
-			weights:    DefaultWeightsMap,
+		weights := map[DriverType]decimal.Decimal{
+			DriverBinance:   decimal.NewFromInt(3),
+			DriverUniswapV3: decimal.NewFromInt(0),
 		}
-		ag.weights[DriverBinance] = decimal.NewFromInt(3)
-		ag.weights[DriverUniswapV3] = decimal.NewFromInt(0)
+
+		ag := &IndexAggregator{
+			priceCache: NewPriceCache(weights),
+			weights:    weights,
+		}
 
 		var decimalPrices []decimal.Decimal
 		var decimalAmounts []decimal.Decimal
@@ -83,6 +86,84 @@ func Test_IndexAggregator(t *testing.T) {
 		}
 
 		exp := []float64{40000, 40207.54717, 40466.24305, 40530.21098, 40941.96994, 40722.34661, 40788.43173, 40982.49411, 41098.56987, 41104.26589, 41107.33374, 41107.00358, 41277.3339, 41292.39911, 41839.88457, 42682.42649, 43596.62893, 43605.96679, 43637.13205, 43568.57095, 43568.57095}
+		require.Equal(t, exp, result)
+	})
+
+	inputTrades := []TradeEvent{
+		{Source: DriverBinance, Market: "btcusdt", Price: decimal.NewFromInt(41000), Amount: decimal.NewFromFloat(0.3)},
+		{Source: DriverBinance, Market: "btcusdt", Price: decimal.NewFromInt(42500), Amount: decimal.NewFromFloat(0.5)},
+		{Source: DriverUniswapV3, Market: "btcusdt", Price: decimal.NewFromInt(55000), Amount: decimal.NewFromFloat(0.6)},
+		{Source: DriverUniswapV3, Market: "btcusdt", Price: decimal.NewFromInt(50000), Amount: decimal.NewFromFloat(0.4)},
+		{Source: DriverBinance, Market: "btcusdt", Price: decimal.NewFromInt(40000), Amount: decimal.NewFromFloat(1)},
+	}
+	t.Run("README example 1: equal driver weight", func(t *testing.T) {
+		weights := map[DriverType]decimal.Decimal{
+			DriverBinance:   decimal.NewFromInt(2),
+			DriverUniswapV3: decimal.NewFromInt(2),
+		}
+
+		ag := &IndexAggregator{
+			priceCache: NewPriceCache(weights),
+			weights:    weights,
+		}
+
+		var result []float64
+		for _, tr := range inputTrades {
+			res := ag.indexPrice(tr)
+			result = append(result, res.Price.Round(5).InexactFloat64())
+		}
+
+		exp := []float64{41000, 41223.8806, 43500.32787, 43873.32054, 43343.1976}
+		require.Equal(t, exp, result)
+	})
+
+	t.Run("README example 2: zero weight for one of the drivers", func(t *testing.T) {
+		weights := map[DriverType]decimal.Decimal{
+			DriverBinance:   decimal.NewFromInt(3),
+			DriverUniswapV3: decimal.NewFromInt(0),
+		}
+
+		ag := &IndexAggregator{
+			priceCache: NewPriceCache(weights),
+			weights:    weights,
+		}
+
+		var result []float64
+		for _, tr := range inputTrades {
+			res := ag.indexPrice(tr)
+			result = append(result, res.Price.Round(5).InexactFloat64())
+		}
+
+		exp := []float64{41000, 41223.8806, 41223.8806, 41223.8806, 40872.3039}
+		require.Equal(t, exp, result)
+	})
+
+	t.Run("README example 3: trade volume", func(t *testing.T) {
+		weights := map[DriverType]decimal.Decimal{
+			DriverBinance:   decimal.NewFromInt(2),
+			DriverUniswapV3: decimal.NewFromInt(2),
+		}
+
+		ag := &IndexAggregator{
+			priceCache: NewPriceCache(weights),
+			weights:    weights,
+		}
+
+		inputTrades := []TradeEvent{
+			{Source: DriverBinance, Market: "btcusdt", Price: decimal.NewFromInt(40000), Amount: decimal.NewFromFloat(1.0)},
+			{Source: DriverBinance, Market: "btcusdt", Price: decimal.NewFromInt(42000), Amount: decimal.NewFromFloat(1.0)},
+			{Source: DriverBinance, Market: "btcusdt", Price: decimal.NewFromInt(44000), Amount: decimal.NewFromFloat(1.0)},
+			{Source: DriverBinance, Market: "btcusdt", Price: decimal.NewFromInt(46000), Amount: decimal.NewFromFloat(1.0)},
+			{Source: DriverBinance, Market: "btcusdt", Price: decimal.NewFromInt(48000), Amount: decimal.NewFromFloat(10)},
+		}
+
+		var result []float64
+		for _, tr := range inputTrades {
+			res := ag.indexPrice(tr)
+			result = append(result, res.Price.Round(5).InexactFloat64())
+		}
+
+		exp := []float64{40000, 40190.47619, 40553.28798, 41072.02246, 44624.83145}
 		require.Equal(t, exp, result)
 	})
 }

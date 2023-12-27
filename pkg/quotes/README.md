@@ -40,7 +40,7 @@ last_price = price
 
 ## Index Price
 
-Used mainly in risk management for portfolio evaluation, and is aggregated from multiple sources.
+Index Price is used mainly in risk management for portfolio evaluation, and is aggregated from multiple sources.
 
 ```
 index_price = priceWeightEMA/weightEMA
@@ -49,8 +49,49 @@ priceWeightEMA = EMA20((Volume)*(Price)*(DriverWeight/activeWeights))
 
 weightEMA = EMA20(Volume*(DriverWeight/activeWeights))
 ```
+```
+activeWeights is the sum of weight where this market is active (ex: KuCoin:5 + uniswap:50)
+```
 
-*activeWeight* is the sum of weight where this market exists (ex: KuCoin:5 + uniswap:50)
+This formula calculates a weighted EMA price, using trade volume, and active driver weight as additional weights.
+
+EMA20 is calculated based on the last 20 trades. If on the startup there is no initial data, the values of the first trade received are used as the initial EMA.
+
+Let's assume 5 trades have been received:
+
+```
+{source, price, amount}
+{binance, 41000, 0.3}
+{binance, 42500, 0.5}
+{uniswap, 55000, 0.6}
+{uniswap, 50000, 0.4}
+{binance, 40000, 1.0}
+```
+
+In the first example, drivers' weights are equal: ```2``` for the Binance driver, and ```2``` for the Uniswap.
+
+```Weighted EMA price change with each trade: 41000, 41223.8806, 43500.32787, 43873.32054, 43343.1976```
+
+In the second example, the Uniswap driver has ```0``` weight:
+
+```Weighted EMA price change with each trade: 41000, 41223.8806, 41223.8806, 41223.8806, 40872.3039```
+
+In the third example, we are setting the amound of the first 4 trades to ```1```, and the last trade to ```10```, and this time the price increases by 2000 with each trade:
+
+```
+{source, price, amount}
+{binance, 40000, 1.0}
+{binance, 42000, 1.0}
+{binance, 44000, 1.0}
+{binance, 46000, 1.0}
+{binance, 48000, 10.0}
+```
+
+```Weighted EMA price change with each trade: 40000, 40190.47619, 40553.28798, 41072.02246, 44624.83145```
+
+We observe that the trade with 10X amount influenced the final EMA more significantly than all the other trades.
+
+**Described test scenarios can be found in ```index_test.go```.**
 
 *PriceCache*
 
@@ -65,7 +106,7 @@ type PriceCache interface {
 - PriceCache stores previous priceWeight and weight EMAs.
 - It also stores a map of active drivers for a market. By default, no drivers are active. 
   When the cache receives the first price, it makes the source driver active for the market.
-	This approach solves a problem when different drivers may support different markets.
+	This approach solves the problem when different drivers may support different markets.
 
 ## How Uniswap adapter calculates swap price
 
