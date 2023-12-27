@@ -160,9 +160,10 @@ func TestOpendax_Subscribe(t *testing.T) {
 func TestOpendax_Stop(t *testing.T) {
 	t.Parallel()
 
-	client := opendax{conn: &ODAPIMock{}}
-	err := client.Stop()
-	require.NoError(t, err)
+	client := opendax{once: newOnce(), conn: &ODAPIMock{}}
+
+	client.once.Start(func() {}) // unblock STOP action
+	require.NoError(t, client.Stop())
 }
 
 func TestOpendax_connect(t *testing.T) {
@@ -189,7 +190,7 @@ func TestOpendax_connect(t *testing.T) {
 	})
 }
 
-func TestOpendax_receiveOpendaxMsg(t *testing.T) {
+func TestOpendax_listen(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Error reading from connection", func(t *testing.T) {
@@ -207,7 +208,7 @@ func TestOpendax_receiveOpendaxMsg(t *testing.T) {
 			period: 0,
 		}
 
-		go client.readOpendaxMsg()
+		go client.listen()
 
 		// Allow some time for the goroutine to run
 		time.Sleep(1 * time.Second)
@@ -245,11 +246,18 @@ func TestOpendax_receiveOpendaxMsg(t *testing.T) {
 			outbox: outbox,
 		}
 
-		go client.readOpendaxMsg()
+		go client.listen()
 
 		select {
 		case tradeEvent := <-outbox:
 			require.NotNil(t, tradeEvent)
 		}
+	})
+
+	t.Run("Should return if connection is nil", func(t *testing.T) {
+		t.Parallel()
+
+		client := &opendax{conn: nil}
+		require.NotPanics(t, func() { client.listen() })
 	})
 }

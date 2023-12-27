@@ -12,10 +12,10 @@ import (
 var logger = log.Logger("quotes")
 
 type Driver interface {
-	Subscribe(market Market) error
-	Unsubscribe(market Market) error
 	Start() error
 	Stop() error
+	Subscribe(market Market) error
+	Unsubscribe(market Market) error
 }
 
 func NewDriver(config Config, outbox chan<- TradeEvent) (Driver, error) {

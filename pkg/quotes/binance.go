@@ -11,6 +11,7 @@ import (
 )
 
 type binance struct {
+	once         *once
 	streams      sync.Map
 	tradeSampler tradeSampler
 	outbox       chan<- TradeEvent
@@ -19,12 +20,28 @@ type binance struct {
 func newBinance(config Config, outbox chan<- TradeEvent) *binance {
 	gobinance.WebsocketKeepalive = true
 	return &binance{
+		once:         newOnce(),
 		tradeSampler: *newTradeSampler(config.TradeSampler),
 		outbox:       outbox,
 	}
 }
 
 func (b *binance) Start() error {
+	b.once.Start(func() {})
+	return nil
+}
+
+func (b *binance) Stop() error {
+	b.once.Stop(func() {
+		b.streams.Range(func(key, value any) bool {
+			stopCh := value.(chan struct{})
+			stopCh <- struct{}{}
+			close(stopCh)
+			return true
+		})
+
+		b.streams = sync.Map{}
+	})
 	return nil
 }
 
@@ -71,18 +88,6 @@ func (b *binance) Unsubscribe(market Market) error {
 	close(stopCh)
 
 	b.streams.Delete(pair)
-	return nil
-}
-
-func (b *binance) Stop() error {
-	b.streams.Range(func(key, value any) bool {
-		stopCh := value.(chan struct{})
-		stopCh <- struct{}{}
-		close(stopCh)
-		return true
-	})
-
-	b.streams = sync.Map{}
 	return nil
 }
 

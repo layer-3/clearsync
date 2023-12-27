@@ -2,7 +2,6 @@ package quotes
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,6 +14,7 @@ import (
 )
 
 type kraken struct {
+	once        *once
 	conn        wsTransport
 	dialer      wsDialer
 	url         string
@@ -33,6 +33,7 @@ func newKraken(config Config, outbox chan<- TradeEvent) *kraken {
 	}
 
 	return &kraken{
+		once:         newOnce(),
 		url:          url,
 		dialer:       wsDialWrapper{},
 		retryPeriod:  config.ReconnectPeriod,
@@ -42,16 +43,35 @@ func newKraken(config Config, outbox chan<- TradeEvent) *kraken {
 }
 
 func (k *kraken) Start() error {
-	if err := k.getKrakenPairs(); err != nil {
-		return err
-	}
+	var startErr error
+	k.once.Start(func() {
+		if err := k.getKrakenPairs(); err != nil {
+			startErr = err
+			return
+		}
 
-	if err := k.connect(); err != nil {
-		return err
-	}
+		if err := k.connect(); err != nil {
+			startErr = err
+			return
+		}
 
-	k.listen()
-	return nil
+		go k.listen()
+	})
+	return startErr
+}
+
+func (k *kraken) Stop() error {
+	var stopErr error
+	k.once.Stop(func() {
+		conn := k.conn
+		k.conn = nil
+
+		if conn == nil {
+			return
+		}
+		stopErr = conn.Close()
+	})
+	return stopErr
 }
 
 type subscribeMessage struct {
@@ -115,16 +135,6 @@ func (k *kraken) Unsubscribe(market Market) error {
 	return nil
 }
 
-func (k *kraken) Stop() error {
-	conn := k.conn
-	k.conn = nil
-
-	if conn == nil {
-		return nil
-	}
-	return conn.Close()
-}
-
 func (k *kraken) writeConn(msg subscribeMessage) error {
 	payload, err := json.Marshal(msg)
 	if err != nil {
@@ -141,10 +151,6 @@ func (k *kraken) writeConn(msg subscribeMessage) error {
 }
 
 func (k *kraken) connect() error {
-	if k.conn != nil && k.conn.IsConnected() {
-		return errors.New("already connected")
-	}
-
 	for {
 		var err error
 		k.conn, _, err = k.dialer.Dial(k.url, nil)
@@ -195,7 +201,10 @@ type krakenResult struct {
 
 func (k *kraken) listen() {
 	for {
-		if k.conn == nil || !k.conn.IsConnected() {
+		if k.conn == nil {
+			return
+		}
+		if !k.conn.IsConnected() {
 			<-time.After(k.retryPeriod)
 			continue
 		}
@@ -203,6 +212,18 @@ func (k *kraken) listen() {
 		_, rawMsg, err := k.conn.ReadMessage()
 		if err != nil {
 			logger.Errorf("error reading Kraken message: %v", err)
+
+			k.connect()
+			k.streams.Range(func(m, value any) bool {
+				market := m.(Market)
+				if err := k.Subscribe(market); err != nil {
+					logger.Warnf("Error subscribing to market %s: %s", market, err)
+					return false
+				}
+				return true
+			})
+
+			continue
 		}
 
 		tradeEvents, err := k.parseMessage(rawMsg)

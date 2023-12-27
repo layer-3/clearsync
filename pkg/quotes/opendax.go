@@ -14,6 +14,7 @@ import (
 )
 
 type opendax struct {
+	once   *once
 	conn   wsTransport
 	dialer wsDialer
 	url    string
@@ -31,12 +32,35 @@ func newOpendax(config Config, outbox chan<- TradeEvent) *opendax {
 	}
 
 	return &opendax{
+		once:   newOnce(),
 		url:    url,
 		outbox: outbox,
 		period: config.ReconnectPeriod * time.Second,
 		reqID:  atomic.Uint64{},
 		dialer: wsDialWrapper{},
 	}
+}
+
+func (o *opendax) Start() error {
+	o.once.Start(func() {
+		o.connect()
+		go o.listen()
+	})
+	return nil
+}
+
+func (o *opendax) Stop() error {
+	var stopErr error
+	o.once.Stop(func() {
+		conn := o.conn
+		o.conn = nil
+
+		if conn == nil {
+			return
+		}
+		stopErr = conn.Close()
+	})
+	return stopErr
 }
 
 func (o *opendax) Subscribe(market Market) error {
@@ -49,7 +73,7 @@ func (o *opendax) Subscribe(market Market) error {
 	message := protocol.NewSubscribeMessage(o.reqID.Load(), resource)
 	o.reqID.Add(1)
 
-	err := o.writeOpendaxMsg(message)
+	err := o.writeConn(message)
 	if err != nil {
 		return err
 	}
@@ -68,31 +92,12 @@ func (o *opendax) Unsubscribe(market Market) error {
 	message := protocol.NewUnsubscribeMessage(o.reqID.Load(), resource)
 	o.reqID.Add(1)
 
-	err := o.writeOpendaxMsg(message)
+	err := o.writeConn(message)
 	if err != nil {
 		return err
 	}
 
 	o.streams.Delete(market)
-	return nil
-}
-
-func (o *opendax) Start() error {
-	o.connect()
-	go o.readOpendaxMsg()
-	return nil
-}
-
-func (o *opendax) Stop() error {
-	if o.conn == nil {
-		return nil
-	}
-
-	if err := o.conn.Close(); err != nil {
-		return err
-	}
-
-	o.conn = nil
 	return nil
 }
 
@@ -109,7 +114,7 @@ func (o *opendax) connect() {
 	}
 }
 
-func (o *opendax) writeOpendaxMsg(message *protocol.Msg) error {
+func (o *opendax) writeConn(message *protocol.Msg) error {
 	byteMsg, err := message.Encode()
 	if err != nil {
 		logger.Warn(err)
@@ -128,8 +133,11 @@ func (o *opendax) writeOpendaxMsg(message *protocol.Msg) error {
 	return nil
 }
 
-func (o *opendax) readOpendaxMsg() {
+func (o *opendax) listen() {
 	for {
+		if o.conn == nil {
+			return
+		}
 		if !o.conn.IsConnected() {
 			continue
 		}

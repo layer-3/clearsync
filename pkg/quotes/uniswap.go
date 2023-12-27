@@ -15,6 +15,7 @@ import (
 )
 
 type uniswapV3 struct {
+	once       *once
 	url        string
 	outbox     chan<- TradeEvent
 	windowSize time.Duration
@@ -28,10 +29,30 @@ func newUniswapV3(config Config, outbox chan<- TradeEvent) *uniswapV3 {
 	}
 
 	return &uniswapV3{
+		once:       newOnce(),
 		url:        url,
 		outbox:     outbox,
 		windowSize: 2 * time.Second,
 	}
+}
+
+func (u *uniswapV3) Start() error {
+	u.once.Start(func() {})
+	return nil
+}
+
+func (u *uniswapV3) Stop() error {
+	u.once.Stop(func() {
+		u.streams.Range(func(market, stream any) bool {
+			stopCh := stream.(chan struct{})
+			stopCh <- struct{}{}
+			close(stopCh)
+			return true
+		})
+
+		u.streams = sync.Map{} // delete all stopped streams
+	})
+	return nil
 }
 
 func (u *uniswapV3) Subscribe(market Market) error {
@@ -108,22 +129,6 @@ func (u *uniswapV3) Unsubscribe(market Market) error {
 	close(stopCh)
 
 	u.streams.Delete(market)
-	return nil
-}
-
-func (u *uniswapV3) Start() error {
-	return nil
-}
-
-func (u *uniswapV3) Stop() error {
-	u.streams.Range(func(market, stream any) bool {
-		stopCh := stream.(chan struct{})
-		stopCh <- struct{}{}
-		close(stopCh)
-		return true
-	})
-
-	u.streams = sync.Map{} // delete all stopped streams
 	return nil
 }
 
