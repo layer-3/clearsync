@@ -141,12 +141,6 @@ func TestOpendax_parseOpendaxMsg(t *testing.T) {
 	})
 }
 
-func TestOpendax_marketSubscribe(t *testing.T) {
-	opendax := &opendax{conn: &ODAPIMock{}}
-	markets := []Market{{BaseUnit: "btc", QuoteUnit: "usdt"}}
-	opendax.marketSubscribe(markets)
-}
-
 func TestOpendax_Subscribe(t *testing.T) {
 	t.Run("Successful test", func(t *testing.T) {
 		client := &opendax{
@@ -205,18 +199,7 @@ func TestOpendax_Connect(t *testing.T) {
 	})
 }
 
-func TestOpendax_Start(t *testing.T) {
-	t.Run("No active markets error", func(t *testing.T) {
-		client := &opendax{}
-		err := client.Start([]Market{})
-		require.Error(t, err)
-	})
-}
-
 func TestOpendax_receiveOpendaxMsg(t *testing.T) {
-	mock := ODMarketsMock{}
-	activeMarkets, _ := mock.GetActive()
-
 	t.Run("Error reading from connection", func(t *testing.T) {
 		dialer := ODDialerFailMock{connRetryAttempted: make(chan bool, 1)}
 		client := &opendax{
@@ -226,20 +209,14 @@ func TestOpendax_receiveOpendaxMsg(t *testing.T) {
 		}
 		client.isConnected.Store(true)
 
-		go func() {
-			client.readOpendaxMsg(activeMarkets)
-		}()
+		go client.readOpendaxMsg()
 
 		// the function will try to reestablish the connection,
 		// so the number of retries can be measured
-		for {
-			select {
-			case retryAttempted := <-dialer.connRetryAttempted:
-				require.True(t, retryAttempted)
-				return
-			default:
-				continue
-			}
+		select {
+		case retryAttempted := <-dialer.connRetryAttempted:
+			require.True(t, retryAttempted)
+			return
 		}
 	})
 
@@ -265,9 +242,7 @@ func TestOpendax_receiveOpendaxMsg(t *testing.T) {
 		}
 		client.isConnected.Store(true)
 
-		go func() {
-			client.readOpendaxMsg(activeMarkets)
-		}()
+		go client.readOpendaxMsg()
 
 		for {
 			select {
@@ -275,7 +250,6 @@ func TestOpendax_receiveOpendaxMsg(t *testing.T) {
 				require.NotNil(t, tradeEvent)
 				return
 			default:
-				continue
 			}
 		}
 	})

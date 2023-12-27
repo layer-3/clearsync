@@ -1,7 +1,6 @@
 package quotes
 
 import (
-	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -26,17 +25,7 @@ func newBitfaker(config Config, outbox chan<- TradeEvent) *bitfaker {
 	}
 }
 
-func (b *bitfaker) Start(markets []Market) error {
-	if len(markets) == 0 {
-		return errors.New("no markets specified")
-	}
-
-	for _, m := range markets {
-		if err := b.Subscribe(m); err != nil {
-			return err
-		}
-	}
-
+func (b *bitfaker) Start() error {
 	go func() {
 		for {
 			b.mu.RLock()

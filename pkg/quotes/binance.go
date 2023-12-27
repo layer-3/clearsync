@@ -1,7 +1,6 @@
 package quotes
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -25,21 +24,7 @@ func newBinance(config Config, outbox chan<- TradeEvent) *binance {
 	}
 }
 
-func (b *binance) Start(markets []Market) error {
-	if len(markets) == 0 {
-		return errors.New("no markets specified")
-	}
-
-	for _, m := range markets {
-		m := m
-		go func() {
-			if err := b.Subscribe(m); err != nil {
-				symbol := m.BaseUnit + m.QuoteUnit
-				logger.Warnf("failed to subscribe to %s market: %v", symbol, err)
-			}
-		}()
-	}
-
+func (b *binance) Start() error {
 	return nil
 }
 
@@ -60,15 +45,12 @@ func (b *binance) Subscribe(market Market) error {
 	b.streams.Store(pair, stopCh)
 
 	go func() {
-		for {
-			select {
-			case <-doneCh:
-				for {
-					if err := b.Subscribe(market); err == nil {
-						break
-					}
+		select {
+		case <-doneCh:
+			for {
+				if err := b.Subscribe(market); err == nil {
+					return
 				}
-				return
 			}
 		}
 	}()

@@ -79,14 +79,9 @@ func (o *opendax) Unsubscribe(market Market) error {
 	return nil
 }
 
-func (o *opendax) Start(markets []Market) error {
-	if len(markets) == 0 {
-		return errors.New("no markets specified")
-	}
-
+func (o *opendax) Start() error {
 	o.connect()
-	o.marketSubscribe(markets)
-	o.readOpendaxMsg(markets)
+	go o.readOpendaxMsg()
 	return nil
 }
 
@@ -143,17 +138,7 @@ func (o *opendax) writeOpendaxMsg(message *protocol.Msg) error {
 	return nil
 }
 
-func (o *opendax) marketSubscribe(markets []Market) {
-	for _, m := range markets {
-		symbol := m.BaseUnit + m.QuoteUnit
-		if err := o.Subscribe(m); err != nil {
-			logger.Infof("market %s doesn't exist in Opendax", symbol)
-		}
-		logger.Infof("quotes service connected to Opendax %s market", symbol)
-	}
-}
-
-func (o *opendax) readOpendaxMsg(markets []Market) {
+func (o *opendax) readOpendaxMsg() {
 	for {
 		if !o.isConnected.Load() {
 			continue
@@ -166,8 +151,17 @@ func (o *opendax) readOpendaxMsg(markets []Market) {
 		_, message, err := conn.ReadMessage()
 		if err != nil {
 			logger.Warn("Error reading from connection", err)
+
 			o.connect()
-			o.marketSubscribe(markets)
+			o.streams.Range(func(m, value any) bool {
+				market := m.(Market)
+				if err := o.Subscribe(market); err != nil {
+					logger.Warnf("Error subscribing to market %s: %s", market, err)
+					return false
+				}
+				return true
+			})
+
 			continue
 		}
 

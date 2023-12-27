@@ -23,9 +23,10 @@ type kraken struct {
 	retryPeriod time.Duration
 	isConnected atomic.Bool
 
-	streams      sync.Map
-	tradeSampler tradeSampler
-	outbox       chan<- TradeEvent
+	availablePairs sync.Map
+	streams        sync.Map
+	tradeSampler   tradeSampler
+	outbox         chan<- TradeEvent
 }
 
 func newKraken(config Config, outbox chan<- TradeEvent) *kraken {
@@ -43,16 +44,12 @@ func newKraken(config Config, outbox chan<- TradeEvent) *kraken {
 	}
 }
 
-func (k *kraken) Start(markets []Market) error {
-	if len(markets) == 0 {
-		return errors.New("no markets specified")
-	}
-
-	if err := k.connect(); err != nil {
+func (k *kraken) Start() error {
+	if err := k.getKrakenPairs(); err != nil {
 		return err
 	}
 
-	if err := k.subscribe(markets); err != nil {
+	if err := k.connect(); err != nil {
 		return err
 	}
 
@@ -75,7 +72,11 @@ func (k *kraken) Subscribe(market Market) error {
 	if _, ok := k.streams.Load(market); ok {
 		return fmt.Errorf("market %s already subscribed", market)
 	}
-	k.streams.Store(market, struct{}{})
+
+	symbol := fmt.Sprintf("%s%s", strings.ToUpper(market.BaseUnit), strings.ToUpper(market.QuoteUnit))
+	if _, ok := k.availablePairs.Load(symbol); !ok {
+		return fmt.Errorf("market %s doesn't exist in Kraken", symbol)
+	}
 
 	pair := fmt.Sprintf("%s/%s", strings.ToUpper(market.BaseUnit), strings.ToUpper(market.QuoteUnit))
 	subMsg := subscribeMessage{
@@ -90,6 +91,8 @@ func (k *kraken) Subscribe(market Market) error {
 	if err := k.writeConn(subMsg); err != nil {
 		return fmt.Errorf("market %s: failed to subscribe: %v", market, err)
 	}
+
+	k.streams.Store(market, struct{}{})
 	return nil
 }
 
@@ -166,31 +169,6 @@ func (k *kraken) connect() error {
 		k.isConnected.Store(true)
 		return nil
 	}
-}
-
-func (k *kraken) subscribe(markets []Market) error {
-	availablePairs, err := getKrakenPairs()
-	if err != nil {
-		return err
-	}
-
-	for _, m := range markets {
-		symbol := fmt.Sprintf("%s%s", strings.ToUpper(m.BaseUnit), strings.ToUpper(m.QuoteUnit))
-		if pair, ok := availablePairs[symbol]; !ok || pair.Status != "online" {
-			logger.Warnf("market %s doesn't exist in Kraken", symbol)
-			continue
-		}
-
-		if err := k.Subscribe(m); err != nil {
-			logger.Warnf("failed to subscribe to Kraken market %s: %v", symbol, err)
-			continue
-		}
-
-		logger.Infof("quotes service connected to Kraken %s market", symbol)
-		<-time.After(25 * time.Millisecond) // to cope with rate limits
-	}
-
-	return nil
 }
 
 type krakenEvent[T krakenStatus | krakenTrade] struct {
@@ -322,34 +300,51 @@ type krakenPair struct {
 	Status            string        `json:"status"`
 }
 
-func getKrakenPairs() (map[string]krakenPair, error) {
+func (k *kraken) getKrakenPairs() error {
+	// Fetch pairs
+
 	req, err := http.NewRequest(http.MethodGet, "https://api.kraken.com/0/public/AssetPairs", nil)
 	if err != nil {
-		return nil, fmt.Errorf("error creating HTTP request: %w", err)
+		return fmt.Errorf("error creating HTTP request: %w", err)
 	}
 
 	c := &http.Client{}
 	resp, err := c.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("error making HTTP request: %w", err)
+		return fmt.Errorf("error making HTTP request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		if err := Body.Close(); err != nil {
+			logger.Errorf("error closing HTTP response body: %v", err)
+		}
+	}(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("request failed with status code: %d", resp.StatusCode)
+		return fmt.Errorf("request failed with status code: %d", resp.StatusCode)
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	var pairs krakenAssetPairs
 	if err := json.Unmarshal(body, &pairs); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal Kraken pairs response: %v", err)
+		return fmt.Errorf("failed to unmarshal Kraken pairs response: %v", err)
 	}
 
-	return pairs.Result, nil
+	// Convert pairs to map
+
+	for _, pair := range pairs.Result {
+		if pair.Status != "online" {
+			symbol := fmt.Sprintf("%s%s", strings.ToUpper(pair.Base), strings.ToUpper(pair.Quote))
+			logger.Warnf("market %s doesn't exist in Kraken", symbol)
+			continue
+		}
+		k.availablePairs.Store(pair.Altname, pair)
+	}
+
+	return nil
 }
 
 func buildKrakenEvents(trades []krakenTrade) []TradeEvent {

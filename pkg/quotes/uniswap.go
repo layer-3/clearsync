@@ -3,7 +3,6 @@ package quotes
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -61,6 +60,7 @@ func (u *uniswapV3) Subscribe(market Market) error {
 				case <-stopCh:
 					logger.Infof("market %s is stopped", symbol)
 					return
+				default:
 				}
 			}
 
@@ -89,6 +89,7 @@ func (u *uniswapV3) Subscribe(market Market) error {
 						CreatedAt: createdAt,
 					}
 				}
+			default:
 			}
 		}
 	}()
@@ -110,22 +111,7 @@ func (u *uniswapV3) Unsubscribe(market Market) error {
 	return nil
 }
 
-func (u *uniswapV3) Start(markets []Market) error {
-	if len(markets) == 0 {
-		return errors.New("no markets specified")
-	}
-
-	for _, m := range markets {
-		m := m
-		go func() {
-			err := u.Subscribe(m)
-			if err != nil {
-				symbol := m.BaseUnit + m.QuoteUnit
-				logger.Warnf("failed to subscribe to market %s: %s", symbol, err)
-			}
-		}()
-	}
-
+func (u *uniswapV3) Start() error {
 	return nil
 }
 
@@ -208,8 +194,13 @@ func runGraphqlRequest[T uniswapPools | uniswapSwaps](url, query string) (*T, er
 	if err != nil {
 		return nil, fmt.Errorf("failed to request data: %w", err)
 	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			logger.Errorf("error closing HTTP response body: %v", err)
+		}
+	}(resp.Body)
 
-	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response: %w", err)

@@ -107,8 +107,7 @@ func TestBitfaker_Start(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func() {
-		err := client.Start([]Market{market})
-		require.NoError(t, err)
+		require.NoError(t, client.Start())
 		wg.Done()
 	}()
 	go func() {
