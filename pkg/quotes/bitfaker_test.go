@@ -11,7 +11,11 @@ import (
 )
 
 func TestBitfaker_Subscribe(t *testing.T) {
+	t.Parallel()
+
 	t.Run("Single market", func(t *testing.T) {
+		t.Parallel()
+
 		ch := make(chan TradeEvent, 16)
 		client := bitfaker{outbox: ch}
 
@@ -24,6 +28,8 @@ func TestBitfaker_Subscribe(t *testing.T) {
 	})
 
 	t.Run("Multiple markets", func(t *testing.T) {
+		t.Parallel()
+
 		outbox := make(chan TradeEvent, 16)
 		client := bitfaker{outbox: outbox}
 
@@ -40,6 +46,8 @@ func TestBitfaker_Subscribe(t *testing.T) {
 	})
 
 	t.Run("Subscribe to a market already subscribed to", func(t *testing.T) {
+		t.Parallel()
+
 		ch := make(chan TradeEvent, 16)
 		client := bitfaker{outbox: ch}
 
@@ -53,7 +61,11 @@ func TestBitfaker_Subscribe(t *testing.T) {
 }
 
 func TestBitfaker_Unsubscribe(t *testing.T) {
+	t.Parallel()
+
 	t.Run("Unsubscribe from multiple markets", func(t *testing.T) {
+		t.Parallel()
+
 		ch := make(chan TradeEvent, 16)
 		client := bitfaker{outbox: ch}
 
@@ -70,6 +82,8 @@ func TestBitfaker_Unsubscribe(t *testing.T) {
 	})
 
 	t.Run("Unsubscribe from a market not subscribed to", func(t *testing.T) {
+		t.Parallel()
+
 		ch := make(chan TradeEvent, 16)
 		client := bitfaker{outbox: ch}
 
@@ -80,6 +94,8 @@ func TestBitfaker_Unsubscribe(t *testing.T) {
 	})
 
 	t.Run("No effect on other subscriptions after unsubscribing", func(t *testing.T) {
+		t.Parallel()
+
 		ch := make(chan TradeEvent, 16)
 		client := bitfaker{outbox: ch}
 
@@ -96,6 +112,8 @@ func TestBitfaker_Unsubscribe(t *testing.T) {
 }
 
 func TestBitfaker_Start(t *testing.T) {
+	t.Parallel()
+
 	outbox := make(chan TradeEvent, 1)
 	tradeSampler := *newTradeSampler(TradeSamplerConfig{
 		Enabled:           false,
@@ -121,6 +139,8 @@ func TestBitfaker_Start(t *testing.T) {
 }
 
 func TestCreateTradeEvent(t *testing.T) {
+	t.Parallel()
+
 	outbox := make(chan TradeEvent)
 	client := bitfaker{outbox: outbox}
 

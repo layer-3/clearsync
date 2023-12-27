@@ -70,7 +70,11 @@ func (c *ODAPIMock) Close() error {
 }
 
 func TestOpendax_parseOpendaxMsg(t *testing.T) {
+	t.Parallel()
+
 	t.Run("Successful test", func(t *testing.T) {
+		t.Parallel()
+
 		message := protocol.Msg{
 			ReqID:  1,
 			Type:   3,
@@ -97,6 +101,8 @@ func TestOpendax_parseOpendaxMsg(t *testing.T) {
 	})
 
 	t.Run("invalid message", func(t *testing.T) {
+		t.Parallel()
+
 		trade := ""
 		byteMsg, err := json.Marshal(trade)
 		require.NoError(t, err)
@@ -106,6 +112,8 @@ func TestOpendax_parseOpendaxMsg(t *testing.T) {
 	})
 
 	t.Run("invalid message args", func(t *testing.T) {
+		t.Parallel()
+
 		trade := protocol.Msg{
 			ReqID:  1,
 			Type:   3,
@@ -121,7 +129,11 @@ func TestOpendax_parseOpendaxMsg(t *testing.T) {
 }
 
 func TestOpendax_Subscribe(t *testing.T) {
+	t.Parallel()
+
 	t.Run("Successful test", func(t *testing.T) {
+		t.Parallel()
+
 		client := &opendax{
 			conn: &ODAPIMock{
 				messages:    []ODAPIMockMsg{{}},
@@ -134,6 +146,8 @@ func TestOpendax_Subscribe(t *testing.T) {
 	})
 
 	t.Run("Fail test", func(t *testing.T) {
+		t.Parallel()
+
 		client := &opendax{
 			conn: &ODAPIMock{isConnected: false},
 		}
@@ -144,13 +158,19 @@ func TestOpendax_Subscribe(t *testing.T) {
 }
 
 func TestOpendax_Stop(t *testing.T) {
+	t.Parallel()
+
 	client := opendax{conn: &ODAPIMock{}}
 	err := client.Stop()
 	require.NoError(t, err)
 }
 
 func TestOpendax_connect(t *testing.T) {
+	t.Parallel()
+
 	t.Run("Successful case", func(t *testing.T) {
+		t.Parallel()
+
 		connMock := &ODDialerSuccessMock{
 			reconnectAttempted: make(chan bool, 1),
 			messages:           []ODAPIMockMsg{{}},
@@ -170,7 +190,11 @@ func TestOpendax_connect(t *testing.T) {
 }
 
 func TestOpendax_receiveOpendaxMsg(t *testing.T) {
+	t.Parallel()
+
 	t.Run("Error reading from connection", func(t *testing.T) {
+		t.Parallel()
+
 		// Setup an error message
 		outbox := make(chan TradeEvent, 1)
 		client := &opendax{
@@ -198,6 +222,8 @@ func TestOpendax_receiveOpendaxMsg(t *testing.T) {
 	})
 
 	t.Run("Successful test", func(t *testing.T) {
+		t.Parallel()
+
 		update := protocol.Msg{
 			ReqID:  1,
 			Type:   3,

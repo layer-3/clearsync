@@ -7,6 +7,8 @@ import (
 )
 
 func TestEncoding(t *testing.T) {
+	t.Parallel()
+
 	msg := Msg{
 		Type:   Request,
 		ReqID:  42,
@@ -21,6 +23,8 @@ func TestEncoding(t *testing.T) {
 }
 
 func TestEncodingEvent(t *testing.T) {
+	t.Parallel()
+
 	msg := Msg{
 		Type:   EventPrivate,
 		ReqID:  42,

@@ -7,22 +7,25 @@ import (
 )
 
 func TestArgsIterator(t *testing.T) {
-	args := []interface{}{
-		float64(1),
-		"123",
-		float64(3),
-		"145",
-		float64(3),
-		"145",
-		"56.89",
-		"hello",
-		float64(0.65),
-		true,
-		12345.565656,
-		[]interface{}{1, 2, "hello"},
-	}
+	t.Parallel()
 
 	t.Run("no errors", func(t *testing.T) {
+		t.Parallel()
+
+		args := []interface{}{
+			float64(1),
+			"123",
+			float64(3),
+			"145",
+			float64(3),
+			"145",
+			"56.89",
+			"hello",
+			float64(0.65),
+			true,
+			12345.565656,
+			[]interface{}{1, 2, "hello"},
+		}
 		it := NewArgIterator(args)
 
 		uintv := it.NextUint64()
@@ -78,14 +81,16 @@ func TestArgsIterator(t *testing.T) {
 	})
 
 	t.Run("no errors", func(t *testing.T) {
+		t.Parallel()
+
 		args := []interface{}{
 			"123",
 			"56.89",
 			"hello",
 		}
-		res := []string{}
-
 		it := NewArgIterator(args)
+
+		var res []string
 		for it.More() {
 			res = append(res, it.NextString())
 		}
