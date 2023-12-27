@@ -19,9 +19,7 @@ type uniswapV3 struct {
 	url        string
 	outbox     chan<- TradeEvent
 	windowSize time.Duration
-
-	mu      sync.Mutex
-	streams map[Market]chan struct{}
+	streams    sync.Map
 }
 
 func newUniswapV3(config Config, outbox chan<- TradeEvent) *uniswapV3 {
@@ -34,13 +32,16 @@ func newUniswapV3(config Config, outbox chan<- TradeEvent) *uniswapV3 {
 		url:        url,
 		outbox:     outbox,
 		windowSize: 2 * time.Second,
-
-		streams: make(map[Market]chan struct{}),
 	}
 }
 
 func (u *uniswapV3) Subscribe(market Market) error {
 	symbol := market.BaseUnit + market.QuoteUnit
+
+	if _, ok := u.streams.Load(market); ok {
+		return fmt.Errorf("market %s already subscribed", symbol)
+	}
+
 	exists, err := u.isMarketAvailable(market)
 	if err != nil {
 		return fmt.Errorf("failed to check if market %s exists: %s", symbol, err)
@@ -49,17 +50,21 @@ func (u *uniswapV3) Subscribe(market Market) error {
 		return fmt.Errorf("market %s does not exist", symbol)
 	}
 
-	u.mu.Lock()
-	defer u.mu.Unlock()
-	u.streams[market] = make(chan struct{}, 1)
+	u.streams.Store(market, make(chan struct{}, 1))
 
 	go func() {
 		from := time.Now()
 		for {
+			if stream, ok := u.streams.Load(market); ok {
+				stopCh := stream.(chan struct{})
+				select {
+				case <-stopCh:
+					logger.Infof("market %s is stopped", symbol)
+					return
+				}
+			}
+
 			select {
-			case <-u.streams[market]:
-				logger.Infof("market %s is stopped", symbol)
-				return
 			case <-time.After(u.windowSize):
 				to := from.Add(u.windowSize)
 				swaps, err := u.fetchSwaps(market, from, to)
@@ -92,17 +97,16 @@ func (u *uniswapV3) Subscribe(market Market) error {
 }
 
 func (u *uniswapV3) Unsubscribe(market Market) error {
-	u.mu.Lock()
-	defer u.mu.Unlock()
-
-	stopCh, ok := u.streams[market]
+	stream, ok := u.streams.Load(market)
 	if !ok {
 		return fmt.Errorf("market %s not found", market)
 	}
 
+	stopCh := stream.(chan struct{})
 	stopCh <- struct{}{}
 	close(stopCh)
-	delete(u.streams, market)
+
+	u.streams.Delete(market)
 	return nil
 }
 
@@ -126,15 +130,14 @@ func (u *uniswapV3) Start(markets []Market) error {
 }
 
 func (u *uniswapV3) Stop() error {
-	u.mu.Lock()
-	defer u.mu.Unlock()
-
-	for _, stopCh := range u.streams {
+	u.streams.Range(func(market, stream any) bool {
+		stopCh := stream.(chan struct{})
 		stopCh <- struct{}{}
 		close(stopCh)
-	}
+		return true
+	})
 
-	u.streams = make(map[Market]chan struct{}) // delete all stopped streams
+	u.streams = sync.Map{} // delete all stopped streams
 	return nil
 }
 

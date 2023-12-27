@@ -14,7 +14,7 @@ type bitfaker struct {
 	outbox       chan<- TradeEvent
 	markets      []Market
 	period       time.Duration
-	tradeSampler *tradeSampler
+	tradeSampler tradeSampler
 }
 
 func newBitfaker(config Config, outbox chan<- TradeEvent) *bitfaker {
@@ -22,7 +22,7 @@ func newBitfaker(config Config, outbox chan<- TradeEvent) *bitfaker {
 		outbox:       outbox,
 		markets:      make([]Market, 0),
 		period:       5 * time.Second,
-		tradeSampler: newTradeSampler(config.TradeSampler),
+		tradeSampler: *newTradeSampler(config.TradeSampler),
 	}
 }
 
@@ -53,6 +53,12 @@ func (b *bitfaker) Start(markets []Market) error {
 func (b *bitfaker) Subscribe(market Market) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
+
+	for _, m := range b.markets {
+		if m == market {
+			return fmt.Errorf("market %s already subscribed", market)
+		}
+	}
 
 	b.markets = append(b.markets, market)
 	return nil

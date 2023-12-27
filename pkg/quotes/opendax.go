@@ -14,14 +14,16 @@ import (
 )
 
 type opendax struct {
+	connMu      sync.RWMutex
 	conn        wsTransport
 	dialer      wsDialer
+	isConnected atomic.Bool
 	url         string
-	outbox      chan<- TradeEvent
-	mu          sync.RWMutex
-	period      time.Duration
-	reqID       atomic.Uint64
-	isConnected bool
+
+	outbox  chan<- TradeEvent
+	period  time.Duration
+	reqID   atomic.Uint64
+	streams sync.Map
 }
 
 func newOpendax(config Config, outbox chan<- TradeEvent) *opendax {
@@ -39,13 +41,74 @@ func newOpendax(config Config, outbox chan<- TradeEvent) *opendax {
 	}
 }
 
-func (o *opendax) Connect() {
+func (o *opendax) Subscribe(market Market) error {
+	if _, ok := o.streams.Load(market); ok {
+		return fmt.Errorf("market %s already subscribed", market)
+	}
+
+	// Opendax resource [market].[trades]
+	resource := fmt.Sprintf("%s%s.trades", market.BaseUnit, market.QuoteUnit)
+	message := protocol.NewSubscribeMessage(o.reqID.Load(), resource)
+	o.reqID.Add(1)
+
+	err := o.writeOpendaxMsg(message)
+	if err != nil {
+		return err
+	}
+
+	o.streams.Store(market, struct{}{})
+	return nil
+}
+
+func (o *opendax) Unsubscribe(market Market) error {
+	if _, ok := o.streams.Load(market); !ok {
+		return fmt.Errorf("market %s not subscribed", market)
+	}
+
+	// Opendax resource [market].[trades]
+	resource := fmt.Sprintf("%s%s.trades", market.BaseUnit, market.QuoteUnit)
+	message := protocol.NewUnsubscribeMessage(o.reqID.Load(), resource)
+	o.reqID.Add(1)
+
+	err := o.writeOpendaxMsg(message)
+	if err != nil {
+		return err
+	}
+
+	o.streams.Delete(market)
+	return nil
+}
+
+func (o *opendax) Start(markets []Market) error {
+	if len(markets) == 0 {
+		return errors.New("no markets specified")
+	}
+
+	o.connect()
+	o.marketSubscribe(markets)
+	o.readOpendaxMsg(markets)
+	return nil
+}
+
+func (o *opendax) Stop() error {
+	o.connMu.Lock()
+	defer o.connMu.Unlock()
+
+	if o.conn != nil {
+		o.conn = nil
+	}
+
+	o.isConnected.Store(false)
+	return nil
+}
+
+func (o *opendax) connect() {
 	for {
 		wsConn, _, err := o.dialer.Dial(o.url, nil)
-		o.mu.Lock()
+		o.connMu.Lock()
 		o.conn = wsConn
-		o.isConnected = err == nil
-		o.mu.Unlock()
+		o.connMu.Unlock()
+		o.isConnected.Store(err == nil)
 
 		if err == nil {
 			return
@@ -57,46 +120,6 @@ func (o *opendax) Connect() {
 	}
 }
 
-func (o *opendax) Subscribe(market Market) error {
-	// Opendax resource [market].[trades]
-	resource := fmt.Sprintf("%s%s.trades", market.BaseUnit, market.QuoteUnit)
-	message := protocol.NewSubscribeMessage(o.reqID.Load(), resource)
-	o.reqID.Add(1)
-
-	return o.writeOpendaxMsg(message)
-}
-
-func (o *opendax) Unsubscribe(market Market) error {
-	// Opendax resource [market].[trades]
-	resource := fmt.Sprintf("%s%s.trades", market.BaseUnit, market.QuoteUnit)
-	message := protocol.NewUnsubscribeMessage(o.reqID.Load(), resource)
-	o.reqID.Add(1)
-
-	return o.writeOpendaxMsg(message)
-}
-
-func (o *opendax) Start(markets []Market) error {
-	if len(markets) == 0 {
-		return errors.New("no markets specified")
-	}
-
-	o.Connect()
-	o.marketSubscribe(markets)
-	o.receiveOpendaxMsg(markets)
-	return nil
-}
-
-func (o *opendax) Stop() error {
-	o.mu.Lock()
-	if o.conn != nil {
-		o.conn = nil
-	}
-
-	o.isConnected = false
-	o.mu.Unlock()
-	return nil
-}
-
 func (o *opendax) writeOpendaxMsg(message *protocol.Msg) error {
 	byteMsg, err := message.Encode()
 	if err != nil {
@@ -104,12 +127,16 @@ func (o *opendax) writeOpendaxMsg(message *protocol.Msg) error {
 		return err
 	}
 
-	if err := o.conn.WriteMessage(websocket.TextMessage, byteMsg); err != nil {
+	o.connMu.RLock()
+	conn := o.conn
+	o.connMu.RUnlock()
+
+	if err := conn.WriteMessage(websocket.TextMessage, byteMsg); err != nil {
 		logger.Warn(err)
 		return err
 	}
 
-	if _, _, err := o.conn.ReadMessage(); err != nil {
+	if _, _, err := conn.ReadMessage(); err != nil {
 		logger.Warn(err)
 		return err
 	}
@@ -126,29 +153,35 @@ func (o *opendax) marketSubscribe(markets []Market) {
 	}
 }
 
-func (o *opendax) receiveOpendaxMsg(markets []Market) {
+func (o *opendax) readOpendaxMsg(markets []Market) {
 	for {
-		if o.isConnected {
-			_, message, err := o.conn.ReadMessage()
-			if err != nil {
-				logger.Warn("Error reading from connection", err)
-				o.Connect()
-				o.marketSubscribe(markets)
-				continue
-			}
-
-			trEvent, err := parseOpendaxMsg(message)
-			if err != nil {
-				logger.Warn(err)
-				continue
-			}
-
-			// Skip system messages
-			if trEvent.Market == "" || trEvent.Price == decimal.Zero {
-				continue
-			}
-			o.outbox <- *trEvent
+		if !o.isConnected.Load() {
+			continue
 		}
+
+		o.connMu.RLock()
+		conn := o.conn
+		o.connMu.RUnlock()
+
+		_, message, err := conn.ReadMessage()
+		if err != nil {
+			logger.Warn("Error reading from connection", err)
+			o.connect()
+			o.marketSubscribe(markets)
+			continue
+		}
+
+		trEvent, err := parseOpendaxMsg(message)
+		if err != nil {
+			logger.Warn(err)
+			continue
+		}
+
+		// Skip system messages
+		if trEvent.Market == "" || trEvent.Price == decimal.Zero {
+			continue
+		}
+		o.outbox <- *trEvent
 	}
 }
 

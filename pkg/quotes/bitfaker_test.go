@@ -38,6 +38,18 @@ func TestBitfaker_Subscribe(t *testing.T) {
 		expectedMarkets := []Market{market1, market2}
 		assert.Equal(t, client.markets, expectedMarkets)
 	})
+
+	t.Run("Subscribe to a market already subscribed to", func(t *testing.T) {
+		ch := make(chan TradeEvent, 16)
+		client := bitfaker{outbox: ch}
+
+		market := Market{BaseUnit: "btc", QuoteUnit: "usd"}
+		err := client.Subscribe(market)
+		require.Nil(t, err)
+
+		err = client.Subscribe(market)
+		require.Error(t, err)
+	})
 }
 
 func TestBitfaker_Unsubscribe(t *testing.T) {
@@ -47,13 +59,11 @@ func TestBitfaker_Unsubscribe(t *testing.T) {
 
 		market1 := Market{BaseUnit: "btc", QuoteUnit: "usd"}
 		market2 := Market{BaseUnit: "eth", QuoteUnit: "usd"}
-		client.Subscribe(market1)
-		client.Subscribe(market2)
+		require.NoError(t, client.Subscribe(market1))
+		require.NoError(t, client.Subscribe(market2))
 
-		err := client.Unsubscribe(market1)
-		require.NoError(t, err)
-		err = client.Unsubscribe(market2)
-		require.NoError(t, err)
+		require.NoError(t, client.Unsubscribe(market1))
+		require.NoError(t, client.Unsubscribe(market2))
 
 		assert.NotContains(t, client.markets, market1)
 		assert.NotContains(t, client.markets, market2)
@@ -75,10 +85,10 @@ func TestBitfaker_Unsubscribe(t *testing.T) {
 
 		market1 := Market{BaseUnit: "btc", QuoteUnit: "usd"}
 		market2 := Market{BaseUnit: "eth", QuoteUnit: "usd"}
-		client.Subscribe(market1)
-		client.Subscribe(market2)
+		require.NoError(t, client.Subscribe(market1))
+		require.NoError(t, client.Subscribe(market2))
 
-		client.Unsubscribe(market1)
+		require.NoError(t, client.Unsubscribe(market1))
 
 		assert.NotContains(t, client.markets, market1)
 		assert.Contains(t, client.markets, market2)
@@ -87,8 +97,11 @@ func TestBitfaker_Unsubscribe(t *testing.T) {
 
 func TestBitfaker_Start(t *testing.T) {
 	outbox := make(chan TradeEvent, 1)
-	sampl := tradeSampler{enabled: false, defaultPercentage: 0.0}
-	client := bitfaker{outbox: outbox, period: 0 * time.Second, tradeSampler: &sampl}
+	tradeSampler := *newTradeSampler(TradeSamplerConfig{
+		Enabled:           false,
+		DefaultPercentage: 0,
+	})
+	client := bitfaker{outbox: outbox, period: 0 * time.Second, tradeSampler: tradeSampler}
 	market := Market{BaseUnit: "btc", QuoteUnit: "usd"}
 
 	var wg sync.WaitGroup

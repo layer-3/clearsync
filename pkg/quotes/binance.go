@@ -12,18 +12,15 @@ import (
 )
 
 type binance struct {
-	mu      sync.Mutex
-	streams map[string]chan struct{}
-
-	tradeSampler *tradeSampler
+	streams      sync.Map
+	tradeSampler tradeSampler
 	outbox       chan<- TradeEvent
 }
 
 func newBinance(config Config, outbox chan<- TradeEvent) *binance {
 	gobinance.WebsocketKeepalive = true
 	return &binance{
-		streams:      make(map[string]chan struct{}),
-		tradeSampler: newTradeSampler(config.TradeSampler),
+		tradeSampler: *newTradeSampler(config.TradeSampler),
 		outbox:       outbox,
 	}
 }
@@ -48,6 +45,10 @@ func (b *binance) Start(markets []Market) error {
 
 func (b *binance) Subscribe(market Market) error {
 	pair := strings.ToUpper(market.BaseUnit) + strings.ToUpper(market.QuoteUnit)
+	if _, ok := b.streams.Load(pair); ok {
+		return fmt.Errorf("market %s already subscribed", pair)
+	}
+
 	handleErr := func(err error) {
 		logger.Errorf("error for Binance market %s: %v", pair, err)
 	}
@@ -56,6 +57,7 @@ func (b *binance) Subscribe(market Market) error {
 	if err != nil {
 		return err
 	}
+	b.streams.Store(pair, stopCh)
 
 	go func() {
 		for {
@@ -71,40 +73,34 @@ func (b *binance) Subscribe(market Market) error {
 		}
 	}()
 
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	b.streams[pair] = stopCh
-
 	logger.Infof("subscribed to Binance %s market", strings.ToUpper(pair))
 	return nil
 }
 
 func (b *binance) Unsubscribe(market Market) error {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
 	pair := strings.ToUpper(market.BaseUnit) + strings.ToUpper(market.QuoteUnit)
-	stopCh, ok := b.streams[pair]
+	stream, ok := b.streams.Load(pair)
 	if !ok {
 		return fmt.Errorf("market %s not found", pair)
 	}
 
+	stopCh := stream.(chan struct{})
 	stopCh <- struct{}{}
 	close(stopCh)
-	delete(b.streams, pair)
+
+	b.streams.Delete(pair)
 	return nil
 }
 
 func (b *binance) Stop() error {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	for _, stopCh := range b.streams {
+	b.streams.Range(func(key, value any) bool {
+		stopCh := value.(chan struct{})
 		stopCh <- struct{}{}
 		close(stopCh)
-	}
+		return true
+	})
 
-	b.streams = make(map[string]chan struct{}) // delete all stopped streams
+	b.streams = sync.Map{}
 	return nil
 }
 

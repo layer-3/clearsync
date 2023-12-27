@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"sync"
 	"testing"
 	"time"
 
@@ -178,33 +177,31 @@ func TestOpendax_Connect(t *testing.T) {
 	t.Run("Successful case", func(t *testing.T) {
 		connMock := &ODDialerSuccessMock{connRetryAttempted: make(chan bool, 1)}
 		client := opendax{
-			conn:        nil,
-			mu:          sync.RWMutex{},
-			period:      0,
-			isConnected: false,
-			dialer:      connMock,
+			conn:   nil,
+			period: 0,
+			dialer: connMock,
 		}
+		client.isConnected.Store(false)
 
-		client.Connect()
+		client.connect()
 		require.True(t, <-connMock.connRetryAttempted)
 		require.NotNil(t, client.conn)
-		require.True(t, client.isConnected)
+		require.True(t, client.isConnected.Load())
 	})
 
 	t.Run("Fail case", func(t *testing.T) {
 		connMock := &ODDialerFailMock{connRetryAttempted: make(chan bool, 1)}
 		client := opendax{
-			conn:        nil,
-			mu:          sync.RWMutex{},
-			period:      0,
-			isConnected: false,
-			dialer:      connMock,
+			conn:   nil,
+			period: 0,
+			dialer: connMock,
 		}
+		client.isConnected.Store(false)
 
-		client.Connect()
+		client.connect()
 		require.True(t, <-connMock.connRetryAttempted)
 		require.NotNil(t, client.conn)
-		require.True(t, client.isConnected)
+		require.True(t, client.isConnected.Load())
 	})
 }
 
@@ -223,14 +220,14 @@ func TestOpendax_receiveOpendaxMsg(t *testing.T) {
 	t.Run("Error reading from connection", func(t *testing.T) {
 		dialer := ODDialerFailMock{connRetryAttempted: make(chan bool, 1)}
 		client := &opendax{
-			conn:        &ODAPIMock{messages: []ODAPIMockMsg{}},
-			dialer:      &dialer,
-			isConnected: true,
-			period:      0,
+			conn:   &ODAPIMock{messages: []ODAPIMockMsg{}},
+			dialer: &dialer,
+			period: 0,
 		}
+		client.isConnected.Store(true)
 
 		go func() {
-			client.receiveOpendaxMsg(activeMarkets)
+			client.readOpendaxMsg(activeMarkets)
 		}()
 
 		// the function will try to reestablish the connection,
@@ -262,14 +259,14 @@ func TestOpendax_receiveOpendaxMsg(t *testing.T) {
 			conn: &ODAPIMock{
 				messages: []ODAPIMockMsg{{m: rawMsg}},
 			},
-			dialer:      &ODDialerSuccessMock{},
-			isConnected: true,
-			period:      0,
-			outbox:      outbox,
+			dialer: &ODDialerSuccessMock{},
+			period: 0,
+			outbox: outbox,
 		}
+		client.isConnected.Store(true)
 
 		go func() {
-			client.receiveOpendaxMsg(activeMarkets)
+			client.readOpendaxMsg(activeMarkets)
 		}()
 
 		for {

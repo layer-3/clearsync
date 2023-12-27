@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -15,15 +16,16 @@ import (
 )
 
 type kraken struct {
-	url         string
 	conn        wsTransport
+	connMu      sync.Mutex
 	dialer      wsDialer
+	url         string
 	retryPeriod time.Duration
-	isConnected bool
+	isConnected atomic.Bool
 
-	tradeSampler *tradeSampler
+	streams      sync.Map
+	tradeSampler tradeSampler
 	outbox       chan<- TradeEvent
-	mu           sync.RWMutex
 }
 
 func newKraken(config Config, outbox chan<- TradeEvent) *kraken {
@@ -36,7 +38,7 @@ func newKraken(config Config, outbox chan<- TradeEvent) *kraken {
 		url:          url,
 		dialer:       wsDialWrapper{},
 		retryPeriod:  config.ReconnectPeriod,
-		tradeSampler: newTradeSampler(config.TradeSampler),
+		tradeSampler: *newTradeSampler(config.TradeSampler),
 		outbox:       outbox,
 	}
 }
@@ -70,8 +72,10 @@ type subscriptionParams struct {
 }
 
 func (k *kraken) Subscribe(market Market) error {
-	k.mu.RLock()
-	defer k.mu.RUnlock()
+	if _, ok := k.streams.Load(market); ok {
+		return fmt.Errorf("market %s already subscribed", market)
+	}
+	k.streams.Store(market, struct{}{})
 
 	pair := fmt.Sprintf("%s/%s", strings.ToUpper(market.BaseUnit), strings.ToUpper(market.QuoteUnit))
 	subMsg := subscribeMessage{
@@ -82,10 +86,18 @@ func (k *kraken) Subscribe(market Market) error {
 			Symbol:   []string{pair},
 		},
 	}
-	return k.writeConn(subMsg)
+
+	if err := k.writeConn(subMsg); err != nil {
+		return fmt.Errorf("market %s: failed to subscribe: %v", market, err)
+	}
+	return nil
 }
 
 func (k *kraken) Unsubscribe(market Market) error {
+	if _, ok := k.streams.Load(market); !ok {
+		return fmt.Errorf("market %s not subscribed", market)
+	}
+
 	pair := fmt.Sprintf("%s/%s", strings.ToUpper(market.BaseUnit), strings.ToUpper(market.QuoteUnit))
 	unsubMsg := subscribeMessage{
 		Method: "unsubscribe",
@@ -95,12 +107,17 @@ func (k *kraken) Unsubscribe(market Market) error {
 			Symbol:   []string{pair},
 		},
 	}
-	return k.writeConn(unsubMsg)
+
+	if err := k.writeConn(unsubMsg); err != nil {
+		return fmt.Errorf("market %s: failed to unsubscribe: %v", market, err)
+	}
+	k.streams.Delete(market)
+	return nil
 }
 
 func (k *kraken) Stop() error {
-	k.mu.Lock()
-	defer k.mu.Unlock()
+	k.connMu.Lock()
+	defer k.connMu.Unlock()
 
 	conn := k.conn
 	k.conn = nil
@@ -112,12 +129,15 @@ func (k *kraken) Stop() error {
 }
 
 func (k *kraken) writeConn(msg subscribeMessage) error {
+	k.connMu.Lock()
+	defer k.connMu.Unlock()
+
 	payload, err := json.Marshal(msg)
 	if err != nil {
 		return fmt.Errorf("error marshalling subscription message: %v", err)
 	}
 
-	for !k.isConnected {
+	for !k.isConnected.Load() {
 	}
 
 	if err := k.conn.WriteMessage(websocket.TextMessage, payload); err != nil {
@@ -127,11 +147,15 @@ func (k *kraken) writeConn(msg subscribeMessage) error {
 }
 
 func (k *kraken) connect() error {
-	k.mu.Lock()
-	defer k.mu.Unlock()
+	k.connMu.Lock()
+	defer k.connMu.Unlock()
 
-	var err error
+	if k.conn != nil {
+		return errors.New("already connected")
+	}
+
 	for {
+		var err error
 		k.conn, _, err = k.dialer.Dial(k.url, nil)
 		if err != nil {
 			logger.Error(err)
@@ -139,7 +163,7 @@ func (k *kraken) connect() error {
 			continue
 		}
 
-		k.isConnected = true
+		k.isConnected.Store(true)
 		return nil
 	}
 }
@@ -206,12 +230,19 @@ type krakenResult struct {
 
 func (k *kraken) listen() {
 	for {
-		if !k.isConnected {
+		if !k.isConnected.Load() {
 			<-time.After(k.retryPeriod)
 			continue
 		}
 
-		_, rawMsg, err := k.conn.ReadMessage()
+		k.connMu.Lock()
+		conn := k.conn
+		k.connMu.Unlock()
+		if conn == nil {
+			continue
+		}
+
+		_, rawMsg, err := conn.ReadMessage()
 		if err != nil {
 			logger.Errorf("error reading Kraken message: %v", err)
 		}
