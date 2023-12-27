@@ -48,7 +48,7 @@ func (b *binance) Stop() error {
 func (b *binance) Subscribe(market Market) error {
 	pair := strings.ToUpper(market.BaseUnit) + strings.ToUpper(market.QuoteUnit)
 	if _, ok := b.streams.Load(pair); ok {
-		return fmt.Errorf("market %s already subscribed", pair)
+		return fmt.Errorf("%s: %w", market, ErrAlreadySubbed)
 	}
 
 	handleErr := func(err error) {
@@ -57,7 +57,7 @@ func (b *binance) Subscribe(market Market) error {
 
 	doneCh, stopCh, err := gobinance.WsTradeServe(pair, b.handleTrade, handleErr)
 	if err != nil {
-		return err
+		return fmt.Errorf("%s: %w: %w", market, ErrFailedSub, err)
 	}
 	b.streams.Store(pair, stopCh)
 
@@ -80,7 +80,7 @@ func (b *binance) Unsubscribe(market Market) error {
 	pair := strings.ToUpper(market.BaseUnit) + strings.ToUpper(market.QuoteUnit)
 	stream, ok := b.streams.Load(pair)
 	if !ok {
-		return fmt.Errorf("market %s not found", pair)
+		return fmt.Errorf("%s: %w", market, ErrNotSubbed)
 	}
 
 	stopCh := stream.(chan struct{})

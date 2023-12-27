@@ -65,7 +65,7 @@ func (o *opendax) Stop() error {
 
 func (o *opendax) Subscribe(market Market) error {
 	if _, ok := o.streams.Load(market); ok {
-		return fmt.Errorf("market %s already subscribed", market)
+		return fmt.Errorf("%s: %w", market, ErrAlreadySubbed)
 	}
 
 	// Opendax resource [market].[trades]
@@ -75,7 +75,7 @@ func (o *opendax) Subscribe(market Market) error {
 
 	err := o.writeConn(message)
 	if err != nil {
-		return err
+		return fmt.Errorf("%s: %w: %w", market, ErrFailedSub, err)
 	}
 
 	o.streams.Store(market, struct{}{})
@@ -84,7 +84,7 @@ func (o *opendax) Subscribe(market Market) error {
 
 func (o *opendax) Unsubscribe(market Market) error {
 	if _, ok := o.streams.Load(market); !ok {
-		return fmt.Errorf("market %s not subscribed", market)
+		return fmt.Errorf("%s: %w", market, ErrNotSubbed)
 	}
 
 	// Opendax resource [market].[trades]
@@ -94,7 +94,7 @@ func (o *opendax) Unsubscribe(market Market) error {
 
 	err := o.writeConn(message)
 	if err != nil {
-		return err
+		return fmt.Errorf("%s: %w: %w", market, ErrFailedUnsub, err)
 	}
 
 	o.streams.Delete(market)

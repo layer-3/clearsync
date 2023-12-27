@@ -67,7 +67,7 @@ func (b *bitfaker) Subscribe(market Market) error {
 
 	for _, m := range b.streams {
 		if m == market {
-			return fmt.Errorf("market %s already subscribed", market)
+			return fmt.Errorf("%s: %w", market, ErrAlreadySubbed)
 		}
 	}
 
@@ -88,7 +88,7 @@ func (b *bitfaker) Unsubscribe(market Market) error {
 	}
 
 	if index == -1 {
-		return fmt.Errorf("market %s not found", market)
+		return fmt.Errorf("%s: %w", market, ErrNotSubbed)
 	}
 
 	b.streams = append(b.streams[:index], b.streams[index+1:]...)

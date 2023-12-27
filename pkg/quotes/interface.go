@@ -2,6 +2,7 @@
 package quotes
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -62,3 +63,10 @@ type TradeEvent struct {
 	TakerType TakerType
 	CreatedAt time.Time
 }
+
+var (
+	ErrNotSubbed     = errors.New("market not subscribed")
+	ErrAlreadySubbed = errors.New("market already subscribed")
+	ErrFailedSub     = errors.New("failed to subscribe to market")
+	ErrFailedUnsub   = errors.New("failed to unsubscribe from market")
+)

@@ -59,7 +59,7 @@ func (u *uniswapV3) Subscribe(market Market) error {
 	symbol := market.BaseUnit + market.QuoteUnit
 
 	if _, ok := u.streams.Load(market); ok {
-		return fmt.Errorf("market %s already subscribed", symbol)
+		return fmt.Errorf("%s: %w", market, ErrAlreadySubbed)
 	}
 
 	exists, err := u.isMarketAvailable(market)
@@ -90,7 +90,8 @@ func (u *uniswapV3) Subscribe(market Market) error {
 				to := from.Add(u.windowSize)
 				swaps, err := u.fetchSwaps(market, from, to)
 				if err != nil {
-					logger.Warn("failed to fetch swaps")
+					err = fmt.Errorf("%s: %w", market, err)
+					logger.Warn(err)
 				}
 
 				for _, swap := range swaps {
@@ -121,7 +122,7 @@ func (u *uniswapV3) Subscribe(market Market) error {
 func (u *uniswapV3) Unsubscribe(market Market) error {
 	stream, ok := u.streams.Load(market)
 	if !ok {
-		return fmt.Errorf("market %s not found", market)
+		return fmt.Errorf("%s: %w", market, ErrNotSubbed)
 	}
 
 	stopCh := stream.(chan struct{})

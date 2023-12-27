@@ -87,7 +87,7 @@ type subscriptionParams struct {
 
 func (k *kraken) Subscribe(market Market) error {
 	if _, ok := k.streams.Load(market); ok {
-		return fmt.Errorf("market %s already subscribed", market)
+		return fmt.Errorf("%s: %w", market, ErrAlreadySubbed)
 	}
 
 	symbol := fmt.Sprintf("%s%s", strings.ToUpper(market.BaseUnit), strings.ToUpper(market.QuoteUnit))
@@ -106,7 +106,7 @@ func (k *kraken) Subscribe(market Market) error {
 	}
 
 	if err := k.writeConn(subMsg); err != nil {
-		return fmt.Errorf("market %s: failed to subscribe: %v", market, err)
+		return fmt.Errorf("%s: %w: %w", market, ErrFailedSub, err)
 	}
 
 	k.streams.Store(market, struct{}{})
@@ -115,7 +115,7 @@ func (k *kraken) Subscribe(market Market) error {
 
 func (k *kraken) Unsubscribe(market Market) error {
 	if _, ok := k.streams.Load(market); !ok {
-		return fmt.Errorf("market %s not subscribed", market)
+		return fmt.Errorf("%s: %w", market, ErrNotSubbed)
 	}
 
 	pair := fmt.Sprintf("%s/%s", strings.ToUpper(market.BaseUnit), strings.ToUpper(market.QuoteUnit))
@@ -129,7 +129,7 @@ func (k *kraken) Unsubscribe(market Market) error {
 	}
 
 	if err := k.writeConn(unsubMsg); err != nil {
-		return fmt.Errorf("market %s: failed to unsubscribe: %v", market, err)
+		return fmt.Errorf("%s: %w: %w", market, ErrFailedUnsub, err)
 	}
 	k.streams.Delete(market)
 	return nil
@@ -306,13 +306,13 @@ func (k *kraken) getKrakenPairs() error {
 
 	req, err := http.NewRequest(http.MethodGet, "https://api.kraken.com/0/public/AssetPairs", nil)
 	if err != nil {
-		return fmt.Errorf("error creating HTTP request: %w", err)
+		return fmt.Errorf("HTTP request error: %w", err)
 	}
 
 	c := &http.Client{}
 	resp, err := c.Do(req)
 	if err != nil {
-		return fmt.Errorf("error making HTTP request: %w", err)
+		return fmt.Errorf("HTTP request error: %w", err)
 	}
 	defer func(Body io.ReadCloser) {
 		if err := Body.Close(); err != nil {
