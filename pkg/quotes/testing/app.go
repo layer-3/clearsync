@@ -30,7 +30,7 @@ func main() {
 	// Test the driver's interface
 	d := driver{driverInterface: indexAggregator}
 
-	err = d.driverInterface.Start([]quotes.Market{{BaseUnit: "btc", QuoteUnit: "usdt"}})
+	err = d.driverInterface.Start()
 	if err != nil {
 		panic(err)
 	}

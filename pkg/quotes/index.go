@@ -40,12 +40,12 @@ func (a *IndexAggregator) Name() DriverType {
 	return DriverIndex
 }
 
-func (a *IndexAggregator) Start(markets []Market) error {
+func (a *IndexAggregator) Start() error {
 	logger.Info("starting index quotes service")
 
 	for _, d := range a.drivers {
 		go func(d Driver) {
-			if err := d.Start(markets); err != nil {
+			if err := d.Start(); err != nil {
 				logger.Warn(err.Error())
 			}
 		}(d)
