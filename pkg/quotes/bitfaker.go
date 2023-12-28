@@ -1,7 +1,6 @@
 package quotes
 
 import (
-	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -10,43 +9,55 @@ import (
 )
 
 type bitfaker struct {
+	once         *once
 	mu           sync.RWMutex
+	streams      []Market
 	outbox       chan<- TradeEvent
-	markets      []Market
+	stopCh       chan struct{}
 	period       time.Duration
-	tradeSampler *tradeSampler
+	tradeSampler tradeSampler
 }
 
 func newBitfaker(config Config, outbox chan<- TradeEvent) *bitfaker {
 	return &bitfaker{
+		streams:      make([]Market, 0),
 		outbox:       outbox,
-		markets:      make([]Market, 0),
+		stopCh:       make(chan struct{}, 1),
 		period:       5 * time.Second,
-		tradeSampler: newTradeSampler(config.TradeSampler),
+		tradeSampler: *newTradeSampler(config.TradeSampler),
 	}
 }
 
-func (b *bitfaker) Start(markets []Market) error {
-	if len(markets) == 0 {
-		return errors.New("no markets specified")
-	}
+func (b *bitfaker) Start() error {
+	b.once.Start(func() {
+		go func() {
+			for {
+				select {
+				case <-b.stopCh:
+					return
+				default:
+				}
 
-	for _, m := range markets {
-		if err := b.Subscribe(m); err != nil {
-			return err
-		}
-	}
-
-	go func() {
-		for {
-			b.mu.RLock()
-			for _, v := range b.markets {
-				b.createTradeEvent(v)
+				b.mu.RLock()
+				for _, v := range b.streams {
+					b.createTradeEvent(v)
+				}
+				b.mu.RUnlock()
+				<-time.After(b.period)
 			}
-			b.mu.RUnlock()
-			<-time.After(b.period)
-		}
-	}()
+		}()
+	})
+	return nil
+}
+
+func (b *bitfaker) Stop() error {
+	b.once.Stop(func() {
+		b.mu.Lock()
+		defer b.mu.Unlock()
+
+		b.stopCh <- struct{}{}
+		b.streams = make([]Market, 0)
+	})
 	return nil
 }
 
@@ -54,7 +65,13 @@ func (b *bitfaker) Subscribe(market Market) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	b.markets = append(b.markets, market)
+	for _, m := range b.streams {
+		if m == market {
+			return fmt.Errorf("%s: %w", market, ErrAlreadySubbed)
+		}
+	}
+
+	b.streams = append(b.streams, market)
 	return nil
 }
 
@@ -63,7 +80,7 @@ func (b *bitfaker) Unsubscribe(market Market) error {
 	defer b.mu.Unlock()
 
 	index := -1
-	for i, m := range b.markets {
+	for i, m := range b.streams {
 		if market == m {
 			index = i
 			break
@@ -71,10 +88,10 @@ func (b *bitfaker) Unsubscribe(market Market) error {
 	}
 
 	if index == -1 {
-		return fmt.Errorf("market %s not found", market)
+		return fmt.Errorf("%s: %w", market, ErrNotSubbed)
 	}
 
-	b.markets = append(b.markets[:index], b.markets[index+1:]...)
+	b.streams = append(b.streams[:index], b.streams[index+1:]...)
 	return nil
 }
 
@@ -86,8 +103,4 @@ func (b *bitfaker) createTradeEvent(market Market) {
 	}
 
 	b.outbox <- tr
-}
-
-func (b *bitfaker) Stop() error {
-	return nil
 }

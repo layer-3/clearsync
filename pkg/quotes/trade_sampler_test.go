@@ -8,6 +8,8 @@ import (
 )
 
 func TestNewTradeSampler(t *testing.T) {
+	t.Parallel()
+
 	defaultPercentage := rand.Int()
 	conf := TradeSamplerConfig{
 		Enabled:           false,
@@ -20,7 +22,11 @@ func TestNewTradeSampler(t *testing.T) {
 }
 
 func TestTradeSampler_Allow(t *testing.T) {
+	t.Parallel()
+
 	t.Run("TradeSampler is not enabled", func(t *testing.T) {
+		t.Parallel()
+
 		conf := TradeSamplerConfig{
 			Enabled:           false,
 			DefaultPercentage: 0,
@@ -31,6 +37,8 @@ func TestTradeSampler_Allow(t *testing.T) {
 	})
 
 	t.Run("DefaultPercentage is in specified range", func(t *testing.T) {
+		t.Parallel()
+
 		conf := TradeSamplerConfig{
 			Enabled:           true,
 			DefaultPercentage: 200, // should be greater than rand.Intn(100)
@@ -41,6 +49,8 @@ func TestTradeSampler_Allow(t *testing.T) {
 	})
 
 	t.Run("Should return false", func(t *testing.T) {
+		t.Parallel()
+
 		conf := TradeSamplerConfig{
 			Enabled:           true,
 			DefaultPercentage: 0,

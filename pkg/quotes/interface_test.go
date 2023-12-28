@@ -8,43 +8,59 @@ import (
 )
 
 func TestNewDriver(t *testing.T) {
+	t.Parallel()
+
 	t.Run(DriverBinance.String(), func(t *testing.T) {
+		t.Parallel()
+
 		config := Config{Driver: DriverBinance}
 		outbox := make(chan<- TradeEvent, 1)
 
 		priceFeeds, err := NewDriver(config, outbox)
 		require.NoError(t, err)
-		assert.Equal(t, newBinance(config, outbox), priceFeeds)
+		_, ok := priceFeeds.(*binance)
+		assert.True(t, ok)
 	})
 
 	t.Run(DriverKraken.String(), func(t *testing.T) {
+		t.Parallel()
+
 		config := Config{Driver: DriverKraken}
 		outbox := make(chan<- TradeEvent, 1)
 
 		priceFeeds, err := NewDriver(config, outbox)
 		require.NoError(t, err)
-		assert.Equal(t, newKraken(config, outbox), priceFeeds)
+		_, ok := priceFeeds.(*kraken)
+		assert.True(t, ok)
 	})
 
 	t.Run(DriverBitfaker.String(), func(t *testing.T) {
+		t.Parallel()
+
 		config := Config{Driver: DriverBitfaker}
 		outbox := make(chan<- TradeEvent, 1)
 
 		priceFeeds, err := NewDriver(config, outbox)
 		require.NoError(t, err)
-		assert.Equal(t, newBitfaker(config, outbox), priceFeeds)
+		_, ok := priceFeeds.(*bitfaker)
+		assert.True(t, ok)
 	})
 
 	t.Run(DriverOpendax.String(), func(t *testing.T) {
+		t.Parallel()
+
 		config := Config{Driver: DriverOpendax}
 		outbox := make(chan<- TradeEvent, 1)
 
 		priceFeeds, err := NewDriver(config, outbox)
 		require.NoError(t, err)
-		assert.Equal(t, newOpendax(config, outbox), priceFeeds)
+		_, ok := priceFeeds.(*opendax)
+		assert.True(t, ok)
 	})
 
 	t.Run("Unknown driver", func(t *testing.T) {
+		t.Parallel()
+
 		priceFeeds, err := NewDriver(
 			Config{Driver: DriverType{"wtf"}},
 			make(chan<- TradeEvent, 1),

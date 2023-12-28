@@ -3,7 +3,6 @@ package quotes
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -16,12 +15,11 @@ import (
 )
 
 type uniswapV3 struct {
+	once       *once
 	url        string
 	outbox     chan<- TradeEvent
 	windowSize time.Duration
-
-	mu      sync.Mutex
-	streams map[Market]chan struct{}
+	streams    sync.Map
 }
 
 func newUniswapV3(config Config, outbox chan<- TradeEvent) *uniswapV3 {
@@ -31,16 +29,39 @@ func newUniswapV3(config Config, outbox chan<- TradeEvent) *uniswapV3 {
 	}
 
 	return &uniswapV3{
+		once:       newOnce(),
 		url:        url,
 		outbox:     outbox,
 		windowSize: 2 * time.Second,
-
-		streams: make(map[Market]chan struct{}),
 	}
+}
+
+func (u *uniswapV3) Start() error {
+	u.once.Start(func() {})
+	return nil
+}
+
+func (u *uniswapV3) Stop() error {
+	u.once.Stop(func() {
+		u.streams.Range(func(market, stream any) bool {
+			stopCh := stream.(chan struct{})
+			stopCh <- struct{}{}
+			close(stopCh)
+			return true
+		})
+
+		u.streams = sync.Map{} // delete all stopped streams
+	})
+	return nil
 }
 
 func (u *uniswapV3) Subscribe(market Market) error {
 	symbol := market.BaseUnit + market.QuoteUnit
+
+	if _, ok := u.streams.Load(market); ok {
+		return fmt.Errorf("%s: %w", market, ErrAlreadySubbed)
+	}
+
 	exists, err := u.isMarketAvailable(market)
 	if err != nil {
 		return fmt.Errorf("failed to check if market %s exists: %s", symbol, err)
@@ -49,22 +70,28 @@ func (u *uniswapV3) Subscribe(market Market) error {
 		return fmt.Errorf("market %s does not exist", symbol)
 	}
 
-	u.mu.Lock()
-	defer u.mu.Unlock()
-	u.streams[market] = make(chan struct{}, 1)
+	u.streams.Store(market, make(chan struct{}, 1))
 
 	go func() {
 		from := time.Now()
 		for {
+			if stream, ok := u.streams.Load(market); ok {
+				stopCh := stream.(chan struct{})
+				select {
+				case <-stopCh:
+					logger.Infof("market %s is stopped", symbol)
+					return
+				default:
+				}
+			}
+
 			select {
-			case <-u.streams[market]:
-				logger.Infof("market %s is stopped", symbol)
-				return
 			case <-time.After(u.windowSize):
 				to := from.Add(u.windowSize)
 				swaps, err := u.fetchSwaps(market, from, to)
 				if err != nil {
-					logger.Warn("failed to fetch swaps")
+					err = fmt.Errorf("%s: %w", market, err)
+					logger.Warn(err)
 				}
 
 				for _, swap := range swaps {
@@ -84,6 +111,7 @@ func (u *uniswapV3) Subscribe(market Market) error {
 						CreatedAt: createdAt,
 					}
 				}
+			default:
 			}
 		}
 	}()
@@ -92,49 +120,16 @@ func (u *uniswapV3) Subscribe(market Market) error {
 }
 
 func (u *uniswapV3) Unsubscribe(market Market) error {
-	u.mu.Lock()
-	defer u.mu.Unlock()
-
-	stopCh, ok := u.streams[market]
+	stream, ok := u.streams.Load(market)
 	if !ok {
-		return fmt.Errorf("market %s not found", market)
+		return fmt.Errorf("%s: %w", market, ErrNotSubbed)
 	}
 
+	stopCh := stream.(chan struct{})
 	stopCh <- struct{}{}
 	close(stopCh)
-	delete(u.streams, market)
-	return nil
-}
 
-func (u *uniswapV3) Start(markets []Market) error {
-	if len(markets) == 0 {
-		return errors.New("no markets specified")
-	}
-
-	for _, m := range markets {
-		m := m
-		go func() {
-			err := u.Subscribe(m)
-			if err != nil {
-				symbol := m.BaseUnit + m.QuoteUnit
-				logger.Warnf("failed to subscribe to market %s: %s", symbol, err)
-			}
-		}()
-	}
-
-	return nil
-}
-
-func (u *uniswapV3) Stop() error {
-	u.mu.Lock()
-	defer u.mu.Unlock()
-
-	for _, stopCh := range u.streams {
-		stopCh <- struct{}{}
-		close(stopCh)
-	}
-
-	u.streams = make(map[Market]chan struct{}) // delete all stopped streams
+	u.streams.Delete(market)
 	return nil
 }
 
@@ -205,8 +200,13 @@ func runGraphqlRequest[T uniswapPools | uniswapSwaps](url, query string) (*T, er
 	if err != nil {
 		return nil, fmt.Errorf("failed to request data: %w", err)
 	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			logger.Errorf("error closing HTTP response body: %v", err)
+		}
+	}(resp.Body)
 
-	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response: %w", err)

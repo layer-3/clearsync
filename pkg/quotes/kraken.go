@@ -2,7 +2,6 @@ package quotes
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,15 +14,16 @@ import (
 )
 
 type kraken struct {
-	url         string
+	once        *once
 	conn        wsTransport
 	dialer      wsDialer
+	url         string
 	retryPeriod time.Duration
-	isConnected bool
 
-	tradeSampler *tradeSampler
-	outbox       chan<- TradeEvent
-	mu           sync.RWMutex
+	availablePairs sync.Map
+	streams        sync.Map
+	tradeSampler   tradeSampler
+	outbox         chan<- TradeEvent
 }
 
 func newKraken(config Config, outbox chan<- TradeEvent) *kraken {
@@ -33,29 +33,45 @@ func newKraken(config Config, outbox chan<- TradeEvent) *kraken {
 	}
 
 	return &kraken{
+		once:         newOnce(),
 		url:          url,
 		dialer:       wsDialWrapper{},
 		retryPeriod:  config.ReconnectPeriod,
-		tradeSampler: newTradeSampler(config.TradeSampler),
+		tradeSampler: *newTradeSampler(config.TradeSampler),
 		outbox:       outbox,
 	}
 }
 
-func (k *kraken) Start(markets []Market) error {
-	if len(markets) == 0 {
-		return errors.New("no markets specified")
-	}
+func (k *kraken) Start() error {
+	var startErr error
+	k.once.Start(func() {
+		if err := k.getKrakenPairs(); err != nil {
+			startErr = err
+			return
+		}
 
-	if err := k.connect(); err != nil {
-		return err
-	}
+		if err := k.connect(); err != nil {
+			startErr = err
+			return
+		}
 
-	if err := k.subscribe(markets); err != nil {
-		return err
-	}
+		go k.listen()
+	})
+	return startErr
+}
 
-	k.listen()
-	return nil
+func (k *kraken) Stop() error {
+	var stopErr error
+	k.once.Stop(func() {
+		conn := k.conn
+		k.conn = nil
+
+		if conn == nil {
+			return
+		}
+		stopErr = conn.Close()
+	})
+	return stopErr
 }
 
 type subscribeMessage struct {
@@ -70,8 +86,14 @@ type subscriptionParams struct {
 }
 
 func (k *kraken) Subscribe(market Market) error {
-	k.mu.RLock()
-	defer k.mu.RUnlock()
+	if _, ok := k.streams.Load(market); ok {
+		return fmt.Errorf("%s: %w", market, ErrAlreadySubbed)
+	}
+
+	symbol := fmt.Sprintf("%s%s", strings.ToUpper(market.BaseUnit), strings.ToUpper(market.QuoteUnit))
+	if _, ok := k.availablePairs.Load(symbol); !ok {
+		return fmt.Errorf("market %s doesn't exist in Kraken", symbol)
+	}
 
 	pair := fmt.Sprintf("%s/%s", strings.ToUpper(market.BaseUnit), strings.ToUpper(market.QuoteUnit))
 	subMsg := subscribeMessage{
@@ -82,10 +104,20 @@ func (k *kraken) Subscribe(market Market) error {
 			Symbol:   []string{pair},
 		},
 	}
-	return k.writeConn(subMsg)
+
+	if err := k.writeConn(subMsg); err != nil {
+		return fmt.Errorf("%s: %w: %w", market, ErrFailedSub, err)
+	}
+
+	k.streams.Store(market, struct{}{})
+	return nil
 }
 
 func (k *kraken) Unsubscribe(market Market) error {
+	if _, ok := k.streams.Load(market); !ok {
+		return fmt.Errorf("%s: %w", market, ErrNotSubbed)
+	}
+
 	pair := fmt.Sprintf("%s/%s", strings.ToUpper(market.BaseUnit), strings.ToUpper(market.QuoteUnit))
 	unsubMsg := subscribeMessage{
 		Method: "unsubscribe",
@@ -95,20 +127,12 @@ func (k *kraken) Unsubscribe(market Market) error {
 			Symbol:   []string{pair},
 		},
 	}
-	return k.writeConn(unsubMsg)
-}
 
-func (k *kraken) Stop() error {
-	k.mu.Lock()
-	defer k.mu.Unlock()
-
-	conn := k.conn
-	k.conn = nil
-
-	if conn == nil {
-		return nil
+	if err := k.writeConn(unsubMsg); err != nil {
+		return fmt.Errorf("%s: %w: %w", market, ErrFailedUnsub, err)
 	}
-	return conn.Close()
+	k.streams.Delete(market)
+	return nil
 }
 
 func (k *kraken) writeConn(msg subscribeMessage) error {
@@ -117,7 +141,7 @@ func (k *kraken) writeConn(msg subscribeMessage) error {
 		return fmt.Errorf("error marshalling subscription message: %v", err)
 	}
 
-	for !k.isConnected {
+	for !k.conn.IsConnected() {
 	}
 
 	if err := k.conn.WriteMessage(websocket.TextMessage, payload); err != nil {
@@ -127,11 +151,8 @@ func (k *kraken) writeConn(msg subscribeMessage) error {
 }
 
 func (k *kraken) connect() error {
-	k.mu.Lock()
-	defer k.mu.Unlock()
-
-	var err error
 	for {
+		var err error
 		k.conn, _, err = k.dialer.Dial(k.url, nil)
 		if err != nil {
 			logger.Error(err)
@@ -139,34 +160,8 @@ func (k *kraken) connect() error {
 			continue
 		}
 
-		k.isConnected = true
 		return nil
 	}
-}
-
-func (k *kraken) subscribe(markets []Market) error {
-	availablePairs, err := getKrakenPairs()
-	if err != nil {
-		return err
-	}
-
-	for _, m := range markets {
-		symbol := fmt.Sprintf("%s%s", strings.ToUpper(m.BaseUnit), strings.ToUpper(m.QuoteUnit))
-		if pair, ok := availablePairs[symbol]; !ok || pair.Status != "online" {
-			logger.Warnf("market %s doesn't exist in Kraken", symbol)
-			continue
-		}
-
-		if err := k.Subscribe(m); err != nil {
-			logger.Warnf("failed to subscribe to Kraken market %s: %v", symbol, err)
-			continue
-		}
-
-		logger.Infof("quotes service connected to Kraken %s market", symbol)
-		<-time.After(25 * time.Millisecond) // to cope with rate limits
-	}
-
-	return nil
 }
 
 type krakenEvent[T krakenStatus | krakenTrade] struct {
@@ -206,7 +201,10 @@ type krakenResult struct {
 
 func (k *kraken) listen() {
 	for {
-		if !k.isConnected {
+		if k.conn == nil {
+			return
+		}
+		if !k.conn.IsConnected() {
 			<-time.After(k.retryPeriod)
 			continue
 		}
@@ -214,6 +212,18 @@ func (k *kraken) listen() {
 		_, rawMsg, err := k.conn.ReadMessage()
 		if err != nil {
 			logger.Errorf("error reading Kraken message: %v", err)
+
+			k.connect()
+			k.streams.Range(func(m, value any) bool {
+				market := m.(Market)
+				if err := k.Subscribe(market); err != nil {
+					logger.Warnf("Error subscribing to market %s: %s", market, err)
+					return false
+				}
+				return true
+			})
+
+			continue
 		}
 
 		tradeEvents, err := k.parseMessage(rawMsg)
@@ -291,34 +301,51 @@ type krakenPair struct {
 	Status            string        `json:"status"`
 }
 
-func getKrakenPairs() (map[string]krakenPair, error) {
+func (k *kraken) getKrakenPairs() error {
+	// Fetch pairs
+
 	req, err := http.NewRequest(http.MethodGet, "https://api.kraken.com/0/public/AssetPairs", nil)
 	if err != nil {
-		return nil, fmt.Errorf("error creating HTTP request: %w", err)
+		return fmt.Errorf("HTTP request error: %w", err)
 	}
 
 	c := &http.Client{}
 	resp, err := c.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("error making HTTP request: %w", err)
+		return fmt.Errorf("HTTP request error: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		if err := Body.Close(); err != nil {
+			logger.Errorf("error closing HTTP response body: %v", err)
+		}
+	}(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("request failed with status code: %d", resp.StatusCode)
+		return fmt.Errorf("request failed with status code: %d", resp.StatusCode)
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	var pairs krakenAssetPairs
 	if err := json.Unmarshal(body, &pairs); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal Kraken pairs response: %v", err)
+		return fmt.Errorf("failed to unmarshal Kraken pairs response: %v", err)
 	}
 
-	return pairs.Result, nil
+	// Convert pairs to map
+
+	for _, pair := range pairs.Result {
+		if pair.Status != "online" {
+			symbol := fmt.Sprintf("%s%s", strings.ToUpper(pair.Base), strings.ToUpper(pair.Quote))
+			logger.Warnf("market %s doesn't exist in Kraken", symbol)
+			continue
+		}
+		k.availablePairs.Store(pair.Altname, pair)
+	}
+
+	return nil
 }
 
 func buildKrakenEvents(trades []krakenTrade) []TradeEvent {

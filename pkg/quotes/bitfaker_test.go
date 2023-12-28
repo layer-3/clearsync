@@ -11,7 +11,11 @@ import (
 )
 
 func TestBitfaker_Subscribe(t *testing.T) {
+	t.Parallel()
+
 	t.Run("Single market", func(t *testing.T) {
+		t.Parallel()
+
 		ch := make(chan TradeEvent, 16)
 		client := bitfaker{outbox: ch}
 
@@ -20,10 +24,12 @@ func TestBitfaker_Subscribe(t *testing.T) {
 		require.Nil(t, err)
 
 		expectedMarkets := []Market{m}
-		assert.Equal(t, client.markets, expectedMarkets)
+		assert.Equal(t, client.streams, expectedMarkets)
 	})
 
 	t.Run("Multiple markets", func(t *testing.T) {
+		t.Parallel()
+
 		outbox := make(chan TradeEvent, 16)
 		client := bitfaker{outbox: outbox}
 
@@ -36,30 +42,48 @@ func TestBitfaker_Subscribe(t *testing.T) {
 		require.Nil(t, err)
 
 		expectedMarkets := []Market{market1, market2}
-		assert.Equal(t, client.markets, expectedMarkets)
+		assert.Equal(t, client.streams, expectedMarkets)
+	})
+
+	t.Run("Subscribe to a market already subscribed to", func(t *testing.T) {
+		t.Parallel()
+
+		ch := make(chan TradeEvent, 16)
+		client := bitfaker{outbox: ch}
+
+		market := Market{BaseUnit: "btc", QuoteUnit: "usd"}
+		err := client.Subscribe(market)
+		require.Nil(t, err)
+
+		err = client.Subscribe(market)
+		require.Error(t, err)
 	})
 }
 
 func TestBitfaker_Unsubscribe(t *testing.T) {
+	t.Parallel()
+
 	t.Run("Unsubscribe from multiple markets", func(t *testing.T) {
+		t.Parallel()
+
 		ch := make(chan TradeEvent, 16)
 		client := bitfaker{outbox: ch}
 
 		market1 := Market{BaseUnit: "btc", QuoteUnit: "usd"}
 		market2 := Market{BaseUnit: "eth", QuoteUnit: "usd"}
-		client.Subscribe(market1)
-		client.Subscribe(market2)
+		require.NoError(t, client.Subscribe(market1))
+		require.NoError(t, client.Subscribe(market2))
 
-		err := client.Unsubscribe(market1)
-		require.NoError(t, err)
-		err = client.Unsubscribe(market2)
-		require.NoError(t, err)
+		require.NoError(t, client.Unsubscribe(market1))
+		require.NoError(t, client.Unsubscribe(market2))
 
-		assert.NotContains(t, client.markets, market1)
-		assert.NotContains(t, client.markets, market2)
+		assert.NotContains(t, client.streams, market1)
+		assert.NotContains(t, client.streams, market2)
 	})
 
 	t.Run("Unsubscribe from a market not subscribed to", func(t *testing.T) {
+		t.Parallel()
+
 		ch := make(chan TradeEvent, 16)
 		client := bitfaker{outbox: ch}
 
@@ -70,32 +94,43 @@ func TestBitfaker_Unsubscribe(t *testing.T) {
 	})
 
 	t.Run("No effect on other subscriptions after unsubscribing", func(t *testing.T) {
+		t.Parallel()
+
 		ch := make(chan TradeEvent, 16)
 		client := bitfaker{outbox: ch}
 
 		market1 := Market{BaseUnit: "btc", QuoteUnit: "usd"}
 		market2 := Market{BaseUnit: "eth", QuoteUnit: "usd"}
-		client.Subscribe(market1)
-		client.Subscribe(market2)
+		require.NoError(t, client.Subscribe(market1))
+		require.NoError(t, client.Subscribe(market2))
 
-		client.Unsubscribe(market1)
+		require.NoError(t, client.Unsubscribe(market1))
 
-		assert.NotContains(t, client.markets, market1)
-		assert.Contains(t, client.markets, market2)
+		assert.NotContains(t, client.streams, market1)
+		assert.Contains(t, client.streams, market2)
 	})
 }
 
 func TestBitfaker_Start(t *testing.T) {
+	t.Parallel()
+
 	outbox := make(chan TradeEvent, 1)
-	sampl := tradeSampler{enabled: false, defaultPercentage: 0.0}
-	client := bitfaker{outbox: outbox, period: 0 * time.Second, tradeSampler: &sampl}
+	tradeSampler := *newTradeSampler(TradeSamplerConfig{
+		Enabled:           false,
+		DefaultPercentage: 0,
+	})
+	client := bitfaker{
+		once:         newOnce(),
+		outbox:       outbox,
+		period:       0 * time.Second,
+		tradeSampler: tradeSampler,
+	}
 	market := Market{BaseUnit: "btc", QuoteUnit: "usd"}
 
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func() {
-		err := client.Start([]Market{market})
-		require.NoError(t, err)
+		require.NoError(t, client.Start())
 		wg.Done()
 	}()
 	go func() {
@@ -109,6 +144,8 @@ func TestBitfaker_Start(t *testing.T) {
 }
 
 func TestCreateTradeEvent(t *testing.T) {
+	t.Parallel()
+
 	outbox := make(chan TradeEvent)
 	client := bitfaker{outbox: outbox}
 

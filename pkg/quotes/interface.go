@@ -2,6 +2,7 @@
 package quotes
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -12,10 +13,10 @@ import (
 var logger = log.Logger("quotes")
 
 type Driver interface {
+	Start() error
+	Stop() error
 	Subscribe(market Market) error
 	Unsubscribe(market Market) error
-	Start(markets []Market) error
-	Stop() error
 }
 
 func NewDriver(config Config, outbox chan<- TradeEvent) (Driver, error) {
@@ -62,3 +63,10 @@ type TradeEvent struct {
 	TakerType TakerType
 	CreatedAt time.Time
 }
+
+var (
+	ErrNotSubbed     = errors.New("market not subscribed")
+	ErrAlreadySubbed = errors.New("market already subscribed")
+	ErrFailedSub     = errors.New("failed to subscribe to market")
+	ErrFailedUnsub   = errors.New("failed to unsubscribe from market")
+)

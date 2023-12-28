@@ -1,7 +1,6 @@
 package quotes
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -12,99 +11,83 @@ import (
 )
 
 type binance struct {
-	mu      sync.Mutex
-	streams map[string]chan struct{}
-
-	tradeSampler *tradeSampler
+	once         *once
+	streams      sync.Map
+	tradeSampler tradeSampler
 	outbox       chan<- TradeEvent
 }
 
 func newBinance(config Config, outbox chan<- TradeEvent) *binance {
 	gobinance.WebsocketKeepalive = true
 	return &binance{
-		streams:      make(map[string]chan struct{}),
-		tradeSampler: newTradeSampler(config.TradeSampler),
+		once:         newOnce(),
+		tradeSampler: *newTradeSampler(config.TradeSampler),
 		outbox:       outbox,
 	}
 }
 
-func (b *binance) Start(markets []Market) error {
-	if len(markets) == 0 {
-		return errors.New("no markets specified")
-	}
+func (b *binance) Start() error {
+	b.once.Start(func() {})
+	return nil
+}
 
-	for _, m := range markets {
-		m := m
-		go func() {
-			if err := b.Subscribe(m); err != nil {
-				symbol := m.BaseUnit + m.QuoteUnit
-				logger.Warnf("failed to subscribe to %s market: %v", symbol, err)
-			}
-		}()
-	}
+func (b *binance) Stop() error {
+	b.once.Stop(func() {
+		b.streams.Range(func(key, value any) bool {
+			stopCh := value.(chan struct{})
+			stopCh <- struct{}{}
+			close(stopCh)
+			return true
+		})
 
+		b.streams = sync.Map{}
+	})
 	return nil
 }
 
 func (b *binance) Subscribe(market Market) error {
 	pair := strings.ToUpper(market.BaseUnit) + strings.ToUpper(market.QuoteUnit)
+	if _, ok := b.streams.Load(pair); ok {
+		return fmt.Errorf("%s: %w", market, ErrAlreadySubbed)
+	}
+
 	handleErr := func(err error) {
 		logger.Errorf("error for Binance market %s: %v", pair, err)
 	}
 
 	doneCh, stopCh, err := gobinance.WsTradeServe(pair, b.handleTrade, handleErr)
 	if err != nil {
-		return err
+		return fmt.Errorf("%s: %w: %w", market, ErrFailedSub, err)
 	}
+	b.streams.Store(pair, stopCh)
 
 	go func() {
-		for {
-			select {
-			case <-doneCh:
-				for {
-					if err := b.Subscribe(market); err == nil {
-						break
-					}
+		select {
+		case <-doneCh:
+			for {
+				if err := b.Subscribe(market); err == nil {
+					return
 				}
-				return
 			}
 		}
 	}()
-
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	b.streams[pair] = stopCh
 
 	logger.Infof("subscribed to Binance %s market", strings.ToUpper(pair))
 	return nil
 }
 
 func (b *binance) Unsubscribe(market Market) error {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
 	pair := strings.ToUpper(market.BaseUnit) + strings.ToUpper(market.QuoteUnit)
-	stopCh, ok := b.streams[pair]
+	stream, ok := b.streams.Load(pair)
 	if !ok {
-		return fmt.Errorf("market %s not found", pair)
+		return fmt.Errorf("%s: %w", market, ErrNotSubbed)
 	}
 
+	stopCh := stream.(chan struct{})
 	stopCh <- struct{}{}
 	close(stopCh)
-	delete(b.streams, pair)
-	return nil
-}
 
-func (b *binance) Stop() error {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	for _, stopCh := range b.streams {
-		stopCh <- struct{}{}
-		close(stopCh)
-	}
-
-	b.streams = make(map[string]chan struct{}) // delete all stopped streams
+	b.streams.Delete(pair)
 	return nil
 }
 
