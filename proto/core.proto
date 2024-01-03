@@ -65,6 +65,7 @@ enum PositionStatus {
 }
 
 message Position {
+  string id = 9;
   string channel_id = 1;
   Market market = 2;
   Direction direction = 3;
