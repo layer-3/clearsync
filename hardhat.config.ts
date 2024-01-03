@@ -2,16 +2,13 @@ import 'dotenv/config';
 
 import '@nomicfoundation/hardhat-toolbox';
 import '@nomiclabs/hardhat-ethers';
-import '@openzeppelin/hardhat-upgrades';
 import type { HardhatUserConfig } from 'hardhat/config';
 import 'solidity-docgen';
 import 'hardhat-change-network';
 
 import './src/tasks/accounts';
 import './src/tasks/activate';
-import './src/tasks/forceImport';
 import './src/tasks/vesting';
-import './src/tasks/bridge';
 
 let accounts;
 
@@ -88,6 +85,10 @@ const config: HardhatUserConfig = {
     },
     goerli: {
       url: process.env.GOERLI_URL ?? '',
+      accounts,
+    },
+    sepolia: {
+      url: process.env.SEPOLIA_URL ?? '',
       accounts,
     },
     matic: {
@@ -168,6 +169,7 @@ const config: HardhatUserConfig = {
     apiKey: {
       mainnet: ETHERSCAN_API_KEY,
       goerli: ETHERSCAN_API_KEY,
+      sepolia: ETHERSCAN_API_KEY,
       polygon: POLYGONSCAN_API_KEY,
       polygonMumbai: POLYGONSCAN_API_KEY,
       bsc: BSCSCAN_API_KEY,

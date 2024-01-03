@@ -74,7 +74,7 @@ When parties are off-chains communication must be low latency and capable of hig
 npx hardhat help
 npx hardhat test
 npx hardhat node
-npx hardhat run scripts/deploy.ts
+npx hardhat run scripts/deployContract.ts
 ```
 
 ## Deployments
