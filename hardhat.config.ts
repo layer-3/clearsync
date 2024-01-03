@@ -9,7 +9,6 @@ import 'hardhat-change-network';
 import './src/tasks/accounts';
 import './src/tasks/activate';
 import './src/tasks/vesting';
-import './src/tasks/bridge';
 
 let accounts;
 
