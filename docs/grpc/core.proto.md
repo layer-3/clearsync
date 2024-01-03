@@ -59,6 +59,7 @@ To create a new Decimal type compatible with ExitFormat
 
 | Field | Type | Description |
 | ----- | ---- | ----------- |
+| id | [string](#string) |  |
 | channel_id | [string](#string) |  |
 | market | [core.Market](core.proto.md#market) |  |
 | direction | [core.Direction](core.proto.md#direction) |  |
