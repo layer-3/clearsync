@@ -2,14 +2,12 @@ import 'dotenv/config';
 
 import '@nomicfoundation/hardhat-toolbox';
 import '@nomiclabs/hardhat-ethers';
-import '@openzeppelin/hardhat-upgrades';
 import type { HardhatUserConfig } from 'hardhat/config';
 import 'solidity-docgen';
 import 'hardhat-change-network';
 
 import './src/tasks/accounts';
 import './src/tasks/activate';
-import './src/tasks/forceImport';
 import './src/tasks/vesting';
 import './src/tasks/bridge';
 

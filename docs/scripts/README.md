@@ -35,22 +35,6 @@ NAME=<contract_name> ARGS=<constructor_args_separated_by_comma> npx hardhat run 
 
 Note, that to use a network with `network_name`, it should be correctly set up in the `hardhat.config.ts` file.
 
-## Deploy proxy contract
-
-You can deploy a proxy contract with the following command:
-
-```bash
-NAME=<contract_name> ARGS=<constructor_args_separated_by_comma> npx hardhat run scripts/deployProxy.ts --network <network_name>
-```
-
-## Upgrade proxy contract
-
-You can upgrade a proxy contract with the following command:
-
-```bash
-UPGRADE_TO_NAME=<contract_name_to_upgrade_to> ADDRESS=<proxy_address> npx hardhat run scripts/upgradeProxy.ts --network <network_name>
-```
-
 ## Verify any contract
 
 You can verify any contract with source code in this repo with the following command:
