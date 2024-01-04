@@ -1,4 +1,4 @@
-import type { Outcome } from '@statechannels/nitro-protocol';
+import type { Outcome } from '../../nitro';
 
 type DestinationAmount = [string, number];
 

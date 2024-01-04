@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import '@statechannels/nitro-protocol/contracts/NitroAdjudicator.sol';
+import '../nitro/NitroAdjudicator.sol';
 
 contract YellowAdjudicator is NitroAdjudicator {}

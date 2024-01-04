@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import '@statechannels/nitro-protocol/contracts/interfaces/IForceMoveApp.sol';
-import '@statechannels/nitro-protocol/contracts/libraries/NitroUtils.sol';
-import '@statechannels/nitro-protocol/contracts/interfaces/INitroTypes.sol';
+import '../nitro/interfaces/IForceMoveApp.sol';
+import '../nitro/libraries/NitroUtils.sol';
+import '../nitro/interfaces/INitroTypes.sol';
 import {ExitFormat as Outcome} from '@statechannels/exit-format/contracts/ExitFormat.sol';
 
 // NOTE: Attack:
