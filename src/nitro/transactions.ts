@@ -1,6 +1,6 @@
 import {constants, providers, Signature} from 'ethers';
 
-import {State} from './contract/state';
+import type { State } from './contract/state';
 import * as forceMoveTrans from './contract/transaction-creators/force-move';
 import * as multiAssetHolderTrans from './contract/transaction-creators/multi-asset-holder';
 import * as nitroAdjudicatorTrans from './contract/transaction-creators/nitro-adjudicator';

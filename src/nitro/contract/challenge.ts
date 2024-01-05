@@ -1,12 +1,12 @@
 import {ethers, BigNumber, utils, Signature} from 'ethers';
 const {Interface, keccak256, defaultAbiCoder} = utils;
 
-import NitroAdjudicatorArtifact from '../../artifacts/contracts/NitroAdjudicator.sol/NitroAdjudicator.json';
-import {SignedState} from '../signatures';
+import NitroAdjudicatorArtifact from '../../../artifacts/contracts/nitro/NitroAdjudicator.sol/NitroAdjudicator.json';
+import type { SignedState } from '../signatures';
 
 import {decodeOutcome} from './outcome';
 import {FixedPart, hashState, State, VariablePart} from './state';
-import {Address, Bytes32, Uint8, Uint48} from './types';
+import type { Address, Bytes32, Uint8, Uint48 } from './types';
 
 export function hashChallengeMessage(challengeState: State): Bytes32 {
   return keccak256(

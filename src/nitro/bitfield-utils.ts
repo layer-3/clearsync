@@ -1,4 +1,4 @@
-import {Uint256} from './contract/types';
+import type { Uint256 } from './contract/types';
 
 export function getSignersNum(signedByStr: Uint256): number {
   let signedBy = parseFloat(signedByStr);

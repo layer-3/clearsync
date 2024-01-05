@@ -1,6 +1,6 @@
 import { utils, providers, Signature, constants } from 'ethers';
 
-import NitroAdjudicatorArtifact from '../../../artifacts/contracts/NitroAdjudicator.sol/NitroAdjudicator.json';
+import NitroAdjudicatorArtifact from '../../../../artifacts/contracts/nitro/NitroAdjudicator.sol/NitroAdjudicator.json';
 import { bindSignatures, getChannelId, hashState } from '../..';
 import { encodeOutcome } from '../outcome';
 import { getFixedPart, getVariablePart, separateProofAndCandidate, State } from '../state';

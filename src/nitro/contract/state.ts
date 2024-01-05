@@ -1,10 +1,10 @@
 import {utils} from 'ethers';
-import {Signature} from '@ethersproject/bytes';
-import {ParamType} from 'ethers/lib/utils';
+import type { Signature } from '@ethersproject/bytes';
+import type { ParamType } from 'ethers/lib/utils';
 
 import {getChannelId} from './channel';
-import {Outcome} from './outcome';
-import {Address, Bytes, Bytes32, Uint256, Uint48, Uint64} from './types';
+import type { Outcome } from './outcome';
+import type { Address, Bytes, Bytes32, Uint256, Uint48, Uint64 } from './types';
 
 export type State = FixedPart & VariablePart;
 

@@ -1,6 +1,6 @@
-import FULLNitroAdjudicatorArtifact from '../artifacts/contracts/NitroAdjudicator.sol/NitroAdjudicator.json';
-import FULLConsensusAppArtifact from '../artifacts/contracts/ConsensusApp.sol/ConsensusApp.json';
-import FULLVirtualPaymentAppArtifact from '../artifacts/contracts/VirtualPaymentApp.sol/VirtualPaymentApp.json';
+import FULLNitroAdjudicatorArtifact from '../../artifacts/contracts/nitro/NitroAdjudicator.sol/NitroAdjudicator.json';
+import FULLConsensusAppArtifact from '../../artifacts/contracts/nitro/ConsensusApp.sol/ConsensusApp.json';
+import FULLVirtualPaymentAppArtifact from '../../artifacts/contracts/nitro/VirtualPaymentApp.sol/VirtualPaymentApp.json';
 
 export const ContractArtifacts = {
   NitroAdjudicatorArtifact: FULLNitroAdjudicatorArtifact,

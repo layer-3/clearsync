@@ -2,7 +2,7 @@ import {defaultAbiCoder} from '@ethersproject/abi';
 import * as ExitFormat from '@statechannels/exit-format';
 import {BytesLike, constants, utils} from 'ethers';
 
-import {Bytes32} from './types';
+import type { Bytes32 } from './types';
 
 //
 // CONSTANTS

@@ -1,6 +1,6 @@
 import {ethers, constants} from 'ethers';
 
-import NitroAdjudicatorArtifact from '../../../artifacts/contracts/NitroAdjudicator.sol/NitroAdjudicator.json';
+import NitroAdjudicatorArtifact from '../../../../artifacts/contracts/nitro/NitroAdjudicator.sol/NitroAdjudicator.json';
 
 export const NitroAdjudicatorContractInterface = new ethers.utils.Interface(
   NitroAdjudicatorArtifact.abi

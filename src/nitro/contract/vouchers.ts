@@ -1,9 +1,9 @@
-import {BigNumberish, Signature, Wallet} from 'ethers';
+import type { BigNumberish, Signature, Wallet } from 'ethers';
 import {defaultAbiCoder, keccak256, ParamType} from 'ethers/lib/utils';
 
 import {sign} from '../signatures';
 
-import {Bytes32} from './types';
+import type { Bytes32 } from './types';
 
 export interface Voucher {
   channelId: Bytes32;

@@ -1,10 +1,10 @@
 import {Wallet, utils, Signature} from 'ethers';
 
-import {Bytes, Uint256} from './contract/types';
+import type { Bytes, Uint256 } from './contract/types';
 import {getSignedBy, getSignersIndices, getSignersNum} from './bitfield-utils';
 import {hashChallengeMessage} from './contract/challenge';
 import {getChannelId} from './contract/channel';
-import {Outcome} from './contract/outcome';
+import type { Outcome } from './contract/outcome';
 import {
   getFixedPart,
   hashState,

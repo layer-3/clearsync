@@ -2,7 +2,7 @@ import {Allocation, AllocationType} from '@statechannels/exit-format';
 import {BigNumber, BigNumberish, ethers} from 'ethers';
 import {isBigNumberish} from '@ethersproject/bignumber/lib/bignumber';
 
-import {Outcome} from './contract/outcome';
+import type { Outcome } from './contract/outcome';
 
 /**
  * A mapping from destination to BigNumberish. E.g. {ALICE:2, BOB:3}. Only used in testing.
