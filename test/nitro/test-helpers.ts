@@ -1,4 +1,5 @@
-import { Contract, ethers, BigNumber, providers, Wallet } from 'ethers';
+import { Contract, BigNumber, providers, Wallet } from 'ethers';
+import { ethers } from 'hardhat';
 import { expect } from 'chai';
 import { Allocation, AllocationType, AssetMetadata } from '@statechannels/exit-format';
 import type { LogDescription } from '@ethersproject/abi';
@@ -12,22 +13,25 @@ import type { Outcome } from '../../src/nitro/contract/outcome';
 import type { Bytes32, OutcomeShortHand, VariablePart } from '../../src/nitro';
 
 /**
- * Get a rich object representing an on-chain contract
- * @param provider an ethers JsonRpcProvider
- * @param artifact an object containing the abi of the contract in question
- * @param address the ethereum address of the contract, once it is deployed
- * @returns a rich (ethers) Contract object with a connected signer (the 0th signer of the supplied provider)
+ * Deploys a given contract using the first available signer from ethers.
+ *
+ * This function is generic and can be used to deploy any contract for which a factory can be created.
+ * It retrieves the first signer from the ethers provider to use as the deployer of the contract.
+ *
+ * @param contractName The name of the contract to deploy. This should match the name used in the contract's declaration.
+ * @returns A promise that resolves to a deployed contract instance. The type of the contract is specified by the generic type parameter <T>.
+ * @typeparam T The type of the contract to be deployed. This should correspond to the type of the contract instance expected.
+ *
+ * Usage example:
+ * const contract: MyContractType = await deployContract<MyContractType>('MyContractName');
  */
-export function setupContract(
-  provider: ethers.providers.JsonRpcProvider,
-  artifact: { abi: ethers.ContractInterface },
-  address: string,
-): Contract {
-  return new ethers.Contract(address, artifact.abi, provider.getSigner(0));
-}
-
-export function getCountingAppContractAddress(): string {
-  return process.env.COUNTING_APP_ADDRESS ?? '';
+export async function setupContract<Contract>(
+  contractName: string,
+  ...args: any[]
+): Promise<Contract> {
+  let [Deployer] = await ethers.getSigners();
+  const factory = await ethers.getContractFactory(contractName);
+  return (await factory.connect(Deployer).deploy(...args)) as Contract;
 }
 
 export const nonParticipant = ethers.Wallet.createRandom();
