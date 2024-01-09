@@ -2,7 +2,8 @@
   "name": "clearsync-project",
   "scripts": {
     "lint": "npx eslint \"./\" && prettier '**/*.{json,sol,md}' -c && solhint 'contracts/**/*.sol'",
-    "lint:fix": "eslint '**/*.{js,ts}' --fix && prettier '**/*.{json,sol,md}' --write && solhint 'contracts/**/*.sol' --fix"
+    "lint:fix": "eslint '**/*.{js,ts}' --fix && prettier '**/*.{json,sol,md}' --write && solhint 'contracts/**/*.sol' --fix",
+    "test": "hardhat test"
   },
   "devDependencies": {
     "@layerzerolabs/solidity-examples": "^0.0.13",
