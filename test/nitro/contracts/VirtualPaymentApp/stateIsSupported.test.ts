@@ -1,4 +1,4 @@
-import { Contract, BigNumber } from 'ethers';
+import { Contract, BigNumber, Wallet } from 'ethers';
 import { ethers } from 'hardhat';
 import { describe, beforeEach, it } from 'mocha';
 
@@ -8,10 +8,12 @@ import {
   convertAddressToBytes32,
   encodeVoucherAmountAndSignature,
   getChannelId,
+  MAGIC_ADDRESS_INDICATING_ETH,
   signVoucher,
   Voucher,
 } from '../../../../src/nitro';
 import {
+  FixedPart,
   getFixedPart,
   getVariablePart,
   RecoveredVariablePart,
@@ -22,30 +24,36 @@ import type { VirtualPaymentApp } from '../../../../typechain-types';
 const { HashZero } = ethers.constants;
 
 let virtualPaymentApp: Contract;
-const nParticipants = 4;
-const { wallets, participants } = generateParticipants(nParticipants);
-
-const challengeDuration = 0x100;
-const MAGIC_ETH_ADDRESS = '0x0000000000000000000000000000000000000000';
-
-const baseState: State = {
-  turnNum: 0,
-  isFinal: false,
-  channelNonce: '0x8',
-  participants,
-  challengeDuration,
-  outcome: [],
-  appData: HashZero,
-  appDefinition: process.env.VIRTUAL_PAYMENT_APP_ADDRESS ?? '',
-};
-const fixedPart = getFixedPart(baseState);
-const channelId = getChannelId(fixedPart);
-
-const alice = convertAddressToBytes32(participants[0]); // NOTE these desinations do not necessarily need to be related to participant addresses
-const bob = convertAddressToBytes32(participants[2]);
+let participantsWallets: Wallet[];
+let baseState: State;
+let fixedPart: FixedPart;
+let channelId: string;
+let alice: string;
+let bob: string;
 
 beforeEach(async () => {
   virtualPaymentApp = await setupContract<VirtualPaymentApp>('VirtualPaymentApp');
+
+  const nParticipants = 4;
+  const { wallets, participants } = generateParticipants(nParticipants);
+  participantsWallets = wallets;
+
+  baseState = {
+    turnNum: 0,
+    isFinal: false,
+    channelNonce: '0x8',
+    participants,
+    challengeDuration: 0x100,
+    outcome: [],
+    appData: HashZero,
+    appDefinition: virtualPaymentApp.address,
+  };
+  fixedPart = getFixedPart(baseState);
+  channelId = getChannelId(fixedPart);
+
+  // NOTE these desinations do not necessarily need to be related to participant addresses
+  alice = convertAddressToBytes32(participants[0]);
+  bob = convertAddressToBytes32(participants[2]);
 });
 
 describe('stateIsSupported (lone candidate route)', () => {
@@ -145,7 +153,7 @@ describe('stateIsSupported (candidate plus single proof state route)', () => {
         turnNum: tc.proofTurnNum,
         isFinal: false,
         outcome: computeOutcome({
-          [MAGIC_ETH_ADDRESS]: { [alice]: 10, [bob]: 10 },
+          [MAGIC_ADDRESS_INDICATING_ETH]: { [alice]: 10, [bob]: 10 },
         }),
       };
 
@@ -157,12 +165,12 @@ describe('stateIsSupported (candidate plus single proof state route)', () => {
       const voucher: Voucher = {
         channelId: tc.voucherForThisChannel
           ? channelId
-          : convertAddressToBytes32(MAGIC_ETH_ADDRESS),
+          : convertAddressToBytes32(MAGIC_ADDRESS_INDICATING_ETH),
         amount,
       };
 
       // make an (in)valid signature
-      const signature = await signVoucher(voucher, wallets[0]);
+      const signature = await signVoucher(voucher, participantsWallets[0]);
       if (!tc.voucherSignedByAlice) {
         // (conditionally) corrupt the signature
         signature.s = signature.r;
@@ -173,7 +181,7 @@ describe('stateIsSupported (candidate plus single proof state route)', () => {
       const candidateState: State = {
         ...proofState,
         outcome: computeOutcome({
-          [MAGIC_ETH_ADDRESS]: {
+          [MAGIC_ADDRESS_INDICATING_ETH]: {
             [alice]: tc.aliceAdjustedCorrectly ? 3 : 2,
             [bob]: tc.bobAdjustedCorrectly ? 7 : 99,
           },

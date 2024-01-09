@@ -5,6 +5,7 @@ import { ethers } from 'hardhat';
 import { expectRevert } from '../../../helpers/expect-revert';
 import { computeOutcome, convertAddressToBytes32 } from '../../../../src/nitro';
 import {
+  FixedPart,
   getFixedPart,
   getVariablePart,
   RecoveredVariablePart,
@@ -15,13 +16,15 @@ import { expectUnsupportedState } from '../../tx-expect-wrappers';
 import type { InterestBearingApp } from '../../../../typechain-types';
 
 let interestBearingApp: Contract;
+let baseState: State;
+let fixedPart: FixedPart;
+let signedByBorrower: RecoveredVariablePart;
+let signedByLender: RecoveredVariablePart;
+let signedByBoth: RecoveredVariablePart;
 
 const { participants } = generateParticipants(2);
 const challengeDuration = 0x100;
 const MAGIC_NATIVE_ASSET_ADDRESS = '0x0000000000000000000000000000000000000000';
-const APPDEF = process.env.LEDGER_FINANCING_APP_ADDRESS
-  ? process.env.LEDGER_FINANCING_APP_ADDRESS
-  : 'failfast';
 
 const merchant = convertAddressToBytes32(participants[0]);
 const intermediary = convertAddressToBytes32(participants[1]);
@@ -86,36 +89,35 @@ const baseAppData: InterestBearingAppData = {
   },
 };
 
-const baseState: State = {
-  turnNum: 0,
-  isFinal: false, // intermediary wants to force finalization
-  channelNonce: '0x8',
-  participants,
-  challengeDuration,
-  outcome: initialOutcome,
-  appData: appDataABIEncode(baseAppData),
-  appDefinition: APPDEF,
-};
-
-const variablePart = getVariablePart(baseState);
-
-const signedByBorrower: RecoveredVariablePart = {
-  variablePart,
-  signedBy: BigNumber.from(0b10).toHexString(),
-};
-const signedByLender: RecoveredVariablePart = {
-  variablePart,
-  signedBy: BigNumber.from(0b01).toHexString(),
-};
-const signedByBoth: RecoveredVariablePart = {
-  variablePart,
-  signedBy: BigNumber.from(0b11).toHexString(),
-};
-
-const fixedPart = getFixedPart(baseState);
-
 before(async () => {
   interestBearingApp = await setupContract<InterestBearingApp>('InterestBearingApp');
+
+  baseState = {
+    turnNum: 0,
+    isFinal: false, // intermediary wants to force finalization
+    channelNonce: '0x8',
+    participants,
+    challengeDuration,
+    outcome: initialOutcome,
+    appData: appDataABIEncode(baseAppData),
+    appDefinition: interestBearingApp.address,
+  };
+
+  const variablePart = getVariablePart(baseState);
+  fixedPart = getFixedPart(baseState);
+
+  signedByBorrower = {
+    variablePart,
+    signedBy: BigNumber.from(0b10).toHexString(),
+  };
+  signedByLender = {
+    variablePart,
+    signedBy: BigNumber.from(0b01).toHexString(),
+  };
+  signedByBoth = {
+    variablePart,
+    signedBy: BigNumber.from(0b11).toHexString(),
+  };
 });
 
 describe('stateIsSupported', () => {
