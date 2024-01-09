@@ -151,6 +151,7 @@ message PositionNotification {
 message TransactionNotification {
   string to = 1;
   string data = 2;
+  uint64 gas_limit = 3;
 }
 
 message ErrorNotification {
