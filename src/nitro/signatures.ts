@@ -1,9 +1,9 @@
-import {Wallet, utils, Signature} from 'ethers';
+import { Wallet, utils, Signature } from 'ethers';
 
 import type { Bytes, Uint256 } from './contract/types';
-import {getSignedBy, getSignersIndices, getSignersNum} from './bitfield-utils';
-import {hashChallengeMessage} from './contract/challenge';
-import {getChannelId} from './contract/channel';
+import { getSignedBy, getSignersIndices, getSignersNum } from './bitfield-utils';
+import { hashChallengeMessage } from './contract/challenge';
+import { getChannelId } from './contract/channel';
 import type { Outcome } from './contract/outcome';
 import {
   getFixedPart,
@@ -30,8 +30,8 @@ export function getStateSignerAddress(signedState: SignedState): string {
   if (participants.indexOf(recoveredAddress) < 0) {
     throw new Error(
       `Recovered address ${recoveredAddress} is not a participant in channel ${getChannelId(
-        getFixedPart(signedState.state)
-      )}`
+        getFixedPart(signedState.state),
+      )}`,
     );
   }
   return recoveredAddress;
@@ -52,7 +52,7 @@ export function signState(state: State, privateKey: string): SignedState {
   const hashedState = hashState(state);
 
   const signature = signData(hashedState, privateKey);
-  return {state, signature};
+  return { state, signature };
 }
 
 export async function sign(wallet: Wallet, msgHash: string | Uint8Array): Promise<Signature> {
@@ -85,14 +85,14 @@ export type TurnNumToShortenedVariablePart = Map<number, ShortenedVariablePart>;
 export async function signStateWithBitfield(
   state: State,
   wallets: Wallet[],
-  signedBy: Uint256
+  signedBy: Uint256,
 ): Promise<Signature[]> {
   if (wallets.length < getSignersNum(signedBy)) {
     throw new Error('Insufficient wallets');
   }
 
   const promises = getSignersIndices(signedBy).map(
-    async i => await sign(wallets[i], hashState(state))
+    async (i) => await sign(wallets[i], hashState(state)),
   );
 
   return Promise.all(promises);
@@ -106,7 +106,7 @@ export async function signStateWithBitfield(
  */
 export function shortenedToRecoveredVariablePart(
   turnNum: number,
-  shortenedVP: ShortenedVariablePart
+  shortenedVP: ShortenedVariablePart,
 ): RecoveredVariablePart {
   // if just an array of signerIndices was supplied, convert it to ShortenedVariablePart
   if (Array.isArray(shortenedVP)) {
@@ -136,7 +136,7 @@ export function shortenedToRecoveredVariablePart(
  * @returns An array of RecoveredVariableParts.
  */
 export function shortenedToRecoveredVariableParts(
-  turnNumToShortenedVP: TurnNumToShortenedVariablePart
+  turnNumToShortenedVP: TurnNumToShortenedVariablePart,
 ): RecoveredVariablePart[] {
   return Array.from(turnNumToShortenedVP).map(([turnNum, shortenedVP]) => {
     return shortenedToRecoveredVariablePart(turnNum, shortenedVP);
@@ -152,9 +152,9 @@ export function shortenedToRecoveredVariableParts(
 export async function signStates(
   states: State[],
   wallets: Wallet[],
-  whoSignedWhat: number[]
+  whoSignedWhat: number[],
 ): Promise<Signature[]> {
-  const stateHashes = states.map(s => hashState(s));
+  const stateHashes = states.map((s) => hashState(s));
   const promises = wallets.map(async (w, i) => await sign(w, stateHashes[whoSignedWhat[i]]));
   return Promise.all(promises);
 }
@@ -165,14 +165,14 @@ export async function signStates(
 export function bindSignatures(
   variableParts: VariablePart[],
   signatures: Signature[],
-  whoSignedWhat: number[]
+  whoSignedWhat: number[],
 ): SignedVariablePart[] {
   const signedVariableParts = variableParts.map(
-    vp =>
+    (vp) =>
       ({
         variablePart: vp,
         sigs: [],
-      } as SignedVariablePart)
+      } as SignedVariablePart),
   );
 
   for (let i = 0; i < signatures.length; i++) {
@@ -188,15 +188,15 @@ export function bindSignatures(
 export function bindSignaturesWithSignedByBitfield(
   variableParts: VariablePart[],
   signatures: Signature[],
-  whoSignedWhat: number[]
+  whoSignedWhat: number[],
 ): RecoveredVariablePart[] {
   const recoveredVariableParts = variableParts.map(
-    vp =>
+    (vp) =>
       ({
         variablePart: vp,
 
         signedBy: '0',
-      } as RecoveredVariablePart)
+      } as RecoveredVariablePart),
   );
 
   for (let i = 0; i < signatures.length; i++) {
