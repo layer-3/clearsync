@@ -6,16 +6,13 @@ import { expectRevert } from '../../../helpers/expect-revert';
 import { getVariablePart, State, getFixedPart, getRandomNonce } from '../../../../src/nitro';
 import type { FixedPart, SignedVariablePart } from '../../../../src/nitro/contract/state';
 import type { NitroAdjudicator } from '../../../../typechain-types';
+import { setupContract } from '../../test-helpers';
 
 let nitroAdjudicator: Contract;
 
 describe('null app', () => {
   beforeEach(async () => {
-    let [Deployer] = await ethers.getSigners();
-    const NitroAdjudicatorFactory = await ethers.getContractFactory('NitroAdjudicator');
-    nitroAdjudicator = (await NitroAdjudicatorFactory.connect(
-      Deployer,
-    ).deploy()) as NitroAdjudicator;
+    nitroAdjudicator = await setupContract<NitroAdjudicator>('NitroAdjudicator');
   });
 
   it('should revert when stateIsSupported is called', async () => {

@@ -13,6 +13,7 @@ import {
   VariablePart,
 } from '../../../../src/nitro/contract/state';
 import { expectSupportedState } from '../../tx-expect-wrappers';
+import { setupContract } from '../../test-helpers';
 
 let trivialApp: Contract;
 
@@ -56,9 +57,7 @@ function mockSigs(vp: VariablePart): RecoveredVariablePart {
 
 describe('stateIsSupported', () => {
   beforeEach(async () => {
-    let [Deployer] = await ethers.getSigners();
-    const TrivialAppFactory = await ethers.getContractFactory('TrivialApp');
-    trivialApp = (await TrivialAppFactory.connect(Deployer).deploy()) as TrivialApp;
+    trivialApp = await setupContract<TrivialApp>('TrivialApp');
   });
 
   it('Transitions between random VariableParts are valid', async () => {

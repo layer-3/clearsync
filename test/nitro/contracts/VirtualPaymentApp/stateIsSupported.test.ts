@@ -17,7 +17,7 @@ import {
   RecoveredVariablePart,
   State,
 } from '../../../../src/nitro/contract/state';
-import { generateParticipants } from '../../test-helpers';
+import { generateParticipants, setupContract } from '../../test-helpers';
 import type { VirtualPaymentApp } from '../../../../typechain-types';
 const { HashZero } = ethers.constants;
 
@@ -45,9 +45,7 @@ const alice = convertAddressToBytes32(participants[0]); // NOTE these desination
 const bob = convertAddressToBytes32(participants[2]);
 
 beforeEach(async () => {
-  let [Deployer] = await ethers.getSigners();
-  const TrivialAppFactory = await ethers.getContractFactory('VirtualPaymentApp');
-  virtualPaymentApp = (await TrivialAppFactory.connect(Deployer).deploy()) as VirtualPaymentApp;
+  virtualPaymentApp = await setupContract<VirtualPaymentApp>('VirtualPaymentApp');
 });
 
 describe('stateIsSupported (lone candidate route)', () => {

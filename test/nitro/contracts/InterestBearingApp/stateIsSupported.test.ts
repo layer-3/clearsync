@@ -10,7 +10,7 @@ import {
   RecoveredVariablePart,
   State,
 } from '../../../../src/nitro/contract/state';
-import { generateParticipants } from '../../test-helpers';
+import { generateParticipants, setupContract } from '../../test-helpers';
 import { expectUnsupportedState } from '../../tx-expect-wrappers';
 import type { InterestBearingApp } from '../../../../typechain-types';
 
@@ -115,9 +115,7 @@ const signedByBoth: RecoveredVariablePart = {
 const fixedPart = getFixedPart(baseState);
 
 before(async () => {
-  let [Deployer] = await ethers.getSigners();
-  const factory = await ethers.getContractFactory('InterestBearingApp');
-  interestBearingApp = (await factory.connect(Deployer).deploy()) as InterestBearingApp;
+  interestBearingApp = await setupContract<InterestBearingApp>('InterestBearingApp');
 });
 
 describe('stateIsSupported', () => {
