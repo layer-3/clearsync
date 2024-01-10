@@ -1,7 +1,7 @@
 import { describe, it } from 'mocha';
+import { expect } from 'chai';
 
 import { convertBytes32ToAddress } from '../../../../src/nitro/contract/multi-asset-holder';
-import { expect } from 'chai';
 
 describe('convertBytes32ToAddress', () => {
   const testCases = [
