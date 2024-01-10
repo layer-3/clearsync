@@ -15,6 +15,8 @@ import type {
   Token,
 } from '../../../../typechain-types';
 
+const ERR_NOT_EXPECTED_HELD = 'held != expectedHeld';
+
 let consensusApp: ConsensusApp;
 let nitroAdjudicator: NitroAdjudicator;
 let batchOperator: BatchOperator;
@@ -22,8 +24,8 @@ let token: Token;
 let badToken: BadToken;
 
 const ETH = MAGIC_ADDRESS_INDICATING_ETH;
-let ERC20: string; // = token.address;
-let BadERC20: string; // = badToken.address;
+let ERC20: string;
+let BadERC20: string;
 let signerAddress: string;
 
 const batchSize = 3;
@@ -45,26 +47,33 @@ before(async () => {
     'BadToken',
     '0x6B8B2958795a5E9c00A2E8D4B0b90b870cbAB4b6',
   );
+
+  ERC20 = token.address;
+  BadERC20 = badToken.address;
 });
 
 interface testParams {
   description: string;
-  assetId: string;
+  assetGetter: () => string;
   expectedHelds: number[];
   amounts: number[];
   heldAfters: number[];
   reasonString: string;
 }
 
-function sum(x: BigNumber[]): BigNumber {
-  return x.reduce((s, n) => s.add(n));
-}
-
+// eslint-disable-next-line sonarjs/cognitive-complexity
 describe('deposit_batch', () => {
+  // NOTE: getters allow to use values that are created in "beforeAll" hook inside test cases
+  // This is needed because mocha executes the `describe` callback,
+  // then hooks (including `beforeAll`) and only then test cases (`it` callbacks)
+  const ETH_getter = (): string => ETH;
+  const ERC20_getter = (): string => ERC20;
+  const BadERC20_getter = (): string => BadERC20;
+
   const testCases = [
     {
       description: 'Deposits Eth to Multiple Channels (expectedHeld = 0)',
-      assetId: ETH,
+      assetGetter: ETH_getter,
       expectedHelds: [0, 0, 0],
       amounts: [1, 2, 3],
       heldAfters: [1, 2, 3],
@@ -72,7 +81,7 @@ describe('deposit_batch', () => {
     },
     {
       description: 'Deposits Eth to Multiple Channels (expectedHeld = 1)',
-      assetId: ETH,
+      assetGetter: ETH_getter,
       expectedHelds: [1, 1, 1],
       amounts: [2, 2, 2],
       heldAfters: [3, 3, 3],
@@ -80,7 +89,7 @@ describe('deposit_batch', () => {
     },
     {
       description: 'Deposits Eth to Multiple Channels (mixed expectedHeld)',
-      assetId: ETH,
+      assetGetter: ETH_getter,
       expectedHelds: [0, 1, 2],
       amounts: [1, 1, 1],
       heldAfters: [1, 2, 3],
@@ -89,24 +98,24 @@ describe('deposit_batch', () => {
     {
       description:
         'Reverts deposit of Eth to Multiple Channels (mismatched expectedHeld, zero expected)',
-      assetId: ETH,
+      assetGetter: ETH_getter,
       expectedHelds: [0, 0, 0],
       amounts: [1, 1, 1],
       heldAfters: [1, 1, 1],
-      reasonString: 'unexpectedHeld',
+      reasonString: ERR_NOT_EXPECTED_HELD,
     },
     {
       description:
         'Reverts deposit of Eth to Multiple Channels (mismatched expectedHeld, nonzero expected)',
-      assetId: ETH,
+      assetGetter: ETH_getter,
       expectedHelds: [1, 1, 1],
       amounts: [1, 1, 1],
       heldAfters: [2, 2, 2],
-      reasonString: 'unexpectedHeld',
+      reasonString: ERR_NOT_EXPECTED_HELD,
     },
     {
       description: 'Deposits Tokens to Multiple Channels (expectedHeld = 0)',
-      assetId: ERC20,
+      assetGetter: ERC20_getter,
       expectedHelds: [0, 0, 0],
       amounts: [1, 1, 1],
       heldAfters: [1, 1, 1],
@@ -114,7 +123,7 @@ describe('deposit_batch', () => {
     },
     {
       description: 'Deposits Tokens to Multiple Channels (expectedHeld = 1)',
-      assetId: ERC20,
+      assetGetter: ERC20_getter,
       expectedHelds: [1, 1, 1],
       amounts: [1, 1, 1],
       heldAfters: [2, 2, 2],
@@ -122,7 +131,7 @@ describe('deposit_batch', () => {
     },
     {
       description: 'Deposits Tokens to Multiple Channels (mixed expectedHeld)',
-      assetId: ERC20,
+      assetGetter: ERC20_getter,
       expectedHelds: [0, 1, 0],
       amounts: [1, 1, 1],
       heldAfters: [1, 2, 1],
@@ -131,24 +140,24 @@ describe('deposit_batch', () => {
     {
       description:
         'Reverts deposit of Tokens to Multiple Channels (mismatched expectedHeld, zero expected)',
-      assetId: ERC20,
+      assetGetter: ERC20_getter,
       expectedHelds: [0, 0, 0],
       amounts: [1, 1, 1],
       heldAfters: [1, 1, 1],
-      reasonString: 'unexpectedHeld',
+      reasonString: ERR_NOT_EXPECTED_HELD,
     },
     {
       description:
         'Reverts deposit of Tokens to Multiple Channels (mismatched expectedHeld, nonzero expected)',
-      assetId: ERC20,
+      assetGetter: ERC20_getter,
       expectedHelds: [1, 1, 1],
       amounts: [1, 1, 1],
       heldAfters: [2, 2, 2],
-      reasonString: 'unexpectedHeld',
+      reasonString: ERR_NOT_EXPECTED_HELD,
     },
     {
       description: 'Deposits BadToken to Multiple Channels (expectedHeld = 0)',
-      assetId: BadERC20,
+      assetGetter: BadERC20_getter,
       expectedHelds: [0, 0, 0],
       amounts: [1, 1, 1],
       heldAfters: [1, 1, 1],
@@ -156,7 +165,7 @@ describe('deposit_batch', () => {
     },
     {
       description: 'Reverts if input lengths do not match',
-      assetId: ETH,
+      assetGetter: ETH_getter,
       expectedHelds: [0, 0],
       amounts: [1, 1, 1],
       heldAfters: [1, 1, 1],
@@ -164,14 +173,13 @@ describe('deposit_batch', () => {
     },
   ];
 
-  for (const tc of testCases) it(tc.description, async () => {
-      const { description, assetId, expectedHelds, amounts, heldAfters, reasonString } =
+  for (const tc of testCases)
+    it(tc.description, async () => {
+      const { description, assetGetter, expectedHelds, amounts, heldAfters, reasonString } =
         tc as testParams;
-      ///////////////////////////////////////
-      //
+      const asset: string = assetGetter();
+
       // Construct deposit_batch parameters
-      //
-      ///////////////////////////////////////
       const channelIds = counterparties.map((counterparty) =>
         getChannelId({
           channelNonce: getRandomNonce(description),
@@ -183,84 +191,72 @@ describe('deposit_batch', () => {
       const expectedHeldsBN = expectedHelds.map((x) => BigNumber.from(x));
       const amountsBN = amounts.map((x) => BigNumber.from(x));
       const heldAftersBN = heldAfters.map((x) => BigNumber.from(x));
-      const totalValue = sum(amountsBN);
+      const totalValue = BigNumber.from(amounts.reduce((s, n) => s + n));
 
-      if (assetId === ERC20) {
-        await (
-          await token.increaseAllowance(batchOperator.address, totalValue.add(totalValue))
-        ).wait();
+      if (asset === ERC20) {
+        const tx = await token.increaseAllowance(batchOperator.address, totalValue.add(totalValue));
+        await tx.wait();
       }
 
-      if (assetId === BadERC20) {
-        await (
-          await badToken.increaseAllowance(batchOperator.address, totalValue.add(totalValue))
-        ).wait();
+      if (asset === BadERC20) {
+        const tx = await badToken.increaseAllowance(
+          batchOperator.address,
+          totalValue.add(totalValue),
+        );
+        await tx.wait();
       }
 
-      ///////////////////////////////////////
-      //
       // Set up preexisting holdings (if any)
-      //
-      ///////////////////////////////////////
-
       await Promise.all(
         expectedHeldsBN.map(async (expected, i) => {
           const channelID = channelIds[i];
           // apply incorrect amount if unexpectedHeld reasonString is set
-          const value = reasonString == 'held != expectedHeld' ? expected.add(1) : expected;
+          const value = reasonString == ERR_NOT_EXPECTED_HELD ? expected.add(1) : expected;
 
-          if (assetId === ERC20) {
-            await (await token.increaseAllowance(nitroAdjudicator.address, value)).wait();
+          if (asset === ERC20) {
+            const tx = await token.increaseAllowance(nitroAdjudicator.address, value);
+            await tx.wait();
           }
-          if (assetId === BadERC20) {
-            await (await badToken.increaseAllowance(nitroAdjudicator.address, value)).wait();
+          if (asset === BadERC20) {
+            const tx = await badToken.increaseAllowance(nitroAdjudicator.address, value);
+            await tx.wait();
           }
 
-          const { events } = await (
-            await nitroAdjudicator.deposit(assetId, channelID, 0, value, {
-              value: assetId === ETH ? value : 0,
-            })
-          ).wait();
+          const tx = await nitroAdjudicator.deposit(asset, channelID, 0, value, {
+            value: asset === ETH ? value : 0,
+          });
+          const { events } = await tx.wait();
           expect(events).not.to.equal(undefined);
         }),
       );
 
-      ///////////////////////////////////////
-      //
       // Execute deposit
-      //
-      ///////////////////////////////////////
-
-      const tx =
-        assetId === ETH
+      const txPromise =
+        asset === ETH
           ? batchOperator.deposit_batch_eth(channelIds, expectedHeldsBN, amountsBN, {
               value: totalValue,
             })
           : batchOperator.deposit_batch_erc20(
-              assetId,
+              asset,
               channelIds,
               expectedHeldsBN,
               amountsBN,
               totalValue,
             );
 
-      ///////////////////////////////////////
-      //
-      // Check postconditions
-      //
-      ///////////////////////////////////////
+      // Check post-conditions
       if (reasonString == '') {
-        await (await tx).wait();
+        const tx = await txPromise;
+        await tx.wait();
 
         for (const [i, channelId] of channelIds.entries()) {
           const expectedHoldings = heldAftersBN[i];
 
-          const holdings = await nitroAdjudicator.holdings(assetId, channelId);
+          const holdings = await nitroAdjudicator.holdings(asset, channelId);
           expect(holdings).to.equal(expectedHoldings);
         }
       } else {
-        await expectRevert(() => tx, reasonString);
+        await expectRevert(() => txPromise, reasonString);
       }
-    })
-  ;
+    });
 });
