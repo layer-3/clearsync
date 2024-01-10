@@ -295,3 +295,19 @@ export const largeOutcome = (
       ]
     : [];
 };
+
+// See https://github.com/ethers-io/ethers.js/discussions/2429
+// convertToStruct takes an array-ish type (like those returned from on-chain calls) and converts it to an object type
+export const convertToStruct = <A extends unknown[]>(arr: A): ExtractPropsFromArray<A> => {
+  const keys = Object.keys(arr).filter((key) => Number.isNaN(Number(key)));
+  const result: Record<string, unknown> = {};
+
+  for (const [index, item] of arr.entries()) {
+    result[keys[index]] = item;
+  }
+
+  return result as A;
+};
+
+// This is to remove unnecessary properties from the output type
+export type ExtractPropsFromArray<T> = Omit<T, keyof unknown[] | `${number}`>;

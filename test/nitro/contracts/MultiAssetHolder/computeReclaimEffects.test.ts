@@ -1,9 +1,9 @@
-import { BigNumber, BytesLike, Contract, constants } from 'ethers';
+import { Contract, constants } from 'ethers';
 import { Allocation, AllocationType } from '@statechannels/exit-format';
 import { describe, it } from 'mocha';
-import { assert } from 'chai';
+import { expect } from 'chai';
 
-import { setupContract } from '../../test-helpers';
+import { convertToStruct, setupContract } from '../../test-helpers';
 import { computeReclaimEffects } from '../../../../src/nitro/contract/multi-asset-holder';
 import { encodeGuaranteeData } from '../../../../src/nitro/contract/outcome';
 
@@ -26,13 +26,6 @@ interface TestCaseOutputs {
 interface TestCase {
   inputs: TestCaseInputs;
   outputs: TestCaseOutputs;
-}
-
-interface AllocationT {
-  destination: string;
-  amount: BigNumber;
-  allocationType: number;
-  metadata: BytesLike;
 }
 
 const testCases: TestCase[] = [
@@ -98,7 +91,7 @@ before(async () => {
 });
 
 describe('computeReclaimEffects', () => {
-  testCases.forEach((testCase: TestCase) => {
+  for (const testCase of testCases) {
     it('off chain method matches expectation', () => {
       const offChainNewSourceAllocations = computeReclaimEffects(
         testCase.inputs.sourceAllocations,
@@ -106,7 +99,7 @@ describe('computeReclaimEffects', () => {
         testCase.inputs.indexOfTargetInSource,
       );
 
-      assert.deepEqual(offChainNewSourceAllocations, testCase.outputs.newSourceAllocations);
+      expect(offChainNewSourceAllocations).to.deep.equal(testCase.outputs.newSourceAllocations);
     });
 
     it('on chain method matches expectation', async () => {
@@ -116,12 +109,10 @@ describe('computeReclaimEffects', () => {
         testCase.inputs.indexOfTargetInSource,
       );
 
-      const res = onChainNewSourceAllocations.map(convertAmountToHexString);
-      console.log(res, testCase.outputs.newSourceAllocations);
-
-      assert.deepEqual(res, testCase.outputs.newSourceAllocations);
+      const convertedOnChainAllocs = onChainNewSourceAllocations.map((alloc) =>
+        convertToStruct(alloc),
+      );
+      expect(convertedOnChainAllocs).to.deep.equal(testCase.outputs.newSourceAllocations);
     });
-  });
-
-  const convertAmountToHexString = (a: AllocationT) => ({ ...a, amount: a.amount.toHexString() });
+  }
 });
