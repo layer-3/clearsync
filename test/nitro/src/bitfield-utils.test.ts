@@ -1,5 +1,6 @@
 import { expect } from 'chai';
-import { getSignersNum, getSignersIndices, getSignedBy } from '../../../src/nitro/bitfield-utils';
+
+import { getSignedBy, getSignersIndices, getSignersNum } from '../../../src/nitro/bitfield-utils';
 
 describe('bitfield utils', () => {
   it('getSignersNum', () => {

@@ -1,4 +1,4 @@
-import {ethers, constants} from 'ethers';
+import {constants, ethers} from 'ethers';
 
 import NitroAdjudicatorArtifact from '../../../../artifacts/contracts/nitro/NitroAdjudicator.sol/NitroAdjudicator.json';
 

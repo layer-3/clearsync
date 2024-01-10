@@ -1,18 +1,16 @@
-import { Contract, Wallet, BigNumber } from 'ethers';
+import { BigNumber, Contract, Wallet } from 'ethers';
 import { ethers } from 'hardhat';
-const { HashZero } = ethers.constants;
-const { defaultAbiCoder } = ethers.utils;
-import { describe, before, it } from 'mocha';
+import { before, describe, it } from 'mocha';
+import { expect } from 'chai';
 
 import { expectRevert } from '../../../helpers/expect-revert';
 import { getChannelId } from '../../../../src/nitro/contract/channel';
 import { channelDataToStatus } from '../../../../src/nitro/contract/channel-storage';
-import type { Outcome } from '../../../../src/nitro/contract/outcome';
 import {
+  State,
   getFixedPart,
   getVariablePart,
   separateProofAndCandidate,
-  State,
 } from '../../../../src/nitro/contract/state';
 import {
   CHANNEL_FINALIZED,
@@ -26,8 +24,12 @@ import {
   setupContract,
 } from '../../test-helpers';
 import { bindSignatures, getRandomNonce, signStates } from '../../../../src/nitro';
+
+import type { Outcome } from '../../../../src/nitro/contract/outcome';
 import type { CountingApp, TESTForceMove } from '../../../../typechain-types';
-import { expect } from 'chai';
+
+const { HashZero } = ethers.constants;
+const { defaultAbiCoder } = ethers.utils;
 
 let forceMove: Contract & TESTForceMove;
 let countingApp: Contract & CountingApp;
@@ -35,7 +37,7 @@ let countingApp: Contract & CountingApp;
 const nParticipants = 3;
 const { wallets, participants } = generateParticipants(nParticipants);
 
-const challengeDuration = 0x1000;
+const challengeDuration = 0x10_00;
 const asset = Wallet.createRandom().address;
 const outcome: Outcome = [
   { asset, allocations: [], assetMetadata: { assetType: 0, metadata: '0x' } },
@@ -142,8 +144,7 @@ describe('conclude', () => {
     },
   ];
 
-  testCases.forEach((tc) =>
-    it(tc.description, async () => {
+  for (const tc of testCases) it(tc.description, async () => {
       const { initialFingerprint, isFinal, largestTurnNum, support, reasonString } =
         tc as unknown as {
           initialFingerprint: string;
@@ -197,9 +198,9 @@ describe('conclude', () => {
         const finalizesAt = (await ethers.provider.getBlock(receipt.blockNumber)).timestamp;
 
         const expectedEvent = { channelId, finalizesAt };
-        Object.entries(expectedEvent).forEach(([key, value]) => {
+        for (const [key, value] of Object.entries(expectedEvent)) {
           expect(event.args[key]).to.equal(value);
-        });
+        }
 
         // Compute expected ChannelDataHash
         const blockTimestamp = (await ethers.provider.getBlock(receipt.blockNumber)).timestamp;
@@ -212,8 +213,8 @@ describe('conclude', () => {
         // Check fingerprint against the expected value
         expect(await forceMove.statusOf(channelId)).to.equal(expectedFingerprint);
       }
-    }),
-  );
+    })
+  ;
 
   it('reverts a conclude operation with repeated participant[0] signatures', async () => {
     // this test is against a specific class of exploit where the adjudicator

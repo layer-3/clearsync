@@ -1,14 +1,15 @@
-import { Contract, BigNumber, providers, Wallet } from 'ethers';
+import { BigNumber, Contract, Wallet, providers } from 'ethers';
 import { ethers } from 'hardhat';
 import { expect } from 'chai';
 import { Allocation, AllocationType, AssetMetadata } from '@statechannels/exit-format';
-import type { LogDescription } from '@ethersproject/abi';
 
+import { channelDataToStatus } from '../../src/nitro/contract/channel-storage';
+
+import type { LogDescription } from '@ethersproject/abi';
 import type {
   ChallengeClearedEvent,
   ChallengeRegisteredStruct,
 } from '../../src/nitro/contract/challenge';
-import { channelDataToStatus } from '../../src/nitro/contract/channel-storage';
 import type { Outcome } from '../../src/nitro/contract/outcome';
 import type { Bytes32, OutcomeShortHand, VariablePart } from '../../src/nitro';
 
@@ -25,13 +26,15 @@ import type { Bytes32, OutcomeShortHand, VariablePart } from '../../src/nitro';
  * Usage example:
  * const contract: MyContractType = await deployContract<MyContractType>('MyContractName');
  */
-export async function setupContract<Contract>(
+export async function setupContract<T extends Contract>(
   contractName: string,
   ...args: any[]
-): Promise<Contract> {
-  let [Deployer] = await ethers.getSigners();
+): Promise<T> {
+  const [Deployer] = await ethers.getSigners();
   const factory = await ethers.getContractFactory(contractName);
-  return (await factory.connect(Deployer).deploy(...args)) as Contract;
+  const contract = (await factory.connect(Deployer).deploy(...args)) as T;
+  await contract.deployed();
+  return contract;
 }
 
 export const nonParticipant = ethers.Wallet.createRandom();
@@ -73,7 +76,7 @@ export const finalizedFingerprint = (
   turnNumRecord = 5,
   finalizesAt = 1,
   outcome: Outcome = [],
-  state = undefined,
+  state,
 ): Bytes32 =>
   channelDataToStatus({
     turnNumRecord,
@@ -83,10 +86,10 @@ export const finalizedFingerprint = (
   });
 
 export const parseOutcomeEventResult = (eventOutcomeResult: any[]): Outcome => {
-  eventOutcomeResult = Array.from(eventOutcomeResult);
+  eventOutcomeResult = [...eventOutcomeResult];
   const outcome: Outcome = [];
 
-  if (eventOutcomeResult.length == 0) {
+  if (eventOutcomeResult.length === 0) {
     return outcome;
   }
 
@@ -96,13 +99,13 @@ export const parseOutcomeEventResult = (eventOutcomeResult: any[]): Outcome => {
       assetType: eventSingleAssetExit[1].assetType,
       metadata: eventSingleAssetExit[1].metadata,
     };
-    const eventAllocations: any[] = Array.from(eventSingleAssetExit[2]);
+    const eventAllocations: any[] = [...eventSingleAssetExit[2]];
     const allocations: Allocation[] = [];
 
-    if (eventAllocations.length != 0) {
+    if (eventAllocations.length > 0) {
       eventAllocations.forEach((eventAllocation: any[]) => {
         const destination: string = eventAllocation[0];
-        const amount: string = BigNumber.from(eventAllocation[1]['_hex']).toString();
+        const amount: string = BigNumber.from(eventAllocation[1]._hex).toString();
         const allocationType: number = eventAllocation[2];
         const metadata: string = eventAllocation[3];
 
@@ -117,7 +120,7 @@ export const parseOutcomeEventResult = (eventOutcomeResult: any[]): Outcome => {
 };
 
 export const parseVariablePartEventResult = (vpEventResult: any[]): VariablePart => {
-  vpEventResult = Array.from(vpEventResult);
+  vpEventResult = [...vpEventResult];
   return {
     outcome: parseOutcomeEventResult(vpEventResult[0]),
     appData: vpEventResult[1],
@@ -202,7 +205,7 @@ export const newDepositedEvent = (
 
 // Copied from https://stackoverflow.com/questions/58325771/how-to-generate-random-hex-string-in-javascript
 const genRanHex = (size: number) =>
-  [...Array(size)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
+  [...new Array(size)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
 
 export const randomChannelId = (): Bytes32 => '0x' + genRanHex(64);
 export const randomExternalDestination = (): Bytes32 => '0x' + genRanHex(40).padStart(64, '0');
@@ -223,13 +226,13 @@ interface Event extends LogDescription {
 
 export function compileEventsFromLogs(logs: any[], contractsArray: Contract[]): Event[] {
   const events: Event[] = [];
-  logs.forEach((log) => {
-    contractsArray.forEach((contract) => {
+  for (const log of logs) {
+    for (const contract of contractsArray) {
       if (log.address === contract.address) {
         events.push({ ...contract.interface.parseLog(log), contract: log.address });
       }
-    });
-  });
+    }
+  }
   return events;
 }
 
@@ -238,7 +241,7 @@ export function resetMultipleHoldings(
   multipleHoldings: OutcomeShortHand,
   contractsArray: Contract[],
 ): void {
-  Object.keys(multipleHoldings).forEach((assetHolder) => {
+  for (const assetHolder of Object.keys(multipleHoldings)) {
     const holdings = multipleHoldings[assetHolder];
     Object.keys(holdings).forEach(async (destination) => {
       const amount = holdings[destination];
@@ -250,7 +253,7 @@ export function resetMultipleHoldings(
         }
       });
     });
-  });
+  }
 }
 
 // Check the holdings defined in the multipleHoldings object. Requires an array of the relevant contracts to be passed in.
@@ -258,7 +261,7 @@ export function checkMultipleHoldings(
   multipleHoldings: OutcomeShortHand,
   contractsArray: Contract[],
 ): void {
-  Object.keys(multipleHoldings).forEach((assetHolder) => {
+  for (const assetHolder of Object.keys(multipleHoldings)) {
     const holdings = multipleHoldings[assetHolder];
     Object.keys(holdings).forEach(async (destination) => {
       const amount = holdings[destination];
@@ -269,7 +272,7 @@ export function checkMultipleHoldings(
         }
       });
     });
-  });
+  }
 }
 
 export const largeOutcome = (
@@ -280,7 +283,7 @@ export const largeOutcome = (
   return numAllocationItems > 0
     ? [
         {
-          allocations: Array(numAllocationItems).fill({
+          allocations: new Array(numAllocationItems).fill({
             destination: randomDestination,
             amount: '0x01',
             allocationType: AllocationType.simple,

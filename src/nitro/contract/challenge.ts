@@ -1,12 +1,15 @@
-import {ethers, BigNumber, utils, Signature} from 'ethers';
-const {Interface, keccak256, defaultAbiCoder} = utils;
+import {BigNumber, Signature, ethers, utils} from 'ethers';
 
 import NitroAdjudicatorArtifact from '../../../artifacts/contracts/nitro/NitroAdjudicator.sol/NitroAdjudicator.json';
-import type { SignedState } from '../signatures';
+
 
 import {decodeOutcome} from './outcome';
-import {FixedPart, hashState, State, VariablePart} from './state';
-import type { Address, Bytes32, Uint8, Uint48 } from './types';
+import {FixedPart, State, VariablePart, hashState} from './state';
+
+import type { SignedState } from '../signatures';
+import type { Address, Bytes32, Uint48, Uint8 } from './types';
+
+const {Interface, keccak256, defaultAbiCoder} = utils;
 
 export function hashChallengeMessage(challengeState: State): Bytes32 {
   return keccak256(
@@ -29,9 +32,9 @@ export interface ChallengeRegisteredStruct {
   challenger: Address;
   isFinal: boolean;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  fixedPart: Array<any>;
+  fixedPart: any[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  variableParts: Array<any>;
+  variableParts: any[];
   sigs: Signature[];
   whoSignedWhat: Uint8[];
 }
@@ -51,7 +54,7 @@ export function getChallengeRegisteredEvent(eventResult: any[]): ChallengeRegist
     fixedPart,
     variableParts: variablePartsUnstructured,
     sigs,
-  }: ChallengeRegisteredStruct = eventResult.slice(-1)[0].args;
+  }: ChallengeRegisteredStruct = eventResult.at(-1).args;
 
   // Fixed part
   const participants = fixedPart[1].map((p: string) => BigNumber.from(p).toHexString());
@@ -110,7 +113,7 @@ export function getChallengeClearedEvent(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   eventResult: any[]
 ): ChallengeClearedEvent {
-  const {newTurnNumRecord}: ChallengeClearedStruct = eventResult.slice(-1)[0].args;
+  const {newTurnNumRecord}: ChallengeClearedStruct = eventResult.at(-1).args;
 
   // https://github.com/ethers-io/ethers.js/issues/602#issuecomment-574671078
   const decodedTransaction = new Interface(NitroAdjudicatorArtifact.abi).parseTransaction(tx);

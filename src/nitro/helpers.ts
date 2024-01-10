@@ -7,20 +7,14 @@ import type { Outcome } from './contract/outcome';
 /**
  * A mapping from destination to BigNumberish. E.g. {ALICE:2, BOB:3}. Only used in testing.
  */
-export interface AssetOutcomeShortHand {
-  [destination: string]: BigNumberish;
-}
+export type AssetOutcomeShortHand = Record<string, BigNumberish>;
 
 /**
  * A mapping from asset to AssetOutcomeShorthand. E.g. {ETH: {ALICE:2, BOB:3}, DAI: {ALICE:1, BOB:4}}. Only used in testing.
  */
-export interface OutcomeShortHand {
-  [assetHolder: string]: AssetOutcomeShortHand;
-}
+export type OutcomeShortHand = Record<string, AssetOutcomeShortHand>;
 
-export interface AddressesLookup {
-  [shorthand: string]: string | undefined;
-}
+export type AddressesLookup = Record<string, string | undefined>;
 
 /**
  * Recursively replaces any key in a copy of the supplied object with the value of that key in the supplied addresses object. Also BigNumberifies all numbers.
@@ -37,35 +31,34 @@ export function replaceAddressesAndBigNumberify(
     return BigNumber.from(object);
   }
   const newObject: AssetOutcomeShortHand | OutcomeShortHand = {};
-  Object.keys(object).forEach(key => {
+  for (const key of Object.keys(object)) {
     if (isBigNumberish(object[key])) {
-      newObject[addresses[key] as string] = BigNumber.from(object[key]);
+      newObject[addresses[key]!] = BigNumber.from(object[key]);
     } else if (typeof object[key] === 'object') {
       // Recurse
-      newObject[addresses[key] as string] = replaceAddressesAndBigNumberify(
+      newObject[addresses[key]!] = replaceAddressesAndBigNumberify(
         object[key],
         addresses
       ) as AssetOutcomeShortHand | BigNumberish;
     }
-  });
+  }
   return newObject;
 }
 
 /** Computes an Outcome from a shorthand description */
 export function computeOutcome(outcomeShortHand: OutcomeShortHand): Outcome {
   const outcome: Outcome = [];
-  Object.keys(outcomeShortHand).forEach(asset => {
+  for (const asset of Object.keys(outcomeShortHand)) {
     const allocations: Allocation[] = [];
-    Object.keys(outcomeShortHand[asset]).forEach(destination =>
-      allocations.push({
+    for (const destination of Object.keys(outcomeShortHand[asset])) allocations.push({
         destination,
         amount: BigNumber.from(outcomeShortHand[asset][destination]).toHexString(),
         metadata: '0x',
         allocationType: AllocationType.simple,
       })
-    );
+    ;
     outcome.push({asset, assetMetadata: {assetType: 0, metadata: '0x'}, allocations});
-  });
+  }
   return outcome;
 }
 

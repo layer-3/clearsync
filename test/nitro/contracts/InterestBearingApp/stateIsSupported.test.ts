@@ -1,18 +1,19 @@
-import { Contract, BigNumber } from 'ethers';
-import type { ParamType } from 'ethers/lib/utils';
+import { BigNumber, Contract } from 'ethers';
 import { ethers } from 'hardhat';
 
 import { expectRevert } from '../../../helpers/expect-revert';
 import { computeOutcome, convertAddressToBytes32 } from '../../../../src/nitro';
 import {
   FixedPart,
-  getFixedPart,
-  getVariablePart,
   RecoveredVariablePart,
   State,
+  getFixedPart,
+  getVariablePart,
 } from '../../../../src/nitro/contract/state';
 import { generateParticipants, setupContract } from '../../test-helpers';
 import { expectUnsupportedState } from '../../tx-expect-wrappers';
+
+import type { ParamType } from 'ethers/lib/utils';
 import type { InterestBearingApp } from '../../../../typechain-types';
 
 let interestBearingApp: Contract;
@@ -23,7 +24,7 @@ let signedByLender: RecoveredVariablePart;
 let signedByBoth: RecoveredVariablePart;
 
 const { participants } = generateParticipants(2);
-const challengeDuration = 0x100;
+const challengeDuration = 0x1_00;
 const MAGIC_NATIVE_ASSET_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 const merchant = convertAddressToBytes32(participants[0]);

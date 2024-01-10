@@ -1,4 +1,4 @@
-import {utils, BigNumber, constants} from 'ethers';
+import {BigNumber, constants, utils} from 'ethers';
 import ExitFormat, {AllocationType} from '@statechannels/exit-format';
 
 import {parseEventResult} from '../ethers-utils';
@@ -71,7 +71,7 @@ export function computeReclaimEffects(
   const guarantee = sourceAllocations[indexOfTargetInSource];
 
   if (guarantee.allocationType != AllocationType.guarantee) {
-    throw Error('not a guarantee');
+    throw new Error('not a guarantee');
   }
 
   const {left, right} = decodeGuaranteeData(guarantee.metadata);
@@ -83,28 +83,28 @@ export function computeReclaimEffects(
   let totalReclaimed = BigNumber.from(0);
 
   let k = 0;
-  for (let i = 0; i < sourceAllocations.length; i++) {
+  for (const [i, sourceAllocation] of sourceAllocations.entries()) {
     if (i == indexOfTargetInSource) {
       foundTarget = true;
       continue;
     }
     newSourceAllocations[k] = {
-      destination: sourceAllocations[i].destination,
-      amount: sourceAllocations[i].amount,
-      allocationType: sourceAllocations[i].allocationType,
-      metadata: sourceAllocations[i].metadata,
+      destination: sourceAllocation.destination,
+      amount: sourceAllocation.amount,
+      allocationType: sourceAllocation.allocationType,
+      metadata: sourceAllocation.metadata,
     };
 
     // copy each element except the indexOfTargetInSource element
-    if (!foundLeft && sourceAllocations[i].destination.toLowerCase() == left.toLowerCase()) {
-      newSourceAllocations[k].amount = BigNumber.from(sourceAllocations[i].amount)
+    if (!foundLeft && sourceAllocation.destination.toLowerCase() == left.toLowerCase()) {
+      newSourceAllocations[k].amount = BigNumber.from(sourceAllocation.amount)
         .add(targetAllocations[0].amount)
         .toHexString();
       totalReclaimed = totalReclaimed.add(targetAllocations[0].amount);
       foundLeft = true;
     }
-    if (!foundRight && sourceAllocations[i].destination.toLowerCase() == right.toLowerCase()) {
-      newSourceAllocations[k].amount = BigNumber.from(sourceAllocations[i].amount)
+    if (!foundRight && sourceAllocation.destination.toLowerCase() == right.toLowerCase()) {
+      newSourceAllocations[k].amount = BigNumber.from(sourceAllocation.amount)
         .add(targetAllocations[1].amount)
         .toHexString();
       totalReclaimed = totalReclaimed.add(targetAllocations[1].amount);
@@ -114,19 +114,19 @@ export function computeReclaimEffects(
   }
 
   if (!foundTarget) {
-    throw Error('could not find target');
+    throw new Error('could not find target');
   }
 
   if (!foundLeft) {
-    throw Error('could not find left');
+    throw new Error('could not find left');
   }
 
   if (!foundRight) {
-    throw Error('could not find right');
+    throw new Error('could not find right');
   }
 
   if (!totalReclaimed.eq(guarantee.amount)) {
-    throw Error('totalReclaimed!=guarantee.amount');
+    throw new Error('totalReclaimed!=guarantee.amount');
   }
 
   return newSourceAllocations;
@@ -151,9 +151,7 @@ export function computeTransferEffectsAndInteractions(
 } {
   let totalPayouts = BigNumber.from(0);
   const newAllocations: ExitFormat.Allocation[] = [];
-  const exitAllocations: ExitFormat.Allocation[] = Array(
-    indices.length > 0 ? indices.length : allocations.length
-  ).fill({
+  const exitAllocations: ExitFormat.Allocation[] = Array.from({length: indices.length > 0 ? indices.length : allocations.length}).fill({
     destination: constants.HashZero,
     amount: '0x00',
     metadata: '0x',
@@ -163,28 +161,28 @@ export function computeTransferEffectsAndInteractions(
   let surplus = BigNumber.from(initialHoldings);
   let k = 0;
 
-  for (let i = 0; i < allocations.length; i++) {
+  for (const [i, allocation] of allocations.entries()) {
     newAllocations.push({
-      destination: allocations[i].destination,
+      destination: allocation.destination,
       amount: BigNumber.from(0).toHexString(),
-      metadata: allocations[i].metadata,
-      allocationType: allocations[i].allocationType,
+      metadata: allocation.metadata,
+      allocationType: allocation.allocationType,
     });
-    const affordsForDestination = min(BigNumber.from(allocations[i].amount), surplus);
-    if (indices.length == 0 || (k < indices.length && indices[k] === i)) {
-      newAllocations[i].amount = BigNumber.from(allocations[i].amount)
+    const affordsForDestination = min(BigNumber.from(allocation.amount), surplus);
+    if (indices.length === 0 || (k < indices.length && indices[k] === i)) {
+      newAllocations[i].amount = BigNumber.from(allocation.amount)
         .sub(affordsForDestination)
         .toHexString();
       exitAllocations[k] = {
-        destination: allocations[i].destination,
+        destination: allocation.destination,
         amount: affordsForDestination.toHexString(),
-        metadata: allocations[i].metadata,
-        allocationType: allocations[i].allocationType,
+        metadata: allocation.metadata,
+        allocationType: allocation.allocationType,
       };
       totalPayouts = totalPayouts.add(affordsForDestination);
       ++k;
     } else {
-      newAllocations[i].amount = allocations[i].amount;
+      newAllocations[i].amount = allocation.amount;
     }
     if (!BigNumber.from(newAllocations[i].amount).isZero()) allocatesOnlyZeros = false;
     surplus = surplus.sub(affordsForDestination);

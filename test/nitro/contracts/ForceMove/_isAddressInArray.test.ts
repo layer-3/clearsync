@@ -1,5 +1,7 @@
-import { generateParticipants, setupContract } from '../../test-helpers';
 import { expect } from 'chai';
+
+import { generateParticipants, setupContract } from '../../test-helpers';
+
 import type { TESTForceMove } from '../../../../typechain-types';
 import type { Contract } from 'ethers';
 

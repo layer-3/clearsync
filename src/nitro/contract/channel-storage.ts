@@ -1,7 +1,7 @@
-import {constants, utils, BigNumber} from 'ethers';
+import {BigNumber, constants, utils} from 'ethers';
 
-import {hashOutcome, Outcome} from './outcome';
-import {hashState, State} from './state';
+import {Outcome, hashOutcome} from './outcome';
+import {State, hashState} from './state';
 import {Bytes, Bytes32, Uint48} from './types';
 
 export interface ChannelData {
@@ -29,13 +29,10 @@ export function channelDataToStatus(channelData: ChannelData): Bytes32 {
   const hash = utils.keccak256(encodeFingerprintPreimage(channelData));
   const fingerprint = utils.hexDataSlice(hash, 12);
 
-  const status =
-    '0x' +
+  return '0x' +
     utils.hexZeroPad(utils.hexlify(turnNumRecord), 6).slice(2) +
     utils.hexZeroPad(utils.hexlify(finalizesAt), 6).slice(2) +
     fingerprint.slice(2);
-
-  return status;
 }
 
 export function parseStatus(status: Bytes32): {

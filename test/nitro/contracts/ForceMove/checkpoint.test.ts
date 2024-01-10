@@ -1,29 +1,30 @@
-import { Contract, Wallet, ethers, BigNumber } from 'ethers';
-import { describe, before, it } from 'mocha';
+import { BigNumber, Contract, Wallet, ethers } from 'ethers';
+import { before, describe, it } from 'mocha';
 import { expect } from 'chai';
-
-const { HashZero } = ethers.constants;
-const { defaultAbiCoder } = ethers.utils;
 
 import { expectRevert } from '../../../helpers/expect-revert';
 import { getChannelId } from '../../../../src/nitro/contract/channel';
 import { channelDataToStatus } from '../../../../src/nitro/contract/channel-storage';
-import type { Outcome } from '../../../../src/nitro/contract/outcome';
 import {
+  State,
   getFixedPart,
   getVariablePart,
   separateProofAndCandidate,
-  State,
 } from '../../../../src/nitro/contract/state';
 import { generateParticipants, setupContract } from '../../test-helpers';
 import { bindSignatures, getRandomNonce, signStates } from '../../../../src/nitro';
-import type { CountingApp, TESTForceMove } from '../../../../typechain-types';
 import {
-  TURN_NUM_RECORD_NOT_INCREASED,
+  CHANNEL_FINALIZED,
   COUNTING_APP_INVALID_TRANSITION,
   INVALID_SIGNED_BY,
-  CHANNEL_FINALIZED,
+  TURN_NUM_RECORD_NOT_INCREASED,
 } from '../../../../src/nitro/contract/transaction-creators/revert-reasons';
+
+import type { CountingApp, TESTForceMove } from '../../../../typechain-types';
+import type { Outcome } from '../../../../src/nitro/contract/outcome';
+
+const { HashZero } = ethers.constants;
+const { defaultAbiCoder } = ethers.utils;
 
 interface transitionType {
   whoSignedWhat: number[];
@@ -43,7 +44,7 @@ let countingApp: Contract & CountingApp;
 const participantsNum = 3;
 const { wallets, participants } = generateParticipants(participantsNum);
 
-const challengeDuration = 0x1000;
+const challengeDuration = 0x10_00;
 const asset = Wallet.createRandom().address;
 const defaultOutcome: Outcome = [
   { asset, allocations: [], assetMetadata: { assetType: 0, metadata: '0x' } },
@@ -159,8 +160,7 @@ describe('checkpoint', () => {
     },
   ];
 
-  testCases.forEach((tc) =>
-    it(tc.description, async () => {
+  for (const tc of testCases) it(tc.description, async () => {
       const { largestTurnNum, support, finalizesAt, reason } = tc as unknown as testParams;
       const { appDatas, whoSignedWhat } = support;
 
@@ -185,7 +185,7 @@ describe('checkpoint', () => {
         bindSignatures(variableParts, signatures, whoSignedWhat),
       );
 
-      const isChallenged = finalizesAt && finalizesAt > Math.floor(new Date().getTime() / 1000);
+      const isChallenged = finalizesAt && finalizesAt > Math.floor(Date.now() / 1000);
       const outcome = isChallenged ? defaultOutcome : [];
 
       const challengeState: State | undefined = isChallenged
@@ -228,9 +228,9 @@ describe('checkpoint', () => {
           channelId: channelId,
           newTurnNumRecord: largestTurnNum,
         };
-        Object.entries(expectedEvent).forEach(([key, value]) => {
+        for (const [key, value] of Object.entries(expectedEvent)) {
           expect(event.args[key]).to.equal(value);
-        });
+        }
 
         const expectedChannelStorageHash = channelDataToStatus({
           turnNumRecord: largestTurnNum,
@@ -240,6 +240,6 @@ describe('checkpoint', () => {
         // Check channelStorageHash against the expected value
         expect(await forceMove.statusOf(channelId)).to.equal(expectedChannelStorageHash);
       }
-    }),
-  );
+    })
+  ;
 });

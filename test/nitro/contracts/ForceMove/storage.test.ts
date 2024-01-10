@@ -1,5 +1,6 @@
 import { Contract, ethers } from 'ethers';
-import { describe, before, it } from 'mocha';
+import { before, describe, it } from 'mocha';
+import { expect } from 'chai';
 
 import { expectRevert } from '../../../helpers/expect-revert';
 import {
@@ -8,8 +9,8 @@ import {
   parseStatus,
 } from '../../../../src/nitro/contract/channel-storage';
 import { randomChannelId, setupContract } from '../../test-helpers';
+
 import type { TESTForceMove } from '../../../../typechain-types';
-import { expect } from 'chai';
 
 let forceMove: Contract & TESTForceMove;
 before(async () => {
@@ -24,16 +25,15 @@ describe('storage', () => {
   const testCases = [
     {
       turnNumRecord: 0x42,
-      finalizesAt: 0x9001,
+      finalizesAt: 0x90_01,
     },
     {
-      turnNumRecord: 123456,
+      turnNumRecord: 123_456,
       finalizesAt: 789,
     },
   ];
 
-  testCases.forEach((tc) =>
-    it('Statusing and data retrieval', async () => {
+  for (const tc of testCases) it('Statusing and data retrieval', async () => {
       const storage = tc;
       const blockchainStorage = { ...storage, ...zeroData };
       const blockchainStatus = await forceMove.generateStatus(blockchainStorage);
@@ -47,9 +47,9 @@ describe('storage', () => {
       expect(await forceMove.matchesStatus(blockchainStorage, clientStatus)).to.equal(true);
 
       let event = parseStatus(clientStatus);
-      Object.entries(expected).forEach(([key, value]) => {
+      for (const [key, value] of Object.entries(expected)) {
         expect(event[key]).to.equal(value);
-      });
+      }
 
       // Testing getData is a little more laborious
       await (
@@ -62,11 +62,11 @@ describe('storage', () => {
       } = await forceMove.unpackStatus(ethers.constants.HashZero);
 
       event = { turnNumRecord, finalizesAt, fingerprint: f._hex };
-      Object.entries(expected).forEach(([key, value]) => {
+      for (const [key, value] of Object.entries(expected)) {
         expect(event[key]).to.equal(value);
-      });
-    }),
-  );
+      }
+    })
+  ;
 });
 
 describe('_requireChannelOpen', () => {
@@ -89,7 +89,7 @@ describe('_requireChannelOpen', () => {
     {
       result: 'reverts',
       turnNumRecord: 42,
-      finalizesAt: 0x9001,
+      finalizesAt: 0x90_01,
     },
     {
       result: 'works',
@@ -98,7 +98,7 @@ describe('_requireChannelOpen', () => {
     },
     {
       result: 'works',
-      turnNumRecord: 0xabc,
+      turnNumRecord: 0xa_bc,
       finalizesAt: '0x00',
     },
     {
@@ -113,8 +113,7 @@ describe('_requireChannelOpen', () => {
     },
   ];
 
-  testCases.forEach((tc) =>
-    it(`${tc.result} with turnNumRecord: ${tc.turnNumRecord}, finalizesAt: ${tc.finalizesAt}`, async () => {
+  for (const tc of testCases) it(`${tc.result} with turnNumRecord: ${tc.turnNumRecord}, finalizesAt: ${tc.finalizesAt}`, async () => {
       const blockchainStorage = {
         turnNumRecord: tc.turnNumRecord,
         finalizesAt: tc.finalizesAt,
@@ -129,6 +128,6 @@ describe('_requireChannelOpen', () => {
       const tx = forceMove.requireChannelOpen(channelId);
       // eslint-disable-next-line no-unused-expressions
       tc.result === 'reverts' ? await expectRevert(() => tx, 'Channel not open.') : await tx;
-    }),
-  );
+    })
+  ;
 });

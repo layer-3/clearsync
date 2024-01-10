@@ -1,24 +1,22 @@
-import { BigNumber, constants, Contract } from 'ethers';
+import { BigNumber, constants } from 'ethers';
 import { ethers } from 'hardhat';
-import { describe, before, it } from 'mocha';
+import { before, describe, it } from 'mocha';
 import { Allocation, AllocationType } from '@statechannels/exit-format';
+import { expect } from 'chai';
 
 import { expectRevert } from '../../../helpers/expect-revert';
 import { randomChannelId, randomExternalDestination, setupContract } from '../../test-helpers';
-import { encodeOutcome, hashOutcome, Outcome } from '../../../../src/nitro/contract/outcome';
-import type { TESTNitroAdjudicator } from '../../../../typechain-types';
-import TESTNitroAdjudicatorArtifact from '../../../../artifacts/contracts/nitro/test/TESTNitroAdjudicator.sol/TESTNitroAdjudicator.json';
+import { Outcome, encodeOutcome, hashOutcome } from '../../../../src/nitro/contract/outcome';
 import { channelDataToStatus, isExternalDestination } from '../../../../src/nitro';
 import { MAGIC_ADDRESS_INDICATING_ETH } from '../../../../src/nitro/transactions';
 import {
   AssetOutcomeShortHand,
   replaceAddressesAndBigNumberify,
 } from '../../../../src/nitro/helpers';
-import { expect } from 'chai';
 
-interface addressT {
-  [index: string]: string | undefined;
-}
+import type { TESTNitroAdjudicator } from '../../../../typechain-types';
+
+type addressT = Record<string, string | undefined>;
 
 let testNitroAdjudicator: TESTNitroAdjudicator;
 let addresses: addressT;
@@ -239,14 +237,13 @@ describe('transfer', () => {
     },
   ];
 
-  testCases.forEach((tc) =>
-    it(tc.name, async () => {
+  for (const tc of testCases) it(tc.name, async () => {
       let heldBefore = tc.heldBefore as AssetOutcomeShortHand;
       let setOutcome = tc.setOutcome as AssetOutcomeShortHand;
       let newOutcome = tc.newOutcome as AssetOutcomeShortHand;
       let heldAfter = tc.heldAfter as AssetOutcomeShortHand;
       let payouts = tc.payouts as AssetOutcomeShortHand;
-      const reason = tc.reason as string;
+      const reason = tc.reason!;
 
       // Compute channelId
       addresses.c = randomChannelId();
@@ -282,16 +279,15 @@ describe('transfer', () => {
 
       // Compute an appropriate allocation.
       const allocations: Allocation[] = [];
-      Object.keys(setOutcome).forEach((key) =>
-        allocations.push({
+      for (const key of Object.keys(setOutcome)) allocations.push({
           destination: key,
           amount: BigNumber.from(setOutcome[key]).toHexString(),
           metadata: '0x',
-          allocationType: (tc.isSimple as boolean)
+          allocationType: (tc.isSimple )
             ? AllocationType.simple
             : AllocationType.guarantee,
-        }),
-      );
+        })
+      ;
       const outcomeHash = hashOutcome([
         {
           asset: MAGIC_ADDRESS_INDICATING_ETH,
@@ -328,7 +324,7 @@ describe('transfer', () => {
         channelId,
         reason == 'incorrect fingerprint' ? '0xdeadbeef' : outcomeBytes,
         stateHash,
-        tc.indices as number[],
+        tc.indices ,
       );
 
       // Call method in a slightly different way if expecting a revert
@@ -347,14 +343,14 @@ describe('transfer', () => {
 
         // Check new status
         const allocationsAfter: Allocation[] = [];
-        Object.keys(newOutcome).forEach((key) => {
+        for (const key of Object.keys(newOutcome)) {
           allocationsAfter.push({
             destination: key,
             amount: BigNumber.from(newOutcome[key]).toHexString(),
             metadata: '0x',
             allocationType: AllocationType.simple,
           });
-        });
+        }
         const outcomeAfter: Outcome = [
           {
             asset: MAGIC_ADDRESS_INDICATING_ETH,
@@ -382,22 +378,22 @@ describe('transfer', () => {
           },
         ];
 
-        expectedEvents.forEach((expectedEvent, index) => {
+        for (const [index, expectedEvent] of expectedEvents.entries()) {
           const actualEvent = eventsFromTx[index];
 
           // Assert the 'event' field
           expect(actualEvent.event).to.equal(expectedEvent.event);
 
           // Assert each field in 'args'
-          Object.entries(expectedEvent.args).forEach(([key, value]) => {
+          for (const [key, value] of Object.entries(expectedEvent.args)) {
             expect(actualEvent.args[key]).to.deep.equal(value);
-          });
-        });
+          }
+        }
 
         // Check payouts
         for (const destination of Object.keys(payouts)) {
           if (isExternalDestination(destination)) {
-            const asAddress = '0x' + destination.substring(26);
+            const asAddress = '0x' + destination.slice(26);
             const balance = await ethers.provider.getBalance(asAddress);
             // console.log(`checking balance of ${destination}: ${balance.toString()}`);
             expect(balance).to.equal(payouts[destination]);
@@ -411,6 +407,6 @@ describe('transfer', () => {
           }
         }
       }
-    }),
-  );
+    })
+  ;
 });

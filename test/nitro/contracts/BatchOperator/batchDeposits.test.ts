@@ -1,10 +1,12 @@
 import { BigNumber, Wallet, utils } from 'ethers';
 import { ethers } from 'hardhat';
-import { describe, before, it } from 'mocha';
+import { before, describe, it } from 'mocha';
+import { expect } from 'chai';
 
 import { expectRevert } from '../../../helpers/expect-revert';
 import { MAGIC_ADDRESS_INDICATING_ETH, getChannelId, getRandomNonce } from '../../../../src/nitro';
 import { setupContract } from '../../test-helpers';
+
 import type {
   BadToken,
   BatchOperator,
@@ -12,7 +14,6 @@ import type {
   NitroAdjudicator,
   Token,
 } from '../../../../typechain-types';
-import { expect } from 'chai';
 
 let consensusApp: ConsensusApp;
 let nitroAdjudicator: NitroAdjudicator;
@@ -46,14 +47,14 @@ before(async () => {
   );
 });
 
-type testParams = {
+interface testParams {
   description: string;
   assetId: string;
   expectedHelds: number[];
   amounts: number[];
   heldAfters: number[];
   reasonString: string;
-};
+}
 
 function sum(x: BigNumber[]): BigNumber {
   return x.reduce((s, n) => s.add(n));
@@ -163,8 +164,7 @@ describe('deposit_batch', () => {
     },
   ];
 
-  testCases.forEach((tc) =>
-    it(tc.description, async () => {
+  for (const tc of testCases) it(tc.description, async () => {
       const { description, assetId, expectedHelds, amounts, heldAfters, reasonString } =
         tc as testParams;
       ///////////////////////////////////////
@@ -249,19 +249,18 @@ describe('deposit_batch', () => {
       // Check postconditions
       //
       ///////////////////////////////////////
-      if (reasonString != '') {
-        await expectRevert(() => tx, reasonString);
-      } else {
+      if (reasonString == '') {
         await (await tx).wait();
 
-        for (let i = 0; i < channelIds.length; i++) {
-          const channelId = channelIds[i];
+        for (const [i, channelId] of channelIds.entries()) {
           const expectedHoldings = heldAftersBN[i];
 
           const holdings = await nitroAdjudicator.holdings(assetId, channelId);
           expect(holdings).to.equal(expectedHoldings);
         }
+      } else {
+        await expectRevert(() => tx, reasonString);
       }
-    }),
-  );
+    })
+  ;
 });

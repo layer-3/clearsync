@@ -1,16 +1,16 @@
-import { ethers, Wallet } from 'ethers';
-import { describe, before, it } from 'mocha';
+import { Wallet, ethers } from 'ethers';
+import { before, describe, it } from 'mocha';
 import { expect } from 'chai';
 
-import { getRandomNonce, SignedState, State } from '../../../src/nitro';
+import { SignedState, State, getRandomNonce } from '../../../src/nitro';
 import { MAX_OUTCOME_ITEMS } from '../../../src/nitro/contract/outcome';
 import { signState } from '../../../src/nitro/signatures';
 import {
+  MAX_TX_DATA_SIZE,
+  createChallengeTransaction,
   createCheckpointTransaction,
   createConcludeTransaction,
-  createChallengeTransaction,
   createSignatureArguments,
-  MAX_TX_DATA_SIZE,
 } from '../../../src/nitro/transactions';
 import { largeOutcome } from '../test-helpers';
 
@@ -90,8 +90,7 @@ describe('transaction-generators', () => {
     },
   ];
 
-  testCases.forEach((tc) =>
-    it(`creates a correct signature arguments when handling multiple states (turnNum=${tc.turnNum}, expectedWhoSignedWhat=${tc.expectedWhoSignedWhat})`, async () => {
+  for (const tc of testCases) it(`creates a correct signature arguments when handling multiple states (turnNum=${tc.turnNum}, expectedWhoSignedWhat=${tc.expectedWhoSignedWhat})`, async () => {
       const { turnNum, expectedWhoSignedWhat } = tc;
       const wallet2 = Wallet.createRandom();
 
@@ -128,8 +127,8 @@ describe('transaction-generators', () => {
       expect(states).to.have.lengthOf(2);
       expect(signatures).to.have.lengthOf(2);
       expect(whoSignedWhat).to.deep.equal(expectedWhoSignedWhat);
-    }),
-  );
+    })
+  ;
 
   describe('checkpoint transactions', () => {
     it('creates a transaction when there is a challenge state', async () => {

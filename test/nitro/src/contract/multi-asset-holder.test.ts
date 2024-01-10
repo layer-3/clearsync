@@ -27,9 +27,8 @@ describe('convertBytes32ToAddress', () => {
     },
   ];
 
-  testCases.forEach((tc) =>
-    it(`${tc.bytes32} -- ${tc.address}`, () => {
+  for (const tc of testCases) it(`${tc.bytes32} -- ${tc.address}`, () => {
       expect(convertBytes32ToAddress(tc.bytes32)).to.equal(tc.address);
-    }),
-  );
+    })
+  ;
 });

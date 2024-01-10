@@ -1,29 +1,27 @@
-import { Contract, Wallet, Signature, BigNumber, ethers } from 'ethers';
+import { BigNumber, Contract, Signature, Wallet, ethers } from 'ethers';
 import hre from 'hardhat';
-import { describe, before, it } from 'mocha';
-
-const { HashZero } = ethers.constants;
-const { defaultAbiCoder } = ethers.utils;
+import { before, describe, it } from 'mocha';
+import { expect } from 'chai';
 
 import { expectRevert } from '../../../helpers/expect-revert';
 import { getChannelId } from '../../../../src/nitro/contract/channel';
-import { channelDataToStatus, ChannelData } from '../../../../src/nitro/contract/channel-storage';
+import { ChannelData, channelDataToStatus } from '../../../../src/nitro/contract/channel-storage';
 import {
+  State,
   getFixedPart,
   getVariablePart,
   separateProofAndCandidate,
-  State,
 } from '../../../../src/nitro/contract/state';
 import {
   CHALLENGER_NON_PARTICIPANT,
   CHANNEL_FINALIZED,
+  COUNTING_APP_INVALID_TRANSITION,
   INVALID_NUMBER_OF_PROOF_STATES,
   INVALID_SIGNATURE,
   TURN_NUM_RECORD_DECREASED,
   TURN_NUM_RECORD_NOT_INCREASED,
-  COUNTING_APP_INVALID_TRANSITION,
 } from '../../../../src/nitro/contract/transaction-creators/revert-reasons';
-import { getRandomNonce, Outcome, SignedState } from '../../../../src/nitro/index';
+import { Outcome, SignedState, getRandomNonce } from '../../../../src/nitro/index';
 import {
   bindSignatures,
   signChallengeMessage,
@@ -40,19 +38,22 @@ import {
   parseOutcomeEventResult,
   setupContract,
 } from '../../test-helpers';
-import { createChallengeTransaction, NITRO_MAX_GAS } from '../../../../src/nitro/transactions';
+import { NITRO_MAX_GAS, createChallengeTransaction } from '../../../../src/nitro/transactions';
 import { hashChallengeMessage } from '../../../../src/nitro/contract/challenge';
 import { MAX_OUTCOME_ITEMS } from '../../../../src/nitro/contract/outcome';
+
 import type { transitionType } from './types';
 import type { CountingApp, TESTForceMove } from '../../../../typechain-types';
-import { expect } from 'chai';
+
+const { HashZero } = ethers.constants;
+const { defaultAbiCoder } = ethers.utils;
 
 let forceMove: Contract & TESTForceMove;
 let countingApp: Contract & CountingApp;
 
 const participants = ['', '', ''];
-const wallets = new Array<Wallet>(3);
-const challengeDuration = 86400; // 1 day
+const wallets = Array.from({length: 3});
+const challengeDuration = 86_400; // 1 day
 const outcome: Outcome = [
   {
     allocations: [],
@@ -202,8 +203,7 @@ describe('challenge', () => {
     },
   ];
 
-  testCases.forEach((tc) =>
-    it(tc.description, async () => {
+  for (const tc of testCases) it(tc.description, async () => {
       const { reasonString, challengeSignatureType, stateData, initialFingerprint } =
         tc as unknown as {
           initialFingerprint: string;
@@ -234,7 +234,7 @@ describe('challenge', () => {
       );
 
       const challengeState: SignedState = {
-        state: states[states.length - 1],
+        state: states.at(-1),
         signature: { v: 0, r: '', s: '', _vs: '', recoveryParam: 0 } as Signature,
       };
 
@@ -245,15 +245,18 @@ describe('challenge', () => {
       let challengeSignature: ethers.Signature;
 
       switch (challengeSignatureType) {
-        case 'incorrect':
+        case 'incorrect': {
           challengeSignature = signChallengeMessageByNonParticipant([challengeState]);
           break;
-        case 'invalid':
+        }
+        case 'invalid': {
           challengeSignature = { v: 1, s: HashZero, r: HashZero } as ethers.Signature;
           break;
+        }
         case 'correct':
-        default:
+        default: {
           challengeSignature = correctChallengeSignature;
+        }
       }
 
       // Set current channelStorageHashes value
@@ -280,10 +283,10 @@ describe('challenge', () => {
 
         if (proof.length > 0) {
           expect(
-            parseOutcomeEventResult(eventProof[eventProof.length - 1].variablePart.outcome),
-          ).to.equal(proof[proof.length - 1].variablePart.outcome);
-          expect(eventProof[eventProof.length - 1].variablePart.appData).to.equal(
-            proof[proof.length - 1].variablePart.appData,
+            parseOutcomeEventResult(eventProof.at(-1).variablePart.outcome),
+          ).to.equal(proof.at(-1).variablePart.outcome);
+          expect(eventProof.at(-1).variablePart.appData).to.equal(
+            proof.at(-1).variablePart.appData,
           );
         }
 
@@ -295,7 +298,7 @@ describe('challenge', () => {
         const expectedChannelStorage: ChannelData = {
           turnNumRecord: largestTurnNum,
           finalizesAt: eventFinalizesAt,
-          state: states[states.length - 1],
+          state: states.at(-1),
           outcome,
         };
         const expectedFingerprint = channelDataToStatus(expectedChannelStorage);
@@ -303,8 +306,8 @@ describe('challenge', () => {
         // Check channelStorageHash against the expected value
         expect(await forceMove.statusOf(channelId)).to.equal(expectedFingerprint);
       }
-    }),
-  );
+    })
+  ;
 });
 
 describe('challenge with transaction generator', () => {
@@ -350,8 +353,7 @@ describe('challenge with transaction generator', () => {
   ];
 
   // FIX: even if dropping channel status before each test, turn nums from prev tests are saved and can cause reverts
-  testCases.forEach((tc) =>
-    it(tc.description, async () => {
+  for (const tc of testCases) it(tc.description, async () => {
       const { appData, turnNums, challenger } = tc as unknown as {
         appData: number[];
         turnNums: number[];
@@ -373,8 +375,8 @@ describe('challenge with transaction generator', () => {
       expect(
         BigNumber.from((await response.wait()).gasUsed).lt(BigNumber.from(NITRO_MAX_GAS)),
       ).to.true('gasUsed > NITRO_MAX_GAS');
-    }),
-  );
+    })
+  ;
 });
 
 async function createTwoPartySignedCountingAppState(
@@ -391,7 +393,7 @@ async function createTwoPartySignedCountingAppState(
       outcome,
       channelNonce: '0x1',
       participants: [wallets[0].address, wallets[1].address],
-      challengeDuration: 0xfff,
+      challengeDuration: 0xf_ff,
     },
     wallets[turnNum % 2].privateKey,
   );
@@ -401,7 +403,7 @@ function signChallengeMessageByNonParticipant(signedStates: SignedState[]): Sign
   if (signedStates.length === 0) {
     throw new Error('At least one signed state must be provided');
   }
-  const challengeState = signedStates[signedStates.length - 1].state;
+  const challengeState = signedStates.at(-1).state;
   const challengeHash = hashChallengeMessage(challengeState);
   return signData(challengeHash, nonParticipant.privateKey);
 }

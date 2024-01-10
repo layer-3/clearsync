@@ -1,6 +1,7 @@
-import { utils, Contract } from 'ethers';
+import { Contract, utils } from 'ethers';
 
 import ForceMoveAppArtifact from '../../../artifacts/contracts/nitro/interfaces/IForceMoveApp.sol/IForceMoveApp.json';
+
 import { State, getVariablePart } from './state';
 
 //  https://github.com/ethers-io/ethers.js/issues/602#issuecomment-574671078

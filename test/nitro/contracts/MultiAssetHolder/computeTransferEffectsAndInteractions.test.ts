@@ -1,17 +1,18 @@
 import { BigNumber } from 'ethers';
 import shuffle from 'lodash.shuffle';
 import { Allocation, AllocationType } from '@statechannels/exit-format';
+import { expect } from 'chai';
 
 import { randomExternalDestination, setupContract } from '../../test-helpers';
-import type { TESTNitroAdjudicator } from '../../../../typechain-types';
 import { computeTransferEffectsAndInteractions } from '../../../../src/nitro/contract/multi-asset-holder';
-import { expect } from 'chai';
+
+import type { TESTNitroAdjudicator } from '../../../../typechain-types';
 
 let testNitroAdjudicator: TESTNitroAdjudicator;
 
 const randomAllocations = (numAllocations: number): Allocation[] => {
   return numAllocations > 0
-    ? [...Array(numAllocations)].map(() => ({
+    ? [...new Array(numAllocations)].map(() => ({
         destination: randomExternalDestination(),
         amount: BigNumber.from(Math.ceil(Math.random() * 10)).toHexString(),
         metadata: '0x',
@@ -22,7 +23,7 @@ const randomAllocations = (numAllocations: number): Allocation[] => {
 
 const heldBefore = BigNumber.from(100).toHexString();
 const allocation = randomAllocations(Math.floor(Math.random() * 20));
-const indices = shuffle([...Array(allocation.length).keys()]); // [0, 1, 2, 3,...] but shuffled
+const indices = shuffle([...Array.from({length: allocation.length}).keys()]); // [0, 1, 2, 3,...] but shuffled
 // TODO -- does it make sense to test with indices that don't increase when the chain requires that they do?
 
 before(async () => {

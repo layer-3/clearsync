@@ -1,14 +1,15 @@
-import { ethers, Wallet } from 'ethers';
-const { arrayify, splitSignature, verifyMessage } = ethers.utils;
+import { Wallet, ethers } from 'ethers';
 import { expect } from 'chai';
 
 import { hashChallengeMessage } from '../../../src/nitro/contract/challenge';
-import { hashState, State } from '../../../src/nitro/contract/state';
+import { State, hashState } from '../../../src/nitro/contract/state';
 import {
   getStateSignerAddress,
   signChallengeMessage,
   signState,
 } from '../../../src/nitro/signatures';
+
+const { arrayify, splitSignature, verifyMessage } = ethers.utils;
 
 describe('signatures', () => {
   describe('signState', () => {

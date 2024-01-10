@@ -1,18 +1,19 @@
-import { Wallet, utils, Signature } from 'ethers';
+import { Signature, Wallet, utils } from 'ethers';
 
-import type { Bytes, Uint256 } from './contract/types';
 import { getSignedBy, getSignersIndices, getSignersNum } from './bitfield-utils';
 import { hashChallengeMessage } from './contract/challenge';
 import { getChannelId } from './contract/channel';
-import type { Outcome } from './contract/outcome';
 import {
-  getFixedPart,
-  hashState,
   RecoveredVariablePart,
   SignedVariablePart,
   State,
   VariablePart,
+  getFixedPart,
+  hashState,
 } from './contract/state';
+
+import type { Outcome } from './contract/outcome';
+import type { Bytes, Uint256 } from './contract/types';
 
 /**
  * A {@link State} along with a {@link Signature} on it
@@ -27,7 +28,7 @@ export function getStateSignerAddress(signedState: SignedState): string {
   const recoveredAddress = utils.verifyMessage(utils.arrayify(stateHash), signedState.signature);
   const participants = signedState.state.participants;
 
-  if (participants.indexOf(recoveredAddress) < 0) {
+  if (!participants.includes(recoveredAddress)) {
     throw new Error(
       `Recovered address ${recoveredAddress} is not a participant in channel ${getChannelId(
         getFixedPart(signedState.state),
@@ -45,7 +46,7 @@ export function getStateSignerAddress(signedState: SignedState): string {
  */
 export function signState(state: State, privateKey: string): SignedState {
   const wallet = new Wallet(privateKey);
-  if (state.participants.indexOf(wallet.address) < 0) {
+  if (!state.participants.includes(wallet.address)) {
     throw new Error("The state must be signed with a participant's private key");
   }
 
@@ -138,7 +139,7 @@ export function shortenedToRecoveredVariablePart(
 export function shortenedToRecoveredVariableParts(
   turnNumToShortenedVP: TurnNumToShortenedVariablePart,
 ): RecoveredVariablePart[] {
-  return Array.from(turnNumToShortenedVP).map(([turnNum, shortenedVP]) => {
+  return [...turnNumToShortenedVP].map(([turnNum, shortenedVP]) => {
     return shortenedToRecoveredVariablePart(turnNum, shortenedVP);
   });
 }
@@ -175,8 +176,8 @@ export function bindSignatures(
       } as SignedVariablePart),
   );
 
-  for (let i = 0; i < signatures.length; i++) {
-    signedVariableParts[whoSignedWhat[i]].sigs.push(signatures[i]);
+  for (const [i, signature] of signatures.entries()) {
+    signedVariableParts[whoSignedWhat[i]].sigs.push(signature);
   }
 
   return signedVariableParts;
@@ -218,10 +219,10 @@ export function signChallengeMessage(signedStates: SignedState[], privateKey: st
     throw new Error('At least one signed state must be provided');
   }
   const wallet = new Wallet(privateKey);
-  if (signedStates[0].state.participants.indexOf(wallet.address) < 0) {
+  if (!signedStates[0].state.participants.includes(wallet.address)) {
     throw new Error("The state must be signed with a participant's private key");
   }
-  const challengeState = signedStates[signedStates.length - 1].state;
+  const challengeState = signedStates.at(-1).state;
   const challengeHash = hashChallengeMessage(challengeState);
 
   return signData(challengeHash, privateKey);

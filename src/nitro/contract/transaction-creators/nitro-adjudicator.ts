@@ -1,9 +1,9 @@
-import { utils, providers, Signature, constants } from 'ethers';
+import { Signature, constants, providers, utils } from 'ethers';
 
 import NitroAdjudicatorArtifact from '../../../../artifacts/contracts/nitro/NitroAdjudicator.sol/NitroAdjudicator.json';
 import { bindSignatures, getChannelId, hashState } from '../..';
 import { encodeOutcome } from '../outcome';
-import { getFixedPart, getVariablePart, separateProofAndCandidate, State } from '../state';
+import { State, getFixedPart, getVariablePart, separateProofAndCandidate } from '../state';
 
 // https://github.com/ethers-io/ethers.js/issues/602#issuecomment-574671078
 const NitroAdjudicatorContractInterface = new utils.Interface(NitroAdjudicatorArtifact.abi);

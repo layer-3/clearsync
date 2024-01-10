@@ -5,42 +5,43 @@ import { before, describe, it } from 'mocha';
 
 import { expectRevert } from '../../../helpers/expect-revert';
 import { getChannelId } from '../../../../src/nitro/contract/channel';
-import { hashOutcome, Outcome } from '../../../../src/nitro/contract/outcome';
+import { Outcome, hashOutcome } from '../../../../src/nitro/contract/outcome';
 import {
   generateParticipants,
   randomChannelId,
   randomExternalDestination,
   setupContract,
 } from '../../test-helpers';
-import type { CountingApp, TESTNitroAdjudicator, Token } from '../../../../typechain-types';
 import {
+  OutcomeShortHand,
   channelDataToStatus,
   computeOutcome,
   convertBytes32ToAddress,
   getRandomNonce,
-  OutcomeShortHand,
 } from '../../../../src/nitro';
 import { MAGIC_ADDRESS_INDICATING_ETH } from '../../../../src/nitro/transactions';
 import { replaceAddressesAndBigNumberify } from '../../../../src/nitro/helpers';
+
+import type { CountingApp, TESTNitroAdjudicator, Token } from '../../../../typechain-types';
 
 // Constants for this test suite
 const nParticipants = 3;
 const { participants } = generateParticipants(nParticipants);
 
-const challengeDuration = 0x1000;
+const challengeDuration = 0x10_00;
 let countingApp: Contract;
 let testNitroAdjudicator: Contract;
 let token: Contract;
 let addresses: any;
 
-type testParams = {
+interface testParams {
   setOutcome: OutcomeShortHand;
   heldBefore: OutcomeShortHand;
   newOutcome: OutcomeShortHand;
   heldAfter: OutcomeShortHand;
   payouts: OutcomeShortHand;
   reasonString: string | undefined;
-};
+}
 
 before(async () => {
   countingApp = await setupContract<CountingApp>('CountingApp');
@@ -73,8 +74,7 @@ describe('transferAllAssets', async () => {
     },
   ];
 
-  testCases.forEach((tc) =>
-    it(tc.description, async () => {
+  for (const tc of testCases) it(tc.description, async () => {
       const channelNonce = getRandomNonce('transferAllAssets');
       const channelId = getChannelId({
         channelNonce,
@@ -161,7 +161,7 @@ describe('transferAllAssets', async () => {
         // Check new status
         const outcomeAfter: Outcome = computeOutcome(newOutcome);
 
-        const expectedStatusAfter = newOutcome.length
+        const expectedStatusAfter = newOutcome.length > 0
           ? channelDataToStatus({
               turnNumRecord,
               finalizesAt,
@@ -181,10 +181,10 @@ describe('transferAllAssets', async () => {
                 const address = convertBytes32ToAddress(destination);
                 // for each channel
                 const amount = payouts[asset][destination];
-                if (asset != MAGIC_ADDRESS_INDICATING_ETH) {
-                  expect((await token.balanceOf(address)).eq(amount)).to.equal(true);
-                } else {
+                if (asset == MAGIC_ADDRESS_INDICATING_ETH) {
                   expect((await ethers.provider.getBalance(address)).eq(amount)).to.equal(true);
+                } else {
+                  expect((await token.balanceOf(address)).eq(amount)).to.equal(true);
                 }
               }),
             );
@@ -207,6 +207,6 @@ describe('transferAllAssets', async () => {
           }),
         );
       }
-    }),
-  );
+    })
+  ;
 });

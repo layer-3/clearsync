@@ -1,7 +1,7 @@
 import {Signature, ethers} from 'ethers';
 
 import {bindSignatures, signChallengeMessage} from '../../signatures';
-import {getFixedPart, getVariablePart, separateProofAndCandidate, State} from '../state';
+import {State, getFixedPart, getVariablePart, separateProofAndCandidate} from '../state';
 
 import {NitroAdjudicatorContractInterface} from './multi-asset-holder';
 

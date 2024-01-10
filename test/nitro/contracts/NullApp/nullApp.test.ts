@@ -1,12 +1,13 @@
 import { Contract, Wallet } from 'ethers';
 import { ethers } from 'hardhat';
-import { describe, beforeEach, it } from 'mocha';
+import { beforeEach, describe, it } from 'mocha';
 
 import { expectRevert } from '../../../helpers/expect-revert';
-import { getVariablePart, State, getFixedPart, getRandomNonce } from '../../../../src/nitro';
+import { State, getFixedPart, getRandomNonce, getVariablePart } from '../../../../src/nitro';
+import { setupContract } from '../../test-helpers';
+
 import type { FixedPart, SignedVariablePart } from '../../../../src/nitro/contract/state';
 import type { NitroAdjudicator } from '../../../../typechain-types';
-import { setupContract } from '../../test-helpers';
 
 let nitroAdjudicator: Contract;
 

@@ -1,26 +1,28 @@
-import { Contract, BigNumber, Wallet } from 'ethers';
+import { BigNumber, Contract, Wallet } from 'ethers';
 import { ethers } from 'hardhat';
-import { describe, beforeEach, it } from 'mocha';
+import { beforeEach, describe, it } from 'mocha';
 
 import { expectRevert } from '../../../helpers/expect-revert';
 import {
+  MAGIC_ADDRESS_INDICATING_ETH,
+  Voucher,
   computeOutcome,
   convertAddressToBytes32,
   encodeVoucherAmountAndSignature,
   getChannelId,
-  MAGIC_ADDRESS_INDICATING_ETH,
   signVoucher,
-  Voucher,
 } from '../../../../src/nitro';
 import {
   FixedPart,
-  getFixedPart,
-  getVariablePart,
   RecoveredVariablePart,
   State,
+  getFixedPart,
+  getVariablePart,
 } from '../../../../src/nitro/contract/state';
 import { generateParticipants, setupContract } from '../../test-helpers';
+
 import type { VirtualPaymentApp } from '../../../../typechain-types';
+
 const { HashZero } = ethers.constants;
 
 let virtualPaymentApp: Contract;
@@ -43,7 +45,7 @@ beforeEach(async () => {
     isFinal: false,
     channelNonce: '0x8',
     participants,
-    challengeDuration: 0x100,
+    challengeDuration: 0x1_00,
     outcome: [],
     appData: HashZero,
     appDefinition: virtualPaymentApp.address,
@@ -70,7 +72,7 @@ describe('stateIsSupported (lone candidate route)', () => {
     { turnNum: 4, isFinal: false, reason: 'bad candidate turnNum' },
   ];
 
-  testcases.forEach((tc) => {
+  for (const tc of testcases) {
     it(`${tc.reason ? 'reverts        ' : 'does not revert'} for unanimous consensus on ${
       tc.isFinal ? 'final' : 'nonfinal'
     } state with turnNum ${tc.turnNum}`, async () => {
@@ -96,7 +98,7 @@ describe('stateIsSupported (lone candidate route)', () => {
         await virtualPaymentApp.stateIsSupported(fixedPart, [], candidate);
       }
     });
-  });
+  }
 });
 
 describe('stateIsSupported (candidate plus single proof state route)', () => {
@@ -144,7 +146,7 @@ describe('stateIsSupported (candidate plus single proof state route)', () => {
     { ...vVR, aliceUnderflow: true, reason: ' ' }, // we expect transaction to revert without a reason string
   ];
 
-  testcases.forEach((tc) => {
+  for (const tc of testcases) {
     it(`${
       tc.reason ? 'reverts        ' : 'does not revert'
     } for a redemption transition with ${JSON.stringify(tc)}`, async () => {
@@ -220,7 +222,7 @@ describe('stateIsSupported (candidate plus single proof state route)', () => {
         await virtualPaymentApp.stateIsSupported(fixedPart, proof, candidate);
       }
     });
-  });
+  }
 });
 
 describe('stateIsSupported (longer proof state route)', () => {

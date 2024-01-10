@@ -1,13 +1,14 @@
 import { Allocation, AllocationType } from '@statechannels/exit-format';
-import { constants, BigNumber } from 'ethers';
-import { describe, before, it } from 'mocha';
+import { BigNumber, constants } from 'ethers';
+import { before, describe, it } from 'mocha';
 import { expect } from 'chai';
 
 import { randomChannelId, randomExternalDestination, setupContract } from '../../test-helpers';
-import type { TESTNitroAdjudicator } from '../../../../typechain-types';
-import { channelDataToStatus, encodeOutcome, hashOutcome, Outcome } from '../../../../src/nitro';
+import { Outcome, channelDataToStatus, encodeOutcome, hashOutcome } from '../../../../src/nitro';
 import { MAGIC_ADDRESS_INDICATING_ETH } from '../../../../src/nitro/transactions';
 import { encodeGuaranteeData } from '../../../../src/nitro/contract/outcome';
+
+import type { TESTNitroAdjudicator } from '../../../../typechain-types';
 
 let testNitroAdjudicator: TESTNitroAdjudicator;
 
@@ -128,17 +129,17 @@ describe('reclaim', () => {
       },
     ];
 
-    expectedEvents.forEach((expectedEvent, index) => {
+    for (const [index, expectedEvent] of expectedEvents.entries()) {
       const actualEvent = eventsFromTx[index];
 
       // Assert the 'event' field
       expect(actualEvent.event).to.equal(expectedEvent.event);
 
       // Assert each field in 'args'
-      Object.entries(expectedEvent.args).forEach(([key, value]) => {
+      for (const [key, value] of Object.entries(expectedEvent.args)) {
         expect(actualEvent.args[key]).to.deep.equal(value);
-      });
-    });
+      }
+    }
 
     // assert on updated ledger channel
 

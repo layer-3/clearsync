@@ -1,12 +1,13 @@
-import type { BytesLike } from 'ethers';
 import { describe, it } from 'mocha';
+import { expect } from 'chai';
 
 import {
-  encodeGuaranteeData,
-  decodeGuaranteeData,
   Guarantee,
+  decodeGuaranteeData,
+  encodeGuaranteeData,
 } from '../../../../src/nitro/contract/outcome';
-import { expect } from 'chai';
+
+import type { BytesLike } from 'ethers';
 
 describe('outcome', () => {
   describe('encoding and decoding', () => {
@@ -22,8 +23,7 @@ describe('outcome', () => {
       },
     ];
 
-    testCases.forEach((tc) =>
-      it(tc.description, () => {
+    for (const tc of testCases) it(tc.description, () => {
         const { encodeFunction, decodeFunction, data } = tc as {
           encodeFunction: (g: Guarantee) => BytesLike;
           decodeFunction: (b: BytesLike) => Guarantee;
@@ -32,7 +32,7 @@ describe('outcome', () => {
         const encodedData = encodeFunction(data);
         const decodedData = decodeFunction(encodedData);
         expect(decodedData).to.deep.equal(data);
-      }),
-    );
+      })
+    ;
   });
 });

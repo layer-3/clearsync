@@ -1,13 +1,14 @@
 import { Contract, Wallet } from 'ethers';
 import { ethers } from 'hardhat';
 import { expect } from 'chai';
-import { describe, before, it } from 'mocha';
-
-const { arrayify, id } = ethers.utils;
+import { before, describe, it } from 'mocha';
 
 import { setupContract } from '../../../test-helpers';
 import { sign } from '../../../../../src/nitro/signatures';
+
 import type { TESTNitroUtils } from '../../../../../typechain-types';
+
+const { arrayify, id } = ethers.utils;
 
 let nitroUtils: Contract & TESTNitroUtils;
 
@@ -33,7 +34,7 @@ describe('isClaimedSignedBy', () => {
     expect(await nitroUtils.isClaimedSignedBy(0b101     ,0)).to.equal(true);
     expect(await nitroUtils.isClaimedSignedBy(0b101     ,2)).to.equal(true);
     expect(await nitroUtils.isClaimedSignedBy(0b001     ,0)).to.equal(true);
-    expect(await nitroUtils.isClaimedSignedBy(0b10000000,7)).to.equal(true);
+    expect(await nitroUtils.isClaimedSignedBy(0b1000_0000,7)).to.equal(true);
     expect(await nitroUtils.isClaimedSignedBy(8         ,3)).to.equal(true);
   });
   // prettier-ignore
@@ -49,13 +50,13 @@ describe('isClaimedSignedOnlyBy', () => {
   // prettier-ignore
   it('returns true when only that participant bit is set', async () => {
     expect(await nitroUtils.isClaimedSignedOnlyBy(0b001     ,0)).to.equal(true);
-    expect(await nitroUtils.isClaimedSignedOnlyBy(0b10000000,7)).to.equal(true);
+    expect(await nitroUtils.isClaimedSignedOnlyBy(0b1000_0000,7)).to.equal(true);
     expect(await nitroUtils.isClaimedSignedOnlyBy(8         ,3)).to.equal(true);
   });
   // prettier-ignore
   it('returns false when that participant bit is not set', async () => {
     expect(await nitroUtils.isClaimedSignedOnlyBy(0b011     ,0)).to.equal(false);
-    expect(await nitroUtils.isClaimedSignedOnlyBy(0b10010000,7)).to.equal(false);
+    expect(await nitroUtils.isClaimedSignedOnlyBy(0b1001_0000,7)).to.equal(false);
     expect(await nitroUtils.isClaimedSignedOnlyBy(9         ,3)).to.equal(false);
     expect(await nitroUtils.isClaimedSignedOnlyBy(0b101     ,0)).to.equal(false);
     expect(await nitroUtils.isClaimedSignedOnlyBy(0b101     ,2)).to.equal(false);

@@ -1,12 +1,13 @@
 import { BigNumber, BytesLike, Contract, constants } from 'ethers';
 import { Allocation, AllocationType } from '@statechannels/exit-format';
 import { describe, it } from 'mocha';
+import { assert } from 'chai';
 
 import { setupContract } from '../../test-helpers';
-import type { TESTNitroAdjudicator } from '../../../../typechain-types';
 import { computeReclaimEffects } from '../../../../src/nitro/contract/multi-asset-holder';
 import { encodeGuaranteeData } from '../../../../src/nitro/contract/outcome';
-import { assert } from 'chai';
+
+import type { TESTNitroAdjudicator } from '../../../../typechain-types';
 
 let testNitroAdjudicator: Contract & TESTNitroAdjudicator;
 

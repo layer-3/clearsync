@@ -1,8 +1,9 @@
 import {utils} from 'ethers';
-import type { Signature } from '@ethersproject/bytes';
-import type { ParamType } from 'ethers/lib/utils';
 
 import {getChannelId} from './channel';
+
+import type { Signature } from '@ethersproject/bytes';
+import type { ParamType } from 'ethers/lib/utils';
 import type { Outcome } from './outcome';
 import type { Address, Bytes, Bytes32, Uint256, Uint48, Uint64 } from './types';
 
@@ -56,9 +57,9 @@ export function separateProofAndCandidate<T = SignedVariablePart | RecoveredVari
   candidate: T;
 } {
   const proof = svps.slice(0, -1);
-  const candidate = svps[svps.length - 1];
+  const candidate = svps.at(-1);
   if (candidate == undefined) {
-    throw Error('insufficient length array');
+    throw new Error('insufficient length array');
   }
 
   return {proof, candidate};

@@ -1,8 +1,9 @@
 import { expect } from 'chai';
+import { before } from 'mocha';
 
 import { setupContract } from '../../test-helpers';
+
 import type { TESTNitroAdjudicator } from '../../../../typechain-types';
-import { before } from 'mocha';
 
 let testNitroAdjudicator: TESTNitroAdjudicator;
 before(async () => {

@@ -1,7 +1,7 @@
 import type { Uint256 } from './contract/types';
 
 export function getSignersNum(signedByStr: Uint256): number {
-  let signedBy = parseFloat(signedByStr);
+  let signedBy = Number.parseFloat(signedByStr);
   let amount = 0;
 
   for (; signedBy > 0; amount++) {
@@ -12,7 +12,7 @@ export function getSignersNum(signedByStr: Uint256): number {
 }
 
 export function getSignersIndices(signedByStr: Uint256): number[] {
-  let signedBy = parseFloat(signedByStr);
+  let signedBy = Number.parseFloat(signedByStr);
 
   const signerIndices: number[] = [];
   let signerNum = 0;

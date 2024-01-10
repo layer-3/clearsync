@@ -1,17 +1,16 @@
-import { Contract, BigNumber, constants } from 'ethers';
+import { BigNumber, Contract, constants } from 'ethers';
 import { ethers } from 'hardhat';
-import { describe, before, beforeEach, it } from 'mocha';
+import { before, beforeEach, describe, it } from 'mocha';
 import { expect } from 'chai';
 
 import { expectRevert } from '../../../helpers/expect-revert';
 import { getChannelId } from '../../../../src/nitro/contract/channel';
-import type { Outcome } from '../../../../src/nitro/contract/outcome';
 import {
   FixedPart,
+  State,
   getFixedPart,
   getVariablePart,
   separateProofAndCandidate,
-  State,
 } from '../../../../src/nitro/contract/state';
 import {
   generateParticipants,
@@ -20,18 +19,20 @@ import {
   setupContract,
 } from '../../test-helpers';
 import {
-  signStates,
-  channelDataToStatus,
-  bindSignatures,
   OutcomeShortHand,
+  bindSignatures,
+  channelDataToStatus,
+  signStates,
 } from '../../../../src/nitro';
 import { MAGIC_ADDRESS_INDICATING_ETH, NITRO_MAX_GAS } from '../../../../src/nitro/transactions';
-import type { CountingApp, TESTNitroAdjudicator, Token } from '../../../../typechain-types';
 import {
   computeOutcome,
   getRandomNonce,
   replaceAddressesAndBigNumberify,
 } from '../../../../src/nitro/helpers';
+
+import type { CountingApp, TESTNitroAdjudicator, Token } from '../../../../typechain-types';
+import type { Outcome } from '../../../../src/nitro/contract/outcome';
 
 interface addressesT {
   [index: string]: string | undefined;
@@ -39,9 +40,7 @@ interface addressesT {
   Bt: string;
 }
 
-interface payoutsT {
-  [index: string]: number;
-}
+type payoutsT = Record<string, number>;
 
 interface TestCase {
   description: string;
@@ -57,7 +56,7 @@ describe('concludeAndTransferAllAssets', () => {
   const nParticipants = 3;
   const { wallets, participants } = generateParticipants(nParticipants);
 
-  const challengeDuration = 0x1000;
+  const challengeDuration = 0x10_00;
   let countingApp: Contract;
   let testNitroAdjudicator: Contract;
   let token: Contract;
@@ -84,7 +83,7 @@ describe('concludeAndTransferAllAssets', () => {
   const oneHundredPayouts = { ERC20: {} as payoutsT };
   for (let i = 0; i < 100; i++) {
     addresses[i.toString()] =
-      '0x000000000000000000000000e0c3b40fdff77c786dd3737837887c85' + (0x2392fa22 + i).toString(16); // they need to be distinct because JS objects
+      '0x000000000000000000000000e0c3b40fdff77c786dd3737837887c85' + (0x23_92_fa_22 + i).toString(16); // they need to be distinct because JS objects
     if (i < 10) tenPayouts.ERC20[i.toString()] = 1;
     if (i < 50) fiftyPayouts.ERC20[i.toString()] = 1;
     if (i < 100) oneHundredPayouts.ERC20[i.toString()] = 1;
@@ -197,7 +196,7 @@ describe('concludeAndTransferAllAssets', () => {
     },
   ];
 
-  testCases.forEach((tc) => {
+  for (const tc of testCases) {
     it(tc.description, async () => {
       let outcomeShortHand = tc.outcomeShortHand;
       let heldBefore = tc.heldBefore;
@@ -295,7 +294,7 @@ describe('concludeAndTransferAllAssets', () => {
 
         // Compute expected ChannelDataHash
         const blockTimestamp = (await ethers.provider.getBlock(receipt.blockNumber)).timestamp;
-        const expectedFingerprint = newOutcome.length
+        const expectedFingerprint = newOutcome.length > 0
           ? channelDataToStatus({
               turnNumRecord: 0,
               finalizesAt: blockTimestamp,
@@ -325,5 +324,5 @@ describe('concludeAndTransferAllAssets', () => {
         );
       }
     });
-  });
+  }
 });

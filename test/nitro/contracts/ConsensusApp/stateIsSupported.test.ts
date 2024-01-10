@@ -1,19 +1,21 @@
-import { Contract, Wallet, ethers, BigNumber } from 'ethers';
-import { describe, before, it } from 'mocha';
+import { BigNumber, Contract, Wallet, ethers } from 'ethers';
+import { before, describe, it } from 'mocha';
 
 import { expectRevert } from '../../../helpers/expect-revert';
 import { bindSignaturesWithSignedByBitfield, signState } from '../../../../src/nitro';
 import {
   FixedPart,
-  getFixedPart,
-  getVariablePart,
   RecoveredVariablePart,
   State,
   VariablePart,
+  getFixedPart,
+  getVariablePart,
 } from '../../../../src/nitro/contract/state';
 import { expectSupportedState } from '../../tx-expect-wrappers';
 import { generateParticipants, setupContract } from '../../test-helpers';
+
 import type { ConsensusApp } from '../../../../typechain-types';
+
 const { HashZero } = ethers.constants;
 
 let consensusApp: Contract;
@@ -34,7 +36,7 @@ before(async () => {
     isFinal: false,
     channelNonce: BigNumber.from(8).toHexString(),
     participants,
-    challengeDuration: 0x100,
+    challengeDuration: 0x1_00,
     outcome: [],
     appData: HashZero,
     appDefinition: consensusApp.address,

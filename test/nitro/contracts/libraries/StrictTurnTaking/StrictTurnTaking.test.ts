@@ -1,19 +1,19 @@
-import { BigNumber, Contract, ContractInterface, Wallet } from 'ethers';
-import { describe, before, beforeEach, it } from 'mocha';
+import { BigNumber, Contract, Wallet } from 'ethers';
+import { before, beforeEach, describe, it } from 'mocha';
+import { expect } from 'chai';
 
 import { expectRevert } from '../../../../helpers/expect-revert';
 import {
-  shortenedToRecoveredVariableParts,
   TurnNumToShortenedVariablePart,
+  shortenedToRecoveredVariableParts,
 } from '../../../../../src/nitro/signatures';
 import { generateParticipants, setupContract } from '../../../test-helpers';
-import type { CountingApp, TESTStrictTurnTaking } from '../../../../../typechain-types';
 import {
+  Outcome,
+  State,
   getFixedPart,
   getRandomNonce,
   getVariablePart,
-  Outcome,
-  State,
 } from '../../../../../src/nitro';
 import {
   INVALID_NUMBER_OF_PROOF_STATES,
@@ -27,12 +27,13 @@ import {
 } from '../../../../../src/nitro/contract/state';
 import { getSignedBy } from '../../../../../src/nitro/bitfield-utils';
 import { expectSucceedWithNoReturnValues } from '../../../tx-expect-wrappers';
-import { expect } from 'chai';
+
+import type { CountingApp, TESTStrictTurnTaking } from '../../../../../typechain-types';
 
 let strictTurnTaking: Contract & TESTStrictTurnTaking;
 let countingApp: Contract & CountingApp;
 
-const challengeDuration = 0x1000;
+const challengeDuration = 0x10_00;
 const asset = Wallet.createRandom().address;
 const defaultOutcome: Outcome = [
   { asset, allocations: [], assetMetadata: { assetType: 0, metadata: '0x' } },
@@ -70,8 +71,7 @@ describe('isSignedByMover', () => {
     },
   ];
 
-  testCases.forEach((tc) =>
-    it(tc.description, async () => {
+  for (const tc of testCases) it(tc.description, async () => {
       const { turnNum, signedBy, reason } = tc as unknown as {
         turnNum: number;
         signedBy: number[];
@@ -104,8 +104,8 @@ describe('isSignedByMover', () => {
           strictTurnTaking.isSignedByMover(fixedPart, rvp),
         );
       }
-    }),
-  );
+    })
+  ;
 });
 
 describe('moverAddress', () => {
@@ -137,8 +137,7 @@ describe('moverAddress', () => {
     },
   ];
 
-  testCases.forEach((tc) =>
-    it(tc.description, async () => {
+  for (const tc of testCases) it(tc.description, async () => {
       const { turnNum, expectedParticipantIdx } = tc as unknown as {
         turnNum: number;
         expectedParticipantIdx: number;
@@ -147,8 +146,8 @@ describe('moverAddress', () => {
       expect(await strictTurnTaking.moverAddress(participants, turnNum)).to.equal(
         wallets[expectedParticipantIdx].address,
       );
-    }),
-  );
+    })
+  ;
 });
 
 describe('requireValidInput', () => {
@@ -191,8 +190,7 @@ describe('requireValidInput', () => {
     },
   ];
 
-  testCases.forEach((tc) =>
-    it(tc.description, async () => {
+  for (const tc of testCases) it(tc.description, async () => {
       if (tc.reason) {
         await expectRevert(
           () => strictTurnTaking.requireValidInput(tc.nParticipants, tc.numProof),
@@ -203,8 +201,8 @@ describe('requireValidInput', () => {
           strictTurnTaking.requireValidInput(tc.nParticipants, tc.numProof),
         );
       }
-    }),
-  );
+    })
+  ;
 });
 
 describe('requireValidTurnTaking', () => {
@@ -283,8 +281,7 @@ describe('requireValidTurnTaking', () => {
     },
   ];
 
-  testCases.forEach((tc) =>
-    it(tc.description, async () => {
+  for (const tc of testCases) it(tc.description, async () => {
       const { reason, turnNumToShortenedVariablePart } = tc as unknown as {
         reason: string | undefined;
         turnNumToShortenedVariablePart: TurnNumToShortenedVariablePart;
@@ -315,6 +312,6 @@ describe('requireValidTurnTaking', () => {
           strictTurnTaking.requireValidTurnTaking(fixedPart, proof, candidate),
         );
       }
-    }),
-  );
+    })
+  ;
 });

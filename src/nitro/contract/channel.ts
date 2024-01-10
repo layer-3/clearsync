@@ -9,7 +9,7 @@ import {Bytes32} from './types';
  * @returns true if the destination has 12 leading bytes as zero, false otherwise
  */
 export function isExternalDestination(bytes32: Bytes32): boolean {
-  return /^0x(0{24})([a-fA-F0-9]{40})$/.test(bytes32);
+  return /^0x(0{24})([\dA-Fa-f]{40})$/.test(bytes32);
 }
 
 /**
@@ -26,6 +26,6 @@ export function getChannelId(fixedPart: FixedPart): Bytes32 {
     )
   );
   if (isExternalDestination(channelId))
-    throw Error('This channel would have an external destination as an id');
+    throw new Error('This channel would have an external destination as an id');
   return channelId;
 }

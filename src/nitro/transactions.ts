@@ -1,10 +1,11 @@
-import {constants, providers, Signature} from 'ethers';
+import {Signature, constants, providers} from 'ethers';
 
-import type { State } from './contract/state';
 import * as forceMoveTrans from './contract/transaction-creators/force-move';
 import * as multiAssetHolderTrans from './contract/transaction-creators/multi-asset-holder';
 import * as nitroAdjudicatorTrans from './contract/transaction-creators/nitro-adjudicator';
-import {getStateSignerAddress, SignedState} from './signatures';
+import {SignedState, getStateSignerAddress} from './signatures';
+
+import type { State } from './contract/state';
 
 // CONSTANTS
 export const MAGIC_ADDRESS_INDICATING_ETH = constants.AddressZero;
@@ -140,7 +141,7 @@ export function createSignatureArguments(signedStates: SignedState[]): {
 } {
   const {participants} = signedStates[0].state;
   const states = [];
-  const whoSignedWhat = new Array<number>(participants.length);
+  const whoSignedWhat = Array.from({length: participants.length});
 
   // Get a list of all unique signed states.
   const uniqueSignedStates = signedStates.filter((s, i, a) => a.indexOf(s) === i);
@@ -148,11 +149,11 @@ export function createSignatureArguments(signedStates: SignedState[]): {
   // so we get a list of unique states ignoring their signatures
   // which allows us to create a single state with multiple signatures
   const uniqueStates = uniqueSignedStates.map(s => s.state).filter((s, i, a) => a.indexOf(s) === i);
-  const signatures = new Array<Signature>(uniqueStates.length);
-  for (let i = 0; i < uniqueStates.length; i++) {
-    states.push(uniqueStates[i]);
+  const signatures = Array.from({length: uniqueStates.length});
+  for (const [i, uniqueState] of uniqueStates.entries()) {
+    states.push(uniqueState);
     // Get a list of all signed states that have the state
-    const signedStatesForUniqueState = uniqueSignedStates.filter(s => s.state === uniqueStates[i]);
+    const signedStatesForUniqueState = uniqueSignedStates.filter(s => s.state === uniqueState);
     // Iterate through the signatures and set signatures/whoSignedWhawt
     for (const ss of signedStatesForUniqueState) {
       const participantIndex = participants.indexOf(getStateSignerAddress(ss));

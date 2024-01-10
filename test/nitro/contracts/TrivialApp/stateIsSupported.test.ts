@@ -1,19 +1,20 @@
 import { Contract, Wallet, utils } from 'ethers';
 import { ethers } from 'hardhat';
-import { describe, beforeEach, it } from 'mocha';
+import { beforeEach, describe, it } from 'mocha';
 
-import type { TrivialApp } from '../../../../typechain-types';
 import { getRandomNonce } from '../../../../src/nitro/helpers';
 import {
   FixedPart,
-  getFixedPart,
-  getVariablePart,
   RecoveredVariablePart,
   State,
   VariablePart,
+  getFixedPart,
+  getVariablePart,
 } from '../../../../src/nitro/contract/state';
 import { expectSupportedState } from '../../tx-expect-wrappers';
 import { setupContract } from '../../test-helpers';
+
+import type { TrivialApp } from '../../../../typechain-types';
 
 let trivialApp: Contract;
 

@@ -1,15 +1,14 @@
 import { BigNumber, Contract, Wallet } from 'ethers';
+import { before, beforeEach, describe, it } from 'mocha';
 
-import { describe, before, beforeEach, it } from 'mocha';
 import { expectRevert } from '../../../../helpers/expect-revert';
 import { generateParticipants, setupContract } from '../../../test-helpers';
-import type { TESTConsensus } from '../../../../../typechain-types';
 import {
+  Outcome,
+  State,
   getFixedPart,
   getRandomNonce,
-  Outcome,
   shortenedToRecoveredVariableParts,
-  State,
 } from '../../../../../src/nitro';
 import {
   NOT_UNANIMOUS,
@@ -18,9 +17,11 @@ import {
 import { separateProofAndCandidate } from '../../../../../src/nitro/contract/state';
 import { expectSucceedWithNoReturnValues } from '../../../tx-expect-wrappers';
 
+import type { TESTConsensus } from '../../../../../typechain-types';
+
 let consensusApp: Contract & TESTConsensus;
 
-const challengeDuration = 0x1000;
+const challengeDuration = 0x10_00;
 const asset = Wallet.createRandom().address;
 const defaultOutcome: Outcome = [
   { asset, allocations: [], assetMetadata: { assetType: 0, metadata: '0x' } },
@@ -68,8 +69,7 @@ describe('requireConsensus', () => {
     },
   ];
 
-  testCases.forEach((tc) =>
-    it(tc.description, async () => {
+  for (const tc of testCases) it(tc.description, async () => {
       const { turnNumToShortenedVariablePart, reason } = tc;
 
       const state: State = {
@@ -95,6 +95,6 @@ describe('requireConsensus', () => {
           consensusApp.requireConsensus(fixedPart, proof, candidate),
         );
       }
-    }),
-  );
+    })
+  ;
 });
