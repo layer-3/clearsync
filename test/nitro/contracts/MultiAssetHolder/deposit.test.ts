@@ -230,10 +230,13 @@ describe('deposit', () => {
           return;
         }
         const depositedEvent = getDepositedEvent(events);
-        expect(depositedEvent).to.deep.include({
+        const expectedEvent = {
           destination,
           destinationHoldings: heldAfter,
-        });
+        };
+        for (const [key, value] of Object.entries(expectedEvent)) {
+          expect(depositedEvent[key]).to.deep.equal(value);
+        }
 
         if (asset == ERC20 || asset == BadERC20) {
           const amountTransferred = BigNumber.from(getTransferEvent(events).data);
