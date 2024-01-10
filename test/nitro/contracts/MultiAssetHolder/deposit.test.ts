@@ -47,12 +47,21 @@ before(async () => {
   BadERC20 = badToken.address;
 });
 
+// eslint-disable-next-line sonarjs/cognitive-complexity
 describe('deposit', () => {
   let channelNonce = getRandomNonce('deposit');
+
+  // NOTE: getters allow to use values that are created in "beforeAll" hook inside test cases
+  // This is needed because mocha executes the `describe` callback,
+  // then hooks (including `beforeAll`) and only then test cases (`it` callbacks)
+  const ETH_getter = (): string => ETH;
+  const ERC20_getter = (): string => ERC20;
+  const BadERC20_getter = (): string => BadERC20;
+
   const testCases = [
     {
       description: 'Deposits Tokens (expectedHeld = 0)',
-      asset: ERC20,
+      assetGetter: ERC20_getter,
       held: 0,
       expectedHeld: 0,
       amount: 1,
@@ -61,7 +70,7 @@ describe('deposit', () => {
     },
     {
       description: 'Deposits Tokens (expectedHeld = 1)',
-      asset: ERC20,
+      assetGetter: ERC20_getter,
       held: 1,
       expectedHeld: 1,
       amount: 1,
@@ -70,7 +79,7 @@ describe('deposit', () => {
     },
     {
       description: 'Reverts deposit of Tokens (expectedHeld > holdings)',
-      asset: ERC20,
+      assetGetter: ERC20_getter,
       held: 0,
       expectedHeld: 1,
       amount: 2,
@@ -79,7 +88,7 @@ describe('deposit', () => {
     },
     {
       description: 'Reverts deposit of Tokens (expectedHeld < holdings)',
-      asset: ERC20,
+      assetGetter: ERC20_getter,
       held: 1,
       expectedHeld: 0,
       amount: 2,
@@ -88,7 +97,7 @@ describe('deposit', () => {
     },
     {
       description: 'Deposits ETH (msg.value = amount , expectedHeld = 0)',
-      asset: ETH,
+      assetGetter: ETH_getter,
       held: 0,
       expectedHeld: 0,
       amount: 1,
@@ -97,7 +106,7 @@ describe('deposit', () => {
     },
     {
       description: 'Deposits ETH (msg.value = amount , expectedHeld = 1)',
-      asset: ETH,
+      assetGetter: ETH_getter,
       held: 1,
       expectedHeld: 1,
       amount: 1,
@@ -106,7 +115,7 @@ describe('deposit', () => {
     },
     {
       description: 'Reverts deposit of ETH (msg.value = amount, expectedHeld > holdings)',
-      asset: ETH,
+      assetGetter: ETH_getter,
       held: 0,
       expectedHeld: 1,
       amount: 2,
@@ -115,7 +124,7 @@ describe('deposit', () => {
     },
     {
       description: 'Reverts deposit of ETH (msg.value = amount, expectedHeld < holdings)',
-      asset: ETH,
+      assetGetter: ETH_getter,
       held: 1,
       expectedHeld: 0,
       amount: 2,
@@ -124,7 +133,7 @@ describe('deposit', () => {
     },
     {
       description: 'Reverts deposit of ETH (msg.value != amount)',
-      asset: ETH,
+      assetGetter: ETH_getter,
       held: 0,
       expectedHeld: 0,
       amount: 1,
@@ -133,7 +142,7 @@ describe('deposit', () => {
     },
     {
       description: 'Deposits a Bad token (expectedHeld = 0)',
-      asset: BadERC20,
+      assetGetter: BadERC20_getter,
       held: 0,
       expectedHeld: 0,
       amount: 1,
@@ -152,8 +161,8 @@ describe('deposit', () => {
       const expectedHeld = BigNumber.from(tc.expectedHeld);
       const amount = BigNumber.from(tc.amount);
       const heldAfter = BigNumber.from(tc.heldAfter);
-      const asset = tc.asset;
-      const reasonString = tc.reasonString!;
+      const asset = tc.assetGetter();
+      const reasonString = tc.reasonString;
       const destination = getChannelId({
         channelNonce,
         participants,
