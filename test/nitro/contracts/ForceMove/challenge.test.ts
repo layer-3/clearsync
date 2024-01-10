@@ -52,7 +52,7 @@ let forceMove: Contract & TESTForceMove;
 let countingApp: Contract & CountingApp;
 
 const participants = ['', '', ''];
-const wallets = Array.from({length: 3});
+const wallets = Array.from({ length: 3 });
 const challengeDuration = 86_400; // 1 day
 const outcome: Outcome = [
   {
@@ -203,7 +203,8 @@ describe('challenge', () => {
     },
   ];
 
-  for (const tc of testCases) it(tc.description, async () => {
+  for (const tc of testCases)
+    it(tc.description, async () => {
       const { reasonString, challengeSignatureType, stateData, initialFingerprint } =
         tc as unknown as {
           initialFingerprint: string;
@@ -282,17 +283,15 @@ describe('challenge', () => {
         expect(eventChannelId).to.equal(channelId);
 
         if (proof.length > 0) {
-          expect(
-            parseOutcomeEventResult(eventProof.at(-1).variablePart.outcome),
-          ).to.equal(proof.at(-1).variablePart.outcome);
+          const res = parseOutcomeEventResult(eventProof.at(-1).variablePart.outcome);
+          expect(res).to.deep.equal(proof.at(-1).variablePart.outcome);
           expect(eventProof.at(-1).variablePart.appData).to.equal(
             proof.at(-1).variablePart.appData,
           );
         }
 
-        expect(parseOutcomeEventResult(eventCandidate.variablePart.outcome)).to.equal(
-          candidate.variablePart.outcome,
-        );
+        const res = parseOutcomeEventResult(eventCandidate.variablePart.outcome);
+        expect(res).to.deep.equal(candidate.variablePart.outcome);
         expect(eventCandidate.variablePart.appData).to.equal(candidate.variablePart.appData);
 
         const expectedChannelStorage: ChannelData = {
@@ -306,8 +305,7 @@ describe('challenge', () => {
         // Check channelStorageHash against the expected value
         expect(await forceMove.statusOf(channelId)).to.equal(expectedFingerprint);
       }
-    })
-  ;
+    });
 });
 
 describe('challenge with transaction generator', () => {
@@ -316,16 +314,18 @@ describe('challenge with transaction generator', () => {
     participants: string[];
     appDefinition: string;
     challengeDuration: number;
+  } = {
+    participants: [],
   };
 
   beforeEach(async () => {
-    await (await forceMove.setStatus(getChannelId(twoPartyFixedPart), HashZero)).wait();
     twoPartyFixedPart = {
       channelNonce: '0x1',
       participants: [wallets[0].address, wallets[1].address],
       appDefinition: countingApp.address,
       challengeDuration,
     };
+    await (await forceMove.setStatus(getChannelId(twoPartyFixedPart), HashZero)).wait();
   });
 
   const testCases = [
@@ -353,7 +353,8 @@ describe('challenge with transaction generator', () => {
   ];
 
   // FIX: even if dropping channel status before each test, turn nums from prev tests are saved and can cause reverts
-  for (const tc of testCases) it(tc.description, async () => {
+  for (const tc of testCases)
+    it(tc.description, async () => {
       const { appData, turnNums, challenger } = tc as unknown as {
         appData: number[];
         turnNums: number[];
@@ -372,11 +373,9 @@ describe('challenge with transaction generator', () => {
         to: forceMove.address,
         ...transactionRequest,
       });
-      expect(
-        BigNumber.from((await response.wait()).gasUsed).lt(BigNumber.from(NITRO_MAX_GAS)),
-      ).to.true('gasUsed > NITRO_MAX_GAS');
-    })
-  ;
+      expect(BigNumber.from((await response.wait()).gasUsed).lt(BigNumber.from(NITRO_MAX_GAS))).to
+        .be.true;
+    });
 });
 
 async function createTwoPartySignedCountingAppState(
