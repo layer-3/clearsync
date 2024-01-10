@@ -399,14 +399,14 @@ describe('transfer', () => {
           if (isExternalDestination(destination)) {
             const asAddress = '0x' + destination.substring(26);
             const balance = await ethers.provider.getBalance(asAddress);
-            console.log(`checking balance of ${destination}: ${balance.toString()}`);
+            // console.log(`checking balance of ${destination}: ${balance.toString()}`);
             expect(balance).to.equal(payouts[destination]);
           } else {
             const holdings = await testNitroAdjudicator.holdings(
               MAGIC_ADDRESS_INDICATING_ETH,
               destination,
             );
-            console.log(`checking holdings of ${destination}: ${holdings.toString()}`);
+            // console.log(`checking holdings of ${destination}: ${holdings.toString()}`);
             expect(holdings).to.equal(payouts[destination]);
           }
         }
