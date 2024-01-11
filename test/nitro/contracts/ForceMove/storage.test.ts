@@ -1,8 +1,7 @@
-import { Contract, ethers } from 'ethers';
+import { ethers } from 'ethers';
 import { before, describe, it } from 'mocha';
 import { expect } from 'chai';
 
-import { expectRevert } from '../../../helpers/expect-revert';
 import {
   ChannelData,
   channelDataToStatus,
@@ -12,7 +11,7 @@ import { randomChannelId, setupContract } from '../../test-helpers';
 
 import type { TESTForceMove } from '../../../../typechain-types';
 
-let forceMove: Contract & TESTForceMove;
+let forceMove: TESTForceMove;
 before(async () => {
   forceMove = await setupContract<TESTForceMove>('TESTForceMove');
 });
@@ -33,7 +32,8 @@ describe('storage', () => {
     },
   ];
 
-  for (const tc of testCases) it('Statusing and data retrieval', async () => {
+  for (const tc of testCases)
+    it('Statusing and data retrieval', async () => {
       const storage = tc;
       const blockchainStorage = { ...storage, ...zeroData };
       const blockchainStatus = await forceMove.generateStatus(blockchainStorage);
@@ -48,13 +48,16 @@ describe('storage', () => {
 
       let event = parseStatus(clientStatus);
       for (const [key, value] of Object.entries(expected)) {
-        expect(event[key]).to.equal(value);
+        expect(event[key as keyof typeof event]).to.equal(value);
       }
 
       // Testing getData is a little more laborious
-      await (
-        await forceMove.setStatusFromChannelData(ethers.constants.HashZero, blockchainStorage)
-      ).wait();
+      const setStatusTx = await forceMove.setStatusFromChannelData(
+        ethers.constants.HashZero,
+        blockchainStorage,
+      );
+      await setStatusTx.wait();
+
       const {
         turnNumRecord,
         finalizesAt,
@@ -63,10 +66,9 @@ describe('storage', () => {
 
       event = { turnNumRecord, finalizesAt, fingerprint: f._hex };
       for (const [key, value] of Object.entries(expected)) {
-        expect(event[key]).to.equal(value);
+        expect(event[key as keyof typeof event]).to.equal(value);
       }
-    })
-  ;
+    });
 });
 
 describe('_requireChannelOpen', () => {
@@ -113,21 +115,21 @@ describe('_requireChannelOpen', () => {
     },
   ];
 
-  for (const tc of testCases) it(`${tc.result} with turnNumRecord: ${tc.turnNumRecord}, finalizesAt: ${tc.finalizesAt}`, async () => {
+  for (const tc of testCases)
+    it(`${tc.result} with turnNumRecord: ${tc.turnNumRecord}, finalizesAt: ${tc.finalizesAt}`, async () => {
       const blockchainStorage = {
         turnNumRecord: tc.turnNumRecord,
         finalizesAt: tc.finalizesAt,
         ...zeroData,
       };
 
-      await (await forceMove.setStatusFromChannelData(channelId, blockchainStorage)).wait();
+      const setStatusTx = await forceMove.setStatusFromChannelData(channelId, blockchainStorage);
+      await setStatusTx.wait();
       expect(await forceMove.statusOf(channelId)).to.equal(
         channelDataToStatus(blockchainStorage as ChannelData),
       );
 
       const tx = forceMove.requireChannelOpen(channelId);
-      // eslint-disable-next-line no-unused-expressions
-      tc.result === 'reverts' ? await expectRevert(() => tx, 'Channel not open.') : await tx;
-    })
-  ;
+      tc.result === 'reverts' ? await expect(tx).to.be.revertedWith('Channel not open.') : await tx;
+    });
 });

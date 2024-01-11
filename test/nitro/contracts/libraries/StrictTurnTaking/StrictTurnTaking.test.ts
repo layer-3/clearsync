@@ -1,8 +1,7 @@
-import { BigNumber, Contract, Wallet } from 'ethers';
+import { BigNumber, Wallet } from 'ethers';
 import { before, beforeEach, describe, it } from 'mocha';
 import { expect } from 'chai';
 
-import { expectRevert } from '../../../../helpers/expect-revert';
 import {
   TurnNumToShortenedVariablePart,
   shortenedToRecoveredVariableParts,
@@ -30,8 +29,8 @@ import { expectSucceedWithNoReturnValues } from '../../../tx-expect-wrappers';
 
 import type { CountingApp, TESTStrictTurnTaking } from '../../../../../typechain-types';
 
-let strictTurnTaking: Contract & TESTStrictTurnTaking;
-let countingApp: Contract & CountingApp;
+let strictTurnTaking: TESTStrictTurnTaking;
+let countingApp: CountingApp;
 
 const challengeDuration = 0x10_00;
 const asset = Wallet.createRandom().address;
@@ -71,7 +70,8 @@ describe('isSignedByMover', () => {
     },
   ];
 
-  for (const tc of testCases) it(tc.description, async () => {
+  for (const tc of testCases)
+    it(tc.description, async () => {
       const { turnNum, signedBy, reason } = tc as unknown as {
         turnNum: number;
         signedBy: number[];
@@ -98,14 +98,13 @@ describe('isSignedByMover', () => {
       };
 
       if (reason) {
-        await expectRevert(() => strictTurnTaking.isSignedByMover(fixedPart, rvp), reason);
+        await expect(strictTurnTaking.isSignedByMover(fixedPart, rvp)).to.be.revertedWith(reason);
       } else {
         await expectSucceedWithNoReturnValues(() =>
           strictTurnTaking.isSignedByMover(fixedPart, rvp),
         );
       }
-    })
-  ;
+    });
 });
 
 describe('moverAddress', () => {
@@ -137,7 +136,8 @@ describe('moverAddress', () => {
     },
   ];
 
-  for (const tc of testCases) it(tc.description, async () => {
+  for (const tc of testCases)
+    it(tc.description, async () => {
       const { turnNum, expectedParticipantIdx } = tc as unknown as {
         turnNum: number;
         expectedParticipantIdx: number;
@@ -146,8 +146,7 @@ describe('moverAddress', () => {
       expect(await strictTurnTaking.moverAddress(participants, turnNum)).to.equal(
         wallets[expectedParticipantIdx].address,
       );
-    })
-  ;
+    });
 });
 
 describe('requireValidInput', () => {
@@ -190,19 +189,18 @@ describe('requireValidInput', () => {
     },
   ];
 
-  for (const tc of testCases) it(tc.description, async () => {
+  for (const tc of testCases)
+    it(tc.description, async () => {
       if (tc.reason) {
-        await expectRevert(
-          () => strictTurnTaking.requireValidInput(tc.nParticipants, tc.numProof),
-          tc.reason,
-        );
+        await expect(
+          strictTurnTaking.requireValidInput(tc.nParticipants, tc.numProof),
+        ).to.be.revertedWith(tc.reason);
       } else {
         await expectSucceedWithNoReturnValues(() =>
           strictTurnTaking.requireValidInput(tc.nParticipants, tc.numProof),
         );
       }
-    })
-  ;
+    });
 });
 
 describe('requireValidTurnTaking', () => {
@@ -274,14 +272,15 @@ describe('requireValidTurnTaking', () => {
       description: 'revert when a turn number is skipped',
       turnNumToShortenedVariablePart: new Map([
         [0, [0]],
-        [2, [1]],
-        [3, [2]],
+        [2, [2]],
+        [3, [3]],
       ]),
       reason: WRONG_TURN_NUM,
     },
   ];
 
-  for (const tc of testCases) it(tc.description, async () => {
+  for (const tc of testCases)
+    it(tc.description, async () => {
       const { reason, turnNumToShortenedVariablePart } = tc as unknown as {
         reason: string | undefined;
         turnNumToShortenedVariablePart: TurnNumToShortenedVariablePart;
@@ -304,14 +303,13 @@ describe('requireValidTurnTaking', () => {
       const { proof, candidate } = separateProofAndCandidate(recoveredVP);
 
       if (reason) {
-        await expectRevert(() =>
+        await expect(
           strictTurnTaking.requireValidTurnTaking(fixedPart, proof, candidate),
-        );
+        ).to.be.revertedWith(reason);
       } else {
         await expectSucceedWithNoReturnValues(() =>
           strictTurnTaking.requireValidTurnTaking(fixedPart, proof, candidate),
         );
       }
-    })
-  ;
+    });
 });

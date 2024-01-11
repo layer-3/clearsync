@@ -1,8 +1,7 @@
-import { BigNumber, Contract, Wallet, ethers } from 'ethers';
+import { BigNumber, Wallet, ethers } from 'ethers';
 import { before, describe, it } from 'mocha';
-import { expect } from 'chai';
+import { assert, expect } from 'chai';
 
-import { expectRevert } from '../../../helpers/expect-revert';
 import { getChannelId } from '../../../../src/nitro/contract/channel';
 import { channelDataToStatus } from '../../../../src/nitro/contract/channel-storage';
 import {
@@ -22,14 +21,10 @@ import {
 
 import type { CountingApp, TESTForceMove } from '../../../../typechain-types';
 import type { Outcome } from '../../../../src/nitro/contract/outcome';
+import type { transitionType } from './types';
 
 const { HashZero } = ethers.constants;
 const { defaultAbiCoder } = ethers.utils;
-
-interface transitionType {
-  whoSignedWhat: number[];
-  appDatas: number[];
-}
 
 interface testParams {
   largestTurnNum: number;
@@ -38,8 +33,8 @@ interface testParams {
   reason: string | undefined;
 }
 
-let forceMove: Contract & TESTForceMove;
-let countingApp: Contract & CountingApp;
+let forceMove: TESTForceMove;
+let countingApp: CountingApp;
 
 const participantsNum = 3;
 const { wallets, participants } = generateParticipants(participantsNum);
@@ -73,6 +68,7 @@ const past = 1;
 const never = '0x00';
 const turnNumRecord = 7;
 
+// eslint-disable-next-line sonarjs/cognitive-complexity
 describe('checkpoint', () => {
   let channelNonce = getRandomNonce('checkpoint');
   beforeEach(() => (channelNonce = BigNumber.from(channelNonce).add(1).toHexString()));
@@ -160,7 +156,8 @@ describe('checkpoint', () => {
     },
   ];
 
-  for (const tc of testCases) it(tc.description, async () => {
+  for (const tc of testCases)
+    it(tc.description, async () => {
       const { largestTurnNum, support, finalizesAt, reason } = tc as unknown as testParams;
       const { appDatas, whoSignedWhat } = support;
 
@@ -211,15 +208,26 @@ describe('checkpoint', () => {
         : HashZero;
 
       // Call public wrapper to set state (only works on test contract)
-      await (await forceMove.setStatus(channelId, fingerprint)).wait();
+      const setStatusTx = await forceMove.setStatus(channelId, fingerprint);
+      await setStatusTx.wait();
+
       expect(await forceMove.statusOf(channelId)).to.equal(fingerprint);
 
-      const tx = forceMove.checkpoint(fixedPart, proof, candidate);
+      const pendingTx = forceMove.checkpoint(fixedPart, proof, candidate);
       if (reason) {
-        await expectRevert(() => tx, reason);
+        await expect(pendingTx).to.be.revertedWith(reason);
       } else {
-        const receipt = await (await tx).wait();
+        const tx = await pendingTx;
+        const receipt = await tx.wait();
+
+        if (receipt.events === undefined) {
+          assert.fail('No events emitted');
+        }
         const event = receipt.events.pop();
+
+        if (event === undefined || event.args === undefined) {
+          assert.fail('No events emitted');
+        }
 
         expect(event.event).to.equal(isChallenged ? 'ChallengeCleared' : 'Checkpointed');
         const expectedEvent = {
@@ -240,6 +248,5 @@ describe('checkpoint', () => {
         // Check channelStorageHash against the expected value
         expect(await forceMove.statusOf(channelId)).to.equal(expectedChannelStorageHash);
       }
-    })
-  ;
+    });
 });

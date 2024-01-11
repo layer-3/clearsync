@@ -1,9 +1,8 @@
-import { BigNumber, Contract, Wallet } from 'ethers';
+import { BigNumber, Wallet } from 'ethers';
 import { ethers } from 'hardhat';
 import { before, describe, it } from 'mocha';
-import { expect } from 'chai';
+import { assert, expect } from 'chai';
 
-import { expectRevert } from '../../../helpers/expect-revert';
 import { getChannelId } from '../../../../src/nitro/contract/channel';
 import { channelDataToStatus } from '../../../../src/nitro/contract/channel-storage';
 import {
@@ -27,12 +26,13 @@ import { bindSignatures, getRandomNonce, signStates } from '../../../../src/nitr
 
 import type { Outcome } from '../../../../src/nitro/contract/outcome';
 import type { CountingApp, TESTForceMove } from '../../../../typechain-types';
+import type { transitionType } from './types';
 
 const { HashZero } = ethers.constants;
 const { defaultAbiCoder } = ethers.utils;
 
-let forceMove: Contract & TESTForceMove;
-let countingApp: Contract & CountingApp;
+let forceMove: TESTForceMove;
+let countingApp: CountingApp;
 
 const nParticipants = 3;
 const { wallets, participants } = generateParticipants(nParticipants);
@@ -63,16 +63,18 @@ const accepts5 = acceptsWhenOpenIf + 'the largest turn number is not large enoug
 const reverts1 = 'It reverts when the outcome is already finalized';
 const reverts2 = 'It reverts when the states is not final';
 
-const oneState = {
+const oneState: transitionType = {
   whoSignedWhat: [0, 0, 0],
-  appData: [0],
+  appDatas: [0],
 };
+
 const turnNumRecord = 5;
 const channelOpen = clearedChallengeFingerprint(turnNumRecord);
 const challengeOngoing = ongoingChallengeFingerprint(turnNumRecord);
 const finalized = finalizedFingerprint(turnNumRecord);
 
 let channelNonce = getRandomNonce('conclude');
+// eslint-disable-next-line sonarjs/cognitive-complexity
 describe('conclude', () => {
   beforeEach(() => (channelNonce = BigNumber.from(channelNonce).add(1).toHexString()));
 
@@ -144,17 +146,18 @@ describe('conclude', () => {
     },
   ];
 
-  for (const tc of testCases) it(tc.description, async () => {
+  for (const tc of testCases)
+    it(tc.description, async () => {
       const { initialFingerprint, isFinal, largestTurnNum, support, reasonString } =
         tc as unknown as {
           initialFingerprint: string;
           isFinal: boolean;
           largestTurnNum: number;
-          support: any;
+          support: transitionType;
           reasonString: string | undefined;
         };
-      const { appData, whoSignedWhat } = support;
-      const numStates = appData.length;
+      const { appDatas, whoSignedWhat } = support;
+      const numStates = appDatas.length;
 
       const states: State[] = [];
       for (let i = 1; i <= numStates; i++) {
@@ -164,7 +167,7 @@ describe('conclude', () => {
           channelNonce,
           outcome,
           appDefinition: countingApp.address,
-          appData: defaultAbiCoder.encode(['uint256'], [appData[i - 1]]),
+          appData: defaultAbiCoder.encode(['uint256'], [appDatas[i - 1]]),
           challengeDuration,
           turnNum: largestTurnNum + i - numStates,
         });
@@ -180,7 +183,9 @@ describe('conclude', () => {
       const fixedPart = getFixedPart(states[0]);
 
       // Call public wrapper to set state (only works on test contract)
-      await (await forceMove.setStatus(channelId, initialFingerprint)).wait();
+      const setStatusTx = await forceMove.setStatus(channelId, initialFingerprint);
+      await setStatusTx.wait();
+
       expect(await forceMove.statusOf(channelId)).to.equal(initialFingerprint);
 
       // Sign the states
@@ -189,13 +194,24 @@ describe('conclude', () => {
         bindSignatures(variableParts, signatures, whoSignedWhat),
       );
 
-      const tx = forceMove.conclude(fixedPart, candidate);
+      const pendintTx = forceMove.conclude(fixedPart, candidate);
       if (reasonString) {
-        await expectRevert(() => tx, reasonString);
+        await expect(pendintTx).to.be.revertedWith(reasonString);
       } else {
-        const receipt = await (await tx).wait();
+        const tx = await pendintTx;
+        const receipt = await tx.wait();
+
+        if (receipt.events === undefined) {
+          assert.fail('No events emitted');
+        }
         const event = receipt.events.pop();
-        const finalizesAt = (await ethers.provider.getBlock(receipt.blockNumber)).timestamp;
+
+        if (event === undefined || event.args === undefined) {
+          assert.fail('No events emitted');
+        }
+
+        const block = await ethers.provider.getBlock(receipt.blockNumber);
+        const finalizesAt = block.timestamp;
 
         const expectedEvent = { channelId, finalizesAt };
         for (const [key, value] of Object.entries(expectedEvent)) {
@@ -203,18 +219,16 @@ describe('conclude', () => {
         }
 
         // Compute expected ChannelDataHash
-        const blockTimestamp = (await ethers.provider.getBlock(receipt.blockNumber)).timestamp;
         const expectedFingerprint = channelDataToStatus({
           turnNumRecord: 0,
-          finalizesAt: blockTimestamp,
+          finalizesAt,
           outcome,
         });
 
         // Check fingerprint against the expected value
         expect(await forceMove.statusOf(channelId)).to.equal(expectedFingerprint);
       }
-    })
-  ;
+    });
 
   it('reverts a conclude operation with repeated participant[0] signatures', async () => {
     // this test is against a specific class of exploit where the adjudicator
@@ -247,7 +261,6 @@ describe('conclude', () => {
     const { candidate } = separateProofAndCandidate(
       bindSignatures([variablePart], signatures, [0, 0, 0, 0, 0, 0, 0]),
     );
-    // console.log('candidate', candidate);
-    await expectRevert(() => forceMove.conclude(fixedPart, candidate), '!unanimous');
+    await expect(forceMove.conclude(fixedPart, candidate)).to.be.revertedWith('!unanimous');
   });
 });

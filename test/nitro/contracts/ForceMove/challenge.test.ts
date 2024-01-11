@@ -1,12 +1,12 @@
-import { BigNumber, Contract, Signature, Wallet, ethers } from 'ethers';
+import { BigNumber, Signature, Wallet, ethers } from 'ethers';
 import hre from 'hardhat';
 import { before, describe, it } from 'mocha';
-import { expect } from 'chai';
+import { assert, expect } from 'chai';
 
-import { expectRevert } from '../../../helpers/expect-revert';
 import { getChannelId } from '../../../../src/nitro/contract/channel';
 import { ChannelData, channelDataToStatus } from '../../../../src/nitro/contract/channel-storage';
 import {
+  SignedVariablePart,
   State,
   getFixedPart,
   getVariablePart,
@@ -42,17 +42,17 @@ import { NITRO_MAX_GAS, createChallengeTransaction } from '../../../../src/nitro
 import { hashChallengeMessage } from '../../../../src/nitro/contract/challenge';
 import { MAX_OUTCOME_ITEMS } from '../../../../src/nitro/contract/outcome';
 
-import type { transitionType } from './types';
 import type { CountingApp, TESTForceMove } from '../../../../typechain-types';
+import type { transitionType } from './types';
 
 const { HashZero } = ethers.constants;
 const { defaultAbiCoder } = ethers.utils;
 
-let forceMove: Contract & TESTForceMove;
-let countingApp: Contract & CountingApp;
+let forceMove: TESTForceMove;
+let countingApp: CountingApp;
 
 const participants = ['', '', ''];
-const wallets = Array.from({ length: 3 });
+const wallets: Wallet[] = Array.from({ length: 3 });
 const challengeDuration = 86_400; // 1 day
 const outcome: Outcome = [
   {
@@ -78,6 +78,7 @@ before(async () => {
   countingApp = await setupContract<CountingApp>('CountingApp');
 });
 
+// eslint-disable-next-line sonarjs/cognitive-complexity
 describe('challenge', () => {
   const threeStates = { appDatas: [0, 1, 2], whoSignedWhat: [0, 1, 2] };
   const fourStates = { appDatas: [0, 1, 2, 3], whoSignedWhat: [0, 1, 2, 0] };
@@ -205,6 +206,9 @@ describe('challenge', () => {
 
   for (const tc of testCases)
     it(tc.description, async () => {
+      // Non-null assertion is used to remove `undefined` from `Array.at()` return type
+      // as it is guaranteed to be defined in this test
+      /* eslint-disable @typescript-eslint/no-non-null-assertion */
       const { reasonString, challengeSignatureType, stateData, initialFingerprint } =
         tc as unknown as {
           initialFingerprint: string;
@@ -235,7 +239,7 @@ describe('challenge', () => {
       );
 
       const challengeState: SignedState = {
-        state: states.at(-1),
+        state: states.at(-1)!,
         signature: { v: 0, r: '', s: '', _vs: '', recoveryParam: 0 } as Signature,
       };
 
@@ -254,39 +258,48 @@ describe('challenge', () => {
           challengeSignature = { v: 1, s: HashZero, r: HashZero } as ethers.Signature;
           break;
         }
-        case 'correct':
         default: {
           challengeSignature = correctChallengeSignature;
         }
       }
 
       // Set current channelStorageHashes value
-      await (await forceMove.setStatus(channelId, initialFingerprint)).wait();
+      const setStatusTx = await forceMove.setStatus(channelId, initialFingerprint);
+      await setStatusTx.wait();
 
-      const tx = forceMove.challenge(fixedPart, proof, candidate, challengeSignature);
+      const pendingTx = forceMove.challenge(fixedPart, proof, candidate, challengeSignature);
       if (reasonString) {
-        await expectRevert(() => tx, reasonString);
+        await expect(pendingTx).to.be.revertedWith(reasonString);
       } else {
-        const receipt = await (await tx).wait();
+        const tx = await pendingTx;
+        const receipt = await tx.wait();
+
+        if (receipt.events === undefined) {
+          assert.fail('No events emitted');
+        }
         const event = receipt.events.pop();
 
         // Catch ChallengeRegistered event
         const {
           channelId: eventChannelId,
           finalizesAt: eventFinalizesAt,
-
           proof: eventProof,
           candidate: eventCandidate,
-        } = event.args;
+        } = event!.args as unknown as {
+          channelId: string;
+          finalizesAt: number;
+          proof: SignedVariablePart[];
+          candidate: SignedVariablePart;
+        };
 
         // Check this information is enough to respond
         expect(eventChannelId).to.equal(channelId);
 
         if (proof.length > 0) {
-          const res = parseOutcomeEventResult(eventProof.at(-1).variablePart.outcome);
-          expect(res).to.deep.equal(proof.at(-1).variablePart.outcome);
-          expect(eventProof.at(-1).variablePart.appData).to.equal(
-            proof.at(-1).variablePart.appData,
+          const res = parseOutcomeEventResult(eventProof.at(-1)!.variablePart.outcome);
+          expect(res).to.deep.equal(proof.at(-1)!.variablePart.outcome);
+          expect(eventProof.at(-1)!.variablePart.appData).to.equal(
+            proof.at(-1)!.variablePart.appData,
           );
         }
 
@@ -305,6 +318,7 @@ describe('challenge', () => {
         // Check channelStorageHash against the expected value
         expect(await forceMove.statusOf(channelId)).to.equal(expectedFingerprint);
       }
+      /* eslint-enable @typescript-eslint/no-non-null-assertion */
     });
 });
 
@@ -314,8 +328,6 @@ describe('challenge with transaction generator', () => {
     participants: string[];
     appDefinition: string;
     challengeDuration: number;
-  } = {
-    participants: [],
   };
 
   beforeEach(async () => {
@@ -325,7 +337,8 @@ describe('challenge with transaction generator', () => {
       appDefinition: countingApp.address,
       challengeDuration,
     };
-    await (await forceMove.setStatus(getChannelId(twoPartyFixedPart), HashZero)).wait();
+    const tx = await forceMove.setStatus(getChannelId(twoPartyFixedPart), HashZero);
+    await tx.wait();
   });
 
   const testCases = [
@@ -362,8 +375,8 @@ describe('challenge with transaction generator', () => {
       };
       const transactionRequest: ethers.providers.TransactionRequest = createChallengeTransaction(
         [
-          await createTwoPartySignedCountingAppState(appData[0], turnNums[0]),
-          await createTwoPartySignedCountingAppState(appData[1], turnNums[1]),
+          createTwoPartySignedCountingAppState(appData[0], turnNums[0]),
+          createTwoPartySignedCountingAppState(appData[1], turnNums[1]),
         ],
         wallets[challenger].privateKey,
       );
@@ -373,16 +386,16 @@ describe('challenge with transaction generator', () => {
         to: forceMove.address,
         ...transactionRequest,
       });
-      expect(BigNumber.from((await response.wait()).gasUsed).lt(BigNumber.from(NITRO_MAX_GAS))).to
-        .be.true;
+      const receipt = await response.wait();
+      expect(BigNumber.from(receipt.gasUsed).lt(BigNumber.from(NITRO_MAX_GAS))).to.be.true;
     });
 });
 
-async function createTwoPartySignedCountingAppState(
+function createTwoPartySignedCountingAppState(
   appData: number,
   turnNum: number,
   outcome: Outcome = [],
-) {
+): SignedState {
   return signState(
     {
       turnNum,
@@ -402,7 +415,8 @@ function signChallengeMessageByNonParticipant(signedStates: SignedState[]): Sign
   if (signedStates.length === 0) {
     throw new Error('At least one signed state must be provided');
   }
-  const challengeState = signedStates.at(-1).state;
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const challengeState = signedStates.at(-1)!.state;
   const challengeHash = hashChallengeMessage(challengeState);
   return signData(challengeHash, nonParticipant.privateKey);
 }

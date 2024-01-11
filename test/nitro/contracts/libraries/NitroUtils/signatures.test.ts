@@ -1,4 +1,4 @@
-import { Contract, Wallet } from 'ethers';
+import { Wallet } from 'ethers';
 import { ethers } from 'hardhat';
 import { expect } from 'chai';
 import { before, describe, it } from 'mocha';
@@ -10,7 +10,7 @@ import type { TESTNitroUtils } from '../../../../../typechain-types';
 
 const { arrayify, id } = ethers.utils;
 
-let nitroUtils: Contract & TESTNitroUtils;
+let nitroUtils: TESTNitroUtils;
 
 before(async () => {
   nitroUtils = await setupContract<TESTNitroUtils>('TESTNitroUtils');

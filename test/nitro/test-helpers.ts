@@ -11,7 +11,7 @@ import type {
   ChallengeRegisteredStruct,
 } from '../../src/nitro/contract/challenge';
 import type { Outcome } from '../../src/nitro/contract/outcome';
-import type { Bytes32, OutcomeShortHand, VariablePart } from '../../src/nitro';
+import type { Bytes32, OutcomeShortHand, State, VariablePart } from '../../src/nitro';
 
 /**
  * Deploys a given contract using the first available signer from ethers.
@@ -76,7 +76,7 @@ export const finalizedFingerprint = (
   turnNumRecord = 5,
   finalizesAt = 1,
   outcome: Outcome = [],
-  state,
+  state?: State,
 ): Bytes32 =>
   channelDataToStatus({
     turnNumRecord,

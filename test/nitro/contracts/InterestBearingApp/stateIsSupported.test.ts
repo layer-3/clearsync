@@ -1,7 +1,7 @@
-import { BigNumber, Contract } from 'ethers';
+import { BigNumber } from 'ethers';
 import { ethers } from 'hardhat';
+import { expect } from 'chai';
 
-import { expectRevert } from '../../../helpers/expect-revert';
 import { computeOutcome, convertAddressToBytes32 } from '../../../../src/nitro';
 import {
   FixedPart,
@@ -16,7 +16,7 @@ import { expectUnsupportedState } from '../../tx-expect-wrappers';
 import type { ParamType } from 'ethers/lib/utils';
 import type { InterestBearingApp } from '../../../../typechain-types';
 
-let interestBearingApp: Contract;
+let interestBearingApp: InterestBearingApp;
 let baseState: State;
 let fixedPart: FixedPart;
 let signedByBorrower: RecoveredVariablePart;
@@ -149,7 +149,7 @@ describe('stateIsSupported', () => {
     };
 
     // mine a block
-    ethers.provider.send('evm_mine', []);
+    await ethers.provider.send('evm_mine', []);
 
     const challengeState: State = {
       ...baseState,
@@ -194,7 +194,7 @@ describe('stateIsSupported', () => {
     };
 
     // advance one block
-    ethers.provider.send('evm_mine', []);
+    await ethers.provider.send('evm_mine', []);
 
     const challengeState: State = {
       ...baseState,
@@ -208,15 +208,13 @@ describe('stateIsSupported', () => {
       variablePart: getVariablePart(challengeState),
       signedBy: BigNumber.from(0b01).toHexString(),
     };
-    await expectRevert(
-      () =>
-        interestBearingApp.stateIsSupported(
-          fixedPart,
-          [pfStateSignedByBoth],
-          updatedWithIntermediarySignature,
-        ),
-      'earned<claimed',
-    );
+    await expect(
+      interestBearingApp.stateIsSupported(
+        fixedPart,
+        [pfStateSignedByBoth],
+        updatedWithIntermediarySignature,
+      ),
+    ).to.be.revertedWith('earned<claimed');
   });
 
   it('rejects unilateral unsupported candidates', async () => {
@@ -225,14 +223,12 @@ describe('stateIsSupported', () => {
     // - only the merchant
     // assert failure
 
-    await expectRevert(
-      () => interestBearingApp.stateIsSupported(fixedPart, [], signedByBorrower),
-      '!unanimous',
-    );
-    await expectRevert(
-      () => interestBearingApp.stateIsSupported(fixedPart, [], signedByLender),
-      '!unanimous',
-    );
+    await expect(
+      interestBearingApp.stateIsSupported(fixedPart, [], signedByBorrower),
+    ).to.be.revertedWith('!unanimous');
+    await expect(
+      interestBearingApp.stateIsSupported(fixedPart, [], signedByLender),
+    ).to.be.revertedWith('!unanimous');
   });
 
   it('rejects unilateral support proof states', async () => {
@@ -241,15 +237,13 @@ describe('stateIsSupported', () => {
     //  - only the merchant
     // assert failure.
 
-    await expectRevert(
-      () => interestBearingApp.stateIsSupported(fixedPart, [signedByBorrower], signedByLender),
-      '!unanimous',
-    );
+    await expect(
+      interestBearingApp.stateIsSupported(fixedPart, [signedByBorrower], signedByLender),
+    ).to.be.revertedWith('!unanimous');
 
-    await expectRevert(
-      () => interestBearingApp.stateIsSupported(fixedPart, [signedByLender], signedByBorrower),
-      '!unanimous',
-    );
+    await expect(
+      interestBearingApp.stateIsSupported(fixedPart, [signedByLender], signedByBorrower),
+    ).to.be.revertedWith('!unanimous');
   });
 
   it('rejects too-long proofs', async () => {

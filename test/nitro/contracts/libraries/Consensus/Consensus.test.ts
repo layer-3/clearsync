@@ -1,7 +1,7 @@
-import { BigNumber, Contract, Wallet } from 'ethers';
+import { BigNumber, Wallet } from 'ethers';
 import { before, beforeEach, describe, it } from 'mocha';
+import { expect } from 'chai';
 
-import { expectRevert } from '../../../../helpers/expect-revert';
 import { generateParticipants, setupContract } from '../../../test-helpers';
 import {
   Outcome,
@@ -19,7 +19,7 @@ import { expectSucceedWithNoReturnValues } from '../../../tx-expect-wrappers';
 
 import type { TESTConsensus } from '../../../../../typechain-types';
 
-let consensusApp: Contract & TESTConsensus;
+let consensusApp: TESTConsensus;
 
 const challengeDuration = 0x10_00;
 const asset = Wallet.createRandom().address;
@@ -69,7 +69,8 @@ describe('requireConsensus', () => {
     },
   ];
 
-  for (const tc of testCases) it(tc.description, async () => {
+  for (const tc of testCases)
+    it(tc.description, async () => {
       const { turnNumToShortenedVariablePart, reason } = tc;
 
       const state: State = {
@@ -89,12 +90,11 @@ describe('requireConsensus', () => {
       const { proof, candidate } = separateProofAndCandidate(recoveredVP);
 
       if (reason) {
-        await expectRevert(() => consensusApp.requireConsensus(fixedPart, proof, candidate));
+        await expect(consensusApp.requireConsensus(fixedPart, proof, candidate)).to.be.reverted;
       } else {
         await expectSucceedWithNoReturnValues(() =>
           consensusApp.requireConsensus(fixedPart, proof, candidate),
         );
       }
-    })
-  ;
+    });
 });
