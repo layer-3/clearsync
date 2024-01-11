@@ -12,8 +12,8 @@ export async function expectSucceedWithNoReturnValues(fn: () => void) {
 /**
  * Wrapper for calls to `stateIsSupported` that are expected to succeed.
  */
-export async function expectSupportedState(fn: () => void) {
-  const txResult = (await fn()) as any;
+export async function expectSupportedState(fn: () => any): Promise<void> {
+  const txResult = await fn();
 
   // `.stateIsSupported` returns a (bool, string) tuple
   expect(txResult.length).to.equal(2);

@@ -26,7 +26,7 @@ let badToken: BadToken;
 const ETH = MAGIC_ADDRESS_INDICATING_ETH;
 let ERC20: string;
 let BadERC20: string;
-let signerAddress: string;
+let participant: string;
 
 const batchSize = 3;
 const counterparties: string[] = [];
@@ -37,16 +37,13 @@ for (let i = 0; i < batchSize; i++) {
 }
 
 before(async () => {
-  signerAddress = await ethers.provider.getSigner(0).getAddress();
+  participant = await ethers.provider.getSigner(0).getAddress();
 
   consensusApp = await setupContract<ConsensusApp>('ConsensusApp');
   nitroAdjudicator = await setupContract<NitroAdjudicator>('NitroAdjudicator');
   batchOperator = await setupContract<BatchOperator>('BatchOperator', nitroAdjudicator.address);
-  token = await setupContract<Token>('Token', '0x6B8B2958795a5E9c00A2E8D4B0b90b870cbAB4b6');
-  badToken = await setupContract<BadToken>(
-    'BadToken',
-    '0x6B8B2958795a5E9c00A2E8D4B0b90b870cbAB4b6',
-  );
+  token = await setupContract<Token>('Token', participant);
+  badToken = await setupContract<BadToken>('BadToken', participant);
 
   ERC20 = token.address;
   BadERC20 = badToken.address;
@@ -183,7 +180,7 @@ describe('deposit_batch', () => {
       const channelIds = counterparties.map((counterparty) =>
         getChannelId({
           channelNonce: getRandomNonce(description),
-          participants: [signerAddress, counterparty],
+          participants: [participant, counterparty],
           appDefinition: consensusApp.address,
           challengeDuration: 100,
         }),

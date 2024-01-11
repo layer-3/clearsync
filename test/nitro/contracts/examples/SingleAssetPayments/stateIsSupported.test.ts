@@ -1,9 +1,9 @@
 import { Allocation, AllocationType } from '@statechannels/exit-format';
-import { BigNumber, Contract } from 'ethers';
+import { BigNumber } from 'ethers';
 import { ethers } from 'hardhat';
 import { before, beforeEach, describe, it } from 'mocha';
+import { expect } from 'chai';
 
-import { expectRevert } from '../../../../helpers/expect-revert';
 import { Outcome, encodeGuaranteeData } from '../../../../../src/nitro/contract/outcome';
 import {
   State,
@@ -28,9 +28,9 @@ import { replaceAddressesAndBigNumberify } from '../../../../../src/nitro/helper
 
 import type { SingleAssetPayments } from '../../../../../typechain-types';
 
-const { HashZero } = ethers.constants;
+const { HashZero, AddressZero } = ethers.constants;
 
-let singleAssetPayments: Contract;
+let singleAssetPayments: SingleAssetPayments;
 
 const addresses = {
   // Participants
@@ -52,6 +52,7 @@ before(async () => {
   singleAssetPayments = await setupContract<SingleAssetPayments>('SingleAssetPayments');
 });
 
+// eslint-disable-next-line sonarjs/cognitive-complexity
 describe('stateIsSupported', () => {
   beforeEach(() => (channelNonce = BigNumber.from(channelNonce).add(1).toHexString()));
 
@@ -118,7 +119,8 @@ describe('stateIsSupported', () => {
     },
   ];
 
-  for (const tc of testCases) it(tc.description, async () => {
+  for (const tc of testCases)
+    it(tc.description, async () => {
       const { isAllocation, numAssets, turnNums, whoSignedWhat, reason } = tc as unknown as {
         isAllocation: boolean[];
         numAssets: number[];
@@ -131,16 +133,18 @@ describe('stateIsSupported', () => {
       let balancesA = tc.balancesA as AssetOutcomeShortHand;
       balancesA = replaceAddressesAndBigNumberify(balancesA, addresses) as AssetOutcomeShortHand;
       const allocationsA: Allocation[] = [];
-      for (const key of Object.keys(balancesA)) allocationsA.push({
+      for (const key of Object.keys(balancesA))
+        allocationsA.push({
           destination: key,
+          // balancesA[key] is a BigNumberish and `.toString()` will not return [object Object]
+          // eslint-disable-next-line @typescript-eslint/no-base-to-string
           amount: balancesA[key].toString(),
           allocationType: isAllocation[0] ? AllocationType.simple : AllocationType.guarantee,
           metadata: isAllocation[0] ? '0x' : encodeGuaranteeData(guaranteeData),
-        })
-      ;
+        });
       const outcomeA: Outcome = [
         {
-          asset: ethers.constants.AddressZero,
+          asset: AddressZero,
           assetMetadata: { assetType: 0, metadata: '0x' },
           allocations: allocationsA,
         },
@@ -153,17 +157,19 @@ describe('stateIsSupported', () => {
       balancesB = replaceAddressesAndBigNumberify(balancesB, addresses) as AssetOutcomeShortHand;
       const allocationsB: Allocation[] = [];
 
-      for (const key of Object.keys(balancesB)) allocationsB.push({
+      for (const key of Object.keys(balancesB))
+        allocationsB.push({
           destination: key,
+          // balancesB[key] is a BigNumberish and `.toString()` will not return [object Object]
+          // eslint-disable-next-line @typescript-eslint/no-base-to-string
           amount: balancesB[key].toString(),
           allocationType: isAllocation[1] ? AllocationType.simple : AllocationType.guarantee,
           metadata: isAllocation[1] ? '0x' : encodeGuaranteeData(guaranteeData),
-        })
-      ;
+        });
 
       const outcomeB: Outcome = [
         {
-          asset: ethers.constants.AddressZero,
+          asset: AddressZero,
           assetMetadata: { assetType: 0, metadata: '0x' },
           allocations: allocationsB,
         },
@@ -209,15 +215,13 @@ describe('stateIsSupported', () => {
       const { proof, candidate } = separateProofAndCandidate(recoveredVariableParts);
 
       if (reason) {
-        await expectRevert(
-          () => singleAssetPayments.stateIsSupported(fixedPart, proof, candidate),
-          reason,
-        );
+        await expect(
+          singleAssetPayments.stateIsSupported(fixedPart, proof, candidate),
+        ).to.be.revertedWith(reason);
       } else {
         await expectSupportedState(() =>
           singleAssetPayments.stateIsSupported(fixedPart, proof, candidate),
         );
       }
-    })
-  ;
+    });
 });

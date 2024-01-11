@@ -1,7 +1,7 @@
-import { BigNumber, Contract, Wallet, ethers } from 'ethers';
+import { BigNumber, Wallet, ethers } from 'ethers';
 import { before, describe, it } from 'mocha';
+import { expect } from 'chai';
 
-import { expectRevert } from '../../../helpers/expect-revert';
 import { bindSignaturesWithSignedByBitfield, signState } from '../../../../src/nitro';
 import {
   FixedPart,
@@ -18,7 +18,7 @@ import type { ConsensusApp } from '../../../../typechain-types';
 
 const { HashZero } = ethers.constants;
 
-let consensusApp: Contract;
+let consensusApp: ConsensusApp;
 let state: State;
 let fixedPart: FixedPart;
 let variablePart: VariablePart;
@@ -48,11 +48,7 @@ before(async () => {
   fixedPart = getFixedPart(state);
   variablePart = getVariablePart(state);
 
-  candidate = bindSignaturesWithSignedByBitfield(
-    [variablePart],
-    sigs,
-    [0, 0, 0],
-  )[0];
+  candidate = bindSignaturesWithSignedByBitfield([variablePart], sigs, [0, 0, 0])[0];
 });
 
 describe('stateIsSupported', () => {
@@ -62,17 +58,15 @@ describe('stateIsSupported', () => {
   });
 
   it('Submitting more than one state does NOT constitute a support proof', async () => {
-    // expect.assertions(1);
-    await expectRevert(() => consensusApp.stateIsSupported(fixedPart, [candidate], candidate));
+    await expect(consensusApp.stateIsSupported(fixedPart, [candidate, candidate], candidate)).to.be
+      .reverted;
   });
 
   it('A single state signed by less than everyone is NOT considered supported', async () => {
-    // expect.assertions(1);
-
     const candidate: RecoveredVariablePart = {
       variablePart,
       signedBy: BigNumber.from(0b011).toHexString(),
     };
-    await expectRevert(() => consensusApp.stateIsSupported(fixedPart, [], candidate));
+    await expect(consensusApp.stateIsSupported(fixedPart, [], candidate)).to.be.reverted;
   });
 });

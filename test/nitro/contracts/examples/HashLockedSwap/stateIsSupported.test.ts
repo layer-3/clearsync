@@ -1,9 +1,9 @@
 import { Allocation, AllocationType } from '@statechannels/exit-format';
-import { BigNumber, Contract, utils } from 'ethers';
+import { BigNumber, utils } from 'ethers';
 import { ethers } from 'hardhat';
 import { before, beforeEach, describe, it } from 'mocha';
+import { expect } from 'chai';
 
-import { expectRevert } from '../../../../helpers/expect-revert';
 import {
   AssetOutcomeShortHand,
   Bytes32,
@@ -29,7 +29,7 @@ import type { Bytes } from '../../../../../src/nitro/contract/types';
 import type { Outcome } from '../../../../../src/nitro/contract/outcome';
 import type { HashLockedSwap } from '../../../../../typechain-types';
 
-const { HashZero } = ethers.constants;
+const { HashZero, AddressZero } = ethers.constants;
 
 // Utilities
 // TODO: move to a src file
@@ -41,9 +41,8 @@ interface HashLockedSwapData {
 function encodeHashLockedSwapData(data: HashLockedSwapData): string {
   return utils.defaultAbiCoder.encode(['tuple(bytes32 h, bytes preImage)'], [data]);
 }
-// *****
 
-let hashTimeLock: Contract;
+let hashLockedSwap: HashLockedSwap;
 
 const addresses = {
   // Participants
@@ -58,7 +57,7 @@ const challengeDuration = 0x1_00;
 const whoSignedWhat = [1, 0];
 
 before(async () => {
-  hashTimeLock = await setupContract<HashLockedSwap>('HashLockedSwap');
+  hashLockedSwap = await setupContract<HashLockedSwap>('HashLockedSwap');
 });
 
 const preImage = '0xdeadbeef';
@@ -115,38 +114,43 @@ describe('stateIsSupported', () => {
     },
   ];
 
-  for (const tc of testCases) it(tc.description, async () => {
+  for (const tc of testCases)
+    it(tc.description, async () => {
       const { isValid, dataA, turnNumB, dataB } = tc as unknown as testParams;
       let { balancesA, balancesB } = tc as unknown as testParams;
       const turnNumA = turnNumB - 1;
       balancesA = replaceAddressesAndBigNumberify(balancesA, addresses) as AssetOutcomeShortHand;
       const allocationsA: Allocation[] = [];
-      for (const key of Object.keys(balancesA)) allocationsA.push({
+      for (const key of Object.keys(balancesA))
+        allocationsA.push({
           destination: key,
+          // balancesA[key] is a BigNumberish and `.toString()` will not return [object Object]
+          // eslint-disable-next-line @typescript-eslint/no-base-to-string
           amount: balancesA[key].toString(),
           allocationType: AllocationType.simple,
           metadata: '0x',
-        })
-      ;
+        });
       const outcomeA: Outcome = [
         {
-          asset: ethers.constants.AddressZero,
+          asset: AddressZero,
           allocations: allocationsA,
           assetMetadata: { assetType: 0, metadata: '0x' },
         },
       ];
       balancesB = replaceAddressesAndBigNumberify(balancesB, addresses) as AssetOutcomeShortHand;
       const allocationsB: Allocation[] = [];
-      for (const key of Object.keys(balancesB)) allocationsB.push({
+      for (const key of Object.keys(balancesB))
+        allocationsB.push({
           destination: key,
+          // balancesB[key] is a BigNumberish and `.toString()` will not return [object Object]
+          // eslint-disable-next-line @typescript-eslint/no-base-to-string
           amount: balancesB[key].toString(),
           allocationType: AllocationType.simple,
           metadata: '0x',
-        })
-      ;
+        });
       const outcomeB: Outcome = [
         {
-          asset: ethers.constants.AddressZero,
+          asset: AddressZero,
           allocations: allocationsB,
           assetMetadata: { assetType: 0, metadata: '0x' },
         },
@@ -160,7 +164,7 @@ describe('stateIsSupported', () => {
           challengeDuration,
           outcome: outcomeA,
           appData: encodeHashLockedSwapData(dataA),
-          appDefinition: hashTimeLock.address,
+          appDefinition: hashLockedSwap.address,
         },
         {
           turnNum: turnNumB,
@@ -170,7 +174,7 @@ describe('stateIsSupported', () => {
           challengeDuration,
           outcome: outcomeB,
           appData: encodeHashLockedSwapData(dataB),
-          appDefinition: hashTimeLock.address,
+          appDefinition: hashLockedSwap.address,
         },
       ];
       const fixedPart = getFixedPart(states[0]);
@@ -184,14 +188,12 @@ describe('stateIsSupported', () => {
 
       if (isValid) {
         await expectSupportedState(() =>
-          hashTimeLock.stateIsSupported(fixedPart, proof, candidate),
+          hashLockedSwap.stateIsSupported(fixedPart, proof, candidate),
         );
       } else {
-        await expectRevert(
-          () => hashTimeLock.stateIsSupported(fixedPart, proof, candidate),
-          'incorrect preimage',
-        );
+        await expect(
+          hashLockedSwap.stateIsSupported(fixedPart, proof, candidate),
+        ).to.be.revertedWith('incorrect preimage');
       }
-    })
-  ;
+    });
 });

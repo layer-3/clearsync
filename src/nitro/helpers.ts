@@ -1,6 +1,6 @@
-import {Allocation, AllocationType} from '@statechannels/exit-format';
-import {BigNumber, BigNumberish, ethers} from 'ethers';
-import {isBigNumberish} from '@ethersproject/bignumber/lib/bignumber';
+import { Allocation, AllocationType } from '@statechannels/exit-format';
+import { BigNumber, BigNumberish, ethers } from 'ethers';
+import { isBigNumberish } from '@ethersproject/bignumber/lib/bignumber';
 
 import type { Outcome } from './contract/outcome';
 
@@ -25,7 +25,7 @@ export type AddressesLookup = Record<string, string | undefined>;
  */
 export function replaceAddressesAndBigNumberify(
   object: AssetOutcomeShortHand | OutcomeShortHand | BigNumberish,
-  addresses: AddressesLookup
+  addresses: AddressesLookup,
 ): AssetOutcomeShortHand | OutcomeShortHand | BigNumberish {
   if (isBigNumberish(object)) {
     return BigNumber.from(object);
@@ -36,10 +36,9 @@ export function replaceAddressesAndBigNumberify(
       newObject[addresses[key]!] = BigNumber.from(object[key]);
     } else if (typeof object[key] === 'object') {
       // Recurse
-      newObject[addresses[key]!] = replaceAddressesAndBigNumberify(
-        object[key],
-        addresses
-      ) as AssetOutcomeShortHand | BigNumberish;
+      newObject[addresses[key]!] = replaceAddressesAndBigNumberify(object[key], addresses) as
+        | AssetOutcomeShortHand
+        | BigNumberish;
     }
   }
   return newObject;
@@ -50,14 +49,14 @@ export function computeOutcome(outcomeShortHand: OutcomeShortHand): Outcome {
   const outcome: Outcome = [];
   for (const asset of Object.keys(outcomeShortHand)) {
     const allocations: Allocation[] = [];
-    for (const destination of Object.keys(outcomeShortHand[asset])) allocations.push({
+    for (const destination of Object.keys(outcomeShortHand[asset]))
+      allocations.push({
         destination,
         amount: BigNumber.from(outcomeShortHand[asset][destination]).toHexString(),
         metadata: '0x',
         allocationType: AllocationType.simple,
-      })
-    ;
-    outcome.push({asset, assetMetadata: {assetType: 0, metadata: '0x'}, allocations});
+      });
+    outcome.push({ asset, assetMetadata: { assetType: 0, metadata: '0x' }, allocations });
   }
   return outcome;
 }
