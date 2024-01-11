@@ -1,24 +1,23 @@
-import { Contract, Wallet, utils } from 'ethers';
+import { Wallet, utils } from 'ethers';
 import { ethers } from 'hardhat';
-import { beforeEach, describe, it } from 'mocha';
 
-import { getRandomNonce } from '../../../../src/nitro/helpers';
+import { setupContract } from '../../test-helpers';
 import {
-  FixedPart,
-  RecoveredVariablePart,
+  type FixedPart,
+  type RecoveredVariablePart,
   State,
-  VariablePart,
+  type VariablePart,
   getFixedPart,
   getVariablePart,
 } from '../../../../src/nitro/contract/state';
 import { expectSupportedState } from '../../tx-expect-wrappers';
-import { setupContract } from '../../test-helpers';
+import { getRandomNonce } from '../../../../src/nitro/helpers';
 
 import type { TrivialApp } from '../../../../typechain-types';
 
-let trivialApp: Contract;
+let trivialApp: TrivialApp;
 
-function computeSaltedHash(salt: string, num: number) {
+function computeSaltedHash(salt: string, num: number): string {
   return utils.solidityKeccak256(['bytes32', 'uint256'], [salt, num]);
 }
 
@@ -56,11 +55,11 @@ function mockSigs(vp: VariablePart): RecoveredVariablePart {
   };
 }
 
-describe('stateIsSupported', () => {
-  beforeEach(async () => {
-    trivialApp = await setupContract<TrivialApp>('TrivialApp');
-  });
+before(async () => {
+  trivialApp = await setupContract('TrivialApp');
+});
 
+describe('stateIsSupported', () => {
   it('Transitions between random VariableParts are valid', async () => {
     // expect.assertions(15);
     for (let i = 0; i < 5; i++) {

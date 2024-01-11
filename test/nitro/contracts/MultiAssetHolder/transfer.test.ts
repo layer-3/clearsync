@@ -2,9 +2,8 @@ import { BigNumber, constants } from 'ethers';
 import { ethers } from 'hardhat';
 import { before, describe, it } from 'mocha';
 import { Allocation, AllocationType } from '@statechannels/exit-format';
-import { expect } from 'chai';
+import { assert, expect } from 'chai';
 
-import { expectRevert } from '../../../helpers/expect-revert';
 import { randomChannelId, randomExternalDestination, setupContract } from '../../test-helpers';
 import { Outcome, encodeOutcome, hashOutcome } from '../../../../src/nitro/contract/outcome';
 import { channelDataToStatus, isExternalDestination } from '../../../../src/nitro';
@@ -17,6 +16,8 @@ import {
 import type { TESTNitroAdjudicator } from '../../../../typechain-types';
 
 type addressT = Record<string, string | undefined>;
+
+const ERR_CHANNEL_NOT_FINALIZED = 'Channel not finalized.';
 
 let testNitroAdjudicator: TESTNitroAdjudicator;
 let addresses: addressT;
@@ -35,6 +36,7 @@ before(async () => {
 });
 
 // c is the channel we are transferring from.
+// eslint-disable-next-line sonarjs/cognitive-complexity
 describe('transfer', () => {
   const testCases = [
     {
@@ -46,7 +48,7 @@ describe('transfer', () => {
       newOutcome: {},
       heldAfter: {},
       payouts: { A: 1 },
-      reason: 'Channel not finalized',
+      reason: ERR_CHANNEL_NOT_FINALIZED,
     },
     {
       name: ' 1. funded          -> 1 EOA',
@@ -237,13 +239,14 @@ describe('transfer', () => {
     },
   ];
 
-  for (const tc of testCases) it(tc.name, async () => {
+  for (const tc of testCases)
+    it(tc.name, async () => {
       let heldBefore = tc.heldBefore as AssetOutcomeShortHand;
       let setOutcome = tc.setOutcome as AssetOutcomeShortHand;
       let newOutcome = tc.newOutcome as AssetOutcomeShortHand;
       let heldAfter = tc.heldAfter as AssetOutcomeShortHand;
       let payouts = tc.payouts as AssetOutcomeShortHand;
-      const reason = tc.reason!;
+      const reason = tc.reason;
 
       // Compute channelId
       addresses.c = randomChannelId();
@@ -266,28 +269,31 @@ describe('transfer', () => {
         Object.keys(heldBefore).map(async (key) => {
           // Key must be either in heldBefore or heldAfter or both
           const amount = heldBefore[key];
-          await (
-            await testNitroAdjudicator.deposit(MAGIC_ADDRESS_INDICATING_ETH, key, 0, amount, {
+          const tx = await testNitroAdjudicator.deposit(
+            MAGIC_ADDRESS_INDICATING_ETH,
+            key,
+            0,
+            amount,
+            {
               value: amount,
-            })
-          ).wait();
-          expect(
-            (await testNitroAdjudicator.holdings(MAGIC_ADDRESS_INDICATING_ETH, key)).eq(amount),
-          ).to.equal(true);
+            },
+          );
+          await tx.wait();
+
+          const holdings = await testNitroAdjudicator.holdings(MAGIC_ADDRESS_INDICATING_ETH, key);
+          expect(holdings.eq(amount)).to.equal(true);
         }),
       );
 
       // Compute an appropriate allocation.
       const allocations: Allocation[] = [];
-      for (const key of Object.keys(setOutcome)) allocations.push({
+      for (const key of Object.keys(setOutcome))
+        allocations.push({
           destination: key,
           amount: BigNumber.from(setOutcome[key]).toHexString(),
           metadata: '0x',
-          allocationType: (tc.isSimple )
-            ? AllocationType.simple
-            : AllocationType.guarantee,
-        })
-      ;
+          allocationType: tc.isSimple ? AllocationType.simple : AllocationType.guarantee,
+        });
       const outcomeHash = hashOutcome([
         {
           asset: MAGIC_ADDRESS_INDICATING_ETH,
@@ -308,30 +314,34 @@ describe('transfer', () => {
       const finalizesAt = 42;
       const turnNumRecord = 7;
 
-      if (reason != 'Channel not finalized') {
-        await (
-          await testNitroAdjudicator.setStatusFromChannelData(channelId, {
-            turnNumRecord,
-            finalizesAt,
-            stateHash,
-            outcomeHash,
-          })
-        ).wait();
+      if (reason != ERR_CHANNEL_NOT_FINALIZED) {
+        const tx = await testNitroAdjudicator.setStatusFromChannelData(channelId, {
+          turnNumRecord,
+          finalizesAt,
+          stateHash,
+          outcomeHash,
+        });
+        await tx.wait();
       }
 
-      const tx = testNitroAdjudicator.transfer(
+      const pendingTx = testNitroAdjudicator.transfer(
         MAGIC_ADDRESS_INDICATING_ETH,
         channelId,
         reason == 'incorrect fingerprint' ? '0xdeadbeef' : outcomeBytes,
         stateHash,
-        tc.indices ,
+        tc.indices,
       );
 
       // Call method in a slightly different way if expecting a revert
       if (reason) {
-        await expectRevert(() => tx, reason);
+        await expect(pendingTx).to.be.revertedWith(reason);
       } else {
-        const { events: eventsFromTx } = await (await tx).wait();
+        const tx = await pendingTx;
+        const { events: eventsFromTx } = await tx.wait();
+        if (!eventsFromTx) {
+          assert.fail('No events found');
+        }
+
         // Check new holdings
         await Promise.all(
           Object.keys(heldAfter).map(async (key) =>
@@ -380,6 +390,9 @@ describe('transfer', () => {
 
         for (const [index, expectedEvent] of expectedEvents.entries()) {
           const actualEvent = eventsFromTx[index];
+          if (!actualEvent.args) {
+            assert.fail('No event args found');
+          }
 
           // Assert the 'event' field
           expect(actualEvent.event).to.equal(expectedEvent.event);
@@ -407,6 +420,5 @@ describe('transfer', () => {
           }
         }
       }
-    })
-  ;
+    });
 });

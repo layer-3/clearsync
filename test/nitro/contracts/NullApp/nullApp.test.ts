@@ -1,15 +1,15 @@
-import { Contract, Wallet } from 'ethers';
+import { Wallet } from 'ethers';
 import { ethers } from 'hardhat';
 import { beforeEach, describe, it } from 'mocha';
+import { expect } from 'chai';
 
-import { expectRevert } from '../../../helpers/expect-revert';
 import { State, getFixedPart, getRandomNonce, getVariablePart } from '../../../../src/nitro';
 import { setupContract } from '../../test-helpers';
 
 import type { FixedPart, SignedVariablePart } from '../../../../src/nitro/contract/state';
 import type { NitroAdjudicator } from '../../../../typechain-types';
 
-let nitroAdjudicator: Contract;
+let nitroAdjudicator: NitroAdjudicator;
 
 describe('null app', () => {
   beforeEach(async () => {
@@ -39,8 +39,6 @@ describe('null app', () => {
       sigs: [],
     };
 
-    await expectRevert(async () => {
-      await nitroAdjudicator.stateIsSupported(fixedPart, [from], to);
-    }, 'call revert exception');
+    await expect(nitroAdjudicator.stateIsSupported(fixedPart, [from], to)).to.be.reverted;
   });
 });

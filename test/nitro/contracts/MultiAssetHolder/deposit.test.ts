@@ -3,7 +3,6 @@ import { ethers } from 'hardhat';
 import { afterEach, before, describe, it } from 'mocha';
 import { expect } from 'chai';
 
-import { expectRevert } from '../../../helpers/expect-revert';
 import { getChannelId } from '../../../../src/nitro/contract/channel';
 import { setupContract } from '../../test-helpers';
 import { MAGIC_ADDRESS_INDICATING_ETH } from '../../../../src/nitro/transactions';
@@ -15,6 +14,7 @@ import type {
   TESTNitroAdjudicator,
   Token,
 } from '../../../../typechain-types';
+import type { Result } from 'ethers/lib/utils';
 
 const { AddressZero } = ethers.constants;
 
@@ -176,9 +176,8 @@ describe('deposit', () => {
         expect(balance.gte(held.add(amount))).to.be.true;
 
         // Increase allowance
-        await (
-          await token.increaseAllowance(testNitroAdjudicator.address, held.add(amount))
-        ).wait(); // Approve enough for setup and main test
+        const tx = await token.increaseAllowance(testNitroAdjudicator.address, held.add(amount));
+        await tx.wait(); // Approve enough for setup and main test
 
         // Check allowance updated
         const allowance = BigNumber.from(
@@ -193,9 +192,8 @@ describe('deposit', () => {
         expect(balance.gte(held.add(amount))).to.be.true;
 
         // Increase allowance
-        await (
-          await badToken.increaseAllowance(testNitroAdjudicator.address, held.add(amount))
-        ).wait(); // Approve enough for setup and main test
+        const tx = await badToken.increaseAllowance(testNitroAdjudicator.address, held.add(amount));
+        await tx.wait(); // Approve enough for setup and main test
 
         // Check allowance updated
         const allowance = BigNumber.from(
@@ -206,11 +204,10 @@ describe('deposit', () => {
 
       if (held.gt(0)) {
         // Set holdings by depositing in the 'safest' way
-        const { events } = await (
-          await testNitroAdjudicator.deposit(asset, destination, 0, held, {
-            value: asset === ETH ? held : 0,
-          })
-        ).wait();
+        const tx = await testNitroAdjudicator.deposit(asset, destination, 0, held, {
+          value: asset === ETH ? held : 0,
+        });
+        const { events } = await tx.wait();
 
         expect(events).to.not.be.undefined;
         if (events === undefined) {
@@ -226,14 +223,15 @@ describe('deposit', () => {
 
       const balanceBefore = await getBalance(asset, signer0Address);
 
-      const tx = testNitroAdjudicator.deposit(asset, destination, expectedHeld, amount, {
+      const pendingTx = testNitroAdjudicator.deposit(asset, destination, expectedHeld, amount, {
         value: asset === ETH && reasonString != 'Incorrect msg.value for deposit' ? amount : 0,
       });
 
       if (reasonString) {
-        await expectRevert(() => tx, reasonString);
+        await expect(pendingTx).to.be.revertedWith(reasonString);
       } else {
-        const { events } = await (await tx).wait();
+        const tx = await pendingTx;
+        const { events } = await tx.wait();
         expect(events).to.not.be.undefined;
         if (events === undefined) {
           return;
@@ -244,7 +242,7 @@ describe('deposit', () => {
           destinationHoldings: heldAfter,
         };
         for (const [key, value] of Object.entries(expectedEvent)) {
-          expect(depositedEvent[key]).to.deep.equal(value);
+          expect(depositedEvent[key as keyof Event]).to.deep.equal(value);
         }
 
         if (asset == ERC20 || asset == BadERC20) {
@@ -261,9 +259,11 @@ describe('deposit', () => {
   }
 });
 
-const getDepositedEvent = (events: Event[]): Event =>
+const getDepositedEvent = (events: Event[]): Result => {
+  const event = events.find(({ event }) => event === 'Deposited');
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  events.find(({ event }) => event === 'Deposited')!.args;
+  return event!.args!;
+};
 
 const getTransferEvent = (events: Event[]): Event =>
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

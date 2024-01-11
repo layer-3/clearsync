@@ -1,9 +1,8 @@
-import { BigNumber, Contract, constants } from 'ethers';
+import { BigNumber, constants } from 'ethers';
 import { ethers } from 'hardhat';
 import { before, beforeEach, describe, it } from 'mocha';
 import { expect } from 'chai';
 
-import { expectRevert } from '../../../helpers/expect-revert';
 import { getChannelId } from '../../../../src/nitro/contract/channel';
 import {
   FixedPart,
@@ -52,14 +51,15 @@ interface TestCase {
   reasonString: string | undefined;
 }
 
+// eslint-disable-next-line sonarjs/cognitive-complexity
 describe('concludeAndTransferAllAssets', () => {
   const nParticipants = 3;
   const { wallets, participants } = generateParticipants(nParticipants);
 
   const challengeDuration = 0x10_00;
-  let countingApp: Contract;
-  let testNitroAdjudicator: Contract;
-  let token: Contract;
+  let countingApp: CountingApp;
+  let testNitroAdjudicator: TESTNitroAdjudicator;
+  let token: Token;
 
   const addresses: addressesT = {
     // Channels
@@ -83,7 +83,8 @@ describe('concludeAndTransferAllAssets', () => {
   const oneHundredPayouts = { ERC20: {} as payoutsT };
   for (let i = 0; i < 100; i++) {
     addresses[i.toString()] =
-      '0x000000000000000000000000e0c3b40fdff77c786dd3737837887c85' + (0x23_92_fa_22 + i).toString(16); // they need to be distinct because JS objects
+      '0x000000000000000000000000e0c3b40fdff77c786dd3737837887c85' +
+      (0x23_92_fa_22 + i).toString(16); // they need to be distinct because JS objects
     if (i < 10) tenPayouts.ERC20[i.toString()] = 1;
     if (i < 50) fiftyPayouts.ERC20[i.toString()] = 1;
     if (i < 100) oneHundredPayouts.ERC20[i.toString()] = 1;
@@ -105,8 +106,10 @@ describe('concludeAndTransferAllAssets', () => {
     addresses.ERC20 = token.address;
 
     // Preload At and Bt with TOK
-    await (await token.transfer('0x' + addresses.At.slice(26), BigNumber.from(1))).wait();
-    await (await token.transfer('0x' + addresses.Bt.slice(26), BigNumber.from(1))).wait();
+    const aliceTx = await token.transfer('0x' + addresses.At.slice(26), BigNumber.from(1));
+    await aliceTx.wait();
+    const bobTx = await token.transfer('0x' + addresses.Bt.slice(26), BigNumber.from(1));
+    await bobTx.wait();
   });
 
   beforeEach(() => (channelNonce = BigNumber.from(channelNonce).add(1).toHexString()));
@@ -221,25 +224,31 @@ describe('concludeAndTransferAllAssets', () => {
       // Transfer some tokens into the relevant AssetHolder
       // Do this step before transforming input data (easier)
       if ('ERC20' in heldBefore) {
-        await (
-          await token.increaseAllowance(testNitroAdjudicator.address, heldBefore.ERC20.c)
-        ).wait();
-        await (
-          await testNitroAdjudicator.deposit(token.address, channelId, '0x00', heldBefore.ERC20.c)
-        ).wait();
+        const increaseTx = await token.increaseAllowance(
+          testNitroAdjudicator.address,
+          heldBefore.ERC20.c,
+        );
+        await increaseTx.wait();
+
+        const depositTx = await testNitroAdjudicator.deposit(
+          token.address,
+          channelId,
+          '0x00',
+          heldBefore.ERC20.c,
+        );
+        await depositTx.wait();
       }
       if ('ETH' in heldBefore) {
-        await (
-          await testNitroAdjudicator.deposit(
-            MAGIC_ADDRESS_INDICATING_ETH,
-            channelId,
-            '0x00',
-            heldBefore.ETH.c,
-            {
-              value: heldBefore.ETH.c,
-            },
-          )
-        ).wait();
+        const tx = await testNitroAdjudicator.deposit(
+          MAGIC_ADDRESS_INDICATING_ETH,
+          channelId,
+          '0x00',
+          heldBefore.ETH.c,
+          {
+            value: heldBefore.ETH.c,
+          },
+        );
+        await tx.wait();
       }
 
       // Transform input data (unpack addresses and BigNumberify amounts)
@@ -278,7 +287,7 @@ describe('concludeAndTransferAllAssets', () => {
       );
 
       // Form transaction
-      const tx = testNitroAdjudicator.concludeAndTransferAllAssets(
+      const pendingTx = testNitroAdjudicator.concludeAndTransferAllAssets(
         getFixedPart(states[0]),
         candidate,
         { gasLimit: NITRO_MAX_GAS },
@@ -286,27 +295,27 @@ describe('concludeAndTransferAllAssets', () => {
 
       // Switch on overall test expectation
       if (reasonString) {
-        await expectRevert(() => tx, reasonString);
+        await expect(pendingTx).to.be.revertedWith(reasonString);
       } else {
-        const receipt = await (await tx).wait();
+        const tx = await pendingTx;
+        const receipt = await tx.wait();
 
         expect(BigNumber.from(receipt.gasUsed).lt(BigNumber.from(NITRO_MAX_GAS))).to.equal(true);
 
         // Compute expected ChannelDataHash
-        const blockTimestamp = (await ethers.provider.getBlock(receipt.blockNumber)).timestamp;
-        const expectedFingerprint = newOutcome.length > 0
-          ? channelDataToStatus({
-              turnNumRecord: 0,
-              finalizesAt: blockTimestamp,
-              outcome: computeOutcome(newOutcome),
-            })
-          : constants.HashZero;
+        const block = await ethers.provider.getBlock(receipt.blockNumber);
+        const expectedFingerprint =
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+          newOutcome.length === undefined
+            ? constants.HashZero
+            : channelDataToStatus({
+                turnNumRecord: 0,
+                finalizesAt: block.timestamp,
+                outcome: computeOutcome(newOutcome),
+              });
 
         // Check fingerprint against the expected value
         expect(await testNitroAdjudicator.statusOf(channelId)).to.equal(expectedFingerprint);
-
-        // Extract logs
-        await (await tx).wait();
 
         // Check new holdings
         await Promise.all(

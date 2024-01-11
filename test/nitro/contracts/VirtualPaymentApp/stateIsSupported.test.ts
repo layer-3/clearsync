@@ -1,8 +1,8 @@
 import { BigNumber, Contract, Wallet } from 'ethers';
 import { ethers } from 'hardhat';
 import { beforeEach, describe, it } from 'mocha';
+import { expect } from 'chai';
 
-import { expectRevert } from '../../../helpers/expect-revert';
 import {
   MAGIC_ADDRESS_INDICATING_ETH,
   Voucher,
@@ -24,6 +24,8 @@ import { generateParticipants, setupContract } from '../../test-helpers';
 import type { VirtualPaymentApp } from '../../../../typechain-types';
 
 const { HashZero } = ethers.constants;
+
+const PANIC_ARITHMETIC = '0x11';
 
 let virtualPaymentApp: Contract;
 let participantsWallets: Wallet[];
@@ -53,7 +55,7 @@ beforeEach(async () => {
   fixedPart = getFixedPart(baseState);
   channelId = getChannelId(fixedPart);
 
-  // NOTE these desinations do not necessarily need to be related to participant addresses
+  // NOTE these destinations do not necessarily need to be related to participant addresses
   alice = convertAddressToBytes32(participants[0]);
   bob = convertAddressToBytes32(participants[2]);
 });
@@ -68,8 +70,8 @@ describe('stateIsSupported (lone candidate route)', () => {
   const testcases: TestCase[] = [
     { turnNum: 0, isFinal: false, reason: undefined },
     { turnNum: 1, isFinal: false, reason: undefined },
-    { turnNum: 2, isFinal: false, reason: 'bad candidate turnNum' },
-    { turnNum: 4, isFinal: false, reason: 'bad candidate turnNum' },
+    { turnNum: 2, isFinal: false, reason: 'bad candidate turnNum; |proof|=0' },
+    { turnNum: 4, isFinal: false, reason: 'bad candidate turnNum; |proof|=0' },
   ];
 
   for (const tc of testcases) {
@@ -90,10 +92,9 @@ describe('stateIsSupported (lone candidate route)', () => {
       };
 
       if (tc.reason) {
-        await expectRevert(
-          () => virtualPaymentApp.stateIsSupported(fixedPart, [], candidate),
-          tc.reason,
-        );
+        await expect(
+          virtualPaymentApp.stateIsSupported(fixedPart, [], candidate),
+        ).to.be.revertedWith(tc.reason);
       } else {
         await virtualPaymentApp.stateIsSupported(fixedPart, [], candidate);
       }
@@ -101,6 +102,7 @@ describe('stateIsSupported (lone candidate route)', () => {
   }
 });
 
+// eslint-disable-next-line sonarjs/cognitive-complexity
 describe('stateIsSupported (candidate plus single proof state route)', () => {
   interface TestCase {
     proofTurnNum: number;
@@ -143,7 +145,8 @@ describe('stateIsSupported (candidate plus single proof state route)', () => {
     { ...vVR, bobAdjustedCorrectly: false, reason: 'Bob not adjusted correctly' },
     { ...vVR, nativeAsset: false, reason: 'only native asset allowed' },
     { ...vVR, multipleAssets: true, reason: 'only native asset allowed' },
-    { ...vVR, aliceUnderflow: true, reason: ' ' }, // we expect transaction to revert without a reason string
+    // we expect transaction to revert with a panic code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)
+    { ...vVR, aliceUnderflow: true, reason: PANIC_ARITHMETIC },
   ];
 
   for (const tc of testcases) {
@@ -214,10 +217,15 @@ describe('stateIsSupported (candidate plus single proof state route)', () => {
       };
 
       if (tc.reason) {
-        await expectRevert(
-          () => virtualPaymentApp.stateIsSupported(fixedPart, proof, candidate),
-          tc.reason,
-        );
+        if (tc.reason === PANIC_ARITHMETIC) {
+          await expect(
+            virtualPaymentApp.stateIsSupported(fixedPart, proof, candidate),
+          ).to.be.revertedWithPanic(PANIC_ARITHMETIC);
+        } else {
+          await expect(
+            virtualPaymentApp.stateIsSupported(fixedPart, proof, candidate),
+          ).to.be.revertedWith(tc.reason);
+        }
       } else {
         await virtualPaymentApp.stateIsSupported(fixedPart, proof, candidate);
       }
@@ -234,9 +242,8 @@ describe('stateIsSupported (longer proof state route)', () => {
       signedBy: BigNumber.from(0b1111).toHexString(),
     };
 
-    await expectRevert(
-      () => virtualPaymentApp.stateIsSupported(fixedPart, [candidate, candidate], candidate),
-      'bad proof length',
-    );
+    await expect(
+      virtualPaymentApp.stateIsSupported(fixedPart, [candidate, candidate], candidate),
+    ).to.be.revertedWith('bad proof length');
   });
 });

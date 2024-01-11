@@ -1,4 +1,4 @@
-import { Contract, constants } from 'ethers';
+import { constants } from 'ethers';
 import { Allocation, AllocationType } from '@statechannels/exit-format';
 import { describe, it } from 'mocha';
 import { expect } from 'chai';
@@ -9,7 +9,7 @@ import { encodeGuaranteeData } from '../../../../src/nitro/contract/outcome';
 
 import type { TESTNitroAdjudicator } from '../../../../typechain-types';
 
-let testNitroAdjudicator: Contract & TESTNitroAdjudicator;
+let testNitroAdjudicator: TESTNitroAdjudicator;
 
 const Alice = '0x000000000000000000000000000000000000000000000000000000000000000a';
 const Bob = '0x000000000000000000000000000000000000000000000000000000000000000b';

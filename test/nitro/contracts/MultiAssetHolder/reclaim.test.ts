@@ -1,7 +1,7 @@
 import { Allocation, AllocationType } from '@statechannels/exit-format';
 import { BigNumber, constants } from 'ethers';
 import { before, describe, it } from 'mocha';
-import { expect } from 'chai';
+import { assert, expect } from 'chai';
 
 import { randomChannelId, randomExternalDestination, setupContract } from '../../test-helpers';
 import { Outcome, channelDataToStatus, encodeOutcome, hashOutcome } from '../../../../src/nitro';
@@ -51,14 +51,13 @@ describe('reclaim', () => {
       },
     ];
     const vOutcomeHash = hashOutcome(vOutcome);
-    await (
-      await testNitroAdjudicator.setStatusFromChannelData(targetId, {
-        turnNumRecord: 99,
-        finalizesAt: 1,
-        stateHash: constants.HashZero, // not realistic, but OK for purpose of this test
-        outcomeHash: vOutcomeHash,
-      })
-    ).wait();
+    const setStatusTx = await testNitroAdjudicator.setStatusFromChannelData(targetId, {
+      turnNumRecord: 99,
+      finalizesAt: 1,
+      stateHash: constants.HashZero, // not realistic, but OK for purpose of this test
+      outcomeHash: vOutcomeHash,
+    });
+    await setStatusTx.wait();
 
     // prepare an appropriate ledger channel outcome and finalize
 
@@ -91,18 +90,17 @@ describe('reclaim', () => {
       },
     ];
     const lOutcomeHash = hashOutcome(lOutcome);
-    await (
-      await testNitroAdjudicator.setStatusFromChannelData(sourceId, {
-        turnNumRecord: 99,
-        finalizesAt: 1,
-        stateHash: constants.HashZero, // not realistic, but OK for purpose of this test
-        outcomeHash: lOutcomeHash,
-      })
-    ).wait();
+    const setStatus2Tx = await testNitroAdjudicator.setStatusFromChannelData(sourceId, {
+      turnNumRecord: 99,
+      finalizesAt: 1,
+      stateHash: constants.HashZero, // not realistic, but OK for purpose of this test
+      outcomeHash: lOutcomeHash,
+    });
+    await setStatus2Tx.wait();
 
     // call reclaim
 
-    const tx = testNitroAdjudicator.reclaim({
+    const tx = await testNitroAdjudicator.reclaim({
       sourceChannelId: sourceId,
       sourceStateHash: constants.HashZero,
       sourceOutcomeBytes: encodeOutcome(lOutcome),
@@ -114,11 +112,14 @@ describe('reclaim', () => {
     });
 
     // Extract logs
-    const { events: eventsFromTx } = await (await tx).wait();
+    const { events: eventsFromTx } = await tx.wait();
+    if (!eventsFromTx) {
+      assert.fail('No events found');
+    }
 
     // Compile event expectations
 
-    // Check that each expectedEvent is contained as a subset of the properies of each *corresponding* event: i.e. the order matters!
+    // Check that each expectedEvent is contained as a subset of the properties of each *corresponding* event: i.e. the order matters!
     const expectedEvents = [
       {
         event: 'Reclaimed',
@@ -131,6 +132,9 @@ describe('reclaim', () => {
 
     for (const [index, expectedEvent] of expectedEvents.entries()) {
       const actualEvent = eventsFromTx[index];
+      if (!actualEvent.args) {
+        assert.fail('No event args found');
+      }
 
       // Assert the 'event' field
       expect(actualEvent.event).to.equal(expectedEvent.event);

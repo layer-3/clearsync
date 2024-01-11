@@ -1,9 +1,8 @@
-import { Contract, constants } from 'ethers';
+import { constants } from 'ethers';
 import { ethers } from 'hardhat';
-import { expect } from 'chai';
+import { assert, expect } from 'chai';
 import { before, describe, it } from 'mocha';
 
-import { expectRevert } from '../../../helpers/expect-revert';
 import { getChannelId } from '../../../../src/nitro/contract/channel';
 import { Outcome, hashOutcome } from '../../../../src/nitro/contract/outcome';
 import {
@@ -29,10 +28,10 @@ const nParticipants = 3;
 const { participants } = generateParticipants(nParticipants);
 
 const challengeDuration = 0x10_00;
-let countingApp: Contract;
-let testNitroAdjudicator: Contract;
-let token: Contract;
-let addresses: any;
+let countingApp: CountingApp;
+let testNitroAdjudicator: TESTNitroAdjudicator;
+let token: Token;
+let addresses: Record<string, string | undefined>;
 
 interface testParams {
   setOutcome: OutcomeShortHand;
@@ -60,7 +59,8 @@ before(async () => {
   };
 });
 
-describe('transferAllAssets', async () => {
+// eslint-disable-next-line @typescript-eslint/no-misused-promises, sonarjs/cognitive-complexity
+describe('transferAllAssets', () => {
   const testCases = [
     {
       description:
@@ -74,7 +74,8 @@ describe('transferAllAssets', async () => {
     },
   ];
 
-  for (const tc of testCases) it(tc.description, async () => {
+  for (const tc of testCases)
+    it(tc.description, async () => {
       const channelNonce = getRandomNonce('transferAllAssets');
       const channelId = getChannelId({
         channelNonce,
@@ -107,16 +108,19 @@ describe('transferAllAssets', async () => {
               const amount = heldBefore[asset][destination];
               if (asset != MAGIC_ADDRESS_INDICATING_ETH) {
                 // Increase allowance
-                await (await token.increaseAllowance(testNitroAdjudicator.address, amount)).wait(); // Approve enough for setup and main test
+                const increaseTx = await token.increaseAllowance(
+                  testNitroAdjudicator.address,
+                  amount,
+                );
+                await increaseTx.wait(); // Approve enough for setup and main test
               }
-              await (
-                await testNitroAdjudicator.deposit(asset, destination, 0, amount, {
-                  value: asset == MAGIC_ADDRESS_INDICATING_ETH ? amount : 0,
-                })
-              ).wait();
-              expect((await testNitroAdjudicator.holdings(asset, destination)).eq(amount)).to.equal(
-                true,
-              );
+              const depositTx = await testNitroAdjudicator.deposit(asset, destination, 0, amount, {
+                value: asset == MAGIC_ADDRESS_INDICATING_ETH ? amount : 0,
+              });
+              await depositTx.wait();
+
+              const holdings = await testNitroAdjudicator.holdings(asset, destination);
+              expect(holdings).to.equal(amount);
             }),
           );
         }),
@@ -129,29 +133,29 @@ describe('transferAllAssets', async () => {
       const stateHash = constants.HashZero;
       const finalizesAt = 42;
       const turnNumRecord = 7;
-      await (
-        await testNitroAdjudicator.setStatusFromChannelData(channelId, {
-          turnNumRecord,
-          finalizesAt,
-          stateHash,
-          outcomeHash,
-        })
-      ).wait();
+      const setStatusTx = await testNitroAdjudicator.setStatusFromChannelData(channelId, {
+        turnNumRecord,
+        finalizesAt,
+        stateHash,
+        outcomeHash,
+      });
+      await setStatusTx.wait();
 
-      const tx1 = testNitroAdjudicator.transferAllAssets(channelId, outcome, stateHash);
+      const pendingTx = testNitroAdjudicator.transferAllAssets(channelId, outcome, stateHash);
 
       // Call method in a slightly different way if expecting a revert
       if (reasonString) {
         const regex = new RegExp(
           '^' + 'VM Exception while processing transaction: revert ' + reasonString + '$',
         );
-        await expectRevert(() => tx1, regex);
+        await expect(pendingTx).to.be.revertedWith(regex);
       } else {
-        const { events: eventsFromTx } = await (await tx1).wait();
+        const tx = await pendingTx;
+        const { events: eventsFromTx } = await tx.wait();
 
         expect(eventsFromTx).not.to.equal(undefined);
         if (eventsFromTx === undefined) {
-          return;
+          assert.fail('eventsFromTx is undefined');
         }
 
         // expect an event per asset
@@ -161,15 +165,17 @@ describe('transferAllAssets', async () => {
         // Check new status
         const outcomeAfter: Outcome = computeOutcome(newOutcome);
 
-        const expectedStatusAfter = newOutcome.length > 0
-          ? channelDataToStatus({
-              turnNumRecord,
-              finalizesAt,
-              // stateHash will be set to HashZero by this helper fn
-              // if state property of this object is undefined
-              outcome: outcomeAfter,
-            })
-          : constants.HashZero;
+        const expectedStatusAfter =
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+          newOutcome.length === undefined
+            ? constants.HashZero
+            : channelDataToStatus({
+                turnNumRecord,
+                finalizesAt,
+                // stateHash will be set to HashZero by this helper fn
+                // if state property of this object is undefined
+                outcome: outcomeAfter,
+              });
         expect(await testNitroAdjudicator.statusOf(channelId)).to.equal(expectedStatusAfter);
 
         // Check payouts
@@ -182,9 +188,11 @@ describe('transferAllAssets', async () => {
                 // for each channel
                 const amount = payouts[asset][destination];
                 if (asset == MAGIC_ADDRESS_INDICATING_ETH) {
-                  expect((await ethers.provider.getBalance(address)).eq(amount)).to.equal(true);
+                  const balance = await ethers.provider.getBalance(address);
+                  expect(balance).to.equal(amount);
                 } else {
-                  expect((await token.balanceOf(address)).eq(amount)).to.equal(true);
+                  const balance = await token.balanceOf(address);
+                  expect(balance).equal(amount);
                 }
               }),
             );
@@ -199,14 +207,12 @@ describe('transferAllAssets', async () => {
               Object.keys(heldAfter[asset]).map(async (destination) => {
                 // for each channel
                 const amount = heldAfter[asset][destination];
-                expect(
-                  (await testNitroAdjudicator.holdings(asset, destination)).eq(amount),
-                ).to.equal(true);
+                const holdings = await testNitroAdjudicator.holdings(asset, destination);
+                expect(holdings).to.equal(amount);
               }),
             );
           }),
         );
       }
-    })
-  ;
+    });
 });
