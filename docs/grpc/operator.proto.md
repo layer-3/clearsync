@@ -85,7 +85,8 @@ protolint:disable MAX_LINE_LENGTH
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | channel_id | [string](#string) |  |
-| tx_id | [string](#string) |  |
+| state | [string](#string) |  |
+| event | [string](#string) |  |
 
 
 
@@ -99,10 +100,9 @@ protolint:disable MAX_LINE_LENGTH
 
 | Field | Type | Description |
 | ----- | ---- | ----------- |
-| code | [string](#string) |  |
 | msg | [string](#string) |  |
-| err | [string](#string) |  |
 | metadata | [ErrorMetadata](#errormetadata) |  |
+| action | [string](#string) |  |
 
 
 
