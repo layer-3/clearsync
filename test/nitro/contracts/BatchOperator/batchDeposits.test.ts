@@ -3,7 +3,6 @@ import { ethers } from 'hardhat';
 import { before, describe, it } from 'mocha';
 import { expect } from 'chai';
 
-import { expectRevert } from '../../../helpers/expect-revert';
 import { MAGIC_ADDRESS_INDICATING_ETH, getChannelId, getRandomNonce } from '../../../../src/nitro';
 import { setupContract } from '../../test-helpers';
 
@@ -253,7 +252,7 @@ describe('deposit_batch', () => {
           expect(holdings).to.equal(expectedHoldings);
         }
       } else {
-        await expectRevert(() => txPromise, reasonString);
+        await expect(txPromise).to.be.revertedWith(reasonString);
       }
     });
 });

@@ -4,11 +4,13 @@ import ForceMoveAppArtifact from '../../../artifacts/contracts/nitro/interfaces/
 
 import { State, getVariablePart } from './state';
 
-//  https://github.com/ethers-io/ethers.js/issues/602#issuecomment-574671078
+// TODO: refactor to use updated IForceMoveApp interface
+
+// https://github.com/ethers-io/ethers.js/issues/602#issuecomment-574671078
 export const ForceMoveAppContractInterface = new utils.Interface(ForceMoveAppArtifact.abi);
 
 /**
- * Calls the valiTransition method on the supplied ForceMoveApp using eth_call
+ * Calls the validTransition method on the supplied ForceMoveApp using eth_call
  * @param fromState a State
  * @param toState a State
  * @param appContract a ForceMoveApp contract address
@@ -23,7 +25,11 @@ export async function validTransition(
   const fromVariablePart = getVariablePart(fromState);
   const toVariablePart = getVariablePart(toState);
 
-  return await appContract.validTransition(fromVariablePart, toVariablePart, numberOfParticipants);
+  return (await appContract.validTransition(
+    fromVariablePart,
+    toVariablePart,
+    numberOfParticipants,
+  )) as boolean;
 }
 
 /**

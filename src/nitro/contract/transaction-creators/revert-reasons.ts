@@ -17,7 +17,7 @@ export const RESPONSE_UNAUTHORIZED = 'Signer not authorized mover';
 export const WRONG_REFUTATION_SIGNATURE = 'Refutation state not signed by challenger';
 export const NONFINAL_STATE = 'State must be final';
 
-// Application-specifis messages
+// Application-specific messages
 export const COUNTING_APP_INVALID_TRANSITION = 'Counter must be incremented';
 
 // Turn Taking

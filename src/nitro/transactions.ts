@@ -1,9 +1,9 @@
-import {Signature, constants, providers} from 'ethers';
+import { Signature, constants, providers } from 'ethers';
 
 import * as forceMoveTrans from './contract/transaction-creators/force-move';
 import * as multiAssetHolderTrans from './contract/transaction-creators/multi-asset-holder';
 import * as nitroAdjudicatorTrans from './contract/transaction-creators/nitro-adjudicator';
-import {SignedState, getStateSignerAddress} from './signatures';
+import { SignedState, getStateSignerAddress } from './signatures';
 
 import type { State } from './contract/state';
 
@@ -25,15 +25,15 @@ export const NITRO_MAX_GAS = 6_000_000; // should be below the block gas limit, 
  */
 export function createChallengeTransaction(
   signedStates: SignedState[],
-  challengePrivateKey: string
+  challengePrivateKey: string,
 ): providers.TransactionRequest {
-  const {states, signatures, whoSignedWhat} = createSignatureArguments(signedStates);
+  const { states, signatures, whoSignedWhat } = createSignatureArguments(signedStates);
 
   return forceMoveTrans.createChallengeTransaction(
     states,
     signatures,
     whoSignedWhat,
-    challengePrivateKey
+    challengePrivateKey,
   );
 }
 
@@ -43,9 +43,9 @@ export function createChallengeTransaction(
  * @returns An ethers TransactionRequest. This can be launched with `await signer.sendTransaction({to: adjudicator.address, ...txRequest}`)
  */
 export function createCheckpointTransaction(
-  signedStates: SignedState[]
+  signedStates: SignedState[],
 ): providers.TransactionRequest {
-  const {states, signatures, whoSignedWhat} = createSignatureArguments(signedStates);
+  const { states, signatures, whoSignedWhat } = createSignatureArguments(signedStates);
   return forceMoveTrans.createCheckpointTransaction({
     states,
     signatures,
@@ -59,9 +59,9 @@ export function createCheckpointTransaction(
  * @returns An ethers TransactionRequest. This can be launched with `await signer.sendTransaction({to: adjudicator.address, ...txRequest}`)
  */
 export function createConcludeTransaction(
-  conclusionProof: SignedState[]
+  conclusionProof: SignedState[],
 ): providers.TransactionRequest {
-  const {states, signatures, whoSignedWhat} = createSignatureArguments(conclusionProof);
+  const { states, signatures, whoSignedWhat } = createSignatureArguments(conclusionProof);
   return forceMoveTrans.createConcludeTransaction(states, signatures, whoSignedWhat);
 }
 
@@ -75,7 +75,7 @@ export function createConcludeTransaction(
 export function createETHDepositTransaction(
   destination: string,
   expectedHeld: string,
-  amount: string
+  amount: string,
 ): providers.TransactionRequest {
   return multiAssetHolderTrans.createETHDepositTransaction(destination, expectedHeld, amount);
 }
@@ -92,13 +92,13 @@ export function createERC20DepositTransaction(
   tokenAddress: string,
   destination: string,
   expectedHeld: string,
-  amount: string
+  amount: string,
 ): providers.TransactionRequest {
   return multiAssetHolderTrans.createERC20DepositTransaction(
     tokenAddress,
     destination,
     expectedHeld,
-    amount
+    amount,
   );
 }
 
@@ -108,13 +108,13 @@ export function createERC20DepositTransaction(
  * @returns An ethers TransactionRequest. This can be launched with `await signer.sendTransaction({to: adjudicator.address, ...txRequest}`)
  */
 export function createConcludeAndTransferAllAssetsTransaction(
-  signedStates: SignedState[]
+  signedStates: SignedState[],
 ): providers.TransactionRequest {
-  const {states, signatures, whoSignedWhat} = createSignatureArguments(signedStates);
+  const { states, signatures, whoSignedWhat } = createSignatureArguments(signedStates);
   return nitroAdjudicatorTrans.createConcludeAndTransferAllAssetsTransaction(
     states,
     signatures,
-    whoSignedWhat
+    whoSignedWhat,
   );
 }
 
@@ -132,29 +132,31 @@ export function createTransferAllAssetsTransaction(state: State): providers.Tran
  * Currently we assume each signedState is a unique combination of state/signature
  * So if multiple participants sign a state we expect a SignedState for each participant
  * @param signedStates an array of signed states
- * @returns Object with (states, signatures, whosignedWhat)
+ * @returns Object with (states, signatures, whoSignedWhat)
  */
 export function createSignatureArguments(signedStates: SignedState[]): {
   states: State[];
   signatures: Signature[];
   whoSignedWhat: number[];
 } {
-  const {participants} = signedStates[0].state;
+  const { participants } = signedStates[0].state;
   const states = [];
-  const whoSignedWhat = Array.from({length: participants.length});
+  const whoSignedWhat: number[] = Array.from({ length: participants.length });
 
   // Get a list of all unique signed states.
   const uniqueSignedStates = signedStates.filter((s, i, a) => a.indexOf(s) === i);
   // We may receive multiple Signed States which have the same state and different signatures
   // so we get a list of unique states ignoring their signatures
   // which allows us to create a single state with multiple signatures
-  const uniqueStates = uniqueSignedStates.map(s => s.state).filter((s, i, a) => a.indexOf(s) === i);
-  const signatures = Array.from({length: uniqueStates.length});
+  const uniqueStates = uniqueSignedStates
+    .map((s) => s.state)
+    .filter((s, i, a) => a.indexOf(s) === i);
+  const signatures: Signature[] = Array.from({ length: uniqueStates.length });
   for (const [i, uniqueState] of uniqueStates.entries()) {
     states.push(uniqueState);
     // Get a list of all signed states that have the state
-    const signedStatesForUniqueState = uniqueSignedStates.filter(s => s.state === uniqueState);
-    // Iterate through the signatures and set signatures/whoSignedWhawt
+    const signedStatesForUniqueState = uniqueSignedStates.filter((s) => s.state === uniqueState);
+    // Iterate through the signatures and set signatures/whoSignedWhat
     for (const ss of signedStatesForUniqueState) {
       const participantIndex = participants.indexOf(getStateSignerAddress(ss));
 

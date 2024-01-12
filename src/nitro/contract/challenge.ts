@@ -1,19 +1,18 @@
-import {BigNumber, Signature, ethers, utils} from 'ethers';
+import { BigNumber, Signature, ethers, utils } from 'ethers';
 
 import NitroAdjudicatorArtifact from '../../../artifacts/contracts/nitro/NitroAdjudicator.sol/NitroAdjudicator.json';
 
-
-import {decodeOutcome} from './outcome';
-import {FixedPart, State, VariablePart, hashState} from './state';
+import { Outcome, decodeOutcome } from './outcome';
+import { FixedPart, State, VariablePart, hashState } from './state';
 
 import type { SignedState } from '../signatures';
 import type { Address, Bytes32, Uint48, Uint8 } from './types';
 
-const {Interface, keccak256, defaultAbiCoder} = utils;
+const { Interface, keccak256, defaultAbiCoder } = utils;
 
 export function hashChallengeMessage(challengeState: State): Bytes32 {
   return keccak256(
-    defaultAbiCoder.encode(['bytes32', 'string'], [hashState(challengeState), 'forceMove'])
+    defaultAbiCoder.encode(['bytes32', 'string'], [hashState(challengeState), 'forceMove']),
   );
 }
 
@@ -31,10 +30,8 @@ export interface ChallengeRegisteredStruct {
   finalizesAt: Uint48;
   challenger: Address;
   isFinal: boolean;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  fixedPart: any[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  variableParts: any[];
+  fixedPart: FixedPart;
+  variableParts: VariablePart[];
   sigs: Signature[];
   whoSignedWhat: Uint8[];
 }
@@ -44,8 +41,7 @@ export interface ChallengeRegisteredStruct {
  * @param eventResult the event itself
  * @returns a ChallengeRegisteredEvent
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function getChallengeRegisteredEvent(eventResult: any[]): ChallengeRegisteredEvent {
+export function getChallengeRegisteredEvent(eventResult: ethers.Event): ChallengeRegisteredEvent {
   const {
     channelId,
     turnNumRecord,
@@ -54,7 +50,17 @@ export function getChallengeRegisteredEvent(eventResult: any[]): ChallengeRegist
     fixedPart,
     variableParts: variablePartsUnstructured,
     sigs,
-  }: ChallengeRegisteredStruct = eventResult.at(-1).args;
+  } = eventResult.args as unknown as {
+    channelId: string;
+    turnNumRecord: number;
+    finalizesAt: number;
+    challenger: string;
+    isFinal: boolean;
+    fixedPart: [unknown, string[], string, string, string];
+    variableParts: [Outcome, string, number, boolean][];
+    sigs: Signature[];
+    whoSignedWhat: [string[], string[], string[], string[]];
+  };
 
   // Fixed part
   const participants = fixedPart[1].map((p: string) => BigNumber.from(p).toHexString());
@@ -63,9 +69,9 @@ export function getChallengeRegisteredEvent(eventResult: any[]): ChallengeRegist
   const challengeDuration = BigNumber.from(fixedPart[4]).toNumber();
 
   // Variable part
-  const variableParts: VariablePart[] = variablePartsUnstructured.map(v => {
+  const variableParts: VariablePart[] = variablePartsUnstructured.map((v) => {
     const [outcome, appData, turnNum, isFinal] = v;
-    return {outcome, appData, turnNum, isFinal};
+    return { outcome, appData, turnNum, isFinal };
   });
 
   const challengeStates: SignedState[] = variableParts.map((v, i) => {
@@ -81,9 +87,9 @@ export function getChallengeRegisteredEvent(eventResult: any[]): ChallengeRegist
       appDefinition,
       isFinal,
     };
-    return {state, signature};
+    return { state, signature };
   });
-  return {channelId, challengeStates, finalizesAt};
+  return { channelId, challengeStates, finalizesAt };
 }
 
 export interface ChallengeClearedEvent {
@@ -110,10 +116,9 @@ export interface RespondTransactionArguments {
  */
 export function getChallengeClearedEvent(
   tx: ethers.Transaction,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  eventResult: any[]
+  eventResult: ethers.Event,
 ): ChallengeClearedEvent {
-  const {newTurnNumRecord}: ChallengeClearedStruct = eventResult.at(-1).args;
+  const { newTurnNumRecord } = eventResult.args as unknown as ChallengeClearedStruct;
 
   // https://github.com/ethers-io/ethers.js/issues/602#issuecomment-574671078
   const decodedTransaction = new Interface(NitroAdjudicatorArtifact.abi).parseTransaction(tx);
@@ -121,9 +126,15 @@ export function getChallengeClearedEvent(
   if (decodedTransaction.name === 'respond') {
     // NOTE: args value is an array of the inputted arguments, not an object with labelled keys
     // ethers.js should change this, and when it does, we can use the commented out type
-    const args /* RespondTransactionArguments */ = decodedTransaction.args;
-    const [participants, channelNonce, appDefinition, challengeDuration] = args[2];
+    const args /* CheckpointTransactionArguments */ = decodedTransaction.args as [
+      unknown,
+      [unknown, boolean],
+      [string[], string, string, number],
+      [unknown, [Outcome, string]],
+      [number, string, string, string, number],
+    ];
     const isFinal = args[1][1];
+    const [participants, channelNonce, appDefinition, challengeDuration] = args[2];
     const outcome = decodeOutcome(args[3][1][0]);
     const appData = args[3][1][1];
     const signature: Signature = {
@@ -156,7 +167,7 @@ export function getChallengeClearedEvent(
     throw new Error('UnimplementedError');
   } else {
     throw new Error(
-      'Unexpected call to getChallengeClearedEvent with invalid or unrelated transaction data'
+      'Unexpected call to getChallengeClearedEvent with invalid or unrelated transaction data',
     );
   }
 }

@@ -17,31 +17,21 @@ describe('Quorum', () => {
   let validators: string[];
 
   let ValidatorA: SignerWithAddress;
-  let ValidatorB: SignerWithAddress;
-  let Someone: SignerWithAddress;
-  let Someother: SignerWithAddress;
 
   let QuorumFactory: Quorum__factory;
   let Quorum: Quorum;
   let QuorumAsValidatorA: Quorum;
-  let QuorumAsValidatorB: Quorum;
-  let QuorumAsSomeone: Quorum;
-  let QuorumAsSomeother: Quorum;
 
   beforeEach(async () => {
-    [Someone, Someother, ...Validators] = await ethers.getSigners();
+    [...Validators] = await ethers.getSigners();
     validators = Validators.map((V) => V.address);
     ValidatorA = Validators[0];
-    ValidatorB = Validators[1];
 
     QuorumFactory = (await ethers.getContractFactory('Quorum')) as Quorum__factory;
     Quorum = await QuorumFactory.deploy(validators, quorum);
     await Quorum.deployed();
 
-    [QuorumAsValidatorA, QuorumAsValidatorB, QuorumAsSomeone, QuorumAsSomeother] = connectGroup(
-      Quorum,
-      [ValidatorA, ValidatorB, Someone, Someother],
-    );
+    [QuorumAsValidatorA] = connectGroup(Quorum, [ValidatorA]);
   });
 
   describe('deployment', () => {

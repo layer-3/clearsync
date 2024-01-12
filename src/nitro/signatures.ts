@@ -222,7 +222,13 @@ export function signChallengeMessage(signedStates: SignedState[], privateKey: st
   if (!signedStates[0].state.participants.includes(wallet.address)) {
     throw new Error("The state must be signed with a participant's private key");
   }
-  const challengeState = signedStates.at(-1).state;
+
+  if (signedStates.length === 0) {
+    throw new Error('At least one signed state must be provided');
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const challengeState = signedStates.at(-1)!.state;
   const challengeHash = hashChallengeMessage(challengeState);
 
   return signData(challengeHash, privateKey);

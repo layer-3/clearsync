@@ -1,5 +1,6 @@
 import { Allocation, AllocationType } from '@statechannels/exit-format';
 import { BigNumber, BigNumberish, ethers } from 'ethers';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { isBigNumberish } from '@ethersproject/bignumber/lib/bignumber';
 
 import type { Outcome } from './contract/outcome';
@@ -33,9 +34,11 @@ export function replaceAddressesAndBigNumberify(
   const newObject: AssetOutcomeShortHand | OutcomeShortHand = {};
   for (const key of Object.keys(object)) {
     if (isBigNumberish(object[key])) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       newObject[addresses[key]!] = BigNumber.from(object[key]);
     } else if (typeof object[key] === 'object') {
       // Recurse
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       newObject[addresses[key]!] = replaceAddressesAndBigNumberify(object[key], addresses) as
         | AssetOutcomeShortHand
         | BigNumberish;

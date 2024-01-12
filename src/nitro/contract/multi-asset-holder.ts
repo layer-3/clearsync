@@ -1,9 +1,9 @@
-import {BigNumber, constants, utils} from 'ethers';
-import ExitFormat, {AllocationType} from '@statechannels/exit-format';
+import { BigNumber, constants, ethers, utils } from 'ethers';
+import ExitFormat, { AllocationType } from '@statechannels/exit-format';
 
-import {parseEventResult} from '../ethers-utils';
+import { parseEventResult } from '../ethers-utils';
 
-import {decodeGuaranteeData} from './outcome';
+import { decodeGuaranteeData } from './outcome';
 
 /**
  * Holds rich information about a Deposited event emitted on chain
@@ -19,8 +19,11 @@ export interface DepositedEvent {
  * @returns a DepositedEvent
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function getDepositedEvent(eventResult: any[]): DepositedEvent {
-  const {destination, destinationHoldings} = parseEventResult(eventResult);
+export function getDepositedEvent(eventResult: ethers.Event[]): DepositedEvent {
+  const { destination, destinationHoldings } = parseEventResult(eventResult) as {
+    destination: string;
+    destinationHoldings: string;
+  };
   return {
     destination,
     destinationHoldings: BigNumber.from(destinationHoldings),
@@ -65,16 +68,16 @@ export function convertAddressToBytes32(address: string): string {
 export function computeReclaimEffects(
   sourceAllocations: ExitFormat.Allocation[], // we must index this with a JS number that is less than 2**32 - 1
   targetAllocations: ExitFormat.Allocation[], // we must index this with a JS number that is less than 2**32 - 1
-  indexOfTargetInSource: number
+  indexOfTargetInSource: number,
 ): ExitFormat.Allocation[] {
   const newSourceAllocations: ExitFormat.Allocation[] = []; // will be one slot shorter than sourceAllocations
   const guarantee = sourceAllocations[indexOfTargetInSource];
 
-  if (guarantee.allocationType != AllocationType.guarantee) {
+  if ((guarantee.allocationType as AllocationType) != AllocationType.guarantee) {
     throw new Error('not a guarantee');
   }
 
-  const {left, right} = decodeGuaranteeData(guarantee.metadata);
+  const { left, right } = decodeGuaranteeData(guarantee.metadata);
 
   let foundTarget = false;
   let foundLeft = false;
@@ -134,7 +137,7 @@ export function computeReclaimEffects(
 
 /**
  *
- * Emulates solidity code. TODO replace with PureEVM implementation?
+ * Emulates solidity code. TODO: replace with PureEVM implementation?
  * @param initialHoldings
  * @param allocation
  * @param indices
@@ -142,7 +145,7 @@ export function computeReclaimEffects(
 export function computeTransferEffectsAndInteractions(
   initialHoldings: string,
   allocations: ExitFormat.Allocation[], // we must index this with a JS number that is less than 2**32 - 1
-  indices: number[]
+  indices: number[],
 ): {
   newAllocations: ExitFormat.Allocation[];
   allocatesOnlyZeros: boolean;
@@ -151,12 +154,14 @@ export function computeTransferEffectsAndInteractions(
 } {
   let totalPayouts = BigNumber.from(0);
   const newAllocations: ExitFormat.Allocation[] = [];
-  const exitAllocations: ExitFormat.Allocation[] = Array.from({length: indices.length > 0 ? indices.length : allocations.length}).fill({
+  const exitAllocations = Array.from({
+    length: indices.length > 0 ? indices.length : allocations.length,
+  }).fill({
     destination: constants.HashZero,
     amount: '0x00',
     metadata: '0x',
     allocationType: 0,
-  });
+  }) as ExitFormat.Allocation[];
   let allocatesOnlyZeros = true;
   let surplus = BigNumber.from(initialHoldings);
   let k = 0;
@@ -196,6 +201,6 @@ export function computeTransferEffectsAndInteractions(
   };
 }
 
-function min(a: BigNumber, b: BigNumber) {
+function min(a: BigNumber, b: BigNumber): BigNumber {
   return a.gt(b) ? b : a;
 }

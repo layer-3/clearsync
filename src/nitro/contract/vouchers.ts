@@ -1,6 +1,6 @@
-import {ParamType, defaultAbiCoder, keccak256} from 'ethers/lib/utils';
+import { ParamType, defaultAbiCoder, keccak256 } from 'ethers/lib/utils';
 
-import {sign} from '../signatures';
+import { sign } from '../signatures';
 
 import type { BigNumberish, Signature, Wallet } from 'ethers';
 import type { Bytes32 } from './types';
@@ -18,7 +18,7 @@ export interface VoucherAmountAndSignature {
 const voucherTy = {
   type: 'tuple',
   components: [
-    {name: 'channelId', type: 'bytes32'},
+    { name: 'channelId', type: 'bytes32' },
     {
       name: 'amount',
       type: 'uint256',
@@ -41,14 +41,17 @@ const voucherAmountAndSignatureTy = {
       type: 'tuple',
       name: 'signature',
       components: [
-        {name: 'v', type: 'uint8'},
-        {name: 'r', type: 'bytes32'},
-        {name: 's', type: 'bytes32'},
+        { name: 'v', type: 'uint8' },
+        { name: 'r', type: 'bytes32' },
+        { name: 's', type: 'bytes32' },
       ],
     } as ParamType,
   ],
 } as ParamType;
 
-export function encodeVoucherAmountAndSignature(amount: BigNumberish, signature: Signature) {
-  return defaultAbiCoder.encode([voucherAmountAndSignatureTy], [{amount, signature}]);
+export function encodeVoucherAmountAndSignature(
+  amount: BigNumberish,
+  signature: Signature,
+): string {
+  return defaultAbiCoder.encode([voucherAmountAndSignatureTy], [{ amount, signature }]);
 }

@@ -1,7 +1,7 @@
-import {utils} from 'ethers';
+import { utils } from 'ethers';
 
-import {FixedPart} from './state';
-import {Bytes32} from './types';
+import type { FixedPart } from './state';
+import type { Bytes32 } from './types';
 
 /**
  * Determines if the supplied 32 byte hex string represents an external destination (meaning funds will be paid _out_ of the adjudicator on chain)
@@ -18,12 +18,12 @@ export function isExternalDestination(bytes32: Bytes32): boolean {
  * @returns a 32 byte hex string representing the id
  */
 export function getChannelId(fixedPart: FixedPart): Bytes32 {
-  const {participants, channelNonce, appDefinition, challengeDuration} = fixedPart;
+  const { participants, channelNonce, appDefinition, challengeDuration } = fixedPart;
   const channelId = utils.keccak256(
     utils.defaultAbiCoder.encode(
       ['address[]', 'uint256', 'address', 'uint48'],
-      [participants, channelNonce, appDefinition, challengeDuration]
-    )
+      [participants, channelNonce, appDefinition, challengeDuration],
+    ),
   );
   if (isExternalDestination(channelId))
     throw new Error('This channel would have an external destination as an id');

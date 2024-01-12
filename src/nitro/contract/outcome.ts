@@ -1,6 +1,5 @@
-import { defaultAbiCoder } from '@ethersproject/abi';
 import * as ExitFormat from '@statechannels/exit-format';
-import { BytesLike, constants, utils } from 'ethers';
+import { BytesLike, constants, ethers, utils } from 'ethers';
 
 import type { Bytes32 } from './types';
 
@@ -60,11 +59,11 @@ export interface Guarantee {
 }
 
 export function encodeGuaranteeData(guarantee: Guarantee): BytesLike {
-  return defaultAbiCoder.encode(['tuple(bytes32 left, bytes32 right)'], [guarantee]);
+  return ethers.utils.defaultAbiCoder.encode(['tuple(bytes32 left, bytes32 right)'], [guarantee]);
 }
 
 export function decodeGuaranteeData(data: BytesLike): Guarantee {
-  const result = defaultAbiCoder.decode(['tuple(bytes32 left, bytes32 right)'], data);
+  const result = ethers.utils.defaultAbiCoder.decode(['tuple(bytes32 left, bytes32 right)'], data);
   return { left: result[0][0] as string, right: result[0][1] as string };
 }
 
