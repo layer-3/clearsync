@@ -154,10 +154,9 @@ message TransactionNotification {
 }
 
 message ErrorNotification {
-  string code = 1;
   string msg = 2;
-  string err = 3;
   ErrorMetadata metadata = 4;
+  string action = 5;
 }
 
 message SettlementRequest {
@@ -181,5 +180,6 @@ message GetPositionsResponse {
 
 message ErrorMetadata {
   string channel_id = 1;
-  string tx_id = 2;
+  string state = 3;
+  string event = 4;
 }
