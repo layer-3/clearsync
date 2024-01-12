@@ -1,7 +1,11 @@
 import { BigNumber, Contract, Wallet, providers } from 'ethers';
 import { ethers } from 'hardhat';
-import { expect } from 'chai';
-import { Allocation, AllocationType, AssetMetadata } from '@statechannels/exit-format';
+import {
+  Allocation,
+  AllocationType,
+  AssetMetadata,
+  SingleAssetExit,
+} from '@statechannels/exit-format';
 
 import { channelDataToStatus } from '../../src/nitro/contract/channel-storage';
 
@@ -11,7 +15,7 @@ import type {
   ChallengeRegisteredStruct,
 } from '../../src/nitro/contract/challenge';
 import type { Outcome } from '../../src/nitro/contract/outcome';
-import type { Bytes32, OutcomeShortHand, State, VariablePart } from '../../src/nitro';
+import type { Bytes32, State, VariablePart } from '../../src/nitro';
 
 /**
  * Deploys a given contract using the first available signer from ethers.
@@ -28,7 +32,7 @@ import type { Bytes32, OutcomeShortHand, State, VariablePart } from '../../src/n
  */
 export async function setupContract<T extends Contract>(
   contractName: string,
-  ...args: any[]
+  ...args: unknown[]
 ): Promise<T> {
   const [Deployer] = await ethers.getSigners();
   const factory = await ethers.getContractFactory(contractName);
@@ -48,8 +52,8 @@ export function generateParticipants(n: number): {
   wallets: Wallet[];
   participants: string[];
 } {
-  const participants = new Array(n).fill('');
-  const wallets = new Array(n);
+  const participants = Array.from({ length: n }).fill('') as string[];
+  const wallets: Wallet[] = Array.from({ length: n });
 
   for (let i = 0; i < n; i++) {
     wallets[i] = Wallet.createRandom();
@@ -85,52 +89,60 @@ export const finalizedFingerprint = (
     state,
   });
 
-export const parseOutcomeEventResult = (eventOutcomeResult: any[]): Outcome => {
-  eventOutcomeResult = [...eventOutcomeResult];
+// See https://github.com/ethers-io/ethers.js/discussions/2429
+// convertToStruct takes an array-ish type (like those returned from on-chain calls) and converts it to an object type
+export const convertToStruct = <A extends unknown[]>(arr: A): ExtractPropsFromArray<A> => {
+  const keys = Object.keys(arr).filter((key) => Number.isNaN(Number(key)));
+  const result: Record<string, unknown> = {};
+
+  for (const [index, item] of arr.entries()) {
+    result[keys[index]] = item;
+  }
+
+  return result as A;
+};
+
+// This is to remove unnecessary properties from the output type
+export type ExtractPropsFromArray<T> = Omit<T, keyof unknown[] | `${number}`>;
+
+export const parseOutcomeEventResult = (eventOutcomeResult: unknown[]): Outcome => {
   const outcome: Outcome = [];
 
   if (eventOutcomeResult.length === 0) {
     return outcome;
   }
 
-  eventOutcomeResult.forEach((eventSingleAssetExit: any[]) => {
-    const asset: string = eventSingleAssetExit[0];
-    const assetMetadata: AssetMetadata = {
-      assetType: eventSingleAssetExit[1].assetType,
-      metadata: eventSingleAssetExit[1].metadata,
-    };
-    const eventAllocations: any[] = [...eventSingleAssetExit[2]];
+  for (const eventSingleAssetExit of eventOutcomeResult) {
+    const singleAssetOutcome = convertToStruct(
+      eventSingleAssetExit as unknown[],
+    ) as SingleAssetExit;
+    singleAssetOutcome.assetMetadata = convertToStruct(
+      singleAssetOutcome.assetMetadata as unknown as unknown[],
+    ) as AssetMetadata;
+
     const allocations: Allocation[] = [];
 
-    if (eventAllocations.length > 0) {
-      eventAllocations.forEach((eventAllocation: any[]) => {
-        const destination: string = eventAllocation[0];
-        const amount: string = BigNumber.from(eventAllocation[1]._hex).toString();
-        const allocationType: number = eventAllocation[2];
-        const metadata: string = eventAllocation[3];
-
-        allocations.push({ destination, amount, allocationType, metadata });
-      });
+    if (singleAssetOutcome.allocations.length > 0) {
+      for (const eventAllocation of singleAssetOutcome.allocations) {
+        const allocation = convertToStruct(eventAllocation as unknown as unknown[]) as Allocation;
+        allocations.push(allocation);
+      }
     }
-
-    outcome.push({ asset, assetMetadata, allocations });
-  });
-
+    singleAssetOutcome.allocations = allocations;
+    outcome.push(singleAssetOutcome);
+  }
   return outcome;
 };
 
-export const parseVariablePartEventResult = (vpEventResult: any[]): VariablePart => {
-  vpEventResult = [...vpEventResult];
-  return {
-    outcome: parseOutcomeEventResult(vpEventResult[0]),
-    appData: vpEventResult[1],
-    turnNum: vpEventResult[2],
-    isFinal: vpEventResult[3],
-  };
+export const parseVariablePartEventResult = (vpEventResult: unknown): VariablePart => {
+  const vp = convertToStruct(vpEventResult as unknown[]) as VariablePart;
+  vp.outcome = parseOutcomeEventResult(vp.outcome);
+
+  return vp;
 };
 
 export const newChallengeRegisteredEvent = (
-  contract: ethers.Contract,
+  contract: Contract,
   channelId: string,
 ): Promise<ChallengeRegisteredStruct[keyof ChallengeRegisteredStruct]> => {
   const filter = contract.filters.ChallengeRegistered(channelId);
@@ -162,7 +174,7 @@ export const newChallengeRegisteredEvent = (
 };
 
 export const newChallengeClearedEvent = (
-  contract: ethers.Contract,
+  contract: Contract,
   channelId: string,
 ): Promise<ChallengeClearedEvent[keyof ChallengeClearedEvent]> => {
   const filter = contract.filters.ChallengeCleared(channelId);
@@ -175,10 +187,7 @@ export const newChallengeClearedEvent = (
   });
 };
 
-export const newConcludedEvent = (
-  contract: ethers.Contract,
-  channelId: string,
-): Promise<[Bytes32]> => {
+export const newConcludedEvent = (contract: Contract, channelId: string): Promise<[Bytes32]> => {
   const filter = contract.filters.Concluded(channelId);
   return new Promise((resolve) => {
     contract.on(filter, () => {
@@ -190,7 +199,7 @@ export const newConcludedEvent = (
 };
 
 export const newDepositedEvent = (
-  contract: ethers.Contract,
+  contract: Contract,
   destination: string,
 ): Promise<[string, BigNumber]> => {
   const filter = contract.filters.Deposited(destination);
@@ -204,14 +213,14 @@ export const newDepositedEvent = (
 };
 
 // Copied from https://stackoverflow.com/questions/58325771/how-to-generate-random-hex-string-in-javascript
-const genRanHex = (size: number) =>
-  [...new Array(size)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
+const genRanHex = (size: number): string =>
+  Array.from({ length: size }, () => Math.floor(Math.random() * 16).toString(16)).join('');
 
 export const randomChannelId = (): Bytes32 => '0x' + genRanHex(64);
 export const randomExternalDestination = (): Bytes32 => '0x' + genRanHex(40).padStart(64, '0');
 
 export async function sendTransaction(
-  provider: ethers.providers.JsonRpcProvider,
+  provider: providers.JsonRpcProvider,
   contractAddress: string,
   transaction: providers.TransactionRequest,
 ): Promise<providers.TransactionReceipt> {
@@ -224,7 +233,13 @@ interface Event extends LogDescription {
   contract: string;
 }
 
-export function compileEventsFromLogs(logs: any[], contractsArray: Contract[]): Event[] {
+interface Log {
+  topics: string[];
+  data: string;
+  address: string;
+}
+
+export function compileEventsFromLogs(logs: Log[], contractsArray: Contract[]): Event[] {
   const events: Event[] = [];
   for (const log of logs) {
     for (const contract of contractsArray) {
@@ -236,45 +251,6 @@ export function compileEventsFromLogs(logs: any[], contractsArray: Contract[]): 
   return events;
 }
 
-// Sets the holdings defined in the multipleHoldings object. Requires an array of the relevant contracts to be passed in.
-export function resetMultipleHoldings(
-  multipleHoldings: OutcomeShortHand,
-  contractsArray: Contract[],
-): void {
-  for (const assetHolder of Object.keys(multipleHoldings)) {
-    const holdings = multipleHoldings[assetHolder];
-    Object.keys(holdings).forEach(async (destination) => {
-      const amount = holdings[destination];
-      contractsArray.forEach(async (contract) => {
-        if (contract.address === assetHolder) {
-          await (await contract.setHoldings(destination, amount)).wait();
-          const res = await contract.holdings(destination);
-          expect(res.eq(amount)).to.equal(true);
-        }
-      });
-    });
-  }
-}
-
-// Check the holdings defined in the multipleHoldings object. Requires an array of the relevant contracts to be passed in.
-export function checkMultipleHoldings(
-  multipleHoldings: OutcomeShortHand,
-  contractsArray: Contract[],
-): void {
-  for (const assetHolder of Object.keys(multipleHoldings)) {
-    const holdings = multipleHoldings[assetHolder];
-    Object.keys(holdings).forEach(async (destination) => {
-      const amount = holdings[destination];
-      contractsArray.forEach(async (contract) => {
-        if (contract.address === assetHolder) {
-          const res = await contract.holdings(destination);
-          expect(res.eq(amount)).to.equal(true);
-        }
-      });
-    });
-  }
-}
-
 export const largeOutcome = (
   numAllocationItems: number,
   asset: string = ethers.Wallet.createRandom().address,
@@ -283,31 +259,15 @@ export const largeOutcome = (
   return numAllocationItems > 0
     ? [
         {
-          allocations: new Array(numAllocationItems).fill({
+          allocations: Array.from({ length: numAllocationItems }).fill({
             destination: randomDestination,
             amount: '0x01',
             allocationType: AllocationType.simple,
             metadata: '0x',
-          }),
+          }) as Allocation[],
           asset,
           assetMetadata: { assetType: 0, metadata: '0x' },
         },
       ]
     : [];
 };
-
-// See https://github.com/ethers-io/ethers.js/discussions/2429
-// convertToStruct takes an array-ish type (like those returned from on-chain calls) and converts it to an object type
-export const convertToStruct = <A extends unknown[]>(arr: A): ExtractPropsFromArray<A> => {
-  const keys = Object.keys(arr).filter((key) => Number.isNaN(Number(key)));
-  const result: Record<string, unknown> = {};
-
-  for (const [index, item] of arr.entries()) {
-    result[keys[index]] = item;
-  }
-
-  return result as A;
-};
-
-// This is to remove unnecessary properties from the output type
-export type ExtractPropsFromArray<T> = Omit<T, keyof unknown[] | `${number}`>;

@@ -19,9 +19,9 @@ describe('isExternalDestination', () => {
     },
   ];
 
-  for (const tc of testCases) it(`${tc.bytes32} -- ${tc.result}`, () => {
+  for (const tc of testCases)
+    it(`${tc.bytes32} -- ${String(tc.result)}`, () => {
       const { bytes32, result } = tc as { bytes32: string; result: boolean };
       expect(isExternalDestination(bytes32)).to.equal(result);
-    })
-  ;
+    });
 });

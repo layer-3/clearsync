@@ -1,6 +1,6 @@
-import {defaultAbiCoder} from '@ethersproject/abi';
+import { defaultAbiCoder } from '@ethersproject/abi';
 import * as ExitFormat from '@statechannels/exit-format';
-import {BytesLike, constants, utils} from 'ethers';
+import { BytesLike, constants, utils } from 'ethers';
 
 import type { Bytes32 } from './types';
 
@@ -65,7 +65,7 @@ export function encodeGuaranteeData(guarantee: Guarantee): BytesLike {
 
 export function decodeGuaranteeData(data: BytesLike): Guarantee {
   const result = defaultAbiCoder.decode(['tuple(bytes32 left, bytes32 right)'], data);
-  return {left: result[0][0], right: result[0][1]};
+  return { left: result[0][0] as string, right: result[0][1] as string };
 }
 
 //
@@ -86,17 +86,17 @@ const exampleGuaranteeOutcome1: GuaranteeOutcome = [
         destination: '0xjointchannel1',
         amount: '0xa',
         allocationType: ExitFormat.AllocationType.guarantee,
-        metadata: encodeGuaranteeData({left: B_ADDRESS, right: A_ADDRESS}),
+        metadata: encodeGuaranteeData({ left: B_ADDRESS, right: A_ADDRESS }),
       },
       {
         destination: '0xjointchannel2',
         amount: '0xa',
         allocationType: ExitFormat.AllocationType.guarantee,
-        metadata: encodeGuaranteeData({left: A_ADDRESS, right: B_ADDRESS}),
+        metadata: encodeGuaranteeData({ left: A_ADDRESS, right: B_ADDRESS }),
       },
     ],
   },
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const exampleGuaranteeOutcome2: Outcome = exampleGuaranteeOutcome1; // GuaranteeOutcome is assignable to Outcome
+const __exampleGuaranteeOutcome2: Outcome = exampleGuaranteeOutcome1; // GuaranteeOutcome is assignable to Outcome

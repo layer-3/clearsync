@@ -58,7 +58,7 @@ describe('signatures', () => {
     });
   });
   describe('signChallengeMessage', () => {
-    it('signs a challenge message', async () => {
+    it('signs a challenge message', () => {
       const wallet = Wallet.createRandom();
       const state: State = {
         channelNonce: '0x01',
