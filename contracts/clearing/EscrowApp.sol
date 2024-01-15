@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity ^0.8.20;
 
-import '@statechannels/nitro-protocol/contracts/interfaces/IForceMoveApp.sol';
-import '@statechannels/nitro-protocol/contracts/libraries/NitroUtils.sol';
+import '../nitro/interfaces/IForceMoveApp.sol';
+import '../nitro/libraries/NitroUtils.sol';
 
 /**
  * @dev The EscrowApp contracts complies with the ForceMoveApp interface and uses consensus signatures logic.

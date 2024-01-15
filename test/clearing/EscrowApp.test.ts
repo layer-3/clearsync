@@ -1,4 +1,4 @@
-import { describe } from 'mocha';
+import { describe, it } from 'mocha';
 
 describe('EscrowApp', () => {
   describe('succeed', () => {

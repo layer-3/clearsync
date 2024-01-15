@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity ^0.8.20;
 
-import '@statechannels/nitro-protocol/contracts/interfaces/INitroTypes.sol';
+import '../nitro/interfaces/INitroTypes.sol';
 
 /**
  * @notice Interface

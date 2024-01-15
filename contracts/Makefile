@@ -45,7 +45,7 @@ iyellow_adjudicator_GO = IYellowAdjudicator contracts/interfaces/IYellowAdjudica
 test_erc20_GO = TestERC20 contracts/test/TestERC20.sol/TestERC20.json
 yellow_adjudicator_GO = YellowAdjudicator contracts/clearing/YellowAdjudicator.sol/YellowAdjudicator.json
 yellow_token_GO = YellowToken contracts/YellowToken.sol/YellowToken.json
-consensus_app_GO = ConsensusApp @statechannels/nitro-protocol/contracts/ConsensusApp.sol/ConsensusApp.json
+consensus_app_GO = ConsensusApp contracts/nitro/ConsensusApp.sol/ConsensusApp.json
 margin_app_v1_GO = MarginAppV1 contracts/clearing/MarginAppV1.sol/MarginAppV1.json
 escrow_app_GO = EscrowApp contracts/clearing/EscrowApp.sol/EscrowApp.json
 define gen_binding
