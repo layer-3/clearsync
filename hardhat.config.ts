@@ -6,7 +6,6 @@ import type { HardhatUserConfig } from 'hardhat/config';
 import 'solidity-docgen';
 
 import './src/tasks/accounts';
-import './src/tasks/activate';
 import './src/tasks/vesting';
 
 let accounts;
