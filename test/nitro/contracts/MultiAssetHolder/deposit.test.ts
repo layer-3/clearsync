@@ -176,7 +176,7 @@ describe('deposit', () => {
         expect(balance.gte(held.add(amount))).to.be.true;
 
         // Increase allowance
-        const tx = await token.increaseAllowance(testNitroAdjudicator.address, held.add(amount));
+        const tx = await token.approve(testNitroAdjudicator.address, held.add(amount));
         await tx.wait(); // Approve enough for setup and main test
 
         // Check allowance updated
@@ -192,7 +192,7 @@ describe('deposit', () => {
         expect(balance.gte(held.add(amount))).to.be.true;
 
         // Increase allowance
-        const tx = await badToken.increaseAllowance(testNitroAdjudicator.address, held.add(amount));
+        const tx = await badToken.approve(testNitroAdjudicator.address, held.add(amount));
         await tx.wait(); // Approve enough for setup and main test
 
         // Check allowance updated
