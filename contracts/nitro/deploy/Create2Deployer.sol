@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Taken from https://github.com/OpenZeppelin/openzeppelin-contracts/blob/7201e6707f6631d9499a569f492870ebdd4133cf/contracts/mocks/Create2Impl.sol
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.22;
 
 import {Create2} from '@openzeppelin/contracts/utils/Create2.sol';
 

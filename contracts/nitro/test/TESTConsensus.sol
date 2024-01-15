@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity ^0.8.22;
 
 import {Consensus} from '../libraries/signature-logic/Consensus.sol';
 import {INitroTypes} from '../interfaces/INitroTypes.sol';
