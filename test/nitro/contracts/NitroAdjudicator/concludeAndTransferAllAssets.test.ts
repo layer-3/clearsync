@@ -224,10 +224,7 @@ describe('concludeAndTransferAllAssets', () => {
       // Transfer some tokens into the relevant AssetHolder
       // Do this step before transforming input data (easier)
       if ('ERC20' in heldBefore) {
-        const increaseTx = await token.increaseAllowance(
-          testNitroAdjudicator.address,
-          heldBefore.ERC20.c,
-        );
+        const increaseTx = await token.approve(testNitroAdjudicator.address, heldBefore.ERC20.c);
         await increaseTx.wait();
 
         const depositTx = await testNitroAdjudicator.deposit(

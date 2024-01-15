@@ -106,7 +106,9 @@ describe('Vesting', function () {
           VESTING_1_START,
           VESTING_DURATION,
         ),
-      ).to.be.revertedWith('Ownable: caller is not the owner');
+      )
+        .to.be.revertedWithCustomError(Vesting, 'OwnableUnauthorizedAccount')
+        .withArgs(Someone.address);
     });
 
     it('revert when adding schedule for zero address', async function () {
@@ -177,9 +179,9 @@ describe('Vesting', function () {
         VESTING_1_START,
         VESTING_DURATION,
       );
-      await expect(VestingAsSomeone.deleteSchedule(BeneficiaryAddress, 0)).to.be.revertedWith(
-        'Ownable: caller is not the owner',
-      );
+      await expect(VestingAsSomeone.deleteSchedule(BeneficiaryAddress, 0))
+        .to.be.revertedWithCustomError(Vesting, 'OwnableUnauthorizedAccount')
+        .withArgs(Someone.address);
     });
 
     it('revert when Owner removes non-existent schedule', async function () {

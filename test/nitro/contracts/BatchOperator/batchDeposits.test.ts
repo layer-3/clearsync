@@ -187,36 +187,39 @@ describe('deposit_batch', () => {
       const expectedHeldsBN = expectedHelds.map((x) => BigNumber.from(x));
       const amountsBN = amounts.map((x) => BigNumber.from(x));
       const heldAftersBN = heldAfters.map((x) => BigNumber.from(x));
-      const totalValue = BigNumber.from(amounts.reduce((s, n) => s + n));
+      const totalValue = BigNumber.from(amounts.reduce((acc, curr) => acc + curr));
+      const totalExpectedHeld = BigNumber.from(
+        expectedHelds.reduce((acc, curr) => {
+          // apply incorrect amount if unexpectedHeld reasonString is set
+          return acc + (reasonString == ERR_NOT_EXPECTED_HELD ? curr + 1 : curr);
+        }, 0),
+      );
 
+      // Approve batch deposit and preexisting holdings (if any)
       if (asset === ERC20) {
-        const tx = await token.increaseAllowance(batchOperator.address, totalValue.add(totalValue));
+        let tx = await token.approve(batchOperator.address, totalValue.add(totalValue));
+        await tx.wait();
+
+        tx = await token.approve(nitroAdjudicator.address, totalExpectedHeld);
         await tx.wait();
       }
 
       if (asset === BadERC20) {
-        const tx = await badToken.increaseAllowance(
-          batchOperator.address,
-          totalValue.add(totalValue),
-        );
+        let tx = await badToken.approve(batchOperator.address, totalValue.add(totalValue));
+        await tx.wait();
+
+        tx = await badToken.approve(nitroAdjudicator.address, totalExpectedHeld);
         await tx.wait();
       }
 
-      // Set up preexisting holdings (if any)
+      // Deposit preexisting holdings (if any)
       await Promise.all(
         expectedHeldsBN.map(async (expected, i) => {
           const channelID = channelIds[i];
           // apply incorrect amount if unexpectedHeld reasonString is set
           const value = reasonString == ERR_NOT_EXPECTED_HELD ? expected.add(1) : expected;
 
-          if (asset === ERC20) {
-            const tx = await token.increaseAllowance(nitroAdjudicator.address, value);
-            await tx.wait();
-          }
-          if (asset === BadERC20) {
-            const tx = await badToken.increaseAllowance(nitroAdjudicator.address, value);
-            await tx.wait();
-          }
+          if (value.isZero()) return;
 
           const tx = await nitroAdjudicator.deposit(asset, channelID, 0, value, {
             value: asset === ETH ? value : 0,

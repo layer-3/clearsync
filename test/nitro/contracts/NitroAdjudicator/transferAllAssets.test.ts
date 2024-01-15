@@ -108,10 +108,7 @@ describe('transferAllAssets', () => {
               const amount = heldBefore[asset][destination];
               if (asset != MAGIC_ADDRESS_INDICATING_ETH) {
                 // Increase allowance
-                const increaseTx = await token.increaseAllowance(
-                  testNitroAdjudicator.address,
-                  amount,
-                );
+                const increaseTx = await token.approve(testNitroAdjudicator.address, amount);
                 await increaseTx.wait(); // Approve enough for setup and main test
               }
               const depositTx = await testNitroAdjudicator.deposit(asset, destination, 0, amount, {
