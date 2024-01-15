@@ -87,7 +87,7 @@ contract VestingVault is Ownable {
 	 * @dev Initializes the contract with the given ERC20 token.
 	 * @param token_ The address of the ERC20 token.
 	 */
-	constructor(IERC20 token_) {
+	constructor(IERC20 token_) Ownable(msg.sender) {
 		if (address(token_) == address(0)) revert InvalidTokenAddress(address(token_));
 		token = token_;
 	}
