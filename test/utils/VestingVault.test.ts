@@ -47,7 +47,12 @@ describe('Vesting', function () {
     snapshot = await takeSnapshot();
 
     const TestERC20Factory = await ethers.getContractFactory('TestERC20');
-    ERC20 = (await TestERC20Factory.deploy('TestToken', 'TTK', TOKEN_CAP)) as TestERC20;
+    ERC20 = (await TestERC20Factory.deploy(
+      'TestToken',
+      'TTK',
+      TOKEN_DECIMALS,
+      TOKEN_CAP,
+    )) as TestERC20;
     await ERC20.deployed();
 
     const VestingVaultFactory = await ethers.getContractFactory('VestingVault');
