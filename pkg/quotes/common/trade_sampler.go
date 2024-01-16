@@ -1,4 +1,4 @@
-package quotes
+package common
 
 import (
 	"math/rand"
