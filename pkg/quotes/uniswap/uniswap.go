@@ -1,4 +1,4 @@
-package quotes
+package uniswap
 
 import (
 	"bytes"
@@ -11,37 +11,42 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ipfs/go-log/v2"
 	"github.com/shopspring/decimal"
+
+	"github.com/layer-3/clearsync/pkg/quotes/common"
 )
 
-type uniswapV3 struct {
-	once       *once
+var logger = log.Logger("uniswap")
+
+type UniswapV3 struct {
+	once       *common.Once
 	url        string
-	outbox     chan<- TradeEvent
+	outbox     chan<- common.TradeEvent
 	windowSize time.Duration
 	streams    sync.Map
 }
 
-func newUniswapV3(config Config, outbox chan<- TradeEvent) *uniswapV3 {
+func NewUniswapV3(config common.Config, outbox chan<- common.TradeEvent) *UniswapV3 {
 	url := "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3"
 	if config.URL != "" {
 		url = config.URL
 	}
 
-	return &uniswapV3{
-		once:       newOnce(),
+	return &UniswapV3{
+		once:       common.NewOnce(),
 		url:        url,
 		outbox:     outbox,
 		windowSize: 2 * time.Second,
 	}
 }
 
-func (u *uniswapV3) Start() error {
+func (u *UniswapV3) Start() error {
 	u.once.Start(func() {})
 	return nil
 }
 
-func (u *uniswapV3) Stop() error {
+func (u *UniswapV3) Stop() error {
 	u.once.Stop(func() {
 		u.streams.Range(func(market, stream any) bool {
 			stopCh := stream.(chan struct{})
@@ -55,11 +60,11 @@ func (u *uniswapV3) Stop() error {
 	return nil
 }
 
-func (u *uniswapV3) Subscribe(market Market) error {
+func (u *UniswapV3) Subscribe(market common.Market) error {
 	symbol := market.BaseUnit + market.QuoteUnit
 
 	if _, ok := u.streams.Load(market); ok {
-		return fmt.Errorf("%s: %w", market, ErrAlreadySubbed)
+		return fmt.Errorf("%s: %w", market, common.ErrAlreadySubbed)
 	}
 
 	exists, err := u.isMarketAvailable(market)
@@ -101,13 +106,13 @@ func (u *uniswapV3) Subscribe(market Market) error {
 						logger.Warnf("failed to get swap timestamp: %s", err)
 					}
 
-					u.outbox <- TradeEvent{
-						Source:    DriverUniswapV3,
+					u.outbox <- common.TradeEvent{
+						Source:    common.DriverUniswapV3,
 						Market:    market.QuoteUnit,
 						Price:     price,
 						Amount:    swap.Amount0,
 						Total:     price.Mul(swap.Amount0),
-						TakerType: TakerTypeSell,
+						TakerType: common.TakerTypeSell,
 						CreatedAt: createdAt,
 					}
 				}
@@ -119,10 +124,10 @@ func (u *uniswapV3) Subscribe(market Market) error {
 	return nil
 }
 
-func (u *uniswapV3) Unsubscribe(market Market) error {
+func (u *UniswapV3) Unsubscribe(market common.Market) error {
 	stream, ok := u.streams.Load(market)
 	if !ok {
-		return fmt.Errorf("%s: %w", market, ErrNotSubbed)
+		return fmt.Errorf("%s: %w", market, common.ErrNotSubbed)
 	}
 
 	stopCh := stream.(chan struct{})
@@ -140,7 +145,7 @@ const tokenTemplate = `query {
  }
 }`
 
-func (u *uniswapV3) isMarketAvailable(market Market) (bool, error) {
+func (u *UniswapV3) isMarketAvailable(market common.Market) (bool, error) {
 	query := fmt.Sprintf(tokenTemplate,
 		strings.ToUpper(market.BaseUnit),
 		strings.ToUpper(market.QuoteUnit),
@@ -175,7 +180,7 @@ const swapsTemplate = `query {
   }
 }`
 
-func (u *uniswapV3) fetchSwaps(market Market, from, to time.Time) ([]uniswapSwap, error) {
+func (u *UniswapV3) fetchSwaps(market common.Market, from, to time.Time) ([]uniswapSwap, error) {
 	query := fmt.Sprintf(swapsTemplate,
 		from.Unix(),
 		to.Unix(),
