@@ -8,30 +8,35 @@ import (
 
 	gobinance "github.com/adshao/go-binance/v2"
 	"github.com/shopspring/decimal"
+	"github.com/ipfs/go-log/v2"
+
+  "github.com/layer-3/clearsync/pkg/quotes/common"
 )
 
-type binance struct {
-	once         *once
+var logger = log.Logger("trade_sampler")
+
+type Binance struct {
+	once         *common.Once
 	streams      sync.Map
-	tradeSampler tradeSampler
-	outbox       chan<- TradeEvent
+	tradeSampler common.TradeSampler
+	outbox       chan<- common.TradeEvent
 }
 
-func newBinance(config Config, outbox chan<- TradeEvent) *binance {
+func NewBinance(config common.Config, outbox chan<- common.TradeEvent) *Binance {
 	gobinance.WebsocketKeepalive = true
-	return &binance{
-		once:         newOnce(),
-		tradeSampler: *newTradeSampler(config.TradeSampler),
+	return &Binance{
+		once:         common.NewOnce(),
+		tradeSampler: *common.NewTradeSampler(config.TradeSampler),
 		outbox:       outbox,
 	}
 }
 
-func (b *binance) Start() error {
+func (b *Binance) Start() error {
 	b.once.Start(func() {})
 	return nil
 }
 
-func (b *binance) Stop() error {
+func (b *Binance) Stop() error {
 	b.once.Stop(func() {
 		b.streams.Range(func(key, value any) bool {
 			stopCh := value.(chan struct{})
@@ -45,10 +50,10 @@ func (b *binance) Stop() error {
 	return nil
 }
 
-func (b *binance) Subscribe(market Market) error {
+func (b *Binance) Subscribe(market common.Market) error {
 	pair := strings.ToUpper(market.BaseUnit) + strings.ToUpper(market.QuoteUnit)
 	if _, ok := b.streams.Load(pair); ok {
-		return fmt.Errorf("%s: %w", market, ErrAlreadySubbed)
+		return fmt.Errorf("%s: %w", market, common.ErrAlreadySubbed)
 	}
 
 	handleErr := func(err error) {
@@ -57,7 +62,7 @@ func (b *binance) Subscribe(market Market) error {
 
 	doneCh, stopCh, err := gobinance.WsTradeServe(pair, b.handleTrade, handleErr)
 	if err != nil {
-		return fmt.Errorf("%s: %w: %w", market, ErrFailedSub, err)
+		return fmt.Errorf("%s: %w: %w", market, common.ErrFailedSub, err)
 	}
 	b.streams.Store(pair, stopCh)
 
@@ -76,11 +81,11 @@ func (b *binance) Subscribe(market Market) error {
 	return nil
 }
 
-func (b *binance) Unsubscribe(market Market) error {
+func (b *Binance) Unsubscribe(market common.Market) error {
 	pair := strings.ToUpper(market.BaseUnit) + strings.ToUpper(market.QuoteUnit)
 	stream, ok := b.streams.Load(pair)
 	if !ok {
-		return fmt.Errorf("%s: %w", market, ErrNotSubbed)
+		return fmt.Errorf("%s: %w", market, common.ErrNotSubbed)
 	}
 
 	stopCh := stream.(chan struct{})
@@ -91,8 +96,8 @@ func (b *binance) Unsubscribe(market Market) error {
 	return nil
 }
 
-func (b *binance) handleTrade(event *gobinance.WsTradeEvent) {
-	tradeEvent, err := buildBinanceEvent(event)
+func (b *Binance) handleTrade(event *gobinance.WsTradeEvent) {
+	tradeEvent, err := buildEvent(event)
 	if err != nil {
 		logger.Error(err)
 		return
@@ -105,28 +110,28 @@ func (b *binance) handleTrade(event *gobinance.WsTradeEvent) {
 	b.outbox <- tradeEvent
 }
 
-func buildBinanceEvent(tr *gobinance.WsTradeEvent) (TradeEvent, error) {
+func buildEvent(tr *gobinance.WsTradeEvent) (common.TradeEvent, error) {
 	price, err := decimal.NewFromString(tr.Price)
 	if err != nil {
 		logger.Warn(err)
-		return TradeEvent{}, err
+		return common.TradeEvent{}, err
 	}
 
 	amount, err := decimal.NewFromString(tr.Quantity)
 	if err != nil {
 		logger.Warn(err)
-		return TradeEvent{}, err
+		return common.TradeEvent{}, err
 	}
 
 	// IsBuyerMaker: true => the trade was initiated by the sell-side; the buy-side was the order book already.
 	// IsBuyerMaker: false => the trade was initiated by the buy-side; the sell-side was the order book already.
-	takerType := TakerTypeBuy
+	takerType := common.TakerTypeBuy
 	if tr.IsBuyerMaker {
-		takerType = TakerTypeSell
+		takerType = common.TakerTypeSell
 	}
 
-	return TradeEvent{
-		Source:    DriverBinance,
+	return common.TradeEvent{
+		Source:    common.DriverBinance,
 		Market:    strings.ToLower(tr.Symbol),
 		Price:     price,
 		Amount:    amount,
