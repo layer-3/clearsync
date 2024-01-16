@@ -1,4 +1,4 @@
-package quotes
+package bitfaker
 
 import (
 	"fmt"
@@ -6,29 +6,31 @@ import (
 	"time"
 
 	"github.com/shopspring/decimal"
+
+  "github.com/layer-3/clearsync/pkg/quotes/common"
 )
 
-type bitfaker struct {
-	once         *once
+type Bitfaker struct {
+	once         *common.Once
 	mu           sync.RWMutex
-	streams      []Market
-	outbox       chan<- TradeEvent
+	streams      []common.Market
+	outbox       chan<- common.TradeEvent
 	stopCh       chan struct{}
 	period       time.Duration
-	tradeSampler tradeSampler
+	tradeSampler common.TradeSampler
 }
 
-func newBitfaker(config Config, outbox chan<- TradeEvent) *bitfaker {
-	return &bitfaker{
-		streams:      make([]Market, 0),
+func NewBitfaker(config common.Config, outbox chan<- common.TradeEvent) *Bitfaker {
+	return &Bitfaker{
+		streams:      make([]common.Market, 0),
 		outbox:       outbox,
 		stopCh:       make(chan struct{}, 1),
 		period:       5 * time.Second,
-		tradeSampler: *newTradeSampler(config.TradeSampler),
+		tradeSampler: *common.NewTradeSampler(config.TradeSampler),
 	}
 }
 
-func (b *bitfaker) Start() error {
+func (b *Bitfaker) Start() error {
 	b.once.Start(func() {
 		go func() {
 			for {
@@ -50,24 +52,24 @@ func (b *bitfaker) Start() error {
 	return nil
 }
 
-func (b *bitfaker) Stop() error {
+func (b *Bitfaker) Stop() error {
 	b.once.Stop(func() {
 		b.mu.Lock()
 		defer b.mu.Unlock()
 
 		b.stopCh <- struct{}{}
-		b.streams = make([]Market, 0)
+		b.streams = make([]common.Market, 0)
 	})
 	return nil
 }
 
-func (b *bitfaker) Subscribe(market Market) error {
+func (b *Bitfaker) Subscribe(market common.Market) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
 	for _, m := range b.streams {
 		if m == market {
-			return fmt.Errorf("%s: %w", market, ErrAlreadySubbed)
+			return fmt.Errorf("%s: %w", market, common.ErrAlreadySubbed)
 		}
 	}
 
@@ -75,7 +77,7 @@ func (b *bitfaker) Subscribe(market Market) error {
 	return nil
 }
 
-func (b *bitfaker) Unsubscribe(market Market) error {
+func (b *Bitfaker) Unsubscribe(market common.Market) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
@@ -88,18 +90,18 @@ func (b *bitfaker) Unsubscribe(market Market) error {
 	}
 
 	if index == -1 {
-		return fmt.Errorf("%s: %w", market, ErrNotSubbed)
+		return fmt.Errorf("%s: %w", market, common.ErrNotSubbed)
 	}
 
 	b.streams = append(b.streams[:index], b.streams[index+1:]...)
 	return nil
 }
 
-func (b *bitfaker) createTradeEvent(market Market) {
-	tr := TradeEvent{
+func (b *Bitfaker) createTradeEvent(market common.Market) {
+	tr := common.TradeEvent{
 		Market: market.BaseUnit + market.QuoteUnit,
 		Price:  decimal.NewFromFloat(2.213),
-		Source: DriverBitfaker,
+		Source: common.DriverBitfaker,
 	}
 
 	b.outbox <- tr
