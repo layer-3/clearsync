@@ -12,6 +12,18 @@ Yellow Network may be conducting testing and operations on different networks, a
 
 ### Goerli
 
+Chain id: 5.
+
+#### Contracts Deployed
+
+Last updated: January 16, 2024.
+
+Repository: [layer-3/ClearSync](https://github.com/layer-3/clearsync).
+
+| Description                | Contract Name | Transaction Hash                                                                                                   | Address                                                                                                                         | Git SHA                                  |
+| -------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| Yellow Duckies ERC20 Token | YellowToken   | [0x7675...5818](https://goerli.etherscan.io/tx/0x7675c666d57dda171d22991622d022e7d1e55d7c0db0e2ea2e24b1581b4f5818) | `0x4FFE87BDBa8bd5872Db30e8425CceC0Bd1a0E825`[↗](https://goerli.etherscan.io/address/0x4FFE87BDBa8bd5872Db30e8425CceC0Bd1a0E825) | 418c72494d451b5c4593b602993b71d95517b83f |
+
 ### Sepolia
 
 Chain id: 11155111.
