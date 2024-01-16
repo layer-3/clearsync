@@ -12,7 +12,7 @@ func TestOnce_Start(t *testing.T) {
 	t.Run("Should call the function only once", func(t *testing.T) {
 		t.Parallel()
 
-		o := newOnce()
+		o := NewOnce()
 		startedChan := make(chan bool, 2)
 		defer close(startedChan)
 
@@ -25,7 +25,7 @@ func TestOnce_Start(t *testing.T) {
 	t.Run("Should reset the STOP action", func(t *testing.T) {
 		t.Parallel()
 
-		o := newOnce()
+		o := NewOnce()
 		startedChan := make(chan bool, 2)
 		defer close(startedChan)
 
@@ -43,7 +43,7 @@ func TestOnce_Stop(t *testing.T) {
 	t.Run("Should call the function only once", func(t *testing.T) {
 		t.Parallel()
 
-		o := newOnce()
+		o := NewOnce()
 		stoppedChan := make(chan bool, 2)
 		defer close(stoppedChan)
 
@@ -57,7 +57,7 @@ func TestOnce_Stop(t *testing.T) {
 	t.Run("Should reset the START action", func(t *testing.T) {
 		t.Parallel()
 
-		o := newOnce()
+		o := NewOnce()
 		stoppedChan := make(chan bool, 2)
 		defer close(stoppedChan)
 

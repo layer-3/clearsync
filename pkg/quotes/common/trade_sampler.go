@@ -2,21 +2,25 @@ package common
 
 import (
 	"math/rand"
+
+	"github.com/ipfs/go-log/v2"
 )
 
-type tradeSampler struct {
+var logger = log.Logger("trade_sampler")
+
+type TradeSampler struct {
 	enabled           bool
 	defaultPercentage int
 }
 
-func newTradeSampler(conf TradeSamplerConfig) *tradeSampler {
-	return &tradeSampler{
+func NewTradeSampler(conf TradeSamplerConfig) *TradeSampler {
+	return &TradeSampler{
 		enabled:           conf.Enabled,
 		defaultPercentage: conf.DefaultPercentage,
 	}
 }
 
-func (ts *tradeSampler) Allow(trade TradeEvent) bool {
+func (ts *TradeSampler) Allow(trade TradeEvent) bool {
 	if !ts.enabled {
 		return true
 	}
