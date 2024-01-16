@@ -140,6 +140,14 @@ const config: HardhatUserConfig = {
       url: process.env.ZKSYNC_TESTNET_URL ?? '',
       accounts,
     },
+    linea: {
+      url: process.env.LINEA_URL ?? '',
+      accounts,
+    },
+    'linea-testnet': {
+      url: process.env.LINEA_TESTNET_URL ?? '',
+      accounts,
+    },
   },
   docgen: {
     output: 'docs',
