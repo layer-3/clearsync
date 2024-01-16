@@ -1,4 +1,4 @@
-package quotes
+package opendax
 
 import (
 	"encoding/json"
@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/layer-3/clearsync/pkg/quotes/common"
 	"github.com/layer-3/clearsync/pkg/quotes/opendax/protocol"
 )
 
@@ -25,7 +26,7 @@ type ODDialerSuccessMock struct {
 	isConnected        bool
 }
 
-func (dialer *ODDialerSuccessMock) Dial(_ string, _ http.Header) (wsTransport, *http.Response, error) {
+func (dialer *ODDialerSuccessMock) Dial(_ string, _ http.Header) (common.WsTransport, *http.Response, error) {
 	select {
 	case dialer.reconnectAttempted <- true:
 	default:
@@ -88,14 +89,14 @@ func TestOpendax_parseOpendaxMsg(t *testing.T) {
 		require.NoError(t, err)
 
 		number, _ := decimal.NewFromString("1")
-		expVal := &TradeEvent{
+		expVal := &common.TradeEvent{
 			Market:    "btcusd",
 			Price:     number,
 			Amount:    number,
 			Total:     number,
-			TakerType: TakerTypeBuy,
+			TakerType: common.TakerTypeBuy,
 			CreatedAt: time.Unix(1, 0),
-			Source:    DriverOpendax,
+			Source:    common.DriverOpendax,
 		}
 		assert.Equal(t, expVal, tradeEvent)
 	})
@@ -134,25 +135,25 @@ func TestOpendax_Subscribe(t *testing.T) {
 	t.Run("Successful test", func(t *testing.T) {
 		t.Parallel()
 
-		client := &opendax{
+		client := &Opendax{
 			conn: &ODAPIMock{
 				messages:    []ODAPIMockMsg{{}},
 				isConnected: true,
 			},
 		}
 
-		err := client.Subscribe(Market{BaseUnit: "btc", QuoteUnit: "usdt"})
+		err := client.Subscribe(common.Market{BaseUnit: "btc", QuoteUnit: "usdt"})
 		require.NoError(t, err)
 	})
 
 	t.Run("Fail test", func(t *testing.T) {
 		t.Parallel()
 
-		client := &opendax{
+		client := &Opendax{
 			conn: &ODAPIMock{isConnected: false},
 		}
 
-		err := client.Subscribe(Market{BaseUnit: "btc", QuoteUnit: "usdt"})
+		err := client.Subscribe(common.Market{BaseUnit: "btc", QuoteUnit: "usdt"})
 		require.Error(t, err)
 	})
 }
@@ -160,7 +161,7 @@ func TestOpendax_Subscribe(t *testing.T) {
 func TestOpendax_Stop(t *testing.T) {
 	t.Parallel()
 
-	client := opendax{once: newOnce(), conn: &ODAPIMock{}}
+	client := Opendax{once: common.NewOnce(), conn: &ODAPIMock{}}
 
 	client.once.Start(func() {}) // unblock STOP action
 	require.NoError(t, client.Stop())
@@ -177,7 +178,7 @@ func TestOpendax_connect(t *testing.T) {
 			messages:           []ODAPIMockMsg{{}},
 			isConnected:        true,
 		}
-		client := opendax{
+		client := Opendax{
 			conn:   nil,
 			period: 0,
 			dialer: connMock,
@@ -197,8 +198,8 @@ func TestOpendax_listen(t *testing.T) {
 		t.Parallel()
 
 		// Setup an error message
-		outbox := make(chan TradeEvent, 1)
-		client := &opendax{
+		outbox := make(chan common.TradeEvent, 1)
+		client := &Opendax{
 			conn: &ODAPIMock{
 				messages:    []ODAPIMockMsg{},
 				isConnected: true,
@@ -235,8 +236,8 @@ func TestOpendax_listen(t *testing.T) {
 		rawMsg, err := update.Encode()
 		require.NoError(t, err)
 
-		outbox := make(chan TradeEvent, 1)
-		client := &opendax{
+		outbox := make(chan common.TradeEvent, 1)
+		client := &Opendax{
 			conn: &ODAPIMock{
 				messages:    []ODAPIMockMsg{{m: rawMsg}},
 				isConnected: true,
@@ -257,7 +258,7 @@ func TestOpendax_listen(t *testing.T) {
 	t.Run("Should return if connection is nil", func(t *testing.T) {
 		t.Parallel()
 
-		client := &opendax{conn: nil}
+		client := &Opendax{conn: nil}
 		require.NotPanics(t, func() { client.listen() })
 	})
 }

@@ -1,4 +1,4 @@
-package quotes
+package opendax
 
 import (
 	"errors"
@@ -8,40 +8,44 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/ipfs/go-log/v2"
 	"github.com/shopspring/decimal"
 
+	"github.com/layer-3/clearsync/pkg/quotes/common"
 	"github.com/layer-3/clearsync/pkg/quotes/opendax/protocol"
 )
 
-type opendax struct {
-	once   *once
-	conn   wsTransport
-	dialer wsDialer
+var logger = log.Logger("opendax")
+
+type Opendax struct {
+	once   *common.Once
+	conn   common.WsTransport
+	dialer common.WsDialer
 	url    string
 
-	outbox  chan<- TradeEvent
+	outbox  chan<- common.TradeEvent
 	period  time.Duration
 	reqID   atomic.Uint64
 	streams sync.Map
 }
 
-func newOpendax(config Config, outbox chan<- TradeEvent) *opendax {
+func NewOpendax(config common.Config, outbox chan<- common.TradeEvent) *Opendax {
 	url := "wss://alpha.yellow.org/api/v1/finex/ws"
 	if config.URL != "" {
 		url = config.URL
 	}
 
-	return &opendax{
-		once:   newOnce(),
+	return &Opendax{
+		once:   common.NewOnce(),
 		url:    url,
 		outbox: outbox,
 		period: config.ReconnectPeriod * time.Second,
 		reqID:  atomic.Uint64{},
-		dialer: wsDialWrapper{},
+		dialer: common.WsDialWrapper{},
 	}
 }
 
-func (o *opendax) Start() error {
+func (o *Opendax) Start() error {
 	o.once.Start(func() {
 		o.connect()
 		go o.listen()
@@ -49,7 +53,7 @@ func (o *opendax) Start() error {
 	return nil
 }
 
-func (o *opendax) Stop() error {
+func (o *Opendax) Stop() error {
 	var stopErr error
 	o.once.Stop(func() {
 		conn := o.conn
@@ -63,9 +67,9 @@ func (o *opendax) Stop() error {
 	return stopErr
 }
 
-func (o *opendax) Subscribe(market Market) error {
+func (o *Opendax) Subscribe(market common.Market) error {
 	if _, ok := o.streams.Load(market); ok {
-		return fmt.Errorf("%s: %w", market, ErrAlreadySubbed)
+		return fmt.Errorf("%s: %w", market, common.ErrAlreadySubbed)
 	}
 
 	// Opendax resource [market].[trades]
@@ -75,16 +79,16 @@ func (o *opendax) Subscribe(market Market) error {
 
 	err := o.writeConn(message)
 	if err != nil {
-		return fmt.Errorf("%s: %w: %w", market, ErrFailedSub, err)
+		return fmt.Errorf("%s: %w: %w", market, common.ErrFailedSub, err)
 	}
 
 	o.streams.Store(market, struct{}{})
 	return nil
 }
 
-func (o *opendax) Unsubscribe(market Market) error {
+func (o *Opendax) Unsubscribe(market common.Market) error {
 	if _, ok := o.streams.Load(market); !ok {
-		return fmt.Errorf("%s: %w", market, ErrNotSubbed)
+		return fmt.Errorf("%s: %w", market, common.ErrNotSubbed)
 	}
 
 	// Opendax resource [market].[trades]
@@ -94,14 +98,14 @@ func (o *opendax) Unsubscribe(market Market) error {
 
 	err := o.writeConn(message)
 	if err != nil {
-		return fmt.Errorf("%s: %w: %w", market, ErrFailedUnsub, err)
+		return fmt.Errorf("%s: %w: %w", market, common.ErrFailedUnsub, err)
 	}
 
 	o.streams.Delete(market)
 	return nil
 }
 
-func (o *opendax) connect() {
+func (o *Opendax) connect() {
 	for {
 		var err error
 		o.conn, _, err = o.dialer.Dial(o.url, nil)
@@ -114,7 +118,7 @@ func (o *opendax) connect() {
 	}
 }
 
-func (o *opendax) writeConn(message *protocol.Msg) error {
+func (o *Opendax) writeConn(message *protocol.Msg) error {
 	byteMsg, err := message.Encode()
 	if err != nil {
 		logger.Warn(err)
@@ -133,7 +137,7 @@ func (o *opendax) writeConn(message *protocol.Msg) error {
 	return nil
 }
 
-func (o *opendax) listen() {
+func (o *Opendax) listen() {
 	for {
 		if o.conn == nil {
 			return
@@ -148,7 +152,7 @@ func (o *opendax) listen() {
 
 			o.connect()
 			o.streams.Range(func(m, value any) bool {
-				market := m.(Market)
+				market := m.(common.Market)
 				if err := o.Subscribe(market); err != nil {
 					logger.Warnf("Error subscribing to market %s: %s", market, err)
 					return false
@@ -173,9 +177,9 @@ func (o *opendax) listen() {
 	}
 }
 
-func parseOpendaxMsg(message []byte) (*TradeEvent, error) {
+func parseOpendaxMsg(message []byte) (*common.TradeEvent, error) {
 	if message == nil {
-		return &TradeEvent{}, nil
+		return &common.TradeEvent{}, nil
 	}
 	parsedMsg, err := protocol.ParseRaw(message)
 	if err != nil {
@@ -185,7 +189,7 @@ func parseOpendaxMsg(message []byte) (*TradeEvent, error) {
 	tradeEvent, err := convertToTrade(parsedMsg.Args)
 	if errors.Is(err, errors.New(protocol.ParseError)) || parsedMsg.Method == protocol.MethodSubscribe || parsedMsg.
 		Method == protocol.EventSystem {
-		return &TradeEvent{}, nil
+		return &common.TradeEvent{}, nil
 	}
 	if err != nil {
 		return nil, err
@@ -194,7 +198,7 @@ func parseOpendaxMsg(message []byte) (*TradeEvent, error) {
 	return tradeEvent, nil
 }
 
-func convertToTrade(args []interface{}) (*TradeEvent, error) {
+func convertToTrade(args []interface{}) (*common.TradeEvent, error) {
 	it := protocol.NewArgIterator(args)
 
 	market := it.NextString()
@@ -210,8 +214,8 @@ func convertToTrade(args []interface{}) (*TradeEvent, error) {
 	}
 	_ = it.NextString() // trade source
 
-	return &TradeEvent{
-		Source:    DriverOpendax,
+	return &common.TradeEvent{
+		Source:    common.DriverOpendax,
 		Market:    market,
 		Price:     price,
 		Amount:    amount,
@@ -221,13 +225,13 @@ func convertToTrade(args []interface{}) (*TradeEvent, error) {
 	}, it.Err()
 }
 
-func recognizeSide(side string) (TakerType, error) {
+func recognizeSide(side string) (common.TakerType, error) {
 	switch side {
 	case protocol.OrderSideSell:
-		return TakerTypeSell, nil
+		return common.TakerTypeSell, nil
 	case protocol.OrderSideBuy:
-		return TakerTypeBuy, nil
+		return common.TakerTypeBuy, nil
 	default:
-		return TakerTypeUnknown, errors.New("order side invalid: " + side)
+		return common.TakerTypeUnknown, errors.New("order side invalid: " + side)
 	}
 }
