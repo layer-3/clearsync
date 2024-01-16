@@ -1,0 +1,53 @@
+{
+  "tokens": [
+    {
+      "chainId": 11155111,
+      "address": "0x98e255A2D9e36d5174a7787aBA7053e60F47Fc08",
+      "name": "USD Tether",
+      "symbol": "USDT",
+      "decimals": 6
+    },
+    {
+      "chainId": 11155111,
+      "address": "0x42b757f0B530cb44139ceDd9F0C47249175CBC7E",
+      "name": "USD Coin",
+      "symbol": "USDC",
+      "decimals": 6
+    },
+    {
+      "chainId": 11155111,
+      "address": "0x3e594179ad7E013f817bCddF310a7e75b2b069a9",
+      "name": "Shiba Inu",
+      "symbol": "SHIB",
+      "decimals": 18
+    },
+    {
+      "chainId": 11155111,
+      "address": "0x9cEF6720Ba49c8C94Df1CfA0D713828B7B9fAEB1",
+      "name": "Bitcoin",
+      "symbol": "BTC",
+      "decimals": 18
+    },
+    {
+      "chainId": 11155111,
+      "address": "0x2Ff553CA05b647b0e352fe25828BB754a35Ff7dE",
+      "name": "Ether",
+      "symbol": "ETH",
+      "decimals": 18
+    },
+    {
+      "chainId": 11155111,
+      "address": "0x4e519DD7b0137D3D7a3Fe8EA2aC38E9c598230DB",
+      "name": "Polygon",
+      "symbol": "MATIC",
+      "decimals": 18
+    },
+    {
+      "chainId": 11155111,
+      "address": "0x63FD175d3215779deBA7532fC660fA0E10c18676",
+      "name": "Duckies, the canary network for Yellow ",
+      "symbol": "DUCKIES",
+      "decimals": 2
+    }
+  ]
+}

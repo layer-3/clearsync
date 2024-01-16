@@ -1,7 +1,7 @@
 {
   "chainId": 828282,
   "blockchainRPC": "wss://ethnode.v4.uat.opendax.app/",
-  "adjudicatorAddress": "0x2Ff553CA05b647b0e352fe25828BB754a35Ff7dE",
+  "adjudicatorAddress": "0x91839367E05d0E1E8595bbE7Ced11221e0887D28",
   "clearingAppAddress": "0xe53e9270110103aC0D25196eA946ACCe8177498C",
   "escrowAppAddress": "0x232cF836f8860ba3D0b4eAC9Fa8fe592d420C076",
   "marginTokenAddress": "0xa52755E0dbb3fEa119Ddef928149C6bbe0709F5B"

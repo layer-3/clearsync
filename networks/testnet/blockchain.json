@@ -1,0 +1,8 @@
+{
+  "chainId": 11155111,
+  "blockchainRPC": "https://sepolia.infura.io/v3/a655b83e4be64f6a9b05d5b4ab43cf74",
+  "adjudicatorAddress": "0x47871f064d0b2ABf9190275C4D69f466C98fBD77",
+  "clearingAppAddress": "0xa6F5563CD2D38a0c1F2D41DF7Eff7181bf3c6a7e",
+  "escrowAppAddress": "0xcccb67333fEefb04e85521fF0c219Cdb12539b84",
+  "marginTokenAddress": "0xa52755E0dbb3fEa119Ddef928149C6bbe0709F5B"
+}
