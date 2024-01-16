@@ -7,13 +7,13 @@ import (
 	"time"
 
 	gobinance "github.com/adshao/go-binance/v2"
-	"github.com/shopspring/decimal"
 	"github.com/ipfs/go-log/v2"
+	"github.com/shopspring/decimal"
 
-  "github.com/layer-3/clearsync/pkg/quotes/common"
+	"github.com/layer-3/clearsync/pkg/quotes/common"
 )
 
-var logger = log.Logger("trade_sampler")
+var logger = log.Logger("binance")
 
 type Binance struct {
 	once         *common.Once

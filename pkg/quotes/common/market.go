@@ -22,4 +22,3 @@ type TradeEvent struct {
 	TakerType TakerType
 	CreatedAt time.Time
 }
-

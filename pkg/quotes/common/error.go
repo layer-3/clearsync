@@ -8,4 +8,3 @@ var (
 	ErrFailedSub     = errors.New("failed to subscribe to market")
 	ErrFailedUnsub   = errors.New("failed to unsubscribe from market")
 )
-

@@ -7,7 +7,7 @@ import (
 
 	"github.com/shopspring/decimal"
 
-  "github.com/layer-3/clearsync/pkg/quotes/common"
+	"github.com/layer-3/clearsync/pkg/quotes/common"
 )
 
 type Bitfaker struct {

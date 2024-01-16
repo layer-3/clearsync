@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-  "github.com/layer-3/clearsync/pkg/quotes/common"
+	"github.com/layer-3/clearsync/pkg/quotes/common"
 )
 
 func TestBitfaker_Subscribe(t *testing.T) {
