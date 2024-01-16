@@ -29,7 +29,7 @@ type Opendax struct {
 	streams sync.Map
 }
 
-func NewOpendax(config common.Config, outbox chan<- common.TradeEvent) *Opendax {
+func New(config common.Config, outbox chan<- common.TradeEvent) *Opendax {
 	url := "wss://alpha.yellow.org/api/v1/finex/ws"
 	if config.URL != "" {
 		url = config.URL
@@ -113,7 +113,7 @@ func (o *Opendax) connect() {
 			return
 		}
 
-    logger.Warnf("connection attempt failed: %s", err.Error())
+		logger.Warnf("connection attempt failed: %s", err.Error())
 		time.Sleep(o.period)
 	}
 }

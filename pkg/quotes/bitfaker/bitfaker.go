@@ -20,7 +20,7 @@ type Bitfaker struct {
 	tradeSampler common.TradeSampler
 }
 
-func NewBitfaker(config common.Config, outbox chan<- common.TradeEvent) *Bitfaker {
+func New(config common.Config, outbox chan<- common.TradeEvent) *Bitfaker {
 	return &Bitfaker{
 		streams:      make([]common.Market, 0),
 		outbox:       outbox,

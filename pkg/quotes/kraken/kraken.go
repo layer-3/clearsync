@@ -31,7 +31,7 @@ type Kraken struct {
 	outbox         chan<- common.TradeEvent
 }
 
-func NewKraken(config common.Config, outbox chan<- common.TradeEvent) *Kraken {
+func New(config common.Config, outbox chan<- common.TradeEvent) *Kraken {
 	url := "wss://ws.kraken.com/v2"
 	if config.URL != "" {
 		url = config.URL

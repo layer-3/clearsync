@@ -22,7 +22,7 @@ type Binance struct {
 	outbox       chan<- common.TradeEvent
 }
 
-func NewBinance(config common.Config, outbox chan<- common.TradeEvent) *Binance {
+func New(config common.Config, outbox chan<- common.TradeEvent) *Binance {
 	gobinance.WebsocketKeepalive = true
 	return &Binance{
 		once:         common.NewOnce(),
