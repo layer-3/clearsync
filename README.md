@@ -79,35 +79,53 @@ npx hardhat run scripts/deployContract.ts
 
 ## Deployments
 
+You can find more information about depoyed smart contracts in [deployments.md](docs/deployments.md).
+
 ### Test Network
 
-Goerli and Mumbai are used for development and test environment. The community of early adopters from Duckies platform and early supporters of Yellow Network may be invited for gorilla test sessions through [testnet.yellow.org](testnet.yellow.org)
+Goerli, Sepolia and other networks are used for development and test environments. The community of early adopters from Duckies platform and early supporters of Yellow Network may be invited for gorilla test sessions through [testnet.yellow.org](testnet.yellow.org)
+
+#### Goerli
+
+| Contract | Address                                                                                                                         |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Duckies  | `0x4FFE87BDBa8bd5872Db30e8425CceC0Bd1a0E825`[↗](https://goerli.etherscan.io/address/0x4FFE87BDBa8bd5872Db30e8425CceC0Bd1a0E825) |
+
+#### Sepolia
+
+| Description              | Address                                                                                                                          |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| YellowAdjudicator        | `0x47871f064d0b2ABf9190275C4D69f466C98fBD77`[↗](https://sepolia.etherscan.io/address/0x47871f064d0b2ABf9190275C4D69f466C98fBD77) |
+| Yellow Network MarginApp | `0xa6F5563CD2D38a0c1F2D41DF7Eff7181bf3c6a7e`[↗](https://sepolia.etherscan.io/address/0xa6F5563CD2D38a0c1F2D41DF7Eff7181bf3c6a7e) |
+| Yellow Networ EscrowApp  | `0xcccb67333fEefb04e85521fF0c219Cdb12539b84`[↗](https://sepolia.etherscan.io/address/0xcccb67333fEefb04e85521fF0c219Cdb12539b84) |
+| Duckies                  | `0x63FD175d3215779deBA7532fC660fA0E10c18676`[↗](https://sepolia.etherscan.io/address/0x63FD175d3215779deBA7532fC660fA0E10c18676) |
+
+#### Linea Goerli
+
+| Description              | Address                                                                                                                            |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Yellow Adjudicator       | `0xecd113352c973c769208a77aae8626f9fbf81c6e`[↗](https://goerli.lineascan.build/address/0xecd113352c973c769208a77aae8626f9fbf81c6e) |
+| Yellow Network MarginApp | `0x478c6745c0fa5c83b886fc9d417e03c14371e9d2`[↗](https://goerli.lineascan.build/address/0x478c6745c0fa5c83b886fc9d417e03c14371e9d2) |
+| Yellow Network EscrowApp | `0x94328be5c288Aa28185799435d87a7F5CB366B72`[↗](https://goerli.lineascan.build/address/0x94328be5c288Aa28185799435d87a7F5CB366B72) |
 
 ### Canary Network
 
 Duckies is the **canary network for Yellow**, for testing ClearSync technology in a live environment prior to deployment on mainnet. New network participant must deploy first on Canary Network before rolling out to the mainnet.
 
-DUCKIES ERC20 token and ClearSync is deployed on Polygon mainnet.
-
-Here are addresses of deployed last versions of smart contracts on the [Polygon](https://polygonscan.com/) chain:
-
-| Contract        | Address                                                                                                                      |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Duckies         | `0x18e73A5333984549484348A94f4D219f4faB7b81` [↗](https://polygonscan.com/address/0x18e73A5333984549484348A94f4D219f4faB7b81) |
-| TreasureVaultV1 | `0x68d1E3F802058Ce517e9ba871Ab182299E74D852` [↗](https://polygonscan.com/address/0x68d1E3F802058Ce517e9ba871Ab182299E74D852) |
-| DucklingsV1     | `0x435b74f6DC4A0723CA19e4dD2AC8Aa1361c7B0f0` [↗](https://polygonscan.com/address/0x435b74f6DC4A0723CA19e4dD2AC8Aa1361c7B0f0) |
-| DuckyFamilyV1   | `0xB66bf78cad7cBab51988ddc792652CbabdFf7675` [↗](https://polygonscan.com/address/0xB66bf78cad7cBab51988ddc792652CbabdFf7675) |
-
 ### Main Networks
 
-The first network for YELLOW ERC20 and ClearSync system will be on Ethereum mainnet, but the system can be extended later to Layer-2, Solana, or a Polkadot parachain.
+The first network for YELLOW ERC20 and ClearSync system will be on Ethereum mainnet, but the system can be extended later to Layer-2, Linea, Optimism or others.
 
 ## Smart Contracts
 
-### contracts/Token.sol
+### contracts/YellowToken.sol
 
 This smart contract is an ERC20 used by both YELLOW and DUCKIES tokens. The YELLOW token is collateral to open a state channel with another network entity. Additionally, it is used to pay the settlement fees on the network.
 
-### contracts/duckies/
+### contracts/clearing
 
-The smart contracts in this directory are specific to DUCKIES and include features unique to the Duckies sub-project. These features are designed to promote user engagement within the YELLOW community, particularly during the development phase of the Yellow network, and are related to the Duckies game and reward program.
+This folder contains the smart contracts for the ClearSync protocol: Adjudicator and State Channels Apps.
+
+### contracts/nitro
+
+This folder contains the smart contracts for the Nitro (State Channels) protocol.
