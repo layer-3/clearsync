@@ -113,7 +113,7 @@ func (o *Opendax) connect() {
 			return
 		}
 
-		logger.Warnf("Websocket.Dial: can't connect to Opendax, reason: %s", err.Error())
+    logger.Warnf("connection attempt failed: %s", err.Error())
 		time.Sleep(o.period)
 	}
 }
@@ -148,13 +148,13 @@ func (o *Opendax) listen() {
 
 		_, message, err := o.conn.ReadMessage()
 		if err != nil {
-			logger.Warn("Error reading from connection", err)
+			logger.Warn("error reading from connection", err)
 
 			o.connect()
 			o.streams.Range(func(m, value any) bool {
 				market := m.(common.Market)
 				if err := o.Subscribe(market); err != nil {
-					logger.Warnf("Error subscribing to market %s: %s", market, err)
+					logger.Warnf("error subscribing to market %s: %s", market, err)
 					return false
 				}
 				return true
@@ -163,7 +163,7 @@ func (o *Opendax) listen() {
 			continue
 		}
 
-		trEvent, err := parseOpendaxMsg(message)
+		trEvent, err := parse(message)
 		if err != nil {
 			logger.Warn(err)
 			continue
@@ -177,7 +177,7 @@ func (o *Opendax) listen() {
 	}
 }
 
-func parseOpendaxMsg(message []byte) (*common.TradeEvent, error) {
+func parse(message []byte) (*common.TradeEvent, error) {
 	if message == nil {
 		return &common.TradeEvent{}, nil
 	}
