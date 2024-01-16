@@ -1,4 +1,4 @@
-package opendax_protocol
+package protocol
 
 import (
 	"testing"

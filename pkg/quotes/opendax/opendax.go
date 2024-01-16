@@ -10,7 +10,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/shopspring/decimal"
 
-	protocol "github.com/layer-3/clearsync/pkg/quotes/opendax_protocol"
+	"github.com/layer-3/clearsync/pkg/quotes/opendax/protocol"
 )
 
 type opendax struct {

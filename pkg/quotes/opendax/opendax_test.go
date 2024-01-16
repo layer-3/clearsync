@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	protocol "github.com/layer-3/clearsync/pkg/quotes/opendax_protocol"
+	"github.com/layer-3/clearsync/pkg/quotes/opendax/protocol"
 )
 
 type ODAPIMockMsg struct {
