@@ -48,6 +48,41 @@
       "name": "Duckies, the canary network for Yellow ",
       "symbol": "DUCKIES",
       "decimals": 2
+    },
+    {
+      "chainId": 5,
+      "address": "0x627987539Cc01D1F32d5563039b685190c7BDB28",
+      "name": "USD Tether",
+      "symbol": "USDT",
+      "decimals": 6
+    },
+    {
+      "chainId": 5,
+      "address": "0x16A19b49b780F542616132Eab942E14D13a68De1",
+      "name": "USD Coin",
+      "symbol": "USDC",
+      "decimals": 6
+    },
+    {
+      "chainId": 5,
+      "address": "0x79aa2F880516ed55Fd34A1c655a3C603b0A919B5",
+      "name": "LUBE",
+      "symbol": "LUBE",
+      "decimals": 18
+    },
+    {
+      "chainId": 5,
+      "address": "0xE5393a58624d696Cb225d5EFC9F1a201caB1ad06",
+      "name": "Wrapped Bitcoin",
+      "symbol": "WBTC",
+      "decimals": 18
+    },
+    {
+      "chainId": 5,
+      "address": "0x23d58aA33c5Ccf77D1840Cd953022Bf2Cf5719Ab",
+      "name": "Linea",
+      "symbol": "LINEA",
+      "decimals": 18
     }
   ]
 }

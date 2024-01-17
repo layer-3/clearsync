@@ -107,6 +107,7 @@ Goerli, Sepolia and other networks are used for development and test environment
 | Yellow Adjudicator       | `0xecd113352c973c769208a77aae8626f9fbf81c6e`[↗](https://goerli.lineascan.build/address/0xecd113352c973c769208a77aae8626f9fbf81c6e) |
 | Yellow Network MarginApp | `0x478c6745c0fa5c83b886fc9d417e03c14371e9d2`[↗](https://goerli.lineascan.build/address/0x478c6745c0fa5c83b886fc9d417e03c14371e9d2) |
 | Yellow Network EscrowApp | `0x94328be5c288Aa28185799435d87a7F5CB366B72`[↗](https://goerli.lineascan.build/address/0x94328be5c288Aa28185799435d87a7F5CB366B72) |
+| Duckies                  | `0x4889C4d392DF005dEE5e3998D170Fa90F994699b`[↗](https://goerli.lineascan.build/address/0x4889C4d392DF005dEE5e3998D170Fa90F994699b) |
 
 ### Canary Network
 
