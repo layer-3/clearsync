@@ -1,5 +1,5 @@
 //go:generate sh -c "command -v jq >/dev/null 2>&1 || { echo 'Error: jq is not installed.' >&2; exit 1; } && command -v abigen >/dev/null 2>&1 || { echo 'Error: abigen is not installed.' >&2; exit 1; } && mkdir -p abi/factory && cat ../../../node_modules/@uniswap/v3-core/artifacts/contracts/UniswapV3Factory.sol/UniswapV3Factory.json | jq '.abi' | abigen --pkg=factory --out=./abi/factory/factory.go --abi=-"
-//go:generate sh -c "command -v jq >/dev/null 2>&1 || { echo 'Error: jq is not installed.' >&2; exit 1; } && command -v abigen >/dev/null 2>&1 || { echo 'Error: abigen is not installed.' >&2; exit 1; } && mkdir -p abi/factory && cat ../../../node_modules/@uniswap/v3-core/artifacts/contracts/UniswapV3Pool.sol/UniswapV3Pool.json | jq '.abi' | abigen --pkg=pool --out=./abi/pool/pool.go --abi=-"
+//go:generate sh -c "command -v jq >/dev/null 2>&1 || { echo 'Error: jq is not installed.' >&2; exit 1; } && command -v abigen >/dev/null 2>&1 || { echo 'Error: abigen is not installed.' >&2; exit 1; } && mkdir -p abi/pool    && cat ../../../node_modules/@uniswap/v3-core/artifacts/contracts/UniswapV3Pool.sol/UniswapV3Pool.json       | jq '.abi' | abigen --pkg=pool    --out=./abi/pool/pool.go       --abi=-"
 package uniswap
 
 import (
