@@ -98,7 +98,7 @@ func (u *uniswapV3) Subscribe(market Market) error {
 				}
 
 				for _, swap := range swaps {
-					price := swap.price()
+					price := calculatePrice(swap.SqrtPriceX96, swap.Token0.Decimals, swap.Token1.Decimals)
 					createdAt, err := swap.time()
 					if err != nil {
 						loggerBinance.Warnf("failed to get swap timestamp: %s", err)
@@ -251,23 +251,23 @@ type uniswapV3Swaps struct {
 
 type uniswapV3Swap struct {
 	Timestamp    string          `json:"timestamp"`
-	Token0       token           `json:"token0"`
-	Token1       token           `json:"token1"`
+	Token0       graphqlToken    `json:"token0"`
+	Token1       graphqlToken    `json:"token1"`
 	Amount0      decimal.Decimal `json:"amount0"`
 	Amount1      decimal.Decimal `json:"amount1"`
 	SqrtPriceX96 decimal.Decimal `json:"sqrtPriceX96"`
 }
 
 var priceX96 = decimal.NewFromInt(2).Pow(decimal.NewFromInt(96))
+var ten = decimal.NewFromInt(10)
 
-// price method calculates the price per token at which the swap was performed.
+// calculatePrice method calculates the price per token at which the swap was performed.
 // General formula is as follows: ((sqrtPriceX96 / 2**96)**2) / (10**decimal1 / 10**decimal0)
 // See the math explained at https://blog.uniswap.org/uniswap-v3-math-primer
-func (swap *uniswapV3Swap) price() decimal.Decimal {
-	ten := decimal.NewFromInt(10)
-	decimals := swap.Token1.Decimals.Sub(swap.Token0.Decimals)
+func calculatePrice(sqrtPriceX96, baseTokenDecimals, quoteTokenDecimals decimal.Decimal) decimal.Decimal {
+	decimals := quoteTokenDecimals.Sub(baseTokenDecimals)
 
-	numerator := swap.SqrtPriceX96.Div(priceX96).Pow(decimal.NewFromInt(2))
+	numerator := sqrtPriceX96.Div(priceX96).Pow(decimal.NewFromInt(2))
 	denominator := ten.Pow(decimals)
 	return numerator.Div(denominator)
 }
@@ -281,6 +281,6 @@ func (swap *uniswapV3Swap) time() (time.Time, error) {
 	return time.Unix(unixTimestamp, 0), nil
 }
 
-type token struct {
+type graphqlToken struct {
 	Decimals decimal.Decimal `json:"decimals"`
 }
