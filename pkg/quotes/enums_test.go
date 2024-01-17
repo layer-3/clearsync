@@ -34,9 +34,13 @@ func TestDriverType_Marshal(t *testing.T) {
 			expectedJSON: `"bitfaker"`,
 			expectedYAML: "bitfaker\n",
 		}, {
-			input:        DriverUniswapV3,
-			expectedJSON: `"uniswap_v3"`,
-			expectedYAML: "uniswap_v3\n",
+			input:        DriverUniswapV3Api,
+			expectedJSON: `"uniswap_v3_api"`,
+			expectedYAML: "uniswap_v3_api\n",
+		}, {
+			input:        DriverUniswapV3Geth,
+			expectedJSON: `"uniswap_v3_geth"`,
+			expectedYAML: "uniswap_v3_geth\n",
 		},
 	}
 
@@ -90,9 +94,14 @@ func TestDriverType_Unmarshal(t *testing.T) {
 			expected:  DriverBitfaker,
 			shouldErr: false,
 		}, {
-			inputJSON: `"uniswap_v3"`,
-			inputYAML: "uniswap_v3",
-			expected:  DriverUniswapV3,
+			inputJSON: `"uniswap_v3_api"`,
+			inputYAML: "uniswap_v3_api",
+			expected:  DriverUniswapV3Api,
+			shouldErr: false,
+		}, {
+			inputJSON: `"uniswap_v3_geth"`,
+			inputYAML: "uniswap_v3_geth",
+			expected:  DriverUniswapV3Geth,
 			shouldErr: false,
 		}, {
 			inputJSON: `"invalid"`,
