@@ -6,7 +6,31 @@ Yellow Network may be conducting testing and operations on different networks, a
 
 ### Ethereum
 
+Chain id: 1.
+
+#### Contracts Deployed
+
+Last updated: January 17, 2024.
+
+Repository: [layer-3/ClearSync](https://github.com/layer-3/clearsync).
+
+| Description                | Contract Name | Transaction Hash                                                                                            | Address                                                                                                                  | Git SHA                                  |
+| -------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------- |
+| Yellow Duckies ERC20 Token | YellowToken   | [0xada5...8376](https://etherscan.io/tx/0xada5b0b00f7b4f8288aae99d1157698da78a2301d965b85ff1f5d77fc9db8376) | `0x90b7E285ab6cf4e3A2487669dba3E339dB8a3320`[↗](https://etherscan.io/address/0x90b7E285ab6cf4e3A2487669dba3E339dB8a3320) | c197bebe236ba3134ca2de8c0ac6fa08c2550430 |
+
 ### Linea
+
+Chain id: 59144.
+
+#### Tokens Bridged
+
+Last updated: January 17, 2024.
+
+Bridged Token Smart Contract: [`BridgedToken.sol`](https://github.com/Consensys/linea-contracts/blob/3cf85529fd4539eb06ba998030c37e47f98c528a/contracts/tokenBridge/BridgedToken.sol)
+
+| Description                | Transaction hash                                                                                               | Address                                                                                                                   |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Yellow Duckies ERC20 Token | [0xcf7f...89b3](https://lineascan.build/tx/0xcf7f2f583baec04064417166bf7416f844b3e79d6d446798e3ec2b70cb8589b3) | `0x796000FAd0d00B003B9dd8e531BA90cff39E01E0`[↗](https://lineascan.build/token/0x796000FAd0d00B003B9dd8e531BA90cff39E01E0) |
 
 ## Testnet
 
@@ -75,13 +99,13 @@ Deployed with account: `0x2185da3337cad307fd48dFDabA6D4C66A9fD2c71`[↗](https:/
 
 Last updated: January 17, 2024.
 
-Bridged Token Smart Contract: [`BridgedToken.sol``](https://github.com/Consensys/linea-contracts/blob/3cf85529fd4539eb06ba998030c37e47f98c528a/contracts/tokenBridge/BridgedToken.sol)
+Bridged Token Smart Contract: [`BridgedToken.sol`](https://github.com/Consensys/linea-contracts/blob/3cf85529fd4539eb06ba998030c37e47f98c528a/contracts/tokenBridge/BridgedToken.sol)
 
-| Description                | Transaction hash                                                                                                           | Address                                                                                                                               |
-| -------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Yellow Duckies ERC20 Token | [0x6031...928f](https://explorer.goerli.linea.build/tx/0x6031e559c8882d883775f5bd6b379f283510850fde5aad127f9a7f9c0b1f928f) | `0x4889C4d392DF005dEE5e3998D170Fa90F994699b`[↗](https://explorer.goerli.linea.build/token/0x4889C4d392DF005dEE5e3998D170Fa90F994699b) |
-| USDT Test ERC20 Token      | [0x058e...a3a8](https://goerli.lineascan.build/tx/0x058ef59033e6709f5d406b51611066b82bb46622d7c6b3e02d8757d41597a3a8)      | `0x891967b45eb9910768a9FC48DBb11120Ee180125`[↗](https://explorer.goerli.linea.build/token/0x891967b45eb9910768a9FC48DBb11120Ee180125) |
-| USDC Test ERC20 Token      | [0xd8b0...fbac](https://goerli.lineascan.build/tx/0xd8b03c81ff3233e10802e5cf5af4af8807c53d2c7f13b63ab088c92e0b03fbac)      | `0x9E210Dd034Df7945606f1725447dD68C9FE3fc39`[↗](https://explorer.goerli.linea.build/token/0x9E210Dd034Df7945606f1725447dD68C9FE3fc39) |
-| LUBE Test ERC20 Token      | [0x54cb...092a](https://goerli.lineascan.build/tx/0x54cb6f6f7493d422ab608d97d6614bf72c81882efb19774ae7f505105af0092a)      | `0xb3Ea26Da98fFB06A5c5a7A972d6d4dE58967E38a`[↗](https://explorer.goerli.linea.build/token/0xb3Ea26Da98fFB06A5c5a7A972d6d4dE58967E38a) |
-| WBTC Test ERC20 Token      | [0x8c1f...bb13](https://goerli.lineascan.build/tx/0x8c1f23301248164992bf3c33de7f782b43862044898b8399406be877c508bb13)      | `0x2469206634e32ab6c284e208fB27dF48A29F5359`[↗](https://explorer.goerli.linea.build/token/0x2469206634e32ab6c284e208fB27dF48A29F5359) |
-| LINDA Test ERC20 Token     | [0x133a...2b43](https://goerli.lineascan.build/tx/0x133aeca95c890059b6c5b450c01bd068e9847cc40d884882b8c8b707b4482b43)      | `0x8264ADf56A89170292E6Cc10467A355b13f4f6Dc`[↗](https://explorer.goerli.linea.build/token/0x8264ADf56A89170292E6Cc10467A355b13f4f6Dc) |
+| Description                | Transaction hash                                                                                                      | Address                                                                                                                          |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Yellow Duckies ERC20 Token | [0x6031...928f](https://goerli.lineascan.build/tx/0x6031e559c8882d883775f5bd6b379f283510850fde5aad127f9a7f9c0b1f928f) | `0x4889C4d392DF005dEE5e3998D170Fa90F994699b`[↗](https://goerli.lineascan.build/token/0x4889C4d392DF005dEE5e3998D170Fa90F994699b) |
+| USDT Test ERC20 Token      | [0x058e...a3a8](https://goerli.lineascan.build/tx/0x058ef59033e6709f5d406b51611066b82bb46622d7c6b3e02d8757d41597a3a8) | `0x891967b45eb9910768a9FC48DBb11120Ee180125`[↗](https://goerli.lineascan.build/token/0x891967b45eb9910768a9FC48DBb11120Ee180125) |
+| USDC Test ERC20 Token      | [0xd8b0...fbac](https://goerli.lineascan.build/tx/0xd8b03c81ff3233e10802e5cf5af4af8807c53d2c7f13b63ab088c92e0b03fbac) | `0x9E210Dd034Df7945606f1725447dD68C9FE3fc39`[↗](https://goerli.lineascan.build/token/0x9E210Dd034Df7945606f1725447dD68C9FE3fc39) |
+| LUBE Test ERC20 Token      | [0x54cb...092a](https://goerli.lineascan.build/tx/0x54cb6f6f7493d422ab608d97d6614bf72c81882efb19774ae7f505105af0092a) | `0xb3Ea26Da98fFB06A5c5a7A972d6d4dE58967E38a`[↗](https://goerli.lineascan.build/token/0xb3Ea26Da98fFB06A5c5a7A972d6d4dE58967E38a) |
+| WBTC Test ERC20 Token      | [0x8c1f...bb13](https://goerli.lineascan.build/tx/0x8c1f23301248164992bf3c33de7f782b43862044898b8399406be877c508bb13) | `0x2469206634e32ab6c284e208fB27dF48A29F5359`[↗](https://goerli.lineascan.build/token/0x2469206634e32ab6c284e208fB27dF48A29F5359) |
+| LINDA Test ERC20 Token     | [0x133a...2b43](https://goerli.lineascan.build/tx/0x133aeca95c890059b6c5b450c01bd068e9847cc40d884882b8c8b707b4482b43) | `0x8264ADf56A89170292E6Cc10467A355b13f4f6Dc`[↗](https://goerli.lineascan.build/token/0x8264ADf56A89170292E6Cc10467A355b13f4f6Dc) |
