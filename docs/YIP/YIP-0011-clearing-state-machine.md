@@ -41,12 +41,12 @@ stateDiagram-v2
 
     Accepted --> InitiatorFunded: InitiatorFunded
     Accepted --> Failed: Failed
-    Accepted --> Failed: InitiatorFundingTimeout
-    Accepted --> PreOpChallengeRegistered: ChallengeRegistered
+    Accepted --> Failed: ClearingTimeout
+    Accepted --> Failed: ChallengeRegistered
 
     InitiatorFunded --> Funded: ResponderFunded
     InitiatorFunded --> PreOpChallenging: Failed
-    InitiatorFunded --> PreOpChallenging: ResponderFundingTimeout
+    InitiatorFunded --> PreOpChallenging: ClearingTimeout
     InitiatorFunded --> PreOpChallengeRegistered: ChallengeRegistered
     
     PreOpChallenging --> PendingPreOpChallengeRegistered: Challenged
@@ -56,32 +56,31 @@ stateDiagram-v2
     PreOpChallengeRegistered --> Withdrawing: ChallengeTimeout
 
     Funded --> Operational: PostfundAgreed
-    Funded --> Challenging: Failed
-    Funded --> Funded: ProcessMarginCall
-    Funded --> PreOpChallengeRegistered: ChallengeRegistered
+    Funded --> PreOpChallenging: Failed
 
-    Operational --> ActiveSettlement: PrepareSettlement
+    Operational --> ActiveSettlement: SettlementStarted
     Operational --> Finalizing: Finalize
     Operational --> ProcessingMarginCall: ProcessMarginCall
-    Operational --> Challenging: Challenging
+    Operational --> Challenging: Challenge
     Operational --> ChallengeRegistered: ChallengeRegistered
+    Operational --> Challenging: ClearingTimeout
     
     ProcessingMarginCall --> Operational: MoveToOperational
     ProcessingMarginCall --> Challenging: Challenge
 
     ActiveSettlement --> ProcessingPSMC: ProcessPSMC
     ActiveSettlement --> ProcessingSMC: ProcessMarginCall
-    ActiveSettlement --> Operational: FailedSettlement
+    ActiveSettlement --> Operational: SettlementFailed
     ActiveSettlement --> ChallengeRegistered: ChallengeRegistered
 
     ProcessingSMC --> ActiveSettlement: MoveToActiveSettlement
     ProcessingSMC --> Challenging: Challenge
 
-    ProcessingPSMC --> ExecutedSettlement: ExecutedSettlement
+    ProcessingPSMC --> ExecutedSettlement: SettlementExecuted
     ProcessingPSMC --> ActiveSettlement: MoveToActiveSettlement
 
-    ExecutedSettlement --> Operational: FinalizedSettlement
-    ExecutedSettlement --> Operational: FailedSettlement
+    ExecutedSettlement --> Operational: SettlementFinalized
+    ExecutedSettlement --> Operational: SettlementFailed
     ExecutedSettlement --> ChallengeRegistered: ChallengeRegistered
 
     Challenging --> Challenged: Challenged
@@ -96,9 +95,12 @@ stateDiagram-v2
     Finalizing --> Operational: MoveToOperational
 
     Concluding --> Final: MoveToFinal
+    Concluding --> Withdrawing: ClearingTimeout
+
     Withdrawing --> Final: MoveToFinal
 
     Final --> [*]
+    Failed --> [*]
 ```
 
 ### Responder CSM diagram
@@ -121,13 +123,13 @@ stateDiagram-v2
 
     Accepted --> InitiatorFunded: InitiatorFunded
     Accepted --> Failed: Failed
-    Accepted --> Failed: InitiatorFundingTimeout
-    Accepted --> PreOpChallengeRegistered: ChallengeRegistered
+    Accepted --> Failed: ClearingTimeout
+    Accepted --> Failed: ChallengeRegistered
 
     InitiatorFunded --> Funded: ResponderFunded
     InitiatorFunded --> Failed: Failed
-    InitiatorFunded --> Failed: ResponderFundingTimeout
-    InitiatorFunded --> PreOpChallengeRegistered: ChallengeRegistered
+    InitiatorFunded --> Failed: ClearingTimeout
+    InitiatorFunded --> Failed: ChallengeRegistered
     
     PreOpChallenging --> PendingPreOpChallengeRegistered: PendingChallengeRegistered
 
@@ -137,11 +139,10 @@ stateDiagram-v2
 
     Funded --> Operational: PostfundAgreed
     Funded --> Funded: ProcessMarginCall
-    Funded --> PreOpChallengeRegistered: ChallengeRegistered
     Funded --> PreOpChallenging: Failed
-    Funded --> PreOpChallenging: PostfundProcessingTimeout
+    Funded --> PreOpChallenging: ClearingTimeout
 
-    Operational --> ActiveSettlement: PrepareSettlement
+    Operational --> ActiveSettlement: SettlementStarted
     Operational --> Finalizing: Finalize
     Operational --> ProcessingMarginCall: ProcessMarginCall
     Operational --> Challenging: Challenging
@@ -152,17 +153,17 @@ stateDiagram-v2
 
     ActiveSettlement --> ProcessingPSMC: ProcessPSMC
     ActiveSettlement --> ProcessingSMC: ProcessMarginCall
-    ActiveSettlement --> Operational: FailedSettlement
+    ActiveSettlement --> Operational: SettlementFailed
     ActiveSettlement --> ChallengeRegistered: ChallengeRegistered
 
     ProcessingSMC --> ActiveSettlement: MoveToActiveSettlement
     ProcessingSMC --> Challenging: Challenge
 
-    ProcessingPSMC --> ExecutedSettlement: ExecutedSettlement
+    ProcessingPSMC --> ExecutedSettlement: SettlementExecuted
     ProcessingPSMC --> ActiveSettlement: MoveToActiveSettlement
 
-    ExecutedSettlement --> Operational: FinalizedSettlement
-    ExecutedSettlement --> Operational: FailedSettlement
+    ExecutedSettlement --> Operational: SettlementFinalized
+    ExecutedSettlement --> Operational: SettlementFailed
     ExecutedSettlement --> ChallengeRegistered: ChallengeRegistered
 
     Challenging --> PendingChallengeRegistered: Challenged
@@ -172,7 +173,7 @@ stateDiagram-v2
     ChallengeRegistered --> Operational: ChallengeCleared
     ChallengeRegistered --> Withdrawing: ChallengeTimeout
     
-    Finalizing --> Concluding: Concluding
+    Finalizing --> Concluding: Conclude
     Finalizing --> Challenging: Challenge
     Finalizing --> Operational: MoveToOperational
 
