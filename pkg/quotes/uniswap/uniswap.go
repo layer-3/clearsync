@@ -19,7 +19,7 @@ import (
 
 var logger = log.Logger("uniswap")
 
-type UniswapV3 struct {
+type V3 struct {
 	once       *common.Once
 	url        string
 	outbox     chan<- common.TradeEvent
@@ -27,13 +27,13 @@ type UniswapV3 struct {
 	streams    sync.Map
 }
 
-func New(config common.Config, outbox chan<- common.TradeEvent) *UniswapV3 {
+func New(config common.Config, outbox chan<- common.TradeEvent) *V3 {
 	url := "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3"
 	if config.URL != "" {
 		url = config.URL
 	}
 
-	return &UniswapV3{
+	return &V3{
 		once:       common.NewOnce(),
 		url:        url,
 		outbox:     outbox,
@@ -41,12 +41,12 @@ func New(config common.Config, outbox chan<- common.TradeEvent) *UniswapV3 {
 	}
 }
 
-func (u *UniswapV3) Start() error {
+func (u *V3) Start() error {
 	u.once.Start(func() {})
 	return nil
 }
 
-func (u *UniswapV3) Stop() error {
+func (u *V3) Stop() error {
 	u.once.Stop(func() {
 		u.streams.Range(func(market, stream any) bool {
 			stopCh := stream.(chan struct{})
@@ -60,7 +60,7 @@ func (u *UniswapV3) Stop() error {
 	return nil
 }
 
-func (u *UniswapV3) Subscribe(market common.Market) error {
+func (u *V3) Subscribe(market common.Market) error {
 	symbol := market.BaseUnit + market.QuoteUnit
 
 	if _, ok := u.streams.Load(market); ok {
@@ -124,7 +124,7 @@ func (u *UniswapV3) Subscribe(market common.Market) error {
 	return nil
 }
 
-func (u *UniswapV3) Unsubscribe(market common.Market) error {
+func (u *V3) Unsubscribe(market common.Market) error {
 	stream, ok := u.streams.Load(market)
 	if !ok {
 		return fmt.Errorf("%s: %w", market, common.ErrNotSubbed)
@@ -145,7 +145,7 @@ const tokenTemplate = `query {
  }
 }`
 
-func (u *UniswapV3) isMarketAvailable(market common.Market) (bool, error) {
+func (u *V3) isMarketAvailable(market common.Market) (bool, error) {
 	query := fmt.Sprintf(tokenTemplate,
 		strings.ToUpper(market.BaseUnit),
 		strings.ToUpper(market.QuoteUnit),
@@ -180,7 +180,7 @@ const swapsTemplate = `query {
   }
 }`
 
-func (u *UniswapV3) fetchSwaps(market common.Market, from, to time.Time) ([]uniswapSwap, error) {
+func (u *V3) fetchSwaps(market common.Market, from, to time.Time) ([]uniswapSwap, error) {
 	query := fmt.Sprintf(swapsTemplate,
 		from.Unix(),
 		to.Unix(),
