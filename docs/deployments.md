@@ -16,13 +16,21 @@ Chain id: 5.
 
 #### Contracts Deployed
 
-Last updated: January 16, 2024.
+Last updated: January 17, 2024.
 
 Repository: [layer-3/ClearSync](https://github.com/layer-3/clearsync).
 
-| Description                | Contract Name | Transaction Hash                                                                                                   | Address                                                                                                                         | Git SHA                                  |
-| -------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| Yellow Duckies ERC20 Token | YellowToken   | [0x7675...5818](https://goerli.etherscan.io/tx/0x7675c666d57dda171d22991622d022e7d1e55d7c0db0e2ea2e24b1581b4f5818) | `0x4FFE87BDBa8bd5872Db30e8425CceC0Bd1a0E825`[↗](https://goerli.etherscan.io/address/0x4FFE87BDBa8bd5872Db30e8425CceC0Bd1a0E825) | 418c72494d451b5c4593b602993b71d95517b83f |
+| Description                | Contract Name     | Transaction Hash                                                                                                   | Address                                                                                                                         | Git SHA                                  |
+| -------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| Yellow Duckies ERC20 Token | YellowToken       | [0x7675...5818](https://goerli.etherscan.io/tx/0x7675c666d57dda171d22991622d022e7d1e55d7c0db0e2ea2e24b1581b4f5818) | `0x4FFE87BDBa8bd5872Db30e8425CceC0Bd1a0E825`[↗](https://goerli.etherscan.io/address/0x4FFE87BDBa8bd5872Db30e8425CceC0Bd1a0E825) | 418c72494d451b5c4593b602993b71d95517b83f |
+| USDT Test ERC20 Token      | TestERC20         | [0x0a3f...71e3](https://goerli.etherscan.io/tx/0x0a3f9ddcf6cb907311b2bdc2282282a9cc689af135fd6b107d59203c85a271e3) | `0x627987539Cc01D1F32d5563039b685190c7BDB28`[↗](https://goerli.etherscan.io/address/0x627987539Cc01D1F32d5563039b685190c7BDB28) | c197bebe236ba3134ca2de8c0ac6fa08c2550430 |
+| USDC Test ERC20 Token      | TestERC20         | [0xe272...1656](https://goerli.etherscan.io/tx/0xe272f3c216ffdae554e603fc27ba98df201ca48b9fd9ce22d6b2a3b959741656) | `0x16A19b49b780F542616132Eab942E14D13a68De1`[↗](https://goerli.etherscan.io/address/0x16A19b49b780F542616132Eab942E14D13a68De1) | c197bebe236ba3134ca2de8c0ac6fa08c2550430 |
+| LUBE Test ERC20 Token      | TestERC20         | [0x3005...0659](https://goerli.etherscan.io/tx/0x300586fc3a5184f4e0b06fa969c7a4a7596d290688a3a27094d8607cee6d0659) | `0x79aa2F880516ed55Fd34A1c655a3C603b0A919B5`[↗](https://goerli.etherscan.io/address/0x79aa2F880516ed55Fd34A1c655a3C603b0A919B5) | c197bebe236ba3134ca2de8c0ac6fa08c2550430 |
+| WBTC Test ERC20 Token      | TestERC20         | [0xab21...601b](https://goerli.etherscan.io/tx/0xab21b32db3650847c0804f1268051ec66d4dac8c8c956533739d25cfec1e601b) | `0xE5393a58624d696Cb225d5EFC9F1a201caB1ad06`[↗](https://goerli.etherscan.io/address/0xE5393a58624d696Cb225d5EFC9F1a201caB1ad06) | c197bebe236ba3134ca2de8c0ac6fa08c2550430 |
+| LINEA Test ERC20 Token     | TestERC20         | [0x685b...6e51](https://goerli.etherscan.io/tx/0x685bdecfafc06036edcfb2ece06c0a23b5ffd6b3bdfdc3696c6c6c5787336e51) | `0x23d58aA33c5Ccf77D1840Cd953022Bf2Cf5719Ab`[↗](https://goerli.etherscan.io/address/0x23d58aA33c5Ccf77D1840Cd953022Bf2Cf5719Ab) | c197bebe236ba3134ca2de8c0ac6fa08c2550430 |
+| Yellow Network Adjudicator | YellowAdjudicator | [0xafe7...e2c2](https://goerli.etherscan.io/tx/0xafe757a4b21e9f690d38b825e8f32183db16504b12aa2f051f230663a267e2c2) | `0x330D96298C06da60750243718924Ed5335d3b3d6`[↗](https://goerli.etherscan.io/address/0x330D96298C06da60750243718924Ed5335d3b3d6) | c197bebe236ba3134ca2de8c0ac6fa08c2550430 |
+| State channels Margin App  | ConsensusApp      | [0xe03d...6f2e](https://goerli.etherscan.io/tx/0xe03dc0ececee4124eaa7af550b0a73ca0be8b96ec22ca5ecdc028f049e876f2e) | `0xB53e7c4c7741bc6bdc90F70704930a840bDa5B00`[↗](https://goerli.etherscan.io/address/0xB53e7c4c7741bc6bdc90F70704930a840bDa5B00) | c197bebe236ba3134ca2de8c0ac6fa08c2550430 |
+| State channels Escrow App  | ConsensusApp      | [0xdeeb...2fd9](https://goerli.etherscan.io/tx/0xdeebee80eaef3679ee732f1984aadfbef5e0cdaad15941cf047de1fc71a02fd9) | `0xE3094A9Fa0eBDef2Df5793b21286C096D90664e3`[↗](https://goerli.etherscan.io/address/0xE3094A9Fa0eBDef2Df5793b21286C096D90664e3) | c197bebe236ba3134ca2de8c0ac6fa08c2550430 |
 
 ### Sepolia
 
@@ -65,8 +73,15 @@ Deployed with account: `0x2185da3337cad307fd48dFDabA6D4C66A9fD2c71`[↗](https:/
 
 #### Tokens Bridged
 
-Last updated: January 16, 2024.
+Last updated: January 17, 2024.
 
-| Description                | Contract Name and Link to File                                                                                                                        | Transaction hash                                                                                                           | Address                                                                                                                                               |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Yellow Duckies ERC20 Token | [BridgedToken.sol](https://github.com/Consensys/linea-contracts/blob/3cf85529fd4539eb06ba998030c37e47f98c528a/contracts/tokenBridge/BridgedToken.sol) | [0x6031...928f](https://explorer.goerli.linea.build/tx/0x6031e559c8882d883775f5bd6b379f283510850fde5aad127f9a7f9c0b1f928f) | `0x4889C4d392DF005dEE5e3998D170Fa90F994699b`[↗](https://explorer.goerli.linea.build/token/0x4889C4d392DF005dEE5e3998D170Fa90F994699b/token-transfers) |
+Bridged Token Smart Contract: [`BridgedToken.sol``](https://github.com/Consensys/linea-contracts/blob/3cf85529fd4539eb06ba998030c37e47f98c528a/contracts/tokenBridge/BridgedToken.sol)
+
+| Description                | Transaction hash                                                                                                           | Address                                                                                                                               |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Yellow Duckies ERC20 Token | [0x6031...928f](https://explorer.goerli.linea.build/tx/0x6031e559c8882d883775f5bd6b379f283510850fde5aad127f9a7f9c0b1f928f) | `0x4889C4d392DF005dEE5e3998D170Fa90F994699b`[↗](https://explorer.goerli.linea.build/token/0x4889C4d392DF005dEE5e3998D170Fa90F994699b) |
+| USDT Test ERC20 Token      | [0x058e...a3a8](https://goerli.lineascan.build/tx/0x058ef59033e6709f5d406b51611066b82bb46622d7c6b3e02d8757d41597a3a8)      | `0x891967b45eb9910768a9FC48DBb11120Ee180125`[↗](https://explorer.goerli.linea.build/token/0x891967b45eb9910768a9FC48DBb11120Ee180125) |
+| USDC Test ERC20 Token      | [0xd8b0...fbac](https://goerli.lineascan.build/tx/0xd8b03c81ff3233e10802e5cf5af4af8807c53d2c7f13b63ab088c92e0b03fbac)      | `0x9E210Dd034Df7945606f1725447dD68C9FE3fc39`[↗](https://explorer.goerli.linea.build/token/0x9E210Dd034Df7945606f1725447dD68C9FE3fc39) |
+| LUBE Test ERC20 Token      | [0x54cb...092a](https://goerli.lineascan.build/tx/0x54cb6f6f7493d422ab608d97d6614bf72c81882efb19774ae7f505105af0092a)      | `0xb3Ea26Da98fFB06A5c5a7A972d6d4dE58967E38a`[↗](https://explorer.goerli.linea.build/token/0xb3Ea26Da98fFB06A5c5a7A972d6d4dE58967E38a) |
+| WBTC Test ERC20 Token      | [0x8c1f...bb13](https://goerli.lineascan.build/tx/0x8c1f23301248164992bf3c33de7f782b43862044898b8399406be877c508bb13)      | `0x2469206634e32ab6c284e208fB27dF48A29F5359`[↗](https://explorer.goerli.linea.build/token/0x2469206634e32ab6c284e208fB27dF48A29F5359) |
+| LINEA Test ERC20 Token     | [0x68ac...ac42](https://goerli.lineascan.build/tx/0x68acc6afd7d55493a0dc2067c1a71c6294a0db8d1c0a3d3894ab6a831155ac42)      | `0x851CaCF7fFde54E3197613a0fD05d4b4b89393e0`[↗](https://explorer.goerli.linea.build/token/0x851CaCF7fFde54E3197613a0fD05d4b4b89393e0) |
