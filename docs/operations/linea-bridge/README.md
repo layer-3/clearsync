@@ -4,14 +4,14 @@
 
 ## Linea Bridge Instructions
 
-![Linea Bridge Steps 1 and 2](./media/linea-bridge-1.jpeg)
+<img src="./media/linea-bridge-1.jpeg" alt="Linea Bridge Steps 1 and 2" width="50%"/>
 
 1. Go to [Linea Bridge](https://bridge.linea.build/) and connect your wallet with the corresponding "Connect Wallet" button.
 2. Click the "Native Bridge For Tech Operators".
 
 ---
 
-![Linea Bridge Steps 3 to 5](./media/linea-bridge-2.jpeg)
+<img src="./media/linea-bridge-2.jpeg" alt="Linea Bridge Steps 3 to 5" width="50%"/>
 
 3. Click the "Try Mainnet/Testnet" button if you want to change the mainnet/testnet.
 4. Select the network you want to bridge from.
@@ -19,13 +19,13 @@
 
 ---
 
-![Linea Bridge Step 6](./media/linea-bridge-3.jpeg)
+<img src="./media/linea-bridge-3.jpeg" alt="Linea Bridge Step 6" width="30%"/>
 
 6. Paste the token address you want to bridge from, and select the token from the dropdown menu.
 
 ---
 
-![Linea Bridge Steps 7 to 10](./media/linea-bridge-4.jpeg)
+<img src="./media/linea-bridge-4.jpeg" alt="Linea Bridge Steps 7 to 10" width="30%"/>
 
 7. Input the amount of tokens you want to bridge.
 8. Optionally, you can input the recipient address. If you leave it blank, the tokens will be sent to the same address you are using to bridge the tokens.
@@ -34,6 +34,6 @@
 
 ---
 
-![Linea Bridge Step 11](./media/linea-bridge-5.jpeg)
+<img src="./media/linea-bridge-5.jpeg" alt="Linea Bridge Step 11" width="30%"/>
 
 11. Wait for the bridging message to arrive on the destination chain. After that, click the "Claim Funds" button. You will be prompted to change the network and confirm the transaction on your wallet.
