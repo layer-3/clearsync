@@ -6,7 +6,31 @@ Yellow Network may be conducting testing and operations on different networks, a
 
 ### Ethereum
 
+Chain id: 1.
+
+#### Contracts Deployed
+
+Last updated: January 17, 2024.
+
+Repository: [layer-3/ClearSync](https://github.com/layer-3/clearsync).
+
+| Description                | Contract Name | Transaction Hash                                                                                            | Address                                                                                                                  | Git SHA                                  |
+| -------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------- |
+| Yellow Duckies ERC20 Token | YellowToken   | [0xada5...8376](https://etherscan.io/tx/0xada5b0b00f7b4f8288aae99d1157698da78a2301d965b85ff1f5d77fc9db8376) | `0x90b7E285ab6cf4e3A2487669dba3E339dB8a3320`[↗](https://etherscan.io/address/0x90b7E285ab6cf4e3A2487669dba3E339dB8a3320) | c197bebe236ba3134ca2de8c0ac6fa08c2550430 |
+
 ### Linea
+
+Chain id: 59144.
+
+#### Tokens Bridged
+
+Last updated: January 17, 2024.
+
+Bridged Token Smart Contract: [`BridgedToken.sol`](https://github.com/Consensys/linea-contracts/blob/3cf85529fd4539eb06ba998030c37e47f98c528a/contracts/tokenBridge/BridgedToken.sol)
+
+| Description                | Transaction hash                                                                                               | Address                                                                                                                   |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Yellow Duckies ERC20 Token | [0xcf7f...89b3](https://lineascan.build/tx/0xcf7f2f583baec04064417166bf7416f844b3e79d6d446798e3ec2b70cb8589b3) | `0x796000FAd0d00B003B9dd8e531BA90cff39E01E0`[↗](https://lineascan.build/token/0x796000FAd0d00B003B9dd8e531BA90cff39E01E0) |
 
 ## Testnet
 
@@ -75,7 +99,7 @@ Deployed with account: `0x2185da3337cad307fd48dFDabA6D4C66A9fD2c71`[↗](https:/
 
 Last updated: January 17, 2024.
 
-Bridged Token Smart Contract: [`BridgedToken.sol``](https://github.com/Consensys/linea-contracts/blob/3cf85529fd4539eb06ba998030c37e47f98c528a/contracts/tokenBridge/BridgedToken.sol)
+Bridged Token Smart Contract: [`BridgedToken.sol`](https://github.com/Consensys/linea-contracts/blob/3cf85529fd4539eb06ba998030c37e47f98c528a/contracts/tokenBridge/BridgedToken.sol)
 
 | Description                | Transaction hash                                                                                                           | Address                                                                                                                               |
 | -------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
