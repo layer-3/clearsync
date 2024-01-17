@@ -6,7 +6,7 @@ typechain
 typechain-types
 .tags
 
-#Hardhat files
+# Hardhat files
 cache
 artifacts
 !pkg/artifacts
@@ -17,3 +17,6 @@ config/*.info.json
 
 # Proto
 tmp
+
+# abigen
+pkg/quotes/uniswap/abi
