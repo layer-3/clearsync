@@ -18,10 +18,10 @@ type PriceCache struct {
 	mu      sync.RWMutex
 }
 
-// price contains priceWeight and weight EMAs, and list of active drivers for the market.
+// price contains numEMA, denEMA, and list of active drivers for the market.
 type price struct {
-	priceWeight   decimal.Decimal
-	weight        decimal.Decimal
+	numEMA        decimal.Decimal
+	denEMA        decimal.Decimal
 	driversActive map[DriverType]bool
 }
 
@@ -42,24 +42,24 @@ func (p *PriceCache) Get(market string) (decimal.Decimal, decimal.Decimal) {
 
 	cached, ok := p.market[market]
 	if ok {
-		return cached.priceWeight, cached.weight
+		return cached.numEMA, cached.denEMA
 	}
 	return decimal.Zero, decimal.Zero
 }
 
 // Update updates or creates a price record in cache. It also makes the driver active in the drivers map.
-func (p *PriceCache) Update(driver DriverType, market string, priceWeight, weight decimal.Decimal) {
+func (p *PriceCache) Update(driver DriverType, market string, numEMA, denEMA decimal.Decimal) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
 	_, ok := p.market[market]
 	if ok {
-		p.market[market].priceWeight = priceWeight
-		p.market[market].weight = weight
+		p.market[market].numEMA = numEMA
+		p.market[market].denEMA = denEMA
 		p.market[market].driversActive[driver] = true
 		return
 	}
-	p.market[market] = &price{priceWeight: priceWeight, weight: weight, driversActive: map[DriverType]bool{driver: true}}
+	p.market[market] = &price{numEMA: numEMA, denEMA: denEMA, driversActive: map[DriverType]bool{driver: true}}
 }
 
 // ActiveWeights returns the sum of active driver weights for the market.

@@ -91,24 +91,27 @@ func (a *IndexAggregator) Stop() error {
 
 // indexPrice returns indexPrice based on Weighted Exponential Moving Average of last 20 trades.
 func (a *IndexAggregator) indexPrice(event TradeEvent) TradeEvent {
-	driverWeight := a.weights[event.Source]
-	priceWeightEMA, weightEMA := a.priceCache.Get(event.Market)
+	sourceWeight := a.weights[event.Source]
+	numEMA, denEMA := a.priceCache.Get(event.Market)
 
 	activeWeights := a.priceCache.ActiveWeights(event.Market)
 	if activeWeights == decimal.Zero {
-		activeWeights = driverWeight
+		activeWeights = sourceWeight
 	}
 
+	// sourceMultiplier defines how much the trade from a specific market will affect a new price
+	sourceMultiplier := sourceWeight.Div(activeWeights)
+
 	// To start the procedure (before we've got trades) we generate the initial values:
-	if priceWeightEMA == decimal.Zero || weightEMA == decimal.Zero {
-		priceWeightEMA = event.Price.Mul(event.Amount).Mul(driverWeight).Div(activeWeights)
-		weightEMA = event.Amount.Mul(driverWeight).Div(activeWeights)
+	if numEMA == decimal.Zero || denEMA == decimal.Zero {
+		numEMA = event.Price.Mul(event.Amount).Mul(sourceMultiplier)
+		denEMA = event.Amount.Mul(sourceWeight).Div(activeWeights)
 	}
 
 	// Weighted Exponential Moving Average:
 	// https://www.financialwisdomforum.org/gummy-stuff/EMA.htm
-	newPriceWeightEMA := EMA20(priceWeightEMA, event.Price.Mul(event.Amount).Mul(driverWeight).Div(activeWeights))
-	newWeightEMA := EMA20(weightEMA, event.Amount.Mul(driverWeight).Div(activeWeights))
+	newPriceWeightEMA := EMA20(numEMA, event.Price.Mul(event.Amount).Mul(sourceMultiplier))
+	newWeightEMA := EMA20(denEMA, event.Amount.Mul(sourceMultiplier))
 
 	newEMA := newPriceWeightEMA.Div(newWeightEMA)
 	a.priceCache.Update(event.Source, event.Market, newPriceWeightEMA, newWeightEMA)

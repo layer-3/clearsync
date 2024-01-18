@@ -43,19 +43,76 @@ last_price = price
 Index Price is used mainly in risk management for portfolio evaluation, and is aggregated from multiple sources.
 
 ```
-index_price = priceWeightEMA/weightEMA
+index_price = NumEMA/DenEMA
 
-priceWeightEMA = EMA20((Volume)*(Price)*(DriverWeight/activeWeights))
+NumEMA = EMA20((Volume)*(SourceMultiplier)*(Price))
 
-weightEMA = EMA20(Volume*(DriverWeight/activeWeights))
+DenEMA = EMA20((Volume)*(SourceMultiplier))
+
+SourceMultiplier = (TradeSourceWeight/ActiveWeights))
+
+ActiveWeights(market) - Selects all drivers having the market of the reeceived trade active, and returns the sum of their weights.
 ```
+
+### Example flow
+
+Drivers Weights Config: 
 ```
-activeWeights is the sum of weight where this market is active (ex: KuCoin:5 + uniswap:50)
+driverWeights = [{Binance: 20}, {Uniswap: 10}, {Kraken: 15}]
 ```
 
-This formula calculates a weighted EMA price, using trade volume, and active driver weight as additional weights.
+Trades from all the sources are coming into one queue.
+IndexAggregator reads trades one by one, each time influencing EMA based on trade price, trade importance (volume), and source driver importance (weight):
 
-EMA20 is calculated based on the last 20 trades. If on the startup there is no initial data, the values of the first trade received are used as the initial EMA.
+1. Trade received:
+
+```
+Trade {
+	Source: Binance
+	Market: btcusdt
+	Volume: 0.5
+	Price: 44000
+}
+```
+		
+2. Select active drivers for the market. Lets say, we are receiving btcusdt trades only from Binance and Uniswap.
+```	
+ActiveWeights(btcusdt) = {driverWeights[Binance] + driverWeights[Uniswap] = 20 + 10} = 30
+```
+3. Select the driver weight
+```	
+tradeSourceWeight = driverWeights[Binance] = 20
+```
+4. Select Previous value of numEMA and denEMA. If there is no initial data (on the startup), the values of the first received trade are used to set the initial EMA.
+```
+prevNumEMA, prevDenEMA = cache.Get(btcusdt)
+
+if cache.IsEmpty() {
+	prevNumEMA = Trade.Volume * sourceMultiplier * Trade.Price
+	prevNumEMA = Trade.Volume * sourceMultiplier
+}
+```
+5. Calculate new numEMA and denEMA.
+```
+sourceMultiplier = tradeSourceWeight/ActiveWeights
+numEMA = EMA20(prevNumEMA, (Trade.Volume * sourceMultiplier * Trade.Price))
+denEMA = EMA20(prevDenEMA, (Trade.Volume * sourceMultiplier))
+```
+6. Store new EMAs in the cache
+
+7. Return Index Price
+```
+return index_price = numEMA/denEMA
+```
+
+
+**IMPORTANT!** You should understand how EMA20 function works. It calculates exponential moving average price of last 20 trades, but it doesnt use last 20 trades for calculation. Like a hash function, it takes the previously saved EMA, and influences it with the price and importance of an incoming trade.
+
+[Exponential Moving Average](https://www.investopedia.com/terms/e/ema.asp)
+
+[Weighted Exponential Moving Average](https://www.financialwisdomforum.org/gummy-stuff/EMA.htm)
+
+### Calculation example
 
 Let's assume 5 trades have been received:
 
@@ -68,15 +125,22 @@ Let's assume 5 trades have been received:
 {binance, 40000, 1.0}
 ```
 
-In the first example, drivers' weights are equal: ```2``` for the Binance driver, and ```2``` for the Uniswap.
+Example 1:
+
+Drivers Weights Config: 
+```
+driverWeights = [{Binance: 2}, {Uniswap: 2}]
+```
 
 ```Weighted EMA price change with each trade: 41000, 41223.8806, 43500.32787, 43873.32054, 43343.1976```
 
-In the second example, the Uniswap driver has ```0``` weight:
+Example 2:
+
+driverWeights = [{Binance: 2}, {Uniswap: 0}]
 
 ```Weighted EMA price change with each trade: 41000, 41223.8806, 41223.8806, 41223.8806, 40872.3039```
 
-In the third example, we are setting the amound of the first 4 trades to ```1```, and the last trade to ```10```, and this time the price increases by 2000 with each trade:
+In the third example, we are setting the amount of the first 4 trades to ```1```, and the last trade to ```10```, and this time the price increases by 2000 with each trade:
 
 ```
 {source, price, amount}
@@ -89,7 +153,7 @@ In the third example, we are setting the amound of the first 4 trades to ```1```
 
 ```Weighted EMA price change with each trade: 40000, 40190.47619, 40553.28798, 41072.02246, 44624.83145```
 
-We observe that the trade with 10X amount influenced the final EMA more significantly than all the other trades.
+We observe the last trade with ten times the amount has influenced the final EMA more significantly than all the other trades.
 
 **Described test scenarios can be found in ```index_test.go```.**
 
@@ -97,13 +161,13 @@ We observe that the trade with 10X amount influenced the final EMA more signific
 
 ```
 type PriceCache interface {
-	Get(market string) (decimal.Decimal, decimal.Decimal)                         // Returns priceWeight and weight EMAs for a market
-	Update(driver DriverType, market string, priceWeight, weight decimal.Decimal) // Updates priceWeight and weight EMAs for a market with a new value
+	Get(market string) (decimal.Decimal, decimal.Decimal)                         // Returns numEMA and denEMA EMAs for a market
+	Update(driver DriverType, market string, numEMA, denEMA decimal.Decimal) // Updates numEMA and denEMA EMAs for a market with a new value
 	ActiveWeights(market string) decimal.Decimal                                  // Returns the sum of active driver weights for the market.
 }
 ```
 
-- PriceCache stores previous priceWeight and weight EMAs.
+- PriceCache stores previous numEMA and denEMA EMAs.
 - It also stores a map of active drivers for a market. By default, no drivers are active. 
   When the cache receives the first price, it makes the source driver active for the market.
 	This approach solves the problem when different drivers may support different markets.
