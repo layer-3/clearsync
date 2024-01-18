@@ -1,5 +1,4 @@
 {
-    "BTC": ["BTC","WBTC"],
-    "ETH": ["ETH","WETH"],
-    "USD": ["USDT"]
+  "BTC": ["BTC", "WBTC"],
+  "USD": ["USDT"]
 }

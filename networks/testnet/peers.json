@@ -1,7 +1,7 @@
 [
   {
     "url": "http://localhost:50081/",
-    "name": "localhost.sepolia",
+    "name": "localhost.linea-goerli",
     "address": "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3",
     "packages": [
       {
@@ -17,8 +17,8 @@
     ]
   },
   {
-    "url": "http://clearport-sepolia.uat.opendax.app:31551",
-    "name": "kayen.sepolia",
+    "url": "http://clearport-linea-goerli.uat.opendax.app:31551",
+    "name": "kayen.linea-goerli",
     "address": "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3",
     "packages": [
       {
