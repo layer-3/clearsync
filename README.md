@@ -18,6 +18,51 @@ ClearSync is licensed under the GNU General Public License v3.0
 
 [Technical Paper](docs/whitepaper.md)
 
+## Deployments
+
+You can find more information about depoyed smart contracts in [deployments.md](docs/deployments.md).
+
+### Test Network
+
+Goerli, Sepolia and other networks are used for development and test environments. The community of early adopters from Duckies platform and early supporters of Yellow Network may be invited for gorilla test sessions through [testnet.yellow.org](testnet.yellow.org)
+
+#### Ethereum
+
+| Contract | Address                                                                                                                         |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Duckies  | `0x90b7E285ab6cf4e3A2487669dba3E339dB8a3320`[↗](https://etherscan.io/token/0x90b7E285ab6cf4e3A2487669dba3E339dB8a3320) |
+
+#### Linea
+
+| Contract | Address                                                                                                                         |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Duckies  | `0x796000fad0d00b003b9dd8e531ba90cff39e01e0`[↗](https://lineascan.build/token/0x796000fad0d00b003b9dd8e531ba90cff39e01e0) |
+
+#### Goerli
+
+| Contract | Address                                                                                                                         |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Duckies  | `0x4FFE87BDBa8bd5872Db30e8425CceC0Bd1a0E825`[↗](https://goerli.etherscan.io/address/0x4FFE87BDBa8bd5872Db30e8425CceC0Bd1a0E825) |
+
+#### Sepolia
+
+| Description              | Address                                                                                                                          |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| YellowAdjudicator        | `0x47871f064d0b2ABf9190275C4D69f466C98fBD77`[↗](https://sepolia.etherscan.io/address/0x47871f064d0b2ABf9190275C4D69f466C98fBD77) |
+| Yellow Network MarginApp | `0xa6F5563CD2D38a0c1F2D41DF7Eff7181bf3c6a7e`[↗](https://sepolia.etherscan.io/address/0xa6F5563CD2D38a0c1F2D41DF7Eff7181bf3c6a7e) |
+| Yellow Networ EscrowApp  | `0xcccb67333fEefb04e85521fF0c219Cdb12539b84`[↗](https://sepolia.etherscan.io/address/0xcccb67333fEefb04e85521fF0c219Cdb12539b84) |
+| Duckies                  | `0x63FD175d3215779deBA7532fC660fA0E10c18676`[↗](https://sepolia.etherscan.io/address/0x63FD175d3215779deBA7532fC660fA0E10c18676) |
+
+#### Linea Goerli
+
+| Description              | Address                                                                                                                            |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Yellow Adjudicator       | `0xecd113352c973c769208a77aae8626f9fbf81c6e`[↗](https://goerli.lineascan.build/address/0xecd113352c973c769208a77aae8626f9fbf81c6e) |
+| Yellow Network MarginApp | `0x478c6745c0fa5c83b886fc9d417e03c14371e9d2`[↗](https://goerli.lineascan.build/address/0x478c6745c0fa5c83b886fc9d417e03c14371e9d2) |
+| Yellow Network EscrowApp | `0x94328be5c288Aa28185799435d87a7F5CB366B72`[↗](https://goerli.lineascan.build/address/0x94328be5c288Aa28185799435d87a7F5CB366B72) |
+| Duckies                  | `0x4889C4d392DF005dEE5e3998D170Fa90F994699b`[↗](https://goerli.lineascan.build/address/0x4889C4d392DF005dEE5e3998D170Fa90F994699b) |
+
+
 ### ClearSync Architecture
 
 ![contract architecture](docs/media/architecture.png)
@@ -76,38 +121,6 @@ npx hardhat test
 npx hardhat node
 npx hardhat run scripts/deployContract.ts
 ```
-
-## Deployments
-
-You can find more information about depoyed smart contracts in [deployments.md](docs/deployments.md).
-
-### Test Network
-
-Goerli, Sepolia and other networks are used for development and test environments. The community of early adopters from Duckies platform and early supporters of Yellow Network may be invited for gorilla test sessions through [testnet.yellow.org](testnet.yellow.org)
-
-#### Goerli
-
-| Contract | Address                                                                                                                         |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Duckies  | `0x4FFE87BDBa8bd5872Db30e8425CceC0Bd1a0E825`[↗](https://goerli.etherscan.io/address/0x4FFE87BDBa8bd5872Db30e8425CceC0Bd1a0E825) |
-
-#### Sepolia
-
-| Description              | Address                                                                                                                          |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| YellowAdjudicator        | `0x47871f064d0b2ABf9190275C4D69f466C98fBD77`[↗](https://sepolia.etherscan.io/address/0x47871f064d0b2ABf9190275C4D69f466C98fBD77) |
-| Yellow Network MarginApp | `0xa6F5563CD2D38a0c1F2D41DF7Eff7181bf3c6a7e`[↗](https://sepolia.etherscan.io/address/0xa6F5563CD2D38a0c1F2D41DF7Eff7181bf3c6a7e) |
-| Yellow Networ EscrowApp  | `0xcccb67333fEefb04e85521fF0c219Cdb12539b84`[↗](https://sepolia.etherscan.io/address/0xcccb67333fEefb04e85521fF0c219Cdb12539b84) |
-| Duckies                  | `0x63FD175d3215779deBA7532fC660fA0E10c18676`[↗](https://sepolia.etherscan.io/address/0x63FD175d3215779deBA7532fC660fA0E10c18676) |
-
-#### Linea Goerli
-
-| Description              | Address                                                                                                                            |
-| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| Yellow Adjudicator       | `0xecd113352c973c769208a77aae8626f9fbf81c6e`[↗](https://goerli.lineascan.build/address/0xecd113352c973c769208a77aae8626f9fbf81c6e) |
-| Yellow Network MarginApp | `0x478c6745c0fa5c83b886fc9d417e03c14371e9d2`[↗](https://goerli.lineascan.build/address/0x478c6745c0fa5c83b886fc9d417e03c14371e9d2) |
-| Yellow Network EscrowApp | `0x94328be5c288Aa28185799435d87a7F5CB366B72`[↗](https://goerli.lineascan.build/address/0x94328be5c288Aa28185799435d87a7F5CB366B72) |
-| Duckies                  | `0x4889C4d392DF005dEE5e3998D170Fa90F994699b`[↗](https://goerli.lineascan.build/address/0x4889C4d392DF005dEE5e3998D170Fa90F994699b) |
 
 ### Canary Network
 
