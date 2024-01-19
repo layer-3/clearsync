@@ -4,6 +4,7 @@ import '@nomicfoundation/hardhat-toolbox';
 import '@nomiclabs/hardhat-ethers';
 import type { HardhatUserConfig } from 'hardhat/config';
 import 'solidity-docgen';
+import 'hardhat-dependency-compiler';
 
 import './src/tasks/accounts';
 import './src/tasks/vesting';
@@ -176,6 +177,14 @@ const config: HardhatUserConfig = {
           browserURL: 'https://ethnodescan.v4.uat.opendax.app/',
         },
       },
+    ],
+  },
+  dependencyCompiler: {
+    paths: [
+      '@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol',
+      '@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol',
+      '@syncswap/core-contracts/contracts/interfaces/factory/IBasePoolFactory.sol',
+      '@syncswap/core-contracts/contracts/interfaces/IRouter.sol',
     ],
   },
 };
