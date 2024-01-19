@@ -26,7 +26,7 @@ type kraken struct {
 	outbox         chan<- TradeEvent
 }
 
-func newKraken(config Config, outbox chan<- TradeEvent) *kraken {
+func newKraken(config Config, outbox chan<- TradeEvent) Driver {
 	url := "wss://ws.kraken.com/v2"
 	if config.URL != "" {
 		url = config.URL

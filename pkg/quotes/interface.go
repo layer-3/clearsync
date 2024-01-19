@@ -21,20 +21,20 @@ type Driver interface {
 }
 
 func NewDriver(config Config, outbox chan<- TradeEvent) (Driver, error) {
-	allDrivers := map[DriverType]Driver{
-		DriverBinance:   newBinance(config, outbox),
-		DriverKraken:    newKraken(config, outbox),
-		DriverOpendax:   newOpendax(config, outbox),
-		DriverBitfaker:  newBitfaker(config, outbox),
-		DriverUniswapV3: newUniswapV3(config, outbox),
-		DriverIndex:     newIndex(outbox),
+	allDrivers := map[DriverType]func(Config, chan<- TradeEvent) Driver{
+		DriverBinance:   newBinance,
+		DriverKraken:    newKraken,
+		DriverOpendax:   newOpendax,
+		DriverBitfaker:  newBitfaker,
+		DriverUniswapV3: newUniswapV3,
+		DriverIndex:     newIndex,
 	}
 
 	driver, ok := allDrivers[config.Driver]
 	if !ok {
 		return nil, fmt.Errorf("invalid driver type: %v", config.Driver.String())
 	}
-	return driver, nil
+	return driver(config, outbox), nil
 }
 
 type Config struct {

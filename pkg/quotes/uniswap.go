@@ -22,7 +22,7 @@ type uniswapV3 struct {
 	streams    sync.Map
 }
 
-func newUniswapV3(config Config, outbox chan<- TradeEvent) *uniswapV3 {
+func newUniswapV3(config Config, outbox chan<- TradeEvent) Driver {
 	url := "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3"
 	if config.URL != "" {
 		url = config.URL

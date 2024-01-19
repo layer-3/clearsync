@@ -18,7 +18,7 @@ type bitfaker struct {
 	tradeSampler tradeSampler
 }
 
-func newBitfaker(config Config, outbox chan<- TradeEvent) *bitfaker {
+func newBitfaker(config Config, outbox chan<- TradeEvent) Driver {
 	return &bitfaker{
 		streams:      make([]Market, 0),
 		outbox:       outbox,

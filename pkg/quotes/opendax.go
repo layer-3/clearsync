@@ -25,7 +25,7 @@ type opendax struct {
 	streams sync.Map
 }
 
-func newOpendax(config Config, outbox chan<- TradeEvent) *opendax {
+func newOpendax(config Config, outbox chan<- TradeEvent) Driver {
 	url := "wss://alpha.yellow.org/api/v1/finex/ws"
 	if config.URL != "" {
 		url = config.URL

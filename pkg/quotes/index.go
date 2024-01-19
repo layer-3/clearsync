@@ -15,7 +15,7 @@ type indexAggregator struct {
 }
 
 // NewIndexAggregator creates a new instance of IndexAggregator.
-func NewIndexAggregator(driverConfigs []Config, weightsMap map[DriverType]decimal.Decimal, outbox chan<- TradeEvent) *indexAggregator {
+func NewIndexAggregator(driverConfigs []Config, weightsMap map[DriverType]decimal.Decimal, outbox chan<- TradeEvent) Driver {
 	aggregated := make(chan TradeEvent, 128)
 
 	drivers := []Driver{}
@@ -39,7 +39,7 @@ func NewIndexAggregator(driverConfigs []Config, weightsMap map[DriverType]decima
 	}
 }
 
-func newIndex(outbox chan<- TradeEvent) *indexAggregator {
+func newIndex(config Config, outbox chan<- TradeEvent) Driver {
 	return NewIndexAggregator(AllDrivers, DefaultWeightsMap, outbox)
 }
 
