@@ -2,5 +2,6 @@
     "spot://USDC/USDT",
     "spot://LUBE/USDT",
     "spot://WBTC/USDT",
+    "spot://WETH/USDT",
     "spot://LINDA/USDT"
 ]
