@@ -40,7 +40,7 @@ Chain id: 5.
 
 #### Contracts Deployed
 
-Last updated: January 17, 2024.
+Last updated: January 19, 2024.
 
 Repository: [layer-3/ClearSync](https://github.com/layer-3/clearsync).
 
@@ -55,6 +55,7 @@ Repository: [layer-3/ClearSync](https://github.com/layer-3/clearsync).
 | Yellow Network Adjudicator | YellowAdjudicator | [0xafe7...e2c2](https://goerli.etherscan.io/tx/0xafe757a4b21e9f690d38b825e8f32183db16504b12aa2f051f230663a267e2c2) | `0x330D96298C06da60750243718924Ed5335d3b3d6`[↗](https://goerli.etherscan.io/address/0x330D96298C06da60750243718924Ed5335d3b3d6) | c197bebe236ba3134ca2de8c0ac6fa08c2550430 |
 | State channels Margin App  | ConsensusApp      | [0xe03d...6f2e](https://goerli.etherscan.io/tx/0xe03dc0ececee4124eaa7af550b0a73ca0be8b96ec22ca5ecdc028f049e876f2e) | `0xB53e7c4c7741bc6bdc90F70704930a840bDa5B00`[↗](https://goerli.etherscan.io/address/0xB53e7c4c7741bc6bdc90F70704930a840bDa5B00) | c197bebe236ba3134ca2de8c0ac6fa08c2550430 |
 | State channels Escrow App  | ConsensusApp      | [0xdeeb...2fd9](https://goerli.etherscan.io/tx/0xdeebee80eaef3679ee732f1984aadfbef5e0cdaad15941cf047de1fc71a02fd9) | `0xE3094A9Fa0eBDef2Df5793b21286C096D90664e3`[↗](https://goerli.etherscan.io/address/0xE3094A9Fa0eBDef2Df5793b21286C096D90664e3) | c197bebe236ba3134ca2de8c0ac6fa08c2550430 |
+| WETH Test ERC20 Token      | TestERC20         | [0x7c15...5401](https://goerli.etherscan.io/tx/0x7c156a0664554cd3681b3c7f2494b5122b6bf32a855fd12cbb210b794ecf5401) | `0x660E49546d0b500490f88aee8e0A0aa5819170f0`[↗](https://goerli.etherscan.io/address/0x660E49546d0b500490f88aee8e0A0aa5819170f0) | 49aa81fef3bc28c84e92eb4c231a4fe19db4dcaa |
 
 ### Sepolia
 
@@ -97,7 +98,7 @@ Deployed with account: `0x2185da3337cad307fd48dFDabA6D4C66A9fD2c71`[↗](https:/
 
 #### Tokens Bridged
 
-Last updated: January 17, 2024.
+Last updated: January 19, 2024.
 
 Bridged Token Smart Contract: [`BridgedToken.sol`](https://github.com/Consensys/linea-contracts/blob/3cf85529fd4539eb06ba998030c37e47f98c528a/contracts/tokenBridge/BridgedToken.sol)
 
@@ -109,3 +110,4 @@ Bridged Token Smart Contract: [`BridgedToken.sol`](https://github.com/Consensys/
 | LUBE Test ERC20 Token      | [0x54cb...092a](https://goerli.lineascan.build/tx/0x54cb6f6f7493d422ab608d97d6614bf72c81882efb19774ae7f505105af0092a) | `0xb3Ea26Da98fFB06A5c5a7A972d6d4dE58967E38a`[↗](https://goerli.lineascan.build/token/0xb3Ea26Da98fFB06A5c5a7A972d6d4dE58967E38a) |
 | WBTC Test ERC20 Token      | [0x8c1f...bb13](https://goerli.lineascan.build/tx/0x8c1f23301248164992bf3c33de7f782b43862044898b8399406be877c508bb13) | `0x2469206634e32ab6c284e208fB27dF48A29F5359`[↗](https://goerli.lineascan.build/token/0x2469206634e32ab6c284e208fB27dF48A29F5359) |
 | LINDA Test ERC20 Token     | [0x133a...2b43](https://goerli.lineascan.build/tx/0x133aeca95c890059b6c5b450c01bd068e9847cc40d884882b8c8b707b4482b43) | `0x8264ADf56A89170292E6Cc10467A355b13f4f6Dc`[↗](https://goerli.lineascan.build/token/0x8264ADf56A89170292E6Cc10467A355b13f4f6Dc) |
+| WETH Test ERC20 Token      | [0xa2d2...78ff](https://goerli.lineascan.build/tx/0xa2d25bef697b92f9b0091d1f203398d5de6b76af2d6adedb46095ce5136f78ff) | `0x42e6f9a4805220C7E7DC99bd6E71D7FEa346fcCD`[↗](https://goerli.lineascan.build/token/0x42e6f9a4805220C7E7DC99bd6E71D7FEa346fcCD) |
