@@ -1,4 +1,4 @@
-package protocol
+package opendax_protocol
 
 import (
 	"encoding/json"

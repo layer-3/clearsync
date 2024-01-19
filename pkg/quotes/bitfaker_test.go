@@ -1,4 +1,4 @@
-package bitfaker
+package quotes
 
 import (
 	"sync"
@@ -8,8 +8,6 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/layer-3/clearsync/pkg/quotes/common"
 )
 
 func TestBitfaker_Subscribe(t *testing.T) {
@@ -18,42 +16,42 @@ func TestBitfaker_Subscribe(t *testing.T) {
 	t.Run("Single market", func(t *testing.T) {
 		t.Parallel()
 
-		ch := make(chan common.TradeEvent, 16)
-		client := Bitfaker{outbox: ch}
+		ch := make(chan TradeEvent, 16)
+		client := bitfaker{outbox: ch}
 
-		m := common.Market{BaseUnit: "btc", QuoteUnit: "usd"}
+		m := Market{BaseUnit: "btc", QuoteUnit: "usd"}
 		err := client.Subscribe(m)
 		require.Nil(t, err)
 
-		expectedMarkets := []common.Market{m}
+		expectedMarkets := []Market{m}
 		assert.Equal(t, client.streams, expectedMarkets)
 	})
 
 	t.Run("Multiple markets", func(t *testing.T) {
 		t.Parallel()
 
-		outbox := make(chan common.TradeEvent, 16)
-		client := Bitfaker{outbox: outbox}
+		outbox := make(chan TradeEvent, 16)
+		client := bitfaker{outbox: outbox}
 
-		market1 := common.Market{BaseUnit: "btc", QuoteUnit: "usd"}
+		market1 := Market{BaseUnit: "btc", QuoteUnit: "usd"}
 		err := client.Subscribe(market1)
 		require.Nil(t, err)
 
-		market2 := common.Market{BaseUnit: "eth", QuoteUnit: "usd"}
+		market2 := Market{BaseUnit: "eth", QuoteUnit: "usd"}
 		err = client.Subscribe(market2)
 		require.Nil(t, err)
 
-		expectedMarkets := []common.Market{market1, market2}
+		expectedMarkets := []Market{market1, market2}
 		assert.Equal(t, client.streams, expectedMarkets)
 	})
 
 	t.Run("Subscribe to a market already subscribed to", func(t *testing.T) {
 		t.Parallel()
 
-		ch := make(chan common.TradeEvent, 16)
-		client := Bitfaker{outbox: ch}
+		ch := make(chan TradeEvent, 16)
+		client := bitfaker{outbox: ch}
 
-		market := common.Market{BaseUnit: "btc", QuoteUnit: "usd"}
+		market := Market{BaseUnit: "btc", QuoteUnit: "usd"}
 		err := client.Subscribe(market)
 		require.Nil(t, err)
 
@@ -68,11 +66,11 @@ func TestBitfaker_Unsubscribe(t *testing.T) {
 	t.Run("Unsubscribe from multiple markets", func(t *testing.T) {
 		t.Parallel()
 
-		ch := make(chan common.TradeEvent, 16)
-		client := Bitfaker{outbox: ch}
+		ch := make(chan TradeEvent, 16)
+		client := bitfaker{outbox: ch}
 
-		market1 := common.Market{BaseUnit: "btc", QuoteUnit: "usd"}
-		market2 := common.Market{BaseUnit: "eth", QuoteUnit: "usd"}
+		market1 := Market{BaseUnit: "btc", QuoteUnit: "usd"}
+		market2 := Market{BaseUnit: "eth", QuoteUnit: "usd"}
 		require.NoError(t, client.Subscribe(market1))
 		require.NoError(t, client.Subscribe(market2))
 
@@ -86,10 +84,10 @@ func TestBitfaker_Unsubscribe(t *testing.T) {
 	t.Run("Unsubscribe from a market not subscribed to", func(t *testing.T) {
 		t.Parallel()
 
-		ch := make(chan common.TradeEvent, 16)
-		client := Bitfaker{outbox: ch}
+		ch := make(chan TradeEvent, 16)
+		client := bitfaker{outbox: ch}
 
-		market := common.Market{BaseUnit: "xrp", QuoteUnit: "usd"}
+		market := Market{BaseUnit: "xrp", QuoteUnit: "usd"}
 		err := client.Unsubscribe(market)
 
 		require.Error(t, err)
@@ -98,11 +96,11 @@ func TestBitfaker_Unsubscribe(t *testing.T) {
 	t.Run("No effect on other subscriptions after unsubscribing", func(t *testing.T) {
 		t.Parallel()
 
-		ch := make(chan common.TradeEvent, 16)
-		client := Bitfaker{outbox: ch}
+		ch := make(chan TradeEvent, 16)
+		client := bitfaker{outbox: ch}
 
-		market1 := common.Market{BaseUnit: "btc", QuoteUnit: "usd"}
-		market2 := common.Market{BaseUnit: "eth", QuoteUnit: "usd"}
+		market1 := Market{BaseUnit: "btc", QuoteUnit: "usd"}
+		market2 := Market{BaseUnit: "eth", QuoteUnit: "usd"}
 		require.NoError(t, client.Subscribe(market1))
 		require.NoError(t, client.Subscribe(market2))
 
@@ -116,18 +114,18 @@ func TestBitfaker_Unsubscribe(t *testing.T) {
 func TestBitfaker_Start(t *testing.T) {
 	t.Parallel()
 
-	outbox := make(chan common.TradeEvent, 1)
-	tradeSampler := *common.NewTradeSampler(common.TradeSamplerConfig{
+	outbox := make(chan TradeEvent, 1)
+	tradeSampler := *newTradeSampler(TradeSamplerConfig{
 		Enabled:           false,
 		DefaultPercentage: 0,
 	})
-	client := Bitfaker{
-		once:         common.NewOnce(),
+	client := bitfaker{
+		once:         newOnce(),
 		outbox:       outbox,
 		period:       0 * time.Second,
 		tradeSampler: tradeSampler,
 	}
-	market := common.Market{BaseUnit: "btc", QuoteUnit: "usd"}
+	market := Market{BaseUnit: "btc", QuoteUnit: "usd"}
 
 	var wg sync.WaitGroup
 	wg.Add(2)
@@ -148,14 +146,14 @@ func TestBitfaker_Start(t *testing.T) {
 func TestCreateTradeEvent(t *testing.T) {
 	t.Parallel()
 
-	outbox := make(chan common.TradeEvent)
-	client := Bitfaker{outbox: outbox}
+	outbox := make(chan TradeEvent)
+	client := bitfaker{outbox: outbox}
 
-	go func() { client.createTradeEvent(common.Market{BaseUnit: "btc", QuoteUnit: "usd"}) }()
+	go func() { client.createTradeEvent(Market{BaseUnit: "btc", QuoteUnit: "usd"}) }()
 
 	event := <-outbox
 	assert.NotEmpty(t, event)
 	assert.Equal(t, event.Market, "btcusd")
-	assert.Equal(t, event.Source, common.DriverBitfaker)
+	assert.Equal(t, event.Source, DriverBitfaker)
 	assert.Equal(t, event.Price, decimal.NewFromFloat(2.213))
 }

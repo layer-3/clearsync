@@ -1,4 +1,4 @@
-package common
+package quotes
 
 import (
 	"encoding/json"

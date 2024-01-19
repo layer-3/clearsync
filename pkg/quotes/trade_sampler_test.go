@@ -1,4 +1,4 @@
-package common
+package quotes
 
 import (
 	"math/rand"
@@ -16,7 +16,7 @@ func TestNewTradeSampler(t *testing.T) {
 		DefaultPercentage: defaultPercentage,
 	}
 
-	tradeSampler := NewTradeSampler(conf)
+	tradeSampler := newTradeSampler(conf)
 	require.Equal(t, tradeSampler.defaultPercentage, defaultPercentage)
 	require.False(t, tradeSampler.enabled)
 }
@@ -31,9 +31,9 @@ func TestTradeSampler_Allow(t *testing.T) {
 			Enabled:           false,
 			DefaultPercentage: 0,
 		}
-		ts := NewTradeSampler(conf)
+		ts := newTradeSampler(conf)
 
-		require.True(t, ts.Allow(TradeEvent{}))
+		require.True(t, ts.allow(TradeEvent{}))
 	})
 
 	t.Run("DefaultPercentage is in specified range", func(t *testing.T) {
@@ -43,9 +43,9 @@ func TestTradeSampler_Allow(t *testing.T) {
 			Enabled:           true,
 			DefaultPercentage: 200, // should be greater than rand.Intn(100)
 		}
-		ts := NewTradeSampler(conf)
+		ts := newTradeSampler(conf)
 
-		require.True(t, ts.Allow(TradeEvent{}))
+		require.True(t, ts.allow(TradeEvent{}))
 	})
 
 	t.Run("Should return false", func(t *testing.T) {
@@ -55,8 +55,8 @@ func TestTradeSampler_Allow(t *testing.T) {
 			Enabled:           true,
 			DefaultPercentage: 0,
 		}
-		ts := NewTradeSampler(conf)
+		ts := newTradeSampler(conf)
 
-		require.False(t, ts.Allow(TradeEvent{}))
+		require.False(t, ts.allow(TradeEvent{}))
 	})
 }

@@ -1,4 +1,4 @@
-package common
+package quotes
 
 import (
 	"math/rand"
@@ -6,21 +6,21 @@ import (
 	"github.com/ipfs/go-log/v2"
 )
 
-var logger = log.Logger("trade_sampler")
+var loggerTradeSampler = log.Logger("trade_sampler")
 
-type TradeSampler struct {
+type tradeSampler struct {
 	enabled           bool
 	defaultPercentage int
 }
 
-func NewTradeSampler(conf TradeSamplerConfig) *TradeSampler {
-	return &TradeSampler{
+func newTradeSampler(conf TradeSamplerConfig) *tradeSampler {
+	return &tradeSampler{
 		enabled:           conf.Enabled,
 		defaultPercentage: conf.DefaultPercentage,
 	}
 }
 
-func (ts *TradeSampler) Allow(trade TradeEvent) bool {
+func (ts *tradeSampler) allow(trade TradeEvent) bool {
 	if !ts.enabled {
 		return true
 	}
@@ -29,6 +29,6 @@ func (ts *TradeSampler) Allow(trade TradeEvent) bool {
 		return true
 	}
 
-	logger.Debugw("skipping trade", "trade", trade)
+	loggerBinance.Debugw("skipping trade", "trade", trade)
 	return false
 }

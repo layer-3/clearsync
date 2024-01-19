@@ -1,5 +1,5 @@
 // Events/metods names for open-finance.org protocol implementation client and server.
-package protocol
+package opendax_protocol
 
 import "fmt"
 

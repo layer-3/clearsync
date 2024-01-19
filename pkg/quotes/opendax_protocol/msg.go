@@ -1,5 +1,5 @@
 // Types and helpers for easy formatting and parsing open-finance protocol messages.
-package protocol
+package opendax_protocol
 
 import (
 	"encoding/json"
