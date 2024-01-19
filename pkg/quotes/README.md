@@ -40,7 +40,7 @@ last_price = price
 
 ## Index Price
 
-Index Price is used mainly in risk management for portfolio evaluation, and is aggregated from multiple sources.
+Index Price is used mainly in risk management for portfolio evaluation and is aggregated from multiple sources.
 
 ```
 index_price = NumEMA/DenEMA
@@ -51,7 +51,7 @@ DenEMA = EMA20((Volume)*(SourceMultiplier))
 
 SourceMultiplier = (TradeSourceWeight/ActiveWeights))
 
-ActiveWeights(market) - Selects all drivers having the market of the reeceived trade active, and returns the sum of their weights.
+ActiveWeights(market) - Selects all drivers having the market of the received trade active, and returns the sum of their weights.
 ```
 
 ### Example flow
@@ -76,15 +76,15 @@ Trade {
 ```
 		
 2. Select active drivers for the market. By default, all drivers are not active. When the first trade from a driver is received, a market becomes active. 
-Lets say, we are receiving btcusdt trades only from Binance and Uniswap.
+Let's say, we are receiving btcusdt trades only from Binance and Uniswap.
 ```	
 ActiveWeights(btcusdt) = {driverWeights[Binance] + driverWeights[Uniswap] = 20 + 10} = 30
 ```
-1. Select the driver weight
+1. Select the driver's weight
 ```	
 tradeSourceWeight = driverWeights[Binance] = 20
 ```
-1. Select Previous value of numEMA and denEMA. If there is no initial data (on the startup), the values of the first received trade are used to set the initial EMA.
+1. Select the previous value of numEMA and denEMA. If there is no initial data (on the startup), the values of the first received trade are used to set the initial EMA.
 ```
 prevNumEMA, prevDenEMA = cache.Get(btcusdt)
 
@@ -106,7 +106,7 @@ denEMA = EMA20(prevDenEMA, (Trade.Volume * sourceMultiplier))
 index_price = numEMA/denEMA
 ```
 
-**IMPORTANT!** You should understand how EMA20 function works. It calculates exponential moving average price of the last 20 trades, but it doesn't use last 20 trades for calculation. Similar to a hash function, it takes the previous EMA, and influences it with the price and importance of an incoming trade.
+**IMPORTANT!** You should understand how EMA20 function works. It calculates the exponential moving average price of the last 20 trades, but it doesn't use the last 20 trades for calculation. Similar to a hash function, it takes the previous EMA and influences it with the price and importance of an incoming trade.
 
 [Exponential Moving Average](https://www.investopedia.com/terms/e/ema.asp)
 
@@ -329,14 +329,13 @@ index_price = numEMA/denEMA = 13547.1970732/0.33144842237 = 40872
 {binance, 48000, 10.0}
 ```
 
-Calculations flow is the same as in the previous examples, ```sourceMultiplier``` stays at ```1``` because only Binance driver is active.
+Calculations flow is the same as in the previous examples, ```sourceMultiplier``` stays at ```1``` because only the Binance driver is active.
 
 ```Weighted EMA price change with each trade: 40000, 40190, 40553, 41072, 44624```
 
-The last trade with larger amount has influenced the final price more significantly than all other trades.
+The last trade with a larger amount has influenced the final price more significantly than all other trades.
 
 **Described test scenarios can be found in ```index_test.go```. The final price in the test examples may be different because of higher calculation precision.**
-
 *PriceCache*
 
 ```
