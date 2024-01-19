@@ -10,4 +10,13 @@ var (
 		DriverBitfaker:  decimal.NewFromInt(1),
 		DriverUniswapV3: decimal.NewFromInt(2),
 	}
+
+	AllDrivers = []Config{
+		{
+			Driver: DriverBinance,
+		},
+		{
+			Driver: DriverUniswapV3,
+		},
+	}
 )

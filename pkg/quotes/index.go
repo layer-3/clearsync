@@ -4,7 +4,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type IndexAggregator struct {
+type indexAggregator struct {
 	weights map[DriverType]decimal.Decimal
 
 	drivers    []Driver
@@ -15,32 +15,39 @@ type IndexAggregator struct {
 }
 
 // NewIndexAggregator creates a new instance of IndexAggregator.
-func NewIndexAggregator(driverConfigs []Config, weightsMap map[DriverType]decimal.Decimal, outbox chan<- TradeEvent) (*IndexAggregator, error) {
+func NewIndexAggregator(driverConfigs []Config, weightsMap map[DriverType]decimal.Decimal, outbox chan<- TradeEvent) *indexAggregator {
 	aggregated := make(chan TradeEvent, 128)
 
 	drivers := []Driver{}
 	for _, d := range driverConfigs {
+		if d.Driver == DriverIndex {
+			continue
+		}
 		driver, err := NewDriver(d, aggregated)
 		if err != nil {
-			return nil, err
+			continue
 		}
 		drivers = append(drivers, driver)
 	}
 
-	return &IndexAggregator{
+	return &indexAggregator{
 		priceCache: NewPriceCache(weightsMap),
 		weights:    weightsMap,
 		drivers:    drivers,
 		outbox:     outbox,
 		aggregated: aggregated,
-	}, nil
+	}
 }
 
-func (a *IndexAggregator) Name() DriverType {
+func newIndex(outbox chan<- TradeEvent) *indexAggregator {
+	return NewIndexAggregator(AllDrivers, DefaultWeightsMap, outbox)
+}
+
+func (a *indexAggregator) Name() DriverType {
 	return DriverIndex
 }
 
-func (a *IndexAggregator) Start() error {
+func (a *indexAggregator) Start() error {
 	logger.Info("starting index quotes service")
 
 	for _, d := range a.drivers {
@@ -59,7 +66,7 @@ func (a *IndexAggregator) Start() error {
 	return nil
 }
 
-func (a *IndexAggregator) Subscribe(m Market) error {
+func (a *indexAggregator) Subscribe(m Market) error {
 	for _, d := range a.drivers {
 		err := d.Subscribe(m)
 		if err != nil {
@@ -69,7 +76,7 @@ func (a *IndexAggregator) Subscribe(m Market) error {
 	return nil
 }
 
-func (a *IndexAggregator) Unsubscribe(m Market) error {
+func (a *indexAggregator) Unsubscribe(m Market) error {
 	for _, d := range a.drivers {
 		err := d.Unsubscribe(m)
 		if err != nil {
@@ -79,7 +86,7 @@ func (a *IndexAggregator) Unsubscribe(m Market) error {
 	return nil
 }
 
-func (a *IndexAggregator) Stop() error {
+func (a *indexAggregator) Stop() error {
 	for _, d := range a.drivers {
 		err := d.Stop()
 		if err != nil {
@@ -90,7 +97,7 @@ func (a *IndexAggregator) Stop() error {
 }
 
 // indexPrice returns indexPrice based on Weighted Exponential Moving Average of last 20 trades.
-func (a *IndexAggregator) indexPrice(event TradeEvent) TradeEvent {
+func (a *indexAggregator) indexPrice(event TradeEvent) TradeEvent {
 	sourceWeight := a.weights[event.Source]
 	numEMA, denEMA := a.priceCache.Get(event.Market)
 

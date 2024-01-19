@@ -56,7 +56,7 @@ func Test_IndexAggregator(t *testing.T) {
 			DriverUniswapV3: decimal.NewFromInt(0),
 		}
 
-		ag := &IndexAggregator{
+		ag := &indexAggregator{
 			priceCache: NewPriceCache(weights),
 			weights:    weights,
 		}
@@ -102,7 +102,7 @@ func Test_IndexAggregator(t *testing.T) {
 			DriverUniswapV3: decimal.NewFromInt(2),
 		}
 
-		ag := &IndexAggregator{
+		ag := &indexAggregator{
 			priceCache: NewPriceCache(weights),
 			weights:    weights,
 		}
@@ -123,7 +123,7 @@ func Test_IndexAggregator(t *testing.T) {
 			DriverUniswapV3: decimal.NewFromInt(0),
 		}
 
-		ag := &IndexAggregator{
+		ag := &indexAggregator{
 			priceCache: NewPriceCache(weights),
 			weights:    weights,
 		}
@@ -144,7 +144,7 @@ func Test_IndexAggregator(t *testing.T) {
 			DriverUniswapV3: decimal.NewFromInt(2),
 		}
 
-		ag := &IndexAggregator{
+		ag := &indexAggregator{
 			priceCache: NewPriceCache(weights),
 			weights:    weights,
 		}

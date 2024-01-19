@@ -27,6 +27,7 @@ func NewDriver(config Config, outbox chan<- TradeEvent) (Driver, error) {
 		DriverOpendax:   newOpendax(config, outbox),
 		DriverBitfaker:  newBitfaker(config, outbox),
 		DriverUniswapV3: newUniswapV3(config, outbox),
+		DriverIndex:     newIndex(outbox),
 	}
 
 	driver, ok := allDrivers[config.Driver]
