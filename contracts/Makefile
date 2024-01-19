@@ -70,7 +70,7 @@ define gen_binding
 		--type ${STRUCT_NAME} \
 		--out $(1)/$(3).go
 endef
-${BINDINGS:%=${GO_PKG_DIR}/%}: ${ABIGEN_BIN} ${JQ_BIN} compile
+${BINDINGS:%=${GO_PKG_DIR}/%}: ${ABIGEN_BIN} ${JQ_BIN}
 	$(eval VALUES = $(shell echo $@ | sed -r 's#((.*/)?(.*))/(.*).go#\1 \3 \4#'))
 	$(eval PKG_PATH = $(word 1,${VALUES}))
 	$(eval PKG = $(word 2,${VALUES}))
