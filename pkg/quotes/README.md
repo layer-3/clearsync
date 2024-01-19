@@ -14,9 +14,10 @@ Available drivers:
 
 ```go
 type Driver interface {
-	Subscribe(market Market) error
-	Start(markets []Market) error
+	Start() error
 	Stop() error
+	Subscribe(market common.Market) error
+	Unsubscribe(market common.Market) error
 }
 ```
 

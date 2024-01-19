@@ -10,8 +10,11 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/ipfs/go-log/v2"
 	"github.com/shopspring/decimal"
 )
+
+var loggerKraken = log.Logger("kraken")
 
 type kraken struct {
 	once        *once
@@ -45,7 +48,7 @@ func newKraken(config Config, outbox chan<- TradeEvent) *kraken {
 func (k *kraken) Start() error {
 	var startErr error
 	k.once.Start(func() {
-		if err := k.getKrakenPairs(); err != nil {
+		if err := k.getPairs(); err != nil {
 			startErr = err
 			return
 		}
@@ -74,12 +77,12 @@ func (k *kraken) Stop() error {
 	return stopErr
 }
 
-type subscribeMessage struct {
-	Method string             `json:"method"`
-	Params subscriptionParams `json:"params"`
+type krakenSubscribeMessage struct {
+	Method string                   `json:"method"`
+	Params krakenSubscriptionParams `json:"params"`
 }
 
-type subscriptionParams struct {
+type krakenSubscriptionParams struct {
 	Channel  string   `json:"channel"`
 	Snapshot bool     `json:"snapshot"`
 	Symbol   []string `json:"symbol"`
@@ -87,7 +90,7 @@ type subscriptionParams struct {
 
 func (k *kraken) Subscribe(market Market) error {
 	if _, ok := k.streams.Load(market); ok {
-		return fmt.Errorf("%s: %w", market, ErrAlreadySubbed)
+		return fmt.Errorf("%s: %w", market, errAlreadySubbed)
 	}
 
 	symbol := fmt.Sprintf("%s%s", strings.ToUpper(market.BaseUnit), strings.ToUpper(market.QuoteUnit))
@@ -96,9 +99,9 @@ func (k *kraken) Subscribe(market Market) error {
 	}
 
 	pair := fmt.Sprintf("%s/%s", strings.ToUpper(market.BaseUnit), strings.ToUpper(market.QuoteUnit))
-	subMsg := subscribeMessage{
+	subMsg := krakenSubscribeMessage{
 		Method: "subscribe",
-		Params: subscriptionParams{
+		Params: krakenSubscriptionParams{
 			Channel:  "trade",
 			Snapshot: true,
 			Symbol:   []string{pair},
@@ -106,7 +109,7 @@ func (k *kraken) Subscribe(market Market) error {
 	}
 
 	if err := k.writeConn(subMsg); err != nil {
-		return fmt.Errorf("%s: %w: %w", market, ErrFailedSub, err)
+		return fmt.Errorf("%s: %w: %w", market, errFailedSub, err)
 	}
 
 	k.streams.Store(market, struct{}{})
@@ -115,13 +118,13 @@ func (k *kraken) Subscribe(market Market) error {
 
 func (k *kraken) Unsubscribe(market Market) error {
 	if _, ok := k.streams.Load(market); !ok {
-		return fmt.Errorf("%s: %w", market, ErrNotSubbed)
+		return fmt.Errorf("%s: %w", market, errNotSubbed)
 	}
 
 	pair := fmt.Sprintf("%s/%s", strings.ToUpper(market.BaseUnit), strings.ToUpper(market.QuoteUnit))
-	unsubMsg := subscribeMessage{
+	unsubMsg := krakenSubscribeMessage{
 		Method: "unsubscribe",
-		Params: subscriptionParams{
+		Params: krakenSubscriptionParams{
 			Channel:  "trade",
 			Snapshot: true,
 			Symbol:   []string{pair},
@@ -129,13 +132,13 @@ func (k *kraken) Unsubscribe(market Market) error {
 	}
 
 	if err := k.writeConn(unsubMsg); err != nil {
-		return fmt.Errorf("%s: %w: %w", market, ErrFailedUnsub, err)
+		return fmt.Errorf("%s: %w: %w", market, errFailedUnsub, err)
 	}
 	k.streams.Delete(market)
 	return nil
 }
 
-func (k *kraken) writeConn(msg subscribeMessage) error {
+func (k *kraken) writeConn(msg krakenSubscribeMessage) error {
 	payload, err := json.Marshal(msg)
 	if err != nil {
 		return fmt.Errorf("error marshalling subscription message: %v", err)
@@ -155,7 +158,7 @@ func (k *kraken) connect() error {
 		var err error
 		k.conn, _, err = k.dialer.Dial(k.url, nil)
 		if err != nil {
-			logger.Error(err)
+			loggerBinance.Error(err)
 			time.Sleep(k.retryPeriod)
 			continue
 		}
@@ -211,13 +214,13 @@ func (k *kraken) listen() {
 
 		_, rawMsg, err := k.conn.ReadMessage()
 		if err != nil {
-			logger.Errorf("error reading Kraken message: %v", err)
+			loggerBinance.Errorf("error reading message: %v", err)
 
 			k.connect()
 			k.streams.Range(func(m, value any) bool {
 				market := m.(Market)
 				if err := k.Subscribe(market); err != nil {
-					logger.Warnf("Error subscribing to market %s: %s", market, err)
+					loggerBinance.Warnf("Error subscribing to market %s: %s", market, err)
 					return false
 				}
 				return true
@@ -228,7 +231,7 @@ func (k *kraken) listen() {
 
 		tradeEvents, err := k.parseMessage(rawMsg)
 		if err != nil {
-			logger.Errorf("error parsing Kraken message: %v", err)
+			loggerBinance.Errorf("error parsing message: %v", err)
 			continue
 		}
 		if tradeEvents == nil {
@@ -236,7 +239,7 @@ func (k *kraken) listen() {
 		}
 
 		for _, tr := range tradeEvents {
-			if !k.tradeSampler.Allow(tr) {
+			if !k.tradeSampler.allow(tr) {
 				continue
 			}
 
@@ -248,7 +251,7 @@ func (k *kraken) listen() {
 func (k *kraken) parseMessage(rawMsg []byte) ([]TradeEvent, error) {
 	var ticker krakenEvent[krakenTrade]
 	if err := json.Unmarshal(rawMsg, &ticker); err == nil && ticker.Channel != "heartbeat" {
-		return buildKrakenEvents(ticker.Data), nil
+		return k.buildEvents(ticker.Data), nil
 	}
 
 	var status krakenEvent[krakenStatus]
@@ -266,42 +269,42 @@ func (k *kraken) parseMessage(rawMsg []byte) ([]TradeEvent, error) {
 	}
 
 	if !result.Success {
-		return nil, fmt.Errorf("failed to subscribe to Kraken market %s: ", result.Result.Symbol)
+		return nil, fmt.Errorf("failed to subscribe to market %s: ", result.Result.Symbol)
 	}
-	return nil, fmt.Errorf("unknown Kraken message: %s", string(rawMsg))
+	return nil, fmt.Errorf("unknown message: %s", string(rawMsg))
 }
 
 type krakenAssetPairs struct {
-	Error  []interface{}         `json:"error"`
+	Error  []any                 `json:"error"`
 	Result map[string]krakenPair `json:"result"`
 }
 
 type krakenPair struct {
-	Altname           string        `json:"altname"`
-	Wsname            string        `json:"wsname"`
-	AclassBase        string        `json:"aclass_base"`
-	Base              string        `json:"base"`
-	AclassQuote       string        `json:"aclass_quote"`
-	Quote             string        `json:"quote"`
-	Lot               string        `json:"lot"`
-	CostDecimals      int           `json:"cost_decimals"`
-	PairDecimals      int           `json:"pair_decimals"`
-	LotDecimals       int           `json:"lot_decimals"`
-	LotMultiplier     int           `json:"lot_multiplier"`
-	LeverageBuy       []interface{} `json:"leverage_buy"`
-	LeverageSell      []interface{} `json:"leverage_sell"`
-	Fees              [][]float64   `json:"fees"`
-	FeesMaker         [][]float64   `json:"fees_maker"`
-	FeeVolumeCurrency string        `json:"fee_volume_currency"`
-	MarginCall        int           `json:"margin_call"`
-	MarginStop        int           `json:"margin_stop"`
-	Ordermin          string        `json:"ordermin"`
-	Costmin           string        `json:"costmin"`
-	TickSize          string        `json:"tick_size"`
-	Status            string        `json:"status"`
+	Altname           string      `json:"altname"`
+	Wsname            string      `json:"wsname"`
+	AclassBase        string      `json:"aclass_base"`
+	Base              string      `json:"base"`
+	AclassQuote       string      `json:"aclass_quote"`
+	Quote             string      `json:"quote"`
+	Lot               string      `json:"lot"`
+	CostDecimals      int         `json:"cost_decimals"`
+	PairDecimals      int         `json:"pair_decimals"`
+	LotDecimals       int         `json:"lot_decimals"`
+	LotMultiplier     int         `json:"lot_multiplier"`
+	LeverageBuy       []any       `json:"leverage_buy"`
+	LeverageSell      []any       `json:"leverage_sell"`
+	Fees              [][]float64 `json:"fees"`
+	FeesMaker         [][]float64 `json:"fees_maker"`
+	FeeVolumeCurrency string      `json:"fee_volume_currency"`
+	MarginCall        int         `json:"margin_call"`
+	MarginStop        int         `json:"margin_stop"`
+	Ordermin          string      `json:"ordermin"`
+	Costmin           string      `json:"costmin"`
+	TickSize          string      `json:"tick_size"`
+	Status            string      `json:"status"`
 }
 
-func (k *kraken) getKrakenPairs() error {
+func (k *kraken) getPairs() error {
 	// Fetch pairs
 
 	req, err := http.NewRequest(http.MethodGet, "https://api.kraken.com/0/public/AssetPairs", nil)
@@ -316,7 +319,7 @@ func (k *kraken) getKrakenPairs() error {
 	}
 	defer func(Body io.ReadCloser) {
 		if err := Body.Close(); err != nil {
-			logger.Errorf("error closing HTTP response body: %v", err)
+			loggerBinance.Errorf("error closing HTTP response body: %v", err)
 		}
 	}(resp.Body)
 
@@ -331,7 +334,7 @@ func (k *kraken) getKrakenPairs() error {
 
 	var pairs krakenAssetPairs
 	if err := json.Unmarshal(body, &pairs); err != nil {
-		return fmt.Errorf("failed to unmarshal Kraken pairs response: %v", err)
+		return fmt.Errorf("failed to unmarshal pairs response: %v", err)
 	}
 
 	// Convert pairs to map
@@ -339,7 +342,7 @@ func (k *kraken) getKrakenPairs() error {
 	for _, pair := range pairs.Result {
 		if pair.Status != "online" {
 			symbol := fmt.Sprintf("%s%s", strings.ToUpper(pair.Base), strings.ToUpper(pair.Quote))
-			logger.Warnf("market %s doesn't exist in Kraken", symbol)
+			loggerBinance.Warnf("market %s doesn't exist", symbol)
 			continue
 		}
 		k.availablePairs.Store(pair.Altname, pair)
@@ -348,7 +351,7 @@ func (k *kraken) getKrakenPairs() error {
 	return nil
 }
 
-func buildKrakenEvents(trades []krakenTrade) []TradeEvent {
+func (*kraken) buildEvents(trades []krakenTrade) []TradeEvent {
 	var events []TradeEvent
 	for _, tr := range trades {
 		price := decimal.NewFromFloat(tr.Price)

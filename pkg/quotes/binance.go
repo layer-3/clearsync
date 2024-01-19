@@ -7,8 +7,11 @@ import (
 	"time"
 
 	gobinance "github.com/adshao/go-binance/v2"
+	"github.com/ipfs/go-log/v2"
 	"github.com/shopspring/decimal"
 )
+
+var loggerBinance = log.Logger("binance")
 
 type binance struct {
 	once         *once
@@ -48,16 +51,16 @@ func (b *binance) Stop() error {
 func (b *binance) Subscribe(market Market) error {
 	pair := strings.ToUpper(market.BaseUnit) + strings.ToUpper(market.QuoteUnit)
 	if _, ok := b.streams.Load(pair); ok {
-		return fmt.Errorf("%s: %w", market, ErrAlreadySubbed)
+		return fmt.Errorf("%s: %w", market, errAlreadySubbed)
 	}
 
 	handleErr := func(err error) {
-		logger.Errorf("error for Binance market %s: %v", pair, err)
+		loggerBinance.Errorf("error for Binance market %s: %v", pair, err)
 	}
 
 	doneCh, stopCh, err := gobinance.WsTradeServe(pair, b.handleTrade, handleErr)
 	if err != nil {
-		return fmt.Errorf("%s: %w: %w", market, ErrFailedSub, err)
+		return fmt.Errorf("%s: %w: %w", market, errFailedSub, err)
 	}
 	b.streams.Store(pair, stopCh)
 
@@ -72,7 +75,7 @@ func (b *binance) Subscribe(market Market) error {
 		}
 	}()
 
-	logger.Infof("subscribed to Binance %s market", strings.ToUpper(pair))
+	loggerBinance.Infof("subscribed to Binance %s market", strings.ToUpper(pair))
 	return nil
 }
 
@@ -80,7 +83,7 @@ func (b *binance) Unsubscribe(market Market) error {
 	pair := strings.ToUpper(market.BaseUnit) + strings.ToUpper(market.QuoteUnit)
 	stream, ok := b.streams.Load(pair)
 	if !ok {
-		return fmt.Errorf("%s: %w", market, ErrNotSubbed)
+		return fmt.Errorf("%s: %w", market, errNotSubbed)
 	}
 
 	stopCh := stream.(chan struct{})
@@ -92,29 +95,29 @@ func (b *binance) Unsubscribe(market Market) error {
 }
 
 func (b *binance) handleTrade(event *gobinance.WsTradeEvent) {
-	tradeEvent, err := buildBinanceEvent(event)
+	tradeEvent, err := b.buildEvent(event)
 	if err != nil {
-		logger.Error(err)
+		loggerBinance.Error(err)
 		return
 	}
 
-	if !b.tradeSampler.Allow(tradeEvent) {
+	if !b.tradeSampler.allow(tradeEvent) {
 		return
 	}
 
 	b.outbox <- tradeEvent
 }
 
-func buildBinanceEvent(tr *gobinance.WsTradeEvent) (TradeEvent, error) {
+func (*binance) buildEvent(tr *gobinance.WsTradeEvent) (TradeEvent, error) {
 	price, err := decimal.NewFromString(tr.Price)
 	if err != nil {
-		logger.Warn(err)
+		loggerBinance.Warn(err)
 		return TradeEvent{}, err
 	}
 
 	amount, err := decimal.NewFromString(tr.Quantity)
 	if err != nil {
-		logger.Warn(err)
+		loggerBinance.Warn(err)
 		return TradeEvent{}, err
 	}
 

@@ -10,7 +10,7 @@ const ParseError = "unexpected message"
 
 func ParseRaw(msg []byte) (*Msg, error) {
 	req := Msg{}
-	var v []interface{}
+	var v []any
 	if err := json.Unmarshal(msg, &v); err != nil {
 		return nil, fmt.Errorf("could not parse message: %w", err)
 	}
@@ -29,7 +29,7 @@ func ParseRaw(msg []byte) (*Msg, error) {
 
 	var reqID uint64
 	var method string
-	var args []interface{}
+	var args []any
 
 	switch t {
 	case Request, Response:

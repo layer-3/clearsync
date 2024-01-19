@@ -13,7 +13,7 @@ func TestEncoding(t *testing.T) {
 		Type:   Request,
 		ReqID:  42,
 		Method: "test",
-		Args:   []interface{}{"hello", "there"},
+		Args:   []any{"hello", "there"},
 	}
 
 	enc, err := msg.Encode()
@@ -29,7 +29,7 @@ func TestEncodingEvent(t *testing.T) {
 		Type:   EventPrivate,
 		ReqID:  42,
 		Method: "test",
-		Args:   []interface{}{"hello", "there"},
+		Args:   []any{"hello", "there"},
 	}
 
 	enc, err := msg.Encode()

@@ -12,7 +12,7 @@ func TestArgsIterator(t *testing.T) {
 	t.Run("no errors", func(t *testing.T) {
 		t.Parallel()
 
-		args := []interface{}{
+		args := []any{
 			float64(1),
 			"123",
 			float64(3),
@@ -24,7 +24,7 @@ func TestArgsIterator(t *testing.T) {
 			float64(0.65),
 			true,
 			12345.565656,
-			[]interface{}{1, 2, "hello"},
+			[]any{1, 2, "hello"},
 		}
 		it := NewArgIterator(args)
 
@@ -74,7 +74,7 @@ func TestArgsIterator(t *testing.T) {
 
 		slicev := it.NextSlice()
 		assert.NoError(t, it.Err())
-		assert.Equal(t, slicev, []interface{}{1, 2, "hello"})
+		assert.Equal(t, slicev, []any{1, 2, "hello"})
 
 		it.NextUint64()
 		assert.Equal(t, it.Err(), ErrIterationDone)
@@ -83,7 +83,7 @@ func TestArgsIterator(t *testing.T) {
 	t.Run("no errors", func(t *testing.T) {
 		t.Parallel()
 
-		args := []interface{}{
+		args := []any{
 			"123",
 			"56.89",
 			"hello",

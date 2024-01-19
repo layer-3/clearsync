@@ -79,12 +79,13 @@ func TestOpendax_parseOpendaxMsg(t *testing.T) {
 			ReqID:  1,
 			Type:   3,
 			Method: "trade",
-			Args:   []interface{}{"btcusd", 1, 1, 1, 1, 1, "buy", "Opendax"},
+			Args:   []any{"btcusd", 1, 1, 1, 1, 1, "buy", "Opendax"},
 		}
 		byteMsg, err := message.Encode()
 		require.NoError(t, err)
 
-		tradeEvent, err := parseOpendaxMsg(byteMsg)
+		o := &opendax{}
+		tradeEvent, err := o.parse(byteMsg)
 		require.NoError(t, err)
 
 		number, _ := decimal.NewFromString("1")
@@ -107,7 +108,8 @@ func TestOpendax_parseOpendaxMsg(t *testing.T) {
 		byteMsg, err := json.Marshal(trade)
 		require.NoError(t, err)
 
-		_, err = parseOpendaxMsg(byteMsg)
+		o := &opendax{}
+		_, err = o.parse(byteMsg)
 		require.EqualError(t, errors.New("could not parse message: json: cannot unmarshal string into Go value of type []interface {}"), err.Error())
 	})
 
@@ -118,12 +120,13 @@ func TestOpendax_parseOpendaxMsg(t *testing.T) {
 			ReqID:  1,
 			Type:   3,
 			Method: "trade",
-			Args:   []interface{}{""},
+			Args:   []any{""},
 		}
 		byteMsg, err := trade.Encode()
 		require.NoError(t, err)
 
-		_, err = parseOpendaxMsg(byteMsg)
+		o := &opendax{}
+		_, err = o.parse(byteMsg)
 		require.Error(t, err)
 	})
 }
@@ -229,7 +232,7 @@ func TestOpendax_listen(t *testing.T) {
 			ReqID:  1,
 			Type:   3,
 			Method: "trade",
-			Args:   []interface{}{"btcusd", 1, 1, 1, 1, 1, "buy", "Opendax"},
+			Args:   []any{"btcusd", 1, 1, 1, 1, 1, "buy", "Opendax"},
 		}
 
 		rawMsg, err := update.Encode()

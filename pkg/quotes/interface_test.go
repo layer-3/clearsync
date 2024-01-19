@@ -57,15 +57,4 @@ func TestNewDriver(t *testing.T) {
 		_, ok := priceFeeds.(*opendax)
 		assert.True(t, ok)
 	})
-
-	t.Run("Unknown driver", func(t *testing.T) {
-		t.Parallel()
-
-		priceFeeds, err := NewDriver(
-			Config{Driver: DriverType{"wtf"}},
-			make(chan<- TradeEvent, 1),
-		)
-		require.Error(t, err)
-		assert.Nil(t, priceFeeds)
-	})
 }

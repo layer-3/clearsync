@@ -21,13 +21,13 @@ var ErrValueNil = errors.New("value is nil")
 // ArgIterator is a helper for msg arguments processing.
 type ArgIterator struct {
 	ind  int
-	args []interface{}
+	args []any
 
 	err error
 }
 
 // NewArgIterator creates new ready-to-use iterator
-func NewArgIterator(args []interface{}) *ArgIterator {
+func NewArgIterator(args []any) *ArgIterator {
 	return &ArgIterator{0, args, nil}
 }
 
@@ -47,7 +47,7 @@ func (a *ArgIterator) More() bool {
 }
 
 // Next returns next value or nil, sets ErrIterationDone
-func (a *ArgIterator) Next() interface{} {
+func (a *ArgIterator) Next() any {
 	if a.Err() != nil {
 		return nil
 	}
@@ -267,14 +267,14 @@ func (a *ArgIterator) NextInt() int {
 	}
 }
 
-// NextSlice returns next value converted to []interface{}
-func (a *ArgIterator) NextSlice() []interface{} {
+// NextSlice returns next value converted to []any
+func (a *ArgIterator) NextSlice() []any {
 	el := a.Next()
 	if err := a.Err(); err != nil {
 		return nil
 	}
 
-	converted, ok := el.([]interface{})
+	converted, ok := el.([]any)
 	if !ok {
 		a.err = ErrInvalidType
 		return nil
@@ -308,8 +308,8 @@ func (a *ArgIterator) NextTimestamp() int64 {
 	}
 }
 
-// NextInterface returns next value converted to interface{}
-func (a *ArgIterator) NextInterface() interface{} {
+// NextInterface returns next value converted to any
+func (a *ArgIterator) NextInterface() any {
 	el := a.Next()
 	if err := a.Err(); err != nil {
 		return nil
