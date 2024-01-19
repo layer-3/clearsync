@@ -275,33 +275,33 @@ func (k *kraken) parseMessage(rawMsg []byte) ([]TradeEvent, error) {
 }
 
 type krakenAssetPairs struct {
-	Error  []interface{}         `json:"error"`
+	Error  []any                 `json:"error"`
 	Result map[string]krakenPair `json:"result"`
 }
 
 type krakenPair struct {
-	Altname           string        `json:"altname"`
-	Wsname            string        `json:"wsname"`
-	AclassBase        string        `json:"aclass_base"`
-	Base              string        `json:"base"`
-	AclassQuote       string        `json:"aclass_quote"`
-	Quote             string        `json:"quote"`
-	Lot               string        `json:"lot"`
-	CostDecimals      int           `json:"cost_decimals"`
-	PairDecimals      int           `json:"pair_decimals"`
-	LotDecimals       int           `json:"lot_decimals"`
-	LotMultiplier     int           `json:"lot_multiplier"`
-	LeverageBuy       []interface{} `json:"leverage_buy"`
-	LeverageSell      []interface{} `json:"leverage_sell"`
-	Fees              [][]float64   `json:"fees"`
-	FeesMaker         [][]float64   `json:"fees_maker"`
-	FeeVolumeCurrency string        `json:"fee_volume_currency"`
-	MarginCall        int           `json:"margin_call"`
-	MarginStop        int           `json:"margin_stop"`
-	Ordermin          string        `json:"ordermin"`
-	Costmin           string        `json:"costmin"`
-	TickSize          string        `json:"tick_size"`
-	Status            string        `json:"status"`
+	Altname           string      `json:"altname"`
+	Wsname            string      `json:"wsname"`
+	AclassBase        string      `json:"aclass_base"`
+	Base              string      `json:"base"`
+	AclassQuote       string      `json:"aclass_quote"`
+	Quote             string      `json:"quote"`
+	Lot               string      `json:"lot"`
+	CostDecimals      int         `json:"cost_decimals"`
+	PairDecimals      int         `json:"pair_decimals"`
+	LotDecimals       int         `json:"lot_decimals"`
+	LotMultiplier     int         `json:"lot_multiplier"`
+	LeverageBuy       []any       `json:"leverage_buy"`
+	LeverageSell      []any       `json:"leverage_sell"`
+	Fees              [][]float64 `json:"fees"`
+	FeesMaker         [][]float64 `json:"fees_maker"`
+	FeeVolumeCurrency string      `json:"fee_volume_currency"`
+	MarginCall        int         `json:"margin_call"`
+	MarginStop        int         `json:"margin_stop"`
+	Ordermin          string      `json:"ordermin"`
+	Costmin           string      `json:"costmin"`
+	TickSize          string      `json:"tick_size"`
+	Status            string      `json:"status"`
 }
 
 func (k *kraken) getPairs() error {

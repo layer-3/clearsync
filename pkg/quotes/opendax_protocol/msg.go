@@ -28,27 +28,27 @@ type Msg struct {
 	Type   uint8
 	ReqID  uint64
 	Method string
-	Args   []interface{}
+	Args   []any
 }
 
-func NewSubscribeMessage(reqID uint64, topics ...interface{}) *Msg {
+func NewSubscribeMessage(reqID uint64, topics ...any) *Msg {
 	return &Msg{
 		Type:   Request,
 		ReqID:  reqID,
 		Method: MethodSubscribe,
-		Args: []interface{}{
+		Args: []any{
 			"public",
 			topics,
 		},
 	}
 }
 
-func NewUnsubscribeMessage(reqID uint64, topics ...interface{}) *Msg {
+func NewUnsubscribeMessage(reqID uint64, topics ...any) *Msg {
 	return &Msg{
 		Type:   Request,
 		ReqID:  reqID,
 		Method: MethodUnsubscribe,
-		Args: []interface{}{
+		Args: []any{
 			"public",
 			topics,
 		},
@@ -59,7 +59,7 @@ func NewUnsubscribeMessage(reqID uint64, topics ...interface{}) *Msg {
 func (m *Msg) Encode() ([]byte, error) {
 	switch m.Type {
 	case Response, Request:
-		return json.Marshal([]interface{}{
+		return json.Marshal([]any{
 			m.Type,
 			m.ReqID,
 			m.Method,
@@ -67,7 +67,7 @@ func (m *Msg) Encode() ([]byte, error) {
 		})
 
 	case EventPrivate, EventPublic, EventAdmin:
-		return json.Marshal([]interface{}{
+		return json.Marshal([]any{
 			m.Type,
 			m.Method,
 			m.Args,

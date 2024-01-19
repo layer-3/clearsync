@@ -19,7 +19,7 @@ func TestParseRaw(t *testing.T) {
 				Type:   Request,
 				ReqID:  42,
 				Method: "ping",
-				Args:   []interface{}{},
+				Args:   []any{},
 			}, msg)
 		msg, err = ParseRaw([]byte(`[2,42,"pong",[]]`))
 		assert.NoError(t, err)
@@ -28,7 +28,7 @@ func TestParseRaw(t *testing.T) {
 				Type:   Response,
 				ReqID:  42,
 				Method: "pong",
-				Args:   []interface{}{},
+				Args:   []any{},
 			}, msg)
 		msg, err = ParseRaw([]byte(`[3,"temperature",[28.7]]`))
 		assert.NoError(t, err)
@@ -37,7 +37,7 @@ func TestParseRaw(t *testing.T) {
 				Type:   EventPublic,
 				ReqID:  0,
 				Method: "temperature",
-				Args:   []interface{}{28.7},
+				Args:   []any{28.7},
 			}, msg)
 	})
 

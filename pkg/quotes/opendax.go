@@ -197,7 +197,7 @@ func (o *opendax) parse(message []byte) (*TradeEvent, error) {
 	return tradeEvent, nil
 }
 
-func (o *opendax) convertToTrade(args []interface{}) (*TradeEvent, error) {
+func (o *opendax) convertToTrade(args []any) (*TradeEvent, error) {
 	it := protocol.NewArgIterator(args)
 
 	market := it.NextString()
