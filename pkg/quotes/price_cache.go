@@ -8,7 +8,8 @@ import (
 
 type PriceInterface interface {
 	Get(market string) (decimal.Decimal, decimal.Decimal)
-	Update(driver DriverType, market string, priceWeight, weight decimal.Decimal)
+	Update(market string, priceWeight, weight decimal.Decimal)
+	ActivateDriver(driver DriverType, market string)
 	ActiveWeights(market string) decimal.Decimal
 }
 
@@ -47,8 +48,8 @@ func (p *PriceCache) Get(market string) (decimal.Decimal, decimal.Decimal) {
 	return decimal.Zero, decimal.Zero
 }
 
-// Update updates or creates a price record in cache. It also makes the driver active in the drivers map.
-func (p *PriceCache) Update(driver DriverType, market string, numEMA, denEMA decimal.Decimal) {
+// Update updates or creates a price record in cache.
+func (p *PriceCache) Update(market string, numEMA, denEMA decimal.Decimal) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -56,10 +57,22 @@ func (p *PriceCache) Update(driver DriverType, market string, numEMA, denEMA dec
 	if ok {
 		p.market[market].numEMA = numEMA
 		p.market[market].denEMA = denEMA
+		return
+	}
+	p.market[market] = &price{numEMA: numEMA, denEMA: denEMA, driversActive: map[DriverType]bool{}}
+}
+
+// ActivateDriver makes the driver active for the market.
+func (p *PriceCache) ActivateDriver(driver DriverType, market string) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	_, ok := p.market[market]
+	if ok {
 		p.market[market].driversActive[driver] = true
 		return
 	}
-	p.market[market] = &price{numEMA: numEMA, denEMA: denEMA, driversActive: map[DriverType]bool{driver: true}}
+	p.market[market] = &price{numEMA: decimal.Zero, denEMA: decimal.Zero, driversActive: map[DriverType]bool{driver: true}}
 }
 
 // ActiveWeights returns the sum of active driver weights for the market.

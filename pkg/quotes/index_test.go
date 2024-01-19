@@ -113,7 +113,7 @@ func Test_IndexAggregator(t *testing.T) {
 			result = append(result, res.Price.Round(5).InexactFloat64())
 		}
 
-		exp := []float64{41000, 41223.8806, 43500.32787, 43873.32054, 43343.1976}
+		exp := []float64{41000, 41223.8806, 42464.61758, 42933.56853, 42503.12993}
 		require.Equal(t, exp, result)
 	})
 

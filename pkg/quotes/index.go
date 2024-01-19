@@ -94,6 +94,7 @@ func (a *IndexAggregator) indexPrice(event TradeEvent) TradeEvent {
 	sourceWeight := a.weights[event.Source]
 	numEMA, denEMA := a.priceCache.Get(event.Market)
 
+	a.priceCache.ActivateDriver(event.Source, event.Market)
 	activeWeights := a.priceCache.ActiveWeights(event.Market)
 	if activeWeights == decimal.Zero {
 		activeWeights = sourceWeight
@@ -110,11 +111,11 @@ func (a *IndexAggregator) indexPrice(event TradeEvent) TradeEvent {
 
 	// Weighted Exponential Moving Average:
 	// https://www.financialwisdomforum.org/gummy-stuff/EMA.htm
-	newPriceWeightEMA := EMA20(numEMA, event.Price.Mul(event.Amount).Mul(sourceMultiplier))
-	newWeightEMA := EMA20(denEMA, event.Amount.Mul(sourceMultiplier))
+	newNumEMA := EMA20(numEMA, event.Price.Mul(event.Amount).Mul(sourceMultiplier))
+	newDenEMA := EMA20(denEMA, event.Amount.Mul(sourceMultiplier))
 
-	newEMA := newPriceWeightEMA.Div(newWeightEMA)
-	a.priceCache.Update(event.Source, event.Market, newPriceWeightEMA, newWeightEMA)
+	newEMA := newNumEMA.Div(newDenEMA)
+	a.priceCache.Update(event.Market, newNumEMA, newDenEMA)
 
 	event.Price = newEMA
 	event.Source = DriverIndex
@@ -128,14 +129,14 @@ func EMA20(lastEMA, newPrice decimal.Decimal) decimal.Decimal {
 }
 
 // EMA returns Exponential Moving Average based on previous EMA, current price and the number of intervals.
-func EMA(previousEMA, price decimal.Decimal, intervals int32) decimal.Decimal {
+func EMA(previousEMA, newValue decimal.Decimal, intervals int32) decimal.Decimal {
 	if intervals <= 0 {
 		return decimal.Zero
 	}
 
 	smoothing := smoothing(intervals)
-	// EMA = ((price − previous EMA) × smoothing constant) + (previous EMA).
-	return smoothing.Mul(price.Sub(previousEMA)).Add(previousEMA)
+	// EMA = ((newValue − previous EMA) × smoothing constant) + (previous EMA).
+	return smoothing.Mul(newValue.Sub(previousEMA)).Add(previousEMA)
 }
 
 // smoothing returns a smothing constant which equals 2 ÷ (number of periods + 1).
