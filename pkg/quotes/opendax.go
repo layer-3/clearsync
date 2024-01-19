@@ -112,7 +112,7 @@ func (o *opendax) connect() {
 			return
 		}
 
-		loggerBinance.Warnf("connection attempt failed: %s", err.Error())
+		loggerOpendax.Warnf("connection attempt failed: %s", err.Error())
 		time.Sleep(o.period)
 	}
 }
@@ -120,17 +120,17 @@ func (o *opendax) connect() {
 func (o *opendax) writeConn(message *protocol.Msg) error {
 	byteMsg, err := message.Encode()
 	if err != nil {
-		loggerBinance.Warn(err)
+		loggerOpendax.Warn(err)
 		return err
 	}
 
 	if err := o.conn.WriteMessage(websocket.TextMessage, byteMsg); err != nil {
-		loggerBinance.Warn(err)
+		loggerOpendax.Warn(err)
 		return err
 	}
 
 	if _, _, err := o.conn.ReadMessage(); err != nil {
-		loggerBinance.Warn(err)
+		loggerOpendax.Warn(err)
 		return err
 	}
 	return nil
@@ -147,13 +147,13 @@ func (o *opendax) listen() {
 
 		_, message, err := o.conn.ReadMessage()
 		if err != nil {
-			loggerBinance.Warn("error reading from connection", err)
+			loggerOpendax.Warn("error reading from connection", err)
 
 			o.connect()
 			o.streams.Range(func(m, value any) bool {
 				market := m.(Market)
 				if err := o.Subscribe(market); err != nil {
-					loggerBinance.Warnf("error subscribing to market %s: %s", market, err)
+					loggerOpendax.Warnf("error subscribing to market %s: %s", market, err)
 					return false
 				}
 				return true
@@ -164,7 +164,7 @@ func (o *opendax) listen() {
 
 		trEvent, err := o.parse(message)
 		if err != nil {
-			loggerBinance.Warn(err)
+			loggerOpendax.Warn(err)
 			continue
 		}
 

@@ -15,9 +15,9 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-var logger = log.Logger("uniswap")
+var loggerUniswapV3Api = log.Logger("uniswap_v3_api")
 
-type uniswapV3 struct {
+type uniswapV3Api struct {
 	once       *once
 	url        string
 	outbox     chan<- TradeEvent
@@ -25,13 +25,13 @@ type uniswapV3 struct {
 	streams    sync.Map
 }
 
-func newUniswapV3(config Config, outbox chan<- TradeEvent) *uniswapV3 {
+func newUniswapV3Api(config Config, outbox chan<- TradeEvent) *uniswapV3Api {
 	url := "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3"
 	if config.URL != "" {
 		url = config.URL
 	}
 
-	return &uniswapV3{
+	return &uniswapV3Api{
 		once:       newOnce(),
 		url:        url,
 		outbox:     outbox,
@@ -39,12 +39,12 @@ func newUniswapV3(config Config, outbox chan<- TradeEvent) *uniswapV3 {
 	}
 }
 
-func (u *uniswapV3) Start() error {
+func (u *uniswapV3Api) Start() error {
 	u.once.Start(func() {})
 	return nil
 }
 
-func (u *uniswapV3) Stop() error {
+func (u *uniswapV3Api) Stop() error {
 	u.once.Stop(func() {
 		u.streams.Range(func(market, stream any) bool {
 			stopCh := stream.(chan struct{})
@@ -58,7 +58,7 @@ func (u *uniswapV3) Stop() error {
 	return nil
 }
 
-func (u *uniswapV3) Subscribe(market Market) error {
+func (u *uniswapV3Api) Subscribe(market Market) error {
 	symbol := market.BaseUnit + market.QuoteUnit
 
 	if _, ok := u.streams.Load(market); ok {
@@ -82,7 +82,7 @@ func (u *uniswapV3) Subscribe(market Market) error {
 				stopCh := stream.(chan struct{})
 				select {
 				case <-stopCh:
-					loggerBinance.Infof("market %s is stopped", symbol)
+					loggerUniswapV3Api.Infof("market %s is stopped", symbol)
 					return
 				default:
 				}
@@ -94,18 +94,18 @@ func (u *uniswapV3) Subscribe(market Market) error {
 				swaps, err := u.fetchSwaps(market, from, to)
 				if err != nil {
 					err = fmt.Errorf("%s: %w", market, err)
-					loggerBinance.Warn(err)
+					loggerUniswapV3Api.Warn(err)
 				}
 
 				for _, swap := range swaps {
 					price := calculatePrice(swap.SqrtPriceX96, swap.Token0.Decimals, swap.Token1.Decimals)
 					createdAt, err := swap.time()
 					if err != nil {
-						loggerBinance.Warnf("failed to get swap timestamp: %s", err)
+						loggerUniswapV3Api.Warnf("failed to get swap timestamp: %s", err)
 					}
 
 					u.outbox <- TradeEvent{
-						Source:    DriverUniswapV3,
+						Source:    DriverUniswapV3Api,
 						Market:    market.QuoteUnit,
 						Price:     price,
 						Amount:    swap.Amount0,
@@ -122,7 +122,7 @@ func (u *uniswapV3) Subscribe(market Market) error {
 	return nil
 }
 
-func (u *uniswapV3) Unsubscribe(market Market) error {
+func (u *uniswapV3Api) Unsubscribe(market Market) error {
 	stream, ok := u.streams.Load(market)
 	if !ok {
 		return fmt.Errorf("%s: %w", market, errNotSubbed)
@@ -143,7 +143,7 @@ const tokenTemplate = `query {
  }
 }`
 
-func (u *uniswapV3) isMarketAvailable(market Market) (bool, error) {
+func (u *uniswapV3Api) isMarketAvailable(market Market) (bool, error) {
 	query := fmt.Sprintf(tokenTemplate,
 		strings.ToUpper(market.BaseUnit),
 		strings.ToUpper(market.QuoteUnit),
@@ -178,7 +178,7 @@ const swapsTemplate = `query {
   }
 }`
 
-func (u *uniswapV3) fetchSwaps(market Market, from, to time.Time) ([]uniswapV3Swap, error) {
+func (u *uniswapV3Api) fetchSwaps(market Market, from, to time.Time) ([]uniswapV3Swap, error) {
 	query := fmt.Sprintf(swapsTemplate,
 		from.Unix(),
 		to.Unix(),
@@ -206,7 +206,7 @@ func runUniswapV3GraphqlRequest[T uniswapV3Pools | uniswapV3Swaps](url, query st
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
-			loggerBinance.Errorf("error closing HTTP response body: %v", err)
+			loggerUniswapV3Api.Errorf("error closing HTTP response body: %v", err)
 		}
 	}(resp.Body)
 
