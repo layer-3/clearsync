@@ -116,6 +116,7 @@ func (u *uniswapV3Api) Subscribe(market Market) error {
 					}
 				}
 				timer = time.After(u.windowSize)
+				from = to
 			default:
 			}
 		}
