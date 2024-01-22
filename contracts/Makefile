@@ -16,13 +16,13 @@ BINDINGS = \
 	abi/iuniswap_v3_factory/iuniswap_v3_factory.go \
 	abi/iuniswap_v3_router/iuniswap_v3_router.go \
 	abi/isyncswap_factory/isyncswap_factory.go \
-	abi/isyncswap_router/isyncswap_router.go \
 	artifacts/test_erc20/test_erc20.go \
 	artifacts/adjudicator/yellow_adjudicator.go \
 	artifacts/yellow_token/yellow_token.go \
 	artifacts/consensus_app/consensus_app.go \
 	artifacts/margin_app/margin_app_v1.go \
-	artifacts/escrow_app/escrow_app.go
+	artifacts/escrow_app/escrow_app.go \
+	artifacts/syncswap_router/syncswap_router.go
 
 default: deps solc bindings
 
@@ -48,7 +48,6 @@ iyellow_adjudicator_GO = IYellowAdjudicator contracts/interfaces/IYellowAdjudica
 iuniswap_v3_factory_GO = IUniswapV3Factory @uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol/IUniswapV3Factory.json
 iuniswap_v3_router_GO = IUniswapV3Router @uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol/ISwapRouter.json
 isyncswap_factory_GO = ISyncSwapFactory @syncswap/core-contracts/contracts/interfaces/factory/IBasePoolFactory.sol/IBasePoolFactory.json
-isyncswap_router_GO = ISyncSwapRouter @syncswap/core-contracts/contracts/interfaces/IRouter.sol/IRouter.json
 
 test_erc20_GO = TestERC20 contracts/test/TestERC20.sol/TestERC20.json
 yellow_adjudicator_GO = YellowAdjudicator contracts/clearing/YellowAdjudicator.sol/YellowAdjudicator.json
@@ -56,6 +55,7 @@ yellow_token_GO = YellowToken contracts/YellowToken.sol/YellowToken.json
 consensus_app_GO = ConsensusApp contracts/nitro/ConsensusApp.sol/ConsensusApp.json
 margin_app_v1_GO = MarginAppV1 contracts/clearing/MarginAppV1.sol/MarginAppV1.json
 escrow_app_GO = EscrowApp contracts/clearing/EscrowApp.sol/EscrowApp.json
+syncswap_router_GO = SyncSwapRouter @syncswap/core-contracts/contracts/SyncSwapRouter.sol/SyncSwapRouter.json
 define gen_binding
 	$(eval STRUCT_NAME = $(word 1,$($(3)_GO)))
 	$(eval ARTIFACT_PATH = $(word 2,$($(3)_GO)))
