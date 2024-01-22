@@ -3,7 +3,7 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -37,19 +37,21 @@ func main() {
 		panic(err)
 	}
 
-	err = driver.Start()
-	if err != nil {
+	if err := driver.Start(); err != nil {
 		panic(err)
 	}
 
 	market := quotes.Market{BaseUnit: "usdc", QuoteUnit: "weth"}
-	err = driver.Subscribe(market)
-	if err != nil {
+	if err = driver.Subscribe(market); err != nil {
 		panic(err)
 	}
 
-	log.Printf("Subscribed for market %s", market)
+	slog.Info("Subscribed", "market", market)
 	for e := range outbox {
-		log.Printf("market: %s, price: %.5f, amount: %s\n", e.Market, e.Price.InexactFloat64(), e.Amount.String())
+		slog.Info("new trade",
+			"market", e.Market,
+			"side", e.TakerType.String(),
+			"price", e.Price.String(),
+			"amount", e.Amount.String())
 	}
 }
