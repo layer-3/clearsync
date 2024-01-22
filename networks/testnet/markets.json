@@ -1,6 +1,5 @@
 [
-    "spot://BTC/USDT",
-    "spot://ETH/USDT",
-    "spot://MATIC/USDT",
-    "spot://SHIB/USDT"
+  "spot://USDC/USDT",
+  "spot://WBTC/USDT",
+  "spot://WETH/USDT"
 ]

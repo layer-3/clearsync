@@ -1,8 +1,8 @@
 {
-  "chainId": 11155111,
-  "blockchainRPC": "https://sepolia.infura.io/v3/a655b83e4be64f6a9b05d5b4ab43cf74",
-  "adjudicatorAddress": "0x47871f064d0b2ABf9190275C4D69f466C98fBD77",
-  "clearingAppAddress": "0xa6F5563CD2D38a0c1F2D41DF7Eff7181bf3c6a7e",
-  "escrowAppAddress": "0xcccb67333fEefb04e85521fF0c219Cdb12539b84",
-  "marginTokenAddress": "0x98e255A2D9e36d5174a7787aBA7053e60F47Fc08"
+  "chainId": 59140,
+  "blockchainRPC": "wss://linea-goerli.infura.io/v3/a655b83e4be64f6a9b05d5b4ab43cf74",
+  "adjudicatorAddress": "0xecd113352c973c769208a77aae8626f9fbf81c6e",
+  "clearingAppAddress": "0x478c6745c0fa5c83b886fc9d417e03c14371e9d2",
+  "escrowAppAddress": "0x94328be5c288Aa28185799435d87a7F5CB366B72",
+  "marginTokenAddress": "0x891967b45eb9910768a9FC48DBb11120Ee180125"
 }

@@ -1,88 +1,74 @@
 {
   "tokens": [
     {
-      "chainId": 11155111,
-      "address": "0x98e255A2D9e36d5174a7787aBA7053e60F47Fc08",
-      "name": "USD Tether",
-      "symbol": "USDT",
-      "decimals": 6
-    },
-    {
-      "chainId": 11155111,
-      "address": "0x42b757f0B530cb44139ceDd9F0C47249175CBC7E",
-      "name": "USD Coin",
-      "symbol": "USDC",
-      "decimals": 6
-    },
-    {
-      "chainId": 11155111,
-      "address": "0x3e594179ad7E013f817bCddF310a7e75b2b069a9",
-      "name": "Shiba Inu",
-      "symbol": "SHIB",
-      "decimals": 18
-    },
-    {
-      "chainId": 11155111,
-      "address": "0x9cEF6720Ba49c8C94Df1CfA0D713828B7B9fAEB1",
-      "name": "Bitcoin",
-      "symbol": "BTC",
-      "decimals": 18
-    },
-    {
-      "chainId": 11155111,
-      "address": "0x2Ff553CA05b647b0e352fe25828BB754a35Ff7dE",
-      "name": "Ether",
-      "symbol": "ETH",
-      "decimals": 18
-    },
-    {
-      "chainId": 11155111,
-      "address": "0x4e519DD7b0137D3D7a3Fe8EA2aC38E9c598230DB",
-      "name": "Polygon",
-      "symbol": "MATIC",
-      "decimals": 18
-    },
-    {
-      "chainId": 11155111,
-      "address": "0x63FD175d3215779deBA7532fC660fA0E10c18676",
-      "name": "Duckies, the canary network for Yellow ",
+      "chainId": 59140,
+      "address": "0x4889C4d392DF005dEE5e3998D170Fa90F994699b",
+      "name": "Yellow Duckies",
       "symbol": "DUCKIES",
-      "decimals": 2
+      "decimals": 8,
+      "precision": 6,
+      "logoURI": "https://www.yellow.org/images/duckies_200x200.png",
+      "extensions": {}
     },
     {
-      "chainId": 5,
-      "address": "0x627987539Cc01D1F32d5563039b685190c7BDB28",
+      "chainId": 59140,
+      "address": "0x891967b45eb9910768a9FC48DBb11120Ee180125",
       "name": "USD Tether",
       "symbol": "USDT",
-      "decimals": 6
+      "decimals": 6,
+      "precision": 6,
+      "logoURI": "https://lineascan.build/token/images/usdtlogo_32.png",
+      "extensions": {}
     },
     {
-      "chainId": 5,
-      "address": "0x16A19b49b780F542616132Eab942E14D13a68De1",
+      "chainId": 59140,
+      "address": "0x9E210Dd034Df7945606f1725447dD68C9FE3fc39",
       "name": "USD Coin",
       "symbol": "USDC",
-      "decimals": 6
+      "decimals": 6,
+      "precision": 6,
+      "logoURI": "https://lineascan.build/token/images/centre-usdc_28.png",
+      "extensions": {}
     },
     {
-      "chainId": 5,
-      "address": "0x79aa2F880516ed55Fd34A1c655a3C603b0A919B5",
+      "chainId": 59140,
+      "address": "0xb3Ea26Da98fFB06A5c5a7A972d6d4dE58967E38a",
       "name": "LUBE",
       "symbol": "LUBE",
-      "decimals": 18
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "",
+      "extensions": {}
     },
     {
-      "chainId": 5,
-      "address": "0xE5393a58624d696Cb225d5EFC9F1a201caB1ad06",
+      "chainId": 59140,
+      "address": "0x2469206634e32ab6c284e208fB27dF48A29F5359",
       "name": "Wrapped Bitcoin",
       "symbol": "WBTC",
-      "decimals": 18
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://lineascan.build/token/images/wbtc_28.png",
+      "extensions": {}
     },
     {
-      "chainId": 5,
-      "address": "0x1e6f8a79c7c895b15470b2f0b146716415aa0147",
+      "chainId": 59140,
+      "address": "0x42e6f9a4805220C7E7DC99bd6E71D7FEa346fcCD",
+      "name": "Wrapped Ether",
+      "symbol": "WETH",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://lineascan.build/token/images/weth_32.png",
+      "extensions": {}
+    },
+    {
+      "chainId": 59140,
+      "address": "0x8264ADf56A89170292E6Cc10467A355b13f4f6Dc",
       "name": "Linda",
       "symbol": "LINDA",
-      "decimals": 18
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "",
+      "extensions": {}
     }
   ]
 }
