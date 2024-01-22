@@ -184,7 +184,7 @@ const config: HardhatUserConfig = {
       '@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol',
       '@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol',
       '@syncswap/core-contracts/contracts/interfaces/factory/IBasePoolFactory.sol',
-      '@syncswap/core-contracts/contracts/interfaces/IRouter.sol',
+      '@syncswap/core-contracts/contracts/SyncSwapRouter.sol',
     ],
   },
 };
