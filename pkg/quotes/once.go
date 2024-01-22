@@ -6,7 +6,9 @@ import (
 )
 
 // Once manages the synchronization of starting and stopping a process.
-// It ensures that the start and stop functions are called IN ORDER and ONLY ONCE.
+// It ensures that:
+// 1. methods are called IN ORDER: Start -> {Subscribe | Unsubscribe} -> Stop -> Start -> ...
+// 2. the Start and Stop methods are executed ONLY ONCE.
 type once struct {
 	start sync.Once
 	stop  sync.Once
@@ -49,12 +51,12 @@ func (o *once) Stop() bool {
 	return stopped
 }
 
-// Subscribe checks if Start has been called before allowing subscription
+// Subscribe checks if Start has been called before allowing subscription.
 func (o *once) Subscribe() bool {
 	return o.started.Load()
 }
 
-// Unsubscribe checks if Start has been called before allowing unsubscription
+// Unsubscribe checks if Start has been called before allowing unsubscription.
 func (o *once) Unsubscribe() bool {
 	return o.started.Load()
 }
