@@ -16,6 +16,7 @@ func main() {
 		http.ListenAndServe("localhost:8080", nil)
 	}()
 
+	driverName := quotes.DriverBinance
 	if len(os.Args) == 2 {
 		parsedDriver, err := quotes.ToDriverType(os.Args[1])
 		if err != nil {
