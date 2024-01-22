@@ -20,6 +20,7 @@ type bitfaker struct {
 
 func newBitfaker(config Config, outbox chan<- TradeEvent) *bitfaker {
 	return &bitfaker{
+		once:         newOnce(),
 		streams:      make([]Market, 0),
 		outbox:       outbox,
 		stopCh:       make(chan struct{}, 1),
@@ -96,10 +97,18 @@ func (b *bitfaker) Unsubscribe(market Market) error {
 }
 
 func (b *bitfaker) createTradeEvent(market Market) {
+	price := decimal.NewFromFloat(2.213)
+	amount := decimal.NewFromFloat(2.213)
+	takerType := TakerTypeBuy
+
 	tr := TradeEvent{
-		Market: market.BaseUnit + market.QuoteUnit,
-		Price:  decimal.NewFromFloat(2.213),
-		Source: DriverBitfaker,
+		Source:    DriverBitfaker,
+		Market:    market.BaseUnit + market.QuoteUnit,
+		Price:     price,
+		Amount:    amount,
+		Total:     price.Mul(amount),
+		TakerType: takerType,
+		CreatedAt: time.Now(),
 	}
 
 	b.outbox <- tr

@@ -99,6 +99,7 @@ func (u *uniswapV3Api) Subscribe(market Market) error {
 				}
 
 				for _, swap := range swaps {
+					amount := swap.Amount0.Abs()
 					price := calculatePrice(swap.SqrtPriceX96, swap.Token0.Decimals, swap.Token1.Decimals)
 					createdAt, err := swap.time()
 					if err != nil {
@@ -116,8 +117,8 @@ func (u *uniswapV3Api) Subscribe(market Market) error {
 						Source:    DriverUniswapV3Api,
 						Market:    market.QuoteUnit,
 						Price:     price,
-						Amount:    swap.Amount0,
-						Total:     price.Mul(swap.Amount0),
+						Amount:    amount,
+						Total:     price.Mul(amount),
 						TakerType: takerType,
 						CreatedAt: createdAt,
 					}
