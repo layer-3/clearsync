@@ -136,14 +136,19 @@ func (u *uniswapV3Geth) Subscribe(market Market) error {
 				decimal.NewFromBigInt(swap.SqrtPriceX96, 0),
 				uniswapPool.baseToken.Decimals,
 				uniswapPool.quoteToken.Decimals)
+			takerType := TakerTypeBuy
+			if amount.Sign() < 0 {
+				takerType = TakerTypeSell
+			}
 
+			amount = amount.Abs()
 			u.outbox <- TradeEvent{
 				Source:    DriverUniswapV3Geth,
 				Market:    symbol,
 				Price:     price,
 				Amount:    amount,
 				Total:     price.Mul(amount),
-				TakerType: TakerTypeSell,
+				TakerType: takerType,
 				CreatedAt: time.Now(),
 			}
 		}
