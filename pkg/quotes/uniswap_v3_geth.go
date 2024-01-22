@@ -138,6 +138,9 @@ func (u *uniswapV3Geth) Subscribe(market Market) error {
 				uniswapPool.quoteToken.Decimals)
 			takerType := TakerTypeBuy
 			if amount.Sign() < 0 {
+				// When amount0 is negative (and amount1 is positive),
+				// it means token0 is leaving the pool in exchange for token1.
+				// This is equivalent to a "sell" of token0 (or a "buy" of token1).
 				takerType = TakerTypeSell
 			}
 
