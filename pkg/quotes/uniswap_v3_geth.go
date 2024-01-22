@@ -1,8 +1,12 @@
 package quotes
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"math/big"
+	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -16,13 +20,15 @@ import (
 )
 
 type uniswapV3Geth struct {
-	once    *once
-	url     string
-	client  *ethclient.Client
-	factory *factory.IUniswapV3Factory
+	once      *once
+	url       string
+	assetsURL string
+	client    *ethclient.Client
+	factory   *factory.IUniswapV3Factory
 
 	outbox  chan<- TradeEvent
 	streams sync.Map
+	assets  sync.Map
 }
 
 func newUniswapV3Geth(config Config, outbox chan<- TradeEvent) *uniswapV3Geth {
@@ -51,6 +57,31 @@ func (u *uniswapV3Geth) Start() error {
 			return
 		}
 		u.factory = uniswapFactory
+
+		// Fetch assets.json
+
+		resp, err := http.Get(u.assetsURL)
+		if err != nil {
+			startErr = err
+			return
+		}
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			startErr = err
+			return
+		}
+
+		var assets []poolToken
+		if err := json.Unmarshal(body, &assets); err != nil {
+			startErr = err
+			return
+		}
+
+		for _, asset := range assets {
+			u.assets.Store(asset.Symbol, asset)
+		}
 	})
 	return startErr
 }
@@ -95,8 +126,8 @@ func (u *uniswapV3Geth) Subscribe(market Market) error {
 			amount := decimal.NewFromBigInt(swap.Amount0, 0)
 			price := calculatePrice(
 				decimal.NewFromBigInt(swap.SqrtPriceX96, 0),
-				uniswapPool.baseToken.decimals,
-				uniswapPool.quoteToken.decimals)
+				uniswapPool.baseToken.Decimals,
+				uniswapPool.quoteToken.Decimals)
 
 			u.outbox <- TradeEvent{
 				Source:    DriverUniswapV3Geth,
@@ -128,8 +159,12 @@ func (u *uniswapV3Geth) Unsubscribe(market Market) error {
 }
 
 type poolToken struct {
-	address  string
-	decimals decimal.Decimal
+	Name     string
+	Address  string
+	Symbol   string
+	Decimals decimal.Decimal
+	ChainId  uint
+	LogoURI  string
 }
 
 type poolWrapper struct {
@@ -139,31 +174,22 @@ type poolWrapper struct {
 }
 
 func (u *uniswapV3Geth) getPool(market Market) (*poolWrapper, error) {
-	// TODO: search for token on Etherscan
-	allTokens := map[string]poolToken{
-		"WETH": {
-			address:  "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
-			decimals: decimal.RequireFromString("18"),
-		},
-		"USDT": {
-			address:  "0xdAC17F958D2ee523a2206206994597C13D831ec7",
-			decimals: decimal.RequireFromString("6"),
-		},
-	}
-
-	baseToken, ok := allTokens[market.BaseUnit]
+	baseAsset, ok := u.assets.Load(strings.ToUpper(market.BaseUnit))
 	if !ok {
 		return nil, fmt.Errorf("tokens '%s' does not exist", market.BaseUnit)
 	}
-	quoteToken, ok := allTokens[market.QuoteUnit]
+	baseToken := baseAsset.(poolToken)
+
+	quoteAsset, ok := u.assets.Load(strings.ToUpper(market.QuoteUnit))
 	if !ok {
 		return nil, fmt.Errorf("tokens '%s' does not exist", market.QuoteUnit)
 	}
+	quoteToken := quoteAsset.(poolToken)
 
 	poolAddress, err := u.factory.GetPool(
 		nil,
-		common.HexToAddress(baseToken.address),
-		common.HexToAddress(quoteToken.address),
+		common.HexToAddress(baseToken.Address),
+		common.HexToAddress(quoteToken.Address),
 		big.NewInt(0),
 	)
 	if err != nil {

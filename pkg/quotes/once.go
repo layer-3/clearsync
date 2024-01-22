@@ -1,8 +1,6 @@
 package quotes
 
-import (
-	"sync"
-)
+import "sync"
 
 // once manages the synchronization of starting and stopping a process.
 // It ensures that the start and stop functions are called IN ORDER and ONLY ONCE.
