@@ -20,7 +20,11 @@ import (
 	pool "github.com/layer-3/clearsync/pkg/abi/iuniswap_v3_pool"
 )
 
-var loggerUniswapV3Geth = log.Logger("uniswap_v3_geth")
+var (
+	loggerUniswapV3Geth = log.Logger("uniswap_v3_geth")
+	// Uniswap v3 protocol has the 1%, 0.3%, 0.05%, and 0.01% fee tiers.
+	uniswapV3FeeTiers = []uint{10000, 3000, 500, 100}
+)
 
 type uniswapV3Geth struct {
 	once      *once
@@ -178,30 +182,29 @@ type poolWrapper struct {
 }
 
 func (u *uniswapV3Geth) getPool(market Market) (*poolWrapper, error) {
-	baseAsset, ok := u.assets.Load(strings.ToUpper(market.BaseUnit))
-	if !ok {
-		return nil, fmt.Errorf("tokens '%s' does not exist", market.BaseUnit)
-	}
-	baseToken := baseAsset.(poolToken)
-	loggerUniswapV3Geth.Infof("market %s: base token address is %s\n", market, baseToken.Address)
-
-	quoteAsset, ok := u.assets.Load(strings.ToUpper(market.QuoteUnit))
-	if !ok {
-		return nil, fmt.Errorf("tokens '%s' does not exist", market.QuoteUnit)
-	}
-	quoteToken := quoteAsset.(poolToken)
-	loggerUniswapV3Geth.Infof("market %s: quote token address is %s\n", market, quoteToken.Address)
-
-	poolAddress, err := u.factory.GetPool(
-		nil,
-		common.HexToAddress(baseToken.Address),
-		common.HexToAddress(quoteToken.Address),
-		big.NewInt(0),
-	)
+	baseToken, quoteToken, err := u.getTokens(market)
 	if err != nil {
 		return nil, err
 	}
-	loggerUniswapV3Geth.Infof("got pool %s for market %s\n", poolAddress, market)
+
+	var poolAddress common.Address
+	zeroAddress := common.HexToAddress("0x0")
+	for _, feeTier := range uniswapV3FeeTiers {
+		poolAddress, err = u.factory.GetPool(
+			nil,
+			common.HexToAddress(baseToken.Address),
+			common.HexToAddress(quoteToken.Address),
+			big.NewInt(int64(feeTier)),
+		)
+		if err != nil {
+			return nil, err
+		}
+		if poolAddress != zeroAddress {
+			loggerUniswapV3Geth.Infof("selected %s fee tier for market %s", feeTier, market)
+			break
+		}
+	}
+	loggerUniswapV3Geth.Infof("got pool %s for market %s", poolAddress, market)
 
 	poolContract, err := pool.NewIUniswapV3Pool(poolAddress, u.client)
 	if err != nil {
@@ -212,4 +215,24 @@ func (u *uniswapV3Geth) getPool(market Market) (*poolWrapper, error) {
 		baseToken:  baseToken,
 		quoteToken: quoteToken,
 	}, nil
+}
+
+func (u *uniswapV3Geth) getTokens(market Market) (baseToken poolToken, quoteToken poolToken, err error) {
+	baseAsset, ok := u.assets.Load(strings.ToUpper(market.BaseUnit))
+	if !ok {
+		err = fmt.Errorf("tokens '%s' does not exist", market.BaseUnit)
+		return
+	}
+	baseToken = baseAsset.(poolToken)
+	loggerUniswapV3Geth.Infof("market %s: base token address is %s", market, baseToken.Address)
+
+	quoteAsset, ok := u.assets.Load(strings.ToUpper(market.QuoteUnit))
+	if !ok {
+		err = fmt.Errorf("tokens '%s' does not exist", market.QuoteUnit)
+		return
+	}
+	quoteToken = quoteAsset.(poolToken)
+	loggerUniswapV3Geth.Infof("market %s: quote token address is %s", market, quoteToken.Address)
+
+	return baseToken, quoteToken, nil
 }

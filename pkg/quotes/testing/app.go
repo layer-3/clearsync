@@ -4,13 +4,18 @@ package main
 
 import (
 	"log"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 
 	"github.com/layer-3/clearsync/pkg/quotes"
 )
 
 func main() {
-	driverName := quotes.DriverBinance
+	go func() {
+		http.ListenAndServe("localhost:8080", nil)
+	}()
+
 	if len(os.Args) == 2 {
 		parsedDriver, err := quotes.ToDriverType(os.Args[1])
 		if err != nil {
