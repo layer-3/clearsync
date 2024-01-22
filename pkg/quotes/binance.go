@@ -30,25 +30,33 @@ func newBinance(config Config, outbox chan<- TradeEvent) *binance {
 }
 
 func (b *binance) Start() error {
-	b.once.Start(func() {})
+	if !b.once.Start() {
+		return errAlreadyStarted
+	}
 	return nil
 }
 
 func (b *binance) Stop() error {
-	b.once.Stop(func() {
-		b.streams.Range(func(key, value any) bool {
-			stopCh := value.(chan struct{})
-			stopCh <- struct{}{}
-			close(stopCh)
-			return true
-		})
+	if !b.once.Stop() {
+		return errAlreadyStopped
+	}
 
-		b.streams = sync.Map{}
+	b.streams.Range(func(key, value any) bool {
+		stopCh := value.(chan struct{})
+		stopCh <- struct{}{}
+		close(stopCh)
+		return true
 	})
+
+	b.streams = sync.Map{}
 	return nil
 }
 
 func (b *binance) Subscribe(market Market) error {
+	if !b.once.Subscribe() {
+		return errNotStarted
+	}
+
 	pair := strings.ToUpper(market.BaseUnit) + strings.ToUpper(market.QuoteUnit)
 	if _, ok := b.streams.Load(pair); ok {
 		return fmt.Errorf("%s: %w", market, errAlreadySubbed)
@@ -80,6 +88,10 @@ func (b *binance) Subscribe(market Market) error {
 }
 
 func (b *binance) Unsubscribe(market Market) error {
+	if !b.once.Unsubscribe() {
+		return errNotStarted
+	}
+
 	pair := strings.ToUpper(market.BaseUnit) + strings.ToUpper(market.QuoteUnit)
 	stream, ok := b.streams.Load(pair)
 	if !ok {
