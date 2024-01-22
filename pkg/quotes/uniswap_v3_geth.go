@@ -13,11 +13,14 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/event"
+	"github.com/ipfs/go-log/v2"
 	"github.com/shopspring/decimal"
 
 	factory "github.com/layer-3/clearsync/pkg/abi/iuniswap_v3_factory"
 	pool "github.com/layer-3/clearsync/pkg/abi/iuniswap_v3_pool"
 )
+
+var loggerUniswapV3Geth = log.Logger("uniswap_v3_geth")
 
 type uniswapV3Geth struct {
 	once      *once
@@ -33,9 +36,10 @@ type uniswapV3Geth struct {
 
 func newUniswapV3Geth(config Config, outbox chan<- TradeEvent) *uniswapV3Geth {
 	return &uniswapV3Geth{
-		once:   newOnce(),
-		url:    config.URL,
-		outbox: outbox,
+		once:      newOnce(),
+		url:       config.URL,
+		assetsURL: config.AssetsURL,
+		outbox:    outbox,
 	}
 }
 
@@ -80,7 +84,7 @@ func (u *uniswapV3Geth) Start() error {
 		}
 
 		for _, asset := range assets {
-			u.assets.Store(asset.Symbol, asset)
+			u.assets.Store(strings.ToUpper(asset.Symbol), asset)
 		}
 	})
 	return startErr
@@ -179,12 +183,14 @@ func (u *uniswapV3Geth) getPool(market Market) (*poolWrapper, error) {
 		return nil, fmt.Errorf("tokens '%s' does not exist", market.BaseUnit)
 	}
 	baseToken := baseAsset.(poolToken)
+	loggerUniswapV3Geth.Infof("market %s: base token address is %s\n", market, baseToken.Address)
 
 	quoteAsset, ok := u.assets.Load(strings.ToUpper(market.QuoteUnit))
 	if !ok {
 		return nil, fmt.Errorf("tokens '%s' does not exist", market.QuoteUnit)
 	}
 	quoteToken := quoteAsset.(poolToken)
+	loggerUniswapV3Geth.Infof("market %s: quote token address is %s\n", market, quoteToken.Address)
 
 	poolAddress, err := u.factory.GetPool(
 		nil,
@@ -195,6 +201,7 @@ func (u *uniswapV3Geth) getPool(market Market) (*poolWrapper, error) {
 	if err != nil {
 		return nil, err
 	}
+	loggerUniswapV3Geth.Infof("got pool %s for market %s\n", poolAddress, market)
 
 	poolContract, err := pool.NewIUniswapV3Pool(poolAddress, u.client)
 	if err != nil {
