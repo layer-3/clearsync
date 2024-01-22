@@ -48,65 +48,67 @@ func newUniswapV3Geth(config Config, outbox chan<- TradeEvent) *uniswapV3Geth {
 }
 
 func (u *uniswapV3Geth) Start() error {
-	var startErr error
-	u.once.Start(func() {
-		client, err := ethclient.Dial(u.url)
-		if err != nil {
-			startErr = fmt.Errorf("failed to connect to the Ethereum client: %w", err)
-			return
-		}
-		u.client = client
+	if !u.once.Start() {
+		return errAlreadyStarted
+	}
 
-		// Check addresses here: https://docs.uniswap.org/contracts/v3/reference/deployments
-		factoryAddress := common.HexToAddress("0x1F98431c8aD98523631AE4a59f267346ea31F984")
-		uniswapFactory, err := factory.NewIUniswapV3Factory(factoryAddress, client)
-		if err != nil {
-			startErr = fmt.Errorf("failed to build Uniswap v3 factory: %w", err)
-			return
-		}
-		u.factory = uniswapFactory
+	client, err := ethclient.Dial(u.url)
+	if err != nil {
+		return fmt.Errorf("failed to connect to the Ethereum client: %w", err)
+	}
+	u.client = client
 
-		// Fetch assets.json
+	// Check addresses here: https://docs.uniswap.org/contracts/v3/reference/deployments
+	factoryAddress := common.HexToAddress("0x1F98431c8aD98523631AE4a59f267346ea31F984")
+	uniswapFactory, err := factory.NewIUniswapV3Factory(factoryAddress, client)
+	if err != nil {
+		return fmt.Errorf("failed to build Uniswap v3 factory: %w", err)
 
-		resp, err := http.Get(u.assetsURL)
-		if err != nil {
-			startErr = err
-			return
-		}
-		defer resp.Body.Close()
+	}
+	u.factory = uniswapFactory
 
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			startErr = err
-			return
-		}
+	// Fetch assets.json
 
-		var assets []poolToken
-		if err := json.Unmarshal(body, &assets); err != nil {
-			startErr = err
-			return
-		}
+	resp, err := http.Get(u.assetsURL)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
 
-		for _, asset := range assets {
-			u.assets.Store(strings.ToUpper(asset.Symbol), asset)
-		}
-	})
-	return startErr
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	var assets []poolToken
+	if err := json.Unmarshal(body, &assets); err != nil {
+		return err
+	}
+
+	for _, asset := range assets {
+		u.assets.Store(strings.ToUpper(asset.Symbol), asset)
+	}
+	return nil
 }
 
 func (u *uniswapV3Geth) Stop() error {
-	u.once.Stop(func() {
-		u.streams.Range(func(market, stream any) bool {
-			err := u.Unsubscribe(market.(Market))
-			return err == nil
-		})
+	if !u.once.Stop() {
+		return errAlreadyStopped
+	}
 
-		u.streams = sync.Map{} // delete all stopped streams
+	u.streams.Range(func(market, stream any) bool {
+		err := u.Unsubscribe(market.(Market))
+		return err == nil
 	})
+
+	u.streams = sync.Map{} // delete all stopped streams
 	return nil
 }
 
 func (u *uniswapV3Geth) Subscribe(market Market) error {
+	if !u.once.Subscribe() {
+		return errNotStarted
+	}
 	symbol := market.BaseUnit + market.QuoteUnit
 
 	if _, ok := u.streams.Load(market); ok {
@@ -162,6 +164,10 @@ func (u *uniswapV3Geth) Subscribe(market Market) error {
 }
 
 func (u *uniswapV3Geth) Unsubscribe(market Market) error {
+	if !u.once.Unsubscribe() {
+		return errNotStarted
+	}
+
 	stream, ok := u.streams.Load(market)
 	if !ok {
 		return fmt.Errorf("%s: %w", market, errNotSubbed)

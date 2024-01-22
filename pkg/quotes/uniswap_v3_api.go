@@ -40,25 +40,32 @@ func newUniswapV3Api(config Config, outbox chan<- TradeEvent) *uniswapV3Api {
 }
 
 func (u *uniswapV3Api) Start() error {
-	u.once.Start(func() {})
+	if !u.once.Start() {
+		return errAlreadyStarted
+	}
 	return nil
 }
 
 func (u *uniswapV3Api) Stop() error {
-	u.once.Stop(func() {
-		u.streams.Range(func(market, stream any) bool {
-			stopCh := stream.(chan struct{})
-			stopCh <- struct{}{}
-			close(stopCh)
-			return true
-		})
+	if !u.once.Stop() {
+		return errAlreadyStopped
+	}
 
-		u.streams = sync.Map{} // delete all stopped streams
+	u.streams.Range(func(market, stream any) bool {
+		stopCh := stream.(chan struct{})
+		stopCh <- struct{}{}
+		close(stopCh)
+		return true
 	})
+
+	u.streams = sync.Map{} // delete all stopped streams
 	return nil
 }
 
 func (u *uniswapV3Api) Subscribe(market Market) error {
+	if !u.once.Subscribe() {
+		return errNotStarted
+	}
 	symbol := market.BaseUnit + market.QuoteUnit
 
 	if _, ok := u.streams.Load(market); ok {
@@ -134,6 +141,10 @@ func (u *uniswapV3Api) Subscribe(market Market) error {
 }
 
 func (u *uniswapV3Api) Unsubscribe(market Market) error {
+	if !u.once.Unsubscribe() {
+		return errNotStarted
+	}
+
 	stream, ok := u.streams.Load(market)
 	if !ok {
 		return fmt.Errorf("%s: %w", market, errNotSubbed)
