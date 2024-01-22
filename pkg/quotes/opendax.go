@@ -45,28 +45,36 @@ func newOpendax(config Config, outbox chan<- TradeEvent) *opendax {
 }
 
 func (o *opendax) Start() error {
-	o.once.Start(func() {
-		o.connect()
-		go o.listen()
-	})
+	if !o.once.Start() {
+		return errAlreadyStarted
+	}
+
+	o.connect()
+	go o.listen()
 	return nil
 }
 
 func (o *opendax) Stop() error {
-	var stopErr error
-	o.once.Stop(func() {
-		conn := o.conn
-		o.conn = nil
+	if !o.once.Stop() {
+		return errAlreadyStopped
+	}
 
-		if conn == nil {
-			return
-		}
-		stopErr = conn.Close()
-	})
-	return stopErr
+	conn := o.conn
+	o.conn = nil
+
+	if conn == nil {
+		return nil
+	}
+
+	err := conn.Close()
+	return err
 }
 
 func (o *opendax) Subscribe(market Market) error {
+	if !o.once.Subscribe() {
+		return errNotStarted
+	}
+
 	if _, ok := o.streams.Load(market); ok {
 		return fmt.Errorf("%s: %w", market, errAlreadySubbed)
 	}
@@ -86,6 +94,10 @@ func (o *opendax) Subscribe(market Market) error {
 }
 
 func (o *opendax) Unsubscribe(market Market) error {
+	if !o.once.Unsubscribe() {
+		return errNotStarted
+	}
+
 	if _, ok := o.streams.Load(market); !ok {
 		return fmt.Errorf("%s: %w", market, errNotSubbed)
 	}
