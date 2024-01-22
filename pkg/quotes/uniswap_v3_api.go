@@ -104,6 +104,13 @@ func (u *uniswapV3Api) Subscribe(market Market) error {
 					if err != nil {
 						loggerUniswapV3Api.Warnf("failed to get swap timestamp: %s", err)
 					}
+					takerType := TakerTypeBuy
+					if swap.Amount0.Sign() < 0 {
+						// When amount0 is negative (and amount1 is positive),
+						// it means token0 is leaving the pool in exchange for token1.
+						// This is equivalent to a "sell" of token0 (or a "buy" of token1).
+						takerType = TakerTypeSell
+					}
 
 					u.outbox <- TradeEvent{
 						Source:    DriverUniswapV3Api,
@@ -111,7 +118,7 @@ func (u *uniswapV3Api) Subscribe(market Market) error {
 						Price:     price,
 						Amount:    swap.Amount0,
 						Total:     price.Mul(swap.Amount0),
-						TakerType: TakerTypeSell,
+						TakerType: takerType,
 						CreatedAt: createdAt,
 					}
 				}
