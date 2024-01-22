@@ -22,8 +22,8 @@ import (
 
 var (
 	loggerUniswapV3Geth = log.Logger("uniswap_v3_geth")
-	// Uniswap v3 protocol has the 1%, 0.3%, 0.05%, and 0.01% fee tiers.
-	uniswapV3FeeTiers = []uint{10000, 3000, 500, 100}
+	// Uniswap v3 protocol has the 0.01%, 0.05%, 0.3%, and 1% fee tiers.
+	uniswapV3FeeTiers = []uint{100, 500, 3000, 10000}
 )
 
 type uniswapV3Geth struct {
@@ -200,7 +200,7 @@ func (u *uniswapV3Geth) getPool(market Market) (*poolWrapper, error) {
 			return nil, err
 		}
 		if poolAddress != zeroAddress {
-			loggerUniswapV3Geth.Infof("selected %s fee tier for market %s", feeTier, market)
+			loggerUniswapV3Geth.Infof("market %s: selected fee tier: %.2f%%", market, float64(feeTier)/10000)
 			break
 		}
 	}
