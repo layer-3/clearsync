@@ -9,6 +9,8 @@ Available drivers:
 - Opendax
 - Bitfaker
 - Uniswap V3
+  - Subgraph API
+  - go-ethereum
 
 ## Interface to connect
 
@@ -16,8 +18,8 @@ Available drivers:
 type Driver interface {
 	Start() error
 	Stop() error
-	Subscribe(market common.Market) error
-	Unsubscribe(market common.Market) error
+	Subscribe(market Market) error
+	Unsubscribe(market Market) error
 }
 ```
 
@@ -113,5 +115,4 @@ tick = floor[ log((sqrtPriceX96 / (2^96))^2) / log(1.0001) ]
 
 ## TODO:
 
-- [x] remove Finex dependencies
 - [ ] add specs or amendments to current interface

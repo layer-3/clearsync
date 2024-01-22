@@ -1,42 +1,39 @@
-//go:generate sh -c "command -v jq >/dev/null 2>&1 || { echo 'Error: jq is not installed.' >&2; exit 1; } && command -v abigen >/dev/null 2>&1 || { echo 'Error: abigen is not installed.' >&2; exit 1; } && mkdir -p abi/factory && cat ../../../node_modules/@uniswap/v3-core/artifacts/contracts/UniswapV3Factory.sol/UniswapV3Factory.json | jq '.abi' | abigen --pkg=factory --out=./abi/factory/factory.go --abi=-"
-//go:generate sh -c "command -v jq >/dev/null 2>&1 || { echo 'Error: jq is not installed.' >&2; exit 1; } && command -v abigen >/dev/null 2>&1 || { echo 'Error: abigen is not installed.' >&2; exit 1; } && mkdir -p abi/pool    && cat ../../../node_modules/@uniswap/v3-core/artifacts/contracts/UniswapV3Pool.sol/UniswapV3Pool.json       | jq '.abi' | abigen --pkg=pool    --out=./abi/pool/pool.go       --abi=-"
-package uniswap
+package quotes
 
 import (
 	"fmt"
-	"github.com/ethereum/go-ethereum/event"
 	"math/big"
 	"sync"
 	"time"
 
-	geth_common "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/event"
 	"github.com/shopspring/decimal"
 
-	"github.com/layer-3/clearsync/pkg/quotes/common"
-	"github.com/layer-3/clearsync/pkg/quotes/uniswap/abi/factory"
-	"github.com/layer-3/clearsync/pkg/quotes/uniswap/abi/pool"
+	factory "github.com/layer-3/clearsync/pkg/abi/iuniswap_v3_factory"
+	pool "github.com/layer-3/clearsync/pkg/abi/iuniswap_v3_pool"
 )
 
-type V3Geth struct {
-	once    *common.Once
+type uniswapV3Geth struct {
+	once    *once
 	url     string
 	client  *ethclient.Client
-	factory *factory.Factory
+	factory *factory.IUniswapV3Factory
 
-	outbox  chan<- common.TradeEvent
+	outbox  chan<- TradeEvent
 	streams sync.Map
 }
 
-func NewV3Geth(config common.Config, outbox chan<- common.TradeEvent) *V3Geth {
-	return &V3Geth{
-		once:   common.NewOnce(),
+func newUniswapV3Geth(config Config, outbox chan<- TradeEvent) *uniswapV3Geth {
+	return &uniswapV3Geth{
+		once:   newOnce(),
 		url:    config.URL,
 		outbox: outbox,
 	}
 }
 
-func (u *V3Geth) Start() error {
+func (u *uniswapV3Geth) Start() error {
 	var startErr error
 	u.once.Start(func() {
 		client, err := ethclient.Dial(u.url)
@@ -47,8 +44,8 @@ func (u *V3Geth) Start() error {
 		u.client = client
 
 		// Check addresses here: https://docs.uniswap.org/contracts/v3/reference/deployments
-		factoryAddress := geth_common.HexToAddress("0x1F98431c8aD98523631AE4a59f267346ea31F984")
-		uniswapFactory, err := factory.NewFactory(factoryAddress, client)
+		factoryAddress := common.HexToAddress("0x1F98431c8aD98523631AE4a59f267346ea31F984")
+		uniswapFactory, err := factory.NewIUniswapV3Factory(factoryAddress, client)
 		if err != nil {
 			startErr = fmt.Errorf("failed to build Uniswap v3 factory: %w", err)
 			return
@@ -58,10 +55,10 @@ func (u *V3Geth) Start() error {
 	return startErr
 }
 
-func (u *V3Geth) Stop() error {
+func (u *uniswapV3Geth) Stop() error {
 	u.once.Stop(func() {
 		u.streams.Range(func(market, stream any) bool {
-			err := u.Unsubscribe(market.(common.Market))
+			err := u.Unsubscribe(market.(Market))
 			return err == nil
 		})
 
@@ -70,11 +67,11 @@ func (u *V3Geth) Stop() error {
 	return nil
 }
 
-func (u *V3Geth) Subscribe(market common.Market) error {
+func (u *uniswapV3Geth) Subscribe(market Market) error {
 	symbol := market.BaseUnit + market.QuoteUnit
 
 	if _, ok := u.streams.Load(market); ok {
-		return fmt.Errorf("%s: %w", market, common.ErrAlreadySubbed)
+		return fmt.Errorf("%s: %w", market, errAlreadySubbed)
 	}
 
 	uniswapPool, err := u.getPool(market)
@@ -82,12 +79,12 @@ func (u *V3Geth) Subscribe(market common.Market) error {
 		return fmt.Errorf("failed get pool for market %v: %s", symbol, err)
 	}
 
-	swapsSink := make(chan *pool.PoolSwap, 128)
+	swapsSink := make(chan *pool.IUniswapV3PoolSwap, 128)
 	sub, err := uniswapPool.contract.WatchSwap(
 		nil,
 		swapsSink,
-		[]geth_common.Address{},
-		[]geth_common.Address{})
+		[]common.Address{},
+		[]common.Address{})
 	if err != nil {
 		return fmt.Errorf("failed to subscribe to swaps for market %s: %w", market, err)
 	}
@@ -101,13 +98,13 @@ func (u *V3Geth) Subscribe(market common.Market) error {
 				uniswapPool.baseToken.decimals,
 				uniswapPool.quoteToken.decimals)
 
-			u.outbox <- common.TradeEvent{
-				Source:    common.DriverUniswapV3Geth,
+			u.outbox <- TradeEvent{
+				Source:    DriverUniswapV3Geth,
 				Market:    symbol,
 				Price:     price,
 				Amount:    amount,
 				Total:     price.Mul(amount),
-				TakerType: common.TakerTypeSell,
+				TakerType: TakerTypeSell,
 				CreatedAt: time.Now(),
 			}
 		}
@@ -117,10 +114,10 @@ func (u *V3Geth) Subscribe(market common.Market) error {
 	return nil
 }
 
-func (u *V3Geth) Unsubscribe(market common.Market) error {
+func (u *uniswapV3Geth) Unsubscribe(market Market) error {
 	stream, ok := u.streams.Load(market)
 	if !ok {
-		return fmt.Errorf("%s: %w", market, common.ErrNotSubbed)
+		return fmt.Errorf("%s: %w", market, errNotSubbed)
 	}
 
 	sub := stream.(event.Subscription)
@@ -136,12 +133,12 @@ type poolToken struct {
 }
 
 type poolWrapper struct {
-	contract   *pool.Pool
+	contract   *pool.IUniswapV3Pool
 	baseToken  poolToken
 	quoteToken poolToken
 }
 
-func (u *V3Geth) getPool(market common.Market) (*poolWrapper, error) {
+func (u *uniswapV3Geth) getPool(market Market) (*poolWrapper, error) {
 	// TODO: search for token on Etherscan
 	allTokens := map[string]poolToken{
 		"WETH": {
@@ -165,15 +162,15 @@ func (u *V3Geth) getPool(market common.Market) (*poolWrapper, error) {
 
 	poolAddress, err := u.factory.GetPool(
 		nil,
-		geth_common.HexToAddress(baseToken.address),
-		geth_common.HexToAddress(quoteToken.address),
+		common.HexToAddress(baseToken.address),
+		common.HexToAddress(quoteToken.address),
 		big.NewInt(0),
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	poolContract, err := pool.NewPool(poolAddress, u.client)
+	poolContract, err := pool.NewIUniswapV3Pool(poolAddress, u.client)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build Uniswap v3 pool: %w", err)
 	}
