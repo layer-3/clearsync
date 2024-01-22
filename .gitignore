@@ -17,6 +17,3 @@ config/*.info.json
 
 # Proto
 tmp
-
-# abigen
-pkg/quotes/uniswap/abi
