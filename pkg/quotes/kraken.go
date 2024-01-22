@@ -46,36 +46,46 @@ func newKraken(config Config, outbox chan<- TradeEvent) *kraken {
 }
 
 func (k *kraken) Start() error {
-	if !k.once.Start() {
+	var startErr error
+	started := k.once.Start(func() {
+		if err := k.getPairs(); err != nil {
+			startErr = err
+			return
+		}
+
+		if err := k.connect(); err != nil {
+			startErr = err
+			return
+		}
+
+		go k.listen()
+	})
+
+	if !started {
 		return errAlreadyStarted
 	}
-
-	if err := k.getPairs(); err != nil {
-		return err
-	}
-
-	if err := k.connect(); err != nil {
-		return err
-	}
-
-	go k.listen()
-	return nil
+	return startErr
 }
 
 func (k *kraken) Stop() error {
-	if !k.once.Stop() {
+	var stopErr error
+	stopped := k.once.Stop(func() {
+		conn := k.conn
+		k.conn = nil
+
+		if conn == nil {
+			return
+		}
+
+		k.availablePairs = sync.Map{}
+		k.streams = sync.Map{} // delete all stopped streams
+		stopErr = conn.Close()
+	})
+
+	if !stopped {
 		return errAlreadyStopped
 	}
-
-	conn := k.conn
-	k.conn = nil
-
-	if conn == nil {
-		return nil
-	}
-
-	err := conn.Close()
-	return err
+	return stopErr
 }
 
 type krakenSubscribeMessage struct {

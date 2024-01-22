@@ -145,7 +145,7 @@ func TestOpendax_Subscribe(t *testing.T) {
 			},
 		}
 
-		client.once.Start()
+		client.once.Start(func() {})
 		err := client.Subscribe(Market{BaseUnit: "btc", QuoteUnit: "usdt"})
 		require.NoError(t, err)
 	})
@@ -158,7 +158,7 @@ func TestOpendax_Subscribe(t *testing.T) {
 			conn: &ODAPIMock{isConnected: false},
 		}
 
-		client.once.Start()
+		client.once.Start(func() {})
 		err := client.Subscribe(Market{BaseUnit: "btc", QuoteUnit: "usdt"})
 		require.Error(t, err)
 	})
@@ -169,7 +169,7 @@ func TestOpendax_Stop(t *testing.T) {
 
 	client := &opendax{once: newOnce(), conn: &ODAPIMock{}}
 
-	client.once.Start() // unblock STOP action
+	client.once.Start(func() {}) // unblock STOP action
 	require.NoError(t, client.Stop())
 }
 
@@ -191,7 +191,7 @@ func TestOpendax_connect(t *testing.T) {
 			dialer: connMock,
 		}
 
-		client.once.Start()
+		client.once.Start(func() {})
 		client.connect()
 		require.True(t, <-connMock.reconnectAttempted)
 		require.NotNil(t, client.conn)
@@ -218,7 +218,7 @@ func TestOpendax_listen(t *testing.T) {
 			period: 0,
 		}
 
-		client.once.Start()
+		client.once.Start(func() {})
 		go client.listen()
 
 		// Allow some time for the goroutine to run
@@ -258,7 +258,7 @@ func TestOpendax_listen(t *testing.T) {
 			outbox: outbox,
 		}
 
-		client.once.Start()
+		client.once.Start(func() {})
 		go client.listen()
 
 		if tradeEvent := <-outbox; true {
@@ -270,7 +270,7 @@ func TestOpendax_listen(t *testing.T) {
 		t.Parallel()
 
 		client := &opendax{once: newOnce(), conn: nil}
-		client.once.Start()
+		client.once.Start(func() {})
 		require.NotPanics(t, func() { client.listen() })
 	})
 }

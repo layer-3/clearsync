@@ -40,25 +40,27 @@ func newUniswapV3Api(config Config, outbox chan<- TradeEvent) *uniswapV3Api {
 }
 
 func (u *uniswapV3Api) Start() error {
-	if !u.once.Start() {
+	if started := u.once.Start(func() {}); !started {
 		return errAlreadyStarted
 	}
 	return nil
 }
 
 func (u *uniswapV3Api) Stop() error {
-	if !u.once.Stop() {
-		return errAlreadyStopped
-	}
+	stopped := u.once.Stop(func() {
+		u.streams.Range(func(market, stream any) bool {
+			stopCh := stream.(chan struct{})
+			stopCh <- struct{}{}
+			close(stopCh)
+			return true
+		})
 
-	u.streams.Range(func(market, stream any) bool {
-		stopCh := stream.(chan struct{})
-		stopCh <- struct{}{}
-		close(stopCh)
-		return true
+		u.streams = sync.Map{} // delete all stopped streams
 	})
 
-	u.streams = sync.Map{} // delete all stopped streams
+	if !stopped {
+		return errAlreadyStopped
+	}
 	return nil
 }
 

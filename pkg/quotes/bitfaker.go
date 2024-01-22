@@ -30,39 +30,43 @@ func newBitfaker(config Config, outbox chan<- TradeEvent) *bitfaker {
 }
 
 func (b *bitfaker) Start() error {
-	if !b.once.Start() {
+	started := b.once.Start(func() {
+		go func() {
+			for {
+				select {
+				case <-b.stopCh:
+					return
+				default:
+				}
+
+				b.mu.RLock()
+				for _, v := range b.streams {
+					b.createTradeEvent(v)
+				}
+				b.mu.RUnlock()
+				<-time.After(b.period)
+			}
+		}()
+	})
+
+	if !started {
 		return errAlreadyStarted
 	}
-
-	go func() {
-		for {
-			select {
-			case <-b.stopCh:
-				return
-			default:
-			}
-
-			b.mu.RLock()
-			for _, v := range b.streams {
-				b.createTradeEvent(v)
-			}
-			b.mu.RUnlock()
-			<-time.After(b.period)
-		}
-	}()
 	return nil
 }
 
 func (b *bitfaker) Stop() error {
-	if !b.once.Stop() {
+	stopped := b.once.Stop(func() {
+		b.mu.Lock()
+		defer b.mu.Unlock()
+
+		b.stopCh <- struct{}{}
+		b.streams = make([]Market, 0)
+	})
+
+	if !stopped {
 		return errAlreadyStopped
 	}
-
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	b.stopCh <- struct{}{}
-	b.streams = make([]Market, 0)
 	return nil
 }
 

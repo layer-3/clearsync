@@ -21,16 +21,17 @@ type once struct {
 
 func newOnce() *once {
 	o := &once{}
-	o.Stop()
+	o.Stop(func() {})
 	return o
 }
 
-func (o *once) Start() bool {
+func (o *once) Start(f func()) bool {
 	// The value is not loaded from atomic storage here,
 	// since there may be subsequent calls to Start
 	// but sync.Once guarantees that the passed function is executed only once,
 	var started bool
 	o.start.Do(func() {
+		f()
 		started = true
 		o.started.Store(true)
 		o.stop = sync.Once{} // allow a new stop
@@ -38,12 +39,13 @@ func (o *once) Start() bool {
 	return started
 }
 
-func (o *once) Stop() bool {
+func (o *once) Stop(f func()) bool {
 	// The value is not loaded from atomic storage here,
 	// since there may be subsequent calls to Stop
 	// but sync.Once guarantees that the passed function is executed only once,
 	var stopped bool
 	o.stop.Do(func() {
+		f()
 		stopped = true
 		o.started.Store(false)
 		o.start = sync.Once{} // allow a new start
