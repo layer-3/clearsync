@@ -77,6 +77,7 @@ func (u *uniswapV3Api) Subscribe(market Market) error {
 
 	go func() {
 		from := time.Now()
+		timer := time.After(u.windowSize)
 		for {
 			if stream, ok := u.streams.Load(market); ok {
 				stopCh := stream.(chan struct{})
@@ -89,7 +90,7 @@ func (u *uniswapV3Api) Subscribe(market Market) error {
 			}
 
 			select {
-			case <-time.After(u.windowSize):
+			case <-timer:
 				to := from.Add(u.windowSize)
 				swaps, err := u.fetchSwaps(market, from, to)
 				if err != nil {
@@ -114,6 +115,7 @@ func (u *uniswapV3Api) Subscribe(market Market) error {
 						CreatedAt: createdAt,
 					}
 				}
+				timer = time.After(u.windowSize)
 			default:
 			}
 		}
