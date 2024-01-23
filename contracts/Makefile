@@ -14,8 +14,10 @@ BINDINGS = \
 	abi/itoken/ierc20.go \
 	abi/iadjudicator/iyellow_adjudicator.go \
 	abi/iuniswap_v3_factory/iuniswap_v3_factory.go \
+	abi/iuniswap_v3_pool/iuniswap_v3_pool.go \
 	abi/iuniswap_v3_router/iuniswap_v3_router.go \
 	abi/isyncswap_factory/isyncswap_factory.go \
+	abi/isyncswap_pool/isyncswap_pool.go \
 	artifacts/test_erc20/test_erc20.go \
 	artifacts/adjudicator/yellow_adjudicator.go \
 	artifacts/yellow_token/yellow_token.go \
@@ -46,8 +48,10 @@ compile: ${ROOT_DIR}/artifacts
 ierc20_GO = IERC20 @openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol/IERC20Metadata.json
 iyellow_adjudicator_GO = IYellowAdjudicator contracts/interfaces/IYellowAdjudicator.sol/IYellowAdjudicator.json
 iuniswap_v3_factory_GO = IUniswapV3Factory @uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol/IUniswapV3Factory.json
+iuniswap_v3_pool_GO = IUniswapV3Pool @uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol/IUniswapV3Pool.json
 iuniswap_v3_router_GO = IUniswapV3Router @uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol/ISwapRouter.json
 isyncswap_factory_GO = ISyncSwapFactory @syncswap/core-contracts/contracts/interfaces/factory/IBasePoolFactory.sol/IBasePoolFactory.json
+isyncswap_pool_GO = ISyncSwapPool @syncswap/core-contracts/contracts/interfaces/pool/IBasePool.sol/IBasePool.json
 
 test_erc20_GO = TestERC20 contracts/test/TestERC20.sol/TestERC20.json
 yellow_adjudicator_GO = YellowAdjudicator contracts/clearing/YellowAdjudicator.sol/YellowAdjudicator.json

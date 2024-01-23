@@ -182,8 +182,10 @@ const config: HardhatUserConfig = {
   dependencyCompiler: {
     paths: [
       '@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol',
+      '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol',
       '@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol',
       '@syncswap/core-contracts/contracts/interfaces/factory/IBasePoolFactory.sol',
+      '@syncswap/core-contracts/contracts/interfaces/pool/IBasePool.sol',
       '@syncswap/core-contracts/contracts/SyncSwapRouter.sol',
     ],
   },
