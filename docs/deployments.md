@@ -18,6 +18,24 @@ Repository: [layer-3/ClearSync](https://github.com/layer-3/clearsync).
 | -------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------- |
 | Yellow Duckies ERC20 Token | YellowToken   | [0xada5...8376](https://etherscan.io/tx/0xada5b0b00f7b4f8288aae99d1157698da78a2301d965b85ff1f5d77fc9db8376) | `0x90b7E285ab6cf4e3A2487669dba3E339dB8a3320`[↗](https://etherscan.io/address/0x90b7E285ab6cf4e3A2487669dba3E339dB8a3320) | c197bebe236ba3134ca2de8c0ac6fa08c2550430 |
 
+### Polygon
+
+Chain id: 137.
+
+#### Contracts Deployed
+
+Last updated: January 23, 2024.
+
+Repository: [layer-3/duckies](https://github.com/layer-3/duckies).
+
+Deployed by: `0x2C9391752AE0Ee8a01e00D8b77187aB6D6Debc25`[↗](https://polygonscan.com/address/0x2C9391752AE0Ee8a01e00D8b77187aB6D6Debc25)
+
+| Description                | Contract Name | Transaction Hash                                                                                               | Address                                                                                                                     | Git SHA                                  |
+| -------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| Yellow Duckies ERC20 Token | YellowToken   | [0xf96e...6217](https://polygonscan.com/tx/0xf96e07149b6ab7ea5607efec3bd07e9e8bce13ebc68e9dcf007be5c325d76217) | `0x18e73A5333984549484348A94f4D219f4faB7b81`[↗](https://polygonscan.com/address/0x18e73A5333984549484348A94f4D219f4faB7b81) | 7b9389c83a540870369b82d0a1144d61f50f9c35 |
+| Yellow Ducklings NFT       | DucklingsV1   | [0x21bc...993f](https://polygonscan.com/tx/0x21bce8f9a9d2e836070ee883246a1edf9fc409cab0b25a8c1cabcf7d1d5d993f) | `0x435b74f6DC4A0723CA19e4dD2AC8Aa1361c7B0f0`[↗](https://polygonscan.com/address/0x435b74f6DC4A0723CA19e4dD2AC8Aa1361c7B0f0) | 7b9389c83a540870369b82d0a1144d61f50f9c35 |
+| Yellow Ducklings NFT Game  | DuckyFamilyV1 | [0x60e2...15e8](https://polygonscan.com/tx/0x60e21f0f9528ab063b68928c5c8081c473ffb31cdaf747ee77bf057d588415e8) | `0xb66bf78cad7cbab51988ddc792652cbabdff7675`[↗](https://polygonscan.com/address/0xb66bf78cad7cbab51988ddc792652cbabdff7675) | 7b9389c83a540870369b82d0a1144d61f50f9c35 |
+
 ### Linea
 
 Chain id: 59144.
