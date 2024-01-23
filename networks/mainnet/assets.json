@@ -1,8 +1,8 @@
 {
     "tokens": [
       {
-        "chainId": 1,
-        "address": "0x90b7E285ab6cf4e3A2487669dba3E339dB8a3320",
+        "chainId": 59144,
+        "address": "0x796000FAd0d00B003B9dd8e531BA90cff39E01E0",
         "name": "Yellow Duckies",
         "symbol": "DUCKIES",
         "decimals": 8,
@@ -12,14 +12,14 @@
             "137":{
                 "tokenAddress": "0x18e73A5333984549484348A94f4D219f4faB7b81"
             },
-            "59144":{
-                "tokenAddress": "0x796000FAd0d00B003B9dd8e531BA90cff39E01E0"
+            "1":{
+                "tokenAddress": "0x90b7E285ab6cf4e3A2487669dba3E339dB8a3320"
             }
         }
       },
       {
-        "chainId": 1,
-        "address": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+        "chainId": 59144,
+        "address": "0xA219439258ca9da29E9Cc4cE5596924745e12B93",
         "name": "USD Tether",
         "symbol": "USDT",
         "decimals": 6,
@@ -29,14 +29,14 @@
             "137":{
                 "tokenAddress": "0xc2132D05D31c914a87C6611C10748AEb04B58e8F"
             },
-            "59144":{
-                "tokenAddress": "0xA219439258ca9da29E9Cc4cE5596924745e12B93"
+            "1":{
+                "tokenAddress": "0xdAC17F958D2ee523a2206206994597C13D831ec7"
             }
         }
       },
       {
-        "chainId": 1,
-        "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+        "chainId": 59144,
+        "address": "0x176211869ca2b568f2a7d4ee941e073a821ee1ff",
         "name": "USD Coin",
         "symbol": "USDC",
         "decimals": 6,
@@ -46,8 +46,8 @@
             "137":{
                 "tokenAddress": "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359"
             },
-            "59144":{
-                "tokenAddress": "0x176211869ca2b568f2a7d4ee941e073a821ee1ff"
+            "1":{
+                "tokenAddress": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
             }
         }
       },
@@ -62,8 +62,8 @@
         "extensions": {}
       },
       {
-        "chainId": 1,
-        "address": "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
+        "chainId": 59144,
+        "address": "0x3aAB2285ddcDdaD8edf438C1bAB47e1a9D05a9b4",
         "name": "Wrapped Bitcoin",
         "symbol": "WBTC",
         "decimals": 18,
@@ -73,14 +73,14 @@
             "137":{
                 "tokenAddress": "0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6"
             },
-            "59144":{
-                "tokenAddress": "0x3aAB2285ddcDdaD8edf438C1bAB47e1a9D05a9b4"
+            "1":{
+                "tokenAddress": "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599"
             }
         }
       },
       {
-        "chainId": 1,
-        "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+        "chainId": 59144,
+        "address": "0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f",
         "name": "Wrapped Ether",
         "symbol": "WETH",
         "decimals": 18,
@@ -90,8 +90,8 @@
             "137":{
                 "tokenAddress": "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619"
             },
-            "59144":{
-                "tokenAddress": "0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f"
+            "1":{
+                "tokenAddress": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
             }
         }
       },
