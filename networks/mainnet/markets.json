@@ -1,11 +1,9 @@
 [
-    "spot://BTC/USDx",
-    "spot://ETH/USDx",
-    "spot://MATIC/USDx",
-    "spot://SOL/USDx",
-    "spot://RNDR/USDx",
-    "spot://LINK/USDx",
-    "spot://SHIB/USDx",
-    "spot://ARB/USDx",
-    "spot://MNT/USDx"
-]
+    "spot://DUCKIES/USDT",
+    "spot://USDC/USDT",
+    "spot://WBTC/USDT",
+    "spot://WETH/USDT",
+    "spot://LUBE/USDT",
+    "spot://LINDA/USDT"
+  ]
+  
