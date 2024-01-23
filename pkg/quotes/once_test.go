@@ -13,27 +13,17 @@ func TestOnce_Start(t *testing.T) {
 		t.Parallel()
 
 		o := newOnce()
-		startedChan := make(chan bool, 2)
-		defer close(startedChan)
-
-		o.Start(func() { startedChan <- true })
-		o.Start(func() { startedChan <- true })
-
-		require.Len(t, startedChan, 1, "Start() method was executed more than once")
+		require.True(t, o.Start(func() {}))
+		require.False(t, o.Start(func() {}), 1, "Start() method was executed more than once")
 	})
 
 	t.Run("Should reset the STOP action", func(t *testing.T) {
 		t.Parallel()
 
 		o := newOnce()
-		startedChan := make(chan bool, 2)
-		defer close(startedChan)
-
-		o.Start(func() { startedChan <- true })
-		o.Stop(func() {})
-		o.Start(func() { startedChan <- true })
-
-		require.Len(t, startedChan, 2)
+		require.True(t, o.Start(func() {}))
+		require.True(t, o.Stop(func() {}))
+		require.True(t, o.Start(func() {}))
 	})
 }
 
@@ -44,14 +34,9 @@ func TestOnce_Stop(t *testing.T) {
 		t.Parallel()
 
 		o := newOnce()
-		stoppedChan := make(chan bool, 2)
-		defer close(stoppedChan)
-
-		o.Start(func() {}) // start the process to unblock STOP action
-		o.Stop(func() { stoppedChan <- true })
-		o.Stop(func() { stoppedChan <- true })
-
-		require.Len(t, stoppedChan, 1, "Stop() method was executed more than once")
+		require.True(t, o.Start(func() {})) // start the process to unblock STOP action
+		require.True(t, o.Stop(func() {}))
+		require.False(t, o.Stop(func() {}), "Stop() method was executed more than once")
 	})
 
 	t.Run("Should reset the START action", func(t *testing.T) {
@@ -61,11 +46,65 @@ func TestOnce_Stop(t *testing.T) {
 		stoppedChan := make(chan bool, 2)
 		defer close(stoppedChan)
 
-		o.Start(func() {}) // start the process to unblock STOP action
-		o.Stop(func() { stoppedChan <- true })
-		o.Start(func() {})
-		o.Stop(func() { stoppedChan <- true })
+		require.True(t, o.Start(func() {})) // start the process to unblock STOP action
+		require.True(t, o.Stop(func() {}))
+		require.True(t, o.Start(func() {}))
+		require.True(t, o.Stop(func() {}))
+	})
+}
 
-		require.Len(t, stoppedChan, 2)
+func TestOnce_Subscribe(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Should return false if Start has not been called", func(t *testing.T) {
+		t.Parallel()
+
+		o := newOnce()
+		require.False(t, o.Subscribe(), "Subscribe() should return false when Start() has not been called")
+	})
+
+	t.Run("Should return true if Start has been called", func(t *testing.T) {
+		t.Parallel()
+
+		o := newOnce()
+		require.True(t, o.Start(func() {}))
+		require.True(t, o.Subscribe(), "Subscribe() should return true when Start() has been called")
+	})
+
+	t.Run("Should return false after Stop has been called", func(t *testing.T) {
+		t.Parallel()
+
+		o := newOnce()
+		require.True(t, o.Start(func() {}))
+		require.True(t, o.Stop(func() {}))
+		require.False(t, o.Subscribe(), "Subscribe() should return false after Stop() has been called")
+	})
+}
+
+func TestOnce_Unsubscribe(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Should return false if Start has not been called", func(t *testing.T) {
+		t.Parallel()
+
+		o := newOnce()
+		require.False(t, o.Unsubscribe(), "Unsubscribe() should return false when Start() has not been called")
+	})
+
+	t.Run("Should return true if Start has been called", func(t *testing.T) {
+		t.Parallel()
+
+		o := newOnce()
+		require.True(t, o.Start(func() {}))
+		require.True(t, o.Unsubscribe(), "Unsubscribe() should return true when Start() has been called")
+	})
+
+	t.Run("Should return false after Stop has been called", func(t *testing.T) {
+		t.Parallel()
+
+		o := newOnce()
+		require.True(t, o.Start(func() {}))
+		require.True(t, o.Stop(func() {}))
+		require.False(t, o.Unsubscribe(), "Unsubscribe() should return false after Stop() has been called")
 	})
 }

@@ -49,7 +49,7 @@ func newUniswapV3Geth(config Config, outbox chan<- TradeEvent) *uniswapV3Geth {
 
 func (u *uniswapV3Geth) Start() error {
 	var startErr error
-	u.once.Start(func() {
+	started := u.once.Start(func() {
 		client, err := ethclient.Dial(u.url)
 		if err != nil {
 			startErr = fmt.Errorf("failed to connect to the Ethereum client: %w", err)
@@ -61,7 +61,7 @@ func (u *uniswapV3Geth) Start() error {
 		factoryAddress := common.HexToAddress("0x1F98431c8aD98523631AE4a59f267346ea31F984")
 		uniswapFactory, err := factory.NewIUniswapV3Factory(factoryAddress, client)
 		if err != nil {
-			startErr = fmt.Errorf("failed to build Uniswap v3 factory: %w", err)
+			err = fmt.Errorf("failed to build Uniswap v3 factory: %w", err)
 			return
 		}
 		u.factory = uniswapFactory
@@ -91,11 +91,15 @@ func (u *uniswapV3Geth) Start() error {
 			u.assets.Store(strings.ToUpper(asset.Symbol), asset)
 		}
 	})
+
+	if !started {
+		return errAlreadyStarted
+	}
 	return startErr
 }
 
 func (u *uniswapV3Geth) Stop() error {
-	u.once.Stop(func() {
+	stopped := u.once.Stop(func() {
 		u.streams.Range(func(market, stream any) bool {
 			err := u.Unsubscribe(market.(Market))
 			return err == nil
@@ -103,10 +107,17 @@ func (u *uniswapV3Geth) Stop() error {
 
 		u.streams = sync.Map{} // delete all stopped streams
 	})
+
+	if !stopped {
+		return errAlreadyStopped
+	}
 	return nil
 }
 
 func (u *uniswapV3Geth) Subscribe(market Market) error {
+	if !u.once.Subscribe() {
+		return errNotStarted
+	}
 	symbol := market.BaseUnit + market.QuoteUnit
 
 	if _, ok := u.streams.Load(market); ok {
@@ -162,6 +173,10 @@ func (u *uniswapV3Geth) Subscribe(market Market) error {
 }
 
 func (u *uniswapV3Geth) Unsubscribe(market Market) error {
+	if !u.once.Unsubscribe() {
+		return errNotStarted
+	}
+
 	stream, ok := u.streams.Load(market)
 	if !ok {
 		return fmt.Errorf("%s: %w", market, errNotSubbed)

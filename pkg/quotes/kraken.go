@@ -47,7 +47,7 @@ func newKraken(config Config, outbox chan<- TradeEvent) *kraken {
 
 func (k *kraken) Start() error {
 	var startErr error
-	k.once.Start(func() {
+	started := k.once.Start(func() {
 		if err := k.getPairs(); err != nil {
 			startErr = err
 			return
@@ -60,20 +60,31 @@ func (k *kraken) Start() error {
 
 		go k.listen()
 	})
+
+	if !started {
+		return errAlreadyStarted
+	}
 	return startErr
 }
 
 func (k *kraken) Stop() error {
 	var stopErr error
-	k.once.Stop(func() {
+	stopped := k.once.Stop(func() {
 		conn := k.conn
 		k.conn = nil
 
 		if conn == nil {
 			return
 		}
+
+		k.availablePairs = sync.Map{}
+		k.streams = sync.Map{} // delete all stopped streams
 		stopErr = conn.Close()
 	})
+
+	if !stopped {
+		return errAlreadyStopped
+	}
 	return stopErr
 }
 
@@ -89,6 +100,10 @@ type krakenSubscriptionParams struct {
 }
 
 func (k *kraken) Subscribe(market Market) error {
+	if !k.once.Subscribe() {
+		return errNotStarted
+	}
+
 	if _, ok := k.streams.Load(market); ok {
 		return fmt.Errorf("%s: %w", market, errAlreadySubbed)
 	}
@@ -117,6 +132,10 @@ func (k *kraken) Subscribe(market Market) error {
 }
 
 func (k *kraken) Unsubscribe(market Market) error {
+	if !k.once.Unsubscribe() {
+		return errNotStarted
+	}
+
 	if _, ok := k.streams.Load(market); !ok {
 		return fmt.Errorf("%s: %w", market, errNotSubbed)
 	}

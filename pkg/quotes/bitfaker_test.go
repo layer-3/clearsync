@@ -17,9 +17,11 @@ func TestBitfaker_Subscribe(t *testing.T) {
 		t.Parallel()
 
 		ch := make(chan TradeEvent, 16)
-		client := bitfaker{outbox: ch}
+		client := bitfaker{outbox: ch, once: newOnce()}
+		require.NoError(t, client.Start())
 
 		m := Market{BaseUnit: "btc", QuoteUnit: "usd"}
+
 		err := client.Subscribe(m)
 		require.Nil(t, err)
 
@@ -31,7 +33,8 @@ func TestBitfaker_Subscribe(t *testing.T) {
 		t.Parallel()
 
 		outbox := make(chan TradeEvent, 16)
-		client := bitfaker{outbox: outbox}
+		client := bitfaker{outbox: outbox, once: newOnce()}
+		require.NoError(t, client.Start())
 
 		market1 := Market{BaseUnit: "btc", QuoteUnit: "usd"}
 		err := client.Subscribe(market1)
@@ -49,7 +52,8 @@ func TestBitfaker_Subscribe(t *testing.T) {
 		t.Parallel()
 
 		ch := make(chan TradeEvent, 16)
-		client := bitfaker{outbox: ch}
+		client := bitfaker{outbox: ch, once: newOnce()}
+		require.NoError(t, client.Start())
 
 		market := Market{BaseUnit: "btc", QuoteUnit: "usd"}
 		err := client.Subscribe(market)
@@ -67,7 +71,8 @@ func TestBitfaker_Unsubscribe(t *testing.T) {
 		t.Parallel()
 
 		ch := make(chan TradeEvent, 16)
-		client := bitfaker{outbox: ch}
+		client := bitfaker{outbox: ch, once: newOnce()}
+		require.NoError(t, client.Start())
 
 		market1 := Market{BaseUnit: "btc", QuoteUnit: "usd"}
 		market2 := Market{BaseUnit: "eth", QuoteUnit: "usd"}
@@ -85,7 +90,8 @@ func TestBitfaker_Unsubscribe(t *testing.T) {
 		t.Parallel()
 
 		ch := make(chan TradeEvent, 16)
-		client := bitfaker{outbox: ch}
+		client := bitfaker{outbox: ch, once: newOnce()}
+		require.NoError(t, client.Start())
 
 		market := Market{BaseUnit: "xrp", QuoteUnit: "usd"}
 		err := client.Unsubscribe(market)
@@ -97,7 +103,8 @@ func TestBitfaker_Unsubscribe(t *testing.T) {
 		t.Parallel()
 
 		ch := make(chan TradeEvent, 16)
-		client := bitfaker{outbox: ch}
+		client := bitfaker{outbox: ch, once: newOnce()}
+		require.NoError(t, client.Start())
 
 		market1 := Market{BaseUnit: "btc", QuoteUnit: "usd"}
 		market2 := Market{BaseUnit: "eth", QuoteUnit: "usd"}
@@ -147,7 +154,8 @@ func TestCreateTradeEvent(t *testing.T) {
 	t.Parallel()
 
 	outbox := make(chan TradeEvent)
-	client := bitfaker{outbox: outbox}
+	client := bitfaker{outbox: outbox, once: newOnce()}
+	require.NoError(t, client.Start())
 
 	go func() { client.createTradeEvent(Market{BaseUnit: "btc", QuoteUnit: "usd"}) }()
 
