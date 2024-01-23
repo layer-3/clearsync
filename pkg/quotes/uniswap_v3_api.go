@@ -15,9 +15,9 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-var logger = log.Logger("uniswap")
+var loggerUniswapV3Api = log.Logger("uniswap_v3_api")
 
-type uniswapV3 struct {
+type uniswapV3Api struct {
 	once       *once
 	url        string
 	outbox     chan<- TradeEvent
@@ -25,13 +25,13 @@ type uniswapV3 struct {
 	streams    sync.Map
 }
 
-func newUniswapV3(config Config, outbox chan<- TradeEvent) *uniswapV3 {
+func newUniswapV3Api(config Config, outbox chan<- TradeEvent) *uniswapV3Api {
 	url := "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3"
 	if config.URL != "" {
 		url = config.URL
 	}
 
-	return &uniswapV3{
+	return &uniswapV3Api{
 		once:       newOnce(),
 		url:        url,
 		outbox:     outbox,
@@ -39,12 +39,12 @@ func newUniswapV3(config Config, outbox chan<- TradeEvent) *uniswapV3 {
 	}
 }
 
-func (u *uniswapV3) Start() error {
+func (u *uniswapV3Api) Start() error {
 	u.once.Start(func() {})
 	return nil
 }
 
-func (u *uniswapV3) Stop() error {
+func (u *uniswapV3Api) Stop() error {
 	u.once.Stop(func() {
 		u.streams.Range(func(market, stream any) bool {
 			stopCh := stream.(chan struct{})
@@ -58,7 +58,7 @@ func (u *uniswapV3) Stop() error {
 	return nil
 }
 
-func (u *uniswapV3) Subscribe(market Market) error {
+func (u *uniswapV3Api) Subscribe(market Market) error {
 	symbol := market.BaseUnit + market.QuoteUnit
 
 	if _, ok := u.streams.Load(market); ok {
@@ -77,43 +77,54 @@ func (u *uniswapV3) Subscribe(market Market) error {
 
 	go func() {
 		from := time.Now()
+		timer := time.After(u.windowSize)
 		for {
 			if stream, ok := u.streams.Load(market); ok {
 				stopCh := stream.(chan struct{})
 				select {
 				case <-stopCh:
-					loggerBinance.Infof("market %s is stopped", symbol)
+					loggerUniswapV3Api.Infof("market %s is stopped", symbol)
 					return
 				default:
 				}
 			}
 
 			select {
-			case <-time.After(u.windowSize):
+			case <-timer:
 				to := from.Add(u.windowSize)
 				swaps, err := u.fetchSwaps(market, from, to)
 				if err != nil {
 					err = fmt.Errorf("%s: %w", market, err)
-					loggerBinance.Warn(err)
+					loggerUniswapV3Api.Warn(err)
 				}
 
 				for _, swap := range swaps {
-					price := swap.price()
+					amount := swap.Amount0.Abs()
+					price := calculatePrice(swap.SqrtPriceX96, swap.Token0.Decimals, swap.Token1.Decimals)
 					createdAt, err := swap.time()
 					if err != nil {
-						loggerBinance.Warnf("failed to get swap timestamp: %s", err)
+						loggerUniswapV3Api.Warnf("failed to get swap timestamp: %s", err)
+					}
+					takerType := TakerTypeBuy
+					if swap.Amount0.Sign() < 0 {
+						// When amount0 is negative (and amount1 is positive),
+						// it means token0 is leaving the pool in exchange for token1.
+						// This is equivalent to a "sell" of token0 (or a "buy" of token1).
+						takerType = TakerTypeSell
 					}
 
 					u.outbox <- TradeEvent{
-						Source:    DriverUniswapV3,
+						Source:    DriverUniswapV3Api,
 						Market:    market.QuoteUnit,
 						Price:     price,
-						Amount:    swap.Amount0,
-						Total:     price.Mul(swap.Amount0),
-						TakerType: TakerTypeSell,
+						Amount:    amount,
+						Total:     price.Mul(amount),
+						TakerType: takerType,
 						CreatedAt: createdAt,
 					}
 				}
+				timer = time.After(u.windowSize)
+				from = to
 			default:
 			}
 		}
@@ -122,7 +133,7 @@ func (u *uniswapV3) Subscribe(market Market) error {
 	return nil
 }
 
-func (u *uniswapV3) Unsubscribe(market Market) error {
+func (u *uniswapV3Api) Unsubscribe(market Market) error {
 	stream, ok := u.streams.Load(market)
 	if !ok {
 		return fmt.Errorf("%s: %w", market, errNotSubbed)
@@ -143,7 +154,7 @@ const tokenTemplate = `query {
  }
 }`
 
-func (u *uniswapV3) isMarketAvailable(market Market) (bool, error) {
+func (u *uniswapV3Api) isMarketAvailable(market Market) (bool, error) {
 	query := fmt.Sprintf(tokenTemplate,
 		strings.ToUpper(market.BaseUnit),
 		strings.ToUpper(market.QuoteUnit),
@@ -178,7 +189,7 @@ const swapsTemplate = `query {
   }
 }`
 
-func (u *uniswapV3) fetchSwaps(market Market, from, to time.Time) ([]uniswapV3Swap, error) {
+func (u *uniswapV3Api) fetchSwaps(market Market, from, to time.Time) ([]uniswapV3Swap, error) {
 	query := fmt.Sprintf(swapsTemplate,
 		from.Unix(),
 		to.Unix(),
@@ -206,7 +217,7 @@ func runUniswapV3GraphqlRequest[T uniswapV3Pools | uniswapV3Swaps](url, query st
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
-			loggerBinance.Errorf("error closing HTTP response body: %v", err)
+			loggerUniswapV3Api.Errorf("error closing HTTP response body: %v", err)
 		}
 	}(resp.Body)
 
@@ -251,23 +262,23 @@ type uniswapV3Swaps struct {
 
 type uniswapV3Swap struct {
 	Timestamp    string          `json:"timestamp"`
-	Token0       token           `json:"token0"`
-	Token1       token           `json:"token1"`
+	Token0       graphqlToken    `json:"token0"`
+	Token1       graphqlToken    `json:"token1"`
 	Amount0      decimal.Decimal `json:"amount0"`
 	Amount1      decimal.Decimal `json:"amount1"`
 	SqrtPriceX96 decimal.Decimal `json:"sqrtPriceX96"`
 }
 
 var priceX96 = decimal.NewFromInt(2).Pow(decimal.NewFromInt(96))
+var ten = decimal.NewFromInt(10)
 
-// price method calculates the price per token at which the swap was performed.
+// calculatePrice method calculates the price per token at which the swap was performed.
 // General formula is as follows: ((sqrtPriceX96 / 2**96)**2) / (10**decimal1 / 10**decimal0)
 // See the math explained at https://blog.uniswap.org/uniswap-v3-math-primer
-func (swap *uniswapV3Swap) price() decimal.Decimal {
-	ten := decimal.NewFromInt(10)
-	decimals := swap.Token1.Decimals.Sub(swap.Token0.Decimals)
+func calculatePrice(sqrtPriceX96, baseTokenDecimals, quoteTokenDecimals decimal.Decimal) decimal.Decimal {
+	decimals := quoteTokenDecimals.Sub(baseTokenDecimals)
 
-	numerator := swap.SqrtPriceX96.Div(priceX96).Pow(decimal.NewFromInt(2))
+	numerator := sqrtPriceX96.Div(priceX96).Pow(decimal.NewFromInt(2))
 	denominator := ten.Pow(decimals)
 	return numerator.Div(denominator)
 }
@@ -281,6 +292,6 @@ func (swap *uniswapV3Swap) time() (time.Time, error) {
 	return time.Unix(unixTimestamp, 0), nil
 }
 
-type token struct {
+type graphqlToken struct {
 	Decimals decimal.Decimal `json:"decimals"`
 }

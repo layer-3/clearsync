@@ -158,7 +158,7 @@ func (k *kraken) connect() error {
 		var err error
 		k.conn, _, err = k.dialer.Dial(k.url, nil)
 		if err != nil {
-			loggerBinance.Error(err)
+			loggerKraken.Error(err)
 			time.Sleep(k.retryPeriod)
 			continue
 		}
@@ -214,13 +214,13 @@ func (k *kraken) listen() {
 
 		_, rawMsg, err := k.conn.ReadMessage()
 		if err != nil {
-			loggerBinance.Errorf("error reading message: %v", err)
+			loggerKraken.Errorf("error reading message: %v", err)
 
 			k.connect()
 			k.streams.Range(func(m, value any) bool {
 				market := m.(Market)
 				if err := k.Subscribe(market); err != nil {
-					loggerBinance.Warnf("Error subscribing to market %s: %s", market, err)
+					loggerKraken.Warnf("Error subscribing to market %s: %s", market, err)
 					return false
 				}
 				return true
@@ -231,7 +231,7 @@ func (k *kraken) listen() {
 
 		tradeEvents, err := k.parseMessage(rawMsg)
 		if err != nil {
-			loggerBinance.Errorf("error parsing message: %v", err)
+			loggerKraken.Errorf("error parsing message: %v", err)
 			continue
 		}
 		if tradeEvents == nil {
@@ -319,7 +319,7 @@ func (k *kraken) getPairs() error {
 	}
 	defer func(Body io.ReadCloser) {
 		if err := Body.Close(); err != nil {
-			loggerBinance.Errorf("error closing HTTP response body: %v", err)
+			loggerKraken.Errorf("error closing HTTP response body: %v", err)
 		}
 	}(resp.Body)
 
@@ -342,7 +342,7 @@ func (k *kraken) getPairs() error {
 	for _, pair := range pairs.Result {
 		if pair.Status != "online" {
 			symbol := fmt.Sprintf("%s%s", strings.ToUpper(pair.Base), strings.ToUpper(pair.Quote))
-			loggerBinance.Warnf("market %s doesn't exist", symbol)
+			loggerKraken.Warnf("market %s doesn't exist", symbol)
 			continue
 		}
 		k.availablePairs.Store(pair.Altname, pair)

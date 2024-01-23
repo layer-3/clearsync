@@ -6,7 +6,7 @@ typechain
 typechain-types
 .tags
 
-#Hardhat files
+# Hardhat files
 cache
 artifacts
 !pkg/artifacts

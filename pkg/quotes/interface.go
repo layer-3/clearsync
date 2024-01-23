@@ -12,11 +12,12 @@ type Driver interface {
 
 func NewDriver(config Config, outbox chan<- TradeEvent) (Driver, error) {
 	allDrivers := map[DriverType]Driver{
-		DriverBinance:   newBinance(config, outbox),
-		DriverKraken:    newKraken(config, outbox),
-		DriverOpendax:   newOpendax(config, outbox),
-		DriverBitfaker:  newBitfaker(config, outbox),
-		DriverUniswapV3: newUniswapV3(config, outbox),
+		DriverBinance:       newBinance(config, outbox),
+		DriverKraken:        newKraken(config, outbox),
+		DriverOpendax:       newOpendax(config, outbox),
+		DriverBitfaker:      newBitfaker(config, outbox),
+		DriverUniswapV3Api:  newUniswapV3Api(config, outbox),
+		DriverUniswapV3Geth: newUniswapV3Geth(config, outbox),
 	}
 
 	driver, ok := allDrivers[config.Driver]
