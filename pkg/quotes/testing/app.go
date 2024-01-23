@@ -32,6 +32,23 @@ func main() {
 	config.Driver = driverName
 
 	outbox := make(chan quotes.TradeEvent, 128)
+	outboxStop := make(chan struct{}, 1)
+	go func() {
+		// You may add a lot of markets to subscribe
+		// and considering imposed rate limits
+		// it may take a while to get the first trade
+		// if you run outbox processing AFTER subscriptions.
+		// That's why we start processing in an async manner beforehand.
+		for e := range outbox {
+			slog.Info("new trade",
+				"market", e.Market,
+				"side", e.TakerType.String(),
+				"price", e.Price.String(),
+				"amount", e.Amount.String())
+		}
+		outboxStop <- struct{}{}
+	}()
+
 	driver, err := quotes.NewDriver(config, outbox)
 	if err != nil {
 		panic(err)
@@ -46,12 +63,5 @@ func main() {
 		panic(err)
 	}
 
-	slog.Info("Subscribed", "market", market)
-	for e := range outbox {
-		slog.Info("new trade",
-			"market", e.Market,
-			"side", e.TakerType.String(),
-			"price", e.Price.String(),
-			"amount", e.Amount.String())
-	}
+	<-outboxStop
 }

@@ -40,7 +40,7 @@ func newOpendax(config Config, outbox chan<- TradeEvent) *opendax {
 		outbox: outbox,
 		period: config.ReconnectPeriod * time.Second,
 		reqID:  atomic.Uint64{},
-		dialer: wsDialWrapper{},
+		dialer: &wsDialWrapper{},
 	}
 }
 

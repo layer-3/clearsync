@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -37,10 +39,17 @@ func newKraken(config Config, outbox chan<- TradeEvent) *kraken {
 		url = config.URL
 	}
 
+	limiter := &wsDialWrapper{}
+
+	// Set rate limit to 1 req/sec
+	// as imposed by Kraken API docs here:
+	// https://support.kraken.com/hc/en-us/articles/206548367-What-are-the-API-rate-limits-
+	limiter.WithRateLimit(1)
+
 	return &kraken{
 		once:         newOnce(),
 		url:          url,
-		dialer:       wsDialWrapper{},
+		dialer:       limiter,
 		retryPeriod:  config.ReconnectPeriod,
 		tradeSampler: *newTradeSampler(config.TradeSampler),
 		outbox:       outbox,
@@ -256,31 +265,43 @@ func (k *kraken) parseMessage(rawMsg []byte) ([]TradeEvent, error) {
 	// TODO: handle unsubscribe response
 	// TODO: handle error response
 
-	var resp map[string]interface{}
-	if err := json.Unmarshal(rawMsg, &resp); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal message: %w", err)
+	var tradeData []interface{}
+	var eventData map[string]interface{}
+	eventErr := json.Unmarshal(rawMsg, &eventData)
+	tradeErr := json.Unmarshal(rawMsg, &tradeData)
+
+	if eventErr != nil && tradeErr != nil {
+		return nil, fmt.Errorf("failed to unmarshal message: `%s`", string(rawMsg))
+	}
+	if eventErr == nil && tradeErr != nil {
+		return nil, k.parseEvent(eventData)
+	}
+	// NOTE: case `updateErr == nil && tradeErr == nil` is considered impossible
+
+	events, err := k.parseTrade(tradeData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse trade `%s`: %w", string(rawMsg), err)
+	}
+	return k.buildEvents(events)
+}
+
+func (k *kraken) parseEvent(eventData map[string]interface{}) error {
+	if eventData["event"] == "heartbeat" {
+		return nil
 	}
 
-	if resp["event"] == "heartbeat" {
-		return nil, nil
-	}
-	if resp["event"] == "subscriptionStatus" {
-		status := resp["status"].(string)
+	if eventData["event"] == "subscriptionStatus" {
+		status := eventData["status"].(string)
 		if status == "subscribed" {
-			loggerKraken.Info("subscribed", "pair", resp["pair"])
-			return nil, nil
+			loggerKraken.Infow("subscribed", "pair", eventData["pair"])
+			return nil
 		}
 		if status == "error" {
-			return nil, fmt.Errorf("subscription error: %s", resp["errorMessage"])
+			return fmt.Errorf("subscription error: %s", eventData["errorMessage"])
 		}
 	}
 
-	events, err := k.parseTrade(rawMsg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse trade `%s`: %w", rawMsg, err)
-	}
-
-	return k.buildEvents(events)
+	return nil
 }
 
 type krakenTrade struct {
@@ -299,12 +320,7 @@ type krakenTradeDetail struct {
 	Misc      string `json:"misc"`
 }
 
-func (k *kraken) parseTrade(rawMsg []byte) (trade krakenTrade, err error) {
-	var data []interface{}
-	if err = json.Unmarshal(rawMsg, &data); err != nil {
-		return
-	}
-
+func (k *kraken) parseTrade(data []interface{}) (trade krakenTrade, err error) {
 	trade.ChannelID = int(data[0].(float64))
 	trade.ChannelName = data[2].(string)
 	trade.Pair = data[3].(string)
@@ -313,13 +329,13 @@ func (k *kraken) parseTrade(rawMsg []byte) (trade krakenTrade, err error) {
 
 	tradeDetails, ok := data[1].([]interface{})
 	if !ok {
-		return trade, fmt.Errorf("error in type assertion for trade details: %s", rawMsg)
+		return trade, fmt.Errorf("error in type assertion for trade details")
 	}
 
 	for _, item := range tradeDetails {
 		itemDetails, ok := item.([]interface{})
 		if !ok {
-			return trade, fmt.Errorf("error in type assertion for an item in trade details: %s", rawMsg)
+			return trade, fmt.Errorf("error in type assertion for an item in trade details")
 		}
 
 		var detail krakenTradeDetail
@@ -354,10 +370,12 @@ func (*kraken) buildEvents(trades krakenTrade) ([]TradeEvent, error) {
 			takerType = TakerTypeSell
 		}
 
-		createdAt, err := time.Parse(time.RFC3339, tr.Time)
+		unixTime, err := strconv.ParseFloat(tr.Time, 64)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse timestamp `%s`: %w", tr.Time, err)
 		}
+		sec, dec := math.Modf(unixTime)
+		createdAt := time.Unix(int64(sec), int64(dec*(1e9)))
 
 		events = append(events, TradeEvent{
 			Source:    DriverKraken,
@@ -435,14 +453,12 @@ func (k *kraken) getPairs() error {
 		return fmt.Errorf("failed to unmarshal pairs response: %v", err)
 	}
 
-	// Convert pairs to map
+	// Store active pairs in memory
 
 	for _, pair := range pairs.Result {
 		if pair.Status != "online" {
 			continue
 		}
-		// symbol := fmt.Sprintf("%s/%s", strings.ToUpper(pair.Base), strings.ToUpper(pair.Quote))
-		// fmt.Println(symbol)
 		k.availablePairs.Store(pair.Wsname, pair)
 	}
 
