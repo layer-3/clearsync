@@ -43,13 +43,19 @@ func newUniswapV3Geth(config Config, outbox chan<- TradeEvent) *uniswapV3Geth {
 		once:      newOnce(),
 		url:       config.URL,
 		assetsURL: config.AssetsURL,
-		outbox:    outbox,
+
+		outbox: outbox,
 	}
 }
 
 func (u *uniswapV3Geth) Start() error {
 	var startErr error
 	started := u.once.Start(func() {
+		if !strings.HasPrefix(u.url, "ws") {
+			startErr = fmt.Errorf("websocket URL must start with ws:// or wss:// (got %s)", u.url)
+			return
+		}
+
 		client, err := ethclient.Dial(u.url)
 		if err != nil {
 			startErr = fmt.Errorf("failed to connect to the Ethereum client: %w", err)
