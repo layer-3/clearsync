@@ -147,29 +147,41 @@ func (u *uniswapV3Geth) Subscribe(market Market) error {
 
 	go func() {
 		defer close(swapsSink)
-		for swap := range swapsSink {
-			amount := decimal.NewFromBigInt(swap.Amount0, 0)
-			price := calculatePrice(
-				decimal.NewFromBigInt(swap.SqrtPriceX96, 0),
-				uniswapPool.baseToken.Decimals,
-				uniswapPool.quoteToken.Decimals)
-			takerType := TakerTypeBuy
-			if amount.Sign() < 0 {
-				// When amount0 is negative (and amount1 is positive),
-				// it means token0 is leaving the pool in exchange for token1.
-				// This is equivalent to a "sell" of token0 (or a "buy" of token1).
-				takerType = TakerTypeSell
-			}
+		for {
+			select {
+			case err := <-sub.Err():
+				loggerUniswapV3Geth.Errorf("market %s: %s", symbol, err)
+				if _, ok := u.streams.Load(market); !ok {
+					break // market was unsubscribed earlier
+				}
+				if err := u.Subscribe(market); err != nil {
+					loggerUniswapV3Geth.Errorf("market %s: failed to resubscribe: %s", symbol, err)
+				}
+				return
+			case swap := <-swapsSink:
+				amount := decimal.NewFromBigInt(swap.Amount0, 0)
+				price := calculatePrice(
+					decimal.NewFromBigInt(swap.SqrtPriceX96, 0),
+					uniswapPool.baseToken.Decimals,
+					uniswapPool.quoteToken.Decimals)
+				takerType := TakerTypeBuy
+				if amount.Sign() < 0 {
+					// When amount0 is negative (and amount1 is positive),
+					// it means token0 is leaving the pool in exchange for token1.
+					// This is equivalent to a "sell" of token0 (or a "buy" of token1).
+					takerType = TakerTypeSell
+				}
 
-			amount = amount.Abs()
-			u.outbox <- TradeEvent{
-				Source:    DriverUniswapV3Geth,
-				Market:    symbol,
-				Price:     price,
-				Amount:    amount,
-				Total:     price.Mul(amount),
-				TakerType: takerType,
-				CreatedAt: time.Now(),
+				amount = amount.Abs()
+				u.outbox <- TradeEvent{
+					Source:    DriverUniswapV3Geth,
+					Market:    symbol,
+					Price:     price,
+					Amount:    amount,
+					Total:     price.Mul(amount),
+					TakerType: takerType,
+					CreatedAt: time.Now(),
+				}
 			}
 		}
 	}()
