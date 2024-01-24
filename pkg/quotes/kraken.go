@@ -59,6 +59,11 @@ func newKraken(config Config, outbox chan<- TradeEvent) *kraken {
 func (k *kraken) Start() error {
 	var startErr error
 	started := k.once.Start(func() {
+		if !(strings.HasPrefix(k.url, "ws://") || strings.HasPrefix(k.url, "wss://")) {
+			startErr = fmt.Errorf("%s (got '%s')", errInvalidWsURL, k.url)
+			return
+		}
+
 		if err := k.getPairs(); err != nil {
 			startErr = err
 			return

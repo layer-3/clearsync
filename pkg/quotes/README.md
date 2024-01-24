@@ -8,9 +8,10 @@ Available drivers:
 - Kraken
 - Opendax
 - Bitfaker
-- Uniswap V3
+- Uniswap v3
   - based on Subgraph API
   - based on go-ethereum
+- Syncswap
 
 ## Interface to connect
 

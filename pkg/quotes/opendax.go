@@ -3,6 +3,7 @@ package quotes
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -45,7 +46,13 @@ func newOpendax(config Config, outbox chan<- TradeEvent) *opendax {
 }
 
 func (o *opendax) Start() error {
+	var startErr error
 	started := o.once.Start(func() {
+		if !(strings.HasPrefix(o.url, "ws://") || strings.HasPrefix(o.url, "wss://")) {
+			startErr = fmt.Errorf("%s (got '%s')", errInvalidWsURL, o.url)
+			return
+		}
+
 		o.connect()
 		go o.listen()
 	})
@@ -53,7 +60,7 @@ func (o *opendax) Start() error {
 	if !started {
 		return errAlreadyStarted
 	}
-	return nil
+	return startErr
 }
 
 func (o *opendax) Stop() error {
