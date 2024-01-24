@@ -3,7 +3,7 @@ package quotes
 import "errors"
 
 var (
-	errNotStarted     = errors.New("driver is not started")
+	errNotStarted     = errors.New("driver is not started; call `Start()` first or wait for it to finish")
 	errAlreadyStarted = errors.New("driver is already started")
 	errAlreadyStopped = errors.New("driver is already stopped")
 	errNotSubbed      = errors.New("market not subscribed")

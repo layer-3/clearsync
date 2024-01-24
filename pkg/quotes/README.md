@@ -9,8 +9,8 @@ Available drivers:
 - Opendax
 - Bitfaker
 - Uniswap V3
-  - Subgraph API
-  - go-ethereum
+  - based on Subgraph API
+  - based on go-ethereum
 
 ## Interface to connect
 
