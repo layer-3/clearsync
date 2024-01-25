@@ -13,7 +13,7 @@ type DriverType struct {
 	slug string
 }
 
-func (d *DriverType) String() string {
+func (d DriverType) String() string {
 	return d.slug
 }
 
@@ -87,7 +87,7 @@ type TakerType struct {
 	slug string
 }
 
-func (t *TakerType) String() string {
+func (t TakerType) String() string {
 	return t.slug
 }
 

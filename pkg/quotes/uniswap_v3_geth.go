@@ -27,22 +27,24 @@ var (
 )
 
 type uniswapV3Geth struct {
-	once      *once
-	url       string
-	assetsURL string
-	client    *ethclient.Client
-	factory   *factory.IUniswapV3Factory
+	once            *once
+	url             string
+	assetsURL       string
+	contractAddress string
+	client          *ethclient.Client
+	factory         *factory.IUniswapV3Factory
 
 	outbox  chan<- TradeEvent
 	streams sync.Map
 	assets  sync.Map
 }
 
-func newUniswapV3Geth(config Config, outbox chan<- TradeEvent) *uniswapV3Geth {
+func newUniswapV3Geth(config UniswapV3GethConfig, outbox chan<- TradeEvent) *uniswapV3Geth {
 	return &uniswapV3Geth{
-		once:      newOnce(),
-		url:       config.URL,
-		assetsURL: config.AssetsURL,
+		once:            newOnce(),
+		url:             config.URL,
+		assetsURL:       config.AssetsURL,
+		contractAddress: config.FactoryContractAddress,
 
 		outbox: outbox,
 	}
@@ -64,7 +66,7 @@ func (u *uniswapV3Geth) Start() error {
 		u.client = client
 
 		// Check addresses here: https://docs.uniswap.org/contracts/v3/reference/deployments
-		factoryAddress := common.HexToAddress("0x1F98431c8aD98523631AE4a59f267346ea31F984")
+		factoryAddress := common.HexToAddress(u.contractAddress)
 		uniswapFactory, err := factory.NewIUniswapV3Factory(factoryAddress, client)
 		if err != nil {
 			err = fmt.Errorf("failed to build Uniswap v3 factory: %w", err)

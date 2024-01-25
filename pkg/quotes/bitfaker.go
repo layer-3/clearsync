@@ -18,13 +18,13 @@ type bitfaker struct {
 	tradeSampler tradeSampler
 }
 
-func newBitfaker(config Config, outbox chan<- TradeEvent) *bitfaker {
+func newBitfaker(config BitfakerConfig, outbox chan<- TradeEvent) *bitfaker {
 	return &bitfaker{
 		once:         newOnce(),
 		streams:      make([]Market, 0),
 		outbox:       outbox,
 		stopCh:       make(chan struct{}, 1),
-		period:       5 * time.Second,
+		period:       config.Period,
 		tradeSampler: *newTradeSampler(config.TradeSampler),
 	}
 }

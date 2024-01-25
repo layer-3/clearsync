@@ -25,11 +25,10 @@ func main() {
 		driverName = parsedDriver
 	}
 
-	config, err := quotes.NewConfigFromEnv()
+	config, err := quotes.NewConfigFromEnv(driverName)
 	if err != nil {
 		panic(err)
 	}
-	config.Driver = driverName
 
 	outbox := make(chan quotes.TradeEvent, 128)
 	outboxStop := make(chan struct{}, 1)

@@ -29,15 +29,10 @@ type opendax struct {
 	streams sync.Map
 }
 
-func newOpendax(config Config, outbox chan<- TradeEvent) *opendax {
-	url := "wss://alpha.yellow.org/api/v1/finex/ws"
-	if config.URL != "" {
-		url = config.URL
-	}
-
+func newOpendax(config OpendaxConfig, outbox chan<- TradeEvent) *opendax {
 	return &opendax{
 		once:   newOnce(),
-		url:    url,
+		url:    config.URL,
 		outbox: outbox,
 		period: config.ReconnectPeriod * time.Second,
 		reqID:  atomic.Uint64{},

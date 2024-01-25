@@ -33,12 +33,7 @@ type kraken struct {
 	outbox         chan<- TradeEvent
 }
 
-func newKraken(config Config, outbox chan<- TradeEvent) *kraken {
-	url := "wss://ws.kraken.com"
-	if config.URL != "" {
-		url = config.URL
-	}
-
+func newKraken(config KrakenConfig, outbox chan<- TradeEvent) *kraken {
 	limiter := &wsDialWrapper{}
 
 	// Set rate limit to 1 req/sec
@@ -48,7 +43,7 @@ func newKraken(config Config, outbox chan<- TradeEvent) *kraken {
 
 	return &kraken{
 		once:         newOnce(),
-		url:          url,
+		url:          config.URL,
 		dialer:       limiter,
 		retryPeriod:  config.ReconnectPeriod,
 		tradeSampler: *newTradeSampler(config.TradeSampler),
