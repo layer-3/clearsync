@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -16,6 +18,8 @@ import (
 
 var loggerKraken = log.Logger("kraken")
 
+// kraken implements driver for Kraken WebSocket API v1.9.2.
+// See docs here: https://docs.kraken.com/websockets
 type kraken struct {
 	once        *once
 	conn        wsTransport
@@ -30,15 +34,22 @@ type kraken struct {
 }
 
 func newKraken(config Config, outbox chan<- TradeEvent) *kraken {
-	url := "wss://ws.kraken.com/v2"
+	url := "wss://ws.kraken.com"
 	if config.URL != "" {
 		url = config.URL
 	}
 
+	limiter := &wsDialWrapper{}
+
+	// Set rate limit to 1 req/sec
+	// as imposed by Kraken API docs here:
+	// https://support.kraken.com/hc/en-us/articles/206548367-What-are-the-API-rate-limits-
+	limiter.WithRateLimit(1)
+
 	return &kraken{
 		once:         newOnce(),
 		url:          url,
-		dialer:       wsDialWrapper{},
+		dialer:       limiter,
 		retryPeriod:  config.ReconnectPeriod,
 		tradeSampler: *newTradeSampler(config.TradeSampler),
 		outbox:       outbox,
@@ -88,15 +99,20 @@ func (k *kraken) Stop() error {
 	return stopErr
 }
 
-type krakenSubscribeMessage struct {
-	Method string                   `json:"method"`
-	Params krakenSubscriptionParams `json:"params"`
+type krakenSubscriptionMessage struct {
+	Event string `json:"event"` // "subscribe" | "unsubscribe"
+	// Pair is a list of currency pairs.
+	// Format of each pair is "A/B", where A and B are ISO 4217-A3
+	// for standardized assets and popular unique symbol if not standardized.
+	Pair         []string                 `json:"pair"`
+	Subscription krakenSubscriptionParams `json:"subscription"`
 }
 
 type krakenSubscriptionParams struct {
-	Channel  string   `json:"channel"`
-	Snapshot bool     `json:"snapshot"`
-	Symbol   []string `json:"symbol"`
+	// Name field sets the subscription target.
+	// Available variants: book|ohlc|openOrders|ownTrades|spread|ticker|trade|*
+	// * for all available channels depending on the connected environment
+	Name string `json:"name"`
 }
 
 func (k *kraken) Subscribe(market Market) error {
@@ -108,19 +124,15 @@ func (k *kraken) Subscribe(market Market) error {
 		return fmt.Errorf("%s: %w", market, errAlreadySubbed)
 	}
 
-	symbol := fmt.Sprintf("%s%s", strings.ToUpper(market.BaseUnit), strings.ToUpper(market.QuoteUnit))
-	if _, ok := k.availablePairs.Load(symbol); !ok {
-		return fmt.Errorf("market %s doesn't exist in Kraken", symbol)
+	pair := fmt.Sprintf("%s/%s", strings.ToUpper(market.BaseUnit), strings.ToUpper(market.QuoteUnit))
+	if _, ok := k.availablePairs.Load(pair); !ok {
+		return fmt.Errorf("market %s doesn't exist in Kraken", pair)
 	}
 
-	pair := fmt.Sprintf("%s/%s", strings.ToUpper(market.BaseUnit), strings.ToUpper(market.QuoteUnit))
-	subMsg := krakenSubscribeMessage{
-		Method: "subscribe",
-		Params: krakenSubscriptionParams{
-			Channel:  "trade",
-			Snapshot: true,
-			Symbol:   []string{pair},
-		},
+	subMsg := krakenSubscriptionMessage{
+		Event:        "subscribe",
+		Pair:         []string{pair},
+		Subscription: krakenSubscriptionParams{Name: "trade"},
 	}
 
 	if err := k.writeConn(subMsg); err != nil {
@@ -141,13 +153,10 @@ func (k *kraken) Unsubscribe(market Market) error {
 	}
 
 	pair := fmt.Sprintf("%s/%s", strings.ToUpper(market.BaseUnit), strings.ToUpper(market.QuoteUnit))
-	unsubMsg := krakenSubscribeMessage{
-		Method: "unsubscribe",
-		Params: krakenSubscriptionParams{
-			Channel:  "trade",
-			Snapshot: true,
-			Symbol:   []string{pair},
-		},
+	unsubMsg := krakenSubscriptionMessage{
+		Event:        "unsubscribe",
+		Pair:         []string{pair},
+		Subscription: krakenSubscriptionParams{Name: "trade"},
 	}
 
 	if err := k.writeConn(unsubMsg); err != nil {
@@ -157,7 +166,7 @@ func (k *kraken) Unsubscribe(market Market) error {
 	return nil
 }
 
-func (k *kraken) writeConn(msg krakenSubscribeMessage) error {
+func (k *kraken) writeConn(msg krakenSubscriptionMessage) error {
 	payload, err := json.Marshal(msg)
 	if err != nil {
 		return fmt.Errorf("error marshalling subscription message: %v", err)
@@ -173,6 +182,8 @@ func (k *kraken) writeConn(msg krakenSubscribeMessage) error {
 }
 
 func (k *kraken) connect() error {
+	// Connect to Kraken API
+
 	for {
 		var err error
 		k.conn, _, err = k.dialer.Dial(k.url, nil)
@@ -182,43 +193,26 @@ func (k *kraken) connect() error {
 			continue
 		}
 
-		return nil
+		break
 	}
-}
 
-type krakenEvent[T krakenStatus | krakenTrade] struct {
-	Channel string `json:"channel"`
-	Type    string `json:"type"`
-	Data    []T    `json:"data"`
-}
+	// Read initial message
 
-type krakenStatus struct {
-	ApiVersion   string `json:"api_version"`
-	ConnectionId uint64 `json:"connection_id"`
-	System       string `json:"system"`
-	Version      string `json:"version"`
-}
+	_, msg, err := k.conn.ReadMessage()
+	if err != nil {
+		return err
+	}
 
-type krakenTrade struct {
-	OrdType   string    `json:"ord_type"`
-	Price     float64   `json:"price"`
-	Qty       float64   `json:"qty"`
-	Side      string    `json:"side"` // "buy" | "sell"
-	Symbol    string    `json:"symbol"`
-	Timestamp time.Time `json:"timestamp"`
-	TradeId   int       `json:"trade_id"`
-}
+	// Check if Kraken API is online
 
-type krakenResult struct {
-	Method string `json:"method"`
-	Result struct {
-		Channel  string `json:"channel"`
-		Snapshot bool   `json:"snapshot"`
-		Symbol   string `json:"symbol"`
-	} `json:"result"`
-	Success bool      `json:"success"`
-	TimeIn  time.Time `json:"time_in"`
-	TimeOut time.Time `json:"time_out"`
+	var initResp map[string]interface{}
+	if err := json.Unmarshal(msg, &initResp); err != nil {
+		return err
+	}
+	if !(initResp["event"] == "systemStatus" && initResp["status"] == "online") {
+		return fmt.Errorf("Kraken API is offline: %v", initResp)
+	}
+	return nil
 }
 
 func (k *kraken) listen() {
@@ -268,29 +262,132 @@ func (k *kraken) listen() {
 }
 
 func (k *kraken) parseMessage(rawMsg []byte) ([]TradeEvent, error) {
-	var ticker krakenEvent[krakenTrade]
-	if err := json.Unmarshal(rawMsg, &ticker); err == nil && ticker.Channel != "heartbeat" {
-		return k.buildEvents(ticker.Data), nil
+	// TODO: handle unsubscribe response
+	// TODO: handle error response
+
+	var tradeData []interface{}
+	var eventData map[string]interface{}
+	eventErr := json.Unmarshal(rawMsg, &eventData)
+	tradeErr := json.Unmarshal(rawMsg, &tradeData)
+
+	if eventErr != nil && tradeErr != nil {
+		return nil, fmt.Errorf("failed to unmarshal message: `%s`", string(rawMsg))
+	}
+	if eventErr == nil && tradeErr != nil {
+		return nil, k.parseEvent(eventData)
+	}
+	// NOTE: case `updateErr == nil && tradeErr == nil` is considered impossible
+
+	events, err := k.parseTrade(tradeData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse trade `%s`: %w", string(rawMsg), err)
+	}
+	return k.buildEvents(events)
+}
+
+func (k *kraken) parseEvent(eventData map[string]interface{}) error {
+	if eventData["event"] == "heartbeat" {
+		return nil
 	}
 
-	var status krakenEvent[krakenStatus]
-	if err := json.Unmarshal(rawMsg, &status); err == nil && ticker.Channel != "heartbeat" {
-		// TODO: Handle KrakenEvent[KrakenStatus]
-		return nil, nil
+	if eventData["event"] == "subscriptionStatus" {
+		status := eventData["status"].(string)
+		if status == "subscribed" {
+			loggerKraken.Infow("subscribed", "pair", eventData["pair"])
+			return nil
+		}
+		if status == "error" {
+			return fmt.Errorf("subscription error: %s", eventData["errorMessage"])
+		}
 	}
 
-	var result krakenResult
-	if err := json.Unmarshal(rawMsg, &result); err != nil {
-		return nil, err
-	}
-	if ticker.Channel == "heartbeat" {
-		return nil, nil
+	return nil
+}
+
+type krakenTrade struct {
+	ChannelID   int                 `json:"-"`
+	TradeData   []krakenTradeDetail `json:"-"`
+	ChannelName string              `json:"-"`
+	Pair        string              `json:"-"`
+}
+
+type krakenTradeDetail struct {
+	Price     string `json:"price"`
+	Volume    string `json:"volume"`
+	Time      string `json:"time"`
+	Side      string `json:"side"`      // "b" for buy | "s" for sell
+	OrderType string `json:"orderType"` // "m" for market | "l" for limit
+	Misc      string `json:"misc"`
+}
+
+func (k *kraken) parseTrade(data []interface{}) (trade krakenTrade, err error) {
+	trade.ChannelID = int(data[0].(float64))
+	trade.ChannelName = data[2].(string)
+	trade.Pair = data[3].(string)
+
+	// Extract trade details
+
+	tradeDetails, ok := data[1].([]interface{})
+	if !ok {
+		return trade, fmt.Errorf("error in type assertion for trade details")
 	}
 
-	if !result.Success {
-		return nil, fmt.Errorf("failed to subscribe to market %s: ", result.Result.Symbol)
+	for _, item := range tradeDetails {
+		itemDetails, ok := item.([]interface{})
+		if !ok {
+			return trade, fmt.Errorf("error in type assertion for an item in trade details")
+		}
+
+		var detail krakenTradeDetail
+		detail.Price = itemDetails[0].(string)
+		detail.Volume = itemDetails[1].(string)
+		detail.Time = itemDetails[2].(string)
+		detail.Side = itemDetails[3].(string)
+		detail.OrderType = itemDetails[4].(string)
+		detail.Misc = itemDetails[5].(string)
+
+		trade.TradeData = append(trade.TradeData, detail)
 	}
-	return nil, fmt.Errorf("unknown message: %s", string(rawMsg))
+
+	return trade, nil
+}
+
+func (*kraken) buildEvents(trades krakenTrade) ([]TradeEvent, error) {
+	events := make([]TradeEvent, 0, len(trades.TradeData))
+	for _, tr := range trades.TradeData {
+		price, err := decimal.NewFromString(tr.Price)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse price `%s`: %w", tr.Price, err)
+		}
+
+		amount, err := decimal.NewFromString(tr.Volume)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse price `%s`: %w", tr.Price, err)
+		}
+
+		takerType := TakerTypeBuy
+		if tr.Side == "s" {
+			takerType = TakerTypeSell
+		}
+
+		unixTime, err := strconv.ParseFloat(tr.Time, 64)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse timestamp `%s`: %w", tr.Time, err)
+		}
+		sec, dec := math.Modf(unixTime)
+		createdAt := time.Unix(int64(sec), int64(dec*(1e9)))
+
+		events = append(events, TradeEvent{
+			Source:    DriverKraken,
+			Market:    strings.ToLower(trades.Pair),
+			Price:     price,
+			Amount:    amount,
+			Total:     price.Mul(amount),
+			TakerType: takerType,
+			CreatedAt: createdAt,
+		})
+	}
+	return events, nil
 }
 
 type krakenAssetPairs struct {
@@ -356,41 +453,14 @@ func (k *kraken) getPairs() error {
 		return fmt.Errorf("failed to unmarshal pairs response: %v", err)
 	}
 
-	// Convert pairs to map
+	// Store active pairs in memory
 
 	for _, pair := range pairs.Result {
 		if pair.Status != "online" {
-			symbol := fmt.Sprintf("%s%s", strings.ToUpper(pair.Base), strings.ToUpper(pair.Quote))
-			loggerKraken.Warnf("market %s doesn't exist", symbol)
 			continue
 		}
-		k.availablePairs.Store(pair.Altname, pair)
+		k.availablePairs.Store(pair.Wsname, pair)
 	}
 
 	return nil
-}
-
-func (*kraken) buildEvents(trades []krakenTrade) []TradeEvent {
-	var events []TradeEvent
-	for _, tr := range trades {
-		price := decimal.NewFromFloat(tr.Price)
-		amount := decimal.NewFromFloat(tr.Qty)
-
-		takerType := TakerTypeBuy
-		if tr.Side == "sell" {
-			takerType = TakerTypeSell
-		}
-
-		events = append(events, TradeEvent{
-			Source:    DriverKraken,
-			Market:    strings.ToLower(tr.Symbol),
-			Price:     price,
-			Amount:    amount,
-			Total:     price.Mul(amount),
-			TakerType: takerType,
-			CreatedAt: tr.Timestamp,
-		})
-	}
-
-	return events
 }
