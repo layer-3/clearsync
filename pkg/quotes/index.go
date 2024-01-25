@@ -10,21 +10,22 @@ import (
 var loggerIndex = log.Logger("index-aggregator")
 
 type indexAggregator struct {
-	weights map[DriverType]decimal.Decimal
+	drivers         []Driver
+	priceCalculator priceCalculator
+	aggregated      chan TradeEvent
+	outbox          chan<- TradeEvent
+}
 
-	drivers    []Driver
-	priceCache PriceInterface
-
-	aggregated chan TradeEvent
-	outbox     chan<- TradeEvent
+type priceCalculator interface {
+	calculateIndex(trade TradeEvent) (decimal.Decimal, bool)
 }
 
 // NewIndexAggregator creates a new instance of IndexAggregator.
-func NewIndexAggregator(driverConfigs []Config, weightsMap map[DriverType]decimal.Decimal, outbox chan<- TradeEvent) Driver {
+func NewIndexAggregator(driversConfigs []Config, strategy priceCalculator, outbox chan<- TradeEvent) Driver {
 	aggregated := make(chan TradeEvent, 128)
 
-	drivers := []Driver{}
-	for _, d := range driverConfigs {
+	var drivers []Driver
+	for _, d := range driversConfigs {
 		if d.Driver == DriverIndex {
 			continue
 		}
@@ -36,22 +37,28 @@ func NewIndexAggregator(driverConfigs []Config, weightsMap map[DriverType]decima
 	}
 
 	return &indexAggregator{
-		priceCache: NewPriceCache(weightsMap),
-		weights:    weightsMap,
-		drivers:    drivers,
-		outbox:     outbox,
-		aggregated: aggregated,
+		drivers:         drivers,
+		priceCalculator: strategy,
+		outbox:          outbox,
+		aggregated:      aggregated,
 	}
 }
 
+// newIndex creates a new instance of IndexAggregator with default configs.
 func newIndex(config Config, outbox chan<- TradeEvent) Driver {
-	return NewIndexAggregator(AllDrivers, DefaultWeightsMap, outbox)
+	return NewIndexAggregator(AllDrivers, NewStrategyEMA20(), outbox)
+}
+
+// ChangeStrategy allows index price calculation strategy to be changed.
+func (a *indexAggregator) ChangeStrategy(newStrategy priceCalculator) {
+	a.priceCalculator = newStrategy
 }
 
 func (a *indexAggregator) Name() DriverType {
 	return DriverIndex
 }
 
+// Start starts all drivers from the provided config.
 func (a *indexAggregator) Start() error {
 	var wg sync.WaitGroup
 
@@ -67,7 +74,6 @@ func (a *indexAggregator) Start() error {
 		}(d)
 	}
 
-	// Wait for all drivers to finish starting
 	wg.Wait()
 	return nil
 }
@@ -75,9 +81,11 @@ func (a *indexAggregator) Start() error {
 func (a *indexAggregator) Subscribe(m Market) error {
 	go func() {
 		for event := range a.aggregated {
-			indexPrice, ok := a.indexPrice(event)
+			indexPrice, ok := a.priceCalculator.calculateIndex(event)
 			if ok {
-				a.outbox <- indexPrice
+				event.Price = indexPrice
+				event.Source = DriverIndex
+				a.outbox <- event
 			}
 		}
 	}()
@@ -110,65 +118,4 @@ func (a *indexAggregator) Stop() error {
 		}
 	}
 	return nil
-}
-
-// indexPrice returns indexPrice based on Weighted Exponential Moving Average of last 20 trades.
-func (a *indexAggregator) indexPrice(event TradeEvent) (TradeEvent, bool) {
-	sourceWeight := a.weights[event.Source]
-	if event.Market == "" || event.Price.String() == "0" || event.Amount.String() == "0" || sourceWeight == decimal.Zero {
-		return TradeEvent{}, false
-	}
-
-	numEMA, denEMA := a.priceCache.Get(event.Market)
-
-	a.priceCache.ActivateDriver(event.Source, event.Market)
-	activeWeights := a.priceCache.ActiveWeights(event.Market)
-
-	// sourceMultiplier defines how much the trade from a specific market will affect a new price
-	sourceMultiplier := sourceWeight
-	if activeWeights != decimal.Zero {
-		sourceMultiplier = sourceWeight.Div(activeWeights)
-	}
-
-	// To start the procedure (before we've got trades) we generate the initial values:
-	if numEMA == decimal.Zero || denEMA == decimal.Zero {
-		numEMA = event.Price.Mul(event.Amount).Mul(sourceMultiplier)
-		denEMA = event.Amount.Mul(sourceMultiplier)
-	}
-
-	// Weighted Exponential Moving Average:
-	// https://www.financialwisdomforum.org/gummy-stuff/EMA.htm
-	newNumEMA := EMA20(numEMA, event.Price.Mul(event.Amount).Mul(sourceMultiplier))
-	newDenEMA := EMA20(denEMA, event.Amount.Mul(sourceMultiplier))
-
-	newEMA := newNumEMA.Div(newDenEMA)
-	a.priceCache.Update(event.Market, newNumEMA, newDenEMA)
-
-	event.Price = newEMA
-	event.Source = DriverIndex
-
-	return event, true
-}
-
-// EMA20 returns Exponential Moving Average for 20 intervals based on previous EMA, and current price.
-func EMA20(lastEMA, newPrice decimal.Decimal) decimal.Decimal {
-	return EMA(lastEMA, newPrice, 20)
-}
-
-// EMA returns Exponential Moving Average based on previous EMA, current price and the number of intervals.
-func EMA(previousEMA, newValue decimal.Decimal, intervals int32) decimal.Decimal {
-	if intervals <= 0 {
-		return decimal.Zero
-	}
-
-	smoothing := smoothing(intervals)
-	// EMA = ((newValue − previous EMA) × smoothing constant) + (previous EMA).
-	return smoothing.Mul(newValue.Sub(previousEMA)).Add(previousEMA)
-}
-
-// smoothing returns a smothing constant which equals 2 ÷ (number of periods + 1).
-func smoothing(intervals int32) decimal.Decimal {
-	smoothingFactor := decimal.NewFromInt(2)
-	alpha := smoothingFactor.Div(decimal.NewFromInt32(intervals).Add(decimal.NewFromInt(1)))
-	return alpha
 }
