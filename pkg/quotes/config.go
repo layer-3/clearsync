@@ -31,8 +31,11 @@ func NewConfigFromEnv(driver DriverType) (Config, error) {
 	case DriverUniswapV3Geth.String():
 		config := UniswapV3GethConfig{}
 		return config, cleanenv.ReadEnv(&config)
+	case DriverSyncswap.String():
+		config := SyncswapConfig{}
+		return config, cleanenv.ReadEnv(&config)
 	default:
-		return nil, fmt.Errorf("driver is not supported: %s", driver)
+		return nil, fmt.Errorf("driver config is not supported: %s", driver)
 	}
 }
 
@@ -84,14 +87,25 @@ func (UniswapV3ApiConfig) DriverType() DriverType {
 }
 
 type UniswapV3GethConfig struct {
-	URL                    string             `yaml:"url" env:"QUOTES_UNISWAP_V3_GETH_URL" env-default:""`
-	AssetsURL              string             `yaml:"assets_url" env:"QUOTES_UNISWAP_V3_GETH_ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/mainnet/assets.json"`
-	FactoryContractAddress string             `yaml:"factory_contract_address" env:"QUOTES_UNISWAP_V3_GETH_FACTORY_CONTRACT_ADDRESS" env-default:"0x1F98431c8aD98523631AE4a59f267346ea31F984"`
-	TradeSampler           TradeSamplerConfig `yaml:"trade_sampler"`
+	URL            string             `yaml:"url" env:"QUOTES_UNISWAP_V3_GETH_URL" env-default:""`
+	AssetsURL      string             `yaml:"assets_url" env:"QUOTES_UNISWAP_V3_GETH_ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/mainnet/assets.json"`
+	FactoryAddress string             `yaml:"factory_address" env:"QUOTES_UNISWAP_V3_GETH_FACTORY_ADDRESS" env-default:"0x1F98431c8aD98523631AE4a59f267346ea31F984"`
+	TradeSampler   TradeSamplerConfig `yaml:"trade_sampler"`
 }
 
 func (UniswapV3GethConfig) DriverType() DriverType {
 	return DriverUniswapV3Geth
+}
+
+type SyncswapConfig struct {
+	URL                       string             `yaml:"url" env:"QUOTES_SYNCSWAP_URL" env-default:""`
+	AssetsURL                 string             `yaml:"assets_url" env:"QUOTES_SYNCSWAP_ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/mainnet/assets.json"`
+	ClassicPoolFactoryAddress string             `yaml:"classic_pool_factory_address" env:"QUOTES_SYNCSWAP_CLASSIC_POOL_FACTORY_ADDRESS" env-default:"0x1F98431c8aD98523631AE4a59f267346ea31F984"`
+	TradeSampler              TradeSamplerConfig `yaml:"trade_sampler"`
+}
+
+func (SyncswapConfig) DriverType() DriverType {
+	return DriverSyncswap
 }
 
 type TradeSamplerConfig struct {
