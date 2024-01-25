@@ -1,7 +1,6 @@
 package quotes
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/shopspring/decimal"
@@ -58,8 +57,7 @@ func Test_IndexAggregator(t *testing.T) {
 		}
 
 		ag := &indexAggregator{
-			priceCache: NewPriceCache(weights),
-			weights:    weights,
+			priceCalculator: NewStrategyEMA20(WithCustomWeightsEMA20(weights)),
 		}
 
 		var decimalPrices []decimal.Decimal
@@ -82,9 +80,9 @@ func Test_IndexAggregator(t *testing.T) {
 
 		var result []float64
 		for _, tr := range inputTrades {
-			res, ok := ag.indexPrice(tr)
+			res, ok := ag.priceCalculator.calculateIndex(tr)
 			if ok {
-				result = append(result, res.Price.Round(5).InexactFloat64())
+				result = append(result, res.Round(5).InexactFloat64())
 			}
 		}
 
@@ -107,8 +105,7 @@ func Test_IndexAggregator(t *testing.T) {
 		}
 
 		ag := &indexAggregator{
-			priceCache: NewPriceCache(weights),
-			weights:    weights,
+			priceCalculator: NewStrategyEMA20(WithCustomWeightsEMA20(weights)),
 		}
 
 		inputTrades := []TradeEvent{
@@ -121,9 +118,9 @@ func Test_IndexAggregator(t *testing.T) {
 
 		var result []float64
 		for _, tr := range inputTrades {
-			res, ok := ag.indexPrice(tr)
+			res, ok := ag.priceCalculator.calculateIndex(tr)
 			if ok {
-				result = append(result, res.Price.Round(5).InexactFloat64())
+				result = append(result, res.Round(5).InexactFloat64())
 			}
 		}
 
@@ -138,15 +135,14 @@ func Test_IndexAggregator(t *testing.T) {
 		}
 
 		ag := &indexAggregator{
-			priceCache: NewPriceCache(weights),
-			weights:    weights,
+			priceCalculator: NewStrategyEMA20(WithCustomWeightsEMA20(weights)),
 		}
 
 		var result []float64
 		for _, tr := range inputTrades {
-			res, ok := ag.indexPrice(tr)
+			res, ok := ag.priceCalculator.calculateIndex(tr)
 			if ok {
-				result = append(result, res.Price.Round(5).InexactFloat64())
+				result = append(result, res.Round(5).InexactFloat64())
 			}
 		}
 
@@ -161,15 +157,14 @@ func Test_IndexAggregator(t *testing.T) {
 		}
 
 		ag := &indexAggregator{
-			priceCache: NewPriceCache(weights),
-			weights:    weights,
+			priceCalculator: NewStrategyEMA20(WithCustomWeightsEMA20(weights)),
 		}
 
 		var result []float64
 		for _, tr := range inputTrades {
-			res, ok := ag.indexPrice(tr)
+			res, ok := ag.priceCalculator.calculateIndex(tr)
 			if ok {
-				result = append(result, res.Price.Round(5).InexactFloat64())
+				result = append(result, res.Round(5).InexactFloat64())
 			}
 		}
 
@@ -184,8 +179,7 @@ func Test_IndexAggregator(t *testing.T) {
 		}
 
 		ag := &indexAggregator{
-			priceCache: NewPriceCache(weights),
-			weights:    weights,
+			priceCalculator: NewStrategyEMA20(WithCustomWeightsEMA20(weights)),
 		}
 
 		inputTrades := []TradeEvent{
@@ -198,9 +192,9 @@ func Test_IndexAggregator(t *testing.T) {
 
 		var result []float64
 		for _, tr := range inputTrades {
-			res, ok := ag.indexPrice(tr)
+			res, ok := ag.priceCalculator.calculateIndex(tr)
 			if ok {
-				result = append(result, res.Price.Round(5).InexactFloat64())
+				result = append(result, res.Round(5).InexactFloat64())
 			}
 		}
 
@@ -214,32 +208,31 @@ func Test_IndexAggregator(t *testing.T) {
 			DriverUniswapV3Api: decimal.NewFromInt(2),
 		}
 
-		ag := &indexAggregator{
-			priceCache: NewPriceCache(weights),
-			weights:    weights,
-		}
+		testPriceCache := NewPriceCache(weights)
+		testPriceCache.ActivateDriver(DriverBinance, "btcusdt")
+		testPriceCache.ActivateDriver(DriverUniswapV3Api, "btcusdt")
 
-		ag.priceCache.ActivateDriver(DriverBinance, "btcusdt")
-		ag.priceCache.ActivateDriver(DriverUniswapV3Api, "btcusdt")
+		ag := &indexAggregator{
+			priceCalculator: NewStrategyEMA20(WithCustomWeightsEMA20(weights), WithCustomPriceCacheEMA20(testPriceCache)),
+		}
 
 		// Initial price: 41000
 		inputTrades := []TradeEvent{{Source: DriverBinance, Market: "btcusdt", Price: decimal.NewFromInt(41000), Amount: decimal.NewFromInt(1.0)}}
 		// Two equal drivers are sending: 42000 and 40000 prices sequentially.
-		inputTrades = append(inputTrades, GenerateTrades([]TradeEvent{
-			{Source: DriverUniswapV3Api, Market: "btcusdt", Price: decimal.NewFromInt(44000), Amount: decimal.NewFromFloat(1.0)},
-			{Source: DriverBinance, Market: "btcusdt", Price: decimal.NewFromInt(38000), Amount: decimal.NewFromFloat(1.0)}}, 25)...)
+		inputTrades = append(inputTrades, generateTrades([]TradeEvent{
+			{Source: DriverUniswapV3Api, Market: "btcusdt", Price: decimal.NewFromInt(42000), Amount: decimal.NewFromFloat(1.0)},
+			{Source: DriverBinance, Market: "btcusdt", Price: decimal.NewFromInt(40000), Amount: decimal.NewFromFloat(1.0)}}, 25)...)
 		// The drivers start sending the same price: 41000.
-		inputTrades = append(inputTrades, GenerateTrades([]TradeEvent{
+		inputTrades = append(inputTrades, generateTrades([]TradeEvent{
 			{Source: DriverUniswapV3Api, Market: "btcusdt", Price: decimal.NewFromInt(41000), Amount: decimal.NewFromFloat(1.0)},
 			{Source: DriverBinance, Market: "btcusdt", Price: decimal.NewFromInt(41000), Amount: decimal.NewFromFloat(1.0)}}, 25)...)
 
 		var result []float64
-		for i, tr := range inputTrades {
-			res, ok := ag.indexPrice(tr)
+		for _, tr := range inputTrades {
+			res, ok := ag.priceCalculator.calculateIndex(tr)
 			if ok {
-				result = append(result, res.Price.Round(0).InexactFloat64())
+				result = append(result, res.Round(0).InexactFloat64())
 			}
-			fmt.Println(i, res.Price.Round(0))
 		}
 
 		exp := []float64{41000, 40950, 41050, 41000}
@@ -255,7 +248,7 @@ func Test_IndexAggregator(t *testing.T) {
 	})
 }
 
-func GenerateTrades(tr []TradeEvent, n int) []TradeEvent {
+func generateTrades(tr []TradeEvent, n int) []TradeEvent {
 	trades := []TradeEvent{}
 	for i := 0; i < n; i++ {
 		trades = append(trades, tr...)
