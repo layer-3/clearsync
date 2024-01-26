@@ -53,11 +53,13 @@ func main() {
 		panic(err)
 	}
 
+	slog.Info("starting driver", "driver", driverName)
 	if err := driver.Start(); err != nil {
 		panic(err)
 	}
 
 	market := quotes.Market{BaseUnit: "usdc", QuoteUnit: "weth"}
+	slog.Info("subscribing to market", "market", market)
 	if err = driver.Subscribe(market); err != nil {
 		panic(err)
 	}

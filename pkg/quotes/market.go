@@ -7,15 +7,15 @@ import (
 )
 
 type Market struct {
-	BaseUnit  string // e.g. `btc` in `btcusdt`
-	QuoteUnit string // e.g. `usdt` in `btcusdt`
+	BaseUnit  string // e.g. `btc` in `btc/usdt`
+	QuoteUnit string // e.g. `usdt` in `btc/usdt`
 }
 
 // TradeEvent is a generic container
 // for trades received from providers.
 type TradeEvent struct {
 	Source    DriverType
-	Market    string // e.g. `btcusdt`
+	Market    string // e.g. `btc/usdt`
 	Price     decimal.Decimal
 	Amount    decimal.Decimal
 	Total     decimal.Decimal

@@ -100,7 +100,7 @@ func (UniswapV3GethConfig) DriverType() DriverType {
 type SyncswapConfig struct {
 	URL                       string             `yaml:"url" env:"QUOTES_SYNCSWAP_URL" env-default:""`
 	AssetsURL                 string             `yaml:"assets_url" env:"QUOTES_SYNCSWAP_ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/mainnet/assets.json"`
-	ClassicPoolFactoryAddress string             `yaml:"classic_pool_factory_address" env:"QUOTES_SYNCSWAP_CLASSIC_POOL_FACTORY_ADDRESS" env-default:"0x1F98431c8aD98523631AE4a59f267346ea31F984"`
+	ClassicPoolFactoryAddress string             `yaml:"classic_pool_factory_address" env:"QUOTES_SYNCSWAP_CLASSIC_POOL_FACTORY_ADDRESS" env-default:"0x37BAc764494c8db4e54BDE72f6965beA9fa0AC2d"`
 	TradeSampler              TradeSamplerConfig `yaml:"trade_sampler"`
 }
 
