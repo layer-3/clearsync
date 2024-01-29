@@ -2,18 +2,20 @@ package quotes
 
 import "github.com/shopspring/decimal"
 
-type ConfFunc func(*strategyEMA20)
+type ConfFuncEMA func(*strategyEMA)
 
-type strategyEMA20 struct {
+type strategyEMA struct {
 	weights    map[DriverType]decimal.Decimal
-	priceCache PriceInterface
+	priceCache *PriceCacheEMA
+	nTrades    int32
 }
 
-// NewStrategyEMA20 creates a new instance of EMA20 index price calculator.
-func NewStrategyEMA20(configs ...ConfFunc) priceCalculator {
-	s := strategyEMA20{
-		priceCache: NewPriceCache(DefaultWeightsMap),
+// NewStrategyEMA creates a new instance of EMA index price calculator.
+func NewStrategyEMA(configs ...ConfFuncEMA) priceCalculator {
+	s := strategyEMA{
+		priceCache: NewPriceCacheEMA(DefaultWeightsMap),
 		weights:    DefaultWeightsMap,
+		nTrades:    20,
 	}
 	for _, conf := range configs {
 		conf(&s)
@@ -21,25 +23,25 @@ func NewStrategyEMA20(configs ...ConfFunc) priceCalculator {
 	return s
 }
 
-// WithCustomWeightsEMA20 configures custom drivers weights. Should be passed as an argument to the NewStrategyEMA20() constructor.
-func WithCustomWeightsEMA20(driversWeights map[DriverType]decimal.Decimal) ConfFunc {
-	return func(strategy *strategyEMA20) {
+// WithCustomWeightsEMA configures custom drivers weights. Should be passed as an argument to the NewStrategyEMA() constructor.
+func WithCustomWeightsEMA(driversWeights map[DriverType]decimal.Decimal) ConfFuncEMA {
+	return func(strategy *strategyEMA) {
 		strategy.weights = driversWeights
-		strategy.priceCache = NewPriceCache(driversWeights)
+		strategy.priceCache.weights = driversWeights
 	}
 }
 
-// WithCustomPriceCacheEMA20 configures price cache. Should be passed as an argument to the NewStrategyEMA20() constructor.
-func WithCustomPriceCacheEMA20(priceCache PriceInterface) ConfFunc {
-	return func(strategy *strategyEMA20) {
+// WithCustomPriceCacheEMA configures price cache. Should be passed as an argument to the NewStrategyEMA() constructor.
+func WithCustomPriceCacheEMA(priceCache *PriceCacheEMA) ConfFuncEMA {
+	return func(strategy *strategyEMA) {
 		strategy.priceCache = priceCache
 	}
 }
 
 // calculateIndex returns indexPrice based on Weighted Exponential Moving Average of last 20 trades.
-func (a strategyEMA20) calculateIndex(event TradeEvent) (decimal.Decimal, bool) {
+func (a strategyEMA) calculateIndex(event TradeEvent) (decimal.Decimal, bool) {
 	sourceWeight := a.weights[event.Source]
-	if event.Market == "" || event.Price.String() == "0" || event.Amount.String() == "0" || sourceWeight == decimal.Zero {
+	if event.Market == "" || event.Price.String() == "0" || event.Amount.String() == "0" || sourceWeight.IsZero() {
 		return decimal.Decimal{}, false
 	}
 
@@ -62,18 +64,13 @@ func (a strategyEMA20) calculateIndex(event TradeEvent) (decimal.Decimal, bool) 
 
 	// Weighted Exponential Moving Average:
 	// https://www.financialwisdomforum.org/gummy-stuff/EMA.htm
-	newNumEMA := EMA20(numEMA, event.Price.Mul(event.Amount).Mul(sourceMultiplier))
-	newDenEMA := EMA20(denEMA, event.Amount.Mul(sourceMultiplier))
+	newNumEMA := EMA(numEMA, event.Price.Mul(event.Amount).Mul(sourceMultiplier), a.nTrades)
+	newDenEMA := EMA(denEMA, event.Amount.Mul(sourceMultiplier), a.nTrades)
 
 	newEMA := newNumEMA.Div(newDenEMA)
 	a.priceCache.Update(event.Market, newNumEMA, newDenEMA)
 
 	return newEMA, true
-}
-
-// EMA20 returns Exponential Moving Average for 20 intervals based on previous EMA, and current price.
-func EMA20(lastEMA, newPrice decimal.Decimal) decimal.Decimal {
-	return EMA(lastEMA, newPrice, 20)
 }
 
 // EMA returns Exponential Moving Average based on previous EMA, current price and the number of intervals.
