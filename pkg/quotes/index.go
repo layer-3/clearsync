@@ -46,7 +46,7 @@ func NewIndexAggregator(driversConfigs []Config, strategy priceCalculator, outbo
 
 // newIndex creates a new instance of IndexAggregator with default configs.
 func newIndex(config Config, outbox chan<- TradeEvent) Driver {
-	return NewIndexAggregator(AllDrivers, NewStrategyEMA20(), outbox)
+	return NewIndexAggregator(AllDrivers, NewStrategyVWA(), outbox)
 }
 
 // ChangeStrategy allows index price calculation strategy to be changed.

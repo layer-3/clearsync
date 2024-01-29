@@ -21,73 +21,66 @@ var (
 		2, 3.3, 4.0, 2.9,
 		1, 0.1, 0.01, 0.04,
 		9, 0.4, 4.4, 5,
-		6, 0.1, 2, 1, 1,
+		6, 0.1, 2, 1,
+		1,
+	}
+
+	defaultWeights = map[DriverType]decimal.Decimal{
+		DriverBinance:      decimal.NewFromInt(2),
+		DriverUniswapV3Api: decimal.NewFromInt(2),
 	}
 )
 
-func Test_EMA20(t *testing.T) {
-	t.Run("Successful test", func(t *testing.T) {
-		var decimalPrices []decimal.Decimal
-		for _, p := range prices {
-			decimalPrices = append(decimalPrices, decimal.NewFromInt32(p))
-		}
-
-		var emas []decimal.Decimal
-		emas = append(emas, decimalPrices[0])
-
-		for i, price := range decimalPrices {
-			emas = append(emas, EMA20(emas[i], price))
-		}
-
-		var result []float64
-		for _, ema := range emas {
-			result = append(result, ema.Round(5).InexactFloat64())
-		}
-
-		exp := []float64{40000, 40000, 40190.47619, 40315.19274, 40666.12677, 40888.40041, 40803.79085, 40822.47743, 40934.62244, 41131.32506, 41214.05601, 41622.24115, 41562.98009, 41556.98199, 41599.17418, 41827.82426, 42225.17433, 42679.91963, 42996.11776, 43091.72559, 42987.75173, 48417.48966}
-		require.Equal(t, exp, result)
-	})
-}
-
-func Test_IndexAggregator(t *testing.T) {
+func Test_IndexAggregatorStrategies(t *testing.T) {
 	t.Run("Successful test", func(t *testing.T) {
 		weights := map[DriverType]decimal.Decimal{
 			DriverBinance:      decimal.NewFromInt(3),
 			DriverUniswapV3Api: decimal.NewFromInt(0),
 		}
 
-		ag := &indexAggregator{
-			priceCalculator: NewStrategyEMA20(WithCustomWeightsEMA20(weights)),
-		}
-
-		var decimalPrices []decimal.Decimal
-		var decimalAmounts []decimal.Decimal
-		for i, p := range prices {
-			decimalPrices = append(decimalPrices, decimal.NewFromInt32(p))
-			decimalAmounts = append(decimalAmounts, decimal.NewFromFloat32(amounts[i]))
-		}
-
-		var inputTrades []TradeEvent
 		trade := TradeEvent{Source: DriverBinance, Market: "btcusdt"}
-		for i, p := range decimalPrices {
-			trade.Price = p
-			trade.Amount = decimalAmounts[i]
+		var inputTrades []TradeEvent
+		for i, p := range prices {
+			decimalPrice := decimal.NewFromInt32(p)
+			decimalAmount := decimal.NewFromFloat32(amounts[i])
+
+			trade.Price = decimalPrice
+			trade.Amount = decimalAmount
 			if i == 20 {
 				trade.Source = DriverUniswapV3Api
 			}
 			inputTrades = append(inputTrades, trade)
 		}
 
-		var result []float64
-		for _, tr := range inputTrades {
-			res, ok := ag.priceCalculator.calculateIndex(tr)
-			if ok {
-				result = append(result, res.Round(5).InexactFloat64())
-			}
+		results := testStrategies(inputTrades, NewStrategyEMA(WithCustomWeightsEMA(weights)), NewStrategyVWA(WithCustomWeightsVWA(weights)))
+
+		// Check EMA strategy
+		expEMA := []float64{40000, 40207.54717, 40466.24305, 40530.21098, 40941.96994, 40722.34661, 40788.43173, 40982.49411, 41098.56987, 41104.26589, 41107.33374, 41107.00358, 41277.3339, 41292.39911, 41839.88457, 42682.42649, 43596.62893, 43605.96679, 43637.13205, 43568.57095}
+		require.Equal(t, expEMA, results[0])
+
+		// Check VWA strategy
+		expVWA := []float64{40000, 41047.61905, 41288.88889, 41404.25532, 41880.59701, 41260, 41185.71429, 41325.44379, 41418.99441, 41422.22222, 41424.4864, 41423.54571, 41448.98336, 41457.01275, 41808.32025, 42377.0692, 43024.3874, 43031.31548, 43074.41602, 43051.03373}
+		require.Equal(t, expVWA, results[1])
+	})
+
+	t.Run("Skip trades with zero price or amount", func(t *testing.T) {
+		inputTrades := []TradeEvent{
+			{Source: DriverBinance, Market: "btcusdt", Price: decimal.NewFromInt(40000), Amount: decimal.NewFromFloat(1.0)},
+			{Source: DriverBinance, Market: "btcusdt", Price: decimal.NewFromInt(42000), Amount: decimal.NewFromFloat(1.0)},
+			{Source: DriverBinance, Market: "btcusdt", Price: decimal.Zero, Amount: decimal.NewFromFloat(1.0)},
+			{Source: DriverBinance, Market: "btcusdt", Price: decimal.NewFromInt(44000), Amount: decimal.Zero},
+			{Source: DriverBinance, Market: "btcusdt", Price: decimal.NewFromInt(44000), Amount: decimal.NewFromFloat(1)},
 		}
 
-		exp := []float64{40000, 40207.54717, 40466.24305, 40530.21098, 40941.96994, 40722.34661, 40788.43173, 40982.49411, 41098.56987, 41104.26589, 41107.33374, 41107.00358, 41277.3339, 41292.39911, 41839.88457, 42682.42649, 43596.62893, 43605.96679, 43637.13205, 43568.57095, 43568.57095}
-		require.Equal(t, exp, result)
+		results := testStrategies(inputTrades, NewStrategyEMA(WithCustomWeightsEMA(defaultWeights)), NewStrategyVWA(WithCustomWeightsVWA(defaultWeights)))
+
+		// Check EMA strategy
+		expEMA := []float64{40000, 40190.47619, 40553.28798}
+		require.Equal(t, expEMA, results[0])
+
+		// Check VWA strategy
+		expVWA := []float64{40000, 41000, 42000}
+		require.Equal(t, expVWA, results[1])
 	})
 
 	inputTrades := []TradeEvent{
@@ -98,56 +91,16 @@ func Test_IndexAggregator(t *testing.T) {
 		{Source: DriverBinance, Market: "btcusdt", Price: decimal.NewFromInt(40000), Amount: decimal.NewFromFloat(1)},
 	}
 
-	t.Run("Skip trades with zero price or amount", func(t *testing.T) {
-		weights := map[DriverType]decimal.Decimal{
-			DriverBinance:      decimal.NewFromInt(2),
-			DriverUniswapV3Api: decimal.NewFromInt(2),
-		}
-
-		ag := &indexAggregator{
-			priceCalculator: NewStrategyEMA20(WithCustomWeightsEMA20(weights)),
-		}
-
-		inputTrades := []TradeEvent{
-			{Source: DriverBinance, Market: "btcusdt", Price: decimal.NewFromInt(40000), Amount: decimal.NewFromFloat(1.0)},
-			{Source: DriverBinance, Market: "btcusdt", Price: decimal.NewFromInt(42000), Amount: decimal.NewFromFloat(1.0)},
-			{Source: DriverBinance, Market: "btcusdt", Price: decimal.Zero, Amount: decimal.NewFromFloat(1.0)},
-			{Source: DriverBinance, Market: "btcusdt", Price: decimal.NewFromInt(44000), Amount: decimal.Zero},
-			{Source: DriverBinance, Market: "btcusdt", Price: decimal.NewFromInt(44000), Amount: decimal.NewFromFloat(1)},
-		}
-
-		var result []float64
-		for _, tr := range inputTrades {
-			res, ok := ag.priceCalculator.calculateIndex(tr)
-			if ok {
-				result = append(result, res.Round(5).InexactFloat64())
-			}
-		}
-
-		exp := []float64{40000, 40190.47619, 40553.28798}
-		require.Equal(t, exp, result)
-	})
-
 	t.Run("README example 1: equal driver weight", func(t *testing.T) {
-		weights := map[DriverType]decimal.Decimal{
-			DriverBinance:      decimal.NewFromInt(2),
-			DriverUniswapV3Api: decimal.NewFromInt(2),
-		}
+		results := testStrategies(inputTrades, NewStrategyEMA(WithCustomWeightsEMA(defaultWeights)), NewStrategyVWA(WithCustomWeightsVWA(defaultWeights)))
 
-		ag := &indexAggregator{
-			priceCalculator: NewStrategyEMA20(WithCustomWeightsEMA20(weights)),
-		}
+		// Check EMA strategy
+		expEMA := []float64{41000, 41223.8806, 42464.61758, 42933.56853, 42503.12993}
+		require.Equal(t, expEMA, results[0])
 
-		var result []float64
-		for _, tr := range inputTrades {
-			res, ok := ag.priceCalculator.calculateIndex(tr)
-			if ok {
-				result = append(result, res.Round(5).InexactFloat64())
-			}
-		}
-
-		exp := []float64{41000, 41223.8806, 42464.61758, 42933.56853, 42503.12993}
-		require.Equal(t, exp, result)
+		// Check VWA strategy
+		expVWA := []float64{41000, 41937.5, 45500, 46192.30769, 44472.22222}
+		require.Equal(t, expVWA, results[1])
 	})
 
 	t.Run("README example 2: zero weight for one of the drivers", func(t *testing.T) {
@@ -156,32 +109,18 @@ func Test_IndexAggregator(t *testing.T) {
 			DriverUniswapV3Api: decimal.NewFromInt(0),
 		}
 
-		ag := &indexAggregator{
-			priceCalculator: NewStrategyEMA20(WithCustomWeightsEMA20(weights)),
-		}
+		results := testStrategies(inputTrades, NewStrategyEMA(WithCustomWeightsEMA(weights)), NewStrategyVWA(WithCustomWeightsVWA(weights)))
 
-		var result []float64
-		for _, tr := range inputTrades {
-			res, ok := ag.priceCalculator.calculateIndex(tr)
-			if ok {
-				result = append(result, res.Round(5).InexactFloat64())
-			}
-		}
+		// Check EMA strategy
+		expEMA := []float64{41000, 41223.8806, 40920.25989}
+		require.Equal(t, expEMA, results[0])
 
-		exp := []float64{41000, 41223.8806, 41223.8806, 41223.8806, 40872.3039}
-		require.Equal(t, exp, result)
+		// Check VWA strategy
+		expVWA := []float64{41000, 41937.5, 40861.11111}
+		require.Equal(t, expVWA, results[1])
 	})
 
 	t.Run("README example 3: trade volume", func(t *testing.T) {
-		weights := map[DriverType]decimal.Decimal{
-			DriverBinance:      decimal.NewFromInt(2),
-			DriverUniswapV3Api: decimal.NewFromInt(2),
-		}
-
-		ag := &indexAggregator{
-			priceCalculator: NewStrategyEMA20(WithCustomWeightsEMA20(weights)),
-		}
-
 		inputTrades := []TradeEvent{
 			{Source: DriverBinance, Market: "btcusdt", Price: decimal.NewFromInt(40000), Amount: decimal.NewFromFloat(1.0)},
 			{Source: DriverBinance, Market: "btcusdt", Price: decimal.NewFromInt(42000), Amount: decimal.NewFromFloat(1.0)},
@@ -190,32 +129,18 @@ func Test_IndexAggregator(t *testing.T) {
 			{Source: DriverBinance, Market: "btcusdt", Price: decimal.NewFromInt(48000), Amount: decimal.NewFromFloat(10)},
 		}
 
-		var result []float64
-		for _, tr := range inputTrades {
-			res, ok := ag.priceCalculator.calculateIndex(tr)
-			if ok {
-				result = append(result, res.Round(5).InexactFloat64())
-			}
-		}
+		results := testStrategies(inputTrades, NewStrategyEMA(WithCustomWeightsEMA(defaultWeights)), NewStrategyVWA(WithCustomWeightsVWA(defaultWeights)))
 
-		exp := []float64{40000, 40190.47619, 40553.28798, 41072.02246, 44624.83145}
-		require.Equal(t, exp, result)
+		// Check EMA strategy
+		expEMA := []float64{40000, 40190.47619, 40553.28798, 41072.02246, 44624.83145}
+		require.Equal(t, expEMA, results[0])
+
+		// Check VWA strategy
+		expVWA := []float64{40000, 41000, 42000, 43000, 46571.42857}
+		require.Equal(t, expVWA, results[1])
 	})
 
 	t.Run("README example 4: drivers volatility", func(t *testing.T) {
-		weights := map[DriverType]decimal.Decimal{
-			DriverBinance:      decimal.NewFromInt(2),
-			DriverUniswapV3Api: decimal.NewFromInt(2),
-		}
-
-		testPriceCache := NewPriceCache(weights)
-		testPriceCache.ActivateDriver(DriverBinance, "btcusdt")
-		testPriceCache.ActivateDriver(DriverUniswapV3Api, "btcusdt")
-
-		ag := &indexAggregator{
-			priceCalculator: NewStrategyEMA20(WithCustomWeightsEMA20(weights), WithCustomPriceCacheEMA20(testPriceCache)),
-		}
-
 		// Initial price: 41000
 		inputTrades := []TradeEvent{{Source: DriverBinance, Market: "btcusdt", Price: decimal.NewFromInt(41000), Amount: decimal.NewFromInt(1.0)}}
 		// Two equal drivers are sending: 42000 and 40000 prices sequentially.
@@ -227,24 +152,32 @@ func Test_IndexAggregator(t *testing.T) {
 			{Source: DriverUniswapV3Api, Market: "btcusdt", Price: decimal.NewFromInt(41000), Amount: decimal.NewFromFloat(1.0)},
 			{Source: DriverBinance, Market: "btcusdt", Price: decimal.NewFromInt(41000), Amount: decimal.NewFromFloat(1.0)}}, 25)...)
 
-		var result []float64
-		for _, tr := range inputTrades {
-			res, ok := ag.priceCalculator.calculateIndex(tr)
-			if ok {
-				result = append(result, res.Round(0).InexactFloat64())
-			}
-		}
+		testPriceCacheEMA := NewPriceCacheEMA(defaultWeights)
+		testPriceCacheEMA.ActivateDriver(DriverBinance, "btcusdt")
+		testPriceCacheEMA.ActivateDriver(DriverUniswapV3Api, "btcusdt")
 
-		exp := []float64{41000, 40950, 41050, 41000}
+		testPriceCacheVWA := NewPriceCacheVWA(defaultWeights, 20)
+		testPriceCacheVWA.ActivateDriver(DriverBinance, "btcusdt")
+		testPriceCacheVWA.ActivateDriver(DriverUniswapV3Api, "btcusdt")
+
+		results := testStrategies(inputTrades, NewStrategyEMA(WithCustomWeightsEMA(defaultWeights), WithCustomPriceCacheEMA(testPriceCacheEMA)), NewStrategyVWA(WithCustomWeightsVWA(defaultWeights), WithCustomPriceCacheVWA(testPriceCacheVWA)))
+		resultsEMA := results[0]
+		resultsVWA := results[1]
+
+		// Check EMA strategy
+		expEMA := []float64{41000, 40950.40984, 41050.37081, 40999.66676}
 		// Initial price is 41000.
-		require.Equal(t, exp[0], result[0])
+		require.Equal(t, expEMA[0], resultsEMA[0])
 		// Price is getting smoothed, and alternates between 41050 and 40950 instead of 40000 and 42000.
-		// Another example: if initial prices were 38000 and 44000, smoothed values would be 40850 and 41150.
-
-		require.Equal(t, exp[1], result[48])
-		require.Equal(t, exp[2], result[49])
+		require.Equal(t, expEMA[1], resultsEMA[48])
+		require.Equal(t, expEMA[2], resultsEMA[49])
 		// Index price when drivers start sending the same price.
-		require.Equal(t, exp[3], result[100])
+		require.Equal(t, expEMA[3], resultsEMA[100])
+
+		// Check VWA strategy
+		require.Equal(t, float64(41000), resultsVWA[0])
+		require.Equal(t, float64(41000), resultsVWA[25])
+		require.Equal(t, float64(41000), resultsVWA[50])
 	})
 }
 
@@ -254,4 +187,19 @@ func generateTrades(tr []TradeEvent, n int) []TradeEvent {
 		trades = append(trades, tr...)
 	}
 	return trades
+}
+
+func testStrategies(inputTrades []TradeEvent, priceCalculators ...priceCalculator) [][]float64 {
+	results := make([][]float64, len(priceCalculators))
+
+	for i, pc := range priceCalculators {
+		for _, tr := range inputTrades {
+			res, ok := pc.calculateIndex(tr)
+			if ok {
+				results[i] = append(results[i], res.Round(5).InexactFloat64())
+			}
+		}
+	}
+
+	return results
 }

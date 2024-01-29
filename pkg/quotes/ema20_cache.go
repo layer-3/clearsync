@@ -6,14 +6,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type PriceInterface interface {
-	Get(market string) (decimal.Decimal, decimal.Decimal)
-	Update(market string, priceWeight, weight decimal.Decimal)
-	ActivateDriver(driver DriverType, market string)
-	ActiveWeights(market string) decimal.Decimal
-}
-
-type PriceCache struct {
+type PriceCacheEMA struct {
 	weights map[DriverType]decimal.Decimal
 	market  map[string]*price
 	mu      sync.RWMutex
@@ -26,9 +19,9 @@ type price struct {
 	driversActive map[DriverType]bool
 }
 
-// NewPriceCache initializes new cache for ema prices for markets.
-func NewPriceCache(weightsMap map[DriverType]decimal.Decimal) *PriceCache {
-	cache := new(PriceCache)
+// NewPriceCacheEMA initializes new cache for ema prices for markets.
+func NewPriceCacheEMA(weightsMap map[DriverType]decimal.Decimal) *PriceCacheEMA {
+	cache := new(PriceCacheEMA)
 	cache.market = make(map[string]*price, 0)
 	cache.market = make(map[string]*price, 0)
 	cache.weights = weightsMap
@@ -37,7 +30,7 @@ func NewPriceCache(weightsMap map[DriverType]decimal.Decimal) *PriceCache {
 }
 
 // Get returns the price record for the market from cache.
-func (p *PriceCache) Get(market string) (decimal.Decimal, decimal.Decimal) {
+func (p *PriceCacheEMA) Get(market string) (decimal.Decimal, decimal.Decimal) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -49,7 +42,7 @@ func (p *PriceCache) Get(market string) (decimal.Decimal, decimal.Decimal) {
 }
 
 // Update updates or creates a price record in cache.
-func (p *PriceCache) Update(market string, numEMA, denEMA decimal.Decimal) {
+func (p *PriceCacheEMA) Update(market string, numEMA, denEMA decimal.Decimal) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -63,7 +56,7 @@ func (p *PriceCache) Update(market string, numEMA, denEMA decimal.Decimal) {
 }
 
 // ActivateDriver makes the driver active for the market.
-func (p *PriceCache) ActivateDriver(driver DriverType, market string) {
+func (p *PriceCacheEMA) ActivateDriver(driver DriverType, market string) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -76,7 +69,7 @@ func (p *PriceCache) ActivateDriver(driver DriverType, market string) {
 }
 
 // ActiveWeights returns the sum of active driver weights for the market.
-func (p *PriceCache) ActiveWeights(market string) decimal.Decimal {
+func (p *PriceCacheEMA) ActiveWeights(market string) decimal.Decimal {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
