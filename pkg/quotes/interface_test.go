@@ -13,7 +13,7 @@ func TestNewDriver(t *testing.T) {
 	t.Run(DriverBinance.String(), func(t *testing.T) {
 		t.Parallel()
 
-		config := Config{Driver: DriverBinance}
+		config := BinanceConfig{}
 		outbox := make(chan<- TradeEvent, 1)
 
 		priceFeeds, err := NewDriver(config, outbox)
@@ -25,7 +25,7 @@ func TestNewDriver(t *testing.T) {
 	t.Run(DriverKraken.String(), func(t *testing.T) {
 		t.Parallel()
 
-		config := Config{Driver: DriverKraken}
+		config := KrakenConfig{}
 		outbox := make(chan<- TradeEvent, 1)
 
 		priceFeeds, err := NewDriver(config, outbox)
@@ -37,7 +37,7 @@ func TestNewDriver(t *testing.T) {
 	t.Run(DriverBitfaker.String(), func(t *testing.T) {
 		t.Parallel()
 
-		config := Config{Driver: DriverBitfaker}
+		config := BitfakerConfig{}
 		outbox := make(chan<- TradeEvent, 1)
 
 		priceFeeds, err := NewDriver(config, outbox)
@@ -49,12 +49,36 @@ func TestNewDriver(t *testing.T) {
 	t.Run(DriverOpendax.String(), func(t *testing.T) {
 		t.Parallel()
 
-		config := Config{Driver: DriverOpendax}
+		config := OpendaxConfig{}
 		outbox := make(chan<- TradeEvent, 1)
 
 		priceFeeds, err := NewDriver(config, outbox)
 		require.NoError(t, err)
 		_, ok := priceFeeds.(*opendax)
+		assert.True(t, ok)
+	})
+
+	t.Run(DriverUniswapV3Api.String(), func(t *testing.T) {
+		t.Parallel()
+
+		config := UniswapV3ApiConfig{}
+		outbox := make(chan<- TradeEvent, 1)
+
+		priceFeeds, err := NewDriver(config, outbox)
+		require.NoError(t, err)
+		_, ok := priceFeeds.(*uniswapV3Api)
+		assert.True(t, ok)
+	})
+
+	t.Run(DriverUniswapV3Geth.String(), func(t *testing.T) {
+		t.Parallel()
+
+		config := UniswapV3GethConfig{}
+		outbox := make(chan<- TradeEvent, 1)
+
+		priceFeeds, err := NewDriver(config, outbox)
+		require.NoError(t, err)
+		_, ok := priceFeeds.(*uniswapV3Geth)
 		assert.True(t, ok)
 	})
 }

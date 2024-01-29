@@ -25,17 +25,12 @@ type uniswapV3Api struct {
 	streams    sync.Map
 }
 
-func newUniswapV3Api(config Config, outbox chan<- TradeEvent) *uniswapV3Api {
-	url := "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3"
-	if config.URL != "" {
-		url = config.URL
-	}
-
+func newUniswapV3Api(config UniswapV3ApiConfig, outbox chan<- TradeEvent) *uniswapV3Api {
 	return &uniswapV3Api{
 		once:       newOnce(),
-		url:        url,
+		url:        config.URL,
 		outbox:     outbox,
-		windowSize: 2 * time.Second,
+		windowSize: config.WindowSize,
 	}
 }
 

@@ -13,7 +13,7 @@ type DriverType struct {
 	slug string
 }
 
-func (d *DriverType) String() string {
+func (d DriverType) String() string {
 	return d.slug
 }
 
@@ -24,6 +24,7 @@ var (
 	DriverBitfaker      = DriverType{"bitfaker"}
 	DriverUniswapV3Api  = DriverType{"uniswap_v3_api"}
 	DriverUniswapV3Geth = DriverType{"uniswap_v3_geth"}
+	DriverSyncswap      = DriverType{"syncswap"}
 )
 
 func ToDriverType(raw string) (DriverType, error) {
@@ -34,6 +35,7 @@ func ToDriverType(raw string) (DriverType, error) {
 		DriverBitfaker.String():      DriverBitfaker,
 		DriverUniswapV3Api.String():  DriverUniswapV3Api,
 		DriverUniswapV3Geth.String(): DriverUniswapV3Geth,
+		DriverSyncswap.String():      DriverSyncswap,
 	}
 
 	driver, ok := allDrivers[raw]
@@ -87,7 +89,7 @@ type TakerType struct {
 	slug string
 }
 
-func (t *TakerType) String() string {
+func (t TakerType) String() string {
 	return t.slug
 }
 

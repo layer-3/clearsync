@@ -3,6 +3,7 @@ package quotes
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -28,15 +29,10 @@ type opendax struct {
 	streams sync.Map
 }
 
-func newOpendax(config Config, outbox chan<- TradeEvent) *opendax {
-	url := "wss://alpha.yellow.org/api/v1/finex/ws"
-	if config.URL != "" {
-		url = config.URL
-	}
-
+func newOpendax(config OpendaxConfig, outbox chan<- TradeEvent) *opendax {
 	return &opendax{
 		once:   newOnce(),
-		url:    url,
+		url:    config.URL,
 		outbox: outbox,
 		period: config.ReconnectPeriod * time.Second,
 		reqID:  atomic.Uint64{},
@@ -45,7 +41,13 @@ func newOpendax(config Config, outbox chan<- TradeEvent) *opendax {
 }
 
 func (o *opendax) Start() error {
+	var startErr error
 	started := o.once.Start(func() {
+		if !(strings.HasPrefix(o.url, "ws://") || strings.HasPrefix(o.url, "wss://")) {
+			startErr = fmt.Errorf("%s (got '%s')", errInvalidWsURL, o.url)
+			return
+		}
+
 		o.connect()
 		go o.listen()
 	})
@@ -53,7 +55,7 @@ func (o *opendax) Start() error {
 	if !started {
 		return errAlreadyStarted
 	}
-	return nil
+	return startErr
 }
 
 func (o *opendax) Stop() error {

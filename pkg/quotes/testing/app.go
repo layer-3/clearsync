@@ -25,11 +25,10 @@ func main() {
 		driverName = parsedDriver
 	}
 
-	config, err := quotes.NewConfigFromEnv()
+	config, err := quotes.NewConfigFromEnv(driverName)
 	if err != nil {
 		panic(err)
 	}
-	config.Driver = driverName
 
 	outbox := make(chan quotes.TradeEvent, 128)
 	outboxStop := make(chan struct{}, 1)
@@ -54,11 +53,13 @@ func main() {
 		panic(err)
 	}
 
+	slog.Info("starting driver", "driver", driverName)
 	if err := driver.Start(); err != nil {
 		panic(err)
 	}
 
 	market := quotes.Market{BaseUnit: "usdc", QuoteUnit: "weth"}
+	slog.Info("subscribing to market", "market", market)
 	if err = driver.Subscribe(market); err != nil {
 		panic(err)
 	}

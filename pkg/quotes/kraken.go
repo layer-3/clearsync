@@ -33,12 +33,7 @@ type kraken struct {
 	outbox         chan<- TradeEvent
 }
 
-func newKraken(config Config, outbox chan<- TradeEvent) *kraken {
-	url := "wss://ws.kraken.com"
-	if config.URL != "" {
-		url = config.URL
-	}
-
+func newKraken(config KrakenConfig, outbox chan<- TradeEvent) *kraken {
 	limiter := &wsDialWrapper{}
 
 	// Set rate limit to 1 req/sec
@@ -48,7 +43,7 @@ func newKraken(config Config, outbox chan<- TradeEvent) *kraken {
 
 	return &kraken{
 		once:         newOnce(),
-		url:          url,
+		url:          config.URL,
 		dialer:       limiter,
 		retryPeriod:  config.ReconnectPeriod,
 		tradeSampler: *newTradeSampler(config.TradeSampler),
@@ -59,6 +54,11 @@ func newKraken(config Config, outbox chan<- TradeEvent) *kraken {
 func (k *kraken) Start() error {
 	var startErr error
 	started := k.once.Start(func() {
+		if !(strings.HasPrefix(k.url, "ws://") || strings.HasPrefix(k.url, "wss://")) {
+			startErr = fmt.Errorf("%s (got '%s')", errInvalidWsURL, k.url)
+			return
+		}
+
 		if err := k.getPairs(); err != nil {
 			startErr = err
 			return
