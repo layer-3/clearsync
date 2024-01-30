@@ -65,7 +65,7 @@ func (s *syncswap) Start() error {
 		}
 		s.factory = factory
 
-		assets, err := getAssets(s.assetsURL)
+		assets, err := fetchAssets(s.assetsURL)
 		if err != nil {
 			startErr = fmt.Errorf("failed to fetch assets: %w", err)
 			return
@@ -197,7 +197,7 @@ type syncswapPoolWrapper struct {
 }
 
 func (s *syncswap) getPool(market Market) (*syncswapPoolWrapper, error) {
-	baseToken, quoteToken, err := s.getTokens(market)
+	baseToken, quoteToken, err := getAssetsFromCache(market, &s.assets)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tokens: %w", err)
 	}
@@ -226,24 +226,4 @@ func (s *syncswap) getPool(market Market) (*syncswapPoolWrapper, error) {
 		baseToken:  baseToken,
 		quoteToken: quoteToken,
 	}, nil
-}
-
-func (s *syncswap) getTokens(market Market) (baseToken poolToken, quoteToken poolToken, err error) {
-	baseAsset, ok := s.assets.Load(strings.ToUpper(market.BaseUnit))
-	if !ok {
-		err = fmt.Errorf("tokens '%s' does not exist", market.BaseUnit)
-		return
-	}
-	baseToken = baseAsset.(poolToken)
-	loggerSyncswap.Infof("market %s: base token address is %s", market, baseToken.Address)
-
-	quoteAsset, ok := s.assets.Load(strings.ToUpper(market.QuoteUnit))
-	if !ok {
-		err = fmt.Errorf("tokens '%s' does not exist", market.QuoteUnit)
-		return
-	}
-	quoteToken = quoteAsset.(poolToken)
-	loggerSyncswap.Infof("market %s: quote token address is %s", market, quoteToken.Address)
-
-	return baseToken, quoteToken, nil
 }

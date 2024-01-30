@@ -66,14 +66,14 @@ func (u *uniswapV3Geth) Start() error {
 		u.client = client
 
 		factoryAddress := common.HexToAddress(u.factoryAddress)
-		uniswapFactory, err := iuniswap_v3_factory.NewIUniswapV3Factory(factoryAddress, client)
+		factory, err := iuniswap_v3_factory.NewIUniswapV3Factory(factoryAddress, client)
 		if err != nil {
 			err = fmt.Errorf("failed to build Uniswap v3 factory: %w", err)
 			return
 		}
-		u.factory = uniswapFactory
+		u.factory = factory
 
-		assets, err := getAssets(u.assetsURL)
+		assets, err := fetchAssets(u.assetsURL)
 		if err != nil {
 			startErr = fmt.Errorf("failed to fetch assets: %w", err)
 			return
@@ -204,7 +204,7 @@ type uniswapV3GethPoolWrapper struct {
 }
 
 func (u *uniswapV3Geth) getPool(market Market) (*uniswapV3GethPoolWrapper, error) {
-	baseToken, quoteToken, err := u.getTokens(market)
+	baseToken, quoteToken, err := getAssetsFromCache(market, &u.assets)
 	if err != nil {
 		return nil, err
 	}
@@ -239,32 +239,16 @@ func (u *uniswapV3Geth) getPool(market Market) (*uniswapV3GethPoolWrapper, error
 	}, nil
 }
 
-func (u *uniswapV3Geth) getTokens(market Market) (baseToken poolToken, quoteToken poolToken, err error) {
-	baseAsset, ok := u.assets.Load(strings.ToUpper(market.BaseUnit))
-	if !ok {
-		err = fmt.Errorf("tokens '%s' does not exist", market.BaseUnit)
-		return
-	}
-	baseToken = baseAsset.(poolToken)
-	loggerUniswapV3Geth.Infof("market %s: base token address is %s", market, baseToken.Address)
-
-	quoteAsset, ok := u.assets.Load(strings.ToUpper(market.QuoteUnit))
-	if !ok {
-		err = fmt.Errorf("tokens '%s' does not exist", market.QuoteUnit)
-		return
-	}
-	quoteToken = quoteAsset.(poolToken)
-	loggerUniswapV3Geth.Infof("market %s: quote token address is %s", market, quoteToken.Address)
-
-	return baseToken, quoteToken, nil
-}
-
-func getAssets(assetsURL string) ([]poolToken, error) {
+func fetchAssets(assetsURL string) ([]poolToken, error) {
 	resp, err := http.Get(assetsURL)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		if err := Body.Close(); err != nil {
+			loggerUniswapV3Geth.Errorf("failed to close response body: %s", err)
+		}
+	}(resp.Body)
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -276,4 +260,31 @@ func getAssets(assetsURL string) ([]poolToken, error) {
 		return nil, err
 	}
 	return assets["tokens"], nil
+}
+
+func getAssetsFromCache(
+	market Market,
+	assets *sync.Map, /*use pointer here to avoid copying over mutex*/
+) (
+	baseToken poolToken,
+	quoteToken poolToken,
+	err error,
+) {
+	baseAsset, ok := assets.Load(strings.ToUpper(market.BaseUnit))
+	if !ok {
+		err = fmt.Errorf("tokens '%s' does not exist", market.BaseUnit)
+		return
+	}
+	baseToken = baseAsset.(poolToken)
+	loggerUniswapV3Geth.Infof("market %s: base token address is %s", market, baseToken.Address)
+
+	quoteAsset, ok := assets.Load(strings.ToUpper(market.QuoteUnit))
+	if !ok {
+		err = fmt.Errorf("tokens '%s' does not exist", market.QuoteUnit)
+		return
+	}
+	quoteToken = quoteAsset.(poolToken)
+	loggerUniswapV3Geth.Infof("market %s: quote token address is %s", market, quoteToken.Address)
+
+	return baseToken, quoteToken, nil
 }
