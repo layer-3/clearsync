@@ -38,13 +38,14 @@
     "solhint": "3.4.1",
     "solhint-plugin-prettier": "0.0.5",
     "solidity-docgen": "0.6.0-beta.35",
-    "tsx": "3.12.7"
+    "tsx": "3.12.7",
+    "mocha": "10.2.0"
   },
   "dependencies": {
     "@statechannels/exit-format": "0.2.0",
     "@syncswap/core-contracts": "github:syncswap/core-contracts",
     "@uniswap/v3-core": "^1.0.1",
-    "@uniswap/v3-periphery": "^1.4.4",
-    "mocha": "10.2.0"
+    "@sushiswap/v2-core": "github:sushiswap/v2-core",
+    "@sushiswap/v3-core": "github:sushiswap/v3-core"
   }
 }

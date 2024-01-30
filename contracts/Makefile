@@ -16,9 +16,12 @@ BINDINGS = \
 	abi/iadjudicator/iyellow_adjudicator.go \
 	abi/iuniswap_v3_factory/iuniswap_v3_factory.go \
 	abi/iuniswap_v3_pool/iuniswap_v3_pool.go \
-	abi/iuniswap_v3_router/iuniswap_v3_router.go \
 	abi/isyncswap_factory/isyncswap_factory.go \
 	abi/isyncswap_pool/isyncswap_pool.go \
+	abi/isushiswap_v2_factory/isushiswap_v2_factory.go \
+	abi/isushiswap_v2_pair/isushiswap_v2_pair.go \
+	abi/isushiswap_v3_factory/isushiswap_v3_factory.go \
+	abi/isushiswap_v3_pool/isushiswap_v3_pool.go \
 	artifacts/test_erc20/test_erc20.go \
 	artifacts/adjudicator/yellow_adjudicator.go \
 	artifacts/yellow_token/yellow_token.go \
@@ -51,9 +54,12 @@ ierc1271_GO = IERC1271 @openzeppelin/contracts/interfaces/IERC1271.sol/IERC1271.
 iyellow_adjudicator_GO = IYellowAdjudicator contracts/interfaces/IYellowAdjudicator.sol/IYellowAdjudicator.json
 iuniswap_v3_factory_GO = IUniswapV3Factory @uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol/IUniswapV3Factory.json
 iuniswap_v3_pool_GO = IUniswapV3Pool @uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol/IUniswapV3Pool.json
-iuniswap_v3_router_GO = IUniswapV3Router @uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol/ISwapRouter.json
 isyncswap_factory_GO = ISyncSwapFactory @syncswap/core-contracts/contracts/interfaces/factory/IBasePoolFactory.sol/IBasePoolFactory.json
 isyncswap_pool_GO = ISyncSwapPool @syncswap/core-contracts/contracts/interfaces/pool/IBasePool.sol/IBasePool.json
+isushiswap_v2_factory_GO = ISushiswapV2Factory @sushiswap/v2-core/contracts/UniswapV2Factory.sol/UniswapV2Factory.json
+isushiswap_v2_pair_GO = ISushiswapV2Pair @sushiswap/v2-core/contracts/UniswapV2Pair.sol/UniswapV2Pair.json
+isushiswap_v3_factory_GO = ISushiswapV3Factory @sushiswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol/IUniswapV3Factory.json
+isushiswap_v3_pool_GO = ISushiswapV3Pool @sushiswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol/IUniswapV3Pool.json
 
 test_erc20_GO = TestERC20 contracts/test/TestERC20.sol/TestERC20.json
 yellow_adjudicator_GO = YellowAdjudicator contracts/clearing/YellowAdjudicator.sol/YellowAdjudicator.json
