@@ -10,7 +10,6 @@ typechain-types
 cache
 artifacts
 !pkg/artifacts
-config/*.info.json
 
 # OpenZeppelin
 .openzeppelin/unknown-*.json
