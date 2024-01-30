@@ -20,12 +20,11 @@ type binance struct {
 	outbox       chan<- TradeEvent
 }
 
-func newBinance(config Config, outbox chan<- TradeEvent) Driver {
-	cnf := config.(BinanceConfig)
+func newBinance(config BinanceConfig, outbox chan<- TradeEvent) Driver {
 	gobinance.WebsocketKeepalive = true
 	return &binance{
 		once:         newOnce(),
-		tradeSampler: *newTradeSampler(cnf.TradeSampler),
+		tradeSampler: *newTradeSampler(config.TradeSampler),
 		outbox:       outbox,
 	}
 }

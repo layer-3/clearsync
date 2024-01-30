@@ -25,13 +25,12 @@ type uniswapV3Api struct {
 	streams    sync.Map
 }
 
-func newUniswapV3Api(config Config, outbox chan<- TradeEvent) Driver {
-	cnf := config.(UniswapV3ApiConfig)
+func newUniswapV3Api(config UniswapV3ApiConfig, outbox chan<- TradeEvent) Driver {
 	return &uniswapV3Api{
 		once:       newOnce(),
-		url:        cnf.URL,
+		url:        config.URL,
 		outbox:     outbox,
-		windowSize: cnf.WindowSize,
+		windowSize: config.WindowSize,
 	}
 }
 

@@ -30,5 +30,4 @@ func NewDriver(config Config, outbox chan<- TradeEvent) (Driver, error) {
 	default:
 		return nil, fmt.Errorf("driver is not supported: %s", config.Driver)
 	}
-	return driver(config, outbox), nil
 }

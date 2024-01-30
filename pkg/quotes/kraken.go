@@ -33,8 +33,7 @@ type kraken struct {
 	outbox         chan<- TradeEvent
 }
 
-func newKraken(config Config, outbox chan<- TradeEvent) Driver {
-	cnf := config.(KrakenConfig)
+func newKraken(config KrakenConfig, outbox chan<- TradeEvent) Driver {
 	limiter := &wsDialWrapper{}
 
 	// Set rate limit to 1 req/sec
@@ -44,10 +43,10 @@ func newKraken(config Config, outbox chan<- TradeEvent) Driver {
 
 	return &kraken{
 		once:         newOnce(),
-		url:          cnf.URL,
+		url:          config.URL,
 		dialer:       limiter,
-		retryPeriod:  cnf.ReconnectPeriod,
-		tradeSampler: *newTradeSampler(cnf.TradeSampler),
+		retryPeriod:  config.ReconnectPeriod,
+		tradeSampler: *newTradeSampler(config.TradeSampler),
 		outbox:       outbox,
 	}
 }

@@ -24,7 +24,7 @@ type PriceCacheVWA struct {
 	nTrades int
 }
 
-// NewPriceCacheVWA initializes a new cache for VWA prices for markets.
+// NewPriceCacheVWA initializes a new cache to store last n trades for each market.
 func NewPriceCacheVWA(driversWeights map[DriverType]decimal.Decimal, nTrades int) *PriceCacheVWA {
 	cache := new(PriceCacheVWA)
 	cache.market = make(map[string]*marketHistory)
@@ -50,7 +50,7 @@ func (p *PriceCacheVWA) AddTrade(market string, price, volume, weight decimal.De
 	// Append the new trade and maintain only the last N trades
 	trades := append(p.market[market].trades, trade{Price: price, Volume: volume, Weight: weight})
 	if len(trades) > p.nTrades {
-		trades = trades[len(trades)-p.nTrades:] // Use tradeLength instead of 20
+		trades = trades[len(trades)-p.nTrades:]
 	}
 	p.market[market].trades = trades
 }

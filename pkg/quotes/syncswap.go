@@ -31,13 +31,12 @@ type syncswap struct {
 	assets  sync.Map
 }
 
-func newSyncswap(config Config, outbox chan<- TradeEvent) Driver {
-	cnf := config.(SyncswapConfig)
+func newSyncswap(config SyncswapConfig, outbox chan<- TradeEvent) Driver {
 	return &syncswap{
 		once:                      newOnce(),
-		url:                       cnf.URL,
-		assetsURL:                 cnf.AssetsURL,
-		classicPoolFactoryAddress: cnf.ClassicPoolFactoryAddress,
+		url:                       config.URL,
+		assetsURL:                 config.AssetsURL,
+		classicPoolFactoryAddress: config.ClassicPoolFactoryAddress,
 
 		outbox: outbox,
 	}

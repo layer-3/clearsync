@@ -17,14 +17,14 @@ type indexAggregator struct {
 }
 
 type priceCalculator interface {
-	calculateIndex(trade TradeEvent) (decimal.Decimal, bool)
+	calculateIndexPrice(trade TradeEvent) (decimal.Decimal, bool)
 }
 
 // NewIndexAggregator creates a new instance of IndexAggregator.
 func NewIndexAggregator(driversConfigs []Config, strategy priceCalculator, outbox chan<- TradeEvent) Driver {
 	aggregated := make(chan TradeEvent, 128)
 
-	drivers := []Driver{}
+	var drivers []Driver
 	for _, d := range driversConfigs {
 		if d.DriverType() == DriverIndex {
 			continue
@@ -44,9 +44,9 @@ func NewIndexAggregator(driversConfigs []Config, strategy priceCalculator, outbo
 	}
 }
 
-// newIndex creates a new instance of IndexAggregator with default configs.
-func newIndex(config Config, outbox chan<- TradeEvent) Driver {
-	return NewIndexAggregator(AllDrivers, NewStrategyVWA(), outbox)
+// newIndex creates a new instance of IndexAggregator with VWA strategy and default drivers weights.
+func newIndex(config IndexConfig, outbox chan<- TradeEvent) Driver {
+	return NewIndexAggregator(AllDrivers, NewStrategyVWA(WithCustomPriceCacheVWA(NewPriceCacheVWA(DefaultWeightsMap, config.TradesCached))), outbox)
 }
 
 // ChangeStrategy allows index price calculation strategy to be changed.
@@ -81,7 +81,7 @@ func (a *indexAggregator) Start() error {
 func (a *indexAggregator) Subscribe(m Market) error {
 	go func() {
 		for event := range a.aggregated {
-			indexPrice, ok := a.priceCalculator.calculateIndex(event)
+			indexPrice, ok := a.priceCalculator.calculateIndexPrice(event)
 			if ok {
 				event.Price = indexPrice
 				event.Source = DriverIndex

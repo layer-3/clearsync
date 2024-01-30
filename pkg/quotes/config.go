@@ -54,6 +54,14 @@ func ToConfig(driver DriverConfig) Config {
 	return config
 }
 
+type IndexConfig struct {
+	TradesCached int `yaml:"trades_cached" env:"QUOTES_INDEX_TRADES_CACHED" env-default:"20"`
+}
+
+func (IndexConfig) DriverType() DriverType {
+	return DriverIndex
+}
+
 type BinanceConfig struct {
 	TradeSampler TradeSamplerConfig `yaml:"trade_sampler"`
 }

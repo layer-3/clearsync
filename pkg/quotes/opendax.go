@@ -29,13 +29,12 @@ type opendax struct {
 	streams sync.Map
 }
 
-func newOpendax(config Config, outbox chan<- TradeEvent) Driver {
-	cnf := config.(OpendaxConfig)
+func newOpendax(config OpendaxConfig, outbox chan<- TradeEvent) Driver {
 	return &opendax{
 		once:   newOnce(),
-		url:    cnf.URL,
+		url:    config.URL,
 		outbox: outbox,
-		period: cnf.ReconnectPeriod * time.Second,
+		period: config.ReconnectPeriod * time.Second,
 		reqID:  atomic.Uint64{},
 		dialer: &wsDialWrapper{},
 	}

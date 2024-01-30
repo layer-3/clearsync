@@ -11,7 +11,7 @@ type strategyVWA struct {
 	priceCache *PriceCacheVWA
 }
 
-// NewStrategyVWA creates a new instance of VWA index price calculator.
+// NewStrategyVWA creates a new instance of Volume-Weighted Average Price index price calculator.
 func NewStrategyVWA(configs ...ConfFuncVWA) priceCalculator {
 	s := strategyVWA{
 		priceCache: NewPriceCacheVWA(DefaultWeightsMap, 20),
@@ -38,8 +38,8 @@ func WithCustomPriceCacheVWA(priceCache *PriceCacheVWA) ConfFuncVWA {
 	}
 }
 
-// calculateIndex returns indexPrice based on Volume Weighted Average Price of last 20 trades.
-func (a strategyVWA) calculateIndex(event TradeEvent) (decimal.Decimal, bool) {
+// calculateIndexPrice returns indexPrice based on Volume Weighted Average Price of last 20 trades.
+func (a strategyVWA) calculateIndexPrice(event TradeEvent) (decimal.Decimal, bool) {
 	sourceWeight := a.weights[event.Source]
 	if event.Market == "" || event.Price.String() == "0" || event.Amount.String() == "0" || sourceWeight.IsZero() {
 		return decimal.Decimal{}, false
@@ -57,6 +57,5 @@ func (a strategyVWA) calculateIndex(event TradeEvent) (decimal.Decimal, bool) {
 	// Add the current trade to the cache
 	a.priceCache.AddTrade(event.Market, event.Price, event.Amount, sourceMultiplier)
 
-	// Use the separate function to calculate VWA
 	return a.priceCache.GetVWA(event.Market)
 }

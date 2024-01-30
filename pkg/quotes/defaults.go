@@ -10,17 +10,13 @@ var (
 		DriverBitfaker:      decimal.NewFromInt(1),
 		DriverUniswapV3Api:  decimal.NewFromInt(2),
 		DriverUniswapV3Geth: decimal.NewFromInt(2),
+		DriverSyncswap:      decimal.NewFromInt(2),
 	}
 
 	AllDrivers = []Config{
-		{
-			Driver: DriverKraken,
-		},
-		{
-			Driver: DriverBinance,
-		},
-		{
-			Driver: DriverUniswapV3Api,
-		},
+		KrakenConfig{},
+		BinanceConfig{},
+		UniswapV3ApiConfig{},
+		SyncswapConfig{},
 	}
 )
