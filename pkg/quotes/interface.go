@@ -26,6 +26,10 @@ func NewDriver(config Config, outbox chan<- TradeEvent) (Driver, error) {
 		return newUniswapV3Geth(config.UniswapV3Geth, outbox), nil
 	case DriverSyncswap:
 		return newSyncswap(config.Syncswap, outbox), nil
+	case DriverSushiswapV2Geth:
+		return newSushiswapV2Geth(config.SushiswapV2Geth, outbox), nil
+	case DriverSushiswapV3Geth:
+		return newSushiswapV3Geth(config.SushiswapV3Geth, outbox), nil
 	default:
 		return nil, fmt.Errorf("driver is not supported: %s", config.Driver)
 	}

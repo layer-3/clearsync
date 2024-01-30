@@ -45,6 +45,14 @@ func TestDriverType_Marshal(t *testing.T) {
 			input:        DriverSyncswap,
 			expectedJSON: `"syncswap"`,
 			expectedYAML: "syncswap\n",
+		}, {
+			input:        DriverSushiswapV2Geth,
+			expectedJSON: `"sushiswap_v2_geth"`,
+			expectedYAML: "sushiswap_v2_geth\n",
+		}, {
+			input:        DriverSushiswapV3Geth,
+			expectedJSON: `"sushiswap_v3_geth"`,
+			expectedYAML: "sushiswap_v3_geth\n",
 		},
 	}
 
@@ -111,6 +119,16 @@ func TestDriverType_Unmarshal(t *testing.T) {
 			inputJSON: `"syncswap"`,
 			inputYAML: "syncswap",
 			expected:  DriverSyncswap,
+			shouldErr: false,
+		}, {
+			inputJSON: `"sushiswap_v2_geth"`,
+			inputYAML: "sushiswap_v2_geth",
+			expected:  DriverSushiswapV2Geth,
+			shouldErr: false,
+		}, {
+			inputJSON: `"sushiswap_v3_geth"`,
+			inputYAML: "sushiswap_v3_geth",
+			expected:  DriverSushiswapV3Geth,
 			shouldErr: false,
 		}, {
 			inputJSON: `"invalid"`,
