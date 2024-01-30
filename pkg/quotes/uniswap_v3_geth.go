@@ -65,7 +65,6 @@ func (u *uniswapV3Geth) Start() error {
 		}
 		u.client = client
 
-		// Check addresses here: https://docs.uniswap.org/contracts/v3/reference/deployments
 		factoryAddress := common.HexToAddress(u.factoryAddress)
 		uniswapFactory, err := iuniswap_v3_factory.NewIUniswapV3Factory(factoryAddress, client)
 		if err != nil {

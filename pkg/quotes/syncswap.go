@@ -57,11 +57,10 @@ func (s *syncswap) Start() error {
 		}
 		s.client = client
 
-		// Check addresses here: https://syncswap.gitbook.io/syncswap/smart-contracts/smart-contracts
 		classicPoolFactoryAddress := common.HexToAddress(s.classicPoolFactoryAddress)
 		factory, err := isyncswap_factory.NewISyncSwapFactory(classicPoolFactoryAddress, client)
 		if err != nil {
-			startErr = fmt.Errorf("failed to instantiate a TokenFactory contract: %w", err)
+			startErr = fmt.Errorf("failed to instantiate a factory contract: %w", err)
 			return
 		}
 		s.factory = factory

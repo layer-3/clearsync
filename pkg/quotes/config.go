@@ -58,15 +58,17 @@ type UniswapV3ApiConfig struct {
 }
 
 type UniswapV3GethConfig struct {
-	URL            string             `yaml:"url" env:"QUOTES_UNISWAP_V3_GETH_URL" env-default:""`
-	AssetsURL      string             `yaml:"assets_url" env:"QUOTES_UNISWAP_V3_GETH_ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/mainnet/assets.json"`
+	URL       string `yaml:"url" env:"QUOTES_UNISWAP_V3_GETH_URL" env-default:""`
+	AssetsURL string `yaml:"assets_url" env:"QUOTES_UNISWAP_V3_GETH_ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/mainnet/assets.json"`
+	// FactoryAddress uses addresses from here: https://docs.uniswap.org/contracts/v3/reference/deployments
 	FactoryAddress string             `yaml:"factory_address" env:"QUOTES_UNISWAP_V3_GETH_FACTORY_ADDRESS" env-default:"0x1F98431c8aD98523631AE4a59f267346ea31F984"`
 	TradeSampler   TradeSamplerConfig `yaml:"trade_sampler"`
 }
 
 type SyncswapConfig struct {
-	URL                       string             `yaml:"url" env:"QUOTES_SYNCSWAP_URL" env-default:""`
-	AssetsURL                 string             `yaml:"assets_url" env:"QUOTES_SYNCSWAP_ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/mainnet/assets.json"`
+	URL       string `yaml:"url" env:"QUOTES_SYNCSWAP_URL" env-default:""`
+	AssetsURL string `yaml:"assets_url" env:"QUOTES_SYNCSWAP_ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/mainnet/assets.json"`
+	// ClassicPoolFactoryAddress uses addresses from here: https://syncswap.gitbook.io/syncswap/smart-contracts/smart-contracts
 	ClassicPoolFactoryAddress string             `yaml:"classic_pool_factory_address" env:"QUOTES_SYNCSWAP_CLASSIC_POOL_FACTORY_ADDRESS" env-default:"0x37BAc764494c8db4e54BDE72f6965beA9fa0AC2d"`
 	TradeSampler              TradeSamplerConfig `yaml:"trade_sampler"`
 }
