@@ -74,16 +74,18 @@ type SyncswapConfig struct {
 }
 
 type SushiswapV2GethConfig struct {
-	URL            string             `yaml:"url" env:"QUOTES_SUSHISWAP_V2_GETH_URL" env-default:""`
-	AssetsURL      string             `yaml:"assets_url" env:"QUOTES_SUSHISWAP_V2_GETH_ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/mainnet/assets.json"`
-	FactoryAddress string             `yaml:"factory_address" env:"QUOTES_SUSHISWAP_V2_GETH_FACTORY_ADDRESS" env-default:"0xc35DADB65012eC5796536bD9864eD8773aBc74C4"`
+	URL       string `yaml:"url" env:"QUOTES_SUSHISWAP_V2_GETH_URL" env-default:""`
+	AssetsURL string `yaml:"assets_url" env:"QUOTES_SUSHISWAP_V2_GETH_ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/mainnet/assets.json"`
+	// FactoryAddress uses addresses from here: https://dev.sushi.com/docs/Products/Classic%20AMM/Deployment%20Addresses
+	FactoryAddress string             `yaml:"factory_address" env:"QUOTES_SUSHISWAP_V2_GETH_FACTORY_ADDRESS" env-default:"0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac"`
 	TradeSampler   TradeSamplerConfig `yaml:"trade_sampler"`
 }
 
 type SushiswapV3GethConfig struct {
-	URL            string             `yaml:"url" env:"QUOTES_SUSHISWAP_V3_GETH_URL" env-default:""`
-	AssetsURL      string             `yaml:"assets_url" env:"QUOTES_SUSHISWAP_V3_GETH_ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/mainnet/assets.json"`
-	FactoryAddress string             `yaml:"factory_address" env:"QUOTES_SUSHISWAP_V3_GETH_FACTORY_ADDRESS" env-default:"0xc35DADB65012eC5796536bD9864eD8773aBc74C4"`
+	URL       string `yaml:"url" env:"QUOTES_SUSHISWAP_V3_GETH_URL" env-default:""`
+	AssetsURL string `yaml:"assets_url" env:"QUOTES_SUSHISWAP_V3_GETH_ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/mainnet/assets.json"`
+	// FactoryAddress uses addresses from here: https://dev.sushi.com/docs/Products/V3%20AMM/Core/Deployment%20Addresses
+	FactoryAddress string             `yaml:"factory_address" env:"QUOTES_SUSHISWAP_V3_GETH_FACTORY_ADDRESS" env-default:"0xaa26771d497814E81D305c511Efbb3ceD90BF5bd"`
 	TradeSampler   TradeSamplerConfig `yaml:"trade_sampler"`
 }
 
