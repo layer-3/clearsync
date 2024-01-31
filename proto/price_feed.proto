@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+import "core.proto";
+
+option go_package = "github.com/layer-3/clearport/proto";
+
+service PriceFeed {
+  rpc Subscribe(PriceFeedSubscribeRequest) returns (stream Quote);
+}
+
+message Quote {
+  core.Market market = 1;
+  core.Decimal price = 2;
+  int64 timestamp = 3;
+}
+
+message PriceFeedSubscribeRequest {
+  core.Market market = 1;
+}
