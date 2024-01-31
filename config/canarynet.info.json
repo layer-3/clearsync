@@ -1,0 +1,8 @@
+{
+  "deployedContracts":
+  {
+    "adjudicator":"0x0ba4D7cB34ff4B4A60338A0234576F52d1631182",
+    "clearingApp":"0x6178d14644D29c389b9fDB3B0d25dbdC7C428CaD",
+    "escrowApp":"0xA230Bc7F76351DfbF97064a16E0b1a9e141cBF9c"
+  }
+}

@@ -122,16 +122,22 @@ interface YNDeployedContracts {
 }
 
 async function deployYNContracts(deployer: Signer, filepath: string): Promise<void> {
+
+  const gasOverrides = {
+    gasLimit: 5000000,
+    gasPrice: 5000000000
+  }
+
   const AdjudicatorFactory = await ethers.getContractFactory('YellowAdjudicator');
-  const Adjudicator = await AdjudicatorFactory.connect(deployer).deploy();
+  const Adjudicator = await AdjudicatorFactory.connect(deployer).deploy(gasOverrides);
   await Adjudicator.deployed();
 
   const ClearginAppFactory = await ethers.getContractFactory('ConsensusApp'); // TODO: change with ClearingApp when ready
-  const ClearginApp = await ClearginAppFactory.connect(deployer).deploy();
+  const ClearginApp = await ClearginAppFactory.connect(deployer).deploy(gasOverrides);
   await ClearginApp.deployed();
 
   const EscrowAppFactory = await ethers.getContractFactory('ConsensusApp'); // TODO: change with EscrowApp when ready
-  const EscrowApp = await EscrowAppFactory.connect(deployer).deploy();
+  const EscrowApp = await EscrowAppFactory.connect(deployer).deploy(gasOverrides);
   await EscrowApp.deployed();
 
   const deployedContracts: YNDeployedContracts = {
