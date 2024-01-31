@@ -83,7 +83,7 @@ type SushiswapV2GethConfig struct {
 }
 
 type SushiswapV3ApiConfig struct {
-	URL          string             `yaml:"url" env:"QUOTES_SUSHISWAP_V3_API_URL" env-default:"https://thegraph.com/hosted-service/subgraph/sushi-v3/v3-ethereum"`
+	URL          string             `yaml:"url" env:"QUOTES_SUSHISWAP_V3_API_URL" env-default:"https://api.thegraph.com/subgraphs/name/sushi-v3/v3-ethereum"`
 	WindowSize   time.Duration      `yaml:"window_size" env:"QUOTES_SUSHISWAP_V3_API_WINDOW_SIZE" env-default:"2s"`
 	TradeSampler TradeSamplerConfig `yaml:"trade_sampler"`
 }
