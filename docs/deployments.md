@@ -35,6 +35,7 @@ Deployed by: `0x2C9391752AE0Ee8a01e00D8b77187aB6D6Debc25`[↗](https://polygonsc
 | Yellow Duckies ERC20 Token | YellowToken   | [0xf96e...6217](https://polygonscan.com/tx/0xf96e07149b6ab7ea5607efec3bd07e9e8bce13ebc68e9dcf007be5c325d76217) | `0x18e73A5333984549484348A94f4D219f4faB7b81`[↗](https://polygonscan.com/address/0x18e73A5333984549484348A94f4D219f4faB7b81) | 7b9389c83a540870369b82d0a1144d61f50f9c35 |
 | Yellow Ducklings NFT       | DucklingsV1   | [0x21bc...993f](https://polygonscan.com/tx/0x21bce8f9a9d2e836070ee883246a1edf9fc409cab0b25a8c1cabcf7d1d5d993f) | `0x435b74f6DC4A0723CA19e4dD2AC8Aa1361c7B0f0`[↗](https://polygonscan.com/address/0x435b74f6DC4A0723CA19e4dD2AC8Aa1361c7B0f0) | 7b9389c83a540870369b82d0a1144d61f50f9c35 |
 | Yellow Ducklings NFT Game  | DuckyFamilyV1 | [0x60e2...15e8](https://polygonscan.com/tx/0x60e21f0f9528ab063b68928c5c8081c473ffb31cdaf747ee77bf057d588415e8) | `0xb66bf78cad7cbab51988ddc792652cbabdff7675`[↗](https://polygonscan.com/address/0xb66bf78cad7cbab51988ddc792652cbabdff7675) | 7b9389c83a540870369b82d0a1144d61f50f9c35 |
+| Yellow Duckies Treasury    | TreasureVault | [0x38c3...65ae](https://polygonscan.com/tx/0x38c3467b1adf4fa71992de627fa8bf08d1bf1118c10d8004753cd44637b565ae) | `0x68d1E3F802058Ce517e9ba871Ab182299E74D852`[↗](https://polygonscan.com/address/0x68d1E3F802058Ce517e9ba871Ab182299E74D852) | 7b9389c83a540870369b82d0a1144d61f50f9c35 |
 
 ### Linea
 
@@ -49,6 +50,20 @@ Bridged Token Smart Contract: [`BridgedToken.sol`](https://github.com/Consensys/
 | Description                | Transaction hash                                                                                               | Address                                                                                                                   |
 | -------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | Yellow Duckies ERC20 Token | [0xcf7f...89b3](https://lineascan.build/tx/0xcf7f2f583baec04064417166bf7416f844b3e79d6d446798e3ec2b70cb8589b3) | `0x796000FAd0d00B003B9dd8e531BA90cff39E01E0`[↗](https://lineascan.build/token/0x796000FAd0d00B003B9dd8e531BA90cff39E01E0) |
+
+#### Contracts Deployed
+
+Last updated: January 31, 2024.
+
+Repository: [layer-3/ClearSync](https://github.com/layer-3/clearsync)
+
+Deployed by: `0xfa89b5b708d8fbd174ebe9be4d3adf1cab03a0b5`[↗](https://lineascan.build/address/0xfa89b5b708d8fbd174ebe9be4d3adf1cab03a0b5)
+
+| Description                | Contract Name     | Transaction Hash                                                                                               | Address                                                                                                                     | Git SHA                                  |
+| -------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| Yellow Network Adjudicator | YellowAdjudicator | [0x69f2...002d](https://lineascan.build/tx/0x69f2a47e88909320a82fe191cc3b0d8ecc20a998b9243aa3896ff761f1d8002d) | `0x0ba4d7cb34ff4b4a60338a0234576f52d1631182`[↗](https://lineascan.build/address/0x0ba4d7cb34ff4b4a60338a0234576f52d1631182) | 58f7c97934585b72ba05eceb2d8737f76d51dece |
+| State channels Margin App  | ConsensusApp      | [0xd414...b359](https://lineascan.build/tx/0xd4149bdae1cb7509f4dca5cdfc10b6a289073af21c494c57fc5f3f605460b359) | `0x6178d14644d29c389b9fdb3b0d25dbdc7c428cad`[↗](https://lineascan.build/address/0x6178d14644d29c389b9fdb3b0d25dbdc7c428cad) | 58f7c97934585b72ba05eceb2d8737f76d51dece |
+| State channels Escrow App  | ConsensusApp      | [0xa480...7702](https://lineascan.build/tx/0xa480ee98c2b2d6f54d4d3c3c8ebdc3eee775043f4015749edff27ac3daf57702) | `0xa230bc7f76351dfbf97064a16e0b1a9e141cbf9c`[↗](https://lineascan.build/address/0xa230bc7f76351dfbf97064a16e0b1a9e141cbf9c) | 58f7c97934585b72ba05eceb2d8737f76d51dece |
 
 ## Testnet
 
