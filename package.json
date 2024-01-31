@@ -45,6 +45,7 @@
     "@statechannels/exit-format": "0.2.0",
     "@syncswap/core-contracts": "github:syncswap/core-contracts",
     "@uniswap/v3-core": "^1.0.1",
+    "@uniswap/v3-periphery": "^1.4.4",
     "@sushiswap/v2-core": "github:sushiswap/v2-core",
     "@sushiswap/v3-core": "github:sushiswap/v3-core"
   }
