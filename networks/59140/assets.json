@@ -1,7 +1,6 @@
 {
   "tokens": [
     {
-      "chainId": 59140,
       "address": "0x4889C4d392DF005dEE5e3998D170Fa90F994699b",
       "name": "Yellow Duckies",
       "symbol": "DUCKIES",
@@ -11,7 +10,14 @@
       "extensions": {}
     },
     {
-      "chainId": 59140,
+      "address": "0x0000000000000000000000000000000000000000",
+      "name": "Ether",
+      "symbol": "ETH",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png?1696501628"
+    },
+    {
       "address": "0x891967b45eb9910768a9FC48DBb11120Ee180125",
       "name": "USD Tether",
       "symbol": "USDT",
@@ -21,7 +27,6 @@
       "extensions": {}
     },
     {
-      "chainId": 59140,
       "address": "0x9E210Dd034Df7945606f1725447dD68C9FE3fc39",
       "name": "USD Coin",
       "symbol": "USDC",
@@ -31,7 +36,6 @@
       "extensions": {}
     },
     {
-      "chainId": 59140,
       "address": "0xb3Ea26Da98fFB06A5c5a7A972d6d4dE58967E38a",
       "name": "LUBE",
       "symbol": "LUBE",
@@ -41,7 +45,6 @@
       "extensions": {}
     },
     {
-      "chainId": 59140,
       "address": "0x2469206634e32ab6c284e208fB27dF48A29F5359",
       "name": "Wrapped Bitcoin",
       "symbol": "WBTC",
@@ -51,7 +54,6 @@
       "extensions": {}
     },
     {
-      "chainId": 59140,
       "address": "0x42e6f9a4805220C7E7DC99bd6E71D7FEa346fcCD",
       "name": "Wrapped Ether",
       "symbol": "WETH",
@@ -61,7 +63,6 @@
       "extensions": {}
     },
     {
-      "chainId": 59140,
       "address": "0x8264ADf56A89170292E6Cc10467A355b13f4f6Dc",
       "name": "Linda",
       "symbol": "LINDA",
