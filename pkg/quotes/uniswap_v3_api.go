@@ -18,19 +18,21 @@ import (
 var loggerUniswapV3Api = log.Logger("uniswap_v3_api")
 
 type uniswapV3Api struct {
-	once       *once
-	url        string
-	outbox     chan<- TradeEvent
-	windowSize time.Duration
-	streams    sync.Map
+	once         *once
+	url          string
+	outbox       chan<- TradeEvent
+	windowSize   time.Duration
+	streams      sync.Map
+	tradeSampler *tradeSampler
 }
 
 func newUniswapV3Api(config UniswapV3ApiConfig, outbox chan<- TradeEvent) *uniswapV3Api {
 	return &uniswapV3Api{
-		once:       newOnce(),
-		url:        config.URL,
-		outbox:     outbox,
-		windowSize: config.WindowSize,
+		once:         newOnce(),
+		url:          config.URL,
+		outbox:       outbox,
+		windowSize:   config.WindowSize,
+		tradeSampler: newTradeSampler(config.TradeSampler),
 	}
 }
 
@@ -117,7 +119,7 @@ func (u *uniswapV3Api) Subscribe(market Market) error {
 						takerType = TakerTypeSell
 					}
 
-					u.outbox <- TradeEvent{
+					tr := TradeEvent{
 						Source:    DriverUniswapV3Api,
 						Market:    market.QuoteUnit,
 						Price:     price,
@@ -126,6 +128,11 @@ func (u *uniswapV3Api) Subscribe(market Market) error {
 						TakerType: takerType,
 						CreatedAt: createdAt,
 					}
+
+					if !u.tradeSampler.allow(tr) {
+						continue
+					}
+					u.outbox <- tr
 				}
 				timer = time.After(u.windowSize)
 				from = to
@@ -177,7 +184,7 @@ func (u *uniswapV3Api) isMarketAvailable(market Market) (bool, error) {
 
 // NOTE: GraphQL Query is used here because
 // Uniswap V3 does not support Subscriptions
-const swapsTemplate = `query {
+const uniswapV3ApiSwapsTemplate = `query {
   swaps(
     orderBy: timestamp
     orderDirection: desc
@@ -198,7 +205,7 @@ const swapsTemplate = `query {
 }`
 
 func (u *uniswapV3Api) fetchSwaps(market Market, from, to time.Time) ([]uniswapV3Swap, error) {
-	query := fmt.Sprintf(swapsTemplate,
+	query := fmt.Sprintf(uniswapV3ApiSwapsTemplate,
 		from.Unix(),
 		to.Unix(),
 		strings.ToUpper(market.BaseUnit),
@@ -269,12 +276,12 @@ type uniswapV3Swaps struct {
 }
 
 type uniswapV3Swap struct {
-	Timestamp    string          `json:"timestamp"`
-	Token0       graphqlToken    `json:"token0"`
-	Token1       graphqlToken    `json:"token1"`
-	Amount0      decimal.Decimal `json:"amount0"`
-	Amount1      decimal.Decimal `json:"amount1"`
-	SqrtPriceX96 decimal.Decimal `json:"sqrtPriceX96"`
+	Timestamp    string                   `json:"timestamp"`
+	Token0       uniswapV3ApiGraphqlToken `json:"token0"`
+	Token1       uniswapV3ApiGraphqlToken `json:"token1"`
+	Amount0      decimal.Decimal          `json:"amount0"`
+	Amount1      decimal.Decimal          `json:"amount1"`
+	SqrtPriceX96 decimal.Decimal          `json:"sqrtPriceX96"`
 }
 
 var priceX96 = decimal.NewFromInt(2).Pow(decimal.NewFromInt(96))
@@ -300,6 +307,6 @@ func (swap *uniswapV3Swap) time() (time.Time, error) {
 	return time.Unix(unixTimestamp, 0), nil
 }
 
-type graphqlToken struct {
+type uniswapV3ApiGraphqlToken struct {
 	Decimals decimal.Decimal `json:"decimals"`
 }

@@ -26,9 +26,10 @@ type sushiswapV2Geth struct {
 	client         *ethclient.Client
 	factory        *isushiswap_v2_factory.ISushiswapV2Factory
 
-	outbox  chan<- TradeEvent
-	streams sync.Map
-	assets  sync.Map
+	outbox       chan<- TradeEvent
+	streams      sync.Map
+	assets       sync.Map
+	tradeSampler tradeSampler
 }
 
 func newSushiswapV2Geth(config SushiswapV2GethConfig, outbox chan<- TradeEvent) Driver {
@@ -38,7 +39,8 @@ func newSushiswapV2Geth(config SushiswapV2GethConfig, outbox chan<- TradeEvent) 
 		assetsURL:      config.AssetsURL,
 		factoryAddress: config.FactoryAddress,
 
-		outbox: outbox,
+		outbox:       outbox,
+		tradeSampler: *newTradeSampler(config.TradeSampler),
 	}
 }
 
@@ -155,7 +157,7 @@ func (s *sushiswapV2Geth) Subscribe(market Market) error {
 				}
 
 				amount = amount.Abs()
-				s.outbox <- TradeEvent{
+				tr := TradeEvent{
 					Source:    DriverSushiswapV2Geth,
 					Market:    symbol,
 					Price:     price,
@@ -164,6 +166,11 @@ func (s *sushiswapV2Geth) Subscribe(market Market) error {
 					TakerType: takerType,
 					CreatedAt: time.Now(),
 				}
+
+				if !s.tradeSampler.allow(tr) {
+					continue
+				}
+				s.outbox <- tr
 			}
 		}
 	}()

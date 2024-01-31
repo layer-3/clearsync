@@ -127,5 +127,8 @@ func (b *bitfaker) createTradeEvent(market Market) {
 		CreatedAt: time.Now(),
 	}
 
+	if !b.tradeSampler.allow(tr) {
+		return
+	}
 	b.outbox <- tr
 }

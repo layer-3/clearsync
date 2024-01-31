@@ -34,9 +34,10 @@ type uniswapV3Geth struct {
 	client         *ethclient.Client
 	factory        *iuniswap_v3_factory.IUniswapV3Factory
 
-	outbox  chan<- TradeEvent
-	streams sync.Map
-	assets  sync.Map
+	outbox       chan<- TradeEvent
+	streams      sync.Map
+	assets       sync.Map
+	tradeSampler tradeSampler
 }
 
 func newUniswapV3Geth(config UniswapV3GethConfig, outbox chan<- TradeEvent) *uniswapV3Geth {
@@ -46,7 +47,8 @@ func newUniswapV3Geth(config UniswapV3GethConfig, outbox chan<- TradeEvent) *uni
 		assetsURL:      config.AssetsURL,
 		factoryAddress: config.FactoryAddress,
 
-		outbox: outbox,
+		outbox:       outbox,
+		tradeSampler: *newTradeSampler(config.TradeSampler),
 	}
 }
 
@@ -154,7 +156,7 @@ func (u *uniswapV3Geth) Subscribe(market Market) error {
 				}
 
 				amount = amount.Abs()
-				u.outbox <- TradeEvent{
+				tr := TradeEvent{
 					Source:    DriverUniswapV3Geth,
 					Market:    symbol,
 					Price:     price,
@@ -163,6 +165,11 @@ func (u *uniswapV3Geth) Subscribe(market Market) error {
 					TakerType: takerType,
 					CreatedAt: time.Now(),
 				}
+
+				if !u.tradeSampler.allow(tr) {
+					continue
+				}
+				u.outbox <- tr
 			}
 		}
 	}()

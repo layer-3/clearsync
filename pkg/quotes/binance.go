@@ -16,16 +16,16 @@ var loggerBinance = log.Logger("binance")
 type binance struct {
 	once         *once
 	streams      sync.Map
-	tradeSampler tradeSampler
 	outbox       chan<- TradeEvent
+	tradeSampler tradeSampler
 }
 
 func newBinance(config BinanceConfig, outbox chan<- TradeEvent) *binance {
 	gobinance.WebsocketKeepalive = true
 	return &binance{
 		once:         newOnce(),
-		tradeSampler: *newTradeSampler(config.TradeSampler),
 		outbox:       outbox,
+		tradeSampler: *newTradeSampler(config.TradeSampler),
 	}
 }
 
@@ -117,7 +117,6 @@ func (b *binance) handleTrade(event *gobinance.WsTradeEvent) {
 	if !b.tradeSampler.allow(tradeEvent) {
 		return
 	}
-
 	b.outbox <- tradeEvent
 }
 

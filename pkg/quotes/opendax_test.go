@@ -89,7 +89,7 @@ func TestOpendax_parse(t *testing.T) {
 		require.NoError(t, err)
 
 		number, _ := decimal.NewFromString("1")
-		expVal := &TradeEvent{
+		expVal := TradeEvent{
 			Market:    "btcusd",
 			Price:     number,
 			Amount:    number,

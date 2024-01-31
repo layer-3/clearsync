@@ -29,8 +29,8 @@ type kraken struct {
 
 	availablePairs sync.Map
 	streams        sync.Map
-	tradeSampler   tradeSampler
 	outbox         chan<- TradeEvent
+	tradeSampler   tradeSampler
 }
 
 func newKraken(config KrakenConfig, outbox chan<- TradeEvent) *kraken {
@@ -46,8 +46,8 @@ func newKraken(config KrakenConfig, outbox chan<- TradeEvent) *kraken {
 		url:          config.URL,
 		dialer:       limiter,
 		retryPeriod:  config.ReconnectPeriod,
-		tradeSampler: *newTradeSampler(config.TradeSampler),
 		outbox:       outbox,
+		tradeSampler: *newTradeSampler(config.TradeSampler),
 	}
 }
 
@@ -255,7 +255,6 @@ func (k *kraken) listen() {
 			if !k.tradeSampler.allow(tr) {
 				continue
 			}
-
 			k.outbox <- tr
 		}
 	}

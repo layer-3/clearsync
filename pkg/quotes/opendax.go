@@ -23,20 +23,22 @@ type opendax struct {
 	dialer wsDialer
 	url    string
 
-	outbox  chan<- TradeEvent
-	period  time.Duration
-	reqID   atomic.Uint64
-	streams sync.Map
+	outbox       chan<- TradeEvent
+	period       time.Duration
+	reqID        atomic.Uint64
+	streams      sync.Map
+	tradeSampler tradeSampler
 }
 
 func newOpendax(config OpendaxConfig, outbox chan<- TradeEvent) *opendax {
 	return &opendax{
-		once:   newOnce(),
-		url:    config.URL,
-		outbox: outbox,
-		period: config.ReconnectPeriod * time.Second,
-		reqID:  atomic.Uint64{},
-		dialer: &wsDialWrapper{},
+		once:         newOnce(),
+		url:          config.URL,
+		outbox:       outbox,
+		period:       config.ReconnectPeriod * time.Second,
+		reqID:        atomic.Uint64{},
+		dialer:       &wsDialWrapper{},
+		tradeSampler: *newTradeSampler(config.TradeSampler),
 	}
 }
 
@@ -181,39 +183,42 @@ func (o *opendax) listen() {
 			continue
 		}
 
-		trEvent, err := o.parse(message)
+		tr, err := o.parse(message)
 		if err != nil {
 			loggerOpendax.Warn(err)
 			continue
 		}
 
 		// Skip system messages
-		if trEvent.Market == "" || trEvent.Price == decimal.Zero {
+		if tr.Market == "" || tr.Price == decimal.Zero {
 			continue
 		}
-		o.outbox <- *trEvent
+		if !o.tradeSampler.allow(tr) {
+			continue
+		}
+		o.outbox <- tr
 	}
 }
 
-func (o *opendax) parse(message []byte) (*TradeEvent, error) {
+func (o *opendax) parse(message []byte) (TradeEvent, error) {
 	if message == nil {
-		return &TradeEvent{}, nil
+		return TradeEvent{}, nil
 	}
 	parsedMsg, err := protocol.ParseRaw(message)
 	if err != nil {
-		return nil, err
+		return TradeEvent{}, err
 	}
 
 	tradeEvent, err := o.convertToTrade(parsedMsg.Args)
 	if errors.Is(err, errors.New(protocol.ParseError)) || parsedMsg.Method == protocol.MethodSubscribe || parsedMsg.
 		Method == protocol.EventSystem {
-		return &TradeEvent{}, nil
+		return TradeEvent{}, nil
 	}
 	if err != nil {
-		return nil, err
+		return TradeEvent{}, err
 	}
 
-	return tradeEvent, nil
+	return *tradeEvent, nil
 }
 
 func (o *opendax) convertToTrade(args []any) (*TradeEvent, error) {
