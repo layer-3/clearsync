@@ -28,6 +28,8 @@ func NewDriver(config Config, outbox chan<- TradeEvent) (Driver, error) {
 		return newSyncswap(config.Syncswap, outbox), nil
 	case DriverSushiswapV2Geth:
 		return newSushiswapV2Geth(config.SushiswapV2Geth, outbox), nil
+	case DriverSushiswapV3Api:
+		return newSushiswapV3Api(config.SushiswapV3Api, outbox), nil
 	case DriverSushiswapV3Geth:
 		return newSushiswapV3Geth(config.SushiswapV3Geth, outbox), nil
 	default:

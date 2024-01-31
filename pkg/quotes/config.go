@@ -17,6 +17,7 @@ type Config struct {
 	UniswapV3Geth   UniswapV3GethConfig   `yaml:"uniswap_v3_geth"`
 	Syncswap        SyncswapConfig        `yaml:"syncswap"`
 	SushiswapV2Geth SushiswapV2GethConfig `yaml:"sushiswap_v2_geth"`
+	SushiswapV3Api  SushiswapV3ApiConfig  `yaml:"sushiswap_v3_api"`
 	SushiswapV3Geth SushiswapV3GethConfig `yaml:"sushiswap_v3_geth"`
 }
 
@@ -79,6 +80,12 @@ type SushiswapV2GethConfig struct {
 	// FactoryAddress uses addresses from here: https://dev.sushi.com/docs/Products/Classic%20AMM/Deployment%20Addresses
 	FactoryAddress string             `yaml:"factory_address" env:"QUOTES_SUSHISWAP_V2_GETH_FACTORY_ADDRESS" env-default:"0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac"`
 	TradeSampler   TradeSamplerConfig `yaml:"trade_sampler"`
+}
+
+type SushiswapV3ApiConfig struct {
+	URL          string             `yaml:"url" env:"QUOTES_SUSHISWAP_V3_API_URL" env-default:"https://thegraph.com/hosted-service/subgraph/sushi-v3/v3-ethereum"`
+	WindowSize   time.Duration      `yaml:"window_size" env:"QUOTES_SUSHISWAP_V3_API_WINDOW_SIZE" env-default:"2s"`
+	TradeSampler TradeSamplerConfig `yaml:"trade_sampler"`
 }
 
 type SushiswapV3GethConfig struct {

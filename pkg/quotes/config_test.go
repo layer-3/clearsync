@@ -55,6 +55,11 @@ func TestNewConfigFromEnv(t *testing.T) {
 			expectErr: false,
 		},
 		{
+			input:     DriverSushiswapV3Api,
+			expect:    &SushiswapV3ApiConfig{},
+			expectErr: false,
+		},
+		{
 			input:     DriverSushiswapV3Geth,
 			expect:    &SushiswapV3GethConfig{},
 			expectErr: false,

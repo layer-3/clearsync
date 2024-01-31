@@ -100,6 +100,18 @@ func TestNewDriver(t *testing.T) {
 		assert.True(t, ok)
 	})
 
+	t.Run(DriverSushiswapV3Api.String(), func(t *testing.T) {
+		t.Parallel()
+
+		config := SushiswapV3ApiConfig{}
+		outbox := make(chan<- TradeEvent, 1)
+
+		priceFeeds, err := NewDriver(config, outbox)
+		require.NoError(t, err)
+		_, ok := priceFeeds.(*sushiswapV3Api)
+		assert.True(t, ok)
+	})
+
 	t.Run(DriverSushiswapV3Geth.String(), func(t *testing.T) {
 		t.Parallel()
 

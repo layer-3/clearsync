@@ -26,6 +26,7 @@ var (
 	DriverUniswapV3Geth   = DriverType{"uniswap_v3_geth"}
 	DriverSyncswap        = DriverType{"syncswap"}
 	DriverSushiswapV2Geth = DriverType{"sushiswap_v2_geth"}
+	DriverSushiswapV3Api  = DriverType{"sushiswap_v3_api"}
 	DriverSushiswapV3Geth = DriverType{"sushiswap_v3_geth"}
 )
 
@@ -39,6 +40,7 @@ func ToDriverType(raw string) (DriverType, error) {
 		DriverUniswapV3Geth.String():   DriverUniswapV3Geth,
 		DriverSyncswap.String():        DriverSyncswap,
 		DriverSushiswapV2Geth.String(): DriverSushiswapV2Geth,
+		DriverSushiswapV3Api.String():  DriverSushiswapV3Api,
 		DriverSushiswapV3Geth.String(): DriverSushiswapV3Geth,
 	}
 
