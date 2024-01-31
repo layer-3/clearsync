@@ -59,12 +59,19 @@ func main() {
 		panic(err)
 	}
 
-	market := quotes.Market{BaseUnit: "usdc", QuoteUnit: "weth"}
-	slog.Info("subscribing to market", "market", market)
-	if err = driver.Subscribe(market); err != nil {
-		panic(err)
+	markets := []quotes.Market{
+		// Add your markets here
+		{BaseUnit: "usdc", QuoteUnit: "weth"},
 	}
 
-	slog.Info("waiting for trades", "market", market)
+	for _, market := range markets {
+		if err = driver.Subscribe(market); err != nil {
+			slog.Warn("failed to subscribe", "market", market, "err", err)
+			continue
+		}
+		slog.Info("subscribed", "market", market)
+	}
+
+	slog.Info("waiting for trades")
 	<-outboxStop
 }

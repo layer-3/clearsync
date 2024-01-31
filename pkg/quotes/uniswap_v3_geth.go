@@ -271,7 +271,7 @@ func fetchAssets(assetsURL string) ([]poolToken, error) {
 
 func getAssetsFromCache(
 	market Market,
-	assets *sync.Map, /*use pointer here to avoid copying over mutex*/
+	assets *sync.Map, /*use pointer here to avoid copying mutex over*/
 ) (
 	baseToken poolToken,
 	quoteToken poolToken,
