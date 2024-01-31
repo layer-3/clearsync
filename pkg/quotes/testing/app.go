@@ -65,5 +65,6 @@ func main() {
 		panic(err)
 	}
 
+	slog.Info("waiting for trades", "market", market)
 	<-outboxStop
 }

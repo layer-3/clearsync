@@ -2,6 +2,7 @@ package quotes
 
 import (
 	"fmt"
+	"math/big"
 	"strings"
 	"sync"
 	"time"
@@ -45,7 +46,7 @@ func (s *sushiswapV2Geth) Start() error {
 	var startErr error
 	started := s.once.Start(func() {
 		if !(strings.HasPrefix(s.url, "ws://") || strings.HasPrefix(s.url, "wss://")) {
-			startErr = fmt.Errorf("%s (got '%s')", errInvalidWsURL, s.url)
+			startErr = fmt.Errorf("%w (got '%s')", errInvalidWsURL, s.url)
 			return
 		}
 
@@ -108,7 +109,7 @@ func (s *sushiswapV2Geth) Subscribe(market Market) error {
 
 	pool, err := s.getPool(market)
 	if err != nil {
-		return fmt.Errorf("failed to get pool for market %v: %s", symbol, err)
+		return fmt.Errorf("failed to get pool for market %v: %w", symbol, err)
 	}
 
 	sink := make(chan *isushiswap_v2_pair.ISushiswapV2PairSwap, 128)
@@ -135,21 +136,20 @@ func (s *sushiswapV2Geth) Subscribe(market Market) error {
 				var price decimal.Decimal
 				var amount decimal.Decimal
 
-				if swap.Amount0In != nil && swap.Amount1Out != nil {
+				switch {
+				case isValidNonZero(swap.Amount0In) && isValidNonZero(swap.Amount1Out):
 					amount1Out := decimal.NewFromBigInt(swap.Amount1Out, 0)
 					amount0In := decimal.NewFromBigInt(swap.Amount0In, 0)
-
 					takerType = TakerTypeSell
 					price = amount1Out.Div(amount0In)
 					amount = amount0In
-				} else if swap.Amount0Out != nil && swap.Amount1In != nil {
+				case isValidNonZero(swap.Amount0Out) && isValidNonZero(swap.Amount1In):
 					amount0Out := decimal.NewFromBigInt(swap.Amount0Out, 0)
 					amount1In := decimal.NewFromBigInt(swap.Amount1In, 0)
-
 					takerType = TakerTypeBuy
 					price = amount0Out.Div(amount1In)
 					amount = amount0Out
-				} else {
+				default:
 					loggerSushiswapV2Geth.Errorf("market %s: unknown swap type", symbol)
 					continue
 				}
@@ -212,4 +212,8 @@ func (s *sushiswapV2Geth) getPool(market Market) (*sushiswapV2GethPoolWrapper, e
 		baseToken:  baseToken,
 		quoteToken: quoteToken,
 	}, nil
+}
+
+func isValidNonZero(x *big.Int) bool {
+	return x != nil && x.Sign() != 0
 }
