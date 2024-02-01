@@ -29,6 +29,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	config.Driver = driverType
 
 	outbox := make(chan quotes.TradeEvent, 128)
 	outboxStop := make(chan struct{}, 1)
@@ -48,7 +49,7 @@ func main() {
 		outboxStop <- struct{}{}
 	}()
 
-	driver, err := quotes.NewDriver(driverType, config, outbox)
+	driver, err := quotes.NewDriver(config, outbox)
 	if err != nil {
 		panic(err)
 	}

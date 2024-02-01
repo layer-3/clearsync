@@ -7,6 +7,8 @@ import (
 )
 
 type Config struct {
+	Driver DriverType `yaml:"driver" env:"QUOTES_DRIVER" env-default:"binance"`
+
 	Binance       BinanceConfig       `yaml:"binance"`
 	Kraken        KrakenConfig        `yaml:"kraken"`
 	Opendax       OpendaxConfig       `yaml:"opendax"`

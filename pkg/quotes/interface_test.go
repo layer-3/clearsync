@@ -14,7 +14,7 @@ func TestNewDriver(t *testing.T) {
 		t.Parallel()
 
 		outbox := make(chan<- TradeEvent, 1)
-		priceFeeds, err := NewDriver(DriverBinance, Config{}, outbox)
+		priceFeeds, err := NewDriver(Config{Driver: DriverBinance}, outbox)
 		require.NoError(t, err)
 
 		_, ok := priceFeeds.(*binance)
@@ -25,7 +25,7 @@ func TestNewDriver(t *testing.T) {
 		t.Parallel()
 
 		outbox := make(chan<- TradeEvent, 1)
-		priceFeeds, err := NewDriver(DriverKraken, Config{}, outbox)
+		priceFeeds, err := NewDriver(Config{Driver: DriverKraken}, outbox)
 		require.NoError(t, err)
 
 		_, ok := priceFeeds.(*kraken)
@@ -36,7 +36,7 @@ func TestNewDriver(t *testing.T) {
 		t.Parallel()
 
 		outbox := make(chan<- TradeEvent, 1)
-		priceFeeds, err := NewDriver(DriverBitfaker, Config{}, outbox)
+		priceFeeds, err := NewDriver(Config{Driver: DriverBitfaker}, outbox)
 		require.NoError(t, err)
 
 		_, ok := priceFeeds.(*bitfaker)
@@ -47,7 +47,7 @@ func TestNewDriver(t *testing.T) {
 		t.Parallel()
 
 		outbox := make(chan<- TradeEvent, 1)
-		priceFeeds, err := NewDriver(DriverOpendax, Config{}, outbox)
+		priceFeeds, err := NewDriver(Config{Driver: DriverOpendax}, outbox)
 		require.NoError(t, err)
 
 		_, ok := priceFeeds.(*opendax)
@@ -58,7 +58,7 @@ func TestNewDriver(t *testing.T) {
 		t.Parallel()
 
 		outbox := make(chan<- TradeEvent, 1)
-		priceFeeds, err := NewDriver(DriverUniswapV3Api, Config{}, outbox)
+		priceFeeds, err := NewDriver(Config{Driver: DriverUniswapV3Api}, outbox)
 		require.NoError(t, err)
 
 		_, ok := priceFeeds.(*uniswapV3Api)
@@ -69,7 +69,7 @@ func TestNewDriver(t *testing.T) {
 		t.Parallel()
 
 		outbox := make(chan<- TradeEvent, 1)
-		priceFeeds, err := NewDriver(DriverUniswapV3Geth, Config{}, outbox)
+		priceFeeds, err := NewDriver(Config{Driver: DriverUniswapV3Geth}, outbox)
 		require.NoError(t, err)
 
 		_, ok := priceFeeds.(*uniswapV3Geth)

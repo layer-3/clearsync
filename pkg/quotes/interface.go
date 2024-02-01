@@ -10,8 +10,8 @@ type Driver interface {
 	Unsubscribe(market Market) error
 }
 
-func NewDriver(driver DriverType, config Config, outbox chan<- TradeEvent) (Driver, error) {
-	switch driver {
+func NewDriver(config Config, outbox chan<- TradeEvent) (Driver, error) {
+	switch config.Driver {
 	case DriverBinance:
 		return newBinance(config.Binance, outbox), nil
 	case DriverKraken:
@@ -27,6 +27,6 @@ func NewDriver(driver DriverType, config Config, outbox chan<- TradeEvent) (Driv
 	case DriverSyncswap:
 		return newSyncswap(config.Syncswap, outbox), nil
 	default:
-		return nil, fmt.Errorf("driver is not supported: %s", driver)
+		return nil, fmt.Errorf("driver is not supported: %s", config.Driver)
 	}
 }
