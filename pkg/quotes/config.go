@@ -18,9 +18,9 @@ type Config struct {
 	Syncswap      SyncswapConfig      `yaml:"syncswap"`
 }
 
-func NewConfig(filePath string) (Config, error) {
+func NewConfigFromFile(path string) (Config, error) {
 	var config Config
-	return config, cleanenv.ReadConfig(filePath, &config)
+	return config, cleanenv.ReadConfig(path, &config)
 }
 
 func NewConfigFromEnv() (Config, error) {
