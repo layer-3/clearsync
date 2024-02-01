@@ -30,7 +30,7 @@ func NewIndexAggregator(driversConfigs []DriverConfig, strategy priceCalculator,
 			continue
 		}
 
-		driver, err := NewDriver(NewConfigFromInterface(d), aggregated)
+		driver, err := NewDriver(ToConfig(d), aggregated)
 		if err != nil {
 			continue
 		}

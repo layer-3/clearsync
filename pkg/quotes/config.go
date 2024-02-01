@@ -33,7 +33,7 @@ func NewConfigFromEnv() (Config, error) {
 	return config, cleanenv.ReadEnv(&config)
 }
 
-func NewConfigFromInterface(driver DriverConfig) Config {
+func ToConfig(driver DriverConfig) Config {
 	config := Config{Driver: driver.DriverType()}
 
 	switch driver.DriverType() {

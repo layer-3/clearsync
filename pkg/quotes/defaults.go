@@ -4,13 +4,11 @@ import "github.com/shopspring/decimal"
 
 var (
 	DefaultWeightsMap = map[DriverType]decimal.Decimal{
-		DriverBinance:       decimal.NewFromInt(4),
-		DriverKraken:        decimal.NewFromInt(4),
-		DriverOpendax:       decimal.NewFromInt(1),
-		DriverBitfaker:      decimal.NewFromInt(1),
-		DriverUniswapV3Api:  decimal.NewFromInt(2),
-		DriverUniswapV3Geth: decimal.NewFromInt(2),
-		DriverSyncswap:      decimal.NewFromInt(2),
+		DriverKraken:        decimal.NewFromInt(15),
+		DriverBinance:       decimal.NewFromInt(20),
+		DriverUniswapV3Api:  decimal.NewFromInt(50),
+		DriverUniswapV3Geth: decimal.NewFromInt(50),
+		DriverSyncswap:      decimal.NewFromInt(50),
 	}
 
 	AllDrivers = []DriverConfig{
