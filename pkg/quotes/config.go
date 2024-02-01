@@ -32,6 +32,28 @@ func NewConfigFromEnv() (Config, error) {
 	return config, cleanenv.ReadEnv(&config)
 }
 
+func ToConfig(driver DriverConfig) Config {
+	config := Config{Driver: driver.DriverType()}
+
+	switch driver.DriverType() {
+	case DriverBinance:
+		config.Binance = driver.(BinanceConfig)
+	case DriverKraken:
+		config.Kraken = driver.(KrakenConfig)
+	case DriverOpendax:
+		config.Opendax = driver.(OpendaxConfig)
+	case DriverBitfaker:
+		config.Bitfaker = driver.(BitfakerConfig)
+	case DriverUniswapV3Api:
+		config.UniswapV3Api = driver.(UniswapV3ApiConfig)
+	case DriverUniswapV3Geth:
+		config.UniswapV3Geth = driver.(UniswapV3GethConfig)
+	case DriverSyncswap:
+		config.Syncswap = driver.(SyncswapConfig)
+	}
+	return config
+}
+
 type BinanceConfig struct {
 	TradeSampler TradeSamplerConfig `yaml:"trade_sampler"`
 }
