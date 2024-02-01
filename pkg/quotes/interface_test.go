@@ -79,11 +79,10 @@ func TestNewDriver(t *testing.T) {
 	t.Run(DriverSyncswap.String(), func(t *testing.T) {
 		t.Parallel()
 
-		config := SyncswapConfig{}
 		outbox := make(chan<- TradeEvent, 1)
-
-		priceFeeds, err := NewDriver(config, outbox)
+		priceFeeds, err := NewDriver(Config{Driver: DriverSyncswap}, outbox)
 		require.NoError(t, err)
+
 		_, ok := priceFeeds.(*syncswap)
 		assert.True(t, ok)
 	})
@@ -91,11 +90,10 @@ func TestNewDriver(t *testing.T) {
 	t.Run(DriverSushiswapV2Geth.String(), func(t *testing.T) {
 		t.Parallel()
 
-		config := SushiswapV2GethConfig{}
 		outbox := make(chan<- TradeEvent, 1)
-
-		priceFeeds, err := NewDriver(config, outbox)
+		priceFeeds, err := NewDriver(Config{Driver: DriverSushiswapV2Geth}, outbox)
 		require.NoError(t, err)
+
 		_, ok := priceFeeds.(*sushiswapV2Geth)
 		assert.True(t, ok)
 	})
@@ -103,11 +101,10 @@ func TestNewDriver(t *testing.T) {
 	t.Run(DriverSushiswapV3Api.String(), func(t *testing.T) {
 		t.Parallel()
 
-		config := SushiswapV3ApiConfig{}
 		outbox := make(chan<- TradeEvent, 1)
-
-		priceFeeds, err := NewDriver(config, outbox)
+		priceFeeds, err := NewDriver(Config{Driver: DriverSushiswapV3Api}, outbox)
 		require.NoError(t, err)
+
 		_, ok := priceFeeds.(*sushiswapV3Api)
 		assert.True(t, ok)
 	})
@@ -115,11 +112,10 @@ func TestNewDriver(t *testing.T) {
 	t.Run(DriverSushiswapV3Geth.String(), func(t *testing.T) {
 		t.Parallel()
 
-		config := SushiswapV3GethConfig{}
 		outbox := make(chan<- TradeEvent, 1)
-
-		priceFeeds, err := NewDriver(config, outbox)
+		priceFeeds, err := NewDriver(Config{Driver: DriverSushiswapV3Geth}, outbox)
 		require.NoError(t, err)
+
 		_, ok := priceFeeds.(*sushiswapV3Geth)
 		assert.True(t, ok)
 	})
