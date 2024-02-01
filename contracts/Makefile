@@ -12,6 +12,7 @@ ABIGEN_VERSION ?= 1.12.2
 
 BINDINGS = \
 	abi/itoken/ierc20.go \
+	abi/ierc1271/ierc1271.go \
 	abi/iadjudicator/iyellow_adjudicator.go \
 	abi/iuniswap_v3_factory/iuniswap_v3_factory.go \
 	abi/iuniswap_v3_pool/iuniswap_v3_pool.go \
@@ -46,6 +47,7 @@ compile: ${ROOT_DIR}/artifacts
 
 # <go_file>_GO = <struct_name> <path_to_artifact>
 ierc20_GO = IERC20 @openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol/IERC20Metadata.json
+ierc1271_GO = IERC1271 @openzeppelin/contracts/interfaces/IERC1271.sol/IERC1271.json
 iyellow_adjudicator_GO = IYellowAdjudicator contracts/interfaces/IYellowAdjudicator.sol/IYellowAdjudicator.json
 iuniswap_v3_factory_GO = IUniswapV3Factory @uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol/IUniswapV3Factory.json
 iuniswap_v3_pool_GO = IUniswapV3Pool @uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol/IUniswapV3Pool.json

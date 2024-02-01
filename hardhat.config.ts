@@ -187,6 +187,7 @@ const config: HardhatUserConfig = {
       '@syncswap/core-contracts/contracts/interfaces/factory/IBasePoolFactory.sol',
       '@syncswap/core-contracts/contracts/interfaces/pool/IBasePool.sol',
       '@syncswap/core-contracts/contracts/SyncSwapRouter.sol',
+      '@openzeppelin/contracts/interfaces/IERC1271.sol',
     ],
   },
 };
