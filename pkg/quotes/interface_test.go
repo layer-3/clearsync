@@ -10,13 +10,26 @@ import (
 func TestNewDriver(t *testing.T) {
 	t.Parallel()
 
+	t.Run(DriverIndex.String(), func(t *testing.T) {
+		t.Parallel()
+
+		config := IndexConfig{}
+		outbox := make(chan<- TradeEvent, 1)
+
+		priceFeeds, err := NewDriver(NewConfigFromInterface(config), outbox)
+		require.NoError(t, err)
+
+		_, ok := priceFeeds.(*binance)
+		assert.True(t, ok)
+	})
+
 	t.Run(DriverBinance.String(), func(t *testing.T) {
 		t.Parallel()
 
 		config := BinanceConfig{}
 		outbox := make(chan<- TradeEvent, 1)
 
-		priceFeeds, err := NewDriver(ToConfig(config), outbox)
+		priceFeeds, err := NewDriver(NewConfigFromInterface(config), outbox)
 		require.NoError(t, err)
 
 		_, ok := priceFeeds.(*binance)
@@ -29,7 +42,7 @@ func TestNewDriver(t *testing.T) {
 		config := KrakenConfig{}
 		outbox := make(chan<- TradeEvent, 1)
 
-		priceFeeds, err := NewDriver(ToConfig(config), outbox)
+		priceFeeds, err := NewDriver(NewConfigFromInterface(config), outbox)
 		require.NoError(t, err)
 
 		_, ok := priceFeeds.(*kraken)
@@ -42,7 +55,7 @@ func TestNewDriver(t *testing.T) {
 		config := BitfakerConfig{}
 		outbox := make(chan<- TradeEvent, 1)
 
-		priceFeeds, err := NewDriver(ToConfig(config), outbox)
+		priceFeeds, err := NewDriver(NewConfigFromInterface(config), outbox)
 		require.NoError(t, err)
 
 		_, ok := priceFeeds.(*bitfaker)
@@ -55,7 +68,7 @@ func TestNewDriver(t *testing.T) {
 		config := OpendaxConfig{}
 		outbox := make(chan<- TradeEvent, 1)
 
-		priceFeeds, err := NewDriver(ToConfig(config), outbox)
+		priceFeeds, err := NewDriver(NewConfigFromInterface(config), outbox)
 		require.NoError(t, err)
 
 		_, ok := priceFeeds.(*opendax)
@@ -68,7 +81,7 @@ func TestNewDriver(t *testing.T) {
 		config := UniswapV3ApiConfig{}
 		outbox := make(chan<- TradeEvent, 1)
 
-		priceFeeds, err := NewDriver(ToConfig(config), outbox)
+		priceFeeds, err := NewDriver(NewConfigFromInterface(config), outbox)
 		require.NoError(t, err)
 
 		_, ok := priceFeeds.(*uniswapV3Api)
@@ -81,7 +94,7 @@ func TestNewDriver(t *testing.T) {
 		config := UniswapV3GethConfig{}
 		outbox := make(chan<- TradeEvent, 1)
 
-		priceFeeds, err := NewDriver(ToConfig(config), outbox)
+		priceFeeds, err := NewDriver(NewConfigFromInterface(config), outbox)
 		require.NoError(t, err)
 
 		_, ok := priceFeeds.(*uniswapV3Geth)

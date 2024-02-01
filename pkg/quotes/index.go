@@ -21,7 +21,7 @@ type priceCalculator interface {
 }
 
 // NewIndexAggregator creates a new instance of IndexAggregator.
-func NewIndexAggregator(driversConfigs []Config, strategy priceCalculator, outbox chan<- TradeEvent) Driver {
+func NewIndexAggregator(driversConfigs []DriverConfig, strategy priceCalculator, outbox chan<- TradeEvent) Driver {
 	aggregated := make(chan TradeEvent, 128)
 
 	var drivers []Driver
@@ -29,7 +29,8 @@ func NewIndexAggregator(driversConfigs []Config, strategy priceCalculator, outbo
 		if d.DriverType() == DriverIndex {
 			continue
 		}
-		driver, err := NewDriver(d, aggregated)
+
+		driver, err := NewDriver(NewConfigFromInterface(d), aggregated)
 		if err != nil {
 			continue
 		}

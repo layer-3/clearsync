@@ -13,6 +13,8 @@ type Driver interface {
 
 func NewDriver(config Config, outbox chan<- TradeEvent) (Driver, error) {
 	switch config.Driver {
+	case DriverIndex:
+		return newIndex(config.Index, outbox), nil
 	case DriverBinance:
 		return newBinance(config.Binance, outbox), nil
 	case DriverKraken:

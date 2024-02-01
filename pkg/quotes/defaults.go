@@ -13,7 +13,7 @@ var (
 		DriverSyncswap:      decimal.NewFromInt(2),
 	}
 
-	AllDrivers = []Config{
+	AllDrivers = []DriverConfig{
 		KrakenConfig{},
 		BinanceConfig{},
 		UniswapV3ApiConfig{},

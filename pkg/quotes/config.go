@@ -16,6 +16,7 @@ type Config struct {
 	UniswapV3Api  UniswapV3ApiConfig  `yaml:"uniswap_v3_api"`
 	UniswapV3Geth UniswapV3GethConfig `yaml:"uniswap_v3_geth"`
 	Syncswap      SyncswapConfig      `yaml:"syncswap"`
+	Index         IndexConfig         `yaml:"index"`
 }
 
 type DriverConfig interface {
@@ -32,10 +33,12 @@ func NewConfigFromEnv() (Config, error) {
 	return config, cleanenv.ReadEnv(&config)
 }
 
-func ToConfig(driver DriverConfig) Config {
+func NewConfigFromInterface(driver DriverConfig) Config {
 	config := Config{Driver: driver.DriverType()}
 
 	switch driver.DriverType() {
+	case DriverIndex:
+		config.Index = driver.(IndexConfig)
 	case DriverBinance:
 		config.Binance = driver.(BinanceConfig)
 	case DriverKraken:
