@@ -16,19 +16,20 @@ func main() {
 		http.ListenAndServe("localhost:8080", nil)
 	}()
 
-	driverName := quotes.DriverBinance
+	driverType := quotes.DriverBinance
 	if len(os.Args) == 2 {
 		parsedDriver, err := quotes.ToDriverType(os.Args[1])
 		if err != nil {
 			panic(err)
 		}
-		driverName = parsedDriver
+		driverType = parsedDriver
 	}
 
-	config, err := quotes.NewConfigFromEnv(driverName)
+	config, err := quotes.NewConfigFromEnv()
 	if err != nil {
 		panic(err)
 	}
+	config.Driver = driverType
 
 	outbox := make(chan quotes.TradeEvent, 128)
 	outboxStop := make(chan struct{}, 1)
@@ -53,7 +54,7 @@ func main() {
 		panic(err)
 	}
 
-	slog.Info("starting driver", "driver", driverName)
+	slog.Info("starting driver", "driver", driverType)
 	if err := driver.Start(); err != nil {
 		panic(err)
 	}

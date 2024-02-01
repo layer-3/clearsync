@@ -11,22 +11,22 @@ type Driver interface {
 }
 
 func NewDriver(config Config, outbox chan<- TradeEvent) (Driver, error) {
-	switch config.DriverType() {
+	switch config.Driver {
 	case DriverBinance:
-		return newBinance(config.(BinanceConfig), outbox), nil
+		return newBinance(config.Binance, outbox), nil
 	case DriverKraken:
-		return newKraken(config.(KrakenConfig), outbox), nil
+		return newKraken(config.Kraken, outbox), nil
 	case DriverOpendax:
-		return newOpendax(config.(OpendaxConfig), outbox), nil
+		return newOpendax(config.Opendax, outbox), nil
 	case DriverBitfaker:
-		return newBitfaker(config.(BitfakerConfig), outbox), nil
+		return newBitfaker(config.Bitfaker, outbox), nil
 	case DriverUniswapV3Api:
-		return newUniswapV3Api(config.(UniswapV3ApiConfig), outbox), nil
+		return newUniswapV3Api(config.UniswapV3Api, outbox), nil
 	case DriverUniswapV3Geth:
-		return newUniswapV3Geth(config.(UniswapV3GethConfig), outbox), nil
+		return newUniswapV3Geth(config.UniswapV3Geth, outbox), nil
 	case DriverSyncswap:
-		return newSyncswap(config.(SyncswapConfig), outbox), nil
+		return newSyncswap(config.Syncswap, outbox), nil
 	default:
-		return nil, fmt.Errorf("driver is not supported: %s", config.DriverType())
+		return nil, fmt.Errorf("driver is not supported: %s", config.Driver)
 	}
 }
