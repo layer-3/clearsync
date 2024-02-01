@@ -37,6 +37,15 @@ const config: HardhatUserConfig = {
           },
         },
       },
+      {
+        version: '0.6.12', // for Sushiswap v2
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
+      },
     ],
   },
   typechain: {
@@ -187,6 +196,10 @@ const config: HardhatUserConfig = {
       '@syncswap/core-contracts/contracts/interfaces/factory/IBasePoolFactory.sol',
       '@syncswap/core-contracts/contracts/interfaces/pool/IBasePool.sol',
       '@syncswap/core-contracts/contracts/SyncSwapRouter.sol',
+      '@sushiswap/v2-core/contracts/UniswapV2Factory.sol',
+      '@sushiswap/v2-core/contracts/UniswapV2Pair.sol',
+      '@sushiswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol',
+      '@sushiswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol',
       '@openzeppelin/contracts/interfaces/IERC1271.sol',
     ],
   },

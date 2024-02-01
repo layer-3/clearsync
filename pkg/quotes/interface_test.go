@@ -75,4 +75,48 @@ func TestNewDriver(t *testing.T) {
 		_, ok := priceFeeds.(*uniswapV3Geth)
 		assert.True(t, ok)
 	})
+
+	t.Run(DriverSyncswap.String(), func(t *testing.T) {
+		t.Parallel()
+
+		outbox := make(chan<- TradeEvent, 1)
+		priceFeeds, err := NewDriver(Config{Driver: DriverSyncswap}, outbox)
+		require.NoError(t, err)
+
+		_, ok := priceFeeds.(*syncswap)
+		assert.True(t, ok)
+	})
+
+	t.Run(DriverSushiswapV2Geth.String(), func(t *testing.T) {
+		t.Parallel()
+
+		outbox := make(chan<- TradeEvent, 1)
+		priceFeeds, err := NewDriver(Config{Driver: DriverSushiswapV2Geth}, outbox)
+		require.NoError(t, err)
+
+		_, ok := priceFeeds.(*sushiswapV2Geth)
+		assert.True(t, ok)
+	})
+
+	t.Run(DriverSushiswapV3Api.String(), func(t *testing.T) {
+		t.Parallel()
+
+		outbox := make(chan<- TradeEvent, 1)
+		priceFeeds, err := NewDriver(Config{Driver: DriverSushiswapV3Api}, outbox)
+		require.NoError(t, err)
+
+		_, ok := priceFeeds.(*sushiswapV3Api)
+		assert.True(t, ok)
+	})
+
+	t.Run(DriverSushiswapV3Geth.String(), func(t *testing.T) {
+		t.Parallel()
+
+		outbox := make(chan<- TradeEvent, 1)
+		priceFeeds, err := NewDriver(Config{Driver: DriverSushiswapV3Geth}, outbox)
+		require.NoError(t, err)
+
+		_, ok := priceFeeds.(*sushiswapV3Geth)
+		assert.True(t, ok)
+	})
 }

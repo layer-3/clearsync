@@ -15,35 +15,35 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-var loggerUniswapV3Api = log.Logger("uniswap_v3_api")
+var loggerSushiswapV3Api = log.Logger("sushiswap_v3_api")
 
-type uniswapV3Api struct {
+type sushiswapV3Api struct {
 	once         *once
 	url          string
 	outbox       chan<- TradeEvent
 	windowSize   time.Duration
 	streams      sync.Map
-	tradeSampler *tradeSampler
+	tradeSampler tradeSampler
 }
 
-func newUniswapV3Api(config UniswapV3ApiConfig, outbox chan<- TradeEvent) *uniswapV3Api {
-	return &uniswapV3Api{
+func newSushiswapV3Api(config SushiswapV3ApiConfig, outbox chan<- TradeEvent) *sushiswapV3Api {
+	return &sushiswapV3Api{
 		once:         newOnce(),
 		url:          config.URL,
 		outbox:       outbox,
 		windowSize:   config.WindowSize,
-		tradeSampler: newTradeSampler(config.TradeSampler),
+		tradeSampler: *newTradeSampler(config.TradeSampler),
 	}
 }
 
-func (u *uniswapV3Api) Start() error {
+func (u *sushiswapV3Api) Start() error {
 	if started := u.once.Start(func() {}); !started {
 		return errAlreadyStarted
 	}
 	return nil
 }
 
-func (u *uniswapV3Api) Stop() error {
+func (u *sushiswapV3Api) Stop() error {
 	stopped := u.once.Stop(func() {
 		u.streams.Range(func(market, stream any) bool {
 			stopCh := stream.(chan struct{})
@@ -61,7 +61,7 @@ func (u *uniswapV3Api) Stop() error {
 	return nil
 }
 
-func (u *uniswapV3Api) Subscribe(market Market) error {
+func (u *sushiswapV3Api) Subscribe(market Market) error {
 	if !u.once.Subscribe() {
 		return errNotStarted
 	}
@@ -89,7 +89,7 @@ func (u *uniswapV3Api) Subscribe(market Market) error {
 				stopCh := stream.(chan struct{})
 				select {
 				case <-stopCh:
-					loggerUniswapV3Api.Infof("market %s is stopped", symbol)
+					loggerSushiswapV3Api.Infof("market %s is stopped", symbol)
 					return
 				default:
 				}
@@ -101,7 +101,7 @@ func (u *uniswapV3Api) Subscribe(market Market) error {
 				swaps, err := u.fetchSwaps(market, from, to)
 				if err != nil {
 					err = fmt.Errorf("%s: %w", market, err)
-					loggerUniswapV3Api.Warn(err)
+					loggerSushiswapV3Api.Warn(err)
 				}
 
 				for _, swap := range swaps {
@@ -109,7 +109,7 @@ func (u *uniswapV3Api) Subscribe(market Market) error {
 					price := calculatePrice(swap.SqrtPriceX96, swap.Token0.Decimals, swap.Token1.Decimals)
 					createdAt, err := swap.time()
 					if err != nil {
-						loggerUniswapV3Api.Warnf("failed to get swap timestamp: %s", err)
+						loggerSushiswapV3Api.Warnf("failed to get swap timestamp: %s", err)
 					}
 					takerType := TakerTypeBuy
 					if swap.Amount0.Sign() < 0 {
@@ -120,7 +120,7 @@ func (u *uniswapV3Api) Subscribe(market Market) error {
 					}
 
 					tr := TradeEvent{
-						Source:    DriverUniswapV3Api,
+						Source:    DriverSushiswapV3Api,
 						Market:    market.QuoteUnit,
 						Price:     price,
 						Amount:    amount,
@@ -144,7 +144,7 @@ func (u *uniswapV3Api) Subscribe(market Market) error {
 	return nil
 }
 
-func (u *uniswapV3Api) Unsubscribe(market Market) error {
+func (u *sushiswapV3Api) Unsubscribe(market Market) error {
 	if !u.once.Unsubscribe() {
 		return errNotStarted
 	}
@@ -162,20 +162,20 @@ func (u *uniswapV3Api) Unsubscribe(market Market) error {
 	return nil
 }
 
-const tokenTemplate = `query {
+const sushiswapV3ApiTokenTemplate = `query {
   pools(where: {token0_: {symbol:"%s"}, token1_: {symbol:"%s"}}) {
     token0 { symbol }
     token1 { symbol }
   }
 }`
 
-func (u *uniswapV3Api) isMarketAvailable(market Market) (bool, error) {
-	query := fmt.Sprintf(tokenTemplate,
+func (u *sushiswapV3Api) isMarketAvailable(market Market) (bool, error) {
+	query := fmt.Sprintf(sushiswapV3ApiTokenTemplate,
 		strings.ToUpper(market.BaseUnit),
 		strings.ToUpper(market.QuoteUnit),
 	)
 
-	pools, err := runUniswapV3GraphqlRequest[uniswapV3Pools](u.url, query)
+	pools, err := runSushiswapV3GraphqlRequest[sushiswapV3Pools](u.url, query)
 	if err != nil {
 		return false, err
 	}
@@ -183,8 +183,8 @@ func (u *uniswapV3Api) isMarketAvailable(market Market) (bool, error) {
 }
 
 // NOTE: Query is used here because
-// Uniswap V3 GraphQL API does not support Subscriptions
-const uniswapV3ApiSwapsTemplate = `query {
+// Sushiswap V3 GraphQL API does not support Subscriptions
+const sushiswapV3ApiSwapsTemplate = `query {
   swaps(
     orderBy: timestamp
     orderDirection: desc
@@ -204,23 +204,23 @@ const uniswapV3ApiSwapsTemplate = `query {
   }
 }`
 
-func (u *uniswapV3Api) fetchSwaps(market Market, from, to time.Time) ([]uniswapV3Swap, error) {
-	query := fmt.Sprintf(uniswapV3ApiSwapsTemplate,
+func (u *sushiswapV3Api) fetchSwaps(market Market, from, to time.Time) ([]sushiswapV3Swap, error) {
+	query := fmt.Sprintf(sushiswapV3ApiSwapsTemplate,
 		from.Unix(),
 		to.Unix(),
 		strings.ToUpper(market.BaseUnit),
 		strings.ToUpper(market.QuoteUnit),
 	)
 
-	swaps, err := runUniswapV3GraphqlRequest[uniswapV3Swaps](u.url, query)
+	swaps, err := runSushiswapV3GraphqlRequest[sushiswapV3Swaps](u.url, query)
 	if err != nil {
 		return nil, err
 	}
 	return swaps.Swaps, nil
 }
 
-func runUniswapV3GraphqlRequest[T uniswapV3Pools | uniswapV3Swaps](url, query string) (*T, error) {
-	requestBody, err := json.Marshal(uniswapV3GraphqlRequest{Query: query})
+func runSushiswapV3GraphqlRequest[T sushiswapV3Pools | sushiswapV3Swaps](url, query string) (*T, error) {
+	requestBody, err := json.Marshal(sushiswapV3GraphqlRequest{Query: query})
 	if err != nil {
 		return nil, err
 	}
@@ -232,7 +232,7 @@ func runUniswapV3GraphqlRequest[T uniswapV3Pools | uniswapV3Swaps](url, query st
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
-			loggerUniswapV3Api.Errorf("error closing HTTP response body: %v", err)
+			loggerSushiswapV3Api.Errorf("error closing HTTP response body: %v", err)
 		}
 	}(resp.Body)
 
@@ -241,28 +241,28 @@ func runUniswapV3GraphqlRequest[T uniswapV3Pools | uniswapV3Swaps](url, query st
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 
-	var parsed uniswapV3GraphqlResponse[T]
+	var parsed sushiswapV3GraphqlResponse[T]
 	if err := json.Unmarshal(body, &parsed); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal response: %w (body: `%s`)", err, string(body))
 	}
 
 	return &parsed.Data, nil
 }
 
-type uniswapV3GraphqlRequest struct {
+type sushiswapV3GraphqlRequest struct {
 	Query string `json:"query"`
 }
 
-type uniswapV3GraphqlResponse[T any] struct {
+type sushiswapV3GraphqlResponse[T any] struct {
 	Data   T      `json:"data"`
 	Errors string `json:"errors"`
 }
 
-type uniswapV3Pools struct {
-	Pools []uniswapV3Market `json:"pools"`
+type sushiswapV3Pools struct {
+	Pools []sushiswapV3Market `json:"pools"`
 }
 
-type uniswapV3Market struct {
+type sushiswapV3Market struct {
 	Token0 struct {
 		Symbol string `json:"symbol"`
 	} `json:"token0"`
@@ -271,35 +271,21 @@ type uniswapV3Market struct {
 	} `json:"token"`
 }
 
-type uniswapV3Swaps struct {
-	Swaps []uniswapV3Swap `json:"swaps"`
+type sushiswapV3Swaps struct {
+	Swaps []sushiswapV3Swap `json:"swaps"`
 }
 
-type uniswapV3Swap struct {
-	Timestamp    string                   `json:"timestamp"`
-	Token0       uniswapV3ApiGraphqlToken `json:"token0"`
-	Token1       uniswapV3ApiGraphqlToken `json:"token1"`
-	Amount0      decimal.Decimal          `json:"amount0"`
-	Amount1      decimal.Decimal          `json:"amount1"`
-	SqrtPriceX96 decimal.Decimal          `json:"sqrtPriceX96"`
-}
-
-var priceX96 = decimal.NewFromInt(2).Pow(decimal.NewFromInt(96))
-var ten = decimal.NewFromInt(10)
-
-// calculatePrice method calculates the price per token at which the swap was performed.
-// General formula is as follows: ((sqrtPriceX96 / 2**96)**2) / (10**decimal1 / 10**decimal0)
-// See the math explained at https://blog.uniswap.org/uniswap-v3-math-primer
-func calculatePrice(sqrtPriceX96, baseTokenDecimals, quoteTokenDecimals decimal.Decimal) decimal.Decimal {
-	decimals := quoteTokenDecimals.Sub(baseTokenDecimals)
-
-	numerator := sqrtPriceX96.Div(priceX96).Pow(decimal.NewFromInt(2))
-	denominator := ten.Pow(decimals)
-	return numerator.Div(denominator)
+type sushiswapV3Swap struct {
+	Timestamp    string                     `json:"timestamp"`
+	Token0       sushiswapV3ApiGraphqlToken `json:"token0"`
+	Token1       sushiswapV3ApiGraphqlToken `json:"token1"`
+	Amount0      decimal.Decimal            `json:"amount0"`
+	Amount1      decimal.Decimal            `json:"amount1"`
+	SqrtPriceX96 decimal.Decimal            `json:"sqrtPriceX96"`
 }
 
 // time method parses string representation of Unix timestamp into a stdlib Time object.
-func (swap *uniswapV3Swap) time() (time.Time, error) {
+func (swap *sushiswapV3Swap) time() (time.Time, error) {
 	unixTimestamp, err := strconv.ParseInt(swap.Timestamp, 10, 64)
 	if err != nil {
 		return time.Now(), err
@@ -307,6 +293,6 @@ func (swap *uniswapV3Swap) time() (time.Time, error) {
 	return time.Unix(unixTimestamp, 0), nil
 }
 
-type uniswapV3ApiGraphqlToken struct {
+type sushiswapV3ApiGraphqlToken struct {
 	Decimals decimal.Decimal `json:"decimals"`
 }

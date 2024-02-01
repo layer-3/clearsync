@@ -2,29 +2,29 @@ package quotes
 
 import (
 	"fmt"
+	"math/big"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/event"
 	"github.com/ipfs/go-log/v2"
 	"github.com/shopspring/decimal"
 
-	"github.com/layer-3/clearsync/pkg/abi/isyncswap_factory"
-	"github.com/layer-3/clearsync/pkg/abi/isyncswap_pool"
+	"github.com/layer-3/clearsync/pkg/abi/isushiswap_v2_factory"
+	"github.com/layer-3/clearsync/pkg/abi/isushiswap_v2_pair"
 )
 
-var loggerSyncswap = log.Logger("syncswap")
+var loggerSushiswapV2Geth = log.Logger("sushiswap_v2_geth")
 
-type syncswap struct {
-	once                      *once
-	url                       string
-	assetsURL                 string
-	classicPoolFactoryAddress string
-	client                    *ethclient.Client
-	factory                   *isyncswap_factory.ISyncSwapFactory
+type sushiswapV2Geth struct {
+	once           *once
+	url            string
+	assetsURL      string
+	factoryAddress string
+	client         *ethclient.Client
+	factory        *isushiswap_v2_factory.ISushiswapV2Factory
 
 	outbox       chan<- TradeEvent
 	streams      sync.Map
@@ -32,23 +32,23 @@ type syncswap struct {
 	tradeSampler tradeSampler
 }
 
-func newSyncswap(config SyncswapConfig, outbox chan<- TradeEvent) Driver {
-	return &syncswap{
-		once:                      newOnce(),
-		url:                       config.URL,
-		assetsURL:                 config.AssetsURL,
-		classicPoolFactoryAddress: config.ClassicPoolFactoryAddress,
+func newSushiswapV2Geth(config SushiswapV2GethConfig, outbox chan<- TradeEvent) Driver {
+	return &sushiswapV2Geth{
+		once:           newOnce(),
+		url:            config.URL,
+		assetsURL:      config.AssetsURL,
+		factoryAddress: config.FactoryAddress,
 
 		outbox:       outbox,
 		tradeSampler: *newTradeSampler(config.TradeSampler),
 	}
 }
 
-func (s *syncswap) Start() error {
+func (s *sushiswapV2Geth) Start() error {
 	var startErr error
 	started := s.once.Start(func() {
 		if !(strings.HasPrefix(s.url, "ws://") || strings.HasPrefix(s.url, "wss://")) {
-			startErr = fmt.Errorf("%s (got '%s')", errInvalidWsURL, s.url)
+			startErr = fmt.Errorf("%w (got '%s')", errInvalidWsURL, s.url)
 			return
 		}
 
@@ -59,8 +59,8 @@ func (s *syncswap) Start() error {
 		}
 		s.client = client
 
-		classicPoolFactoryAddress := common.HexToAddress(s.classicPoolFactoryAddress)
-		factory, err := isyncswap_factory.NewISyncSwapFactory(classicPoolFactoryAddress, client)
+		factoryAddress := common.HexToAddress(s.factoryAddress)
+		factory, err := isushiswap_v2_factory.NewISushiswapV2Factory(factoryAddress, client)
 		if err != nil {
 			startErr = fmt.Errorf("failed to instantiate a factory contract: %w", err)
 			return
@@ -83,7 +83,7 @@ func (s *syncswap) Start() error {
 	return startErr
 }
 
-func (s *syncswap) Stop() error {
+func (s *sushiswapV2Geth) Stop() error {
 	stopped := s.once.Stop(func() {
 		s.streams.Range(func(market, stream any) bool {
 			err := s.Unsubscribe(market.(Market))
@@ -99,7 +99,7 @@ func (s *syncswap) Stop() error {
 	return nil
 }
 
-func (s *syncswap) Subscribe(market Market) error {
+func (s *sushiswapV2Geth) Subscribe(market Market) error {
 	if !s.once.Subscribe() {
 		return errNotStarted
 	}
@@ -111,10 +111,10 @@ func (s *syncswap) Subscribe(market Market) error {
 
 	pool, err := s.getPool(market)
 	if err != nil {
-		return fmt.Errorf("failed to get pool for market %v: %s", symbol, err)
+		return fmt.Errorf("failed to get pool for market %v: %w", symbol, err)
 	}
 
-	sink := make(chan *isyncswap_pool.ISyncSwapPoolSwap, 128)
+	sink := make(chan *isushiswap_v2_pair.ISushiswapV2PairSwap, 128)
 	sub, err := pool.contract.WatchSwap(nil, sink, []common.Address{}, []common.Address{})
 	if err != nil {
 		return fmt.Errorf("failed to subscribe to swaps for market %s: %w", market, err)
@@ -125,12 +125,12 @@ func (s *syncswap) Subscribe(market Market) error {
 		for {
 			select {
 			case err := <-sub.Err():
-				loggerSyncswap.Errorf("market %s: %s", symbol, err)
+				loggerSushiswapV2Geth.Errorf("market %s: %s", symbol, err)
 				if _, ok := s.streams.Load(market); !ok {
 					break // market was unsubscribed earlier
 				}
 				if err := s.Subscribe(market); err != nil {
-					loggerSyncswap.Errorf("market %s: failed to resubscribe: %s", symbol, err)
+					loggerSushiswapV2Geth.Errorf("market %s: failed to resubscribe: %s", symbol, err)
 				}
 				return
 			case swap := <-sink:
@@ -138,28 +138,27 @@ func (s *syncswap) Subscribe(market Market) error {
 				var price decimal.Decimal
 				var amount decimal.Decimal
 
-				if swap.Amount0In != nil && swap.Amount1Out != nil {
+				switch {
+				case isValidNonZero(swap.Amount0In) && isValidNonZero(swap.Amount1Out):
 					amount1Out := decimal.NewFromBigInt(swap.Amount1Out, 0)
 					amount0In := decimal.NewFromBigInt(swap.Amount0In, 0)
-
 					takerType = TakerTypeSell
 					price = amount1Out.Div(amount0In)
 					amount = amount0In
-				} else if swap.Amount0Out != nil && swap.Amount1In != nil {
+				case isValidNonZero(swap.Amount0Out) && isValidNonZero(swap.Amount1In):
 					amount0Out := decimal.NewFromBigInt(swap.Amount0Out, 0)
 					amount1In := decimal.NewFromBigInt(swap.Amount1In, 0)
-
 					takerType = TakerTypeBuy
 					price = amount0Out.Div(amount1In)
 					amount = amount0Out
-				} else {
-					loggerSyncswap.Errorf("market %s: unknown swap type", symbol)
+				default:
+					loggerSushiswapV2Geth.Errorf("market %s: unknown swap type", symbol)
 					continue
 				}
 
 				amount = amount.Abs()
 				tr := TradeEvent{
-					Source:    DriverSyncswap,
+					Source:    DriverSushiswapV2Geth,
 					Market:    symbol,
 					Price:     price,
 					Amount:    amount,
@@ -180,30 +179,17 @@ func (s *syncswap) Subscribe(market Market) error {
 	return nil
 }
 
-func (s *syncswap) Unsubscribe(market Market) error {
-	if !s.once.Unsubscribe() {
-		return errNotStarted
-	}
-
-	stream, ok := s.streams.Load(market)
-	if !ok {
-		return fmt.Errorf("%s: %w", market, errNotSubbed)
-	}
-
-	sub := stream.(event.Subscription)
-	sub.Unsubscribe()
-
-	s.streams.Delete(market)
-	return nil
+func (s *sushiswapV2Geth) Unsubscribe(market Market) error {
+	panic("implement me")
 }
 
-type syncswapPoolWrapper struct {
-	contract   *isyncswap_pool.ISyncSwapPool
+type sushiswapV2GethPoolWrapper struct {
+	contract   *isushiswap_v2_pair.ISushiswapV2Pair
 	baseToken  poolToken
 	quoteToken poolToken
 }
 
-func (s *syncswap) getPool(market Market) (*syncswapPoolWrapper, error) {
+func (s *sushiswapV2Geth) getPool(market Market) (*sushiswapV2GethPoolWrapper, error) {
 	baseToken, quoteToken, err := getAssetsFromCache(market, &s.assets)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tokens: %w", err)
@@ -211,7 +197,7 @@ func (s *syncswap) getPool(market Market) (*syncswapPoolWrapper, error) {
 
 	var poolAddress common.Address
 	zeroAddress := common.HexToAddress("0x0")
-	poolAddress, err = s.factory.GetPool(
+	poolAddress, err = s.factory.GetPair(
 		nil,
 		common.HexToAddress(baseToken.Address),
 		common.HexToAddress(quoteToken.Address),
@@ -222,15 +208,19 @@ func (s *syncswap) getPool(market Market) (*syncswapPoolWrapper, error) {
 	if poolAddress == zeroAddress {
 		return nil, fmt.Errorf("pool for market %s does not exist", market)
 	}
-	loggerSyncswap.Infof("got pool %s for market %s", poolAddress, market)
+	loggerSushiswapV2Geth.Infof("got pool %s for market %s", poolAddress, market)
 
-	poolContract, err := isyncswap_pool.NewISyncSwapPool(poolAddress, s.client)
+	poolContract, err := isushiswap_v2_pair.NewISushiswapV2Pair(poolAddress, s.client)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build Syncswap pool: %w", err)
+		return nil, fmt.Errorf("failed to build Sushiswap v2 pool: %w", err)
 	}
-	return &syncswapPoolWrapper{
+	return &sushiswapV2GethPoolWrapper{
 		contract:   poolContract,
 		baseToken:  baseToken,
 		quoteToken: quoteToken,
 	}, nil
+}
+
+func isValidNonZero(x *big.Int) bool {
+	return x != nil && x.Sign() != 0
 }
