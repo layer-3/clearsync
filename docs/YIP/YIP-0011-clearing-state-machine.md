@@ -140,7 +140,6 @@ stateDiagram-v2
     Funded --> Operational: PostfundAgreed
     Funded --> Funded: ProcessMarginCall
     Funded --> PreOpChallenging: Failed
-    Funded --> PreOpChallenging: ClearingTimeout
 
     Operational --> ActiveSettlement: SettlementStarted
     Operational --> Finalizing: Finalize
@@ -209,6 +208,7 @@ The first state of active clearing process, mostly focused on validation and iss
 2. Notifies user about state update
 3. Checks for sufficient requirements for channel opening
 4. Issues prefund nitro state
+5. Runs clearing reactor
 
 ##### Responder Action
 
@@ -245,23 +245,23 @@ Indicates that peers agreed on prefund nitro state and channel is ready for fund
 
 1. Updates state in Storage
 2. Notifies user about state update
-3. Launches `InitiatorFundingTimeout` timer
-4. Funds (if auto fund is ON)
+3. Funds (if auto fund is ON)
+4. Starts `ClearingTimeout` timer
 
 ##### Responder Action
 
 1. Updates state in Storage
 2. Notifies user about state update
-3. Launches `InitiatorFundingTimeout` timer
+3. Starts `ClearingTimeout` timer
 
 ##### Transitions
 
-| Event                   | State                    | Description                                                                                                                           |
-|-------------------------|--------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
-| InitiatorFunded         | InitiatorFunded          | External event that indicates that Initiator fulfilled his part of the deal by funding channel                                        |
-| Failed                  | Failed                   | Internal event that could occur on any error during action execution                                                                  |
-| InitiatorFundingTimeout | Failed                   | External event that indicates that Initiator haven't fulfilled his part of the deal on time, so there is no need to keep channel open |
-| ChallengeRegistered     | PreOpChallengeRegistered | External event that indicates Challenge was started on blockchain                                                                     |
+| Event               | State           | Description                                                                                                                           |
+|---------------------|-----------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| InitiatorFunded     | InitiatorFunded | External event that indicates that Initiator fulfilled his part of the deal by funding channel                                        |
+| Failed              | Failed          | Internal event that could occur on any error during action execution                                                                  |
+| ClearingTimeout     | Failed          | External event that indicates that Initiator haven't fulfilled his part of the deal on time, so there is no need to keep channel open |
+| ChallengeRegistered | Failed          | External event that indicates Challenge was started on blockchain                                                                     |
 
 #### InitiatorFunded
 
@@ -269,29 +269,30 @@ Indicates that Initiator funded channel, and now it's Responder's turn
 
 ##### Initiator Action
 
-1. Updates state in Storage
-2. Notifies user about state update
-3. Removes `InitiatorFundingTimeout` timer
-4. Launches `ResponderFundingTimeout` timer
+1. Stops `ClearingTimeout` timer
+2. Updates state in Storage
+3. Notifies user about state update
+4. Starts `ClearingTimeout` timer
 
 ##### Responder Action
 
-1. Updates state in Storage
-2. Notifies user about state update
-3. Removes `InitiatorFundingTimeout` timer
+1. Stops `ClearingTimeout` timer
+2. Updates state in Storage
+3. Notifies user about state update
 4. Funds (if auto fund is ON)
-5. Launches `NoPostfundTimeout` timer
+5. Starts `ClearingTimeout` timer
 
 ##### Transitions
 
-| Side | Event                   | State                    | Description                                                                                                                                      |
-|------|-------------------------|--------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| IR   | ResponderFunded         | Funded                   | External event that indicates that Responder fulfilled his part of the deal by funding channel                                                   |
-| I    | Failed                  | PreOpChallenging         | Internal event that could occur on any error during action execution, so Initiator calls Challenge to retrieve his assets                        |
-| R    | Failed                  | Failed                   | Internal event that could occur on any error during action execution                                                                             |
-| I    | ResponderFundingTimeout | PreOpChallenging         | External event that indicates that Responder haven't fulfilled his part of the deal on time, so Initiator calls Challenge to retrieve his assets |
-| R    | ResponderFundingTimeout | Failed                   | External event that indicates that Responder haven't fulfilled his part of the deal on time                                                      |
-| IR   | ChallengeRegistered     | PreOpChallengeRegistered | External event that indicates Challenge was started on blockchain                                                                                |
+| Side | Event               | State                    | Description                                                                                                                                      |
+|------|---------------------|--------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+| IR   | ResponderFunded     | Funded                   | External event that indicates that Responder fulfilled his part of the deal by funding channel                                                   |
+| I    | Failed              | PreOpChallenging         | Internal event that could occur on any error during action execution, so Initiator calls Challenge to retrieve his assets                        |
+| R    | Failed              | Failed                   | Internal event that could occur on any error during action execution                                                                             |
+| I    | ClearingTimeout     | PreOpChallenging         | External event that indicates that Responder haven't fulfilled his part of the deal on time, so Initiator calls Challenge to retrieve his assets |
+| R    | ClearingTimeout     | Failed                   | External event that indicates that Responder haven't fulfilled his part of the deal on time                                                      |
+| I    | ChallengeRegistered | PreOpChallengeRegistered | External event that indicates Challenge was started on blockchain, so Initiator want to finish it and retrieve his assets                        |
+| R    | ChallengeRegistered | Failed                   | External event that indicates Challenge was started on blockchain                                                                                |
 
 
 #### PreOpChallenging
@@ -300,9 +301,9 @@ Indicates the will of one party to forcefully close the channel before Postfund 
 
 ##### Action
 
-1. Updates state in Storage
-2. Notifies user about state update
-3. Removes `ResponderFundingTimeout` timer
+1. Stops `ClearingTimeout` timer
+2. Updates state in Storage
+3. Notifies user about state update
 4. Starts Challenge with Prefund State
 
 ##### Transitions
@@ -355,50 +356,44 @@ to the `Challenging` state is possible
 
 ##### Initiator Action
 
-1. Updates state in Storage
-2. Notifies user about state update
-3. Removes `ResponderFundingTimeout` timer
+1. Stops `ClearingTimeout` timer
+2. Updates state in Storage
+3. Notifies user about state update
 4. Issues postfund nitro state
 5. Notifies user about successful channel opening
 
 ##### Responder Action
 
-1. Updates state in Storage
-2. Notifies user about state update
-3. Removes `NoPostfundTimeout` timer
+1. Stops `ClearingTimeout` timer
+2. Updates state in Storage
+3. Notifies user about state update
 4. Countersigns postfund nitro state
 5. Notifies user about successful channel opening
 
 ##### Transitions
 
-| Event               | State                    | Description                                                                   |
-|---------------------|--------------------------|-------------------------------------------------------------------------------|
-| PostfundAgreed      | Operational              | Internal event that indicates that postfund was successfully signed and saved |
-| Failed              | Challenging              | Internal event that could occur on any error during action execution          |
-| ProcessMarginCall   | Funded                   | External event that gives an ability to process one more postfund call        |
-| ChallengeRegistered | PreOpChallengeRegistered | External event that indicates that Challenge was started on blockchain        |
+| Side | Event             | State       | Description                                                                   |
+|------|-------------------|-------------|-------------------------------------------------------------------------------|
+| IR   | PostfundAgreed    | Operational | Internal event that indicates that postfund was successfully signed and saved |
+| IR   | Failed            | Challenging | Internal event that could occur on any error during action execution          |
+| I    | ProcessMarginCall | Funded      | External event that gives an ability to process one more postfund call        |
 
 #### Operational
 
 Clearing channel has no other tasks, but existing
 
-##### Initiator Action
+##### Action
 
 1. Updates state in Storage
-
-##### Responder Action
-
-1. Updates state in Storage
-2. Launches `NoMarginCallsTimeout` timer
 
 ##### Transitions
 
 | Event               | State                | Description                                                                                                |
 |---------------------|----------------------|------------------------------------------------------------------------------------------------------------|
-| PrepareSettlement   | ActiveSettlement     | External event that comes from the settlement state machine, indicates that settlement process was started |
+| SettlementStarted   | ActiveSettlement     | External event that comes from the settlement state machine, indicates that settlement process was started |
 | Finalize            | Finalizing           | External event that comes from the user request to gracefully close the clearing channel                   |
 | ProcessMarginCall   | ProcessingMarginCall | External event that comes from the reactor(?) system and intending to issue new margin call                |
-| Challenging         | Challenging          | External event that request to forcefully close the clearing channel                                       |
+| Challenge           | Challenging          | External event that request to forcefully close the clearing channel                                       |
 | ChallengeRegistered | ChallengeRegistered  | External event that indicates that Challenge was started on blockchain                                     |
 
 #### ProcessingMarginCall
@@ -415,8 +410,7 @@ means that he should issue new state, for the Responder -- that he should countr
 
 1. Validates nitro state
 2. Countersigns nitro state update
-3. Removes `NoMarginCallsTimeout` timer
-4. Checks and updates `StateSyncFailure` amount  
+3. Checks and updates `StateSyncFailure` amount  
 
 ##### Transitions
 
@@ -429,18 +423,11 @@ means that he should issue new state, for the Responder -- that he should countr
 
 Clearing process is currently in the middle of settlement, but `PostSettlementState` wasn't signed yet
 
-##### Initiator Action
+##### Action
 
-1. Updates state in Storage
-2. Notifies user about state update
-3. If something went wrong -- notifies SSM about failure
-
-##### Responder Action
-
-1. Updates state in Storage
-2. Notifies user about state update
-3. Removes `NoMarginCallsTimeout` timer
-4. If something went wrong -- notifies SSM about failure
+1. Stops `ClearingTimeout` timer
+2. Updates state in Storage
+3. Notifies user about state update
 
 ##### Transitions
 
@@ -448,7 +435,7 @@ Clearing process is currently in the middle of settlement, but `PostSettlementSt
 |---------------------|---------------------|-----------------------------------------------------------------------------------------------------------------------------|
 | ProcessPSMC         | ProcessingPSMC      | External event from the SSM that indicates that it's time to stop processing margin calls                                   |
 | ProcessMarginCall   | ProcessingSMC       | External event from the reactor(?) system and intending to issue new margin call                                            |
-| FailedSettlement    | Operational         | External event from the SSM that indicates that Settlement Failed for some reason and CSM could return to Operational state |
+| SettlementFailed    | Operational         | External event from the SSM that indicates that Settlement Failed for some reason and CSM could return to Operational state |
 | ChallengeRegistered | ChallengeRegistered | External event that indicates that Challenge was started on blockchain                                                      |
 
 #### ProcessingSMC
@@ -525,8 +512,9 @@ Indicates the will of one party to forcefully close the channel
 
 ##### Action
 
-1. Updates state in Storage
-2. Notifies user about state update
+1. Stops `ClearingTimeout` timer
+2. Updates state in Storage
+3. Notifies user about state update
 4. Starts Challenge with Last Supported State
 
 ##### Transitions
@@ -573,26 +561,25 @@ Processes final clearing state
 
 ##### Initiator Action
 
-1. Updates state in Storage
-2. Notifies user about state update
+1. Stops `ClearingTimeout` timer
+2. Updates state in Storage
 3. Issues final clearing state
-4. Checks and updates `StateSyncFailure` amount
+4. Notifies user about state update
+5. Checks and updates `StateSyncFailure` amount
 
 ##### Responder Action
 
-1. Updates state in Storage
-2. Notifies user about state update
-3. Removes `NoMarginCallsTimeout` timer
-4. Validates final clearing state
-5. Countersigns final clearing state
-6. Checks and updates `StateSyncFailure` amount
-7. Calls `ConcludeAndWithdraw` method on blockchain
+1. Stops `ClearingTimeout` timer
+2. Updates state in Storage
+3. Validates final clearing state
+4. Countersigns final clearing state
+5. Checks and updates `StateSyncFailure` amount
 
 ##### Transitions
 
 | Event             | State       | Description                                                                                         |
 |-------------------|-------------|-----------------------------------------------------------------------------------------------------|
-| Concluding        | Concluding  | Internal event that indicates that final state was successfully signed                              |
+| Conclude          | Concluding  | Internal event that indicates that final state was successfully signed                              |
 | Challenge         | Challenging | Internal event that indicates that final state wasn't signed and `StateSyncFailure` is unacceptable |
 | MoveToOperational | Operational | Internal event that indicates that final state wasn't signed and `StateSyncFailure` is acceptable   |
 
@@ -600,16 +587,25 @@ Processes final clearing state
 
 Waits for the event from the blockchain about concluding channel
 
-##### Action
+##### Initiator Action
+
+1. Start `ClearingTimeout` timer
+2. Updates state in Storage
+3. Notifies user about state update
+
+#### Responder Action
 
 1. Updates state in Storage
 2. Notifies user about state update
+3. Calls `ConcludeAndDefund` method on blockchain
+4. Start `ClearingTimeout` timer
 
 ##### Transitions
 
-| Event       | State | Description                                                                               |
-|-------------|-------|-------------------------------------------------------------------------------------------|
-| MoveToFinal | Final | External event from reactor system that indicates that channel was successfully concluded |
+| Side | Event           | State       | Description                                                                                  |
+|------|-----------------|-------------|----------------------------------------------------------------------------------------------|
+| IR   | MoveToFinal     | Final       | External event from reactor system that indicates that channel was successfully concluded    |
+| I    | ClearingTimeout | Withdrawing | External event from reactor system that indicates that Responder hasn't conclude the channel |
 
 #### Withdrawing
 
