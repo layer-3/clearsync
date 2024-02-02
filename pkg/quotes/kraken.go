@@ -381,9 +381,16 @@ func (*kraken) buildEvents(trades krakenTrade) ([]TradeEvent, error) {
 		sec, dec := math.Modf(unixTime)
 		createdAt := time.Unix(int64(sec), int64(dec*(1e9)))
 
+		// According to kraken docs, trade pair should have format: BTC/USDT
+		// https://docs.kraken.com/websockets/#message-trade
+		currencies := strings.Split(trades.Pair, "/")
+		if len(currencies) != 2 {
+			return nil, fmt.Errorf("failed to parse trade pair: %s", trades.Pair)
+		}
+
 		events = append(events, TradeEvent{
 			Source:    DriverKraken,
-			Market:    strings.ToLower(trades.Pair),
+			Market:    Market{BaseUnit: currencies[0], QuoteUnit: currencies[1]},
 			Price:     price,
 			Amount:    amount,
 			Total:     price.Mul(amount),

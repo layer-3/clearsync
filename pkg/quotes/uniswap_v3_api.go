@@ -123,7 +123,7 @@ func (u *uniswapV3Api) Subscribe(market Market) error {
 
 					u.outbox <- TradeEvent{
 						Source:    DriverUniswapV3Api,
-						Market:    market.QuoteUnit,
+						Market:    market,
 						Price:     price,
 						Amount:    amount,
 						Total:     price.Mul(amount),

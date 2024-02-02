@@ -8,6 +8,7 @@ import (
 
 	gobinance "github.com/adshao/go-binance/v2"
 	"github.com/ipfs/go-log/v2"
+	"github.com/layer-3/clearsync/pkg/safe"
 	"github.com/shopspring/decimal"
 )
 
@@ -18,14 +19,17 @@ type binance struct {
 	streams      sync.Map
 	tradeSampler tradeSampler
 	outbox       chan<- TradeEvent
+
+	symbolToMarket safe.Map[string, Market]
 }
 
 func newBinance(config BinanceConfig, outbox chan<- TradeEvent) Driver {
 	gobinance.WebsocketKeepalive = true
 	return &binance{
-		once:         newOnce(),
-		tradeSampler: *newTradeSampler(config.TradeSampler),
-		outbox:       outbox,
+		once:           newOnce(),
+		tradeSampler:   *newTradeSampler(config.TradeSampler),
+		outbox:         outbox,
+		symbolToMarket: safe.NewMap[string, Market](),
 	}
 }
 
@@ -63,6 +67,8 @@ func (b *binance) Subscribe(market Market) error {
 	}
 
 	pair := strings.ToUpper(market.BaseUnit) + strings.ToUpper(market.QuoteUnit)
+	b.symbolToMarket.Store(strings.ToLower(pair), market)
+
 	if _, ok := b.streams.Load(pair); ok {
 		return fmt.Errorf("%s: %w", market, errAlreadySubbed)
 	}
@@ -125,7 +131,7 @@ func (b *binance) handleTrade(event *gobinance.WsTradeEvent) {
 	b.outbox <- tradeEvent
 }
 
-func (*binance) buildEvent(tr *gobinance.WsTradeEvent) (TradeEvent, error) {
+func (b *binance) buildEvent(tr *gobinance.WsTradeEvent) (TradeEvent, error) {
 	price, err := decimal.NewFromString(tr.Price)
 	if err != nil {
 		loggerBinance.Warn(err)
@@ -138,6 +144,11 @@ func (*binance) buildEvent(tr *gobinance.WsTradeEvent) (TradeEvent, error) {
 		return TradeEvent{}, err
 	}
 
+	market, ok := b.symbolToMarket.Load(strings.ToLower(tr.Symbol))
+	if !ok {
+		return TradeEvent{}, fmt.Errorf("failed to load market: %+v", tr.Symbol)
+	}
+
 	// IsBuyerMaker: true => the trade was initiated by the sell-side; the buy-side was the order book already.
 	// IsBuyerMaker: false => the trade was initiated by the buy-side; the sell-side was the order book already.
 	takerType := TakerTypeBuy
@@ -147,7 +158,7 @@ func (*binance) buildEvent(tr *gobinance.WsTradeEvent) (TradeEvent, error) {
 
 	return TradeEvent{
 		Source:    DriverBinance,
-		Market:    strings.ToLower(tr.Symbol),
+		Market:    market,
 		Price:     price,
 		Amount:    amount,
 		Total:     price.Mul(amount),

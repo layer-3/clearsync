@@ -161,7 +161,7 @@ func (u *uniswapV3Geth) Subscribe(market Market) error {
 				amount = amount.Abs()
 				u.outbox <- TradeEvent{
 					Source:    DriverUniswapV3Geth,
-					Market:    symbol,
+					Market:    market,
 					Price:     price,
 					Amount:    amount,
 					Total:     price.Mul(amount),

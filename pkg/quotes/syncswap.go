@@ -163,7 +163,7 @@ func (s *syncswap) Subscribe(market Market) error {
 				amount = amount.Abs()
 				s.outbox <- TradeEvent{
 					Source:    DriverSyncswap,
-					Market:    symbol,
+					Market:    market,
 					Price:     price,
 					Amount:    amount,
 					Total:     price.Mul(amount),

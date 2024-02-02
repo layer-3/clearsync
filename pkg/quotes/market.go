@@ -15,7 +15,7 @@ type Market struct {
 // for trades received from providers.
 type TradeEvent struct {
 	Source    DriverType
-	Market    string // e.g. `btc/usdt`
+	Market    Market // e.g. `btc/usdt`
 	Price     decimal.Decimal
 	Amount    decimal.Decimal
 	Total     decimal.Decimal

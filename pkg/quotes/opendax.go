@@ -192,7 +192,7 @@ func (o *opendax) listen() {
 		}
 
 		// Skip system messages
-		if trEvent.Market == "" || trEvent.Price == decimal.Zero {
+		if trEvent.Market.BaseUnit == "" || trEvent.Market.QuoteUnit == "" || trEvent.Price == decimal.Zero {
 			continue
 		}
 		o.outbox <- *trEvent
@@ -223,7 +223,7 @@ func (o *opendax) parse(message []byte) (*TradeEvent, error) {
 func (o *opendax) convertToTrade(args []any) (*TradeEvent, error) {
 	it := protocol.NewArgIterator(args)
 
-	market := it.NextString()
+	marketSymbol := it.NextString()
 	_ = it.NextUint64() // trade id
 	price := it.NextDecimal()
 	amount := it.NextDecimal()
@@ -235,6 +235,16 @@ func (o *opendax) convertToTrade(args []any) (*TradeEvent, error) {
 		return nil, err
 	}
 	_ = it.NextString() // trade source
+
+	// TODO: find the way to split market symbol if it doesn't have delimiter
+	market := Market{}
+	currencies := strings.Split(marketSymbol, "/")
+	if len(currencies) == 2 {
+		market = Market{
+			BaseUnit:  currencies[0],
+			QuoteUnit: currencies[1],
+		}
+	}
 
 	return &TradeEvent{
 		Source:    DriverOpendax,
