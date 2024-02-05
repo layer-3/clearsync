@@ -19,7 +19,6 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type OperatorClient interface {
 	GetVersion(ctx context.Context, in *VersionRequest, opts ...grpc.CallOption) (*VersionResponse, error)
-	GetIdentityAddress(ctx context.Context, in *GetIdentityAddressRequest, opts ...grpc.CallOption) (*GetIdentityAddressResponse, error)
 	GetChallenge(ctx context.Context, in *GetChallengeRequest, opts ...grpc.CallOption) (*GetChallengeResponse, error)
 	Authenticate(ctx context.Context, in *AuthenticateRequest, opts ...grpc.CallOption) (*AuthenticateResponse, error)
 	OpenChannel(ctx context.Context, in *OpenChannelRequest, opts ...grpc.CallOption) (*OpenChannelResponse, error)
@@ -43,15 +42,6 @@ func NewOperatorClient(cc grpc.ClientConnInterface) OperatorClient {
 func (c *operatorClient) GetVersion(ctx context.Context, in *VersionRequest, opts ...grpc.CallOption) (*VersionResponse, error) {
 	out := new(VersionResponse)
 	err := c.cc.Invoke(ctx, "/Operator/GetVersion", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *operatorClient) GetIdentityAddress(ctx context.Context, in *GetIdentityAddressRequest, opts ...grpc.CallOption) (*GetIdentityAddressResponse, error) {
-	out := new(GetIdentityAddressResponse)
-	err := c.cc.Invoke(ctx, "/Operator/GetIdentityAddress", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +166,6 @@ func (x *operatorSubscribeChannelsEventsClient) Recv() (*Notification, error) {
 // for forward compatibility
 type OperatorServer interface {
 	GetVersion(context.Context, *VersionRequest) (*VersionResponse, error)
-	GetIdentityAddress(context.Context, *GetIdentityAddressRequest) (*GetIdentityAddressResponse, error)
 	GetChallenge(context.Context, *GetChallengeRequest) (*GetChallengeResponse, error)
 	Authenticate(context.Context, *AuthenticateRequest) (*AuthenticateResponse, error)
 	OpenChannel(context.Context, *OpenChannelRequest) (*OpenChannelResponse, error)
@@ -196,9 +185,6 @@ type UnimplementedOperatorServer struct {
 
 func (UnimplementedOperatorServer) GetVersion(context.Context, *VersionRequest) (*VersionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetVersion not implemented")
-}
-func (UnimplementedOperatorServer) GetIdentityAddress(context.Context, *GetIdentityAddressRequest) (*GetIdentityAddressResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetIdentityAddress not implemented")
 }
 func (UnimplementedOperatorServer) GetChallenge(context.Context, *GetChallengeRequest) (*GetChallengeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetChallenge not implemented")
@@ -257,24 +243,6 @@ func _Operator_GetVersion_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(OperatorServer).GetVersion(ctx, req.(*VersionRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Operator_GetIdentityAddress_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetIdentityAddressRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(OperatorServer).GetIdentityAddress(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/Operator/GetIdentityAddress",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(OperatorServer).GetIdentityAddress(ctx, req.(*GetIdentityAddressRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -472,10 +440,6 @@ var Operator_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetVersion",
 			Handler:    _Operator_GetVersion_Handler,
-		},
-		{
-			MethodName: "GetIdentityAddress",
-			Handler:    _Operator_GetIdentityAddress_Handler,
 		},
 		{
 			MethodName: "GetChallenge",

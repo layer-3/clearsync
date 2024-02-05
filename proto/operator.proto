@@ -9,7 +9,6 @@ option go_package = "github.com/layer-3/clearport/proto";
 // protolint:disable MAX_LINE_LENGTH
 service Operator {
   rpc GetVersion(VersionRequest) returns (VersionResponse);
-  rpc GetIdentityAddress(GetIdentityAddressRequest) returns (GetIdentityAddressResponse);
   rpc GetChallenge(GetChallengeRequest) returns (GetChallengeResponse);
   rpc Authenticate(AuthenticateRequest) returns (AuthenticateResponse);
 
@@ -31,14 +30,9 @@ message VersionResponse {
   string version = 1;
 }
 
-message GetIdentityAddressRequest {
-}
-
-message GetIdentityAddressResponse {
-  core.Address address = 1;
-}
-
 message GetChallengeRequest {
+  core.Address address = 1;
+  string name = 2;
 }
 
 message GetChallengeResponse {
@@ -46,8 +40,8 @@ message GetChallengeResponse {
 }
 
 message AuthenticateRequest {
-  string challenge = 1;
   string signature = 2;
+  core.Address address = 3;
 }
 
 message AuthenticateResponse {
