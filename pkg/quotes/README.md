@@ -4,6 +4,7 @@ The Quotes Service is a centralized system responsible for recording and dissemi
 from various trading platforms.
 
 Available drivers:
+- Index Price
 - Binance
 - Kraken
 - Opendax
@@ -24,7 +25,7 @@ type Driver interface {
 }
 ```
 
-## Type of price source
+## Types of price sources
 
 | Top Tier CEX | Altcoins CEX | FIAT       | DEX         |
 |--------------|--------------|------------|-------------|
@@ -43,13 +44,95 @@ last_price = price
 
 ## Index Price
 
-Used mainly in risk management for portfolio evaluation:
+```Index Price``` is used mainly in risk management for portfolio evaluation and is aggregated from multiple sources.
+
+Trades from all sources are coming into one queue. IndexAggregator reads trades sequentially, calling calculateIndexPrice() method from a configured strategy.
+
+> You can leverage your index price calculation strategy by implementing the priceCalculator interface and passing it as an argument to the IndexAggregator constructor.
 
 ```
-index_price = EMA20(price x ( trade_size x weight / active_weights ))
-# active_weight being the sum of weight where this market exists (ex: KuCoin:5 + uniswap:50)
-# EMA20 is likely 20 at 1 min scale
+type priceCalculator interface {
+	calculateIndexPrice(trade TradeEvent) (decimal.Decimal, bool)
+}
 ```
+
+The default strategy for index price calculation is Volume Weighted Average Price (VWAP), additionally weighted by trade source importance.
+
+```
+
+sourceMultiplier = (tradeSourceWeight/(activeSourcesWeightsSum(market)))
+
+var totalPriceVolume, totalVolume num
+for trade in range(N trades(market)) {
+		totalPriceVolume += (Price * Volume * sourceMultiplier)
+		totalVolume += (Volume * sourceMultiplier)
+}
+
+index_price = totalPriceVolume / totalVolume 
+
+```
+
+In the VWAP strategy ```Price cache``` is used to store a queue containing the last N (default=20) trades for each market.
+
+> Drivers may support different markets. That's why the price cache additionally stores active drivers for each market. By default, no drivers are active. When a trade is added, the source of the trade becomes active for a market.
+
+### Calculation flow
+
+Drivers weights config example: 
+```
+driverWeights = [{Binance: 20}, {Uniswap: 10}, {Kraken: 15}]
+```
+
+
+Trade received:
+
+```
+Trade {
+	Source: Binance
+	Market: btcusdt
+	Volume: 0.5
+	Price: 44000
+}
+```
+
+The trade is skipped if the trade price or volume is zero.
+
+1. Calculate sourceMultiplier. Select active drivers for the market. By default, all drivers are not active. When the first trade from a driver is received, a market becomes active. 
+Let's say, we are receiving btcusdt trades only from Binance and Uniswap.
+```	
+activeSourcesWeightsSum(btcusdt) = {driversWeights[Binance] + driversWeights[Uniswap] = 2 + 1} = 3
+tradeSourceWeight = driverWeights[Binance] = 2
+
+sourceMultiplier = (tradeSourceWeight/(activeSourcesWeightsSum(market)))
+
+```
+2. Add trade data to the price cache.
+```	
+priceCache.AddTrade(event.Market, event.Price, event.Amount, sourceMultiplier)
+```
+3. Fetch the last n trades from PriceCache.
+```
+var totalPriceVolume, totalVolume num
+for trade in range(priceCache.trades(btcusdt)) {
+		totalPriceVolume += (Price * Volume * sourceMultiplier)
+		totalVolume += (Volume * sourceMultiplier)
+}
+```
+4. Return Index Price
+```
+index_price = totalPriceVolume / totalVolume 
+```
+
+
+**VWA20 Index Price Example Over 20 trades**
+
+|        | 1   | 2   | 3   | 4   | 5   | 6   | 7   | 8   | 9   | 10  | 11  | 12  | 13  | 14  | 15  | 16  | 17  | 18  | 19  | 20  |
+|--------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+| Amount | 1.0 | 1.1 | 2.4 | 0.2 | 2.0 | 3.3 | 4.0 | 2.9 | 1.0 | 0.1 | 0.01| 0.04| 9.0 | 0.4 | 4.4 | 5.0 | 6.0 | 0.1 | 2.0 | 1.0 |
+| Price  | 40000| 42000| 41500| 44000| 43000| 40000| 41000| 42000| 43000| 42000| 45500| 41000| 41500| 42000| 44000| 46000| 47000| 46000| 44000| 42000|
+| VWA20  | 40000| 41047| 41288| 41404| 41880| 41260| 41185| 41325| 41418| 41422| 41424| 41423| 41448| 41457| 41808| 42377| 43024| 43031| 43074| 43051|
+
+> More examples and test scenarios can be found in ```index_test.go```.
 
 ## How Uniswap adapter calculates swap price
 

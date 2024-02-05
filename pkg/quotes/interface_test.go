@@ -10,6 +10,19 @@ import (
 func TestNewDriver(t *testing.T) {
 	t.Parallel()
 
+	t.Run(DriverIndex.String(), func(t *testing.T) {
+		t.Parallel()
+
+		config := IndexConfig{}
+		outbox := make(chan<- TradeEvent, 1)
+
+		priceFeeds, err := NewDriver(ToConfig(config), outbox)
+		require.NoError(t, err)
+
+		_, ok := priceFeeds.(*indexAggregator)
+		assert.True(t, ok)
+	})
+
 	t.Run(DriverBinance.String(), func(t *testing.T) {
 		t.Parallel()
 

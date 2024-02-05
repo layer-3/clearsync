@@ -42,6 +42,10 @@ func newSyncswap(config SyncswapConfig, outbox chan<- TradeEvent) Driver {
 	}
 }
 
+func (s *syncswap) Name() DriverType {
+	return DriverSyncswap
+}
+
 func (s *syncswap) Start() error {
 	var startErr error
 	started := s.once.Start(func() {
