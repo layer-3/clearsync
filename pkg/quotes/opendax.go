@@ -23,21 +23,23 @@ type opendax struct {
 	dialer wsDialer
 	url    string
 
-	outbox  chan<- TradeEvent
-	period  time.Duration
-	reqID   atomic.Uint64
-	streams safe.Map[Market, struct{}]
+	outbox         chan<- TradeEvent
+	period         time.Duration
+	reqID          atomic.Uint64
+	streams        safe.Map[Market, struct{}]
+	symbolToMarket safe.Map[string, Market]
 }
 
 func newOpendax(config OpendaxConfig, outbox chan<- TradeEvent) Driver {
 	return &opendax{
-		once:    newOnce(),
-		url:     config.URL,
-		outbox:  outbox,
-		period:  config.ReconnectPeriod * time.Second,
-		reqID:   atomic.Uint64{},
-		dialer:  &wsDialWrapper{},
-		streams: safe.NewMap[Market, struct{}](),
+		once:           newOnce(),
+		url:            config.URL,
+		outbox:         outbox,
+		period:         config.ReconnectPeriod * time.Second,
+		reqID:          atomic.Uint64{},
+		dialer:         &wsDialWrapper{},
+		streams:        safe.NewMap[Market, struct{}](),
+		symbolToMarket: safe.NewMap[string, Market](),
 	}
 }
 
@@ -101,6 +103,7 @@ func (o *opendax) Subscribe(market Market) error {
 		return fmt.Errorf("%s: %w: %w", market, errFailedSub, err)
 	}
 
+	o.symbolToMarket.Store(market.Base()+market.Quote(), market)
 	o.streams.Store(market, struct{}{})
 	return nil
 }
@@ -236,8 +239,15 @@ func (o *opendax) convertToTrade(args []any) (*TradeEvent, error) {
 	}
 	_ = it.NextString() // trade source
 
-	// TODO: find the way to split market symbol if it doesn't have delimiter
-	market, _ := NewMarketFromString(marketSymbol)
+	market, ok := NewMarketFromString(marketSymbol)
+	if !ok {
+		market, ok = o.symbolToMarket.Load(marketSymbol)
+	}
+
+	// market is unparsable and is missing in the map
+	if !ok {
+		return nil, fmt.Errorf("failed to get market: %s", marketSymbol)
+	}
 
 	return &TradeEvent{
 		Source:    DriverOpendax,
