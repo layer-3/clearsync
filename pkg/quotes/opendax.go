@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/shopspring/decimal"
 
 	protocol "github.com/layer-3/clearsync/pkg/quotes/opendax_protocol"
+	"github.com/layer-3/clearsync/pkg/safe"
 )
 
 var loggerOpendax = log.Logger("opendax")
@@ -26,17 +26,18 @@ type opendax struct {
 	outbox  chan<- TradeEvent
 	period  time.Duration
 	reqID   atomic.Uint64
-	streams sync.Map
+	streams safe.Map[Market, struct{}]
 }
 
 func newOpendax(config OpendaxConfig, outbox chan<- TradeEvent) Driver {
 	return &opendax{
-		once:   newOnce(),
-		url:    config.URL,
-		outbox: outbox,
-		period: config.ReconnectPeriod * time.Second,
-		reqID:  atomic.Uint64{},
-		dialer: &wsDialWrapper{},
+		once:    newOnce(),
+		url:     config.URL,
+		outbox:  outbox,
+		period:  config.ReconnectPeriod * time.Second,
+		reqID:   atomic.Uint64{},
+		dialer:  &wsDialWrapper{},
+		streams: safe.NewMap[Market, struct{}](),
 	}
 }
 
@@ -173,8 +174,7 @@ func (o *opendax) listen() {
 			loggerOpendax.Warn("error reading from connection", err)
 
 			o.connect()
-			o.streams.Range(func(m, value any) bool {
-				market := m.(Market)
+			o.streams.Range(func(market Market, _ struct{}) bool {
 				if err := o.Subscribe(market); err != nil {
 					loggerOpendax.Warnf("error subscribing to market %s: %s", market, err)
 					return false

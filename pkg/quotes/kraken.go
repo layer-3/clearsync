@@ -8,11 +8,11 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/ipfs/go-log/v2"
+	"github.com/layer-3/clearsync/pkg/safe"
 	"github.com/shopspring/decimal"
 )
 
@@ -27,8 +27,8 @@ type kraken struct {
 	url         string
 	retryPeriod time.Duration
 
-	availablePairs sync.Map
-	streams        sync.Map
+	availablePairs safe.Map[string, krakenPair]
+	streams        safe.Map[Market, struct{}]
 	tradeSampler   tradeSampler
 	outbox         chan<- TradeEvent
 }
@@ -42,10 +42,13 @@ func newKraken(config KrakenConfig, outbox chan<- TradeEvent) Driver {
 	limiter.WithRateLimit(1)
 
 	return &kraken{
-		once:         newOnce(),
-		url:          config.URL,
-		dialer:       limiter,
-		retryPeriod:  config.ReconnectPeriod,
+		once:           newOnce(),
+		url:            config.URL,
+		dialer:         limiter,
+		retryPeriod:    config.ReconnectPeriod,
+		availablePairs: safe.NewMap[string, krakenPair](),
+		streams:        safe.NewMap[Market, struct{}](),
+
 		tradeSampler: *newTradeSampler(config.TradeSampler),
 		outbox:       outbox,
 	}
@@ -88,8 +91,8 @@ func (k *kraken) Stop() error {
 			return
 		}
 
-		k.availablePairs = sync.Map{}
-		k.streams = sync.Map{} // delete all stopped streams
+		k.availablePairs = safe.Map[string, krakenPair]{}
+		k.streams = safe.Map[Market, struct{}]{} // delete all stopped streams
 		stopErr = conn.Close()
 	})
 
@@ -234,8 +237,7 @@ func (k *kraken) listen() {
 			loggerKraken.Errorf("error reading message: %v", err)
 
 			k.connect()
-			k.streams.Range(func(m, value any) bool {
-				market := m.(Market)
+			k.streams.Range(func(market Market, _ struct{}) bool {
 				if err := k.Subscribe(market); err != nil {
 					loggerKraken.Warnf("Error subscribing to market %s: %s", market, err)
 					return false

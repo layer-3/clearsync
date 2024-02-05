@@ -3,7 +3,6 @@ package quotes
 import (
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	gobinance "github.com/adshao/go-binance/v2"
@@ -16,7 +15,7 @@ var loggerBinance = log.Logger("binance")
 
 type binance struct {
 	once         *once
-	streams      sync.Map
+	streams      safe.Map[Market, chan struct{}]
 	tradeSampler tradeSampler
 	outbox       chan<- TradeEvent
 
@@ -27,6 +26,7 @@ func newBinance(config BinanceConfig, outbox chan<- TradeEvent) Driver {
 	gobinance.WebsocketKeepalive = true
 	return &binance{
 		once:           newOnce(),
+		streams:        safe.NewMap[Market, chan struct{}](),
 		tradeSampler:   *newTradeSampler(config.TradeSampler),
 		outbox:         outbox,
 		symbolToMarket: safe.NewMap[string, Market](),
@@ -46,13 +46,12 @@ func (b *binance) Start() error {
 
 func (b *binance) Stop() error {
 	stopped := b.once.Stop(func() {
-		b.streams.Range(func(key, value any) bool {
-			market := key.(Market)
+		b.streams.Range(func(market Market, _ chan struct{}) bool {
 			err := b.Unsubscribe(market)
 			return err == nil
 		})
 
-		b.streams = sync.Map{}
+		b.streams = safe.NewMap[Market, chan struct{}]()
 	})
 
 	if !stopped {
@@ -69,7 +68,7 @@ func (b *binance) Subscribe(market Market) error {
 	pair := strings.ToUpper(market.BaseUnit) + strings.ToUpper(market.QuoteUnit)
 	b.symbolToMarket.Store(strings.ToLower(pair), market)
 
-	if _, ok := b.streams.Load(pair); ok {
+	if _, ok := b.streams.Load(market); ok {
 		return fmt.Errorf("%s: %w", market, errAlreadySubbed)
 	}
 
@@ -103,17 +102,15 @@ func (b *binance) Unsubscribe(market Market) error {
 		return errNotStarted
 	}
 
-	pair := strings.ToUpper(market.BaseUnit) + strings.ToUpper(market.QuoteUnit)
-	stream, ok := b.streams.Load(pair)
+	stopCh, ok := b.streams.Load(market)
 	if !ok {
 		return fmt.Errorf("%s: %w", market, errNotSubbed)
 	}
 
-	stopCh := stream.(chan struct{})
 	stopCh <- struct{}{}
 	close(stopCh)
 
-	b.streams.Delete(pair)
+	b.streams.Delete(market)
 	return nil
 }
 

@@ -7,7 +7,6 @@ import (
 	"math/big"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -18,6 +17,7 @@ import (
 
 	"github.com/layer-3/clearsync/pkg/abi/iuniswap_v3_factory"
 	"github.com/layer-3/clearsync/pkg/abi/iuniswap_v3_pool"
+	"github.com/layer-3/clearsync/pkg/safe"
 )
 
 var (
@@ -35,8 +35,8 @@ type uniswapV3Geth struct {
 	factory        *iuniswap_v3_factory.IUniswapV3Factory
 
 	outbox  chan<- TradeEvent
-	streams sync.Map
-	assets  sync.Map
+	streams safe.Map[Market, event.Subscription]
+	assets  safe.Map[string, poolToken]
 }
 
 func newUniswapV3Geth(config UniswapV3GethConfig, outbox chan<- TradeEvent) Driver {
@@ -46,7 +46,9 @@ func newUniswapV3Geth(config UniswapV3GethConfig, outbox chan<- TradeEvent) Driv
 		assetsURL:      config.AssetsURL,
 		factoryAddress: config.FactoryAddress,
 
-		outbox: outbox,
+		outbox:  outbox,
+		streams: safe.NewMap[Market, event.Subscription](),
+		assets:  safe.NewMap[string, poolToken](),
 	}
 }
 
@@ -96,12 +98,12 @@ func (u *uniswapV3Geth) Start() error {
 
 func (u *uniswapV3Geth) Stop() error {
 	stopped := u.once.Stop(func() {
-		u.streams.Range(func(market, stream any) bool {
-			err := u.Unsubscribe(market.(Market))
+		u.streams.Range(func(market Market, _ event.Subscription) bool {
+			err := u.Unsubscribe(market)
 			return err == nil
 		})
 
-		u.streams = sync.Map{} // delete all stopped streams
+		u.streams = safe.NewMap[Market, event.Subscription]() // delete all stopped streams
 	})
 
 	if !stopped {
@@ -245,20 +247,18 @@ func (u *uniswapV3Geth) getPool(market Market) (*uniswapV3GethPoolWrapper, error
 }
 
 func (u *uniswapV3Geth) getTokens(market Market) (baseToken poolToken, quoteToken poolToken, err error) {
-	baseAsset, ok := u.assets.Load(strings.ToUpper(market.BaseUnit))
+	baseToken, ok := u.assets.Load(strings.ToUpper(market.BaseUnit))
 	if !ok {
 		err = fmt.Errorf("tokens '%s' does not exist", market.BaseUnit)
 		return
 	}
-	baseToken = baseAsset.(poolToken)
 	loggerUniswapV3Geth.Infof("market %s: base token address is %s", market, baseToken.Address)
 
-	quoteAsset, ok := u.assets.Load(strings.ToUpper(market.QuoteUnit))
+	quoteToken, ok = u.assets.Load(strings.ToUpper(market.QuoteUnit))
 	if !ok {
 		err = fmt.Errorf("tokens '%s' does not exist", market.QuoteUnit)
 		return
 	}
-	quoteToken = quoteAsset.(poolToken)
 	loggerUniswapV3Geth.Infof("market %s: quote token address is %s", market, quoteToken.Address)
 
 	return baseToken, quoteToken, nil

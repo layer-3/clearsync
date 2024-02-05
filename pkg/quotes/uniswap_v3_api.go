@@ -8,10 +8,10 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/ipfs/go-log/v2"
+	"github.com/layer-3/clearsync/pkg/safe"
 	"github.com/shopspring/decimal"
 )
 
@@ -22,7 +22,7 @@ type uniswapV3Api struct {
 	url        string
 	outbox     chan<- TradeEvent
 	windowSize time.Duration
-	streams    sync.Map
+	streams    safe.Map[Market, chan struct{}]
 }
 
 func newUniswapV3Api(config UniswapV3ApiConfig, outbox chan<- TradeEvent) Driver {
@@ -31,6 +31,7 @@ func newUniswapV3Api(config UniswapV3ApiConfig, outbox chan<- TradeEvent) Driver
 		url:        config.URL,
 		outbox:     outbox,
 		windowSize: config.WindowSize,
+		streams:    safe.NewMap[Market, chan struct{}](),
 	}
 }
 
@@ -47,14 +48,13 @@ func (u *uniswapV3Api) Start() error {
 
 func (u *uniswapV3Api) Stop() error {
 	stopped := u.once.Stop(func() {
-		u.streams.Range(func(market, stream any) bool {
-			stopCh := stream.(chan struct{})
+		u.streams.Range(func(_ Market, stopCh chan struct{}) bool {
 			stopCh <- struct{}{}
 			close(stopCh)
 			return true
 		})
 
-		u.streams = sync.Map{} // delete all stopped streams
+		u.streams = safe.NewMap[Market, chan struct{}]() // delete all stopped streams
 	})
 
 	if !stopped {
@@ -87,8 +87,7 @@ func (u *uniswapV3Api) Subscribe(market Market) error {
 		from := time.Now()
 		timer := time.After(u.windowSize)
 		for {
-			if stream, ok := u.streams.Load(market); ok {
-				stopCh := stream.(chan struct{})
+			if stopCh, ok := u.streams.Load(market); ok {
 				select {
 				case <-stopCh:
 					loggerUniswapV3Api.Infof("market %s is stopped", symbol)
@@ -146,12 +145,11 @@ func (u *uniswapV3Api) Unsubscribe(market Market) error {
 		return errNotStarted
 	}
 
-	stream, ok := u.streams.Load(market)
+	stopCh, ok := u.streams.Load(market)
 	if !ok {
 		return fmt.Errorf("%s: %w", market, errNotSubbed)
 	}
 
-	stopCh := stream.(chan struct{})
 	stopCh <- struct{}{}
 	close(stopCh)
 
