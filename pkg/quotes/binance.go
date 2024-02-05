@@ -65,7 +65,7 @@ func (b *binance) Subscribe(market Market) error {
 		return errNotStarted
 	}
 
-	pair := strings.ToUpper(market.BaseUnit) + strings.ToUpper(market.QuoteUnit)
+	pair := strings.ToUpper(market.Base()) + strings.ToUpper(market.Quote())
 	b.symbolToMarket.Store(strings.ToLower(pair), market)
 
 	if _, ok := b.streams.Load(market); ok {

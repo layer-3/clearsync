@@ -90,7 +90,7 @@ func TestOpendax_parse(t *testing.T) {
 
 		number, _ := decimal.NewFromString("1")
 		expVal := &TradeEvent{
-			Market:    Market{BaseUnit: "btc", QuoteUnit: "usd"},
+			Market:    NewMarket("btc", "usd"),
 			Price:     number,
 			Amount:    number,
 			Total:     number,
@@ -146,7 +146,7 @@ func TestOpendax_Subscribe(t *testing.T) {
 		}
 
 		client.once.Start(func() {})
-		err := client.Subscribe(Market{BaseUnit: "btc", QuoteUnit: "usdt"})
+		err := client.Subscribe(NewMarket("btc", "usdt"))
 		require.NoError(t, err)
 	})
 
@@ -159,7 +159,7 @@ func TestOpendax_Subscribe(t *testing.T) {
 		}
 
 		client.once.Start(func() {})
-		err := client.Subscribe(Market{BaseUnit: "btc", QuoteUnit: "usdt"})
+		err := client.Subscribe(NewMarket("btc", "usdt"))
 		require.Error(t, err)
 	})
 }

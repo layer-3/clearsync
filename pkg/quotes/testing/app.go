@@ -63,7 +63,7 @@ func main() {
 		panic(err)
 	}
 
-	market := quotes.Market{BaseUnit: "btc", QuoteUnit: "usdt"}
+	market := quotes.NewMarket("btc", "usdt")
 	slog.Info("subscribing to market", "market", market)
 	if err = driver.Subscribe(market); err != nil {
 		panic(err)

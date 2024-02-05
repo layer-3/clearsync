@@ -108,7 +108,6 @@ func (s *syncswap) Subscribe(market Market) error {
 	if !s.once.Subscribe() {
 		return errNotStarted
 	}
-	symbol := market.BaseUnit + market.QuoteUnit
 
 	if _, ok := s.streams.Load(market); ok {
 		return fmt.Errorf("%s: %w", market, errAlreadySubbed)
@@ -116,7 +115,7 @@ func (s *syncswap) Subscribe(market Market) error {
 
 	pool, err := s.getPool(market)
 	if err != nil {
-		return fmt.Errorf("failed to get pool for market %v: %s", symbol, err)
+		return fmt.Errorf("failed to get pool for market %v: %s", market.String(), err)
 	}
 
 	sink := make(chan *isyncswap_pool.ISyncSwapPoolSwap, 128)
@@ -130,12 +129,12 @@ func (s *syncswap) Subscribe(market Market) error {
 		for {
 			select {
 			case err := <-sub.Err():
-				loggerSyncswap.Errorf("market %s: %s", symbol, err)
+				loggerSyncswap.Errorf("market %s: %s", market.String(), err)
 				if _, ok := s.streams.Load(market); !ok {
 					break // market was unsubscribed earlier
 				}
 				if err := s.Subscribe(market); err != nil {
-					loggerSyncswap.Errorf("market %s: failed to resubscribe: %s", symbol, err)
+					loggerSyncswap.Errorf("market %s: failed to resubscribe: %s", market.String(), err)
 				}
 				return
 			case swap := <-sink:
@@ -158,7 +157,7 @@ func (s *syncswap) Subscribe(market Market) error {
 					price = amount0Out.Div(amount1In)
 					amount = amount0Out
 				} else {
-					loggerSyncswap.Errorf("market %s: unknown swap type", symbol)
+					loggerSyncswap.Errorf("market %s: unknown swap type", market.String())
 					continue
 				}
 
@@ -236,16 +235,16 @@ func (s *syncswap) getPool(market Market) (*syncswapPoolWrapper, error) {
 }
 
 func (s *syncswap) getTokens(market Market) (baseToken poolToken, quoteToken poolToken, err error) {
-	baseToken, ok := s.assets.Load(strings.ToUpper(market.BaseUnit))
+	baseToken, ok := s.assets.Load(strings.ToUpper(market.Base()))
 	if !ok {
-		err = fmt.Errorf("tokens '%s' does not exist", market.BaseUnit)
+		err = fmt.Errorf("tokens '%s' does not exist", market.Base())
 		return
 	}
 	loggerSyncswap.Infof("market %s: base token address is %s", market, baseToken.Address)
 
-	quoteToken, ok = s.assets.Load(strings.ToUpper(market.QuoteUnit))
+	quoteToken, ok = s.assets.Load(strings.ToUpper(market.Quote()))
 	if !ok {
-		err = fmt.Errorf("tokens '%s' does not exist", market.QuoteUnit)
+		err = fmt.Errorf("tokens '%s' does not exist", market.Quote)
 		return
 	}
 	loggerSyncswap.Infof("market %s: quote token address is %s", market, quoteToken.Address)

@@ -131,7 +131,7 @@ func (k *kraken) Subscribe(market Market) error {
 		return fmt.Errorf("%s: %w", market, errAlreadySubbed)
 	}
 
-	pair := fmt.Sprintf("%s/%s", strings.ToUpper(market.BaseUnit), strings.ToUpper(market.QuoteUnit))
+	pair := fmt.Sprintf("%s/%s", strings.ToUpper(market.Base()), strings.ToUpper(market.Quote()))
 	if _, ok := k.availablePairs.Load(pair); !ok {
 		return fmt.Errorf("market %s doesn't exist in Kraken", pair)
 	}
@@ -159,7 +159,7 @@ func (k *kraken) Unsubscribe(market Market) error {
 		return fmt.Errorf("%s: %w", market, errNotSubbed)
 	}
 
-	pair := fmt.Sprintf("%s/%s", strings.ToUpper(market.BaseUnit), strings.ToUpper(market.QuoteUnit))
+	pair := fmt.Sprintf("%s/%s", strings.ToUpper(market.Base()), strings.ToUpper(market.Quote()))
 	unsubMsg := krakenSubscriptionMessage{
 		Event:        "unsubscribe",
 		Pair:         []string{pair},
@@ -385,14 +385,14 @@ func (*kraken) buildEvents(trades krakenTrade) ([]TradeEvent, error) {
 
 		// According to kraken docs, trade pair should have format: BTC/USDT
 		// https://docs.kraken.com/websockets/#message-trade
-		currencies := strings.Split(trades.Pair, "/")
-		if len(currencies) != 2 {
+		market, ok := NewMarketFromString(trades.Pair)
+		if !ok {
 			return nil, fmt.Errorf("failed to parse trade pair: %s", trades.Pair)
 		}
 
 		events = append(events, TradeEvent{
 			Source:    DriverKraken,
-			Market:    Market{BaseUnit: currencies[0], QuoteUnit: currencies[1]},
+			Market:    market,
 			Price:     price,
 			Amount:    amount,
 			Total:     price.Mul(amount),

@@ -92,7 +92,7 @@ func (o *opendax) Subscribe(market Market) error {
 	}
 
 	// Opendax resource [market].[trades]
-	resource := fmt.Sprintf("%s%s.trades", market.BaseUnit, market.QuoteUnit)
+	resource := fmt.Sprintf("%s%s.trades", market.Base(), market.Quote())
 	message := protocol.NewSubscribeMessage(o.reqID.Load(), resource)
 	o.reqID.Add(1)
 
@@ -115,7 +115,7 @@ func (o *opendax) Unsubscribe(market Market) error {
 	}
 
 	// Opendax resource [market].[trades]
-	resource := fmt.Sprintf("%s%s.trades", market.BaseUnit, market.QuoteUnit)
+	resource := fmt.Sprintf("%s%s.trades", market.Base(), market.Quote())
 	message := protocol.NewUnsubscribeMessage(o.reqID.Load(), resource)
 	o.reqID.Add(1)
 
@@ -192,7 +192,7 @@ func (o *opendax) listen() {
 		}
 
 		// Skip system messages
-		if trEvent.Market.BaseUnit == "" || trEvent.Market.QuoteUnit == "" || trEvent.Price == decimal.Zero {
+		if trEvent.Market.Base() == "" || trEvent.Market.Quote() == "" || trEvent.Price == decimal.Zero {
 			continue
 		}
 		o.outbox <- *trEvent
@@ -237,14 +237,7 @@ func (o *opendax) convertToTrade(args []any) (*TradeEvent, error) {
 	_ = it.NextString() // trade source
 
 	// TODO: find the way to split market symbol if it doesn't have delimiter
-	market := Market{}
-	currencies := strings.Split(marketSymbol, "/")
-	if len(currencies) == 2 {
-		market = Market{
-			BaseUnit:  currencies[0],
-			QuoteUnit: currencies[1],
-		}
-	}
+	market, _ := NewMarketFromString(marketSymbol)
 
 	return &TradeEvent{
 		Source:    DriverOpendax,

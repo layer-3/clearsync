@@ -67,7 +67,6 @@ func (u *uniswapV3Api) Subscribe(market Market) error {
 	if !u.once.Subscribe() {
 		return errNotStarted
 	}
-	symbol := market.BaseUnit + market.QuoteUnit
 
 	if _, ok := u.streams.Load(market); ok {
 		return fmt.Errorf("%s: %w", market, errAlreadySubbed)
@@ -75,10 +74,10 @@ func (u *uniswapV3Api) Subscribe(market Market) error {
 
 	exists, err := u.isMarketAvailable(market)
 	if err != nil {
-		return fmt.Errorf("failed to check if market %s exists: %s", symbol, err)
+		return fmt.Errorf("failed to check if market %s exists: %s", market.String(), err)
 	}
 	if !exists {
-		return fmt.Errorf("market %s does not exist", symbol)
+		return fmt.Errorf("market %s does not exist", market.String())
 	}
 
 	u.streams.Store(market, make(chan struct{}, 1))
@@ -90,7 +89,7 @@ func (u *uniswapV3Api) Subscribe(market Market) error {
 			if stopCh, ok := u.streams.Load(market); ok {
 				select {
 				case <-stopCh:
-					loggerUniswapV3Api.Infof("market %s is stopped", symbol)
+					loggerUniswapV3Api.Infof("market %s is stopped", market.String())
 					return
 				default:
 				}
@@ -166,8 +165,8 @@ const tokenTemplate = `query {
 
 func (u *uniswapV3Api) isMarketAvailable(market Market) (bool, error) {
 	query := fmt.Sprintf(tokenTemplate,
-		strings.ToUpper(market.BaseUnit),
-		strings.ToUpper(market.QuoteUnit),
+		strings.ToUpper(market.Base()),
+		strings.ToUpper(market.Quote()),
 	)
 
 	pools, err := runUniswapV3GraphqlRequest[uniswapV3Pools](u.url, query)
@@ -203,8 +202,8 @@ func (u *uniswapV3Api) fetchSwaps(market Market, from, to time.Time) ([]uniswapV
 	query := fmt.Sprintf(swapsTemplate,
 		from.Unix(),
 		to.Unix(),
-		strings.ToUpper(market.BaseUnit),
-		strings.ToUpper(market.QuoteUnit),
+		strings.ToUpper(market.Base()),
+		strings.ToUpper(market.Quote()),
 	)
 
 	swaps, err := runUniswapV3GraphqlRequest[uniswapV3Swaps](u.url, query)
