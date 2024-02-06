@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	protocol "github.com/layer-3/clearsync/pkg/quotes/opendax_protocol"
+	"github.com/layer-3/clearsync/pkg/safe"
 )
 
 type ODAPIMockMsg struct {
@@ -143,6 +144,8 @@ func TestOpendax_Subscribe(t *testing.T) {
 				messages:    []ODAPIMockMsg{{}},
 				isConnected: true,
 			},
+			streams:        safe.NewMap[Market, struct{}](),
+			symbolToMarket: safe.NewMap[string, Market](),
 		}
 
 		client.once.Start(func() {})

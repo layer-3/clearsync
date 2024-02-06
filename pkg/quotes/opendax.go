@@ -195,7 +195,7 @@ func (o *opendax) listen() {
 		}
 
 		// Skip system messages
-		if trEvent.Market.Base() == "" || trEvent.Market.Quote() == "" || trEvent.Price == decimal.Zero {
+		if trEvent.Market.IsEmpty() || trEvent.Price == decimal.Zero {
 			continue
 		}
 		o.outbox <- *trEvent

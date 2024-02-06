@@ -244,7 +244,7 @@ func (s *syncswap) getTokens(market Market) (baseToken poolToken, quoteToken poo
 
 	quoteToken, ok = s.assets.Load(strings.ToUpper(market.Quote()))
 	if !ok {
-		err = fmt.Errorf("tokens '%s' does not exist", market.Quote)
+		err = fmt.Errorf("tokens '%s' does not exist", market.Quote())
 		return
 	}
 	loggerSyncswap.Infof("market %s: quote token address is %s", market, quoteToken.Address)

@@ -248,7 +248,7 @@ func (u *uniswapV3Geth) getPool(market Market) (*uniswapV3GethPoolWrapper, error
 func (u *uniswapV3Geth) getTokens(market Market) (baseToken poolToken, quoteToken poolToken, err error) {
 	baseToken, ok := u.assets.Load(strings.ToUpper(market.Base()))
 	if !ok {
-		err = fmt.Errorf("tokens '%s' does not exist", market.Base)
+		err = fmt.Errorf("tokens '%s' does not exist", market.Base())
 		return
 	}
 	loggerUniswapV3Geth.Infof("market %s: base token address is %s", market, baseToken.Address)

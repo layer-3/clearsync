@@ -147,7 +147,7 @@ func TestBitfaker_Start(t *testing.T) {
 
 	event := <-outbox
 	assert.NotEmpty(t, event)
-	assert.Equal(t, event.Market, "btcusd")
+	assert.Equal(t, "btc/usd", event.Market.String())
 }
 
 func TestCreateTradeEvent(t *testing.T) {
@@ -161,7 +161,7 @@ func TestCreateTradeEvent(t *testing.T) {
 
 	event := <-outbox
 	assert.NotEmpty(t, event)
-	assert.Equal(t, event.Market, "btcusd")
-	assert.Equal(t, event.Source, DriverBitfaker)
-	assert.Equal(t, event.Price, decimal.NewFromFloat(2.213))
+	assert.Equal(t, "btc/usd", event.Market.String())
+	assert.Equal(t, DriverBitfaker, event.Source)
+	assert.Equal(t, decimal.NewFromFloat(2.213), event.Price)
 }

@@ -27,6 +27,10 @@ func (m Market) Quote() string {
 	return m.quoteUnit
 }
 
+func (m Market) IsEmpty() bool {
+	return m.baseUnit == "" || m.quoteUnit == ""
+}
+
 func NewMarket(base, quote string) Market {
 	return Market{
 		baseUnit:  strings.ToLower(base),
