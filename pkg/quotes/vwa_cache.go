@@ -1,8 +1,7 @@
 package quotes
 
 import (
-	"sync"
-
+	"github.com/layer-3/clearsync/pkg/safe"
 	"github.com/shopspring/decimal"
 )
 
@@ -17,50 +16,57 @@ type marketHistory struct {
 	activeDrivers map[DriverType]bool
 }
 
+func (*marketHistory) Comparable() bool {
+	return true
+}
+
+func newMarketHistory() marketHistory {
+	return marketHistory{
+		trades:        []trade{},
+		activeDrivers: map[DriverType]bool{},
+	}
+}
+
 type PriceCacheVWA struct {
-	weights map[DriverType]decimal.Decimal
-	market  map[string]*marketHistory
-	mu      sync.RWMutex
+	weights safe.Map[DriverType, decimal.Decimal]
+	market  safe.Map[Market, marketHistory]
 	nTrades int
 }
 
 // NewPriceCacheVWA initializes a new cache to store last n trades for each market.
 func NewPriceCacheVWA(driversWeights map[DriverType]decimal.Decimal, nTrades int) *PriceCacheVWA {
 	cache := new(PriceCacheVWA)
-	cache.market = make(map[string]*marketHistory)
-	cache.weights = driversWeights
+	cache.market = safe.NewMap[Market, marketHistory]()
+	cache.weights = safe.NewMapWithData[DriverType, decimal.Decimal](driversWeights)
 	cache.nTrades = nTrades
 
 	return cache
 }
 
 // AddTrade adds a new trade to the cache for a market.
-func (p *PriceCacheVWA) AddTrade(market string, price, volume, weight decimal.Decimal) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	// Ensure the market exists in the cache
-	if _, ok := p.market[market]; !ok {
-		p.market[market] = &marketHistory{
-			trades:        []trade{},
-			activeDrivers: map[DriverType]bool{},
+func (p *PriceCacheVWA) AddTrade(market Market, price, volume, weight decimal.Decimal) {
+	p.market.UpdateInTx(func(m map[Market]marketHistory) {
+		history, ok := m[market]
+		// Ensure the market exists in the cache
+		if !ok {
+			history = newMarketHistory()
 		}
-	}
 
-	// Append the new trade and maintain only the last N trades
-	trades := append(p.market[market].trades, trade{Price: price, Volume: volume, Weight: weight})
-	if len(trades) > p.nTrades {
-		trades = trades[len(trades)-p.nTrades:]
-	}
-	p.market[market].trades = trades
+		// Append the new trade and maintain only the last N trades
+		trades := append(history.trades, trade{Price: price, Volume: volume, Weight: weight})
+		if len(trades) > p.nTrades {
+			trades = trades[len(trades)-p.nTrades:]
+		}
+
+		history.trades = trades
+
+		m[market] = history
+	})
 }
 
 // GetVWA calculates the VWA based on a list of trades.
-func (p *PriceCacheVWA) GetVWA(market string) (decimal.Decimal, bool) {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-
-	record, ok := p.market[market]
+func (p *PriceCacheVWA) GetVWA(market Market) (decimal.Decimal, bool) {
+	record, ok := p.market.Load(market)
 	if !ok || len(record.trades) == 0 {
 		return decimal.Zero, false
 	}
@@ -80,35 +86,39 @@ func (p *PriceCacheVWA) GetVWA(market string) (decimal.Decimal, bool) {
 }
 
 // ActivateDriver makes the driver active for the market.
-func (p *PriceCacheVWA) ActivateDriver(driver DriverType, market string) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
+func (p *PriceCacheVWA) ActivateDriver(driver DriverType, market Market) {
+	p.market.UpdateInTx(func(m map[Market]marketHistory) {
+		history, ok := m[market]
+		if !ok {
+			history = newMarketHistory()
+		}
 
-	_, ok := p.market[market]
-	if ok {
-		p.market[market].activeDrivers[driver] = true
-		return
-	}
-	p.market[market] = &marketHistory{trades: []trade{}, activeDrivers: map[DriverType]bool{driver: true}}
+		history.activeDrivers[driver] = true
+
+		m[market] = history
+	})
 }
 
 // ActiveWeights returns the sum of active driver weights for the market.
-func (p *PriceCacheVWA) ActiveWeights(market string) decimal.Decimal {
-	p.mu.Lock()
-	defer p.mu.Unlock()
+// TODO: cache the weights inside the marketHistory
+func (p *PriceCacheVWA) ActiveWeights(market Market) decimal.Decimal {
+	count := decimal.Zero
 
-	_, ok := p.market[market]
-	if ok {
-		count := decimal.Zero
-		for driver, active := range p.market[market].activeDrivers {
-			if active == true {
-				weight, ok := p.weights[driver]
-				if ok {
-					count = count.Add(weight)
-				}
+	// there are not changes in the `market`` map, but we need to read value and `activeDrivers` map transactionally
+	p.market.UpdateInTx(func(m map[Market]marketHistory) {
+		history, ok := m[market]
+		if !ok {
+			return
+		}
+
+		for driver, active := range history.activeDrivers {
+			if weight, ok := p.weights.Load(driver); active && ok {
+				count = count.Add(weight)
 			}
 		}
-		return count
-	}
-	return decimal.Zero
+
+		return
+	})
+
+	return count
 }
