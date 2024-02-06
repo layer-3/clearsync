@@ -123,7 +123,7 @@ func (b *bitfaker) createTradeEvent(market Market) {
 
 	tr := TradeEvent{
 		Source:    DriverBitfaker,
-		Market:    market.BaseUnit + market.QuoteUnit,
+		Market:    market,
 		Price:     price,
 		Amount:    amount,
 		Total:     price.Mul(amount),

@@ -3,11 +3,11 @@ package quotes
 import (
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	gobinance "github.com/adshao/go-binance/v2"
 	"github.com/ipfs/go-log/v2"
+	"github.com/layer-3/clearsync/pkg/safe"
 	"github.com/shopspring/decimal"
 )
 
@@ -15,17 +15,21 @@ var loggerBinance = log.Logger("binance")
 
 type binance struct {
 	once         *once
-	streams      sync.Map
+	streams      safe.Map[Market, chan struct{}]
 	tradeSampler tradeSampler
 	outbox       chan<- TradeEvent
+
+	symbolToMarket safe.Map[string, Market]
 }
 
 func newBinance(config BinanceConfig, outbox chan<- TradeEvent) Driver {
 	gobinance.WebsocketKeepalive = true
 	return &binance{
-		once:         newOnce(),
-		tradeSampler: *newTradeSampler(config.TradeSampler),
-		outbox:       outbox,
+		once:           newOnce(),
+		streams:        safe.NewMap[Market, chan struct{}](),
+		tradeSampler:   *newTradeSampler(config.TradeSampler),
+		outbox:         outbox,
+		symbolToMarket: safe.NewMap[string, Market](),
 	}
 }
 
@@ -42,13 +46,12 @@ func (b *binance) Start() error {
 
 func (b *binance) Stop() error {
 	stopped := b.once.Stop(func() {
-		b.streams.Range(func(key, value any) bool {
-			market := key.(Market)
+		b.streams.Range(func(market Market, _ chan struct{}) bool {
 			err := b.Unsubscribe(market)
 			return err == nil
 		})
 
-		b.streams = sync.Map{}
+		b.streams = safe.NewMap[Market, chan struct{}]()
 	})
 
 	if !stopped {
@@ -62,8 +65,10 @@ func (b *binance) Subscribe(market Market) error {
 		return errNotStarted
 	}
 
-	pair := strings.ToUpper(market.BaseUnit) + strings.ToUpper(market.QuoteUnit)
-	if _, ok := b.streams.Load(pair); ok {
+	pair := strings.ToUpper(market.Base()) + strings.ToUpper(market.Quote())
+	b.symbolToMarket.Store(strings.ToLower(pair), market)
+
+	if _, ok := b.streams.Load(market); ok {
 		return fmt.Errorf("%s: %w", market, errAlreadySubbed)
 	}
 
@@ -97,17 +102,15 @@ func (b *binance) Unsubscribe(market Market) error {
 		return errNotStarted
 	}
 
-	pair := strings.ToUpper(market.BaseUnit) + strings.ToUpper(market.QuoteUnit)
-	stream, ok := b.streams.Load(pair)
+	stopCh, ok := b.streams.Load(market)
 	if !ok {
 		return fmt.Errorf("%s: %w", market, errNotSubbed)
 	}
 
-	stopCh := stream.(chan struct{})
 	stopCh <- struct{}{}
 	close(stopCh)
 
-	b.streams.Delete(pair)
+	b.streams.Delete(market)
 	return nil
 }
 
@@ -125,7 +128,7 @@ func (b *binance) handleTrade(event *gobinance.WsTradeEvent) {
 	b.outbox <- tradeEvent
 }
 
-func (*binance) buildEvent(tr *gobinance.WsTradeEvent) (TradeEvent, error) {
+func (b *binance) buildEvent(tr *gobinance.WsTradeEvent) (TradeEvent, error) {
 	price, err := decimal.NewFromString(tr.Price)
 	if err != nil {
 		loggerBinance.Warn(err)
@@ -138,6 +141,11 @@ func (*binance) buildEvent(tr *gobinance.WsTradeEvent) (TradeEvent, error) {
 		return TradeEvent{}, err
 	}
 
+	market, ok := b.symbolToMarket.Load(strings.ToLower(tr.Symbol))
+	if !ok {
+		return TradeEvent{}, fmt.Errorf("failed to load market: %+v", tr.Symbol)
+	}
+
 	// IsBuyerMaker: true => the trade was initiated by the sell-side; the buy-side was the order book already.
 	// IsBuyerMaker: false => the trade was initiated by the buy-side; the sell-side was the order book already.
 	takerType := TakerTypeBuy
@@ -147,7 +155,7 @@ func (*binance) buildEvent(tr *gobinance.WsTradeEvent) (TradeEvent, error) {
 
 	return TradeEvent{
 		Source:    DriverBinance,
-		Market:    strings.ToLower(tr.Symbol),
+		Market:    market,
 		Price:     price,
 		Amount:    amount,
 		Total:     price.Mul(amount),

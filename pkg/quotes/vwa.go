@@ -1,6 +1,7 @@
 package quotes
 
 import (
+	"github.com/layer-3/clearsync/pkg/safe"
 	"github.com/shopspring/decimal"
 )
 
@@ -27,7 +28,7 @@ func NewStrategyVWA(configs ...ConfFuncVWA) priceCalculator {
 func WithCustomWeightsVWA(driversWeights map[DriverType]decimal.Decimal) ConfFuncVWA {
 	return func(strategy *strategyVWA) {
 		strategy.weights = driversWeights
-		strategy.priceCache.weights = driversWeights
+		strategy.priceCache.weights = safe.NewMapWithData[DriverType, decimal.Decimal](driversWeights)
 	}
 }
 
@@ -41,7 +42,7 @@ func WithCustomPriceCacheVWA(priceCache *PriceCacheVWA) ConfFuncVWA {
 // calculateIndexPrice returns indexPrice based on Volume Weighted Average Price of last 20 trades.
 func (a strategyVWA) calculateIndexPrice(event TradeEvent) (decimal.Decimal, bool) {
 	sourceWeight := a.weights[event.Source]
-	if event.Market == "" || event.Price.String() == "0" || event.Amount.String() == "0" || sourceWeight.IsZero() {
+	if event.Market.IsEmpty() || event.Price.IsZero() || event.Amount.IsZero() || sourceWeight.IsZero() {
 		return decimal.Decimal{}, false
 	}
 

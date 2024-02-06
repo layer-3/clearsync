@@ -8,10 +8,10 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/ipfs/go-log/v2"
+	"github.com/layer-3/clearsync/pkg/safe"
 	"github.com/shopspring/decimal"
 )
 
@@ -22,7 +22,7 @@ type uniswapV3Api struct {
 	url        string
 	outbox     chan<- TradeEvent
 	windowSize time.Duration
-	streams    sync.Map
+	streams    safe.Map[Market, chan struct{}]
 }
 
 func newUniswapV3Api(config UniswapV3ApiConfig, outbox chan<- TradeEvent) Driver {
@@ -31,6 +31,7 @@ func newUniswapV3Api(config UniswapV3ApiConfig, outbox chan<- TradeEvent) Driver
 		url:        config.URL,
 		outbox:     outbox,
 		windowSize: config.WindowSize,
+		streams:    safe.NewMap[Market, chan struct{}](),
 	}
 }
 
@@ -47,14 +48,13 @@ func (u *uniswapV3Api) Start() error {
 
 func (u *uniswapV3Api) Stop() error {
 	stopped := u.once.Stop(func() {
-		u.streams.Range(func(market, stream any) bool {
-			stopCh := stream.(chan struct{})
+		u.streams.Range(func(_ Market, stopCh chan struct{}) bool {
 			stopCh <- struct{}{}
 			close(stopCh)
 			return true
 		})
 
-		u.streams = sync.Map{} // delete all stopped streams
+		u.streams = safe.NewMap[Market, chan struct{}]() // delete all stopped streams
 	})
 
 	if !stopped {
@@ -67,7 +67,6 @@ func (u *uniswapV3Api) Subscribe(market Market) error {
 	if !u.once.Subscribe() {
 		return errNotStarted
 	}
-	symbol := market.BaseUnit + market.QuoteUnit
 
 	if _, ok := u.streams.Load(market); ok {
 		return fmt.Errorf("%s: %w", market, errAlreadySubbed)
@@ -75,10 +74,10 @@ func (u *uniswapV3Api) Subscribe(market Market) error {
 
 	exists, err := u.isMarketAvailable(market)
 	if err != nil {
-		return fmt.Errorf("failed to check if market %s exists: %s", symbol, err)
+		return fmt.Errorf("failed to check if market %s exists: %s", market.String(), err)
 	}
 	if !exists {
-		return fmt.Errorf("market %s does not exist", symbol)
+		return fmt.Errorf("market %s does not exist", market.String())
 	}
 
 	u.streams.Store(market, make(chan struct{}, 1))
@@ -87,11 +86,10 @@ func (u *uniswapV3Api) Subscribe(market Market) error {
 		from := time.Now()
 		timer := time.After(u.windowSize)
 		for {
-			if stream, ok := u.streams.Load(market); ok {
-				stopCh := stream.(chan struct{})
+			if stopCh, ok := u.streams.Load(market); ok {
 				select {
 				case <-stopCh:
-					loggerUniswapV3Api.Infof("market %s is stopped", symbol)
+					loggerUniswapV3Api.Infof("market %s is stopped", market.String())
 					return
 				default:
 				}
@@ -123,7 +121,7 @@ func (u *uniswapV3Api) Subscribe(market Market) error {
 
 					u.outbox <- TradeEvent{
 						Source:    DriverUniswapV3Api,
-						Market:    market.QuoteUnit,
+						Market:    market,
 						Price:     price,
 						Amount:    amount,
 						Total:     price.Mul(amount),
@@ -146,12 +144,11 @@ func (u *uniswapV3Api) Unsubscribe(market Market) error {
 		return errNotStarted
 	}
 
-	stream, ok := u.streams.Load(market)
+	stopCh, ok := u.streams.Load(market)
 	if !ok {
 		return fmt.Errorf("%s: %w", market, errNotSubbed)
 	}
 
-	stopCh := stream.(chan struct{})
 	stopCh <- struct{}{}
 	close(stopCh)
 
@@ -168,8 +165,8 @@ const tokenTemplate = `query {
 
 func (u *uniswapV3Api) isMarketAvailable(market Market) (bool, error) {
 	query := fmt.Sprintf(tokenTemplate,
-		strings.ToUpper(market.BaseUnit),
-		strings.ToUpper(market.QuoteUnit),
+		strings.ToUpper(market.Base()),
+		strings.ToUpper(market.Quote()),
 	)
 
 	pools, err := runUniswapV3GraphqlRequest[uniswapV3Pools](u.url, query)
@@ -205,8 +202,8 @@ func (u *uniswapV3Api) fetchSwaps(market Market, from, to time.Time) ([]uniswapV
 	query := fmt.Sprintf(swapsTemplate,
 		from.Unix(),
 		to.Unix(),
-		strings.ToUpper(market.BaseUnit),
-		strings.ToUpper(market.QuoteUnit),
+		strings.ToUpper(market.Base()),
+		strings.ToUpper(market.Quote()),
 	)
 
 	swaps, err := runUniswapV3GraphqlRequest[uniswapV3Swaps](u.url, query)

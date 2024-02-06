@@ -20,7 +20,7 @@ func TestBitfaker_Subscribe(t *testing.T) {
 		client := bitfaker{outbox: ch, once: newOnce()}
 		require.NoError(t, client.Start())
 
-		m := Market{BaseUnit: "btc", QuoteUnit: "usd"}
+		m := NewMarket("btc", "usd")
 
 		err := client.Subscribe(m)
 		require.Nil(t, err)
@@ -36,11 +36,11 @@ func TestBitfaker_Subscribe(t *testing.T) {
 		client := bitfaker{outbox: outbox, once: newOnce()}
 		require.NoError(t, client.Start())
 
-		market1 := Market{BaseUnit: "btc", QuoteUnit: "usd"}
+		market1 := NewMarket("btc", "usd")
 		err := client.Subscribe(market1)
 		require.Nil(t, err)
 
-		market2 := Market{BaseUnit: "eth", QuoteUnit: "usd"}
+		market2 := NewMarket("eth", "usd")
 		err = client.Subscribe(market2)
 		require.Nil(t, err)
 
@@ -55,7 +55,7 @@ func TestBitfaker_Subscribe(t *testing.T) {
 		client := bitfaker{outbox: ch, once: newOnce()}
 		require.NoError(t, client.Start())
 
-		market := Market{BaseUnit: "btc", QuoteUnit: "usd"}
+		market := NewMarket("btc", "usd")
 		err := client.Subscribe(market)
 		require.Nil(t, err)
 
@@ -74,8 +74,8 @@ func TestBitfaker_Unsubscribe(t *testing.T) {
 		client := bitfaker{outbox: ch, once: newOnce()}
 		require.NoError(t, client.Start())
 
-		market1 := Market{BaseUnit: "btc", QuoteUnit: "usd"}
-		market2 := Market{BaseUnit: "eth", QuoteUnit: "usd"}
+		market1 := NewMarket("btc", "usd")
+		market2 := NewMarket("eth", "usd")
 		require.NoError(t, client.Subscribe(market1))
 		require.NoError(t, client.Subscribe(market2))
 
@@ -93,7 +93,7 @@ func TestBitfaker_Unsubscribe(t *testing.T) {
 		client := bitfaker{outbox: ch, once: newOnce()}
 		require.NoError(t, client.Start())
 
-		market := Market{BaseUnit: "xrp", QuoteUnit: "usd"}
+		market := NewMarket("xrp", "usd")
 		err := client.Unsubscribe(market)
 
 		require.Error(t, err)
@@ -106,8 +106,8 @@ func TestBitfaker_Unsubscribe(t *testing.T) {
 		client := bitfaker{outbox: ch, once: newOnce()}
 		require.NoError(t, client.Start())
 
-		market1 := Market{BaseUnit: "btc", QuoteUnit: "usd"}
-		market2 := Market{BaseUnit: "eth", QuoteUnit: "usd"}
+		market1 := NewMarket("btc", "usd")
+		market2 := NewMarket("eth", "usd")
 		require.NoError(t, client.Subscribe(market1))
 		require.NoError(t, client.Subscribe(market2))
 
@@ -132,7 +132,7 @@ func TestBitfaker_Start(t *testing.T) {
 		period:       0 * time.Second,
 		tradeSampler: tradeSampler,
 	}
-	market := Market{BaseUnit: "btc", QuoteUnit: "usd"}
+	market := NewMarket("btc", "usd")
 
 	var wg sync.WaitGroup
 	wg.Add(2)
@@ -147,7 +147,7 @@ func TestBitfaker_Start(t *testing.T) {
 
 	event := <-outbox
 	assert.NotEmpty(t, event)
-	assert.Equal(t, event.Market, "btcusd")
+	assert.Equal(t, "btc/usd", event.Market.String())
 }
 
 func TestCreateTradeEvent(t *testing.T) {
@@ -157,11 +157,11 @@ func TestCreateTradeEvent(t *testing.T) {
 	client := bitfaker{outbox: outbox, once: newOnce()}
 	require.NoError(t, client.Start())
 
-	go func() { client.createTradeEvent(Market{BaseUnit: "btc", QuoteUnit: "usd"}) }()
+	go func() { client.createTradeEvent(NewMarket("btc", "usd")) }()
 
 	event := <-outbox
 	assert.NotEmpty(t, event)
-	assert.Equal(t, event.Market, "btcusd")
-	assert.Equal(t, event.Source, DriverBitfaker)
-	assert.Equal(t, event.Price, decimal.NewFromFloat(2.213))
+	assert.Equal(t, "btc/usd", event.Market.String())
+	assert.Equal(t, DriverBitfaker, event.Source)
+	assert.Equal(t, decimal.NewFromFloat(2.213), event.Price)
 }

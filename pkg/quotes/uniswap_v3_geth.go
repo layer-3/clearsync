@@ -7,7 +7,6 @@ import (
 	"math/big"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -18,6 +17,7 @@ import (
 
 	"github.com/layer-3/clearsync/pkg/abi/iuniswap_v3_factory"
 	"github.com/layer-3/clearsync/pkg/abi/iuniswap_v3_pool"
+	"github.com/layer-3/clearsync/pkg/safe"
 )
 
 var (
@@ -35,8 +35,8 @@ type uniswapV3Geth struct {
 	factory        *iuniswap_v3_factory.IUniswapV3Factory
 
 	outbox  chan<- TradeEvent
-	streams sync.Map
-	assets  sync.Map
+	streams safe.Map[Market, event.Subscription]
+	assets  safe.Map[string, poolToken]
 }
 
 func newUniswapV3Geth(config UniswapV3GethConfig, outbox chan<- TradeEvent) Driver {
@@ -46,7 +46,9 @@ func newUniswapV3Geth(config UniswapV3GethConfig, outbox chan<- TradeEvent) Driv
 		assetsURL:      config.AssetsURL,
 		factoryAddress: config.FactoryAddress,
 
-		outbox: outbox,
+		outbox:  outbox,
+		streams: safe.NewMap[Market, event.Subscription](),
+		assets:  safe.NewMap[string, poolToken](),
 	}
 }
 
@@ -96,12 +98,12 @@ func (u *uniswapV3Geth) Start() error {
 
 func (u *uniswapV3Geth) Stop() error {
 	stopped := u.once.Stop(func() {
-		u.streams.Range(func(market, stream any) bool {
-			err := u.Unsubscribe(market.(Market))
+		u.streams.Range(func(market Market, _ event.Subscription) bool {
+			err := u.Unsubscribe(market)
 			return err == nil
 		})
 
-		u.streams = sync.Map{} // delete all stopped streams
+		u.streams = safe.NewMap[Market, event.Subscription]() // delete all stopped streams
 	})
 
 	if !stopped {
@@ -114,7 +116,6 @@ func (u *uniswapV3Geth) Subscribe(market Market) error {
 	if !u.once.Subscribe() {
 		return errNotStarted
 	}
-	symbol := market.BaseUnit + market.QuoteUnit
 
 	if _, ok := u.streams.Load(market); ok {
 		return fmt.Errorf("%s: %w", market, errAlreadySubbed)
@@ -122,7 +123,7 @@ func (u *uniswapV3Geth) Subscribe(market Market) error {
 
 	pool, err := u.getPool(market)
 	if err != nil {
-		return fmt.Errorf("failed get pool for market %v: %s", symbol, err)
+		return fmt.Errorf("failed get pool for market %v: %s", market.String(), err)
 	}
 
 	sink := make(chan *iuniswap_v3_pool.IUniswapV3PoolSwap, 128)
@@ -136,12 +137,12 @@ func (u *uniswapV3Geth) Subscribe(market Market) error {
 		for {
 			select {
 			case err := <-sub.Err():
-				loggerUniswapV3Geth.Errorf("market %s: %s", symbol, err)
+				loggerUniswapV3Geth.Errorf("market %s: %s", market.String(), err)
 				if _, ok := u.streams.Load(market); !ok {
 					break // market was unsubscribed earlier
 				}
 				if err := u.Subscribe(market); err != nil {
-					loggerUniswapV3Geth.Errorf("market %s: failed to resubscribe: %s", symbol, err)
+					loggerUniswapV3Geth.Errorf("market %s: failed to resubscribe: %s", market.String(), err)
 				}
 				return
 			case swap := <-sink:
@@ -161,7 +162,7 @@ func (u *uniswapV3Geth) Subscribe(market Market) error {
 				amount = amount.Abs()
 				u.outbox <- TradeEvent{
 					Source:    DriverUniswapV3Geth,
-					Market:    symbol,
+					Market:    market,
 					Price:     price,
 					Amount:    amount,
 					Total:     price.Mul(amount),
@@ -245,20 +246,18 @@ func (u *uniswapV3Geth) getPool(market Market) (*uniswapV3GethPoolWrapper, error
 }
 
 func (u *uniswapV3Geth) getTokens(market Market) (baseToken poolToken, quoteToken poolToken, err error) {
-	baseAsset, ok := u.assets.Load(strings.ToUpper(market.BaseUnit))
+	baseToken, ok := u.assets.Load(strings.ToUpper(market.Base()))
 	if !ok {
-		err = fmt.Errorf("tokens '%s' does not exist", market.BaseUnit)
+		err = fmt.Errorf("tokens '%s' does not exist", market.Base())
 		return
 	}
-	baseToken = baseAsset.(poolToken)
 	loggerUniswapV3Geth.Infof("market %s: base token address is %s", market, baseToken.Address)
 
-	quoteAsset, ok := u.assets.Load(strings.ToUpper(market.QuoteUnit))
+	quoteToken, ok = u.assets.Load(strings.ToUpper(market.Quote()))
 	if !ok {
-		err = fmt.Errorf("tokens '%s' does not exist", market.QuoteUnit)
+		err = fmt.Errorf("tokens '%s' does not exist", market.Quote())
 		return
 	}
-	quoteToken = quoteAsset.(poolToken)
 	loggerUniswapV3Geth.Infof("market %s: quote token address is %s", market, quoteToken.Address)
 
 	return baseToken, quoteToken, nil

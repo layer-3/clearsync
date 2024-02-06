@@ -3,7 +3,6 @@ package quotes
 import (
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -14,6 +13,7 @@ import (
 
 	"github.com/layer-3/clearsync/pkg/abi/isyncswap_factory"
 	"github.com/layer-3/clearsync/pkg/abi/isyncswap_pool"
+	"github.com/layer-3/clearsync/pkg/safe"
 )
 
 var loggerSyncswap = log.Logger("syncswap")
@@ -27,8 +27,8 @@ type syncswap struct {
 	factory                   *isyncswap_factory.ISyncSwapFactory
 
 	outbox  chan<- TradeEvent
-	streams sync.Map
-	assets  sync.Map
+	streams safe.Map[Market, event.Subscription]
+	assets  safe.Map[string, poolToken]
 }
 
 func newSyncswap(config SyncswapConfig, outbox chan<- TradeEvent) Driver {
@@ -38,7 +38,9 @@ func newSyncswap(config SyncswapConfig, outbox chan<- TradeEvent) Driver {
 		assetsURL:                 config.AssetsURL,
 		classicPoolFactoryAddress: config.ClassicPoolFactoryAddress,
 
-		outbox: outbox,
+		outbox:  outbox,
+		streams: safe.NewMap[Market, event.Subscription](),
+		assets:  safe.NewMap[string, poolToken](),
 	}
 }
 
@@ -88,12 +90,12 @@ func (s *syncswap) Start() error {
 
 func (s *syncswap) Stop() error {
 	stopped := s.once.Stop(func() {
-		s.streams.Range(func(market, stream any) bool {
-			err := s.Unsubscribe(market.(Market))
+		s.streams.Range(func(market Market, _ event.Subscription) bool {
+			err := s.Unsubscribe(market)
 			return err == nil
 		})
 
-		s.streams = sync.Map{} // delete all stopped streams
+		s.streams = safe.NewMap[Market, event.Subscription]() // delete all stopped streams
 	})
 
 	if !stopped {
@@ -106,7 +108,6 @@ func (s *syncswap) Subscribe(market Market) error {
 	if !s.once.Subscribe() {
 		return errNotStarted
 	}
-	symbol := market.BaseUnit + market.QuoteUnit
 
 	if _, ok := s.streams.Load(market); ok {
 		return fmt.Errorf("%s: %w", market, errAlreadySubbed)
@@ -114,7 +115,7 @@ func (s *syncswap) Subscribe(market Market) error {
 
 	pool, err := s.getPool(market)
 	if err != nil {
-		return fmt.Errorf("failed to get pool for market %v: %s", symbol, err)
+		return fmt.Errorf("failed to get pool for market %v: %s", market.String(), err)
 	}
 
 	sink := make(chan *isyncswap_pool.ISyncSwapPoolSwap, 128)
@@ -128,12 +129,12 @@ func (s *syncswap) Subscribe(market Market) error {
 		for {
 			select {
 			case err := <-sub.Err():
-				loggerSyncswap.Errorf("market %s: %s", symbol, err)
+				loggerSyncswap.Errorf("market %s: %s", market.String(), err)
 				if _, ok := s.streams.Load(market); !ok {
 					break // market was unsubscribed earlier
 				}
 				if err := s.Subscribe(market); err != nil {
-					loggerSyncswap.Errorf("market %s: failed to resubscribe: %s", symbol, err)
+					loggerSyncswap.Errorf("market %s: failed to resubscribe: %s", market.String(), err)
 				}
 				return
 			case swap := <-sink:
@@ -156,14 +157,14 @@ func (s *syncswap) Subscribe(market Market) error {
 					price = amount0Out.Div(amount1In)
 					amount = amount0Out
 				} else {
-					loggerSyncswap.Errorf("market %s: unknown swap type", symbol)
+					loggerSyncswap.Errorf("market %s: unknown swap type", market.String())
 					continue
 				}
 
 				amount = amount.Abs()
 				s.outbox <- TradeEvent{
 					Source:    DriverSyncswap,
-					Market:    symbol,
+					Market:    market,
 					Price:     price,
 					Amount:    amount,
 					Total:     price.Mul(amount),
@@ -234,20 +235,18 @@ func (s *syncswap) getPool(market Market) (*syncswapPoolWrapper, error) {
 }
 
 func (s *syncswap) getTokens(market Market) (baseToken poolToken, quoteToken poolToken, err error) {
-	baseAsset, ok := s.assets.Load(strings.ToUpper(market.BaseUnit))
+	baseToken, ok := s.assets.Load(strings.ToUpper(market.Base()))
 	if !ok {
-		err = fmt.Errorf("tokens '%s' does not exist", market.BaseUnit)
+		err = fmt.Errorf("tokens '%s' does not exist", market.Base())
 		return
 	}
-	baseToken = baseAsset.(poolToken)
 	loggerSyncswap.Infof("market %s: base token address is %s", market, baseToken.Address)
 
-	quoteAsset, ok := s.assets.Load(strings.ToUpper(market.QuoteUnit))
+	quoteToken, ok = s.assets.Load(strings.ToUpper(market.Quote()))
 	if !ok {
-		err = fmt.Errorf("tokens '%s' does not exist", market.QuoteUnit)
+		err = fmt.Errorf("tokens '%s' does not exist", market.Quote())
 		return
 	}
-	quoteToken = quoteAsset.(poolToken)
 	loggerSyncswap.Infof("market %s: quote token address is %s", market, quoteToken.Address)
 
 	return baseToken, quoteToken, nil

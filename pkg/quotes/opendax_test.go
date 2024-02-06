@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	protocol "github.com/layer-3/clearsync/pkg/quotes/opendax_protocol"
+	"github.com/layer-3/clearsync/pkg/safe"
 )
 
 type ODAPIMockMsg struct {
@@ -79,7 +80,7 @@ func TestOpendax_parse(t *testing.T) {
 			ReqID:  1,
 			Type:   3,
 			Method: "trade",
-			Args:   []interface{}{"btcusd", 1, 1, 1, 1, 1, "buy", "Opendax"},
+			Args:   []interface{}{"btc/usd", 1, 1, 1, 1, 1, "buy", "Opendax"},
 		}
 		byteMsg, err := message.Encode()
 		require.NoError(t, err)
@@ -90,7 +91,7 @@ func TestOpendax_parse(t *testing.T) {
 
 		number, _ := decimal.NewFromString("1")
 		expVal := &TradeEvent{
-			Market:    "btcusd",
+			Market:    NewMarket("btc", "usd"),
 			Price:     number,
 			Amount:    number,
 			Total:     number,
@@ -143,10 +144,12 @@ func TestOpendax_Subscribe(t *testing.T) {
 				messages:    []ODAPIMockMsg{{}},
 				isConnected: true,
 			},
+			streams:        safe.NewMap[Market, struct{}](),
+			symbolToMarket: safe.NewMap[string, Market](),
 		}
 
 		client.once.Start(func() {})
-		err := client.Subscribe(Market{BaseUnit: "btc", QuoteUnit: "usdt"})
+		err := client.Subscribe(NewMarket("btc", "usdt"))
 		require.NoError(t, err)
 	})
 
@@ -159,7 +162,7 @@ func TestOpendax_Subscribe(t *testing.T) {
 		}
 
 		client.once.Start(func() {})
-		err := client.Subscribe(Market{BaseUnit: "btc", QuoteUnit: "usdt"})
+		err := client.Subscribe(NewMarket("btc", "usdt"))
 		require.Error(t, err)
 	})
 }
@@ -240,7 +243,7 @@ func TestOpendax_listen(t *testing.T) {
 			ReqID:  1,
 			Type:   3,
 			Method: "trade",
-			Args:   []interface{}{"btcusd", 1, 1, 1, 1, 1, "buy", "Opendax"},
+			Args:   []interface{}{"btc/usd", 1, 1, 1, 1, 1, "buy", "Opendax"},
 		}
 
 		rawMsg, err := update.Encode()

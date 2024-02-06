@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/shopspring/decimal"
 
 	protocol "github.com/layer-3/clearsync/pkg/quotes/opendax_protocol"
+	"github.com/layer-3/clearsync/pkg/safe"
 )
 
 var loggerOpendax = log.Logger("opendax")
@@ -23,20 +23,23 @@ type opendax struct {
 	dialer wsDialer
 	url    string
 
-	outbox  chan<- TradeEvent
-	period  time.Duration
-	reqID   atomic.Uint64
-	streams sync.Map
+	outbox         chan<- TradeEvent
+	period         time.Duration
+	reqID          atomic.Uint64
+	streams        safe.Map[Market, struct{}]
+	symbolToMarket safe.Map[string, Market]
 }
 
 func newOpendax(config OpendaxConfig, outbox chan<- TradeEvent) Driver {
 	return &opendax{
-		once:   newOnce(),
-		url:    config.URL,
-		outbox: outbox,
-		period: config.ReconnectPeriod * time.Second,
-		reqID:  atomic.Uint64{},
-		dialer: &wsDialWrapper{},
+		once:           newOnce(),
+		url:            config.URL,
+		outbox:         outbox,
+		period:         config.ReconnectPeriod * time.Second,
+		reqID:          atomic.Uint64{},
+		dialer:         &wsDialWrapper{},
+		streams:        safe.NewMap[Market, struct{}](),
+		symbolToMarket: safe.NewMap[string, Market](),
 	}
 }
 
@@ -91,7 +94,7 @@ func (o *opendax) Subscribe(market Market) error {
 	}
 
 	// Opendax resource [market].[trades]
-	resource := fmt.Sprintf("%s%s.trades", market.BaseUnit, market.QuoteUnit)
+	resource := fmt.Sprintf("%s%s.trades", market.Base(), market.Quote())
 	message := protocol.NewSubscribeMessage(o.reqID.Load(), resource)
 	o.reqID.Add(1)
 
@@ -100,6 +103,7 @@ func (o *opendax) Subscribe(market Market) error {
 		return fmt.Errorf("%s: %w: %w", market, errFailedSub, err)
 	}
 
+	o.symbolToMarket.Store(market.Base()+market.Quote(), market)
 	o.streams.Store(market, struct{}{})
 	return nil
 }
@@ -114,7 +118,7 @@ func (o *opendax) Unsubscribe(market Market) error {
 	}
 
 	// Opendax resource [market].[trades]
-	resource := fmt.Sprintf("%s%s.trades", market.BaseUnit, market.QuoteUnit)
+	resource := fmt.Sprintf("%s%s.trades", market.Base(), market.Quote())
 	message := protocol.NewUnsubscribeMessage(o.reqID.Load(), resource)
 	o.reqID.Add(1)
 
@@ -173,8 +177,7 @@ func (o *opendax) listen() {
 			loggerOpendax.Warn("error reading from connection", err)
 
 			o.connect()
-			o.streams.Range(func(m, value any) bool {
-				market := m.(Market)
+			o.streams.Range(func(market Market, _ struct{}) bool {
 				if err := o.Subscribe(market); err != nil {
 					loggerOpendax.Warnf("error subscribing to market %s: %s", market, err)
 					return false
@@ -192,7 +195,7 @@ func (o *opendax) listen() {
 		}
 
 		// Skip system messages
-		if trEvent.Market == "" || trEvent.Price == decimal.Zero {
+		if trEvent.Market.IsEmpty() || trEvent.Price == decimal.Zero {
 			continue
 		}
 		o.outbox <- *trEvent
@@ -223,7 +226,7 @@ func (o *opendax) parse(message []byte) (*TradeEvent, error) {
 func (o *opendax) convertToTrade(args []any) (*TradeEvent, error) {
 	it := protocol.NewArgIterator(args)
 
-	market := it.NextString()
+	marketSymbol := it.NextString()
 	_ = it.NextUint64() // trade id
 	price := it.NextDecimal()
 	amount := it.NextDecimal()
@@ -235,6 +238,16 @@ func (o *opendax) convertToTrade(args []any) (*TradeEvent, error) {
 		return nil, err
 	}
 	_ = it.NextString() // trade source
+
+	market, ok := NewMarketFromString(marketSymbol)
+	if !ok {
+		market, ok = o.symbolToMarket.Load(marketSymbol)
+	}
+
+	// market is unparsable and is missing in the map
+	if !ok {
+		return nil, fmt.Errorf("failed to get market: %s", marketSymbol)
+	}
 
 	return &TradeEvent{
 		Source:    DriverOpendax,
