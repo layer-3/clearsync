@@ -8,40 +8,54 @@ import (
 )
 
 func TestNewMap(t *testing.T) {
+	t.Parallel()
+
 	m := NewMap[string, int]()
-	assert.NotNil(t, m.m, "NewMap should create a non-nil map")
+	assert.NotNil(t, m.m, "Should create a non-nil map")
 }
 
 func TestNewMapWithData(t *testing.T) {
+	t.Parallel()
+
 	initialData := map[string]int{"key": 1}
 	m := NewMapWithData(initialData)
-	assert.Equal(t, 1, m.m["key"], "NewMapWithData should initialize map with correct data")
+	assert.Equal(t, 1, m.m["key"], "Should initialize map with correct data")
 }
 
 func TestMap_Load(t *testing.T) {
+	t.Parallel()
+
 	m := NewMap[string, int]()
 	m.Store("key", 2)
 	v, ok := m.Load("key")
 	assert.True(t, ok, "Load should find the key")
-	assert.Equal(t, 2, v, "Load should return the correct value")
+	assert.Equal(t, 2, v, "Should return the correct value")
 }
 
 func TestMap_Store(t *testing.T) {
+	t.Parallel()
+
 	m := NewMap[string, int]()
 	m.Store("key", 2)
-	assert.Equal(t, 2, m.m["key"], "Store should correctly set the value")
+	assert.Equal(t, 2, m.m["key"], "Should correctly set the value")
 }
 
 func TestMap_Delete(t *testing.T) {
+	t.Parallel()
+
 	m := NewMap[string, int]()
 	m.Store("key", 2)
 	m.Delete("key")
 	_, ok := m.Load("key")
-	assert.False(t, ok, "Delete should remove the key")
+	assert.False(t, ok, "Should remove the key")
 }
 
 func TestMap_Range(t *testing.T) {
+	t.Parallel()
+
 	t.Run("Should iterate over all elements", func(t *testing.T) {
+		t.Parallel()
+
 		m := NewMap[string, int]()
 		m.Store("key1", 1)
 		m.Store("key2", 2)
@@ -56,6 +70,8 @@ func TestMap_Range(t *testing.T) {
 	})
 
 	t.Run("Must obey the stop condition", func(t *testing.T) {
+		t.Parallel()
+
 		m := NewMap[string, int]()
 		m.Store("key1", 1)
 		m.Store("key2", 2)
@@ -71,6 +87,8 @@ func TestMap_Range(t *testing.T) {
 }
 
 func TestMap_UpdateInTx(t *testing.T) {
+	t.Parallel()
+
 	m := NewMap[string, int]()
 	m.Store("key1", 1)
 
@@ -79,11 +97,13 @@ func TestMap_UpdateInTx(t *testing.T) {
 		m["key2"] = 3
 	})
 
-	assert.Equal(t, 2, m.m["key1"], "UpdateInTx should update key1 correctly")
-	assert.Equal(t, 3, m.m["key2"], "UpdateInTx should add and update key2 correctly")
+	assert.Equal(t, 2, m.m["key1"], "Should update key1 correctly")
+	assert.Equal(t, 3, m.m["key2"], "Should add and update key2 correctly")
 }
 
 func TestMap_ConcurrentAccess(t *testing.T) {
+	t.Parallel()
+
 	m := NewMap[int, int]()
 	var wg sync.WaitGroup
 
