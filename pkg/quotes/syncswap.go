@@ -2,6 +2,7 @@ package quotes
 
 import (
 	"fmt"
+	"math/big"
 	"strings"
 	"time"
 
@@ -142,21 +143,20 @@ func (s *syncswap) Subscribe(market Market) error {
 				var price decimal.Decimal
 				var amount decimal.Decimal
 
-				if swap.Amount0In != nil && swap.Amount1Out != nil {
+				switch {
+				case isValidNonZero(swap.Amount0In) && isValidNonZero(swap.Amount1Out):
 					amount1Out := decimal.NewFromBigInt(swap.Amount1Out, 0)
 					amount0In := decimal.NewFromBigInt(swap.Amount0In, 0)
-
 					takerType = TakerTypeSell
 					price = amount1Out.Div(amount0In)
 					amount = amount0In
-				} else if swap.Amount0Out != nil && swap.Amount1In != nil {
+				case isValidNonZero(swap.Amount0Out) && isValidNonZero(swap.Amount1In):
 					amount0Out := decimal.NewFromBigInt(swap.Amount0Out, 0)
 					amount1In := decimal.NewFromBigInt(swap.Amount1In, 0)
-
 					takerType = TakerTypeBuy
 					price = amount0Out.Div(amount1In)
 					amount = amount0Out
-				} else {
+				default:
 					loggerSyncswap.Errorf("market %s: unknown swap type", market.String())
 					continue
 				}
@@ -189,8 +189,7 @@ func (s *syncswap) Unsubscribe(market Market) error {
 		return fmt.Errorf("%s: %w", market, errNotSubbed)
 	}
 
-	sub := stream.(event.Subscription)
-	sub.Unsubscribe()
+	stream.Unsubscribe()
 
 	s.streams.Delete(market)
 	return nil
@@ -250,4 +249,8 @@ func (s *syncswap) getTokens(market Market) (baseToken poolToken, quoteToken poo
 	loggerSyncswap.Infof("market %s: quote token address is %s", market, quoteToken.Address)
 
 	return baseToken, quoteToken, nil
+}
+
+func isValidNonZero(x *big.Int) bool {
+	return x != nil && x.Sign() != 0
 }
