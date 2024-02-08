@@ -63,11 +63,19 @@ func main() {
 		panic(err)
 	}
 
-	market := quotes.NewMarket("btc", "usdt")
-	slog.Info("subscribing to market", "market", market)
-	if err = driver.Subscribe(market); err != nil {
-		panic(err)
+	markets := []quotes.Market{
+		// Add your markets here
+		quotes.NewMarket("usdc", "weth"),
 	}
 
+	for _, market := range markets {
+		if err = driver.Subscribe(market); err != nil {
+			slog.Warn("failed to subscribe", "market", market, "err", err)
+			continue
+		}
+		slog.Info("subscribed", "market", market)
+	}
+
+	slog.Info("waiting for trades")
 	<-outboxStop
 }
