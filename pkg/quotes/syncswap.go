@@ -138,21 +138,22 @@ func (s *syncswap) Subscribe(market Market) error {
 				var price decimal.Decimal
 				var amount decimal.Decimal
 
-				if swap.Amount0In != nil && swap.Amount1Out != nil {
+				switch {
+				case isValidNonZero(swap.Amount0In) && isValidNonZero(swap.Amount1Out):
 					amount1Out := decimal.NewFromBigInt(swap.Amount1Out, 0)
 					amount0In := decimal.NewFromBigInt(swap.Amount0In, 0)
 
 					takerType = TakerTypeSell
 					price = amount1Out.Div(amount0In)
 					amount = amount0In
-				} else if swap.Amount0Out != nil && swap.Amount1In != nil {
+				case isValidNonZero(swap.Amount0Out) && isValidNonZero(swap.Amount1In):
 					amount0Out := decimal.NewFromBigInt(swap.Amount0Out, 0)
 					amount1In := decimal.NewFromBigInt(swap.Amount1In, 0)
 
 					takerType = TakerTypeBuy
 					price = amount0Out.Div(amount1In)
 					amount = amount0Out
-				} else {
+				default:
 					loggerSyncswap.Errorf("market %s: unknown swap type", symbol)
 					continue
 				}
