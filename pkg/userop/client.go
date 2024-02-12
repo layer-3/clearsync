@@ -19,15 +19,6 @@ import (
 	"github.com/layer-3/clearsync/pkg/abi/simple_account/account_abstraction"
 )
 
-// type SmartWalletType struct {
-// 	slug string
-// }
-//
-// var (
-// 	SmartWalletSimpleAccount = SmartWalletType{"simple_account"}
-// 	SmartWalletKernel        = SmartWalletType{"kernel"}
-// )
-
 // UserOperationClient represents a client for creating and posting user operations.
 type UserOperationClient interface {
 	NewUserOp(
@@ -51,37 +42,6 @@ type Client struct {
 	paymaster          common.Address
 	signer             func(userOperation UserOperation, entryPoint common.Address, chainId *big.Int) common.Hash
 	middlewares        []middleware
-}
-
-// ClientConfig represents the configuration for the user operation client.
-type ClientConfig struct {
-	ProviderURL string
-	BundlerURL  string
-	ChainID     *big.Int
-	EntryPoint  common.Address
-	Paymaster   PaymasterConfig
-	Signer      func(userOperation UserOperation, entryPoint common.Address, chainId *big.Int) common.Hash
-}
-
-// PaymasterConfig represents the configuration for the paymaster.
-type PaymasterConfig struct {
-	URL     string
-	Address common.Address
-	Ctx     any
-}
-
-// NewClientConfigFromFile reads the
-// client configuration from a file.
-func NewClientConfigFromFile(path string) (ClientConfig, error) {
-	var config ClientConfig
-	return config, cleanenv.ReadConfig(path, &config)
-}
-
-// NewClientConfigFromEnv reads the client
-// configuration from environment variables.
-func NewClientConfigFromEnv() (ClientConfig, error) {
-	var config ClientConfig
-	return config, cleanenv.ReadEnv(&config)
 }
 
 // NewClient is a factory that builds a new
