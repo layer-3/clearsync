@@ -12,46 +12,9 @@ import (
 	"github.com/layer-3/clearsync/pkg/userop"
 )
 
-// packUserOp packs a UserOperation into a byte slice according to the ABI encoding.
-func packUserOp(userOperation userop.UserOperation) []byte {
-	hashedInitCode := crypto.Keccak256(userOperation.InitCode)
-	hashedCallData := crypto.Keccak256(userOperation.CallData)
-	hashedPaymasterAndData := crypto.Keccak256(userOperation.PaymasterAndData)
-
-	arguments := abi.Arguments{
-		{Type: abi.Type{T: abi.AddressTy}},
-		{Type: abi.Type{T: abi.UintTy, Size: 256}},
-		{Type: abi.Type{T: abi.BytesTy}},
-		{Type: abi.Type{T: abi.BytesTy}},
-		{Type: abi.Type{T: abi.UintTy, Size: 256}},
-		{Type: abi.Type{T: abi.UintTy, Size: 256}},
-		{Type: abi.Type{T: abi.UintTy, Size: 256}},
-		{Type: abi.Type{T: abi.UintTy, Size: 256}},
-		{Type: abi.Type{T: abi.UintTy, Size: 256}},
-		{Type: abi.Type{T: abi.BytesTy}},
-	}
-
-	packed, err := arguments.Pack(
-		userOperation.Sender,
-		userOperation.Nonce,
-		hashedInitCode,
-		hashedCallData,
-		userOperation.CallGasLimit,
-		userOperation.VerificationGasLimit,
-		userOperation.PreVerificationGas,
-		userOperation.MaxFeePerGas,
-		userOperation.MaxPriorityFeePerGas,
-		hashedPaymasterAndData,
-	)
-	if err != nil {
-		panic(err) // Handle error appropriately in real code
-	}
-	return packed
-}
-
 // GetUserOperationHash computes the hash of a UserOperation.
-func getUserOperationHash(userOperation userop.UserOperation, entryPoint common.Address, chainID *big.Int) common.Hash {
-	packedOp := packUserOp(userOperation)
+func getUserOperationHash(op userop.UserOperation, entryPoint common.Address, chainID *big.Int) common.Hash {
+	packedOp := op.Pack()
 	hashedOp := crypto.Keccak256(packedOp)
 
 	arguments := abi.Arguments{
