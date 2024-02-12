@@ -18,7 +18,7 @@ type middleware func(ctx context.Context, op *UserOperation) error
 
 func getNonce(entryPoint *entry_point.EntryPoint) middleware {
 	return func(ctx context.Context, op *UserOperation) error {
-		slog.Info("Getting nonce")
+		slog.Info("getting nonce")
 		key := new(big.Int)
 		nonce, err := entryPoint.GetNonce(nil, op.Sender, key)
 		if err != nil {
@@ -40,7 +40,7 @@ func getNonce(entryPoint *entry_point.EntryPoint) middleware {
 
 func getGasPrice(providerRPC *ethclient.Client) middleware {
 	return func(ctx context.Context, op *UserOperation) error {
-		slog.Info("Getting gas price")
+		slog.Info("getting gas price")
 
 		// Get the latest block to read its baseFee
 		block, err := providerRPC.BlockByNumber(ctx, nil)
@@ -91,14 +91,14 @@ type gasEstimate struct {
 
 func estimateUserOperationGas(bundlerRPC *rpc.Client, entryPoint common.Address) middleware {
 	return func(ctx context.Context, op *UserOperation) error {
-		slog.Info("Estimating gas", "userop", op)
+		slog.Info("estimating gas")
 
 		var est gasEstimate
 		if err := bundlerRPC.CallContext(
 			ctx,
 			&est,
 			"eth_estimateUserOperationGas",
-			op,
+			op.Marshal(),
 			entryPoint,
 		); err != nil {
 			return fmt.Errorf("error estimating gas: %w", err)
