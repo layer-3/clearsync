@@ -28,6 +28,7 @@ import (
 // 	SmartWalletKernel        = SmartWalletType{"kernel"}
 // )
 
+// UserOperationClient represents a client for creating and posting user operations.
 type UserOperationClient interface {
 	NewUserOp(
 		ctx context.Context,
@@ -39,6 +40,7 @@ type UserOperationClient interface {
 	SendUserOp(ctx context.Context, op UserOperation, callback func()) error
 }
 
+// Client represents a user operation client.
 type Client struct {
 	providerRPC *ethclient.Client
 	bundlerRPC  *rpc.Client
@@ -51,6 +53,7 @@ type Client struct {
 	middlewares        []middleware
 }
 
+// ClientConfig represents the configuration for the user operation client.
 type ClientConfig struct {
 	ProviderURL string
 	BundlerURL  string
@@ -60,22 +63,29 @@ type ClientConfig struct {
 	Signer      func(userOperation UserOperation, entryPoint common.Address, chainId *big.Int) common.Hash
 }
 
+// PaymasterConfig represents the configuration for the paymaster.
 type PaymasterConfig struct {
 	URL     string
 	Address common.Address
 	Ctx     any
 }
 
+// NewClientConfigFromFile reads the
+// client configuration from a file.
 func NewClientConfigFromFile(path string) (ClientConfig, error) {
 	var config ClientConfig
 	return config, cleanenv.ReadConfig(path, &config)
 }
 
+// NewClientConfigFromEnv reads the client
+// configuration from environment variables.
 func NewClientConfigFromEnv() (ClientConfig, error) {
 	var config ClientConfig
 	return config, cleanenv.ReadEnv(&config)
 }
 
+// NewClient is a factory that builds a new
+// user operation client based on the provided configuration.
 func NewClient(config ClientConfig) (UserOperationClient, error) {
 	providerClient, err := ethclient.Dial(config.ProviderURL)
 	if err != nil {
@@ -110,6 +120,7 @@ func NewClient(config ClientConfig) (UserOperationClient, error) {
 	}, nil
 }
 
+// NewUserOp builds and fills in a new UserOperation.
 func (c *Client) NewUserOp(
 	ctx context.Context,
 	sender common.Address,
@@ -195,6 +206,8 @@ func (c *Client) NewUserOp(
 // 	Data  []byte
 // }
 
+// SendUserOp submits a user operation to a bundler
+// and executes the provided callback function.
 func (c *Client) SendUserOp(ctx context.Context, op UserOperation, callback func()) error {
 	slog.Info("sending user operation", "json", op.Marshal())
 
