@@ -4,17 +4,22 @@
 package userop
 
 import (
-	"encoding/hex"
-	"log/slog"
+	"encoding/json"
+	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/shopspring/decimal"
 )
 
 var (
+	address, _ = abi.NewType("address", "", nil)
+	uint256, _ = abi.NewType("uint256", "", nil)
+	bytes32, _ = abi.NewType("bytes32", "", nil)
+
 	// UserOpPrimitives is the primitive ABI types for each UserOperation field.
 	UserOpPrimitives = []abi.ArgumentMarshaling{
 		{Name: "sender", InternalType: "Sender", Type: "address"},
@@ -38,41 +43,39 @@ var (
 
 // UserOperation represents an EIP-4337 style transaction for a smart contract account.
 type UserOperation struct {
-	Sender               common.Address  `json:"sender,omitempty"`
-	Nonce                decimal.Decimal `json:"nonce,omitempty"`
+	Sender               common.Address  `json:"sender"`
+	Nonce                decimal.Decimal `json:"nonce"`
 	InitCode             []byte          `json:"initCode"`
 	CallData             []byte          `json:"callData"`
-	CallGasLimit         decimal.Decimal `json:"callGasLimit,omitempty"`
-	VerificationGasLimit decimal.Decimal `json:"verificationGasLimit,omitempty"`
-	PreVerificationGas   decimal.Decimal `json:"preVerificationGas,omitempty"`
-	MaxFeePerGas         decimal.Decimal `json:"maxFeePerGas,omitempty"`
-	MaxPriorityFeePerGas decimal.Decimal `json:"maxPriorityFeePerGas,omitempty"`
+	CallGasLimit         decimal.Decimal `json:"callGasLimit"`
+	VerificationGasLimit decimal.Decimal `json:"verificationGasLimit"`
+	PreVerificationGas   decimal.Decimal `json:"preVerificationGas"`
+	MaxFeePerGas         decimal.Decimal `json:"maxFeePerGas"`
+	MaxPriorityFeePerGas decimal.Decimal `json:"maxPriorityFeePerGas"`
 	PaymasterAndData     []byte          `json:"paymasterAndData"`
-	Signature            common.Hash     `json:"signature,omitempty"`
+	Signature            []byte          `json:"signature,omitempty"`
 }
 
-// ToMap method implements custom serialization for user operation.
-// Namely, it converts []byte fields to hex strings and decimal.Decimal fields to strings.
-func (op *UserOperation) ToMap() map[string]interface{} {
-	// Prepare the object for serialization
-	result := map[string]interface{}{
-		"sender":               op.Sender,
-		"nonce":                "0x" + op.Nonce.BigInt().Text(16),
-		"initCode":             "0x" + hex.EncodeToString(op.InitCode),
-		"callData":             "0x" + hex.EncodeToString(op.CallData),
-		"callGasLimit":         "0x" + op.CallGasLimit.BigInt().Text(16),
-		"verificationGasLimit": "0x" + op.VerificationGasLimit.BigInt().Text(16),
-		"preVerificationGas":   "0x" + op.PreVerificationGas.BigInt().Text(16),
-		"maxFeePerGas":         "0x" + op.MaxFeePerGas.BigInt().Text(16),
-		"maxPriorityFeePerGas": "0x" + op.MaxPriorityFeePerGas.BigInt().Text(16),
-		"paymasterAndData":     "0x" + hex.EncodeToString(op.PaymasterAndData),
-		"signature":            op.Signature,
+// GetFactory returns the address portion of InitCode if applicable. Otherwise it returns the zero address.
+func (op *UserOperation) GetFactory() common.Address {
+	if len(op.InitCode) < common.AddressLength {
+		return common.HexToAddress("0x")
 	}
 
-	slog.Info("marshalling", "userop", result)
-	return result
+	return common.BytesToAddress(op.InitCode[:common.AddressLength])
 }
 
+// GetFactoryData returns the data portion of InitCode if applicable. Otherwise it returns an empty byte
+// array.
+func (op *UserOperation) GetFactoryData() []byte {
+	if len(op.InitCode) < common.AddressLength {
+		return []byte{}
+	}
+
+	return op.InitCode[common.AddressLength:]
+}
+
+// Pack returns a standard message of the userOp. This cannot be used to generate a userOpHash.
 func (op *UserOperation) Pack() []byte {
 	args := abi.Arguments{
 		{Name: "UserOp", Type: UserOpType},
@@ -100,10 +103,81 @@ func (op *UserOperation) Pack() []byte {
 		op.MaxFeePerGas.BigInt(),
 		op.MaxPriorityFeePerGas.BigInt(),
 		op.PaymasterAndData,
-		op.Signature.Bytes(),
+		op.Signature,
 	})
 
 	enc := hexutil.Encode(packed)
 	enc = "0x" + enc[66:]
 	return (hexutil.MustDecode(enc))
+}
+
+// UserOpHash returns the hash of the userOp + entryPoint address + chainID.
+func (op *UserOperation) UserOpHash(entryPoint common.Address, chainID *big.Int) common.Hash {
+	args := abi.Arguments{
+		{Name: "sender", Type: address},
+		{Name: "nonce", Type: uint256},
+		{Name: "hashInitCode", Type: bytes32},
+		{Name: "hashCallData", Type: bytes32},
+		{Name: "callGasLimit", Type: uint256},
+		{Name: "verificationGasLimit", Type: uint256},
+		{Name: "preVerificationGas", Type: uint256},
+		{Name: "maxFeePerGas", Type: uint256},
+		{Name: "maxPriorityFeePerGas", Type: uint256},
+		{Name: "hashPaymasterAndData", Type: bytes32},
+	}
+	packed, _ := args.Pack(
+		op.Sender,
+		op.Nonce,
+		crypto.Keccak256Hash(op.InitCode),
+		crypto.Keccak256Hash(op.CallData),
+		op.CallGasLimit,
+		op.VerificationGasLimit,
+		op.PreVerificationGas,
+		op.MaxFeePerGas,
+		op.MaxPriorityFeePerGas,
+		crypto.Keccak256Hash(op.PaymasterAndData),
+	)
+
+	return crypto.Keccak256Hash(
+		crypto.Keccak256(packed),
+		common.LeftPadBytes(entryPoint.Bytes(), 32),
+		common.LeftPadBytes(chainID.Bytes(), 32),
+	)
+}
+
+// MarshalJSON returns a JSON encoding of the UserOperation.
+func (op UserOperation) MarshalJSON() ([]byte, error) {
+	// Note: The bundler spec test requires the address portion of the initCode to include the checksum.
+	ic := "0x"
+	if fa := op.GetFactory(); fa != common.HexToAddress("0x") {
+		ic = fmt.Sprintf("%s%s", fa, common.Bytes2Hex(op.GetFactoryData()))
+	}
+
+	res, err := json.Marshal(&struct {
+		Sender               string `json:"sender"`
+		Nonce                string `json:"nonce"`
+		InitCode             string `json:"initCode"`
+		CallData             string `json:"callData"`
+		CallGasLimit         string `json:"callGasLimit"`
+		VerificationGasLimit string `json:"verificationGasLimit"`
+		PreVerificationGas   string `json:"preVerificationGas"`
+		MaxFeePerGas         string `json:"maxFeePerGas"`
+		MaxPriorityFeePerGas string `json:"maxPriorityFeePerGas"`
+		PaymasterAndData     string `json:"paymasterAndData"`
+		Signature            string `json:"signature"`
+	}{
+		Sender:               op.Sender.String(),
+		Nonce:                hexutil.EncodeBig(op.Nonce.BigInt()),
+		InitCode:             ic,
+		CallData:             hexutil.Encode(op.CallData),
+		CallGasLimit:         hexutil.EncodeBig(op.CallGasLimit.BigInt()),
+		VerificationGasLimit: hexutil.EncodeBig(op.VerificationGasLimit.BigInt()),
+		PreVerificationGas:   hexutil.EncodeBig(op.PreVerificationGas.BigInt()),
+		MaxFeePerGas:         hexutil.EncodeBig(op.MaxFeePerGas.BigInt()),
+		MaxPriorityFeePerGas: hexutil.EncodeBig(op.MaxPriorityFeePerGas.BigInt()),
+		PaymasterAndData:     hexutil.Encode(op.PaymasterAndData),
+		Signature:            string(op.Signature), //hexutil.Encode(op.Signature),
+	})
+
+	return res, err
 }
