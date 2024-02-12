@@ -29,14 +29,14 @@ import (
 // )
 
 type UserOperationClient interface {
-	NewUserOperation(
+	NewUserOp(
 		ctx context.Context,
 		sender common.Address,
 		receiver common.Address,
 		token common.Address,
 		amount decimal.Decimal,
 	) (UserOperation, error)
-	SendUserOperation(ctx context.Context, op UserOperation) error
+	SendUserOp(ctx context.Context, op UserOperation, callback func()) error
 }
 
 type Client struct {
@@ -60,6 +60,12 @@ type ClientConfig struct {
 	Signer      func(userOperation UserOperation, entryPoint common.Address, chainId *big.Int) common.Hash
 }
 
+type PaymasterConfig struct {
+	URL     string
+	Address common.Address
+	Ctx     any
+}
+
 func NewClientConfigFromFile(path string) (ClientConfig, error) {
 	var config ClientConfig
 	return config, cleanenv.ReadConfig(path, &config)
@@ -68,12 +74,6 @@ func NewClientConfigFromFile(path string) (ClientConfig, error) {
 func NewClientConfigFromEnv() (ClientConfig, error) {
 	var config ClientConfig
 	return config, cleanenv.ReadEnv(&config)
-}
-
-type PaymasterConfig struct {
-	URL     string
-	Address common.Address
-	Ctx     any
 }
 
 func NewClient(config ClientConfig) (UserOperationClient, error) {
@@ -110,7 +110,7 @@ func NewClient(config ClientConfig) (UserOperationClient, error) {
 	}, nil
 }
 
-func (c *Client) NewUserOperation(
+func (c *Client) NewUserOp(
 	ctx context.Context,
 	sender common.Address,
 	receiver common.Address,
@@ -149,12 +149,14 @@ func (c *Client) NewUserOperation(
 	values = append(values, new(big.Int))
 	callData = append(callData, transferData)
 
+	// Pack calldata for SimpleAccount / Biconomy contract
 	parsedABI, err := abi.JSON(strings.NewReader(account_abstraction.SimpleAccountMetaData.ABI))
 	data, err := parsedABI.Pack("executeBatch", addresses, values, callData)
 	if err != nil {
 		return UserOperation{}, fmt.Errorf("failed to pack executeBatch data: %w", err)
 	}
 
+	// Pack calldata for Zerodev Kernel contract
 	// parsedABI, err := abi.JSON(strings.NewReader(kernel.KernelMetaData.ABI))
 	// params := []callStructKernel{
 	// 	{
@@ -193,15 +195,16 @@ func (c *Client) NewUserOperation(
 // 	Data  []byte
 // }
 
-func (c *Client) SendUserOperation(ctx context.Context, op UserOperation) error {
-	slog.Info("sending user operation", "json", op)
+func (c *Client) SendUserOp(ctx context.Context, op UserOperation, callback func()) error {
+	slog.Info("sending user operation", "json", op.Marshal())
 
 	var userOpHash common.Hash
-	err := c.bundlerRPC.CallContext(ctx, &userOpHash, "eth_sendUserOperation", op)
+	err := c.bundlerRPC.CallContext(ctx, &userOpHash, "eth_sendUserOperation", op.Marshal())
 	if err != nil {
 		return fmt.Errorf("failed to send user operation: %w", err)
 	}
 
 	slog.Info("user operation sent successfully", "hash", userOpHash.Hex())
+	callback()
 	return nil
 }

@@ -4,6 +4,9 @@
 package userop
 
 import (
+	"encoding/hex"
+	"log/slog"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/shopspring/decimal"
 )
@@ -23,4 +26,26 @@ type UserOperation struct {
 	MaxPriorityFeePerGas decimal.Decimal `json:"maxPriorityFeePerGas,omitempty"`
 	PaymasterAndData     []byte          `json:"paymasterAndData"`
 	Signature            common.Hash     `json:"signature,omitempty"`
+}
+
+// Marshal method implements custom serialization for user operation.
+// Namely, it converts []byte fields to hex strings and decimal.Decimal fields to strings.
+func (op *UserOperation) Marshal() map[string]interface{} {
+	// Prepare the object for serialization
+	result := map[string]interface{}{
+		"sender":               op.Sender,
+		"nonce":                "0x" + op.Nonce.BigInt().Text(16),
+		"initCode":             "0x" + hex.EncodeToString(op.InitCode),
+		"callData":             "0x" + hex.EncodeToString(op.CallData),
+		"callGasLimit":         "0x" + op.CallGasLimit.BigInt().Text(16),
+		"verificationGasLimit": "0x" + op.VerificationGasLimit.BigInt().Text(16),
+		"preVerificationGas":   "0x" + op.PreVerificationGas.BigInt().Text(16),
+		"maxFeePerGas":         "0x" + op.MaxFeePerGas.BigInt().Text(16),
+		"maxPriorityFeePerGas": "0x" + op.MaxPriorityFeePerGas.BigInt().Text(16),
+		"paymasterAndData":     "0x" + hex.EncodeToString(op.PaymasterAndData),
+		"signature":            op.Signature,
+	}
+
+	slog.Info("marshalling", "userop", result)
+	return result
 }

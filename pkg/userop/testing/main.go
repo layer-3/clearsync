@@ -75,7 +75,7 @@ func getUserOperationHash(userOperation userop.UserOperation, entryPoint common.
 }
 
 func signUserOp(userOperation userop.UserOperation, entryPoint common.Address, chainID *big.Int) common.Hash {
-	slog.Info("Signing user operation")
+	slog.Info("signing user operation")
 
 	hash := getUserOperationHash(userOperation, entryPoint, chainID)
 	privateKey, err := crypto.HexToECDSA("9be4e88f3d84ff8b58ec9f11f047245cad2f8e2c6cf43ca4087331ffc0fea6c8")
@@ -90,7 +90,7 @@ func signUserOp(userOperation userop.UserOperation, entryPoint common.Address, c
 
 	signatureStr := fmt.Sprintf("0x%s", common.Bytes2Hex(signature))
 	result := common.Hash([]byte(signatureStr))
-	slog.Info("User operation signed", "hash", result.Hex())
+	slog.Info("user operation signed", "hash", result.Hex())
 	return result
 }
 
@@ -100,12 +100,13 @@ func main() {
 		panic(fmt.Errorf("failed to create userop client: %w", err))
 	}
 
-	op, err := client.NewUserOperation(context.Background(), sender, receiver, token, amount)
+	op, err := client.NewUserOp(context.Background(), sender, receiver, token, amount)
 	if err != nil {
 		panic(fmt.Errorf("failed to build userop: %w", err))
 	}
 
-	if err := client.SendUserOperation(context.Background(), op); err != nil {
+	callback := func() {}
+	if err := client.SendUserOp(context.Background(), op, callback); err != nil {
 		panic(fmt.Errorf("failed to send userop: %w", err))
 	}
 }
