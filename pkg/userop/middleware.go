@@ -5,14 +5,20 @@ import (
 	"fmt"
 	"log/slog"
 	"math/big"
+	"strings"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/shopspring/decimal"
 
 	"github.com/layer-3/clearsync/pkg/abi/entry_point"
+	"github.com/layer-3/clearsync/pkg/abi/simple_account_factory"
 )
+
+var blockGasLimit = decimal.NewFromInt(30_000_000)
 
 type middleware func(ctx context.Context, op *UserOperation) error
 
@@ -26,6 +32,23 @@ func getNonce(entryPoint *entry_point.EntryPoint) middleware {
 		}
 
 		op.Nonce = decimal.NewFromBigInt(nonce, 0)
+		return nil
+	}
+}
+
+func getInitCode(factoryAddress, ownerAddress common.Address) middleware {
+	return func(ctx context.Context, op *UserOperation) error {
+		factory, err := abi.JSON(strings.NewReader(simple_account_factory.SimpleAccountFactoryMetaData.ABI))
+		if err != nil {
+			return fmt.Errorf("failed to parse SimpleAccountFactory ABI: %w", err)
+		}
+
+		initCode, err := factory.Pack("deployCounterFactualAccount", ownerAddress, new(big.Int))
+		if err != nil {
+			return fmt.Errorf("failed to pack initCode: %w", err)
+		}
+
+		op.InitCode = initCode
 		return nil
 	}
 }
@@ -83,10 +106,9 @@ func getGasPrice(providerRPC *ethclient.Client) middleware {
 
 // gasEstimate holds gas estimates for a user operation.
 type gasEstimate struct {
-	PreVerificationGas   *decimal.Decimal `json:"preVerificationGas"`
-	VerificationGasLimit *decimal.Decimal `json:"verificationGasLimit"`
-	CallGasLimit         *decimal.Decimal `json:"callGasLimit"`
-	VerificationGas      *decimal.Decimal `json:"verificationGas"` // TODO: remove this with EntryPoint v0.7
+	CallGasLimit         string `json:"callGasLimit"`
+	VerificationGasLimit string `json:"verificationGasLimit"`
+	PreVerificationGas   string `json:"preVerificationGas"`
 }
 
 func estimateUserOperationGas(bundlerRPC *rpc.Client, entryPoint common.Address) middleware {
@@ -98,21 +120,41 @@ func estimateUserOperationGas(bundlerRPC *rpc.Client, entryPoint common.Address)
 			ctx,
 			&est,
 			"eth_estimateUserOperationGas",
-			op.Marshal(),
+			op,
 			entryPoint,
 		); err != nil {
 			return fmt.Errorf("error estimating gas: %w", err)
 		}
 
-		op.CallGasLimit = *est.CallGasLimit
-		if est.VerificationGasLimit != nil {
-			op.VerificationGasLimit = *est.VerificationGasLimit
-		} else {
-			// Fallback to verificationGas if verificationGasLimit is not available.
-			op.VerificationGasLimit = *est.VerificationGas
+		preVerificationGas, err := hexutil.DecodeBig(est.PreVerificationGas)
+		if err != nil {
+			return fmt.Errorf("failed to parse preVerificationGas: %w (got '%s')", err, est.PreVerificationGas)
 		}
-		op.PreVerificationGas = *est.PreVerificationGas
+		verificationGasLimit, err := hexutil.DecodeBig(est.VerificationGasLimit)
+		if err != nil {
+			return fmt.Errorf("failed to parse verificationGasLimit: %w (got '%s')", err, est.VerificationGasLimit)
+		}
+		callGasLimit, err := hexutil.DecodeBig(est.CallGasLimit)
+		if err != nil {
+			return fmt.Errorf("failed to parse callGasLimit: %w (got '%s')", err, est.CallGasLimit)
+		}
 
+		op.CallGasLimit = decimal.NewFromBigInt(callGasLimit, 0)
+		op.VerificationGasLimit = decimal.NewFromBigInt(verificationGasLimit, 0)
+		op.PreVerificationGas = decimal.NewFromBigInt(preVerificationGas, 0)
+
+		return nil
+	}
+}
+
+func sign(signer Signer, entryPoint common.Address, chainID *big.Int) middleware {
+	return func(ctx context.Context, op *UserOperation) error {
+		signature, err := signer(*op, entryPoint, chainID)
+		if err != nil {
+			return fmt.Errorf("failed to sign user operation: %w", err)
+		}
+
+		op.Signature = signature
 		return nil
 	}
 }

@@ -15,7 +15,7 @@ type ClientConfig struct {
 	SmartAccountFactory common.Address
 	EntryPoint          common.Address
 	Paymaster           PaymasterConfig
-	Signer              func(userOperation UserOperation, entryPoint common.Address, chainId *big.Int) []byte
+	Signer              Signer
 }
 
 // PaymasterConfig represents the configuration for the paymaster.
@@ -24,6 +24,8 @@ type PaymasterConfig struct {
 	Address common.Address
 	Ctx     any
 }
+
+type Signer func(userOperation UserOperation, entryPoint common.Address, chainId *big.Int) ([]byte, error)
 
 // NewClientConfigFromFile reads the
 // client configuration from a file.
