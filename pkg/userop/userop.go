@@ -6,9 +6,32 @@ package userop
 import (
 	"encoding/hex"
 	"log/slog"
+	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/shopspring/decimal"
+)
+
+var (
+	// UserOpPrimitives is the primitive ABI types for each UserOperation field.
+	UserOpPrimitives = []abi.ArgumentMarshaling{
+		{Name: "sender", InternalType: "Sender", Type: "address"},
+		{Name: "nonce", InternalType: "Nonce", Type: "uint256"},
+		{Name: "initCode", InternalType: "InitCode", Type: "bytes"},
+		{Name: "callData", InternalType: "CallData", Type: "bytes"},
+		{Name: "callGasLimit", InternalType: "CallGasLimit", Type: "uint256"},
+		{Name: "verificationGasLimit", InternalType: "VerificationGasLimit", Type: "uint256"},
+		{Name: "preVerificationGas", InternalType: "PreVerificationGas", Type: "uint256"},
+		{Name: "maxFeePerGas", InternalType: "MaxFeePerGas", Type: "uint256"},
+		{Name: "maxPriorityFeePerGas", InternalType: "MaxPriorityFeePerGas", Type: "uint256"},
+		{Name: "paymasterAndData", InternalType: "PaymasterAndData", Type: "bytes"},
+		{Name: "signature", InternalType: "Signature", Type: "bytes"},
+	}
+
+	// UserOpType is the ABI type of a UserOperation.
+	UserOpType, _ = abi.NewType("tuple", "op", UserOpPrimitives)
 )
 
 // TODO: verify userop validity (https://www.erc4337.io/docs/bundlers/running-a-bundler)
@@ -28,9 +51,9 @@ type UserOperation struct {
 	Signature            common.Hash     `json:"signature,omitempty"`
 }
 
-// Marshal method implements custom serialization for user operation.
+// ToMap method implements custom serialization for user operation.
 // Namely, it converts []byte fields to hex strings and decimal.Decimal fields to strings.
-func (op *UserOperation) Marshal() map[string]interface{} {
+func (op *UserOperation) ToMap() map[string]interface{} {
 	// Prepare the object for serialization
 	result := map[string]interface{}{
 		"sender":               op.Sender,
@@ -48,4 +71,39 @@ func (op *UserOperation) Marshal() map[string]interface{} {
 
 	slog.Info("marshalling", "userop", result)
 	return result
+}
+
+func (op *UserOperation) Pack() []byte {
+	args := abi.Arguments{
+		{Name: "UserOp", Type: UserOpType},
+	}
+	packed, _ := args.Pack(&struct {
+		Sender               common.Address
+		Nonce                *big.Int
+		InitCode             []byte
+		CallData             []byte
+		CallGasLimit         *big.Int
+		VerificationGasLimit *big.Int
+		PreVerificationGas   *big.Int
+		MaxFeePerGas         *big.Int
+		MaxPriorityFeePerGas *big.Int
+		PaymasterAndData     []byte
+		Signature            []byte
+	}{
+		op.Sender,
+		op.Nonce.BigInt(),
+		op.InitCode,
+		op.CallData,
+		op.CallGasLimit.BigInt(),
+		op.VerificationGasLimit.BigInt(),
+		op.PreVerificationGas.BigInt(),
+		op.MaxFeePerGas.BigInt(),
+		op.MaxPriorityFeePerGas.BigInt(),
+		op.PaymasterAndData,
+		op.Signature.Bytes(),
+	})
+
+	enc := hexutil.Encode(packed)
+	enc = "0x" + enc[66:]
+	return (hexutil.MustDecode(enc))
 }
