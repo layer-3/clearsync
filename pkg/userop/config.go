@@ -25,6 +25,7 @@ type PaymasterConfig struct {
 	Ctx     any
 }
 
+// Signer represents a function that signs a user operation.
 type Signer func(userOperation UserOperation, entryPoint common.Address, chainId *big.Int) ([]byte, error)
 
 // NewClientConfigFromFile reads the
