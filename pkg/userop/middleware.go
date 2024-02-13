@@ -2,6 +2,7 @@ package userop
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"math/big"
@@ -102,11 +103,106 @@ func getGasPrice(providerRPC *ethclient.Client) middleware {
 	}
 }
 
+func getPaymasterData(paymasterRPC *rpc.Client, paymasterCtx map[string]any, _ common.Address) middleware {
+	return func(ctx context.Context, op *UserOperation) error {
+		opModified := struct {
+			Sender               common.Address  `json:"sender"`
+			Nonce                decimal.Decimal `json:"nonce"`
+			InitCode             string          `json:"initCode"`
+			CallData             string          `json:"callData"`
+			CallGasLimit         decimal.Decimal `json:"callGasLimit"`
+			VerificationGasLimit decimal.Decimal `json:"verificationGasLimit"`
+			PreVerificationGas   decimal.Decimal `json:"preVerificationGas"`
+			MaxFeePerGas         decimal.Decimal `json:"maxFeePerGas"`
+			MaxPriorityFeePerGas decimal.Decimal `json:"maxPriorityFeePerGas"`
+			PaymasterAndData     string          `json:"paymasterAndData"`
+			Signature            string          `json:"signature,omitempty"`
+		}{
+			Sender:               op.Sender,
+			Nonce:                op.Nonce,
+			InitCode:             hexutil.Encode(op.InitCode),
+			CallData:             hexutil.Encode(op.CallData),
+			CallGasLimit:         op.CallGasLimit,
+			VerificationGasLimit: op.VerificationGasLimit,
+			PreVerificationGas:   op.PreVerificationGas,
+			MaxFeePerGas:         op.MaxFeePerGas,
+			MaxPriorityFeePerGas: op.MaxPriorityFeePerGas,
+			PaymasterAndData:     hexutil.Encode(op.PaymasterAndData),
+			Signature:            hexutil.Encode(op.Signature),
+		}
+
+		var est gasEstimate
+		if err := paymasterRPC.CallContext(
+			ctx,
+			&est,
+			"pm_sponsorUserOperation",
+			opModified,
+			paymasterCtx,
+		); err != nil {
+			return fmt.Errorf("failed to call pm_sponsorUserOperation: %v", err)
+		}
+
+		callGasLimit, verificationGasLimit, preVerificationGas, err := est.convert()
+		if err != nil {
+			return fmt.Errorf("failed to convert gas estimates: %w", err)
+		}
+
+		op.CallGasLimit = decimal.NewFromBigInt(callGasLimit, 0)
+		op.VerificationGasLimit = decimal.NewFromBigInt(verificationGasLimit, 0)
+		op.PreVerificationGas = decimal.NewFromBigInt(preVerificationGas, 0)
+
+		paymasterAndData, err := hexutil.Decode(est.PaymasterAndData)
+		if err != nil {
+			return fmt.Errorf("failed to decode paymasterAndData: %w", err)
+		}
+		op.PaymasterAndData = paymasterAndData
+
+		return nil
+	}
+}
+
 // gasEstimate holds gas estimates for a user operation.
 type gasEstimate struct {
-	CallGasLimit         string `json:"callGasLimit"`
-	VerificationGasLimit string `json:"verificationGasLimit"`
-	PreVerificationGas   string `json:"preVerificationGas"`
+	CallGasLimit         decimal.Decimal `json:"callGasLimit"`
+	VerificationGasLimit decimal.Decimal `json:"verificationGasLimit"`
+	PreVerificationGas   decimal.Decimal `json:"preVerificationGas"`
+	PaymasterAndData     string          `json:"paymasterAndData,omitempty"`
+}
+
+func (est *gasEstimate) UnmarshalJSON(data []byte) error {
+	type Alias gasEstimate
+	aux := &struct {
+		*Alias
+	}{
+		Alias: (*Alias)(est),
+	}
+
+	fmt.Println("data", string(data))
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (est gasEstimate) convert() (*big.Int, *big.Int, *big.Int, error) {
+	// preVerificationGas, err := hexutil.DecodeBig(est.PreVerificationGas)
+	// if err != nil {
+	// 	return nil, nil, nil, fmt.Errorf("failed to parse preVerificationGas: %w (got '%s')", err, est.PreVerificationGas)
+	// }
+	// verificationGasLimit, err := hexutil.DecodeBig(est.VerificationGasLimit)
+	// if err != nil {
+	// 	return nil, nil, nil, fmt.Errorf("failed to parse verificationGasLimit: %w (got '%s')", err, est.VerificationGasLimit)
+	// }
+	// callGasLimit, err := hexutil.DecodeBig(est.CallGasLimit)
+	// if err != nil {
+	// 	return nil, nil, nil, fmt.Errorf("failed to parse callGasLimit: %w (got '%s')", err, est.CallGasLimit)
+	// }
+
+	// return preVerificationGas, verificationGasLimit, callGasLimit, nil
+	return est.PreVerificationGas.BigInt(),
+		est.VerificationGasLimit.BigInt(),
+		est.CallGasLimit.BigInt(),
+		nil
 }
 
 func estimateUserOperationGas(bundlerRPC *rpc.Client, entryPoint common.Address) middleware {
@@ -124,17 +220,9 @@ func estimateUserOperationGas(bundlerRPC *rpc.Client, entryPoint common.Address)
 			return fmt.Errorf("error estimating gas: %w", err)
 		}
 
-		preVerificationGas, err := hexutil.DecodeBig(est.PreVerificationGas)
+		callGasLimit, verificationGasLimit, preVerificationGas, err := est.convert()
 		if err != nil {
-			return fmt.Errorf("failed to parse preVerificationGas: %w (got '%s')", err, est.PreVerificationGas)
-		}
-		verificationGasLimit, err := hexutil.DecodeBig(est.VerificationGasLimit)
-		if err != nil {
-			return fmt.Errorf("failed to parse verificationGasLimit: %w (got '%s')", err, est.VerificationGasLimit)
-		}
-		callGasLimit, err := hexutil.DecodeBig(est.CallGasLimit)
-		if err != nil {
-			return fmt.Errorf("failed to parse callGasLimit: %w (got '%s')", err, est.CallGasLimit)
+			return fmt.Errorf("failed to convert gas estimates: %w", err)
 		}
 
 		op.CallGasLimit = decimal.NewFromBigInt(callGasLimit, 0)
@@ -153,6 +241,8 @@ func sign(signer Signer, entryPoint common.Address, chainID *big.Int) middleware
 		}
 
 		op.Signature = signature
+
+		fmt.Println("to array", op.ToArray(), "hash", op.UserOpHash(entryPoint, chainID).String())
 		return nil
 	}
 }

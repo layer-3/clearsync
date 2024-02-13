@@ -62,12 +62,23 @@ func NewClient(config ClientConfig) (UserOperationClient, error) {
 		return nil, fmt.Errorf("failed to connect to the entry point contract: %w", err)
 	}
 
+	isPaymasterEnabled := config.Paymaster.URL != "" && config.Paymaster.Address != common.Address{}
+	estimateGas := estimateUserOperationGas(bundlerRPC, config.EntryPoint)
+	if isPaymasterEnabled {
+		paymasterRPC, err := rpc.Dial(config.Paymaster.URL)
+		if err != nil {
+			return nil, fmt.Errorf("failed to connect to the Ethereum RPC: %w", err)
+		}
+
+		estimateGas = getPaymasterData(paymasterRPC, config.Paymaster.Ctx, config.EntryPoint)
+	}
+
 	return &Client{
 		providerRPC:        providerClient,
 		bundlerRPC:         bundlerRPC,
 		chainID:            config.ChainID,
 		entryPoint:         config.EntryPoint,
-		isPaymasterEnabled: config.Paymaster.URL != "",
+		isPaymasterEnabled: isPaymasterEnabled,
 		paymaster:          config.Paymaster.Address,
 		signer:             config.Signer,
 		middlewares: []middleware{ // Middleware order matters - first in, first executed
@@ -75,7 +86,7 @@ func NewClient(config ClientConfig) (UserOperationClient, error) {
 			// getInitCode(config.SmartAccountFactory, ), // TODO: add smart wallet deployment support
 			getGasPrice(providerClient),
 			sign(config.Signer, config.EntryPoint, config.ChainID),
-			estimateUserOperationGas(bundlerRPC, config.EntryPoint),
+			estimateGas,
 			sign(config.Signer, config.EntryPoint, config.ChainID), // update signature after gas estimation
 		},
 	}, nil
