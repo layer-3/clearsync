@@ -4,8 +4,10 @@
 package userop
 
 import (
+	"crypto/ecdsa"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -16,9 +18,10 @@ import (
 )
 
 var (
-	address, _ = abi.NewType("address", "", nil)
+	Address, _ = abi.NewType("address", "", nil)
 	uint256, _ = abi.NewType("uint256", "", nil)
-	bytes32, _ = abi.NewType("bytes32", "", nil)
+	Bytes32, _ = abi.NewType("bytes32", "", nil)
+	Bytes, _   = abi.NewType("bytes", "", nil)
 
 	// UserOpPrimitives is the primitive ABI types for each UserOperation field.
 	UserOpPrimitives = []abi.ArgumentMarshaling{
@@ -114,29 +117,32 @@ func (op *UserOperation) Pack() []byte {
 // UserOpHash returns the hash of the userOp + entryPoint address + chainID.
 func (op *UserOperation) UserOpHash(entryPoint common.Address, chainID *big.Int) common.Hash {
 	args := abi.Arguments{
-		{Name: "sender", Type: address},
+		{Name: "sender", Type: Address},
 		{Name: "nonce", Type: uint256},
-		{Name: "hashInitCode", Type: bytes32},
-		{Name: "hashCallData", Type: bytes32},
+		{Name: "hashInitCode", Type: Bytes32},
+		{Name: "hashCallData", Type: Bytes32},
 		{Name: "callGasLimit", Type: uint256},
 		{Name: "verificationGasLimit", Type: uint256},
 		{Name: "preVerificationGas", Type: uint256},
 		{Name: "maxFeePerGas", Type: uint256},
 		{Name: "maxPriorityFeePerGas", Type: uint256},
-		{Name: "hashPaymasterAndData", Type: bytes32},
+		{Name: "hashPaymasterAndData", Type: Bytes32},
 	}
-	packed, _ := args.Pack(
+	packed, err := args.Pack(
 		op.Sender,
-		op.Nonce,
+		op.Nonce.BigInt(),
 		crypto.Keccak256Hash(op.InitCode),
 		crypto.Keccak256Hash(op.CallData),
-		op.CallGasLimit,
-		op.VerificationGasLimit,
-		op.PreVerificationGas,
-		op.MaxFeePerGas,
-		op.MaxPriorityFeePerGas,
+		op.CallGasLimit.BigInt(),
+		op.VerificationGasLimit.BigInt(),
+		op.PreVerificationGas.BigInt(),
+		op.MaxFeePerGas.BigInt(),
+		op.MaxPriorityFeePerGas.BigInt(),
 		crypto.Keccak256Hash(op.PaymasterAndData),
 	)
+	if err != nil { // This should never happen
+		panic(err)
+	}
 
 	return crypto.Keccak256Hash(
 		crypto.Keccak256(packed),
@@ -147,7 +153,6 @@ func (op *UserOperation) UserOpHash(entryPoint common.Address, chainID *big.Int)
 
 // MarshalJSON returns a JSON encoding of the UserOperation.
 func (op UserOperation) MarshalJSON() ([]byte, error) {
-	// Note: The bundler spec test requires the address portion of the initCode to include the checksum.
 	ic := "0x"
 	if fa := op.GetFactory(); fa != common.HexToAddress("0x") {
 		ic = fmt.Sprintf("%s%s", fa, common.Bytes2Hex(op.GetFactoryData()))
@@ -176,8 +181,36 @@ func (op UserOperation) MarshalJSON() ([]byte, error) {
 		MaxFeePerGas:         hexutil.EncodeBig(op.MaxFeePerGas.BigInt()),
 		MaxPriorityFeePerGas: hexutil.EncodeBig(op.MaxPriorityFeePerGas.BigInt()),
 		PaymasterAndData:     hexutil.Encode(op.PaymasterAndData),
-		Signature:            string(op.Signature), //hexutil.Encode(op.Signature),
+		Signature:            hexutil.Encode(op.Signature),
 	})
 
 	return res, err
+}
+
+func (op UserOperation) SignWithECDSA(privateKey *ecdsa.PrivateKey, entryPoint common.Address, chainID *big.Int) ([]byte, error) {
+	hash := op.UserOpHash(entryPoint, chainID)
+	ethMessageHash := computeEthereumSignedMessageHash(hash.Bytes())
+
+	signature, err := crypto.Sign(ethMessageHash, privateKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to sign user operation: %w", err)
+	}
+
+	// To make the signature compatible with
+	// Ethereum's ECDSA recovery, ensure V is 27 or 28.
+	if signature[64] < 27 {
+		signature[64] += 27
+	}
+
+	slog.Debug("user operation signed:", "hash", hash, "signature", hexutil.Encode(signature))
+	return signature, nil
+}
+
+// computeEthereumSignedMessageHash accepts an arbitrary message, prepends a known message,
+// and hashes the result using keccak256. The known message added to the input before hashing is
+// "\x19Ethereum Signed Message:\n" + len(message).
+func computeEthereumSignedMessageHash(message []byte) []byte {
+	return crypto.Keccak256([]byte(
+		fmt.Sprintf("\x19Ethereum Signed Message:\n%d%s", len(message), string(message)),
+	))
 }

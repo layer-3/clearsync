@@ -18,8 +18,6 @@ import (
 	"github.com/layer-3/clearsync/pkg/abi/simple_account_factory"
 )
 
-var blockGasLimit = decimal.NewFromInt(30_000_000)
-
 type middleware func(ctx context.Context, op *UserOperation) error
 
 func getNonce(entryPoint *entry_point.EntryPoint) middleware {
