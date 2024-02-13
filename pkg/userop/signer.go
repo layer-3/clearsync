@@ -11,11 +11,12 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-func SignerForBiconomy(privateKey *ecdsa.PrivateKey) func(op UserOperation, entryPoint common.Address, chainID *big.Int) ([]byte, error) {
+func SignerForBiconomy(privateKey *ecdsa.PrivateKey) Signer {
 	return func(op UserOperation, entryPoint common.Address, chainID *big.Int) ([]byte, error) {
 		slog.Info("signing user operation")
 
-		signature, err := op.SignWithECDSA(privateKey, entryPoint, chainID)
+		hash := op.UserOpHash(entryPoint, chainID)
+		signature, err := op.SignWithECDSA(hash.Bytes(), privateKey)
 		if err != nil {
 			return nil, fmt.Errorf("failed to sign user operation: %w", err)
 		}

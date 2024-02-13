@@ -187,9 +187,8 @@ func (op UserOperation) MarshalJSON() ([]byte, error) {
 	return res, err
 }
 
-func (op UserOperation) SignWithECDSA(privateKey *ecdsa.PrivateKey, entryPoint common.Address, chainID *big.Int) ([]byte, error) {
-	hash := op.UserOpHash(entryPoint, chainID)
-	ethMessageHash := computeEthereumSignedMessageHash(hash.Bytes())
+func (op UserOperation) SignWithECDSA(hash []byte, privateKey *ecdsa.PrivateKey) ([]byte, error) {
+	ethMessageHash := computeEthereumSignedMessageHash(hash)
 
 	signature, err := crypto.Sign(ethMessageHash, privateKey)
 	if err != nil {

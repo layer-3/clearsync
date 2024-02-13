@@ -22,7 +22,7 @@ type ClientConfig struct {
 type PaymasterConfig struct {
 	URL     string
 	Address common.Address
-	Ctx     any
+	Ctx     map[string]any
 }
 
 // Signer represents a function that signs a user operation.
