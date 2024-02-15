@@ -406,6 +406,7 @@ Maximum number of trades per request is 6765
 | ----- | ---- | ----------- |
 | to | [string](#string) |  |
 | data | [string](#string) |  |
+| gas_limit | [uint64](#uint64) |  |
 
 
 
