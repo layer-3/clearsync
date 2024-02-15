@@ -16,7 +16,7 @@ import (
 
 	"github.com/layer-3/clearsync/pkg/abi/entry_point"
 	"github.com/layer-3/clearsync/pkg/abi/itoken"
-	"github.com/layer-3/clearsync/pkg/abi/simple_account/account_abstraction"
+	"github.com/layer-3/clearsync/pkg/abi/simple_account/kernel"
 )
 
 // UserOperationClient represents a client for creating and posting user operations.
@@ -126,7 +126,7 @@ func (c *Client) SendUserOp(ctx context.Context, op UserOperation, callback func
 		return fmt.Errorf("failed to marshal user operation: %w", err)
 	}
 	slog.Info("sending user operation")
-	fmt.Println("opJSON", string(opJSON))
+	fmt.Println("opJSON = ", string(opJSON), "array = ", op.ToArray())
 
 	var userOpHash common.Hash
 	if err := c.bundlerRPC.CallContext(ctx, &userOpHash, "eth_sendUserOperation", op, c.entryPoint); err != nil {
@@ -144,9 +144,7 @@ func (c *Client) buildCallData(op *UserOperation, receiver, token common.Address
 		return nil, fmt.Errorf("failed to parse IERC20 ABI: %w", err)
 	}
 
-	var addresses []common.Address
-	var values []*big.Int
-	var callData [][]byte
+	var params []callStructKernel
 	if c.isPaymasterEnabled {
 		slog.Info("paymaster is enabled")
 		approveData, err := erc20.Pack("approve", c.paymaster, amount.BigInt())
@@ -154,10 +152,11 @@ func (c *Client) buildCallData(op *UserOperation, receiver, token common.Address
 			return nil, fmt.Errorf("failed to pack approve data: %w", err)
 		}
 
-		addresses = append(addresses, token)
-		values = append(values, new(big.Int))
-		callData = append(callData, approveData)
-
+		params = append(params, callStructKernel{
+			To:    token,
+			Value: new(big.Int),
+			Data:  approveData,
+		})
 		op.PaymasterAndData = c.paymaster[:]
 	}
 
@@ -165,40 +164,31 @@ func (c *Client) buildCallData(op *UserOperation, receiver, token common.Address
 	if err != nil {
 		return nil, fmt.Errorf("failed to pack transfer data: %w", err)
 	}
-	addresses = append(addresses, token)
-	values = append(values, new(big.Int))
-	callData = append(callData, transferData)
+	params = append(params, callStructKernel{
+		To:    token,
+		Value: new(big.Int),
+		Data:  transferData,
+	})
 
 	// Pack calldata for SimpleAccount / Biconomy contract
-	parsedABI, err := abi.JSON(strings.NewReader(account_abstraction.SimpleAccountMetaData.ABI))
-	data, err := parsedABI.Pack("executeBatch", addresses, values, callData)
-	if err != nil {
-		return nil, fmt.Errorf("failed to pack executeBatch data: %w", err)
-	}
+	// parsedABI, err := abi.JSON(strings.NewReader(account_abstraction.SimpleAccountMetaData.ABI))
+	// data, err := parsedABI.Pack("executeBatch", addresses, values, callData)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to pack executeBatch data: %w", err)
+	// }
 
 	// Pack calldata for Zerodev Kernel contract
-	// type callStructKernel struct {
-	// 	To    common.Address
-	// 	Value *big.Int
-	// 	Data  []byte
-	// }
-	// parsedABI, err := abi.JSON(strings.NewReader(kernel.KernelMetaData.ABI))
-	// params := []callStructKernel{
-	// 	{
-	// 		To:    token,
-	// 		Value: new(big.Int),
-	// 		Data:  callData[0],
-	// 	},
-	// 	{
-	// 		To:    token,
-	// 		Value: new(big.Int),
-	// 		Data:  callData[1],
-	// 	},
-	// }
-	// data, err := parsedABI.Pack("executeBatch", params)
-	// if err != nil {
-	// 	return UserOperation{}, err
-	// }
+	parsedABI, err := abi.JSON(strings.NewReader(kernel.KernelMetaData.ABI))
+	data, err := parsedABI.Pack("executeBatch", params)
+	if err != nil {
+		return nil, err
+	}
 
 	return data, nil
+}
+
+type callStructKernel struct {
+	To    common.Address
+	Value *big.Int
+	Data  []byte
 }

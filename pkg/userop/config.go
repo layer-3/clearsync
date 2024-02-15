@@ -9,13 +9,12 @@ import (
 
 // ClientConfig represents the configuration for the user operation client.
 type ClientConfig struct {
-	ProviderURL         string
-	BundlerURL          string
-	ChainID             *big.Int
-	SmartAccountFactory common.Address
-	EntryPoint          common.Address
-	Paymaster           PaymasterConfig
-	Signer              Signer
+	ProviderURL string
+	BundlerURL  string
+	ChainID     *big.Int
+	EntryPoint  common.Address
+	Paymaster   PaymasterConfig
+	Signer      Signer
 }
 
 // PaymasterConfig represents the configuration for the paymaster.
@@ -26,7 +25,7 @@ type PaymasterConfig struct {
 }
 
 // Signer represents a function that signs a user operation.
-type Signer func(userOperation UserOperation, entryPoint common.Address, chainId *big.Int) ([]byte, error)
+type Signer func(op UserOperation, entryPoint common.Address, chainID *big.Int) ([]byte, error)
 
 // NewClientConfigFromFile reads the
 // client configuration from a file.
