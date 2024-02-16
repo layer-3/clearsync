@@ -2,7 +2,6 @@ package userop
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"math/big"
@@ -15,28 +14,28 @@ import (
 	"github.com/shopspring/decimal"
 
 	"github.com/layer-3/clearsync/pkg/abi/entry_point"
-	"github.com/layer-3/clearsync/pkg/abi/itoken"
-	"github.com/layer-3/clearsync/pkg/abi/simple_account/kernel"
+	"github.com/layer-3/clearsync/pkg/abi/simple_account/account_abstraction"
 )
 
 // UserOperationClient represents a client for creating and posting user operations.
 type UserOperationClient interface {
-	NewUserOp(
-		ctx context.Context,
-		sender common.Address,
-		receiver common.Address,
-		token common.Address,
-		amount decimal.Decimal,
-	) (UserOperation, error)
+	NewUserOp(ctx context.Context, sender common.Address, calls []Call) (UserOperation, error)
 	SendUserOp(ctx context.Context, op UserOperation, callback func()) error
 }
 
-// Client represents a user operation client.
-type Client struct {
+type Call struct {
+	ContractAddress common.Address  // ContractAddress is a contract address to be called (e.g. token).
+	Value           decimal.Decimal // Value is a wei amount to be sent with the call.
+	CallData        []byte
+}
+
+// client represents a user operation client.
+type client struct {
 	providerRPC *ethclient.Client
 	bundlerRPC  *rpc.Client
 	chainID     *big.Int
 
+	smartWalletType    SmartWalletType
 	entryPoint         common.Address
 	isPaymasterEnabled bool
 	paymaster          common.Address
@@ -49,12 +48,12 @@ type Client struct {
 func NewClient(config ClientConfig) (UserOperationClient, error) {
 	providerClient, err := ethclient.Dial(config.ProviderURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to the Ethereum client: %w", err)
+		return nil, fmt.Errorf("failed to connect to the blockchain RPC: %w", err)
 	}
 
 	bundlerRPC, err := rpc.Dial(config.BundlerURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to the Ethereum RPC: %w", err)
+		return nil, fmt.Errorf("failed to connect to the bundler RPC: %w", err)
 	}
 
 	entryPointContract, err := entry_point.NewEntryPoint(config.EntryPoint, providerClient)
@@ -65,18 +64,22 @@ func NewClient(config ClientConfig) (UserOperationClient, error) {
 	isPaymasterEnabled := config.Paymaster.URL != "" && config.Paymaster.Address != common.Address{}
 	estimateGas := estimateUserOperationGas(bundlerRPC, config.EntryPoint)
 	if isPaymasterEnabled {
-		paymasterRPC, err := rpc.Dial(config.Paymaster.URL)
-		if err != nil {
-			return nil, fmt.Errorf("failed to connect to the Ethereum RPC: %w", err)
+		switch typ := config.Paymaster.Type; typ {
+		case PaymasterPimlicoERC20:
+			estimateGas = getPimlicoERC20PaymasterData(bundlerRPC, config.EntryPoint, config.Paymaster.Address)
+		case PaymasterPimlicoVerifying:
+		case PaymasterBiconomyERC20:
+		case PaymasterBiconomySponsoring:
+		default:
+			panic(fmt.Errorf("unknown paymaster type: %s", typ))
 		}
-
-		estimateGas = getPaymasterData(paymasterRPC, config.Paymaster.Ctx, config.EntryPoint)
 	}
 
-	return &Client{
+	return &client{
 		providerRPC:        providerClient,
 		bundlerRPC:         bundlerRPC,
 		chainID:            config.ChainID,
+		smartWalletType:    config.SmartWalletType,
 		entryPoint:         config.EntryPoint,
 		isPaymasterEnabled: isPaymasterEnabled,
 		paymaster:          config.Paymaster.Address,
@@ -93,22 +96,20 @@ func NewClient(config ClientConfig) (UserOperationClient, error) {
 }
 
 // NewUserOp builds and fills in a new UserOperation.
-func (c *Client) NewUserOp(
+func (c *client) NewUserOp(
 	ctx context.Context,
-	sender common.Address,
-	receiver common.Address,
-	token common.Address,
-	amount decimal.Decimal,
+	smartWallet common.Address, // TODO: support calculating SW address from SmartWalletType
+	calls []Call,
 ) (UserOperation, error) {
-	op := UserOperation{Sender: sender}
+	slog.Info("apply middlewares to user operation")
+	op := UserOperation{Sender: smartWallet}
 
-	calldata, err := c.buildCallData(&op, receiver, token, amount)
+	calldata, err := c.buildCallData(calls)
 	if err != nil {
 		return UserOperation{}, fmt.Errorf("failed to build call data: %w", err)
 	}
 	op.CallData = calldata
 
-	slog.Info("apply middlewares to user operation")
 	for _, fn := range c.middlewares {
 		if err := fn(ctx, &op); err != nil {
 			return UserOperation{}, fmt.Errorf("failed to apply middleware to user operation: %w", err)
@@ -120,13 +121,8 @@ func (c *Client) NewUserOp(
 
 // SendUserOp submits a user operation to a bundler
 // and executes the provided callback function.
-func (c *Client) SendUserOp(ctx context.Context, op UserOperation, callback func()) error {
-	opJSON, err := json.Marshal([]any{op, c.entryPoint})
-	if err != nil {
-		return fmt.Errorf("failed to marshal user operation: %w", err)
-	}
+func (c *client) SendUserOp(ctx context.Context, op UserOperation, callback func()) error {
 	slog.Info("sending user operation")
-	fmt.Println("opJSON = ", string(opJSON), "array = ", op.ToArray())
 
 	var userOpHash common.Hash
 	if err := c.bundlerRPC.CallContext(ctx, &userOpHash, "eth_sendUserOperation", op, c.entryPoint); err != nil {
@@ -138,57 +134,63 @@ func (c *Client) SendUserOp(ctx context.Context, op UserOperation, callback func
 	return nil
 }
 
-func (c *Client) buildCallData(op *UserOperation, receiver, token common.Address, amount decimal.Decimal) ([]byte, error) {
-	erc20, err := abi.JSON(strings.NewReader(itoken.IERC20MetaData.ABI))
+func (c *client) buildCallData(calls []Call) ([]byte, error) {
+	switch c.smartWalletType {
+	case SmartWalletSimpleAccount, SmartWalletBiconomy:
+		return handleCallSimpleAccount(calls)
+	case SmartWalletKernel:
+		return handleCallKernel(calls)
+	default:
+		return nil, fmt.Errorf("unknown smart wallet type: %s", c.smartWalletType)
+	}
+}
+
+func handleCallSimpleAccount(calls []Call) ([]byte, error) {
+	parsedABI, err := abi.JSON(strings.NewReader(account_abstraction.SimpleAccountMetaData.ABI))
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse IERC20 ABI: %w", err)
+		return nil, fmt.Errorf("failed to parse ABI: %w", err)
 	}
 
-	var params []callStructKernel
-	if c.isPaymasterEnabled {
-		slog.Info("paymaster is enabled")
-		approveData, err := erc20.Pack("approve", c.paymaster, amount.BigInt())
-		if err != nil {
-			return nil, fmt.Errorf("failed to pack approve data: %w", err)
-		}
-
-		params = append(params, callStructKernel{
-			To:    token,
-			Value: new(big.Int),
-			Data:  approveData,
-		})
-		op.PaymasterAndData = c.paymaster[:]
+	addresses := make([]any, 0, len(calls))
+	values := make([]any, 0, len(calls))
+	calldatas := make([]any, 0, len(calls))
+	for _, call := range calls {
+		addresses = append(addresses, call.ContractAddress)
+		values = append(values, call.Value.BigInt())
+		calldatas = append(calldatas, call.CallData)
 	}
 
-	transferData, err := erc20.Pack("transfer", receiver, amount.BigInt())
+	data, err := parsedABI.Pack("executeBatch", addresses, values, calldatas)
 	if err != nil {
-		return nil, fmt.Errorf("failed to pack transfer data: %w", err)
+		return nil, fmt.Errorf("failed to pack executeBatch data for SimpleAccount: %w", err)
 	}
-	params = append(params, callStructKernel{
-		To:    token,
-		Value: new(big.Int),
-		Data:  transferData,
-	})
-
-	// Pack calldata for SimpleAccount / Biconomy contract
-	// parsedABI, err := abi.JSON(strings.NewReader(account_abstraction.SimpleAccountMetaData.ABI))
-	// data, err := parsedABI.Pack("executeBatch", addresses, values, callData)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to pack executeBatch data: %w", err)
-	// }
-
-	// Pack calldata for Zerodev Kernel contract
-	parsedABI, err := abi.JSON(strings.NewReader(kernel.KernelMetaData.ABI))
-	data, err := parsedABI.Pack("executeBatch", params)
-	if err != nil {
-		return nil, err
-	}
-
 	return data, nil
 }
 
 type callStructKernel struct {
-	To    common.Address
-	Value *big.Int
-	Data  []byte
+	To    common.Address `json:"to"`
+	Value *big.Int       `json:"value"`
+	Data  []byte         `json:"data"`
+}
+
+func handleCallKernel(calls []Call) ([]byte, error) {
+	parsedABI, err := abi.JSON(strings.NewReader(kernelExecuteABI))
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse ABI: %w", err)
+	}
+
+	params := make([]callStructKernel, 0, len(calls))
+	for _, call := range calls {
+		params = append(params, callStructKernel{
+			To:    call.ContractAddress,
+			Value: call.Value.BigInt(),
+			Data:  call.CallData,
+		})
+	}
+
+	data, err := parsedABI.Pack("executeBatch", params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to pack executeBatch data for Kernel: %w", err)
+	}
+	return data, nil
 }

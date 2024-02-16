@@ -1,4 +1,4 @@
-// Package userop provides a ERC-4337 pseudo-transaction object called a UserOperation
+// Package userop provides an ERC-4337 pseudo-transaction object called a UserOperation
 // which is used to execute actions through a smart contract account.
 // This isn't to be mistaken for a regular transaction type.
 package userop
@@ -18,13 +18,13 @@ import (
 )
 
 var (
-	Address, _ = abi.NewType("address", "", nil)
+	address, _ = abi.NewType("address", "", nil)
 	uint256, _ = abi.NewType("uint256", "", nil)
-	Bytes32, _ = abi.NewType("bytes32", "", nil)
-	Bytes, _   = abi.NewType("bytes", "", nil)
+	bytes32, _ = abi.NewType("bytes32", "", nil)
+	bytes, _   = abi.NewType("bytes", "", nil)
 
-	// UserOpPrimitives is the primitive ABI types for each UserOperation field.
-	UserOpPrimitives = []abi.ArgumentMarshaling{
+	// userOpPrimitives is the primitive ABI types for each UserOperation field.
+	userOpPrimitives = []abi.ArgumentMarshaling{
 		{Name: "sender", InternalType: "Sender", Type: "address"},
 		{Name: "nonce", InternalType: "Nonce", Type: "uint256"},
 		{Name: "initCode", InternalType: "InitCode", Type: "bytes"},
@@ -38,11 +38,9 @@ var (
 		{Name: "signature", InternalType: "Signature", Type: "bytes"},
 	}
 
-	// UserOpType is the ABI type of a UserOperation.
-	UserOpType, _ = abi.NewType("tuple", "op", UserOpPrimitives)
+	// userOpType is the ABI type of UserOperation.
+	userOpType, _ = abi.NewType("tuple", "op", userOpPrimitives)
 )
-
-// TODO: verify userop validity (https://www.erc4337.io/docs/bundlers/running-a-bundler)
 
 // UserOperation represents an EIP-4337 style transaction for a smart contract account.
 type UserOperation struct {
@@ -59,7 +57,8 @@ type UserOperation struct {
 	Signature            []byte          `json:"signature,omitempty"`
 }
 
-// GetFactory returns the address portion of InitCode if applicable. Otherwise it returns the zero address.
+// GetFactory returns the address portion of InitCode if applicable.
+// Otherwise, it returns the zero address.
 func (op *UserOperation) GetFactory() common.Address {
 	if len(op.InitCode) < common.AddressLength {
 		return common.HexToAddress("0x")
@@ -68,8 +67,8 @@ func (op *UserOperation) GetFactory() common.Address {
 	return common.BytesToAddress(op.InitCode[:common.AddressLength])
 }
 
-// GetFactoryData returns the data portion of InitCode if applicable. Otherwise it returns an empty byte
-// array.
+// GetFactoryData returns the data portion of InitCode if applicable.
+// Otherwise, it returns an empty byte array.
 func (op *UserOperation) GetFactoryData() []byte {
 	if len(op.InitCode) < common.AddressLength {
 		return []byte{}
@@ -81,7 +80,7 @@ func (op *UserOperation) GetFactoryData() []byte {
 // Pack returns a standard message of the userOp. This cannot be used to generate a userOpHash.
 func (op *UserOperation) Pack() []byte {
 	args := abi.Arguments{
-		{Name: "UserOp", Type: UserOpType},
+		{Name: "UserOp", Type: userOpType},
 	}
 	packed, _ := args.Pack(&struct {
 		Sender               common.Address
@@ -111,22 +110,22 @@ func (op *UserOperation) Pack() []byte {
 
 	enc := hexutil.Encode(packed)
 	enc = "0x" + enc[66:]
-	return (hexutil.MustDecode(enc))
+	return hexutil.MustDecode(enc)
 }
 
 // UserOpHash returns the hash of the userOp + entryPoint address + chainID.
 func (op *UserOperation) UserOpHash(entryPoint common.Address, chainID *big.Int) common.Hash {
 	args := abi.Arguments{
-		{Name: "sender", Type: Address},
+		{Name: "sender", Type: address},
 		{Name: "nonce", Type: uint256},
-		{Name: "hashInitCode", Type: Bytes32},
-		{Name: "hashCallData", Type: Bytes32},
+		{Name: "hashInitCode", Type: bytes32},
+		{Name: "hashCallData", Type: bytes32},
 		{Name: "callGasLimit", Type: uint256},
 		{Name: "verificationGasLimit", Type: uint256},
 		{Name: "preVerificationGas", Type: uint256},
 		{Name: "maxFeePerGas", Type: uint256},
 		{Name: "maxPriorityFeePerGas", Type: uint256},
-		{Name: "hashPaymasterAndData", Type: Bytes32},
+		{Name: "hashPaymasterAndData", Type: bytes32},
 	}
 	packed, err := args.Pack(
 		op.Sender,
@@ -212,21 +211,4 @@ func computeEthereumSignedMessageHash(message []byte) []byte {
 	return crypto.Keccak256([]byte(
 		fmt.Sprintf("\x19Ethereum Signed Message:\n%d%s", len(message), string(message)),
 	))
-}
-
-func (op *UserOperation) ToArray() string {
-	return fmt.Sprintf(
-		`["%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s"]`,
-		op.Sender.String(),
-		hexutil.EncodeBig(op.Nonce.BigInt()),
-		hexutil.Encode(op.InitCode),
-		hexutil.Encode(op.CallData),
-		hexutil.EncodeBig(op.CallGasLimit.BigInt()),
-		hexutil.EncodeBig(op.VerificationGasLimit.BigInt()),
-		hexutil.EncodeBig(op.PreVerificationGas.BigInt()),
-		hexutil.EncodeBig(op.MaxFeePerGas.BigInt()),
-		hexutil.EncodeBig(op.MaxPriorityFeePerGas.BigInt()),
-		hexutil.Encode(op.PaymasterAndData),
-		hexutil.Encode(op.Signature),
-	)
 }

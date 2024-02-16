@@ -21,7 +21,7 @@ import (
 type middleware func(ctx context.Context, op *UserOperation) error
 
 func getNonce(entryPoint *entry_point.EntryPoint) middleware {
-	return func(ctx context.Context, op *UserOperation) error {
+	return func(_ context.Context, op *UserOperation) error {
 		slog.Info("getting nonce")
 		key := new(big.Int)
 		nonce, err := entryPoint.GetNonce(nil, op.Sender, key)
@@ -34,153 +34,32 @@ func getNonce(entryPoint *entry_point.EntryPoint) middleware {
 	}
 }
 
-var createKernelAccountABI = `[{
-  inputs: [
-    {
-      internalType: "address",
-      name: "moduleSetupContract",
-      type: "address"
-    },
-    {
-      internalType: "bytes",
-      name: "moduleSetupData",
-      type: "bytes"
-    },
-    {
-      internalType: "uint256",
-      name: "index",
-      type: "uint256"
-    }
-  ],
-  name: "deployCounterFactualAccount",
-  outputs: [{
-    internalType: "address",
-    name: "proxy",
-    type: "address"
-  }],
-  stateMutability: "nonpayable",
-  type: "function"
-}]`
-
-// kernelInitABI is the init ABI, used to initialise kernel account
-var kernelInitABI = `[{
-  inputs: [
-    {
-      internalType: "contract IKernelValidator",
-      name: "_defaultValidator",
-      type: "address"
-    },
-    {
-      internalType: "bytes",
-      name: "_data",
-      type: "bytes"
-    }
-  ],
-  name: "initialize",
-  outputs: [],
-  stateMutability: "payable",
-  type: "function"
-}]`
-
 func getKernelInitCode(index int64, factory, accountLogic, ecdsaValidator, owner common.Address) middleware {
 	initABI, err := abi.JSON(strings.NewReader(kernelInitABI))
 	if err != nil {
 		panic(err)
 	}
 
-	createAccountABI, err := abi.JSON(strings.NewReader(createKernelAccountABI))
+	createAccountABI, err := abi.JSON(strings.NewReader(kernelDeployWalletABI))
+	if err != nil {
+		panic(err)
+	}
+
+	initData, err := initABI.Pack("initialize", ecdsaValidator, owner)
+	if err != nil {
+		panic(err)
+	}
+
+	initCode, err := createAccountABI.Pack("createAccount", accountLogic, initData, index)
 	if err != nil {
 		panic(err)
 	}
 
 	return func(ctx context.Context, op *UserOperation) error {
-		initData, err := initABI.Pack("initialize", ecdsaValidator, owner)
-		if err != nil {
-			return err
-		}
-
-		initCode, err := createAccountABI.Pack("createAccount", accountLogic, initData, index)
-		if err != nil {
-			return err
-		}
-
 		op.InitCode = initCode
 		return nil
 	}
 }
-
-var createBiconomyAccountABI = `[{
-  inputs: [
-    {
-      internalType: "address",
-      name: "moduleSetupContract",
-      type: "address"
-    },
-    {
-      internalType: "bytes",
-      name: "moduleSetupData",
-      type: "bytes"
-    },
-    {
-      internalType: "uint256",
-      name: "index",
-      type: "uint256"
-    }
-  ],
-  name: "deployCounterFactualAccount",
-  outputs: [{
-    internalType: "address",
-    name: "proxy",
-    type: "address"
-  }],
-  stateMutability: "nonpayable",
-  type: "function"
-}]`
-
-var biconomyInitABI = `[
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "handler",
-        type: "address"
-      },
-      {
-        internalType: "address",
-        name: "moduleSetupContract",
-        type: "address"
-      },
-      {
-        internalType: "bytes",
-        name: "moduleSetupData",
-        type: "bytes"
-      }
-    ],
-    name: "init",
-    outputs: [{
-      internalType: "address",
-      name: "",
-      type: "address"
-    }],
-    stateMutability: "nonpayable",
-    type: "function"
-  },
-  {
-    inputs: [{
-      internalType: "address",
-      name: "eoaOwner",
-      type: "address"
-    }],
-    name: "initForSmartAccount",
-    outputs: [{
-      internalType: "address",
-      name: "",
-      type: "address"
-    }],
-    stateMutability: "nonpayable",
-    type: "function"
-  },
-]`
 
 func getBiconomyInitCode(index int64, factory, accountLogic, ecdsaValidator, owner common.Address) middleware {
 	initABI, err := abi.JSON(strings.NewReader(biconomyInitABI))
@@ -188,34 +67,26 @@ func getBiconomyInitCode(index int64, factory, accountLogic, ecdsaValidator, own
 		panic(err)
 	}
 
-	createAccountABI, err := abi.JSON(strings.NewReader(createBiconomyAccountABI))
+	createAccountABI, err := abi.JSON(strings.NewReader(biconomyDeployWalletABI))
 	if err != nil {
 		panic(err)
 	}
 
-	return func(ctx context.Context, op *UserOperation) error {
-		ecdsaOwnershipInitData, err := initABI.Pack("initForSmartAccount", owner)
-		if err != nil {
-			return err
-		}
+	ecdsaOwnershipInitData, err := initABI.Pack("initForSmartAccount", owner)
+	if err != nil {
+		panic(err)
+	}
 
-		initCode, err := createAccountABI.Pack("createAccount", ecdsaValidator, ecdsaOwnershipInitData, index)
-		if err != nil {
-			return err
-		}
+	initCode, err := createAccountABI.Pack("createAccount", ecdsaValidator, ecdsaOwnershipInitData, index)
+	if err != nil {
+		panic(err)
+	}
 
+	return func(_ context.Context, op *UserOperation) error {
 		op.InitCode = initCode
 		return nil
 	}
 }
-
-// TODO: uncomment when smart wallet deployment support is added
-// func getInitCode(client *ethclient.Client) middleware {
-// 	return func(ctx context.Context, op *UserOperation) error {
-// 		slog.Info("Getting init code")
-// 		return client.Client().CallContext(ctx, &op.InitCode, "eth_getCode")
-// 	}
-// }
 
 func getGasPrice(providerRPC *ethclient.Client) middleware {
 	return func(ctx context.Context, op *UserOperation) error {
@@ -265,7 +136,7 @@ func getGasPrice(providerRPC *ethclient.Client) middleware {
 	}
 }
 
-func getPaymasterData(paymasterRPC *rpc.Client, paymasterCtx map[string]any, entryPoint common.Address) middleware {
+func getBiconomyPaymasterAndData(paymasterRPC *rpc.Client, paymasterCtx map[string]any, entryPoint common.Address) middleware {
 	return func(ctx context.Context, op *UserOperation) error {
 		opModified := struct {
 			Sender               common.Address  `json:"sender"`
@@ -302,7 +173,7 @@ func getPaymasterData(paymasterRPC *rpc.Client, paymasterCtx map[string]any, ent
 			entryPoint,
 			paymasterCtx,
 		); err != nil {
-			return fmt.Errorf("failed to call pm_sponsorUserOperation: %v", err)
+			return fmt.Errorf("failed to call pm_sponsorUserOperation: %w", err)
 		}
 
 		callGasLimit, verificationGasLimit, preVerificationGas, err := est.convert()
@@ -324,6 +195,27 @@ func getPaymasterData(paymasterRPC *rpc.Client, paymasterCtx map[string]any, ent
 	}
 }
 
+func getPimlicoERC20PaymasterData(
+	bundlerRPC *rpc.Client,
+	entryPoint common.Address,
+	paymaster common.Address,
+) middleware {
+	gasOverhead := decimal.NewFromInt(1_000_000)
+	return func(ctx context.Context, op *UserOperation) error {
+		estimate := estimateUserOperationGas(bundlerRPC, entryPoint)
+		if err := estimate(ctx, op); err != nil {
+			return err
+		}
+
+		op.CallGasLimit = op.CallGasLimit.Add(gasOverhead)
+		op.VerificationGasLimit = op.VerificationGasLimit.Add(gasOverhead)
+		op.PreVerificationGas = op.PreVerificationGas.Add(gasOverhead)
+		op.PaymasterAndData = paymaster.Bytes()
+
+		return nil
+	}
+}
+
 // gasEstimate holds gas estimates for a user operation.
 type gasEstimate struct {
 	// depending on provider, any of the following types can be received here: string, int
@@ -334,30 +226,17 @@ type gasEstimate struct {
 	PaymasterAndData string `json:"paymasterAndData,omitempty"`
 }
 
-// func (est *gasEstimate) UnmarshalJSON(data []byte) error {
-// 	type Alias gasEstimate
-// 	aux := &struct {
-// 		*Alias
-// 	}{
-// 		Alias: (*Alias)(est),
-// 	}
-//
-// 	fmt.Println("data", string(data))
-// 	if err := json.Unmarshal(data, &aux); err != nil {
-// 		return err
-// 	}
-// 	return nil
-// }
-
 func (est gasEstimate) convert() (preVerificationGas *big.Int, verificationGasLimit *big.Int, callGasLimit *big.Int, err error) {
 	preVerificationGas, err = est.fromAny(est.PreVerificationGas)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("preVerificationGas: %w", err)
 	}
+
 	verificationGasLimit, err = est.fromAny(est.VerificationGasLimit)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("verificationGasLimit: %w", err)
 	}
+
 	callGasLimit, err = est.fromAny(est.CallGasLimit)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("callGasLimit: %w", err)
@@ -420,7 +299,7 @@ func estimateUserOperationGas(bundlerRPC *rpc.Client, entryPoint common.Address)
 }
 
 func sign(signer Signer, entryPoint common.Address, chainID *big.Int) middleware {
-	return func(ctx context.Context, op *UserOperation) error {
+	return func(_ context.Context, op *UserOperation) error {
 		signature, err := signer(*op, entryPoint, chainID)
 		if err != nil {
 			return fmt.Errorf("failed to sign user operation: %w", err)
@@ -428,14 +307,14 @@ func sign(signer Signer, entryPoint common.Address, chainID *big.Int) middleware
 
 		op.Signature = signature
 
-		fmt.Println("hash =", op.UserOpHash(entryPoint, chainID).String())
-		fmt.Println("array =", op.ToArray())
-
 		b, err := op.MarshalJSON()
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println("array =", string(b))
+		slog.Debug("userop signed",
+			"hash", op.UserOpHash(entryPoint, chainID).String(),
+			"json", string(b))
+
 		return nil
 	}
 }

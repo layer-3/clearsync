@@ -24,15 +24,17 @@ func SignerForBiconomy(privateKey *ecdsa.PrivateKey) Signer {
 
 		ecdsaOwnershipValidationModuleAddress := common.HexToAddress("0x0000001c5b32F37F5beA87BDD5374eB2aC54eA8e")
 		args := abi.Arguments{
-			{Type: Bytes},
-			{Type: Address},
+			{Type: bytes},
+			{Type: address},
 		}
 		signature, err := args.Pack(signedHash, ecdsaOwnershipValidationModuleAddress)
 		if err != nil {
 			return nil, fmt.Errorf("failed to pack signature: %w", err)
 		}
 
-		slog.Info("signed user operation for Biconomy", "signature", hexutil.Encode(signature))
+		slog.Debug("signed user operation for Biconomy",
+			"signature", hexutil.Encode(signature),
+			"hash", hash.String())
 		return signature, nil
 	}
 }
@@ -46,7 +48,6 @@ func SignerForKernel(privateKey *ecdsa.PrivateKey) Signer {
 		if err != nil {
 			return nil, fmt.Errorf("failed to sign user operation: %w", err)
 		}
-		fmt.Println("signed hash", signature)
 
 		encodedSig := hexutil.Encode(signature)
 		modifiedSig := strings.Replace(encodedSig, "0x", "0x00000000", 1)
@@ -56,7 +57,9 @@ func SignerForKernel(privateKey *ecdsa.PrivateKey) Signer {
 			return nil, fmt.Errorf("failed to decode signature: %w", err)
 		}
 
-		slog.Info("signed user operation for Biconomy", "signature", hexutil.Encode(signature))
+		slog.Debug("signed user operation for Kernel",
+			"signature", hexutil.Encode(signature),
+			"hash", hash.String())
 		return signature, nil
 	}
 }
