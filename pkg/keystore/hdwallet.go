@@ -32,13 +32,11 @@ func NewHdWallet(seed string) (*HdWallet, error) {
 	}, err
 }
 
-// GetOrCreateSigner creates a signer instance based on uniqueIndex.
+// GetOrCreateSigner creates a signer instance based on unique account index.
 func (w *HdWallet) GetOrCreateSigner(uniqueIndex uint32) (signer.Signer, error) {
-	// TODO: derivation path consists of these values:
-	// m / purpose' / coin_type' / account' / change / address_index
-	// which component of the derivation path uniqueIndex stands for? address_index
+	// Define a derivation path and set the account component to be the uniqueIndex.
 	path := accounts.DefaultBaseDerivationPath
-
+	path[2] = uniqueIndex
 	w.mx.RLock()
 	priv, err := w.derivePrivateKey(path)
 	w.mx.RUnlock()

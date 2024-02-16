@@ -27,9 +27,9 @@ func TestWallet_Derive(t *testing.T) {
 		w, err := NewHdWallet(seed)
 		require.NoError(t, err)
 
-		signer, err := w.GetOrCreateSigner(1)
+		signer, err := w.GetOrCreateSigner(623)
 		require.NoError(t, err)
 
-		require.Equal(t, "0x86FCB07ac2E29B897C4AD3632605161FD4c907e9", signer.CommonAddress().Hex())
+		require.Equal(t, "0x900FD92779c0714908b70636Cfda05832277C3E4", signer.CommonAddress().Hex())
 	})
 }

@@ -23,7 +23,7 @@ if err != nil {
 
 ### Creating a Signer
 
-With an `HdWallet` instance, you can generate or retrieve a signer for transaction signing using the `GetOrCreateSigner` method. This method accepts a unique index (uint32) and returns a `signer.Signer` instance. // TODO: what is the unique index?
+With an `HdWallet` instance, you can generate or retrieve a signer for transaction signing using the `GetOrCreateSigner` method. This method accepts a unique account index (uint32) and returns a `signer.Signer` instance.
 
 ```go
 uniqueIndex := uint32(0) // Example index
