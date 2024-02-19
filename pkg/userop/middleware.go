@@ -34,7 +34,14 @@ func getNonce(entryPoint *entry_point.EntryPoint) middleware {
 	}
 }
 
-func getKernelInitCode(index decimal.Decimal, factory, accountLogic, ecdsaValidator, owner common.Address) middleware {
+func getKernelInitCode(
+	providerRPC *ethclient.Client,
+	index decimal.Decimal,
+	factory common.Address,
+	accountLogic common.Address,
+	ecdsaValidator common.Address,
+	owner common.Address,
+) middleware {
 	initABI, err := abi.JSON(strings.NewReader(kernelInitABI))
 	if err != nil {
 		panic(err)
@@ -62,7 +69,25 @@ func getKernelInitCode(index decimal.Decimal, factory, accountLogic, ecdsaValida
 	slog.Debug("built initCode", "initCode", hexutil.Encode(initCode))
 
 	return func(ctx context.Context, op *UserOperation) error {
-		op.InitCode = initCode
+		var result any
+		if err := providerRPC.Client().CallContext(
+			ctx,
+			&result,
+			"eth_getCode",
+			op.Sender,
+			"latest",
+		); err != nil {
+			return fmt.Errorf("failed to check if smart account is already deployed: %w", err)
+		}
+
+		byteCode, ok := result.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type: %T", result)
+		}
+
+		if byteCode == "" || byteCode == "0x" {
+			op.InitCode = initCode
+		}
 		return nil
 	}
 }
@@ -150,7 +175,11 @@ func getGasPrice(providerRPC *ethclient.Client) middleware {
 	}
 }
 
-func getBiconomyPaymasterAndData(paymasterRPC *rpc.Client, paymasterCtx map[string]any, entryPoint common.Address) middleware {
+func getBiconomyPaymasterAndData(
+	bundlerRPC *rpc.Client,
+	paymasterCtx map[string]any,
+	entryPoint common.Address,
+) middleware {
 	return func(ctx context.Context, op *UserOperation) error {
 		opModified := struct {
 			Sender               common.Address  `json:"sender"`
@@ -179,7 +208,7 @@ func getBiconomyPaymasterAndData(paymasterRPC *rpc.Client, paymasterCtx map[stri
 		}
 
 		var est gasEstimate
-		if err := paymasterRPC.CallContext(
+		if err := bundlerRPC.CallContext(
 			ctx,
 			&est,
 			"pm_sponsorUserOperation",
@@ -240,7 +269,12 @@ type gasEstimate struct {
 	PaymasterAndData string `json:"paymasterAndData,omitempty"`
 }
 
-func (est gasEstimate) convert() (preVerificationGas *big.Int, verificationGasLimit *big.Int, callGasLimit *big.Int, err error) {
+func (est gasEstimate) convert() (
+	preVerificationGas *big.Int,
+	verificationGasLimit *big.Int,
+	callGasLimit *big.Int,
+	err error,
+) {
 	preVerificationGas, err = est.fromAny(est.PreVerificationGas)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("preVerificationGas: %w", err)
