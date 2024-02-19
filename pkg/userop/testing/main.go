@@ -86,8 +86,7 @@ func send(client userop.UserOperationClient, call userop.Call) error {
 	}
 	slog.Info("sending user operation", "op", string(b))
 
-	callback := func() {}
-	if err := client.SendUserOp(ctx, op, callback); err != nil {
+	if _, err := client.SendUserOp(ctx, op); err != nil {
 		return fmt.Errorf("failed to send userop: %w", err)
 	}
 	return nil
