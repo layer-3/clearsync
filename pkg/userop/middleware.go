@@ -319,6 +319,12 @@ func (est gasEstimate) fromAny(a any) (*big.Int, error) {
 }
 
 func estimateUserOperationGas(bundlerRPC *rpc.Client, entryPoint common.Address) middleware {
+	// The gas estimate is increased by 10_000 to account for
+	// a rare yet hard to debug bundler gas estimation inaccuracy.
+	// It is NOT a random value, see how it works in the original Alto code:
+	// https://github.com/pimlicolabs/alto/blob/a0a9a4906af809d97611c7f0e0f032e50c4c45cb/src/entrypoint-0.6/rpc/gasEstimation.ts#L277-L279
+	estimationPrecision := decimal.NewFromInt(10_000)
+
 	return func(ctx context.Context, op *UserOperation) error {
 		slog.Info("estimating gas")
 
@@ -338,7 +344,7 @@ func estimateUserOperationGas(bundlerRPC *rpc.Client, entryPoint common.Address)
 			return fmt.Errorf("failed to convert gas estimates: %w", err)
 		}
 
-		op.CallGasLimit = decimal.NewFromBigInt(callGasLimit, 0)
+		op.CallGasLimit = decimal.NewFromBigInt(callGasLimit, 0).Add(estimationPrecision)
 		op.VerificationGasLimit = decimal.NewFromBigInt(verificationGasLimit, 0)
 		op.PreVerificationGas = decimal.NewFromBigInt(preVerificationGas, 0)
 
