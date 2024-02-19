@@ -39,7 +39,7 @@ AuthToken can be attached in headers
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | client | [auth.Peer](auth.proto.md#peer) |  |
-| operator_address | [string](#string) |  |
+| server_operator_address | [string](#string) |  |
 
 
 
@@ -87,7 +87,7 @@ This should be signed with the client's private key
 | ----- | ---- | ----------- |
 | client | [auth.Peer](auth.proto.md#peer) |  |
 | signed_server_challenge | [bytes](#bytes) |  |
-| operator_address | [string](#string) |  |
+| server_operator_address | [string](#string) |  |
 
 
 
