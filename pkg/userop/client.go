@@ -6,7 +6,9 @@ import (
 	"log/slog"
 	"math/big"
 	"strings"
+	"time"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -20,13 +22,13 @@ import (
 // UserOperationClient represents a client for creating and posting user operations.
 type UserOperationClient interface {
 	NewUserOp(ctx context.Context, sender common.Address, calls []Call) (UserOperation, error)
-	SendUserOp(ctx context.Context, op UserOperation, callback func()) error
+	SendUserOp(ctx context.Context, op UserOperation) (<-chan struct{}, error)
 }
 
 type Call struct {
-	ContractAddress common.Address  // ContractAddress is a contract address to be called (e.g. token).
-	Value           decimal.Decimal // Value is a wei amount to be sent with the call.
-	CallData        []byte
+	To       common.Address
+	Value    decimal.Decimal // Value is a wei amount to be sent with the call.
+	CallData []byte
 }
 
 // client represents a user operation client.
@@ -121,11 +123,11 @@ func (c *client) NewUserOp(
 	slog.Info("apply middlewares to user operation")
 	op := UserOperation{Sender: smartWallet}
 
-	calldata, err := c.buildCallData(calls)
+	callData, err := c.buildCallData(calls)
 	if err != nil {
 		return UserOperation{}, fmt.Errorf("failed to build call data: %w", err)
 	}
-	op.CallData = calldata
+	op.CallData = callData
 
 	for _, fn := range c.middlewares {
 		if err := fn(ctx, &op); err != nil {
@@ -138,17 +140,19 @@ func (c *client) NewUserOp(
 
 // SendUserOp submits a user operation to a bundler
 // and executes the provided callback function.
-func (c *client) SendUserOp(ctx context.Context, op UserOperation, callback func()) error {
+func (c *client) SendUserOp(ctx context.Context, op UserOperation) (<-chan struct{}, error) {
 	slog.Info("sending user operation")
 
 	var userOpHash common.Hash
 	if err := c.bundlerRPC.CallContext(ctx, &userOpHash, "eth_sendUserOperation", op, c.entryPoint); err != nil {
-		return fmt.Errorf("call to `eth_sendUserOperation` failed: %w", err)
+		return nil, fmt.Errorf("call to `eth_sendUserOperation` failed: %w", err)
 	}
 
 	slog.Info("user operation sent successfully", "hash", userOpHash.Hex())
-	callback()
-	return nil
+	waiter := make(chan struct{}, 1)
+	go waitForUserOpEvent(c.providerRPC, waiter, c.entryPoint, userOpHash)
+
+	return waiter, nil
 }
 
 func (c *client) buildCallData(calls []Call) ([]byte, error) {
@@ -172,7 +176,7 @@ func handleCallSimpleAccount(calls []Call) ([]byte, error) {
 	values := make([]any, 0, len(calls))
 	calldatas := make([]any, 0, len(calls))
 	for _, call := range calls {
-		addresses = append(addresses, call.ContractAddress)
+		addresses = append(addresses, call.To)
 		values = append(values, call.Value.BigInt())
 		calldatas = append(calldatas, call.CallData)
 	}
@@ -199,7 +203,7 @@ func handleCallKernel(calls []Call) ([]byte, error) {
 	params := make([]callStructKernel, 0, len(calls))
 	for _, call := range calls {
 		params = append(params, callStructKernel{
-			To:    call.ContractAddress,
+			To:    call.To,
 			Value: call.Value.BigInt(),
 			Data:  call.CallData,
 		})
@@ -210,4 +214,46 @@ func handleCallKernel(calls []Call) ([]byte, error) {
 		return nil, fmt.Errorf("failed to pack executeBatch data for Kernel: %w", err)
 	}
 	return data, nil
+}
+
+// waitForUserOpEvent waits for a user operation to be committed on block.
+func waitForUserOpEvent(
+	client *ethclient.Client,
+	done chan<- struct{},
+	entryPoint common.Address,
+	userOpHash common.Hash,
+) {
+	waitTimeout := time.Millisecond * 30000
+	waitInterval := time.Millisecond * 5000
+
+	ctx, cancel := context.WithTimeout(context.Background(), waitTimeout)
+	defer cancel()
+
+	query := ethereum.FilterQuery{
+		Addresses: []common.Address{entryPoint},
+		Topics:    [][]common.Hash{{}, {userOpHash}},
+	}
+
+	ticker := time.NewTicker(waitInterval)
+	defer ticker.Stop()
+	defer close(done)
+
+	for {
+		select {
+		case <-ctx.Done():
+			slog.Error("timeout waiting for user operation event", "hash", userOpHash.Hex())
+			return
+		case <-ticker.C:
+			logs, err := client.FilterLogs(ctx, query)
+			if err != nil {
+				slog.Error("failed to filter logs", "error", err)
+				continue
+			}
+
+			if len(logs) > 0 {
+				done <- struct{}{}
+				return
+			}
+		}
+	}
 }
