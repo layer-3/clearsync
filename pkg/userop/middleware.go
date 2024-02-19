@@ -34,7 +34,7 @@ func getNonce(entryPoint *entry_point.EntryPoint) middleware {
 	}
 }
 
-func getKernelInitCode(index int64, factory, accountLogic, ecdsaValidator, owner common.Address) middleware {
+func getKernelInitCode(index decimal.Decimal, factory, accountLogic, ecdsaValidator, owner common.Address) middleware {
 	initABI, err := abi.JSON(strings.NewReader(kernelInitABI))
 	if err != nil {
 		panic(err)
@@ -45,15 +45,21 @@ func getKernelInitCode(index int64, factory, accountLogic, ecdsaValidator, owner
 		panic(err)
 	}
 
-	initData, err := initABI.Pack("initialize", ecdsaValidator, owner)
+	initData, err := initABI.Pack("initialize", ecdsaValidator, owner.Bytes())
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("failed to pack init data: %w", err))
 	}
 
-	initCode, err := createAccountABI.Pack("createAccount", accountLogic, initData, index)
+	callData, err := createAccountABI.Pack("createAccount", accountLogic, initData, index.BigInt())
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("failed to pack createAccount data: %w", err))
 	}
+
+	initCode := make([]byte, len(factory)+len(callData))
+	copy(initCode, factory.Bytes())
+	copy(initCode[len(factory):], callData)
+
+	slog.Debug("built initCode", "initCode", hexutil.Encode(initCode))
 
 	return func(ctx context.Context, op *UserOperation) error {
 		op.InitCode = initCode
@@ -61,7 +67,9 @@ func getKernelInitCode(index int64, factory, accountLogic, ecdsaValidator, owner
 	}
 }
 
-func getBiconomyInitCode(index int64, factory, accountLogic, ecdsaValidator, owner common.Address) middleware {
+// getBiconomyInitCode returns a middleware that sets the init code for a Biconomy smart account.
+// !!! Not tested extensively since we settled with the Zerodev Kernel smart account. !!!
+func getBiconomyInitCode(index decimal.Decimal, factory, ecdsaValidator, owner common.Address) middleware {
 	initABI, err := abi.JSON(strings.NewReader(biconomyInitABI))
 	if err != nil {
 		panic(err)
@@ -72,15 +80,21 @@ func getBiconomyInitCode(index int64, factory, accountLogic, ecdsaValidator, own
 		panic(err)
 	}
 
-	ecdsaOwnershipInitData, err := initABI.Pack("initForSmartAccount", owner)
+	ecdsaOwnershipInitData, err := initABI.Pack("initForSmartAccount", owner.Bytes())
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("failed to pack init data: %w", err))
 	}
 
-	initCode, err := createAccountABI.Pack("createAccount", ecdsaValidator, ecdsaOwnershipInitData, index)
+	callData, err := createAccountABI.Pack("createAccount", ecdsaValidator, ecdsaOwnershipInitData, index.BigInt())
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("failed to pack createAccount data: %w", err))
 	}
+
+	initCode := make([]byte, len(factory)+len(callData))
+	copy(initCode, factory.Bytes())
+	copy(initCode[len(factory):], callData)
+
+	slog.Debug("built initCode", "initCode", hexutil.Encode(initCode))
 
 	return func(_ context.Context, op *UserOperation) error {
 		op.InitCode = initCode
@@ -309,7 +323,7 @@ func sign(signer Signer, entryPoint common.Address, chainID *big.Int) middleware
 
 		b, err := op.MarshalJSON()
 		if err != nil {
-			panic(err)
+			return fmt.Errorf("failed to marshal user operation: %w", err)
 		}
 		slog.Debug("userop signed",
 			"hash", op.UserOpHash(entryPoint, chainID).String(),

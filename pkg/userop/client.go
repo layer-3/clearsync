@@ -75,18 +75,34 @@ func NewClient(config ClientConfig) (UserOperationClient, error) {
 		}
 	}
 
+	var getInitCode middleware
+	switch typ := config.SmartWallet.Type; typ {
+	case SmartWalletSimpleAccount:
+	case SmartWalletBiconomy:
+	case SmartWalletKernel:
+		getInitCode = getKernelInitCode(
+			decimal.Zero,
+			config.SmartWallet.Factory,
+			config.SmartWallet.Logic,
+			config.SmartWallet.ECDSAValidator,
+			config.SmartWallet.Owner,
+		)
+	default:
+		return nil, fmt.Errorf("unknown smart wallet type: %s", typ)
+	}
+
 	return &client{
 		providerRPC:        providerClient,
 		bundlerRPC:         bundlerRPC,
 		chainID:            config.ChainID,
-		smartWalletType:    config.SmartWalletType,
+		smartWalletType:    config.SmartWallet.Type,
 		entryPoint:         config.EntryPoint,
 		isPaymasterEnabled: isPaymasterEnabled,
 		paymaster:          config.Paymaster.Address,
 		signer:             config.Signer,
 		middlewares: []middleware{ // Middleware order matters - first in, first executed
 			getNonce(entryPointContract),
-			// getInitCode(config.SmartAccountFactory, ), // TODO: add smart wallet deployment support
+			getInitCode,
 			getGasPrice(providerClient),
 			sign(config.Signer, config.EntryPoint, config.ChainID),
 			estimateGas,

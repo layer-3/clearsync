@@ -62,124 +62,126 @@ const kernelExecuteABI = `[
 
 // kernelDeployWalletABI is used to deploy a new smart account on Zerodev Kernel.
 const kernelDeployWalletABI = `[{
-  inputs: [
+  "inputs":[
     {
-      internalType: "address",
-      name: "moduleSetupContract",
-      type: "address"
+      "internalType":"address",
+      "name":"_implementation",
+      "type":"address"
     },
     {
-      internalType: "bytes",
-      name: "moduleSetupData",
-      type: "bytes"
+      "internalType":"bytes",
+      "name":"_data",
+      "type":"bytes"
     },
     {
-      internalType: "uint256",
-      name: "index",
-      type: "uint256"
+      "internalType":"uint256",
+      "name":"_index",
+      "type":"uint256"
     }
   ],
-  name: "deployCounterFactualAccount",
-  outputs: [{
-    internalType: "address",
-    name: "proxy",
-    type: "address"
-  }],
-  stateMutability: "nonpayable",
-  type: "function"
+  "name":"createAccount",
+  "outputs":[
+    {
+      "internalType":"address",
+      "name":"proxy",
+      "type":"address"
+    }
+  ],
+  "stateMutability":"payable",
+  "type":"function"
 }]`
 
 // kernelInitABI is the init ABI, used to initialise Zerodev Kernel smart account.
 const kernelInitABI = `[{
-  inputs: [
+  "inputs": [
     {
-      internalType: "contract IKernelValidator",
-      name: "_defaultValidator",
-      type: "address"
+      "internalType": "contract IKernelValidator",
+      "name": "_defaultValidator",
+      "type": "address"
     },
     {
-      internalType: "bytes",
-      name: "_data",
-      type: "bytes"
+      "internalType": "bytes",
+      "name": "_data",
+      "type": "bytes"
     }
   ],
-  name: "initialize",
-  outputs: [],
-  stateMutability: "payable",
-  type: "function"
+  "name": "initialize",
+  "outputs": [],
+  "stateMutability": "payable",
+  "type": "function"
 }]`
 
 // biconomyDeployWalletABI is used to deploy a new smart account on Biconomy.
 const biconomyDeployWalletABI = `[{
-  inputs: [
+  "inputs": [
     {
-      internalType: "address",
-      name: "moduleSetupContract",
-      type: "address"
+      "internalType": "address",
+      "name": "moduleSetupContract",
+      "type": "address"
     },
     {
-      internalType: "bytes",
-      name: "moduleSetupData",
-      type: "bytes"
+      "internalType": "bytes",
+      "name": "moduleSetupData",
+      "type": "bytes"
     },
     {
-      internalType: "uint256",
-      name: "index",
-      type: "uint256"
+      "internalType": "uint256",
+      "name": "index",
+      "type": "uint256"
     }
   ],
-  name: "deployCounterFactualAccount",
-  outputs: [{
-    internalType: "address",
-    name: "proxy",
-    type: "address"
+  "name": "deployCounterFactualAccount",
+  "outputs": [{
+    "internalType": "address",
+    "name": "proxy",
+    "type": "address"
   }],
-  stateMutability: "nonpayable",
-  type: "function"
+  "stateMutability": "nonpayable",
+  "type": "function"
 }]`
 
 // biconomyInitABI is the init ABI, used to initialise Biconomy smart account.
 const biconomyInitABI = `[
   {
-    inputs: [
+    "inputs": [
       {
-        internalType: "address",
-        name: "handler",
-        type: "address"
+        "internalType": "address",
+        "name": "handler",
+        "type": "address"
       },
       {
-        internalType: "address",
-        name: "moduleSetupContract",
-        type: "address"
+        "internalType": "address",
+        "name": "moduleSetupContract",
+        "type": "address"
       },
       {
-        internalType: "bytes",
-        name: "moduleSetupData",
-        type: "bytes"
+        "internalType": "bytes",
+        "name": "moduleSetupData",
+        "type": "bytes"
       }
     ],
-    name: "init",
-    outputs: [{
-      internalType: "address",
-      name: "",
-      type: "address"
+    "name": "init",
+    "outputs": [{
+      "internalType": "address",
+      "name": "",
+      "type": "address"
     }],
-    stateMutability: "nonpayable",
-    type: "function"
+    "stateMutability": "nonpayable",
+    "type": "function"
   },
   {
-    inputs: [{
-      internalType: "address",
-      name: "eoaOwner",
-      type: "address"
+    "inputs": [{
+      "internalType": "address",
+      "name": "eoaOwner",
+      "type": "address"
     }],
-    name: "initForSmartAccount",
-    outputs: [{
-      internalType: "address",
-      name: "",
-      type: "address"
+    "name": "initForSmartAccount",
+    "outputs": [{
+      "internalType": "address",
+      "name": "",
+      "type": "address"
     }],
-    stateMutability: "nonpayable",
-    type: "function"
+    "stateMutability": "nonpayable",
+    "type": "function"
   },
 ]`

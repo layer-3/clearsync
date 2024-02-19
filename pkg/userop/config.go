@@ -11,13 +11,21 @@ import (
 
 // ClientConfig represents the configuration for the user operation client.
 type ClientConfig struct {
-	SmartWalletType SmartWalletType `yaml:"smart_wallet"`
-	ProviderURL     string          `yaml:"provider_url"`
-	BundlerURL      string          `yaml:"bundler_url"`
-	ChainID         *big.Int        `yaml:"chain_id"`
-	EntryPoint      common.Address  `yaml:"entry_point"`
-	Paymaster       PaymasterConfig `yaml:"paymaster"`
-	Signer          Signer
+	ProviderURL string          `yaml:"provider_url"`
+	ChainID     *big.Int        `yaml:"chain_id"`
+	BundlerURL  string          `yaml:"bundler_url"`
+	EntryPoint  common.Address  `yaml:"entry_point"`
+	SmartWallet SmartWallet     `yaml:"smart_wallet"`
+	Paymaster   PaymasterConfig `yaml:"paymaster"`
+	Signer      Signer
+}
+
+type SmartWallet struct {
+	Type           SmartWalletType `yaml:"type"`
+	ECDSAValidator common.Address  `yaml:"ecdsa_validator"`
+	Logic          common.Address  `yaml:"logic"`
+	Factory        common.Address  `yaml:"factory"`
+	Owner          common.Address  `yaml:"owner"`
 }
 
 // PaymasterConfig represents the configuration for the paymaster.
