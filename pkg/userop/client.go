@@ -46,7 +46,7 @@ type client struct {
 // NewClient is a factory that builds a new
 // user operation client based on the provided configuration.
 func NewClient(config ClientConfig) (UserOperationClient, error) {
-	providerClient, err := ethclient.Dial(config.ProviderURL)
+	providerRPC, err := ethclient.Dial(config.ProviderURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to the blockchain RPC: %w", err)
 	}
@@ -56,7 +56,7 @@ func NewClient(config ClientConfig) (UserOperationClient, error) {
 		return nil, fmt.Errorf("failed to connect to the bundler RPC: %w", err)
 	}
 
-	entryPointContract, err := entry_point.NewEntryPoint(config.EntryPoint, providerClient)
+	entryPointContract, err := entry_point.NewEntryPoint(config.EntryPoint, providerRPC)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to the entry point contract: %w", err)
 	}
@@ -81,6 +81,7 @@ func NewClient(config ClientConfig) (UserOperationClient, error) {
 	case SmartWalletBiconomy:
 	case SmartWalletKernel:
 		getInitCode = getKernelInitCode(
+			providerRPC,
 			decimal.Zero,
 			config.SmartWallet.Factory,
 			config.SmartWallet.Logic,
@@ -92,7 +93,7 @@ func NewClient(config ClientConfig) (UserOperationClient, error) {
 	}
 
 	return &client{
-		providerRPC:        providerClient,
+		providerRPC:        providerRPC,
 		bundlerRPC:         bundlerRPC,
 		chainID:            config.ChainID,
 		smartWalletType:    config.SmartWallet.Type,
@@ -103,7 +104,7 @@ func NewClient(config ClientConfig) (UserOperationClient, error) {
 		middlewares: []middleware{ // Middleware order matters - first in, first executed
 			getNonce(entryPointContract),
 			getInitCode,
-			getGasPrice(providerClient),
+			getGasPrice(providerRPC),
 			sign(config.Signer, config.EntryPoint, config.ChainID),
 			estimateGas,
 			sign(config.Signer, config.EntryPoint, config.ChainID), // update signature after gas estimation
