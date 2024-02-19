@@ -10,7 +10,6 @@ protolint:disable MAX_LINE_LENGTH
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | GetVersion | [VersionRequest](#versionrequest) | [VersionResponse](#versionresponse) |  |
-| GetIdentityAddress | [GetIdentityAddressRequest](#getidentityaddressrequest) | [GetIdentityAddressResponse](#getidentityaddressresponse) |  |
 | GetChallenge | [GetChallengeRequest](#getchallengerequest) | [GetChallengeResponse](#getchallengeresponse) |  |
 | Authenticate | [AuthenticateRequest](#authenticaterequest) | [AuthenticateResponse](#authenticateresponse) |  |
 | OpenChannel | [OpenChannelRequest](#openchannelrequest) | [OpenChannelResponse](#openchannelresponse) |  |
@@ -32,8 +31,8 @@ protolint:disable MAX_LINE_LENGTH
 
 | Field | Type | Description |
 | ----- | ---- | ----------- |
-| challenge | [string](#string) |  |
 | signature | [string](#string) |  |
+| address | [core.Address](core.proto.md#address) |  |
 
 
 
@@ -114,6 +113,12 @@ protolint:disable MAX_LINE_LENGTH
 
 
 
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| address | [core.Address](core.proto.md#address) |  |
+| name | [string](#string) |  |
+
+
 
 
 
@@ -126,29 +131,6 @@ protolint:disable MAX_LINE_LENGTH
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | challenge | [string](#string) |  |
-
-
-
-
-
-
-
-### GetIdentityAddressRequest
-
-
-
-
-
-
-
-
-### GetIdentityAddressResponse
-
-
-
-| Field | Type | Description |
-| ----- | ---- | ----------- |
-| address | [core.Address](core.proto.md#address) |  |
 
 
 
