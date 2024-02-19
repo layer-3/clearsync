@@ -48,9 +48,9 @@ func newApproveCall() (userop.Call, error) {
 	}
 
 	return userop.Call{
-		ContractAddress: token,
-		Value:           decimal.Zero,
-		CallData:        callData,
+		To:       token,
+		Value:    decimal.Zero,
+		CallData: callData,
 	}, nil
 }
 
@@ -66,9 +66,9 @@ func newTransferCall() (userop.Call, error) {
 	}
 
 	return userop.Call{
-		ContractAddress: token,
-		Value:           decimal.Zero,
-		CallData:        callData,
+		To:       token,
+		Value:    decimal.Zero,
+		CallData: callData,
 	}, nil
 }
 
