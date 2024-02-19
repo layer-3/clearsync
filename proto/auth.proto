@@ -20,7 +20,7 @@ message Peer {
 
 message ChallengeRequest {
   Peer client = 1;
-  string operator_address = 2;
+  string server_operator_address = 2;
 }
 
 // Server signs the client's challenge
@@ -33,7 +33,7 @@ message ChallengeResponse {
 message SignedChallenge {
   Peer client = 1;
   bytes signed_server_challenge = 2;
-  string operator_address = 3;
+  string server_operator_address = 3;
 }
 
 // AuthToken can be attached in headers
