@@ -22,11 +22,16 @@ func SignerForBiconomy(privateKey *ecdsa.PrivateKey) Signer {
 			return nil, fmt.Errorf("failed to sign user operation: %w", err)
 		}
 
+		// The address is correct for all chains as for Biconomy v2.0
+		// see https://docs.biconomy.io/contracts
 		ecdsaOwnershipValidationModuleAddress := common.HexToAddress("0x0000001c5b32F37F5beA87BDD5374eB2aC54eA8e")
 		args := abi.Arguments{
 			{Type: bytes},
 			{Type: address},
 		}
+		// Pack the signature and the ecdsaOwnershipValidationModuleAddress
+		// to be used as the signature for the user operation
+		// See more: https://github.com/bcnmy/scw-contracts/blob/v2-deployments/contracts/smart-account/SmartAccount.sol#L337
 		signature, err := args.Pack(signedHash, ecdsaOwnershipValidationModuleAddress)
 		if err != nil {
 			return nil, fmt.Errorf("failed to pack signature: %w", err)
@@ -50,6 +55,8 @@ func SignerForKernel(privateKey *ecdsa.PrivateKey) Signer {
 		}
 
 		encodedSig := hexutil.Encode(signature)
+		// Add 'use sudo validator' mode to signature
+		// See more: https://github.com/zerodevapp/kernel/blob/v2.3/src/Kernel.sol#L142
 		modifiedSig := strings.Replace(encodedSig, "0x", "0x00000000", 1)
 
 		signature, err = hexutil.Decode(modifiedSig)

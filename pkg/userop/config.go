@@ -72,7 +72,7 @@ func (config *PimlicoERC20Config) init() {
 }
 
 // PimlicoVerifyingConfig represents the configuration for the Pimlico Verifying paymaster.
-// See its RPC endpoint docs at https://docs.pimlico.io/paymaster/verifying-paymaster/reference/endpoints#pm_sponsoruseroperation-v2
+// See the RPC endpoint docs at https://docs.pimlico.io/paymaster/verifying-paymaster/reference/endpoints#pm_sponsoruseroperation-v2
 type PimlicoVerifyingConfig struct {
 	SponsorshipPolicyID string `yaml:"sponsorship_policy_id"`
 }
@@ -82,6 +82,7 @@ func (config *PimlicoVerifyingConfig) init() {
 }
 
 // BiconomyERC20Config represents the configuration for the Biconomy ERC20 paymaster.
+// See the RPC endpoint docs at https://docs.biconomy.io/Paymaster/api/sponsor-useroperation#2-mode-is-erc20-
 type BiconomyERC20Config struct {
 	Mode               string            `yaml:"mode"`
 	CalculateGasLimits bool              `yaml:"calculate_gas_limits" env-default:"true"`
@@ -103,6 +104,7 @@ type BiconomyTokenInfo struct {
 }
 
 // BiconomySponsoringConfig represents the configuration for the Biconomy Sponsoring paymaster.
+// See the RPC endpoint docs at https://docs.biconomy.io/Paymaster/api/sponsor-useroperation#1-mode-is-sponsored-
 type BiconomySponsoringConfig struct {
 	Mode               string                        `yaml:"mode"`
 	CalculateGasLimits bool                          `yaml:"calculate_gas_limits"`
@@ -119,7 +121,7 @@ func (config *BiconomySponsoringConfig) init() {
 			WebhookData: make(map[string]any),
 			SmartAccountInfo: BiconomySmartAccountInfo{
 				Name:    "BICONOMY",
-				Version: "2.0.0",
+				Version: "2.0.0", // NOTE: the version of a smart account affects the bundler's behavior
 			},
 		},
 	}
@@ -127,6 +129,7 @@ func (config *BiconomySponsoringConfig) init() {
 
 // BiconomySponsorshipInfoConfig represents the configuration
 // for transaction sponsoring for the Biconomy Sponsoring paymaster.
+// More about webhooks: https://docs.biconomy.io/Paymaster/api/webhookapi
 type BiconomySponsorshipInfoConfig struct {
 	WebhookData      map[string]any           `yaml:"webhook_data"`
 	SmartAccountInfo BiconomySmartAccountInfo `yaml:"smart_account_info"`
