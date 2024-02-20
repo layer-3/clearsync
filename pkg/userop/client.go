@@ -19,15 +19,24 @@ import (
 	"github.com/layer-3/clearsync/pkg/abi/simple_account/account_abstraction"
 )
 
+type WalletDeploymentOpts struct {
+	Owner common.Address
+	Index decimal.Decimal
+}
+
 // UserOperationClient represents a client for creating and posting user operations.
 type UserOperationClient interface {
+	// TODO: reorder
 	NewUserOp(
 		ctx context.Context,
 		sender common.Address,
 		signer Signer,
 		calls []Call,
+		walletDeploymentOpts *WalletDeploymentOpts,
 	) (UserOperation, error)
 	SendUserOp(ctx context.Context, op UserOperation) (<-chan struct{}, error)
+	GetAccountAddress(ctx context.Context, owner common.Address, index decimal.Decimal) (common.Address, error)
+	IsAccountDeployed(ctx context.Context, owner common.Address, index decimal.Decimal) (bool, error)
 }
 
 // Call represents sufficient data to build a single transaction,
@@ -45,7 +54,7 @@ type client struct {
 	bundlerRPC  *rpc.Client
 	chainID     *big.Int
 
-	smartWalletType    SmartWalletType
+	smartWalletConfig  SmartWallet
 	entryPoint         common.Address
 	isPaymasterEnabled bool
 	paymaster          common.Address
@@ -84,28 +93,13 @@ func NewClient(config ClientConfig) (UserOperationClient, error) {
 		}
 	}
 
-	var getInitCode middleware
-	switch typ := config.SmartWallet.Type; typ {
-	case SmartWalletSimpleAccount:
-	case SmartWalletBiconomy:
-	case SmartWalletKernel:
-		getInitCode = getKernelInitCode(
-			providerRPC,
-			decimal.Zero,
-			config.SmartWallet.Factory,
-			config.SmartWallet.Logic,
-			config.SmartWallet.ECDSAValidator,
-			config.SmartWallet.Owner,
-		)
-	default:
-		return nil, fmt.Errorf("unknown smart wallet type: %s", typ)
-	}
+	getInitCode := getInitCodeBuilder(providerRPC, config.SmartWallet)
 
 	return &client{
 		providerRPC:        providerRPC,
 		bundlerRPC:         bundlerRPC,
 		chainID:            config.ChainID,
-		smartWalletType:    config.SmartWallet.Type,
+		smartWalletConfig:  config.SmartWallet,
 		entryPoint:         config.EntryPoint,
 		isPaymasterEnabled: isPaymasterEnabled,
 		paymaster:          config.Paymaster.Address,
@@ -123,16 +117,30 @@ func NewClient(config ClientConfig) (UserOperationClient, error) {
 // NewUserOp builds and fills in a new UserOperation.
 func (c *client) NewUserOp(
 	ctx context.Context,
-	smartWallet common.Address, // TODO: support calculating SW address from SmartWalletType
+	smartWallet common.Address,
 	signer Signer,
 	calls []Call,
+	walletDeploymentOpts *WalletDeploymentOpts,
 ) (UserOperation, error) {
 	slog.Info("apply middlewares to user operation")
+
+	isDeployed, err := isAccountDeployed(c.providerRPC, smartWallet)
+	if err != nil {
+		return UserOperation{}, fmt.Errorf("failed to check if smart account is already deployed: %w", err)
+	}
+
+	if !isDeployed {
+		if walletDeploymentOpts == nil {
+			return UserOperation{}, ErrNoWalletDeploymentOpts
+		}
+		ctx = context.WithValue(ctx, ctxKeyOwner, walletDeploymentOpts.Owner)
+		ctx = context.WithValue(ctx, ctxKeyIndex, walletDeploymentOpts.Index)
+	}
 
 	if signer == nil {
 		return UserOperation{}, fmt.Errorf("signer is not provided")
 	}
-	ctx = context.WithValue(ctx, signerCtxKey, signer)
+	ctx = context.WithValue(ctx, ctxKeySigner, signer)
 	op := UserOperation{Sender: smartWallet}
 
 	callData, err := c.buildCallData(calls)
@@ -167,14 +175,106 @@ func (c *client) SendUserOp(ctx context.Context, op UserOperation) (<-chan struc
 	return waiter, nil
 }
 
+func (c *client) GetAccountAddress(ctx context.Context, owner common.Address, index decimal.Decimal) (common.Address, error) {
+	getInitCode := getInitCodeBuilder(c.providerRPC, c.smartWalletConfig)
+
+	ctx = context.WithValue(ctx, ctxKeyOwner, owner)
+	ctx = context.WithValue(ctx, ctxKeyIndex, index)
+
+	op := UserOperation{
+		Sender: common.Address{},
+	}
+
+	if err := getInitCode(ctx, &op); err != nil {
+		return common.Address{}, fmt.Errorf("failed to get init code: %w", err)
+	}
+
+	entryPointABI, err := abi.JSON(strings.NewReader(entry_point.EntryPointMetaData.ABI))
+	if err != nil {
+		return common.Address{}, fmt.Errorf("failed to parse ABI: %w", err)
+	}
+
+	getSenderAddressData, err := entryPointABI.Pack("getSenderAddress", op.InitCode)
+	if err != nil {
+		return common.Address{}, fmt.Errorf("failed to pack getSenderAddress data: %w", err)
+	}
+
+	msg := ethereum.CallMsg{
+		To:   &c.entryPoint,
+		Data: getSenderAddressData,
+	}
+
+	_, err = c.providerRPC.CallContract(ctx, msg, nil)
+	if err == nil {
+		panic(fmt.Errorf("'getSenderAddress' call returned no error, but expected one"))
+	}
+
+	scError, ok := err.(rpc.DataError)
+	if !ok {
+		panic(fmt.Errorf("unexpected error type: %T", err))
+	}
+
+	errorData := scError.ErrorData().(string)
+
+	senderAddressResultError, ok := entryPointABI.Errors["SenderAddressResult"]
+	if !ok {
+		panic(fmt.Errorf("ABI does not contain 'SenderAddressResult' error"))
+	}
+
+	// check if the error signature is correct
+	if errorData[0:10] != senderAddressResultError.ID.String()[0:10] {
+		panic(fmt.Errorf("'getSenderAddress' unexpected error signature: %s", errorData[0:10]))
+	}
+
+	// check if the error data has the correct length
+	if len(errorData) < 74 {
+		panic(fmt.Errorf("'getSenderAddress' revert data expected to have lenght of 74, but got: %d", len(errorData)))
+	}
+
+	return common.HexToAddress(errorData[34:]), nil
+}
+
+func (c *client) IsAccountDeployed(ctx context.Context, owner common.Address, index decimal.Decimal) (bool, error) {
+	swAddress, err := c.GetAccountAddress(ctx, owner, index)
+	if err != nil {
+		return false, fmt.Errorf("failed to get account address: %w", err)
+	}
+
+	return isAccountDeployed(c.providerRPC, swAddress)
+}
+
+func isAccountDeployed(provider *ethclient.Client, swAddress common.Address) (bool, error) {
+	var result any
+	if err := provider.Client().CallContext(
+		context.Background(),
+		&result,
+		"eth_getCode",
+		swAddress,
+		"latest",
+	); err != nil {
+		return false, fmt.Errorf("failed to check if smart account is already deployed: %w", err)
+	}
+
+	byteCode, ok := result.(string)
+	if !ok {
+		return false, fmt.Errorf("unexpected type: %T", result)
+	}
+
+	if byteCode == "" || byteCode == "0x" {
+		return false, nil
+	}
+
+	return true, nil
+}
+
 func (c *client) buildCallData(calls []Call) ([]byte, error) {
-	switch c.smartWalletType {
+	switch c.smartWalletConfig.Type {
 	case SmartWalletSimpleAccount, SmartWalletBiconomy:
 		return handleCallSimpleAccount(calls)
 	case SmartWalletKernel:
 		return handleCallKernel(calls)
 	default:
-		return nil, fmt.Errorf("unknown smart wallet type: %s", c.smartWalletType)
+		return nil, fmt.Errorf("unknown smart wallet type: %s", c.smartWalletConfig.Type)
 	}
 }
 

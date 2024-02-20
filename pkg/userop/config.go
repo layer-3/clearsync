@@ -18,7 +18,6 @@ type ClientConfig struct {
 	EntryPoint  common.Address  `yaml:"entry_point"`
 	SmartWallet SmartWallet     `yaml:"smart_wallet"`
 	Paymaster   PaymasterConfig `yaml:"paymaster"`
-	Signer      Signer
 }
 
 // SmartWallet represents the configuration
@@ -28,7 +27,6 @@ type SmartWallet struct {
 	ECDSAValidator common.Address  `yaml:"ecdsa_validator"`
 	Logic          common.Address  `yaml:"logic"`
 	Factory        common.Address  `yaml:"factory"`
-	Owner          common.Address  `yaml:"owner"`
 }
 
 // PaymasterConfig represents the configuration

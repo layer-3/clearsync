@@ -19,6 +19,13 @@ func main() {
 		panic(fmt.Errorf("failed to create userop client: %w", err))
 	}
 
+	walletAddress, err := client.GetAccountAddress(context.Background(), owner, decimal.Zero)
+	if err != nil {
+		panic(fmt.Errorf("failed to get wallet address: %w", err))
+	}
+
+	slog.Info("wallet address", "address", walletAddress)
+
 	approve, err := newApproveCall()
 	if err != nil {
 		panic(fmt.Errorf("failed to build call: %w", err))
@@ -75,7 +82,7 @@ func newTransferCall() (userop.Call, error) {
 func send(client userop.UserOperationClient, call userop.Call) error {
 	ctx := context.Background()
 
-	op, err := client.NewUserOp(ctx, sender, []userop.Call{call})
+	op, err := client.NewUserOp(ctx, sender, signer, []userop.Call{call}, nil)
 	if err != nil {
 		panic(fmt.Errorf("failed to build userop: %w", err))
 	}
