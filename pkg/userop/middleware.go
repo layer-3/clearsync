@@ -18,6 +18,8 @@ import (
 	"github.com/layer-3/clearsync/pkg/abi/entry_point"
 )
 
+const signerCtxKey = "signer"
+
 // middleware is a function that modifies a user operation.
 // It is used to create a pipeline of operations to be executed
 // to fill in the user operation with all the necessary data.
@@ -357,8 +359,13 @@ func estimateUserOperationGas(bundlerRPC *rpc.Client, entryPoint common.Address)
 	}
 }
 
-func sign(signer Signer, entryPoint common.Address, chainID *big.Int) middleware {
-	return func(_ context.Context, op *UserOperation) error {
+func sign(entryPoint common.Address, chainID *big.Int) middleware {
+	return func(ctx context.Context, op *UserOperation) error {
+		signer, ok := ctx.Value(signerCtxKey).(Signer)
+		if !ok {
+			return fmt.Errorf("signer not found in context")
+		}
+
 		signature, err := signer(*op, entryPoint, chainID)
 		if err != nil {
 			return fmt.Errorf("failed to sign user operation: %w", err)

@@ -21,7 +21,12 @@ import (
 
 // UserOperationClient represents a client for creating and posting user operations.
 type UserOperationClient interface {
-	NewUserOp(ctx context.Context, sender common.Address, calls []Call) (UserOperation, error)
+	NewUserOp(
+		ctx context.Context,
+		sender common.Address,
+		signer Signer,
+		calls []Call,
+	) (UserOperation, error)
 	SendUserOp(ctx context.Context, op UserOperation) (<-chan struct{}, error)
 }
 
@@ -44,7 +49,6 @@ type client struct {
 	entryPoint         common.Address
 	isPaymasterEnabled bool
 	paymaster          common.Address
-	signer             Signer
 	middlewares        []middleware
 }
 
@@ -105,14 +109,13 @@ func NewClient(config ClientConfig) (UserOperationClient, error) {
 		entryPoint:         config.EntryPoint,
 		isPaymasterEnabled: isPaymasterEnabled,
 		paymaster:          config.Paymaster.Address,
-		signer:             config.Signer,
 		middlewares: []middleware{ // Middleware order matters - first in, first executed
 			getNonce(entryPointContract),
 			getInitCode,
 			getGasPrice(providerRPC),
-			sign(config.Signer, config.EntryPoint, config.ChainID),
+			sign(config.EntryPoint, config.ChainID),
 			estimateGas,
-			sign(config.Signer, config.EntryPoint, config.ChainID), // update signature after gas estimation
+			sign(config.EntryPoint, config.ChainID), // update signature after gas estimation
 		},
 	}, nil
 }
@@ -121,9 +124,15 @@ func NewClient(config ClientConfig) (UserOperationClient, error) {
 func (c *client) NewUserOp(
 	ctx context.Context,
 	smartWallet common.Address, // TODO: support calculating SW address from SmartWalletType
+	signer Signer,
 	calls []Call,
 ) (UserOperation, error) {
 	slog.Info("apply middlewares to user operation")
+
+	if signer == nil {
+		return UserOperation{}, fmt.Errorf("signer is not provided")
+	}
+	ctx = context.WithValue(ctx, signerCtxKey, signer)
 	op := UserOperation{Sender: smartWallet}
 
 	callData, err := c.buildCallData(calls)

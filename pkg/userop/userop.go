@@ -188,7 +188,7 @@ func (op UserOperation) MarshalJSON() ([]byte, error) {
 
 // SignWithECDSA signs the hash with the given private key using the ECDSA algorithm.
 func (op UserOperation) SignWithECDSA(hash []byte, privateKey *ecdsa.PrivateKey) ([]byte, error) {
-	ethMessageHash := computeEthereumSignedMessageHash(hash)
+	ethMessageHash := computeEthSignedMessageHash(hash)
 
 	signature, err := crypto.Sign(ethMessageHash, privateKey)
 	if err != nil {
@@ -205,10 +205,10 @@ func (op UserOperation) SignWithECDSA(hash []byte, privateKey *ecdsa.PrivateKey)
 	return signature, nil
 }
 
-// computeEthereumSignedMessageHash accepts an arbitrary message, prepends a known message,
+// computeEthSignedMessageHash accepts an arbitrary message, prepends a known message,
 // and hashes the result using keccak256. The known message added to the input before hashing is
 // "\x19Ethereum Signed Message:\n" + len(message).
-func computeEthereumSignedMessageHash(message []byte) []byte {
+func computeEthSignedMessageHash(message []byte) []byte {
 	return crypto.Keccak256([]byte(
 		fmt.Sprintf("\x19Ethereum Signed Message:\n%d%s", len(message), string(message)),
 	))
