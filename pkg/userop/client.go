@@ -205,7 +205,7 @@ func (c *client) NewUserOp(
 	}
 
 	if signer == nil {
-		return UserOperation{}, fmt.Errorf("signer is not provided")
+		return UserOperation{}, ErrNoSigner
 	}
 	ctx = context.WithValue(ctx, ctxKeySigner, signer)
 	op := UserOperation{Sender: smartWallet}
