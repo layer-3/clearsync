@@ -26,7 +26,8 @@ type WalletDeploymentOpts struct {
 
 // UserOperationClient represents a client for creating and posting user operations.
 type UserOperationClient interface {
-	// TODO: reorder
+	IsAccountDeployed(ctx context.Context, owner common.Address, index decimal.Decimal) (bool, error)
+	GetAccountAddress(ctx context.Context, owner common.Address, index decimal.Decimal) (common.Address, error)
 	NewUserOp(
 		ctx context.Context,
 		sender common.Address,
@@ -35,8 +36,6 @@ type UserOperationClient interface {
 		walletDeploymentOpts *WalletDeploymentOpts,
 	) (UserOperation, error)
 	SendUserOp(ctx context.Context, op UserOperation) (<-chan struct{}, error)
-	GetAccountAddress(ctx context.Context, owner common.Address, index decimal.Decimal) (common.Address, error)
-	IsAccountDeployed(ctx context.Context, owner common.Address, index decimal.Decimal) (bool, error)
 }
 
 // Call represents sufficient data to build a single transaction,
@@ -114,65 +113,13 @@ func NewClient(config ClientConfig) (UserOperationClient, error) {
 	}, nil
 }
 
-// NewUserOp builds and fills in a new UserOperation.
-func (c *client) NewUserOp(
-	ctx context.Context,
-	smartWallet common.Address,
-	signer Signer,
-	calls []Call,
-	walletDeploymentOpts *WalletDeploymentOpts,
-) (UserOperation, error) {
-	slog.Info("apply middlewares to user operation")
-
-	isDeployed, err := isAccountDeployed(c.providerRPC, smartWallet)
+func (c *client) IsAccountDeployed(ctx context.Context, owner common.Address, index decimal.Decimal) (bool, error) {
+	swAddress, err := c.GetAccountAddress(ctx, owner, index)
 	if err != nil {
-		return UserOperation{}, fmt.Errorf("failed to check if smart account is already deployed: %w", err)
+		return false, fmt.Errorf("failed to get account address: %w", err)
 	}
 
-	if !isDeployed {
-		if walletDeploymentOpts == nil {
-			return UserOperation{}, ErrNoWalletDeploymentOpts
-		}
-		ctx = context.WithValue(ctx, ctxKeyOwner, walletDeploymentOpts.Owner)
-		ctx = context.WithValue(ctx, ctxKeyIndex, walletDeploymentOpts.Index)
-	}
-
-	if signer == nil {
-		return UserOperation{}, fmt.Errorf("signer is not provided")
-	}
-	ctx = context.WithValue(ctx, ctxKeySigner, signer)
-	op := UserOperation{Sender: smartWallet}
-
-	callData, err := c.buildCallData(calls)
-	if err != nil {
-		return UserOperation{}, fmt.Errorf("failed to build call data: %w", err)
-	}
-	op.CallData = callData
-
-	for _, fn := range c.middlewares {
-		if err := fn(ctx, &op); err != nil {
-			return UserOperation{}, fmt.Errorf("failed to apply middleware to user operation: %w", err)
-		}
-	}
-
-	return op, nil
-}
-
-// SendUserOp submits a user operation to a bundler
-// and executes the provided callback function.
-func (c *client) SendUserOp(ctx context.Context, op UserOperation) (<-chan struct{}, error) {
-	slog.Info("sending user operation")
-
-	var userOpHash common.Hash
-	if err := c.bundlerRPC.CallContext(ctx, &userOpHash, "eth_sendUserOperation", op, c.entryPoint); err != nil {
-		return nil, fmt.Errorf("call to `eth_sendUserOperation` failed: %w", err)
-	}
-
-	slog.Info("user operation sent successfully", "hash", userOpHash.Hex())
-	waiter := make(chan struct{}, 1)
-	go waitForUserOpEvent(c.providerRPC, waiter, c.entryPoint, userOpHash)
-
-	return waiter, nil
+	return isAccountDeployed(c.providerRPC, swAddress)
 }
 
 func (c *client) GetAccountAddress(ctx context.Context, owner common.Address, index decimal.Decimal) (common.Address, error) {
@@ -234,13 +181,65 @@ func (c *client) GetAccountAddress(ctx context.Context, owner common.Address, in
 	return common.HexToAddress(errorData[34:]), nil
 }
 
-func (c *client) IsAccountDeployed(ctx context.Context, owner common.Address, index decimal.Decimal) (bool, error) {
-	swAddress, err := c.GetAccountAddress(ctx, owner, index)
+// NewUserOp builds and fills in a new UserOperation.
+func (c *client) NewUserOp(
+	ctx context.Context,
+	smartWallet common.Address,
+	signer Signer,
+	calls []Call,
+	walletDeploymentOpts *WalletDeploymentOpts,
+) (UserOperation, error) {
+	slog.Info("apply middlewares to user operation")
+
+	isDeployed, err := isAccountDeployed(c.providerRPC, smartWallet)
 	if err != nil {
-		return false, fmt.Errorf("failed to get account address: %w", err)
+		return UserOperation{}, fmt.Errorf("failed to check if smart account is already deployed: %w", err)
 	}
 
-	return isAccountDeployed(c.providerRPC, swAddress)
+	if !isDeployed {
+		if walletDeploymentOpts == nil {
+			return UserOperation{}, ErrNoWalletDeploymentOpts
+		}
+		ctx = context.WithValue(ctx, ctxKeyOwner, walletDeploymentOpts.Owner)
+		ctx = context.WithValue(ctx, ctxKeyIndex, walletDeploymentOpts.Index)
+	}
+
+	if signer == nil {
+		return UserOperation{}, fmt.Errorf("signer is not provided")
+	}
+	ctx = context.WithValue(ctx, ctxKeySigner, signer)
+	op := UserOperation{Sender: smartWallet}
+
+	callData, err := c.buildCallData(calls)
+	if err != nil {
+		return UserOperation{}, fmt.Errorf("failed to build call data: %w", err)
+	}
+	op.CallData = callData
+
+	for _, fn := range c.middlewares {
+		if err := fn(ctx, &op); err != nil {
+			return UserOperation{}, fmt.Errorf("failed to apply middleware to user operation: %w", err)
+		}
+	}
+
+	return op, nil
+}
+
+// SendUserOp submits a user operation to a bundler
+// and executes the provided callback function.
+func (c *client) SendUserOp(ctx context.Context, op UserOperation) (<-chan struct{}, error) {
+	slog.Info("sending user operation")
+
+	var userOpHash common.Hash
+	if err := c.bundlerRPC.CallContext(ctx, &userOpHash, "eth_sendUserOperation", op, c.entryPoint); err != nil {
+		return nil, fmt.Errorf("call to `eth_sendUserOperation` failed: %w", err)
+	}
+
+	slog.Info("user operation sent successfully", "hash", userOpHash.Hex())
+	waiter := make(chan struct{}, 1)
+	go waitForUserOpEvent(c.providerRPC, waiter, c.entryPoint, userOpHash)
+
+	return waiter, nil
 }
 
 func isAccountDeployed(provider *ethclient.Client, swAddress common.Address) (bool, error) {
