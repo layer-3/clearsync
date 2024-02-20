@@ -9,8 +9,8 @@ type PaymasterType struct {
 var (
 	PaymasterPimlicoERC20       = PaymasterType{"pimlico_erc20"}
 	PaymasterPimlicoVerifying   = PaymasterType{"pimlico_verifying"}
-	PaymasterBiconomyERC20      = PaymasterType{"biconomy_erc20"}
-	PaymasterBiconomySponsoring = PaymasterType{"biconomy_sponsoring"}
+	PaymasterBiconomyERC20      = PaymasterType{"biconomy_erc20"}      // not tested
+	PaymasterBiconomySponsoring = PaymasterType{"biconomy_sponsoring"} // not tested
 	// PaymasterEthInfinitismERC20     = PaymasterType{"eth_infinitism_erc20"}     // unsupported
 	// PaymasterEthInfinitismVerifying = PaymasterType{"eth_infinitism_verifying"} // unsupported
 )

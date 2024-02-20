@@ -50,8 +50,8 @@ type smartWalletInitCodeGenerator func(op UserOperation, owner common.Address, i
 func getInitCode(providerRPC *ethclient.Client, smartWalletConfig SmartWallet) middleware {
 	var getInitCode smartWalletInitCodeGenerator
 	switch typ := smartWalletConfig.Type; typ {
-	case SmartWalletSimpleAccount:
-	case SmartWalletBiconomy:
+	case SmartWalletSimpleAccount: // unsupported
+	case SmartWalletBiconomy: // not tested
 	case SmartWalletKernel:
 		getInitCode = getKernelInitCode(smartWalletConfig.Factory, smartWalletConfig.Logic, smartWalletConfig.ECDSAValidator)
 	default:
@@ -109,16 +109,22 @@ func getKernelInitCode(factory common.Address, accountLogic common.Address, ecds
 	}
 
 	return func(op UserOperation, owner common.Address, index decimal.Decimal) ([]byte, error) {
+		// Initialize Kernel Smart Account with default validation module and its calldata
+		// see https://github.com/zerodevapp/kernel/blob/v2.3/src/abstract/KernelStorage.sol#L35
 		initData, err := initABI.Pack("initialize", ecdsaValidator, owner.Bytes())
 		if err != nil {
 			panic(fmt.Errorf("failed to pack init data: %w", err))
 		}
 
+		// Deploy Kernel Smart Account by calling `factory.createAccount`
+		// see https://github.com/zerodevapp/kernel/blob/v2.3/src/factory/KernelFactory.sol#L25
 		callData, err := createAccountABI.Pack("createAccount", accountLogic, initData, index.BigInt())
 		if err != nil {
 			panic(fmt.Errorf("failed to pack createAccount data: %w", err))
 		}
 
+		// Pack factory address and deployment data for `CreateSender` in EntryPoint
+		// see https://github.com/eth-infinitism/account-abstraction/blob/v0.6.0/contracts/core/SenderCreator.sol#L15
 		initCode := make([]byte, len(factory)+len(callData))
 		copy(initCode, factory.Bytes())
 		copy(initCode[len(factory):], callData)
@@ -144,16 +150,22 @@ func getBiconomyInitCode(factory, ecdsaValidator common.Address) smartWalletInit
 	}
 
 	return func(op UserOperation, owner common.Address, index decimal.Decimal) ([]byte, error) {
+		// Initialize SCW validation module with owner address
+		// see https://github.com/bcnmy/scw-contracts/blob/v2-deployments/contracts/smart-account/modules/EcdsaOwnershipRegistryModule.sol#L43
 		ecdsaOwnershipInitData, err := initABI.Pack("initForSmartAccount", owner.Bytes())
 		if err != nil {
 			panic(fmt.Errorf("failed to pack init data: %w", err))
 		}
 
+		// Deploy Biconomy SCW by calling `factory.createAccount`
+		// see https://github.com/bcnmy/scw-contracts/blob/v2-deployments/contracts/smart-account/factory/SmartAccountFactory.sol#L112
 		callData, err := createAccountABI.Pack("createAccount", ecdsaValidator, ecdsaOwnershipInitData, index.BigInt())
 		if err != nil {
 			panic(fmt.Errorf("failed to pack createAccount data: %w", err))
 		}
 
+		// Pack factory address and deployment data for `CreateSender` in EntryPoint
+		// see https://github.com/eth-infinitism/account-abstraction/blob/v0.6.0/contracts/core/SenderCreator.sol#L15
 		initCode := make([]byte, len(factory)+len(callData))
 		copy(initCode, factory.Bytes())
 		copy(initCode[len(factory):], callData)
@@ -189,6 +201,7 @@ func getGasPrice(providerRPC *ethclient.Client) middleware {
 			return fmt.Errorf("failed to parse maxPriorityFeePerGas: %s", maxPriorityFeePerGasStr)
 		}
 
+		// TODO: extract maxPriorityFeePerGas increase to a config
 		// Increase maxPriorityFeePerGas by 13%
 		tip := new(big.Int).Div(maxPriorityFeePerGas, big.NewInt(100))
 		tip.Mul(tip, big.NewInt(13))
@@ -201,6 +214,7 @@ func getGasPrice(providerRPC *ethclient.Client) middleware {
 		op.MaxFeePerGas = decimal.NewFromBigInt(maxFeePerGas, 0)
 		op.MaxPriorityFeePerGas = decimal.NewFromBigInt(maxPriorityFeePerGas, 0)
 
+		// TODO: extract to a constant
 		maxBlockGas := decimal.NewFromInt(30_000_000)
 		op.CallGasLimit = maxBlockGas
 		op.VerificationGasLimit = maxBlockGas
@@ -242,6 +256,8 @@ func getBiconomyPaymasterAndData(
 			Signature:            hexutil.Encode(op.Signature),
 		}
 
+		// Biconomy-standardized gas estimation with paymaster
+		// see https://docs.biconomy.io/Paymaster/api/sponsor-useroperation#sponsorship-paymaster
 		var est gasEstimate
 		if err := bundlerRPC.CallContext(
 			ctx,
@@ -278,6 +294,7 @@ func getPimlicoERC20PaymasterData(
 	entryPoint common.Address,
 	paymaster common.Address,
 ) middleware {
+	// TODO: investigate if can remove
 	gasOverhead := decimal.NewFromInt(1_000_000)
 	return func(ctx context.Context, op *UserOperation) error {
 		estimate := estimateUserOperationGas(bundlerRPC, entryPoint)
@@ -358,11 +375,12 @@ func estimateUserOperationGas(bundlerRPC *rpc.Client, entryPoint common.Address)
 	// a rare yet hard to debug bundler gas estimation inaccuracy.
 	// It is NOT a random value, see how it works in the original Alto code:
 	// https://github.com/pimlicolabs/alto/blob/a0a9a4906af809d97611c7f0e0f032e50c4c45cb/src/entrypoint-0.6/rpc/gasEstimation.ts#L277-L279
-	estimationPrecision := decimal.NewFromInt(10_000)
+	gasEstimationOverhead := decimal.NewFromInt(10_000)
 
 	return func(ctx context.Context, op *UserOperation) error {
 		slog.Info("estimating gas")
 
+		// ERC4337-standardized gas estimation
 		var est gasEstimate
 		if err := bundlerRPC.CallContext(
 			ctx,
@@ -379,7 +397,7 @@ func estimateUserOperationGas(bundlerRPC *rpc.Client, entryPoint common.Address)
 			return fmt.Errorf("failed to convert gas estimates: %w", err)
 		}
 
-		op.CallGasLimit = decimal.NewFromBigInt(callGasLimit, 0).Add(estimationPrecision)
+		op.CallGasLimit = decimal.NewFromBigInt(callGasLimit, 0).Add(gasEstimationOverhead)
 		op.VerificationGasLimit = decimal.NewFromBigInt(verificationGasLimit, 0)
 		op.PreVerificationGas = decimal.NewFromBigInt(preVerificationGas, 0)
 
