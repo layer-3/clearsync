@@ -18,10 +18,12 @@ import (
 	"github.com/layer-3/clearsync/pkg/abi/entry_point"
 )
 
+type ctxKey int
+
 const (
-	ctxKeySigner = "signer"
-	ctxKeyOwner  = "owner"
-	ctxKeyIndex  = "index"
+	ctxKeySigner ctxKey = iota
+	ctxKeyOwner
+	ctxKeyIndex
 )
 
 // middleware is a function that modifies a user operation.
