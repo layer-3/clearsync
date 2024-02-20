@@ -18,6 +18,9 @@ import (
 	"github.com/layer-3/clearsync/pkg/abi/entry_point"
 )
 
+// middleware is a function that modifies a user operation.
+// It is used to create a pipeline of operations to be executed
+// to fill in the user operation with all the necessary data.
 type middleware func(ctx context.Context, op *UserOperation) error
 
 func getNonce(entryPoint *entry_point.EntryPoint) middleware {
@@ -34,6 +37,9 @@ func getNonce(entryPoint *entry_point.EntryPoint) middleware {
 	}
 }
 
+// getKernelInitCode returns a middleware that sets the init code
+// for a Zerodev Kernel smart account. The init code deploys
+// a smart account if it is not already deployed.
 func getKernelInitCode(
 	providerRPC *ethclient.Client,
 	index decimal.Decimal,
@@ -93,7 +99,8 @@ func getKernelInitCode(
 }
 
 // getBiconomyInitCode returns a middleware that sets the init code for a Biconomy smart account.
-// !!! Not tested extensively since we settled with the Zerodev Kernel smart account. !!!
+// The init code deploys a smart account if it is not already deployed.
+// !!! NOT TESTED extensively since we settled with the Zerodev Kernel smart account !!!
 func getBiconomyInitCode(index decimal.Decimal, factory, ecdsaValidator, owner common.Address) middleware {
 	initABI, err := abi.JSON(strings.NewReader(biconomyInitABI))
 	if err != nil {
@@ -131,7 +138,7 @@ func getGasPrice(providerRPC *ethclient.Client) middleware {
 	return func(ctx context.Context, op *UserOperation) error {
 		slog.Info("getting gas price")
 
-		// Get the latest block to read its baseFee
+		// Get the latest block to read its base fee
 		block, err := providerRPC.BlockByNumber(ctx, nil)
 		if err != nil {
 			return err
@@ -155,8 +162,6 @@ func getGasPrice(providerRPC *ethclient.Client) middleware {
 		// Increase maxPriorityFeePerGas by 13%
 		tip := new(big.Int).Div(maxPriorityFeePerGas, big.NewInt(100))
 		tip.Mul(tip, big.NewInt(13))
-
-		// maxPriorityFeePerGas = maxPriorityFeePerGas + tip
 		maxPriorityFeePerGas.Add(maxPriorityFeePerGas, tip)
 
 		// Calculate maxFeePerGas

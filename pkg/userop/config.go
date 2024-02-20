@@ -9,7 +9,8 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-// ClientConfig represents the configuration for the user operation client.
+// ClientConfig represents the configuration
+// for the user operation client.
 type ClientConfig struct {
 	ProviderURL string          `yaml:"provider_url"`
 	ChainID     *big.Int        `yaml:"chain_id"`
@@ -20,6 +21,8 @@ type ClientConfig struct {
 	Signer      Signer
 }
 
+// SmartWallet represents the configuration
+// for the smart wallet to be used with the client.
 type SmartWallet struct {
 	Type           SmartWalletType `yaml:"type"`
 	ECDSAValidator common.Address  `yaml:"ecdsa_validator"`
@@ -28,7 +31,8 @@ type SmartWallet struct {
 	Owner          common.Address  `yaml:"owner"`
 }
 
-// PaymasterConfig represents the configuration for the paymaster.
+// PaymasterConfig represents the configuration
+// for the paymaster to be used with the client.
 type PaymasterConfig struct {
 	Type    PaymasterType  `yaml:"type"`
 	URL     string         `yaml:"url"`
@@ -55,6 +59,7 @@ func (c *PaymasterConfig) init() {
 	}
 }
 
+// PimlicoERC20Config represents the configuration for the Pimlico ERC20 paymaster.
 type PimlicoERC20Config struct {
 	// MaxTokenCost specifies the limit for tokens to spend.
 	// Operations requiring user to pay more
@@ -68,7 +73,7 @@ func (config *PimlicoERC20Config) init() {
 	}
 }
 
-// PimlicoVerifyingConfig represents the configuration for the Pimlico paymaster.
+// PimlicoVerifyingConfig represents the configuration for the Pimlico Verifying paymaster.
 // See its RPC endpoint docs at https://docs.pimlico.io/paymaster/verifying-paymaster/reference/endpoints#pm_sponsoruseroperation-v2
 type PimlicoVerifyingConfig struct {
 	SponsorshipPolicyID string `yaml:"sponsorship_policy_id"`
@@ -78,6 +83,7 @@ func (config *PimlicoVerifyingConfig) init() {
 	// no default values
 }
 
+// BiconomyERC20Config represents the configuration for the Biconomy ERC20 paymaster.
 type BiconomyERC20Config struct {
 	Mode               string            `yaml:"mode"`
 	CalculateGasLimits bool              `yaml:"calculate_gas_limits" env-default:"true"`
@@ -92,10 +98,13 @@ func (config *BiconomyERC20Config) init() {
 	}
 }
 
+// BiconomyTokenInfo represents the token
+// used to pay for fees for the Biconomy paymaster.
 type BiconomyTokenInfo struct {
 	FeeTokenAddress common.Address `yaml:"fee_token_address"`
 }
 
+// BiconomySponsoringConfig represents the configuration for the Biconomy Sponsoring paymaster.
 type BiconomySponsoringConfig struct {
 	Mode               string                        `yaml:"mode"`
 	CalculateGasLimits bool                          `yaml:"calculate_gas_limits"`
@@ -103,7 +112,6 @@ type BiconomySponsoringConfig struct {
 	SponsorshipInfo    BiconomySponsorshipInfoConfig `yaml:"sponsorship_info"`
 }
 
-// TODO: implement
 func (config *BiconomySponsoringConfig) init() {
 	*config = BiconomySponsoringConfig{
 		Mode:               "SPONSORED",
@@ -119,11 +127,15 @@ func (config *BiconomySponsoringConfig) init() {
 	}
 }
 
+// BiconomySponsorshipInfoConfig represents the configuration
+// for transaction sponsoring for the Biconomy Sponsoring paymaster.
 type BiconomySponsorshipInfoConfig struct {
 	WebhookData      map[string]any           `yaml:"webhook_data"`
 	SmartAccountInfo BiconomySmartAccountInfo `yaml:"smart_account_info"`
 }
 
+// BiconomySmartAccountInfo represents the configuration
+// for the Biconomy smart contract that sponsors transactions.
 type BiconomySmartAccountInfo struct {
 	Name    string `yaml:"name"`
 	Version string `yaml:"version"`
@@ -155,5 +167,7 @@ func NewClientConfigFromEnv() (ClientConfig, error) {
 	return config, nil
 }
 
-// Signer represents a function that signs a user operation.
+// Signer represents a handler that signs a user operation.
+// The handler DOES NOT modify the operation itself,
+// but rather builds and returns the signature.
 type Signer func(op UserOperation, entryPoint common.Address, chainID *big.Int) ([]byte, error)

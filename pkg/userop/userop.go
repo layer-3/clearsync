@@ -186,6 +186,7 @@ func (op UserOperation) MarshalJSON() ([]byte, error) {
 	return res, err
 }
 
+// SignWithECDSA signs the hash with the given private key using the ECDSA algorithm.
 func (op UserOperation) SignWithECDSA(hash []byte, privateKey *ecdsa.PrivateKey) ([]byte, error) {
 	ethMessageHash := computeEthereumSignedMessageHash(hash)
 

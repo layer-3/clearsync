@@ -25,6 +25,9 @@ type UserOperationClient interface {
 	SendUserOp(ctx context.Context, op UserOperation) (<-chan struct{}, error)
 }
 
+// Call represents sufficient data to build a single transaction,
+// which is a part of a user operation
+// to be executed in a batch with other ones.
 type Call struct {
 	To       common.Address
 	Value    decimal.Decimal // Value is a wei amount to be sent with the call.
@@ -166,6 +169,7 @@ func (c *client) buildCallData(calls []Call) ([]byte, error) {
 	}
 }
 
+// handleCallSimpleAccount packs calldata for SimpleAccount smart wallet.
 func handleCallSimpleAccount(calls []Call) ([]byte, error) {
 	parsedABI, err := abi.JSON(strings.NewReader(account_abstraction.SimpleAccountMetaData.ABI))
 	if err != nil {
@@ -188,12 +192,16 @@ func handleCallSimpleAccount(calls []Call) ([]byte, error) {
 	return data, nil
 }
 
+// callStructKernel represents a call to the Zerodev Kernel smart wallet.
+// The idea is the same as in Call type,
+// but tailed specifically to the Zerodev Kernel ABI.
 type callStructKernel struct {
 	To    common.Address `json:"to"`
 	Value *big.Int       `json:"value"`
 	Data  []byte         `json:"data"`
 }
 
+// handleCallKernel packs calldata for Zerodev Kernel smart wallet.
 func handleCallKernel(calls []Call) ([]byte, error) {
 	parsedABI, err := abi.JSON(strings.NewReader(kernelExecuteABI))
 	if err != nil {
