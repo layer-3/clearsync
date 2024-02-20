@@ -45,20 +45,15 @@ func getNonce(entryPoint *entry_point.EntryPoint) middleware {
 	}
 }
 
-type initCodeGetter func(op UserOperation, owner common.Address, index decimal.Decimal) ([]byte, error)
+type smartWalletInitCodeGenerator func(op UserOperation, owner common.Address, index decimal.Decimal) ([]byte, error)
 
-func getInitCodeBuilder(providerRPC *ethclient.Client, smartWalletConfig SmartWallet) middleware {
-	var getInitCode initCodeGetter
+func getInitCode(providerRPC *ethclient.Client, smartWalletConfig SmartWallet) middleware {
+	var getInitCode smartWalletInitCodeGenerator
 	switch typ := smartWalletConfig.Type; typ {
 	case SmartWalletSimpleAccount:
 	case SmartWalletBiconomy:
 	case SmartWalletKernel:
-		getInitCode = getKernelInitCode(
-			providerRPC,
-			smartWalletConfig.Factory,
-			smartWalletConfig.Logic,
-			smartWalletConfig.ECDSAValidator,
-		)
+		getInitCode = getKernelInitCode(smartWalletConfig.Factory, smartWalletConfig.Logic, smartWalletConfig.ECDSAValidator)
 	default:
 		panic(fmt.Errorf("unknown smart wallet type: %s", typ))
 	}
@@ -67,7 +62,7 @@ func getInitCodeBuilder(providerRPC *ethclient.Client, smartWalletConfig SmartWa
 		owner := ctx.Value(ctxKeyOwner).(common.Address)
 		index := ctx.Value(ctxKeyIndex).(decimal.Decimal)
 
-		var initCode []byte = []byte{}
+		var initCode []byte
 		var err error
 
 		if op.Sender == (common.Address{}) {
@@ -102,12 +97,7 @@ func getInitCodeBuilder(providerRPC *ethclient.Client, smartWalletConfig SmartWa
 // getKernelInitCode returns a middleware that sets the init code
 // for a Zerodev Kernel smart account. The init code deploys
 // a smart account if it is not already deployed.
-func getKernelInitCode(
-	providerRPC *ethclient.Client,
-	factory common.Address,
-	accountLogic common.Address,
-	ecdsaValidator common.Address,
-) initCodeGetter {
+func getKernelInitCode(factory common.Address, accountLogic common.Address, ecdsaValidator common.Address) smartWalletInitCodeGenerator {
 	initABI, err := abi.JSON(strings.NewReader(kernelInitABI))
 	if err != nil {
 		panic(err)
@@ -142,7 +132,7 @@ func getKernelInitCode(
 // getBiconomyInitCode returns a middleware that sets the init code for a Biconomy smart account.
 // The init code deploys a smart account if it is not already deployed.
 // !!! NOT TESTED extensively since we settled with the Zerodev Kernel smart account !!!
-func getBiconomyInitCode(factory, ecdsaValidator common.Address) initCodeGetter {
+func getBiconomyInitCode(factory, ecdsaValidator common.Address) smartWalletInitCodeGenerator {
 	initABI, err := abi.JSON(strings.NewReader(biconomyInitABI))
 	if err != nil {
 		panic(err)

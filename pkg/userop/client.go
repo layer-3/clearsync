@@ -2,6 +2,7 @@ package userop
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"math/big"
@@ -92,7 +93,7 @@ func NewClient(config ClientConfig) (UserOperationClient, error) {
 		}
 	}
 
-	getInitCode := getInitCodeBuilder(providerRPC, config.SmartWallet)
+	getInitCode := getInitCode(providerRPC, config.SmartWallet)
 
 	return &client{
 		providerRPC:        providerRPC,
@@ -123,7 +124,7 @@ func (c *client) IsAccountDeployed(ctx context.Context, owner common.Address, in
 }
 
 func (c *client) GetAccountAddress(ctx context.Context, owner common.Address, index decimal.Decimal) (common.Address, error) {
-	getInitCode := getInitCodeBuilder(c.providerRPC, c.smartWalletConfig)
+	getInitCode := getInitCode(c.providerRPC, c.smartWalletConfig)
 
 	ctx = context.WithValue(ctx, ctxKeyOwner, owner)
 	ctx = context.WithValue(ctx, ctxKeyIndex, index)
@@ -156,11 +157,11 @@ func (c *client) GetAccountAddress(ctx context.Context, owner common.Address, in
 		panic(fmt.Errorf("'getSenderAddress' call returned no error, but expected one"))
 	}
 
-	scError, ok := err.(rpc.DataError)
+	var scError rpc.DataError
+	ok := errors.As(err, &scError)
 	if !ok {
-		panic(fmt.Errorf("unexpected error type: %T", err))
+		panic(fmt.Errorf("unexpected error type '%T' containing message %w)", err, err))
 	}
-
 	errorData := scError.ErrorData().(string)
 
 	senderAddressResultError, ok := entryPointABI.Errors["SenderAddressResult"]
