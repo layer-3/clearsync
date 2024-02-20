@@ -18,7 +18,11 @@ import (
 	"github.com/layer-3/clearsync/pkg/abi/entry_point"
 )
 
-const signerCtxKey = "signer"
+const (
+	ctxKeySigner = "signer"
+	ctxKeyOwner  = "owner"
+	ctxKeyIndex  = "index"
+)
 
 // middleware is a function that modifies a user operation.
 // It is used to create a pipeline of operations to be executed
@@ -39,17 +43,69 @@ func getNonce(entryPoint *entry_point.EntryPoint) middleware {
 	}
 }
 
+type initCodeGetter func(op UserOperation, owner common.Address, index decimal.Decimal) ([]byte, error)
+
+func getInitCodeBuilder(providerRPC *ethclient.Client, smartWalletConfig SmartWallet) middleware {
+	var getInitCode initCodeGetter
+	switch typ := smartWalletConfig.Type; typ {
+	case SmartWalletSimpleAccount:
+	case SmartWalletBiconomy:
+	case SmartWalletKernel:
+		getInitCode = getKernelInitCode(
+			providerRPC,
+			smartWalletConfig.Factory,
+			smartWalletConfig.Logic,
+			smartWalletConfig.ECDSAValidator,
+		)
+	default:
+		panic(fmt.Errorf("unknown smart wallet type: %s", typ))
+	}
+
+	return func(ctx context.Context, op *UserOperation) error {
+		owner := ctx.Value(ctxKeyOwner).(common.Address)
+		index := ctx.Value(ctxKeyIndex).(decimal.Decimal)
+
+		var initCode []byte = []byte{}
+		var err error
+
+		if op.Sender == (common.Address{}) {
+			// if sender == ZeroAddress => get and set init code
+			initCode, err = getInitCode(*op, owner, index)
+			if err != nil {
+				return fmt.Errorf("failed to get init code: %w", err)
+			}
+		} else {
+			// else => check if smart account is already deployed
+			isDeployed, err := isAccountDeployed(providerRPC, op.Sender)
+			if err != nil {
+				return fmt.Errorf("failed to check if smart account is already deployed: %w", err)
+			}
+
+			if !isDeployed {
+				// if smart wallet not deployed, get and set init code
+				initCode, err = getInitCode(*op, owner, index)
+				if err != nil {
+					return fmt.Errorf("failed to get init code: %w", err)
+				}
+			}
+
+			// otherwise, if there is **any** byte code, we imply it is a smart account
+		}
+
+		op.InitCode = initCode
+		return nil
+	}
+}
+
 // getKernelInitCode returns a middleware that sets the init code
 // for a Zerodev Kernel smart account. The init code deploys
 // a smart account if it is not already deployed.
 func getKernelInitCode(
 	providerRPC *ethclient.Client,
-	index decimal.Decimal,
 	factory common.Address,
 	accountLogic common.Address,
 	ecdsaValidator common.Address,
-	owner common.Address,
-) middleware {
+) initCodeGetter {
 	initABI, err := abi.JSON(strings.NewReader(kernelInitABI))
 	if err != nil {
 		panic(err)
@@ -60,50 +116,31 @@ func getKernelInitCode(
 		panic(err)
 	}
 
-	initData, err := initABI.Pack("initialize", ecdsaValidator, owner.Bytes())
-	if err != nil {
-		panic(fmt.Errorf("failed to pack init data: %w", err))
-	}
-
-	callData, err := createAccountABI.Pack("createAccount", accountLogic, initData, index.BigInt())
-	if err != nil {
-		panic(fmt.Errorf("failed to pack createAccount data: %w", err))
-	}
-
-	initCode := make([]byte, len(factory)+len(callData))
-	copy(initCode, factory.Bytes())
-	copy(initCode[len(factory):], callData)
-
-	slog.Debug("built initCode", "initCode", hexutil.Encode(initCode))
-
-	return func(ctx context.Context, op *UserOperation) error {
-		var result any
-		if err := providerRPC.Client().CallContext(
-			ctx,
-			&result,
-			"eth_getCode",
-			op.Sender,
-			"latest",
-		); err != nil {
-			return fmt.Errorf("failed to check if smart account is already deployed: %w", err)
+	return func(op UserOperation, owner common.Address, index decimal.Decimal) ([]byte, error) {
+		initData, err := initABI.Pack("initialize", ecdsaValidator, owner.Bytes())
+		if err != nil {
+			panic(fmt.Errorf("failed to pack init data: %w", err))
 		}
 
-		byteCode, ok := result.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type: %T", result)
+		callData, err := createAccountABI.Pack("createAccount", accountLogic, initData, index.BigInt())
+		if err != nil {
+			panic(fmt.Errorf("failed to pack createAccount data: %w", err))
 		}
 
-		if byteCode == "" || byteCode == "0x" {
-			op.InitCode = initCode
-		}
-		return nil
+		initCode := make([]byte, len(factory)+len(callData))
+		copy(initCode, factory.Bytes())
+		copy(initCode[len(factory):], callData)
+
+		slog.Debug("built initCode", "initCode", hexutil.Encode(initCode))
+
+		return initCode, nil
 	}
 }
 
 // getBiconomyInitCode returns a middleware that sets the init code for a Biconomy smart account.
 // The init code deploys a smart account if it is not already deployed.
 // !!! NOT TESTED extensively since we settled with the Zerodev Kernel smart account !!!
-func getBiconomyInitCode(index decimal.Decimal, factory, ecdsaValidator, owner common.Address) middleware {
+func getBiconomyInitCode(factory, ecdsaValidator common.Address) initCodeGetter {
 	initABI, err := abi.JSON(strings.NewReader(biconomyInitABI))
 	if err != nil {
 		panic(err)
@@ -114,25 +151,24 @@ func getBiconomyInitCode(index decimal.Decimal, factory, ecdsaValidator, owner c
 		panic(err)
 	}
 
-	ecdsaOwnershipInitData, err := initABI.Pack("initForSmartAccount", owner.Bytes())
-	if err != nil {
-		panic(fmt.Errorf("failed to pack init data: %w", err))
-	}
+	return func(op UserOperation, owner common.Address, index decimal.Decimal) ([]byte, error) {
+		ecdsaOwnershipInitData, err := initABI.Pack("initForSmartAccount", owner.Bytes())
+		if err != nil {
+			panic(fmt.Errorf("failed to pack init data: %w", err))
+		}
 
-	callData, err := createAccountABI.Pack("createAccount", ecdsaValidator, ecdsaOwnershipInitData, index.BigInt())
-	if err != nil {
-		panic(fmt.Errorf("failed to pack createAccount data: %w", err))
-	}
+		callData, err := createAccountABI.Pack("createAccount", ecdsaValidator, ecdsaOwnershipInitData, index.BigInt())
+		if err != nil {
+			panic(fmt.Errorf("failed to pack createAccount data: %w", err))
+		}
 
-	initCode := make([]byte, len(factory)+len(callData))
-	copy(initCode, factory.Bytes())
-	copy(initCode[len(factory):], callData)
+		initCode := make([]byte, len(factory)+len(callData))
+		copy(initCode, factory.Bytes())
+		copy(initCode[len(factory):], callData)
 
-	slog.Debug("built initCode", "initCode", hexutil.Encode(initCode))
+		slog.Debug("built initCode", "initCode", hexutil.Encode(initCode))
 
-	return func(_ context.Context, op *UserOperation) error {
-		op.InitCode = initCode
-		return nil
+		return initCode, nil
 	}
 }
 
@@ -361,7 +397,7 @@ func estimateUserOperationGas(bundlerRPC *rpc.Client, entryPoint common.Address)
 
 func sign(entryPoint common.Address, chainID *big.Int) middleware {
 	return func(ctx context.Context, op *UserOperation) error {
-		signer, ok := ctx.Value(signerCtxKey).(Signer)
+		signer, ok := ctx.Value(ctxKeySigner).(Signer)
 		if !ok {
 			return fmt.Errorf("signer not found in context")
 		}
