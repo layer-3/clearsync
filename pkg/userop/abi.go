@@ -1,5 +1,36 @@
 package userop
 
+// ABI with the `UserOperationEventPartial` function with no inputs and nonce, success, actualGasCost and
+// actualGasUsed as outputs taken from `UserOperationEvent` EntryPoint event
+const entrypointUserOperationEventPartialABI = `[
+  {
+    "constant": false,
+    "inputs": [],
+    "name": "UserOperationEventPartial",
+    "outputs": [
+      {
+        "name": "nonce",
+        "type": "uint256"
+      },
+      {
+        "name": "success",
+        "type": "bool"
+      },
+      {
+        "name": "actualGasCost",
+        "type": "uint256"
+      },
+      {
+        "name": "actualGasUsed",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]`
+
 // kernelExecuteABI is used to execute a transaction on Zerodev Kernel smart account.
 const kernelExecuteABI = `[
   {

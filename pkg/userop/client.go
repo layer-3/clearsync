@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/shopspring/decimal"
@@ -31,7 +32,7 @@ type UserOperationClient interface {
 		calls []Call,
 		walletDeploymentOpts *WalletDeploymentOpts,
 	) (UserOperation, error)
-	SendUserOp(ctx context.Context, op UserOperation) (<-chan struct{}, error)
+	SendUserOp(ctx context.Context, op UserOperation) (<-chan Receipt, error)
 }
 
 // Call represents sufficient data to build a single transaction,
@@ -55,11 +56,22 @@ type WalletDeploymentOpts struct {
 type client struct {
 	providerRPC *ethclient.Client
 	bundlerRPC  *rpc.Client
+	chainID     *big.Int
 
 	smartWallet SmartWalletConfig
 	entryPoint  common.Address
 	paymaster   common.Address
 	middlewares []middleware
+}
+
+type Receipt struct {
+	UserOpHash    common.Hash
+	TxHash        common.Hash
+	Sender        common.Address
+	Nonce         decimal.Decimal
+	Success       bool
+	ActualGasCost decimal.Decimal
+	ActualGasUsed decimal.Decimal
 }
 
 // NewClient is a factory that builds a new
@@ -117,6 +129,7 @@ func NewClient(config ClientConfig) (UserOperationClient, error) {
 	return &client{
 		providerRPC: providerRPC,
 		bundlerRPC:  bundlerRPC,
+		chainID:     chainID,
 		smartWallet: config.SmartWallet,
 		entryPoint:  config.EntryPoint,
 		paymaster:   config.Paymaster.Address,
@@ -250,18 +263,22 @@ func (c *client) NewUserOp(
 
 // SendUserOp submits a user operation to a bundler
 // and executes the provided callback function.
-func (c *client) SendUserOp(ctx context.Context, op UserOperation) (<-chan struct{}, error) {
+func (c *client) SendUserOp(ctx context.Context, op UserOperation) (<-chan Receipt, error) {
 	slog.Info("sending user operation")
 
-	var userOpHash common.Hash
+	ctx, cancel := context.WithCancel(ctx)
+
+	userOpHash := op.UserOpHash(c.entryPoint, c.chainID)
+
+	waiter := make(chan Receipt, 1)
+	go waitForUserOpEvent(ctx, cancel, c.providerRPC, waiter, c.entryPoint, userOpHash)
+
 	// ERC4337-standardized call to the bundler
 	if err := c.bundlerRPC.CallContext(ctx, &userOpHash, "eth_sendUserOperation", op, c.entryPoint); err != nil {
 		return nil, fmt.Errorf("call to `eth_sendUserOperation` failed: %w", err)
 	}
 
-	slog.Info("user operation sent successfully", "hash", userOpHash.Hex())
-	waiter := make(chan struct{}, 1)
-	go waitForUserOpEvent(c.providerRPC, waiter, c.entryPoint, userOpHash)
+	slog.Info("user operation sent successfully", "userOpHash", userOpHash.Hex())
 
 	return waiter, nil
 }
@@ -362,25 +379,38 @@ func handleCallKernel(calls []Call) ([]byte, error) {
 
 // waitForUserOpEvent waits for a user operation to be committed on block.
 func waitForUserOpEvent(
+	ctx context.Context,
+	cancel context.CancelFunc,
 	client *ethclient.Client,
-	done chan<- struct{},
+	done chan<- Receipt,
 	entryPoint common.Address,
 	userOpHash common.Hash,
 ) {
-	waitTimeout := time.Millisecond * 30000
+	defer close(done)
+
 	waitInterval := time.Millisecond * 5000
 
-	ctx, cancel := context.WithTimeout(context.Background(), waitTimeout)
-	defer cancel()
+	fromBlock, err := client.BlockNumber(ctx)
+	if err != nil {
+		slog.Error("failed to get block number", "error", err)
+		cancel()
+		return
+	}
 
 	query := ethereum.FilterQuery{
 		Addresses: []common.Address{entryPoint},
 		Topics:    [][]common.Hash{{}, {userOpHash}},
+		FromBlock: big.NewInt(int64(fromBlock)),
 	}
 
 	ticker := time.NewTicker(waitInterval)
 	defer ticker.Stop()
-	defer close(done)
+
+	userOpEvent, err := abi.JSON(strings.NewReader(entrypointUserOperationEventPartialABI))
+	if err != nil {
+		slog.Error("error parsing ABI", "err", err)
+		return
+	}
 
 	for {
 		select {
@@ -395,7 +425,39 @@ func waitForUserOpEvent(
 			}
 
 			if len(logs) > 0 {
-				done <- struct{}{}
+				// There should exist only one log for the user operation
+				topics := logs[0].Topics
+				data := logs[0].Data
+
+				sender := common.BytesToAddress(topics[2].Bytes())
+
+				// Parse the function signature
+
+				// Decode the ABI-encoded message
+				parsedParams, err := userOpEvent.Unpack("UserOperationEventPartial", data)
+				if err != nil {
+					slog.Error("Error decoding ABI:", err)
+					return
+				}
+
+				slog.Debug("parsed userOperationEvent logs", "data", hexutil.Encode(data), "parsedParams", parsedParams)
+
+				userOpReceipt := Receipt{
+					UserOpHash: userOpHash,
+					TxHash:     logs[0].TxHash,
+					Sender:     sender,
+					Nonce:      decimal.NewFromBigInt(parsedParams[0].(*big.Int), 0),
+					Success:    parsedParams[1].(bool),
+					ActualGasCost: decimal.NewFromBigInt(
+						parsedParams[2].(*big.Int),
+						0,
+					),
+					ActualGasUsed: decimal.NewFromBigInt(
+						parsedParams[3].(*big.Int),
+						0,
+					),
+				}
+				done <- userOpReceipt
 				return
 			}
 		}
