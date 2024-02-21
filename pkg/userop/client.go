@@ -86,8 +86,13 @@ func NewClient(config ClientConfig) (UserOperationClient, error) {
 		case PaymasterPimlicoERC20:
 			estimateGas = getPimlicoERC20PaymasterData(bundlerRPC, config.EntryPoint, config.Paymaster.Address)
 		case PaymasterPimlicoVerifying:
+			// NOTE: PimlicoVerifying is the easiest to add
+			return nil, ErrPaymasterNotSupported
 		case PaymasterBiconomyERC20:
+			return nil, ErrPaymasterNotSupported
 		case PaymasterBiconomySponsoring:
+			// NOTE: tried to add BiconomySponsoring, but it is not responding correctly
+			return nil, ErrPaymasterNotSupported
 		default:
 			return nil, fmt.Errorf("unknown paymaster type: %s", typ)
 		}
