@@ -56,11 +56,10 @@ type client struct {
 	providerRPC *ethclient.Client
 	bundlerRPC  *rpc.Client
 
-	smartWalletConfig  SmartWallet
-	entryPoint         common.Address
-	isPaymasterEnabled bool
-	paymaster          common.Address
-	middlewares        []middleware
+	smartWallet SmartWalletConfig
+	entryPoint  common.Address
+	paymaster   common.Address
+	middlewares []middleware
 }
 
 // NewClient is a factory that builds a new
@@ -87,10 +86,9 @@ func NewClient(config ClientConfig) (UserOperationClient, error) {
 		return nil, fmt.Errorf("failed to connect to the entry point contract: %w", err)
 	}
 
-	isPaymasterEnabled := config.Paymaster.URL != "" && config.Paymaster.Address != common.Address{}
 	estimateGas := estimateUserOperationGas(bundlerRPC, config.EntryPoint)
-	if isPaymasterEnabled {
-		switch typ := config.Paymaster.Type; typ {
+	if *config.Paymaster.Type != PaymasterDisabled {
+		switch typ := config.Paymaster.Type; *typ {
 		case PaymasterPimlicoERC20:
 			estimateGas = getPimlicoERC20PaymasterData(
 				bundlerRPC,
@@ -117,12 +115,11 @@ func NewClient(config ClientConfig) (UserOperationClient, error) {
 	}
 
 	return &client{
-		providerRPC:        providerRPC,
-		bundlerRPC:         bundlerRPC,
-		smartWalletConfig:  config.SmartWallet,
-		entryPoint:         config.EntryPoint,
-		isPaymasterEnabled: isPaymasterEnabled,
-		paymaster:          config.Paymaster.Address,
+		providerRPC: providerRPC,
+		bundlerRPC:  bundlerRPC,
+		smartWallet: config.SmartWallet,
+		entryPoint:  config.EntryPoint,
+		paymaster:   config.Paymaster.Address,
 		middlewares: []middleware{ // Middleware order matters - first in, first executed.
 			getNonce(entryPointContract),
 			getInitCode,
@@ -144,7 +141,7 @@ func (c *client) IsAccountDeployed(ctx context.Context, owner common.Address, in
 }
 
 func (c *client) GetAccountAddress(ctx context.Context, owner common.Address, index decimal.Decimal) (common.Address, error) {
-	getInitCode, err := getInitCode(c.providerRPC, c.smartWalletConfig)
+	getInitCode, err := getInitCode(c.providerRPC, c.smartWallet)
 	if err != nil {
 		return common.Address{}, fmt.Errorf("failed to build initCode middleware: %w", err)
 	}
@@ -295,13 +292,13 @@ func isAccountDeployed(provider *ethclient.Client, swAddress common.Address) (bo
 }
 
 func (c *client) buildCallData(calls []Call) ([]byte, error) {
-	switch c.smartWalletConfig.Type {
+	switch *c.smartWallet.Type {
 	case SmartWalletSimpleAccount, SmartWalletBiconomy:
 		return handleCallSimpleAccount(calls)
 	case SmartWalletKernel:
 		return handleCallKernel(calls)
 	default:
-		return nil, fmt.Errorf("unknown smart wallet type: %s", c.smartWalletConfig.Type)
+		return nil, fmt.Errorf("unknown smart wallet type: %s", c.smartWallet.Type)
 	}
 }
 
