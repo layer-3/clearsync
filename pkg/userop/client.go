@@ -87,7 +87,7 @@ func NewClient(config ClientConfig) (UserOperationClient, error) {
 			estimateGas = getPimlicoERC20PaymasterData(bundlerRPC, config.EntryPoint, config.Paymaster.Address)
 		case PaymasterPimlicoVerifying:
 			// NOTE: PimlicoVerifying is the easiest to add
-			return nil, ErrPaymasterNotSupported
+			return nil, fmt.Errorf("%w: %s", ErrPaymasterNotSupported, typ)
 		case PaymasterBiconomyERC20:
 			return nil, ErrPaymasterNotSupported
 		case PaymasterBiconomySponsoring:
@@ -98,7 +98,10 @@ func NewClient(config ClientConfig) (UserOperationClient, error) {
 		}
 	}
 
-	getInitCode := getInitCode(providerRPC, config.SmartWallet)
+	getInitCode, err := getInitCode(providerRPC, config.SmartWallet)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build initCode middleware: %w", err)
+	}
 
 	return &client{
 		providerRPC:        providerRPC,
@@ -129,7 +132,10 @@ func (c *client) IsAccountDeployed(ctx context.Context, owner common.Address, in
 }
 
 func (c *client) GetAccountAddress(ctx context.Context, owner common.Address, index decimal.Decimal) (common.Address, error) {
-	getInitCode := getInitCode(c.providerRPC, c.smartWalletConfig)
+	getInitCode, err := getInitCode(c.providerRPC, c.smartWalletConfig)
+	if err != nil {
+		return common.Address{}, fmt.Errorf("failed to build initCode middleware: %w", err)
+	}
 
 	ctx = context.WithValue(ctx, ctxKeyOwner, owner)
 	ctx = context.WithValue(ctx, ctxKeyIndex, index)
