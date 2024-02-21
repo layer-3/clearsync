@@ -49,9 +49,9 @@ func getNonce(entryPoint *entry_point.EntryPoint) middleware {
 
 type smartWalletInitCodeGenerator func(op UserOperation, owner common.Address, index decimal.Decimal) ([]byte, error)
 
-func getInitCode(providerRPC *ethclient.Client, smartWalletConfig SmartWallet) (middleware, error) {
+func getInitCode(providerRPC *ethclient.Client, smartWalletConfig SmartWalletConfig) (middleware, error) {
 	var getInitCode smartWalletInitCodeGenerator
-	switch typ := smartWalletConfig.Type; typ {
+	switch typ := *smartWalletConfig.Type; typ {
 	case SmartWalletSimpleAccount:
 		return nil, fmt.Errorf("%w: %s", ErrSmartWalletNotSupported, typ)
 	case SmartWalletBiconomy: // not tested

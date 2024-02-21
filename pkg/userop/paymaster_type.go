@@ -7,6 +7,7 @@ type PaymasterType struct {
 }
 
 var (
+	PaymasterDisabled           = PaymasterType{"off"}
 	PaymasterPimlicoERC20       = PaymasterType{"pimlico_erc20"}
 	PaymasterPimlicoVerifying   = PaymasterType{"pimlico_verifying"}
 	PaymasterBiconomyERC20      = PaymasterType{"biconomy_erc20"}      // not tested
@@ -56,6 +57,24 @@ func (t *PaymasterType) UnmarshalJSON(b []byte) error {
 		*t = PaymasterBiconomySponsoring
 	default:
 		return fmt.Errorf("unknown paymaster type: %s", string(b))
+	}
+
+	return nil
+}
+
+// SetValue implements the cleanenv.Setter interface.
+func (t *PaymasterType) SetValue(s string) error {
+	switch s {
+	case PaymasterPimlicoERC20.String():
+		*t = PaymasterPimlicoERC20
+	case PaymasterPimlicoVerifying.String():
+		*t = PaymasterPimlicoVerifying
+	case PaymasterBiconomyERC20.String():
+		*t = PaymasterBiconomyERC20
+	case PaymasterBiconomySponsoring.String():
+		*t = PaymasterBiconomySponsoring
+	default:
+		return fmt.Errorf("unknown paymaster type: %s", s)
 	}
 
 	return nil

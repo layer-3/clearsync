@@ -59,3 +59,19 @@ func (t *SmartWalletType) UnmarshalJSON(b []byte) error {
 
 	return nil
 }
+
+// SetValue implements the cleanenv.Setter interface.
+func (t *SmartWalletType) SetValue(s string) error {
+	switch s {
+	case SmartWalletSimpleAccount.String():
+		*t = SmartWalletSimpleAccount
+	case SmartWalletBiconomy.String():
+		*t = SmartWalletBiconomy
+	case SmartWalletKernel.String():
+		*t = SmartWalletKernel
+	default:
+		return fmt.Errorf("unknown smart wallet type: %s", s)
+	}
+
+	return nil
+}
