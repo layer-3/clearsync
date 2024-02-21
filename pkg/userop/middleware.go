@@ -51,7 +51,9 @@ func getInitCode(providerRPC *ethclient.Client, smartWalletConfig SmartWallet) m
 	var getInitCode smartWalletInitCodeGenerator
 	switch typ := smartWalletConfig.Type; typ {
 	case SmartWalletSimpleAccount: // unsupported
+		panic("unsupported")
 	case SmartWalletBiconomy: // not tested
+		getInitCode = getBiconomyInitCode(smartWalletConfig.Factory, smartWalletConfig.ECDSAValidator)
 	case SmartWalletKernel:
 		getInitCode = getKernelInitCode(smartWalletConfig.Factory, smartWalletConfig.Logic, smartWalletConfig.ECDSAValidator)
 	default:
