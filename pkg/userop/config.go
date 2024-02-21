@@ -13,7 +13,6 @@ import (
 // for the user operation client.
 type ClientConfig struct {
 	ProviderURL string          `yaml:"provider_url"`
-	ChainID     *big.Int        `yaml:"chain_id"`
 	BundlerURL  string          `yaml:"bundler_url"`
 	EntryPoint  common.Address  `yaml:"entry_point"`
 	Gas         GasConfig       `yaml:"gas"`

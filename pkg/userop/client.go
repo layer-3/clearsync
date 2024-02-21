@@ -55,7 +55,6 @@ type WalletDeploymentOpts struct {
 type client struct {
 	providerRPC *ethclient.Client
 	bundlerRPC  *rpc.Client
-	chainID     *big.Int
 
 	smartWalletConfig  SmartWallet
 	entryPoint         common.Address
@@ -71,6 +70,12 @@ func NewClient(config ClientConfig) (UserOperationClient, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to the blockchain RPC: %w", err)
 	}
+
+	chainID, err := providerRPC.ChainID(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("failed to get chain ID: %w", err)
+	}
+	slog.Debug("fetched chain ID", "chainID", chainID.String())
 
 	bundlerRPC, err := rpc.Dial(config.BundlerURL)
 	if err != nil {
@@ -114,7 +119,6 @@ func NewClient(config ClientConfig) (UserOperationClient, error) {
 	return &client{
 		providerRPC:        providerRPC,
 		bundlerRPC:         bundlerRPC,
-		chainID:            config.ChainID,
 		smartWalletConfig:  config.SmartWallet,
 		entryPoint:         config.EntryPoint,
 		isPaymasterEnabled: isPaymasterEnabled,
@@ -123,9 +127,9 @@ func NewClient(config ClientConfig) (UserOperationClient, error) {
 			getNonce(entryPointContract),
 			getInitCode,
 			getGasPrice(providerRPC, config.Gas),
-			sign(config.EntryPoint, config.ChainID),
+			sign(config.EntryPoint, chainID),
 			estimateGas,
-			sign(config.EntryPoint, config.ChainID), // update signature after gas estimation
+			sign(config.EntryPoint, chainID), // update signature after gas estimation
 		},
 	}, nil
 }
