@@ -2,6 +2,7 @@ package userop
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"math/big"
@@ -47,17 +48,17 @@ func getNonce(entryPoint *entry_point.EntryPoint) middleware {
 
 type smartWalletInitCodeGenerator func(op UserOperation, owner common.Address, index decimal.Decimal) ([]byte, error)
 
-func getInitCode(providerRPC *ethclient.Client, smartWalletConfig SmartWallet) middleware {
+func getInitCode(providerRPC *ethclient.Client, smartWalletConfig SmartWallet) (middleware, error) {
 	var getInitCode smartWalletInitCodeGenerator
 	switch typ := smartWalletConfig.Type; typ {
-	case SmartWalletSimpleAccount: // unsupported
-		panic("unsupported")
+	case SmartWalletSimpleAccount:
+		return nil, fmt.Errorf("%w: %s", ErrSmartWalletNotSupported, typ)
 	case SmartWalletBiconomy: // not tested
 		getInitCode = getBiconomyInitCode(smartWalletConfig.Factory, smartWalletConfig.ECDSAValidator)
 	case SmartWalletKernel:
 		getInitCode = getKernelInitCode(smartWalletConfig.Factory, smartWalletConfig.Logic, smartWalletConfig.ECDSAValidator)
 	default:
-		panic(fmt.Errorf("unknown smart wallet type: %s", typ))
+		return nil, fmt.Errorf("unknown smart wallet type: %s", typ)
 	}
 
 	return func(ctx context.Context, op *UserOperation) error {
@@ -93,7 +94,7 @@ func getInitCode(providerRPC *ethclient.Client, smartWalletConfig SmartWallet) m
 
 		op.InitCode = initCode
 		return nil
-	}
+	}, nil
 }
 
 // getKernelInitCode returns a middleware that sets the init code
