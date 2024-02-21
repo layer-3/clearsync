@@ -40,7 +40,7 @@ func main() {
 	)
 
 	// create smartWallet client (with specific Wallet and Paymaster types)
-	client, err := userop.NewClient(config)
+	client, err := userop.NewClient(exampleConfig)
 	if err != nil {
 		panic(fmt.Errorf("failed to create userop client: %w", err))
 	}
@@ -168,7 +168,7 @@ func newCallFromABI(contract common.Address, stringABI string, value decimal.Dec
 func send(client userop.UserOperationClient, smartWallet common.Address, calls []userop.Call) error {
 	ctx := context.Background()
 
-	op, err := client.NewUserOp(ctx, smartWallet, signer, calls, walletDeploymentOpts)
+	op, err := client.NewUserOp(ctx, smartWallet, exampleSigner, calls, walletDeploymentOpts)
 	if err != nil {
 		panic(fmt.Errorf("failed to build userop: %w", err))
 	}
