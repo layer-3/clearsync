@@ -189,7 +189,7 @@ func getGasPrice(providerRPC *ethclient.Client, gasConfig GasConfig) middleware 
 		if err != nil {
 			return err
 		}
-		feePerGas := block.BaseFee()
+		blockBaseFee := block.BaseFee()
 
 		var maxPriorityFeePerGasStr string
 		if err := providerRPC.Client().CallContext(
@@ -205,13 +205,14 @@ func getGasPrice(providerRPC *ethclient.Client, gasConfig GasConfig) middleware 
 			return fmt.Errorf("failed to parse maxPriorityFeePerGas: %s", maxPriorityFeePerGasStr)
 		}
 
-		// Increase maxPriorityFeePerGas by 13%
+		// Increase maxPriorityFeePerGas to give user more
+		// flexibility in setting the gas price.
 		maxPriorityFeePerGas.Mul(
 			maxPriorityFeePerGas,
 			gasConfig.MaxPriorityFeePerGasMultiplier.BigInt())
 
 		// Calculate maxFeePerGas
-		maxFeePerGas := new(big.Int).Mul(feePerGas, gasConfig.MaxFeePerGasMultiplier.BigInt())
+		maxFeePerGas := new(big.Int).Mul(blockBaseFee, gasConfig.MaxFeePerGasMultiplier.BigInt())
 		maxFeePerGas.Add(maxFeePerGas, maxPriorityFeePerGas)
 
 		op.MaxFeePerGas = decimal.NewFromBigInt(maxFeePerGas, 0)
