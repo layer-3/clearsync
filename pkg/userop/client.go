@@ -17,13 +17,8 @@ import (
 	"github.com/shopspring/decimal"
 
 	"github.com/layer-3/clearsync/pkg/abi/entry_point"
-	"github.com/layer-3/clearsync/pkg/abi/simple_account/account_abstraction"
+	"github.com/layer-3/clearsync/pkg/abi/simple_account"
 )
-
-type WalletDeploymentOpts struct {
-	Owner common.Address
-	Index decimal.Decimal
-}
 
 // UserOperationClient represents a client for creating and posting user operations.
 type UserOperationClient interface {
@@ -46,6 +41,14 @@ type Call struct {
 	To       common.Address
 	Value    decimal.Decimal // Value is a wei amount to be sent with the call.
 	CallData []byte
+}
+
+// WalletDeploymentOpts represents data required
+// 1. to deploy a new smart wallet
+// 2. to get the address of the already deployed wallet.
+type WalletDeploymentOpts struct {
+	Owner common.Address
+	Index decimal.Decimal
 }
 
 // client represents a user operation client.
@@ -295,24 +298,22 @@ func (c *client) buildCallData(calls []Call) ([]byte, error) {
 
 // handleCallSimpleAccount packs calldata for SimpleAccount smart wallet.
 func handleCallSimpleAccount(calls []Call) ([]byte, error) {
-	parsedABI, err := abi.JSON(strings.NewReader(account_abstraction.SimpleAccountMetaData.ABI))
+	parsedABI, err := abi.JSON(strings.NewReader(simple_account.SimpleAccountMetaData.ABI))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse ABI: %w", err)
 	}
 
 	addresses := make([]any, 0, len(calls))
-	values := make([]any, 0, len(calls))
 	calldatas := make([]any, 0, len(calls))
 	for _, call := range calls {
 		addresses = append(addresses, call.To)
-		values = append(values, call.Value.BigInt())
 		calldatas = append(calldatas, call.CallData)
 	}
 
 	// pack the data for the `executeBatch` smart account function
 	// Biconomy v2.0: https://github.com/bcnmy/scw-contracts/blob/v2-deployments/contracts/smart-account/SmartAccount.sol#L128
-	// eth-infinitism v0.6.0: TODO: downgrade to v0.6.0, update ABI
-	data, err := parsedABI.Pack("executeBatch", addresses, values, calldatas)
+	// NOTE: you can NOT send native token with SimpeAccount v0.6.0 because of `executeBatch` signature
+	data, err := parsedABI.Pack("executeBatch", addresses, calldatas)
 	if err != nil {
 		return nil, fmt.Errorf("failed to pack executeBatch data for SimpleAccount: %w", err)
 	}
