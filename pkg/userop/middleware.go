@@ -19,6 +19,8 @@ import (
 	"github.com/layer-3/clearsync/pkg/abi/entry_point"
 )
 
+const maxBlockGas = 30_000_000
+
 type ctxKey int
 
 const (
@@ -217,8 +219,7 @@ func getGasPrice(providerRPC *ethclient.Client) middleware {
 		op.MaxFeePerGas = decimal.NewFromBigInt(maxFeePerGas, 0)
 		op.MaxPriorityFeePerGas = decimal.NewFromBigInt(maxPriorityFeePerGas, 0)
 
-		// TODO: extract to a constant
-		maxBlockGas := decimal.NewFromInt(30_000_000)
+		maxBlockGas := decimal.NewFromInt(maxBlockGas)
 		op.CallGasLimit = maxBlockGas
 		op.VerificationGasLimit = maxBlockGas
 		op.PreVerificationGas = maxBlockGas
