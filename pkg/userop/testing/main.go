@@ -25,18 +25,18 @@ func main() {
 
 		ducklingsGame    = common.HexToAddress("0xb66bf78cad7cbab51988ddc792652cbabdff7675") // Duckies
 		ducklingsGameABI = `[{
-      "inputs": [
-        {
-          "internalType": "uint8",
-          "name": "size",
-          "type": "uint8"
-        }
-      ],
-      "name": "mintPack",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    }]`
+		  "inputs": [
+		    {
+		      "internalType": "uint8",
+		      "name": "size",
+		      "type": "uint8"
+		    }
+		  ],
+		  "name": "mintPack",
+		  "outputs": [],
+		  "stateMutability": "nonpayable",
+		  "type": "function"
+		}]`
 	)
 
 	// create smartWallet client (with specific Wallet and Paymaster types)
@@ -179,8 +179,14 @@ func send(client userop.UserOperationClient, smartWallet common.Address, calls [
 	}
 	slog.Info("sending user operation", "op", string(b))
 
-	if _, err := client.SendUserOp(ctx, op); err != nil {
+	waitForUserOp, err := client.SendUserOp(ctx, op)
+	if err != nil {
 		return fmt.Errorf("failed to send userop: %w", err)
 	}
+
+	userOpReceipt := <-waitForUserOp
+
+	slog.Info("user operation verified", "userOpReceipt", userOpReceipt)
+
 	return nil
 }
