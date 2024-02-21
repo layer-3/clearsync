@@ -2,7 +2,6 @@ package userop
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"math/big"
@@ -181,7 +180,7 @@ func getBiconomyInitCode(factory, ecdsaValidator common.Address) smartWalletInit
 	}
 }
 
-func getGasPrice(providerRPC *ethclient.Client) middleware {
+func getGasPrice(providerRPC *ethclient.Client, gasConfig GasConfig) middleware {
 	return func(ctx context.Context, op *UserOperation) error {
 		slog.Info("getting gas price")
 
@@ -206,14 +205,13 @@ func getGasPrice(providerRPC *ethclient.Client) middleware {
 			return fmt.Errorf("failed to parse maxPriorityFeePerGas: %s", maxPriorityFeePerGasStr)
 		}
 
-		// TODO: extract maxPriorityFeePerGas increase to a config
 		// Increase maxPriorityFeePerGas by 13%
-		tip := new(big.Int).Div(maxPriorityFeePerGas, big.NewInt(100))
-		tip.Mul(tip, big.NewInt(13))
-		maxPriorityFeePerGas.Add(maxPriorityFeePerGas, tip)
+		maxPriorityFeePerGas.Mul(
+			maxPriorityFeePerGas,
+			gasConfig.MaxPriorityFeePerGasMultiplier.BigInt())
 
 		// Calculate maxFeePerGas
-		maxFeePerGas := new(big.Int).Mul(feePerGas, big.NewInt(2))
+		maxFeePerGas := new(big.Int).Mul(feePerGas, gasConfig.MaxFeePerGasMultiplier.BigInt())
 		maxFeePerGas.Add(maxFeePerGas, maxPriorityFeePerGas)
 
 		op.MaxFeePerGas = decimal.NewFromBigInt(maxFeePerGas, 0)

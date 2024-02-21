@@ -111,10 +111,10 @@ func NewClient(config ClientConfig) (UserOperationClient, error) {
 		entryPoint:         config.EntryPoint,
 		isPaymasterEnabled: isPaymasterEnabled,
 		paymaster:          config.Paymaster.Address,
-		middlewares: []middleware{ // Middleware order matters - first in, first executed
+		middlewares: []middleware{ // Middleware order matters - first in, first executed.
 			getNonce(entryPointContract),
 			getInitCode,
-			getGasPrice(providerRPC),
+			getGasPrice(providerRPC, config.Gas),
 			sign(config.EntryPoint, config.ChainID),
 			estimateGas,
 			sign(config.EntryPoint, config.ChainID), // update signature after gas estimation

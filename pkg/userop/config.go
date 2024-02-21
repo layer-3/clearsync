@@ -16,8 +16,21 @@ type ClientConfig struct {
 	ChainID     *big.Int        `yaml:"chain_id"`
 	BundlerURL  string          `yaml:"bundler_url"`
 	EntryPoint  common.Address  `yaml:"entry_point"`
+	Gas         GasConfig       `yaml:"gas"`
 	SmartWallet SmartWallet     `yaml:"smart_wallet"`
 	Paymaster   PaymasterConfig `yaml:"paymaster"`
+}
+
+type GasConfig struct {
+	MaxPriorityFeePerGasMultiplier decimal.Decimal `yaml:"max_priority_fee_per_gas_multiplier"` // percentage
+	MaxFeePerGasMultiplier         decimal.Decimal `yaml:"max_fee_per_gas_multiplier"`          // percentage
+}
+
+func (c *GasConfig) Init() {
+	*c = GasConfig{
+		MaxPriorityFeePerGasMultiplier: decimal.RequireFromString("1.13"),
+		MaxFeePerGasMultiplier:         decimal.RequireFromString("2"),
+	}
 }
 
 // SmartWallet represents the configuration
@@ -42,7 +55,7 @@ type PaymasterConfig struct {
 	BiconomySponsoring BiconomySponsoringConfig `yaml:"biconomy_sponsoring"`
 }
 
-func (c *PaymasterConfig) init() {
+func (c *PaymasterConfig) Init() {
 	switch c.Type {
 	case PaymasterPimlicoERC20:
 		c.PimlicoERC20.init()
@@ -146,12 +159,13 @@ type BiconomySmartAccountInfo struct {
 // client configuration from a file.
 func NewClientConfigFromFile(path string) (ClientConfig, error) {
 	var config ClientConfig
+	config.Gas.Init()
+	config.Paymaster.Init()
 
 	if err := cleanenv.ReadConfig(path, &config); err != nil {
 		return config, err
 	}
 
-	config.Paymaster.init()
 	return config, nil
 }
 
@@ -159,12 +173,13 @@ func NewClientConfigFromFile(path string) (ClientConfig, error) {
 // configuration from environment variables.
 func NewClientConfigFromEnv() (ClientConfig, error) {
 	var config ClientConfig
+	config.Gas.Init()
+	config.Paymaster.Init()
 
 	if err := cleanenv.ReadEnv(&config); err != nil {
 		return config, err
 	}
 
-	config.Paymaster.init()
 	return config, nil
 }
 
