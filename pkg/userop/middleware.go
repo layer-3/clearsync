@@ -63,34 +63,32 @@ func getInitCode(providerRPC *ethclient.Client, smartWalletConfig SmartWallet) (
 	}
 
 	return func(ctx context.Context, op *UserOperation) error {
-		owner := ctx.Value(ctxKeyOwner).(common.Address)
-		index := ctx.Value(ctxKeyIndex).(decimal.Decimal)
-
 		var initCode []byte
 		var err error
 
-		if op.Sender == (common.Address{}) {
-			// if sender == ZeroAddress => get and set init code
+		// check if smart account is already deployed
+		isDeployed, err := isAccountDeployed(providerRPC, op.Sender)
+		if err != nil {
+			return fmt.Errorf("failed to check if smart account is already deployed: %w", err)
+		}
+
+		// if sender == zeroAddress OR smart account is not deployed
+		// then we need to calculate the init code
+		if op.Sender == (common.Address{}) || !isDeployed {
+			owner, ok := ctx.Value(ctxKeyOwner).(common.Address)
+			if !ok {
+				return fmt.Errorf("`owner` not found, but required in context to get init code")
+			}
+
+			index, ok := ctx.Value(ctxKeyIndex).(decimal.Decimal)
+			if !ok {
+				return fmt.Errorf("`index` not found, but required in context to get init code")
+			}
+
 			initCode, err = getInitCode(*op, owner, index)
 			if err != nil {
 				return fmt.Errorf("failed to get init code: %w", err)
 			}
-		} else {
-			// else => check if smart account is already deployed
-			isDeployed, err := isAccountDeployed(providerRPC, op.Sender)
-			if err != nil {
-				return fmt.Errorf("failed to check if smart account is already deployed: %w", err)
-			}
-
-			if !isDeployed {
-				// if smart wallet not deployed, get and set init code
-				initCode, err = getInitCode(*op, owner, index)
-				if err != nil {
-					return fmt.Errorf("failed to get init code: %w", err)
-				}
-			}
-
-			// otherwise, if there is **any** byte code, we imply it is a smart account
 		}
 
 		op.InitCode = initCode
@@ -297,17 +295,14 @@ func getPimlicoERC20PaymasterData(
 	entryPoint common.Address,
 	paymaster common.Address,
 ) middleware {
-	// TODO: investigate if can remove
-	gasOverhead := decimal.NewFromInt(1_000_000)
+	verificationGasOverhead := decimal.NewFromInt(10000)
 	return func(ctx context.Context, op *UserOperation) error {
 		estimate := estimateUserOperationGas(bundlerRPC, entryPoint)
 		if err := estimate(ctx, op); err != nil {
 			return err
 		}
 
-		op.CallGasLimit = op.CallGasLimit.Add(gasOverhead)
-		op.VerificationGasLimit = op.VerificationGasLimit.Add(gasOverhead)
-		op.PreVerificationGas = op.PreVerificationGas.Add(gasOverhead)
+		op.VerificationGasLimit = op.VerificationGasLimit.Add(verificationGasOverhead)
 		op.PaymasterAndData = paymaster.Bytes()
 
 		return nil

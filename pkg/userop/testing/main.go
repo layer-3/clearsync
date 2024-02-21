@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"math/big"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -30,7 +31,7 @@ func main() {
 	if err != nil {
 		panic(fmt.Errorf("failed to build call: %w", err))
 	}
-	if err := send(client, approve); err != nil {
+	if err := send(client, []userop.Call{approve}); err != nil {
 		panic(err)
 	}
 
@@ -38,18 +39,19 @@ func main() {
 	if err != nil {
 		panic(fmt.Errorf("failed to build call: %w", err))
 	}
-	if err := send(client, transfer); err != nil {
+	if err := send(client, []userop.Call{transfer}); err != nil {
 		panic(err)
 	}
 }
 
+// Encodes an `approve` call to the `token` contract, approving `amount` to be spent by `receiver`.
 func newApproveCall() (userop.Call, error) {
 	erc20, err := abi.JSON(strings.NewReader(itoken.IERC20MetaData.ABI))
 	if err != nil {
 		panic(fmt.Errorf("failed to parse ERC20 ABI: %w", err))
 	}
 
-	callData, err := erc20.Pack("approve", config.Paymaster.Address, amount.BigInt())
+	callData, err := erc20.Pack("approve", receiver, amount.BigInt())
 	if err != nil {
 		panic(fmt.Errorf("failed to pack transfer data: %w", err))
 	}
@@ -61,6 +63,7 @@ func newApproveCall() (userop.Call, error) {
 	}, nil
 }
 
+// Encodes a `transfer` call to the `token` contract, transferring `amount` to `receiver`.
 func newTransferCall() (userop.Call, error) {
 	erc20, err := abi.JSON(strings.NewReader(itoken.IERC20MetaData.ABI))
 	if err != nil {
@@ -79,10 +82,19 @@ func newTransferCall() (userop.Call, error) {
 	}, nil
 }
 
-func send(client userop.UserOperationClient, call userop.Call) error {
+// TODO: add a `newCallFromABI` function that takes an ABI, method name and args and returns a `Call` object.
+func newCallFromABI(abi string, value big.Int, method string, args ...interface{}) (userop.Call, error) {
+	// ...
+	return userop.Call{}, nil
+}
+
+// Creates and sends the user operation.
+// NOTE: when sending the first userOp from a Smart Wallet,
+// `config.example.go/walletDeploymentOpts` must contain Smart Wallet owner EOA address and SW index (0 by default).
+func send(client userop.UserOperationClient, calls []userop.Call) error {
 	ctx := context.Background()
 
-	op, err := client.NewUserOp(ctx, sender, signer, []userop.Call{call}, nil)
+	op, err := client.NewUserOp(ctx, sender, signer, calls, walletDeploymentOpts)
 	if err != nil {
 		panic(fmt.Errorf("failed to build userop: %w", err))
 	}
