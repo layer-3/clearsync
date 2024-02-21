@@ -21,11 +21,13 @@ type ClientConfig struct {
 	Paymaster   PaymasterConfig `yaml:"paymaster"`
 }
 
+// GasConfig represents the configuration for the userop transaction gas fees.
 type GasConfig struct {
 	MaxPriorityFeePerGasMultiplier decimal.Decimal `yaml:"max_priority_fee_per_gas_multiplier"` // percentage
 	MaxFeePerGasMultiplier         decimal.Decimal `yaml:"max_fee_per_gas_multiplier"`          // percentage
 }
 
+// Init initializes the GasConfig with default values.
 func (c *GasConfig) Init() {
 	*c = GasConfig{
 		MaxPriorityFeePerGasMultiplier: decimal.RequireFromString("1.13"),
@@ -55,6 +57,7 @@ type PaymasterConfig struct {
 	BiconomySponsoring BiconomySponsoringConfig `yaml:"biconomy_sponsoring"`
 }
 
+// Init initializes the PaymasterConfig with default values.
 func (c *PaymasterConfig) Init() {
 	switch c.Type {
 	case PaymasterPimlicoERC20:
