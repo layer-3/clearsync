@@ -87,9 +87,14 @@ func NewClient(config ClientConfig) (UserOperationClient, error) {
 	if isPaymasterEnabled {
 		switch typ := config.Paymaster.Type; typ {
 		case PaymasterPimlicoERC20:
-			estimateGas = getPimlicoERC20PaymasterData(bundlerRPC, config.EntryPoint, config.Paymaster.Address)
+			estimateGas = getPimlicoERC20PaymasterData(
+				bundlerRPC,
+				config.EntryPoint,
+				config.Paymaster.Address,
+				config.Paymaster.PimlicoERC20.VerificationGasOverhead,
+			)
 		case PaymasterPimlicoVerifying:
-			// NOTE: PimlicoVerifying is the easiest to add
+			// NOTE: PimlicoVerifying is the easiest to implement
 			return nil, fmt.Errorf("%w: %s", ErrPaymasterNotSupported, typ)
 		case PaymasterBiconomyERC20:
 			return nil, ErrPaymasterNotSupported

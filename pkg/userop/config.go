@@ -78,12 +78,14 @@ type PimlicoERC20Config struct {
 	// MaxTokenCost specifies the limit for tokens to spend.
 	// Operations requiring user to pay more
 	// than specified amount of tokens for gas will fail.
-	MaxTokenCost decimal.Decimal `json:"maxTokenCost"`
+	MaxTokenCost            decimal.Decimal `json:"maxTokenCost"` // unused for now
+	VerificationGasOverhead decimal.Decimal `yaml:"verification_gas_overhead"`
 }
 
 func (config *PimlicoERC20Config) init() {
 	*config = PimlicoERC20Config{
-		MaxTokenCost: decimal.NewFromInt(1_000_000),
+		MaxTokenCost:            decimal.NewFromInt(1_000_000),
+		VerificationGasOverhead: decimal.NewFromInt(10_000),
 	}
 }
 

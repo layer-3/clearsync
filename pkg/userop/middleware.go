@@ -294,8 +294,8 @@ func getPimlicoERC20PaymasterData(
 	bundlerRPC *rpc.Client,
 	entryPoint common.Address,
 	paymaster common.Address,
+	verificationGasOverhead decimal.Decimal,
 ) middleware {
-	verificationGasOverhead := decimal.NewFromInt(10000)
 	return func(ctx context.Context, op *UserOperation) error {
 		estimate := estimateUserOperationGas(bundlerRPC, entryPoint)
 		if err := estimate(ctx, op); err != nil {
