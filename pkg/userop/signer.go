@@ -56,7 +56,7 @@ func SignerForKernel(privateKey *ecdsa.PrivateKey) Signer {
 
 		encodedSig := hexutil.Encode(signature)
 		// Add 'use sudo validator' mode to signature
-		// See more: https://github.com/zerodevapp/kernel/blob/v2.3/src/Kernel.sol#L142
+		// See more: https://github.com/zerodevapp/kernel/blob/807b75a4da6fea6311a3573bc8b8964a34074d94/src/Kernel.sol#L127
 		modifiedSig := strings.Replace(encodedSig, "0x", "0x00000000", 1)
 
 		signature, err = hexutil.Decode(modifiedSig)

@@ -112,14 +112,14 @@ func getKernelInitCode(factory common.Address, accountLogic common.Address, ecds
 
 	return func(op UserOperation, owner common.Address, index decimal.Decimal) ([]byte, error) {
 		// Initialize Kernel Smart Account with default validation module and its calldata
-		// see https://github.com/zerodevapp/kernel/blob/v2.3/src/abstract/KernelStorage.sol#L35
+		// see https://github.com/zerodevapp/kernel/blob/807b75a4da6fea6311a3573bc8b8964a34074d94/src/abstract/KernelStorage.sol#L35
 		initData, err := initABI.Pack("initialize", ecdsaValidator, owner.Bytes())
 		if err != nil {
 			panic(fmt.Errorf("failed to pack init data: %w", err))
 		}
 
 		// Deploy Kernel Smart Account by calling `factory.createAccount`
-		// see https://github.com/zerodevapp/kernel/blob/v2.3/src/factory/KernelFactory.sol#L25
+		// see https://github.com/zerodevapp/kernel/blob/807b75a4da6fea6311a3573bc8b8964a34074d94/src/factory/KernelFactory.sol#L25
 		callData, err := createAccountABI.Pack("createAccount", accountLogic, initData, index.BigInt())
 		if err != nil {
 			panic(fmt.Errorf("failed to pack createAccount data: %w", err))
@@ -139,7 +139,7 @@ func getKernelInitCode(factory common.Address, accountLogic common.Address, ecds
 
 // getBiconomyInitCode returns a middleware that sets the init code for a Biconomy smart account.
 // The init code deploys a smart account if it is not already deployed.
-// !!! NOT TESTED extensively since we settled with the Zerodev Kernel smart account !!!
+// NOTE: this was NOT tested. User at your own risk or wait for the lib to be updated.
 func getBiconomyInitCode(factory, ecdsaValidator common.Address) smartWalletInitCodeGenerator {
 	initABI, err := abi.JSON(strings.NewReader(biconomyInitABI))
 	if err != nil {

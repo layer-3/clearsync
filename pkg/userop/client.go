@@ -317,7 +317,7 @@ func handleCallSimpleAccount(calls []Call) ([]byte, error) {
 
 	// pack the data for the `executeBatch` smart account function
 	// Biconomy v2.0: https://github.com/bcnmy/scw-contracts/blob/v2-deployments/contracts/smart-account/SmartAccount.sol#L128
-	// NOTE: you can NOT send native token with SimpeAccount v0.6.0 because of `executeBatch` signature
+	// NOTE: you can NOT send native token with SimpleAccount v0.6.0 because of `executeBatch` signature
 	data, err := parsedABI.Pack("executeBatch", addresses, calldatas)
 	if err != nil {
 		return nil, fmt.Errorf("failed to pack executeBatch data for SimpleAccount: %w", err)
@@ -351,7 +351,7 @@ func handleCallKernel(calls []Call) ([]byte, error) {
 	}
 
 	// pack the data for the `executeBatch` smart account function
-	// Zerodev Kernel v2.3: https://github.com/zerodevapp/kernel/blob/v2.3/src/Kernel.sol#L98
+	// Zerodev Kernel v2.2: https://github.com/zerodevapp/kernel/blob/807b75a4da6fea6311a3573bc8b8964a34074d94/src/Kernel.sol#L82
 	data, err := parsedABI.Pack("executeBatch", params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to pack executeBatch data for Kernel: %w", err)
