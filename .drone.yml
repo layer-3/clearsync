@@ -32,6 +32,13 @@ steps:
     commands:
       - make -C contracts bindings
 
+  - name: Test
+    image: golang:1.21
+    pull: if-not-exists
+    commands:
+      - go vet ./...
+      - go test -race ./...
+
   - name: Publish
     image: alpine/git:v2.32.0
     pull: if-not-exists
