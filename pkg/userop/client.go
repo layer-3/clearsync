@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/shopspring/decimal"
@@ -72,6 +73,7 @@ type Receipt struct {
 	Success       bool
 	ActualGasCost decimal.Decimal
 	ActualGasUsed decimal.Decimal
+	RevertData    []byte // non-empty if Success is false
 }
 
 // NewClient is a factory that builds a new
@@ -411,7 +413,7 @@ func waitForUserOpEvent(
 	ticker := time.NewTicker(waitInterval)
 	defer ticker.Stop()
 
-	userOpEvent, err := abi.JSON(strings.NewReader(entrypointUserOperationEventPartialABI))
+	userOpEvents, err := abi.JSON(strings.NewReader(entrypointUserOpEventsABI))
 	if err != nil {
 		slog.Error("error parsing ABI", "err", err)
 		return
@@ -429,42 +431,86 @@ func waitForUserOpEvent(
 				continue
 			}
 
-			if len(logs) > 0 {
-				// There should exist only one log for the user operation
-				topics := logs[0].Topics
-				data := logs[0].Data
+			// keccak256("UserOperationEvent(bytes32,address,address,uint256,bool,uint256,uint256)")
+			userOpEventID := common.HexToHash("0x49628fd1471006c1482da88028e9ce4dbb080b815c9b0344d39e5a8e6ec1419f")
 
-				sender := common.BytesToAddress(topics[2].Bytes())
+			// There are several events where userOpHash is used as a topic
+			// Namely, UserOperationEvent, AccountDeployed and UserOperationRevertReason
+			// see https://github.com/eth-infinitism/account-abstraction/blob/v0.6.0/contracts/interfaces/IEntryPoint.sol#L19-L47
+			userOpEventLog := filterLogsByEventID(logs, userOpEventID)
+			if userOpEventLog == nil {
+				continue
+			}
 
-				// Parse the function signature
+			topics := userOpEventLog.Topics
+			sender := common.BytesToAddress(topics[2].Bytes())
+			data := userOpEventLog.Data
 
-				// Decode the ABI-encoded message
-				parsedParams, err := userOpEvent.Unpack("UserOperationEventPartial", data)
-				if err != nil {
-					slog.Error("Error decoding ABI:", err)
-					return
-				}
+			userOpReceipt := Receipt{
+				UserOpHash: userOpHash,
+				TxHash:     userOpEventLog.TxHash,
+				Sender:     sender,
+			}
 
-				slog.Debug("parsed userOperationEvent logs", "data", hexutil.Encode(data), "parsedParams", parsedParams)
-
-				userOpReceipt := Receipt{
-					UserOpHash: userOpHash,
-					TxHash:     logs[0].TxHash,
-					Sender:     sender,
-					Nonce:      decimal.NewFromBigInt(parsedParams[0].(*big.Int), 0),
-					Success:    parsedParams[1].(bool),
-					ActualGasCost: decimal.NewFromBigInt(
-						parsedParams[2].(*big.Int),
-						0,
-					),
-					ActualGasUsed: decimal.NewFromBigInt(
-						parsedParams[3].(*big.Int),
-						0,
-					),
-				}
-				done <- userOpReceipt
+			// Decode the ABI-encoded message
+			unpackedUserOpParams, err := userOpEvents.Unpack("UserOperationEvent", data)
+			if err != nil {
+				slog.Error("Error decoding UserOperationEvent params:", err)
 				return
 			}
+
+			if len(unpackedUserOpParams) == 4 {
+				slog.Debug("parsed userOperationEvent logs", "data", hexutil.Encode(data), "parsedParams", unpackedUserOpParams)
+
+				userOpReceipt.Nonce = decimal.NewFromBigInt(unpackedUserOpParams[0].(*big.Int), 0)
+				userOpReceipt.Success = unpackedUserOpParams[1].(bool)
+				userOpReceipt.ActualGasCost = decimal.NewFromBigInt(
+					unpackedUserOpParams[2].(*big.Int),
+					0,
+				)
+				userOpReceipt.ActualGasUsed = decimal.NewFromBigInt(
+					unpackedUserOpParams[3].(*big.Int),
+					0,
+				)
+			} else {
+				slog.Warn("unexpected number of unpackedUserOpParams", "unpackedUserOpParams", unpackedUserOpParams)
+			}
+
+			if !userOpReceipt.Success {
+				// try fetching revert reason
+				// keccak256("UserOperationRevertReason(bytes32,address,uint256,bytes)")
+				userOpRevertReasonID := common.HexToHash("0x1c4fada7374c0a9ee8841fc38afe82932dc0f8e69012e927f061a8bae611a201")
+				userOpRevertReasonLog := filterLogsByEventID(logs, userOpRevertReasonID)
+
+				if userOpRevertReasonLog != nil {
+					unpackedRevertReasonParams, err := userOpEvents.Unpack("UserOperationRevertReason", userOpRevertReasonLog.Data)
+					if err != nil {
+						slog.Error("Error decoding UserOperationRevertReason params:", err)
+						return
+					}
+
+					if len(unpackedRevertReasonParams) == 2 {
+						slog.Debug("parsed userOperationRevertReason logs", "data", hexutil.Encode(userOpRevertReasonLog.Data), "parsedParams", unpackedRevertReasonParams)
+						userOpReceipt.RevertData = unpackedRevertReasonParams[1].([]byte)
+					} else {
+						slog.Warn("unexpected number of unpackedRevertReasonParams", "unpackedRevertReasonParams", unpackedRevertReasonParams)
+					}
+				}
+			}
+
+			done <- userOpReceipt
+			return
 		}
 	}
+}
+
+// Return only one log for simplicity, although several logs
+// with the same event signature can be emitted during one tx.
+func filterLogsByEventID(logs []types.Log, eventID common.Hash) *types.Log {
+	for _, log := range logs {
+		if log.Topics[0] == eventID {
+			return &log
+		}
+	}
+	return nil
 }
