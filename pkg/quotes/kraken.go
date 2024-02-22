@@ -261,7 +261,6 @@ func (k *kraken) listen() {
 			if !k.tradeSampler.allow(tr) {
 				continue
 			}
-
 			k.outbox <- tr
 		}
 	}
