@@ -1,8 +1,10 @@
 package userop
 
 import (
+	"fmt"
 	"math/big"
 	"math/rand"
+	"net/url"
 	"os"
 	"testing"
 
@@ -27,8 +29,8 @@ func randomAddress() common.Address {
 
 func bundlerMockedClient(t *testing.T, providerURL string) UserOperationClient {
 	config := ClientConfig{
-		ProviderURL: providerURL,
-		BundlerURL:  "http://127.0.0.1:42424",
+		ProviderURL: *must(url.Parse(providerURL)),
+		BundlerURL:  *must(url.Parse("http://127.0.0.1:42424")),
 		EntryPoint:  common.HexToAddress("0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789"),
 		SmartWallet: SmartWalletConfig{
 			Type:           &SmartWalletKernel,
@@ -47,4 +49,11 @@ func bundlerMockedClient(t *testing.T, providerURL string) UserOperationClient {
 	require.NoError(t, err)
 
 	return client
+}
+
+func must[T any](x T, err error) T {
+	if err != nil {
+		panic(fmt.Errorf("failed to parse private key: %w", err))
+	}
+	return x
 }
