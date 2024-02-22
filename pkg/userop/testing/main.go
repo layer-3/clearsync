@@ -50,7 +50,7 @@ func main() {
 	if err != nil {
 		panic(fmt.Errorf("failed to get wallet address: %w", err))
 	}
-	slog.Info("wallet address", "address", walletAddress)
+	slog.Debug("wallet address", "address", walletAddress)
 
 	// You can send native tokens to any address.
 	transferNative, err := newTransferNativeCall(receiver, amount)
@@ -177,7 +177,7 @@ func send(client userop.UserOperationClient, smartWallet common.Address, calls [
 	if err != nil {
 		return fmt.Errorf("failed to marshal userop: %w", err)
 	}
-	slog.Info("sending user operation", "op", string(b))
+	slog.Debug("sending user operation", "op", string(b))
 
 	waitForUserOp, err := client.SendUserOp(ctx, op)
 	if err != nil {

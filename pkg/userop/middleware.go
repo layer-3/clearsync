@@ -35,7 +35,7 @@ type middleware func(ctx context.Context, op *UserOperation) error
 
 func getNonce(entryPoint *entry_point.EntryPoint) middleware {
 	return func(_ context.Context, op *UserOperation) error {
-		slog.Info("getting nonce")
+		slog.Debug("getting nonce")
 		key := new(big.Int)
 		nonce, err := entryPoint.GetNonce(nil, op.Sender, key)
 		if err != nil {
@@ -180,7 +180,7 @@ func getBiconomyInitCode(factory, ecdsaValidator common.Address) smartWalletInit
 
 func getGasPrice(providerRPC *ethclient.Client, gasConfig GasConfig) middleware {
 	return func(ctx context.Context, op *UserOperation) error {
-		slog.Info("getting gas price")
+		slog.Debug("getting gas price")
 
 		// Get the latest block to read its base fee
 		block, err := providerRPC.BlockByNumber(ctx, nil)
@@ -376,7 +376,7 @@ func estimateUserOperationGas(bundlerRPC *rpc.Client, entryPoint common.Address)
 	gasEstimationOverhead := decimal.NewFromInt(300_000)
 
 	return func(ctx context.Context, op *UserOperation) error {
-		slog.Info("estimating gas")
+		slog.Debug("estimating gas")
 
 		// ERC4337-standardized gas estimation
 		var est gasEstimate
