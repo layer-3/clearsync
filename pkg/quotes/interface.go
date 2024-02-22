@@ -4,7 +4,7 @@ package quotes
 import "fmt"
 
 type Driver interface {
-	Name() DriverType
+	Type() DriverType
 	Start() error
 	Stop() error
 	Subscribe(market Market) error
@@ -14,7 +14,8 @@ type Driver interface {
 func NewDriver(config Config, outbox chan<- TradeEvent) (Driver, error) {
 	switch config.Driver {
 	case DriverIndex:
-		return newIndex(config.Index, outbox), nil
+		strategy := NewStrategyVWA(WithCustomPriceCacheVWA(NewPriceCacheVWA(defaultWeightsMap, config.Index.TradesCached)))
+		return newIndexAggregator(defaultIndexDrivers(config), strategy, outbox), nil
 	case DriverBinance:
 		return newBinance(config.Binance, outbox), nil
 	case DriverKraken:

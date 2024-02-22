@@ -118,7 +118,7 @@ type krakenSubscriptionParams struct {
 	Name string `json:"name"`
 }
 
-func (k *kraken) Name() DriverType {
+func (k *kraken) Type() DriverType {
 	return DriverKraken
 }
 

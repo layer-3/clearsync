@@ -45,7 +45,7 @@ func newSyncswap(config SyncswapConfig, outbox chan<- TradeEvent) Driver {
 	}
 }
 
-func (s *syncswap) Name() DriverType {
+func (s *syncswap) Type() DriverType {
 	return DriverSyncswap
 }
 

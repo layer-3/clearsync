@@ -33,7 +33,7 @@ func newBinance(config BinanceConfig, outbox chan<- TradeEvent) Driver {
 	}
 }
 
-func (b *binance) Name() DriverType {
+func (b *binance) Type() DriverType {
 	return DriverBinance
 }
 

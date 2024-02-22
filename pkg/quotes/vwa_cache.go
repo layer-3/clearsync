@@ -116,8 +116,6 @@ func (p *PriceCacheVWA) ActiveWeights(market Market) decimal.Decimal {
 				count = count.Add(weight)
 			}
 		}
-
-		return
 	})
 
 	return count

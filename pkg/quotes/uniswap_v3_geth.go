@@ -52,7 +52,7 @@ func newUniswapV3Geth(config UniswapV3GethConfig, outbox chan<- TradeEvent) Driv
 	}
 }
 
-func (u *uniswapV3Geth) Name() DriverType {
+func (u *uniswapV3Geth) Type() DriverType {
 	return DriverUniswapV3Geth
 }
 

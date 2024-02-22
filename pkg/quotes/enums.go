@@ -10,6 +10,9 @@ import (
 // DriverType is enum that represents
 // all available quotes providers.
 type DriverType struct {
+	// slug field MUST NOT be accessed ,
+	// let alone modified from within the package.
+	// To get the value, use `String()` method instead.
 	slug string
 }
 
