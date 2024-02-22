@@ -99,7 +99,7 @@ func NewClient(config ClientConfig) (UserOperationClient, error) {
 	}
 
 	estimateGas := estimateUserOperationGas(bundlerRPC, config.EntryPoint)
-	if *config.Paymaster.Type != PaymasterDisabled {
+	if config.Paymaster.Type != nil || *config.Paymaster.Type != PaymasterDisabled {
 		switch typ := config.Paymaster.Type; *typ {
 		case PaymasterPimlicoERC20:
 			estimateGas = getPimlicoERC20PaymasterData(
