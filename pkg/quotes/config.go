@@ -9,14 +9,14 @@ import (
 type Config struct {
 	Driver DriverType `yaml:"driver" env:"QUOTES_DRIVER" env-default:"binance"`
 
-	Binance       BinanceConfig       `yaml:"binance"`
-	Kraken        KrakenConfig        `yaml:"kraken"`
-	Opendax       OpendaxConfig       `yaml:"opendax"`
-	Bitfaker      BitfakerConfig      `yaml:"bitfaker"`
-	UniswapV3Api  UniswapV3ApiConfig  `yaml:"uniswap_v3_api"`
-	UniswapV3Geth UniswapV3GethConfig `yaml:"uniswap_v3_geth"`
-	Syncswap      SyncswapConfig      `yaml:"syncswap"`
-	Index         IndexConfig         `yaml:"index"`
+	Binance       BinanceConfig       `yaml:"binance" env-prefix:"QUOTES_BINANCE_"`
+	Kraken        KrakenConfig        `yaml:"kraken" env-prefix:"QUOTES_KRAKEN_"`
+	Opendax       OpendaxConfig       `yaml:"opendax" env-prefix:"QUOTES_OPENDAX_"`
+	Bitfaker      BitfakerConfig      `yaml:"bitfaker" env-prefix:"QUOTES_BITFAKER_"`
+	UniswapV3Api  UniswapV3ApiConfig  `yaml:"uniswap_v3_api" env-prefix:"QUOTES_UNISWAP_V3_API_"`
+	UniswapV3Geth UniswapV3GethConfig `yaml:"uniswap_v3_geth" env-prefix:"QUOTES_UNISWAP_V3_GETH_"`
+	Syncswap      SyncswapConfig      `yaml:"syncswap" env-prefix:"QUOTES_SYNCSWAP_"`
+	Index         IndexConfig         `yaml:"index" env-prefix:"QUOTES_INDEX_"`
 }
 
 type DriverConfig interface {
@@ -58,7 +58,7 @@ func ToConfig(driver DriverConfig) Config {
 }
 
 type IndexConfig struct {
-	TradesCached int `yaml:"trades_cached" env:"QUOTES_INDEX_TRADES_CACHED" env-default:"20"`
+	TradesCached int `yaml:"trades_cached" env:"TRADES_CACHED" env-default:"20"`
 }
 
 func (IndexConfig) DriverType() DriverType {
@@ -66,7 +66,7 @@ func (IndexConfig) DriverType() DriverType {
 }
 
 type BinanceConfig struct {
-	TradeSampler TradeSamplerConfig `yaml:"trade_sampler"`
+	TradeSampler TradeSamplerConfig `yaml:"trade_sampler" env-prefix:"TRADE_SAMPLER_"`
 }
 
 func (BinanceConfig) DriverType() DriverType {
@@ -74,9 +74,9 @@ func (BinanceConfig) DriverType() DriverType {
 }
 
 type KrakenConfig struct {
-	URL             string             `yaml:"url" env:"QUOTES_KRAKEN_URL" env-default:"wss://ws.kraken.com"`
-	ReconnectPeriod time.Duration      `yaml:"period" env:"QUOTES_KRAKEN_RECONNECT_PERIOD" env-default:"5s"`
-	TradeSampler    TradeSamplerConfig `yaml:"trade_sampler"`
+	URL             string             `yaml:"url" env:"URL" env-default:"wss://ws.kraken.com"`
+	ReconnectPeriod time.Duration      `yaml:"period" env:"RECONNECT_PERIOD" env-default:"5s"`
+	TradeSampler    TradeSamplerConfig `yaml:"trade_sampler" env-prefix:"TRADE_SAMPLER_"`
 }
 
 func (KrakenConfig) DriverType() DriverType {
@@ -84,9 +84,9 @@ func (KrakenConfig) DriverType() DriverType {
 }
 
 type OpendaxConfig struct {
-	URL             string             `yaml:"url" env:"QUOTES_OPENDAX_URL" env-default:"wss://alpha.yellow.org/api/v1/finex/ws"`
-	ReconnectPeriod time.Duration      `yaml:"period" env:"QUOTES_OPENDAX_RECONNECT_PERIOD" env-default:"5s"`
-	TradeSampler    TradeSamplerConfig `yaml:"trade_sampler"`
+	URL             string             `yaml:"url" env:"URL" env-default:"wss://alpha.yellow.org/api/v1/finex/ws"`
+	ReconnectPeriod time.Duration      `yaml:"period" env:"RECONNECT_PERIOD" env-default:"5s"`
+	TradeSampler    TradeSamplerConfig `yaml:"trade_sampler" env-prefix:"TRADE_SAMPLER_"`
 }
 
 func (OpendaxConfig) DriverType() DriverType {
@@ -94,8 +94,8 @@ func (OpendaxConfig) DriverType() DriverType {
 }
 
 type BitfakerConfig struct {
-	Period       time.Duration      `yaml:"period" env:"QUOTES_BITFAKER_PERIOD" env-default:"5s"`
-	TradeSampler TradeSamplerConfig `yaml:"trade_sampler"`
+	Period       time.Duration      `yaml:"period" env:"PERIOD" env-default:"5s"`
+	TradeSampler TradeSamplerConfig `yaml:"trade_sampler" env-prefix:"TRADE_SAMPLER_"`
 }
 
 func (BitfakerConfig) DriverType() DriverType {
@@ -103,9 +103,9 @@ func (BitfakerConfig) DriverType() DriverType {
 }
 
 type UniswapV3ApiConfig struct {
-	URL          string             `yaml:"url" env:"QUOTES_UNISWAP_V3_API_URL" env-default:"https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3"`
-	WindowSize   time.Duration      `yaml:"window_size" env:"QUOTES_UNISWAP_V3_API_WINDOW_SIZE" env-default:"2s"`
-	TradeSampler TradeSamplerConfig `yaml:"trade_sampler"`
+	URL          string             `yaml:"url" env:"URL" env-default:"https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3"`
+	WindowSize   time.Duration      `yaml:"window_size" env:"WINDOW_SIZE" env-default:"2s"`
+	TradeSampler TradeSamplerConfig `yaml:"trade_sampler" env-prefix:"TRADE_SAMPLER_"`
 }
 
 func (UniswapV3ApiConfig) DriverType() DriverType {
@@ -113,10 +113,10 @@ func (UniswapV3ApiConfig) DriverType() DriverType {
 }
 
 type UniswapV3GethConfig struct {
-	URL            string             `yaml:"url" env:"QUOTES_UNISWAP_V3_GETH_URL" env-default:""`
-	AssetsURL      string             `yaml:"assets_url" env:"QUOTES_UNISWAP_V3_GETH_ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/mainnet/assets.json"`
-	FactoryAddress string             `yaml:"factory_address" env:"QUOTES_UNISWAP_V3_GETH_FACTORY_ADDRESS" env-default:"0x1F98431c8aD98523631AE4a59f267346ea31F984"`
-	TradeSampler   TradeSamplerConfig `yaml:"trade_sampler"`
+	URL            string             `yaml:"url" env:"GETH_URL" env-default:""`
+	AssetsURL      string             `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/mainnet/assets.json"`
+	FactoryAddress string             `yaml:"factory_address" env:"FACTORY_ADDRESS" env-default:"0x1F98431c8aD98523631AE4a59f267346ea31F984"`
+	TradeSampler   TradeSamplerConfig `yaml:"trade_sampler" env-prefix:"TRADE_SAMPLER_"`
 }
 
 func (UniswapV3GethConfig) DriverType() DriverType {
@@ -124,10 +124,10 @@ func (UniswapV3GethConfig) DriverType() DriverType {
 }
 
 type SyncswapConfig struct {
-	URL                       string             `yaml:"url" env:"QUOTES_SYNCSWAP_URL" env-default:""`
-	AssetsURL                 string             `yaml:"assets_url" env:"QUOTES_SYNCSWAP_ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/mainnet/assets.json"`
-	ClassicPoolFactoryAddress string             `yaml:"classic_pool_factory_address" env:"QUOTES_SYNCSWAP_CLASSIC_POOL_FACTORY_ADDRESS" env-default:"0x37BAc764494c8db4e54BDE72f6965beA9fa0AC2d"`
-	TradeSampler              TradeSamplerConfig `yaml:"trade_sampler"`
+	URL                       string             `yaml:"url" env:"URL" env-default:""`
+	AssetsURL                 string             `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/mainnet/assets.json"`
+	ClassicPoolFactoryAddress string             `yaml:"classic_pool_factory_address" env:"CLASSIC_POOL_FACTORY_ADDRESS" env-default:"0x37BAc764494c8db4e54BDE72f6965beA9fa0AC2d"`
+	TradeSampler              TradeSamplerConfig `yaml:"trade_sampler" env-prefix:"TRADE_SAMPLER_"`
 }
 
 func (SyncswapConfig) DriverType() DriverType {
@@ -135,6 +135,6 @@ func (SyncswapConfig) DriverType() DriverType {
 }
 
 type TradeSamplerConfig struct {
-	Enabled           bool  `yaml:"enabled" env:"QUOTES_TRADE_SAMPLER_ENABLED"`
-	DefaultPercentage int64 `yaml:"default_percentage" env:"QUOTES_TRADE_SAMPLER_DEFAULT_PERCENTAGE"`
+	Enabled           bool  `yaml:"enabled" env:"ENABLED"`
+	DefaultPercentage int64 `yaml:"default_percentage" env:"DEFAULT_PERCENTAGE"`
 }
