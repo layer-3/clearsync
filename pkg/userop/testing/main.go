@@ -20,7 +20,7 @@ func main() {
 		owner       = common.HexToAddress("0x2185da3337cad307fd48dFDabA6D4C66A9fD2c71")
 		smartWallet = common.HexToAddress("0x69b36b0Cb89b1666d85Ed4fF48243730E9c53405")
 		receiver    = common.HexToAddress("0x2185da3337cad307fd48dFDabA6D4C66A9fD2c71")
-		duckies     = common.HexToAddress("0x18e73A5333984549484348A94f4D219f4faB7b81") // Duckies
+		token       = common.HexToAddress("0x18e73A5333984549484348A94f4D219f4faB7b81") // Duckies
 		amount      = decimal.RequireFromString("1000")                                 // wei
 
 		ducklingsGame    = common.HexToAddress("0xb66bf78cad7cbab51988ddc792652cbabdff7675") // Duckies
@@ -40,7 +40,7 @@ func main() {
 	)
 
 	// create smartWallet client (with specific Wallet and Paymaster types)
-	client, err := userop.NewClient(exampleConfig)
+	client, err := userop.NewClient(config)
 	if err != nil {
 		panic(fmt.Errorf("failed to create userop client: %w", err))
 	}
@@ -63,7 +63,7 @@ func main() {
 
 	// NOTE: prior to using PimlicoERC20Paymaster, make sure to approve the
 	// paymaster contract to spend your fee token.
-	approve, err := newApproveCall(duckies, receiver, amount)
+	approve, err := newApproveCall(token, receiver, amount)
 	if err != nil {
 		panic(fmt.Errorf("failed to build approve call: %w", err))
 	}
@@ -72,7 +72,7 @@ func main() {
 	}
 
 	// Now this call can be paid with ERC20 tokens using PimlicoERC20Paymaster.
-	transferERC20, err := newTransferERC20Call(duckies, receiver, amount)
+	transferERC20, err := newTransferERC20Call(token, receiver, amount)
 	if err != nil {
 		panic(fmt.Errorf("failed to build transfer erc20 call: %w", err))
 	}
@@ -82,12 +82,12 @@ func main() {
 
 	// You can also submit several calls in a single userOp.
 	mintPrice := decimal.RequireFromString("5000000000") // 50 duckies for 1 Duckling
-	approveToGame, err := newApproveCall(duckies, ducklingsGame, mintPrice)
+	approveToGame, err := newApproveCall(token, ducklingsGame, mintPrice)
 	if err != nil {
 		panic(fmt.Errorf("failed to build approve to game call: %w", err))
 	}
 
-	mintPack, err := newCallFromABI(ducklingsGame, ducklingsGameABI, decimal.NewFromInt(0), "mintPack", 1)
+	mintPack, err := newCallFromABI(ducklingsGame, ducklingsGameABI, decimal.NewFromInt(0), "mintPack", uint8(1))
 	if err != nil {
 		panic(fmt.Errorf("failed to build mint pack call: %w", err))
 	}
@@ -168,7 +168,7 @@ func newCallFromABI(contract common.Address, stringABI string, value decimal.Dec
 func send(client userop.UserOperationClient, smartWallet common.Address, calls []userop.Call) error {
 	ctx := context.Background()
 
-	op, err := client.NewUserOp(ctx, smartWallet, exampleSigner, calls, walletDeploymentOpts)
+	op, err := client.NewUserOp(ctx, smartWallet, signer, calls, walletDeploymentOpts)
 	if err != nil {
 		panic(fmt.Errorf("failed to build userop: %w", err))
 	}
