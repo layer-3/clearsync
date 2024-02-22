@@ -12,8 +12,6 @@ import (
 	"github.com/layer-3/clearsync/pkg/quotes"
 )
 
-var logger = log.Logger("testing-app")
-
 func main() {
 	go func() {
 		http.ListenAndServe("localhost:8080", nil)
@@ -58,7 +56,7 @@ func main() {
 		panic(err)
 	}
 
-	slog.Info("starting driver", "driver", driverType)
+	slog.Info("starting", "config", config)
 	if err := driver.Start(); err != nil {
 		panic(err)
 	}

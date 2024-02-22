@@ -27,9 +27,10 @@ type syncswap struct {
 	client                    *ethclient.Client
 	factory                   *isyncswap_factory.ISyncSwapFactory
 
-	outbox  chan<- TradeEvent
-	streams safe.Map[Market, event.Subscription]
-	assets  safe.Map[string, poolToken]
+	outbox       chan<- TradeEvent
+	tradeSampler tradeSampler
+	streams      safe.Map[Market, event.Subscription]
+	assets       safe.Map[string, poolToken]
 }
 
 func newSyncswap(config SyncswapConfig, outbox chan<- TradeEvent) Driver {
@@ -39,9 +40,10 @@ func newSyncswap(config SyncswapConfig, outbox chan<- TradeEvent) Driver {
 		assetsURL:                 config.AssetsURL,
 		classicPoolFactoryAddress: config.ClassicPoolFactoryAddress,
 
-		outbox:  outbox,
-		streams: safe.NewMap[Market, event.Subscription](),
-		assets:  safe.NewMap[string, poolToken](),
+		outbox:       outbox,
+		tradeSampler: *newTradeSampler(config.TradeSampler),
+		streams:      safe.NewMap[Market, event.Subscription](),
+		assets:       safe.NewMap[string, poolToken](),
 	}
 }
 
@@ -162,7 +164,7 @@ func (s *syncswap) Subscribe(market Market) error {
 				}
 
 				amount = amount.Abs()
-				s.outbox <- TradeEvent{
+				tr := TradeEvent{
 					Source:    DriverSyncswap,
 					Market:    market,
 					Price:     price,
@@ -171,6 +173,11 @@ func (s *syncswap) Subscribe(market Market) error {
 					TakerType: takerType,
 					CreatedAt: time.Now(),
 				}
+
+				if !s.tradeSampler.allow(tr) {
+					continue
+				}
+				s.outbox <- tr
 			}
 		}
 	}()

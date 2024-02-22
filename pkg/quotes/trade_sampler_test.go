@@ -1,6 +1,7 @@
 package quotes
 
 import (
+	"math/big"
 	"math/rand"
 	"testing"
 
@@ -10,14 +11,14 @@ import (
 func TestNewTradeSampler(t *testing.T) {
 	t.Parallel()
 
-	defaultPercentage := rand.Int()
+	defaultPercentage := int64(rand.Int())
 	conf := TradeSamplerConfig{
 		Enabled:           false,
 		DefaultPercentage: defaultPercentage,
 	}
 
 	tradeSampler := newTradeSampler(conf)
-	require.Equal(t, tradeSampler.defaultPercentage, defaultPercentage)
+	require.Equal(t, tradeSampler.defaultPercentage, new(big.Int).SetInt64(defaultPercentage))
 	require.False(t, tradeSampler.enabled)
 }
 
