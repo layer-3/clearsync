@@ -14,7 +14,7 @@ import (
 
 func SignerForBiconomy(privateKey *ecdsa.PrivateKey) Signer {
 	return func(op UserOperation, entryPoint common.Address, chainID *big.Int) ([]byte, error) {
-		slog.Info("signing user operation")
+		slog.Debug("signing user operation")
 
 		hash := op.UserOpHash(entryPoint, chainID)
 		signedHash, err := op.SignWithECDSA(hash.Bytes(), privateKey)
@@ -46,7 +46,7 @@ func SignerForBiconomy(privateKey *ecdsa.PrivateKey) Signer {
 
 func SignerForKernel(privateKey *ecdsa.PrivateKey) Signer {
 	return func(op UserOperation, entryPoint common.Address, chainID *big.Int) ([]byte, error) {
-		slog.Info("signing user operation")
+		slog.Debug("signing user operation")
 
 		hash := op.UserOpHash(entryPoint, chainID)
 		signature, err := op.SignWithECDSA(hash.Bytes(), privateKey)

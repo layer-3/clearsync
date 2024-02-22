@@ -227,7 +227,7 @@ func (c *client) NewUserOp(
 	calls []Call,
 	walletDeploymentOpts *WalletDeploymentOpts,
 ) (UserOperation, error) {
-	slog.Info("apply middlewares to user operation")
+	slog.Debug("apply middlewares to user operation")
 
 	isDeployed, err := isAccountDeployed(c.providerRPC, smartWallet)
 	if err != nil {
@@ -271,7 +271,7 @@ func (c *client) NewUserOp(
 // SendUserOp submits a user operation to a bundler
 // and executes the provided callback function.
 func (c *client) SendUserOp(ctx context.Context, op UserOperation) (<-chan Receipt, error) {
-	slog.Info("sending user operation")
+	slog.Debug("sending user operation")
 
 	ctx, cancel := context.WithCancel(ctx)
 
