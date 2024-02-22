@@ -1,33 +1,117 @@
 package userop
 
-// ABI with the `UserOperationEventPartial` function with no inputs and nonce, success, actualGasCost and
-// actualGasUsed as outputs taken from `UserOperationEvent` EntryPoint event
-const entrypointUserOperationEventPartialABI = `[
+// ABI with UserOp events from EntryPoint contract.
+const entrypointUserOpEventsABI = `[
   {
-    "constant": false,
-    "inputs": [],
-    "name": "UserOperationEventPartial",
-    "outputs": [
+    "anonymous": false,
+    "inputs": [
       {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "userOpHash",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "paymaster",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
         "name": "nonce",
         "type": "uint256"
       },
       {
+        "indexed": false,
+        "internalType": "bool",
         "name": "success",
         "type": "bool"
       },
       {
+        "indexed": false,
+        "internalType": "uint256",
         "name": "actualGasCost",
         "type": "uint256"
       },
       {
+        "indexed": false,
+        "internalType": "uint256",
         "name": "actualGasUsed",
         "type": "uint256"
       }
     ],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "function"
+    "name": "UserOperationEvent",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "userOpHash",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "factory",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "paymaster",
+        "type": "address"
+      }
+    ],
+    "name": "AccountDeployed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "userOpHash",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "nonce",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes",
+        "name": "revertReason",
+        "type": "bytes"
+      }
+    ],
+    "name": "UserOperationRevertReason",
+    "type": "event"
   }
 ]`
 

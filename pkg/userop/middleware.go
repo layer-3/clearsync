@@ -373,7 +373,7 @@ func estimateUserOperationGas(bundlerRPC *rpc.Client, entryPoint common.Address)
 	// a rare yet hard to debug bundler gas estimation inaccuracy.
 	// It is NOT a random value, see how it works in the original Alto code:
 	// https://github.com/pimlicolabs/alto/blob/a0a9a4906af809d97611c7f0e0f032e50c4c45cb/src/entrypoint-0.6/rpc/gasEstimation.ts#L277-L279
-	gasEstimationOverhead := decimal.NewFromInt(10_000)
+	gasEstimationOverhead := decimal.NewFromInt(300_000)
 
 	return func(ctx context.Context, op *UserOperation) error {
 		slog.Info("estimating gas")
