@@ -77,7 +77,7 @@ type Receipt struct {
 // NewClient is a factory that builds a new
 // user operation client based on the provided configuration.
 func NewClient(config ClientConfig) (UserOperationClient, error) {
-	providerRPC, err := ethclient.Dial(config.ProviderURL)
+	providerRPC, err := ethclient.Dial(config.ProviderURL.String())
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to the blockchain RPC: %w", err)
 	}
@@ -88,7 +88,7 @@ func NewClient(config ClientConfig) (UserOperationClient, error) {
 	}
 	slog.Debug("fetched chain ID", "chainID", chainID.String())
 
-	bundlerRPC, err := rpc.Dial(config.BundlerURL)
+	bundlerRPC, err := rpc.Dial(config.BundlerURL.String())
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to the bundler RPC: %w", err)
 	}

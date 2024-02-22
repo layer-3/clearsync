@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -12,8 +12,8 @@ import (
 
 var (
 	exampleConfig = userop.ClientConfig{
-		ProviderURL: "https://NETWORK.infura.io/v3/YOUR_INFURA_API_KEY",
-		BundlerURL:  "https://api.pimlico.io/v1/NETWORK/rpc?apikey=YOUR_PIMLICO_API_KEY",
+		ProviderURL: *must(url.Parse("https://NETWORK.infura.io/v3/YOUR_INFURA_API_KEY")),
+		BundlerURL:  *must(url.Parse("https://api.pimlico.io/v1/NETWORK/rpc?apikey=YOUR_PIMLICO_API_KEY")),
 		EntryPoint:  common.HexToAddress("ENTRY_POINT_ADDRESS"),
 		SmartWallet: userop.SmartWalletConfig{
 			// Example of a Kernel Smart Wallet config with Kernel v2.2.
@@ -27,7 +27,7 @@ var (
 		Paymaster: userop.PaymasterConfig{
 			// Example of a Pimlico ERC20 Paymaster config.
 			Type:    &userop.PaymasterPimlicoERC20,
-			URL:     "",
+			URL:     url.URL{},
 			Address: common.HexToAddress("0xa683b47e447De6c8A007d9e294e87B6Db333Eb18"),
 		},
 		Gas: userop.GasConfig{
@@ -45,7 +45,7 @@ var (
 
 func must[T any](x T, err error) T {
 	if err != nil {
-		panic(fmt.Errorf("failed to parse private key: %w", err))
+		panic(err)
 	}
 	return x
 }
