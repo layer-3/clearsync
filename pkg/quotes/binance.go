@@ -124,7 +124,6 @@ func (b *binance) handleTrade(event *gobinance.WsTradeEvent) {
 	if !b.tradeSampler.allow(tradeEvent) {
 		return
 	}
-
 	b.outbox <- tradeEvent
 }
 
