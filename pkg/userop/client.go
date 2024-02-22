@@ -79,6 +79,11 @@ type Receipt struct {
 // NewClient is a factory that builds a new
 // user operation client based on the provided configuration.
 func NewClient(config ClientConfig) (UserOperationClient, error) {
+	err := config.validateAddresses()
+	if err != nil {
+		return nil, fmt.Errorf("failed to validate config: %w", err)
+	}
+
 	providerRPC, err := ethclient.Dial(config.ProviderURL.String())
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to the blockchain RPC: %w", err)
