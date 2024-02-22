@@ -2,6 +2,8 @@ package userop
 
 import "fmt"
 
+// SmartWalletType represents a type for supported ERC-4337 paymaster
+// that can be used with the client to sponsor user operations.
 type PaymasterType struct {
 	slug string
 }
