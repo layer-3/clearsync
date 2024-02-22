@@ -13,8 +13,7 @@ func TestNewClientConfigFromEnv(t *testing.T) {
 		t.Setenv("USEROP_CLIENT_SMART_WALLET_TYPE", "kernel")
 
 		defaultConfig := ClientConfig{}
-		defaultConfig.Gas.Init()
-		defaultConfig.SmartWallet.init()
+		defaultConfig.Init()
 
 		// Act
 		config, err := NewClientConfigFromEnv()

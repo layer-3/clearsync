@@ -20,6 +20,12 @@ type ClientConfig struct {
 	Paymaster   PaymasterConfig   `yaml:"paymaster" env-prefix:"USEROP_CLIENT_PAYMASTER_CONFIG_"`
 }
 
+func (c *ClientConfig) Init() {
+	c.Gas.Init()
+	c.Paymaster.Init()
+	c.SmartWallet.Init()
+}
+
 // GasConfig represents the configuration for the userop transaction gas fees.
 type GasConfig struct {
 	MaxPriorityFeePerGasMultiplier decimal.Decimal `yaml:"max_priority_fee_per_gas_multiplier" env:"MAX_PRIORITY_FEE_PER_GAS_MULTIPLIER"` // percentage
@@ -43,7 +49,7 @@ type SmartWalletConfig struct {
 	Factory        common.Address   `yaml:"factory" env:"FACTORY"`
 }
 
-func (sw *SmartWalletConfig) init() {
+func (sw *SmartWalletConfig) Init() {
 	sw.Type = &SmartWalletType{}
 }
 
@@ -64,10 +70,10 @@ type PaymasterConfig struct {
 func (c *PaymasterConfig) Init() {
 	c.Type = &PaymasterType{}
 
-	c.PimlicoERC20.init()
-	c.PimlicoVerifying.init()
-	c.BiconomyERC20.init()
-	c.BiconomySponsoring.init()
+	c.PimlicoERC20.Init()
+	c.PimlicoVerifying.Init()
+	c.BiconomyERC20.Init()
+	c.BiconomySponsoring.Init()
 }
 
 // PimlicoERC20Config represents the configuration for the Pimlico ERC20 paymaster.
@@ -79,7 +85,7 @@ type PimlicoERC20Config struct {
 	VerificationGasOverhead decimal.Decimal `yaml:"verification_gas_overhead" env:"VERIFICATION_GAS_OVERHEAD"`
 }
 
-func (config *PimlicoERC20Config) init() {
+func (config *PimlicoERC20Config) Init() {
 	*config = PimlicoERC20Config{
 		MaxTokenCost:            decimal.NewFromInt(1_000_000),
 		VerificationGasOverhead: decimal.NewFromInt(10_000),
@@ -92,7 +98,7 @@ type PimlicoVerifyingConfig struct {
 	SponsorshipPolicyID string `yaml:"sponsorship_policy_id" env:"SPONSORSHIP_POLICY_ID"`
 }
 
-func (config *PimlicoVerifyingConfig) init() {
+func (config *PimlicoVerifyingConfig) Init() {
 	// no default values
 }
 
@@ -104,7 +110,7 @@ type BiconomyERC20Config struct {
 	TokenInfo          BiconomyTokenInfo `yaml:"token_info" env-prefix:"TOKEN_INFO_"`
 }
 
-func (config *BiconomyERC20Config) init() {
+func (config *BiconomyERC20Config) Init() {
 	*config = BiconomyERC20Config{
 		Mode:               "ERC20",
 		CalculateGasLimits: true,
@@ -127,7 +133,7 @@ type BiconomySponsoringConfig struct {
 	SponsorshipInfo    BiconomySponsorshipInfoConfig `yaml:"sponsorship_info" env-prefix:"SPONSORSHIP_INFO_"`
 }
 
-func (config *BiconomySponsoringConfig) init() {
+func (config *BiconomySponsoringConfig) Init() {
 	*config = BiconomySponsoringConfig{
 		Mode:               "SPONSORED",
 		CalculateGasLimits: true,
@@ -161,9 +167,7 @@ type BiconomySmartAccountInfo struct {
 // client configuration from a file.
 func NewClientConfigFromFile(path string) (ClientConfig, error) {
 	var config ClientConfig
-	config.Gas.Init()
-	config.Paymaster.Init()
-	config.SmartWallet.init()
+	config.Init()
 
 	if err := cleanenv.ReadConfig(path, &config); err != nil {
 		return config, err
@@ -176,9 +180,7 @@ func NewClientConfigFromFile(path string) (ClientConfig, error) {
 // configuration from environment variables.
 func NewClientConfigFromEnv() (ClientConfig, error) {
 	var config ClientConfig
-	config.Gas.Init()
-	config.Paymaster.Init()
-	config.SmartWallet.init()
+	config.Init()
 
 	if err := cleanenv.ReadEnv(&config); err != nil {
 		return config, err
