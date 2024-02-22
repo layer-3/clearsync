@@ -99,7 +99,7 @@ func NewClient(config ClientConfig) (UserOperationClient, error) {
 	}
 
 	estimateGas := estimateUserOperationGas(bundlerRPC, config.EntryPoint)
-	if config.Paymaster.Type != nil || *config.Paymaster.Type != PaymasterDisabled {
+	if config.Paymaster.Type != nil && *config.Paymaster.Type != PaymasterDisabled {
 		switch typ := config.Paymaster.Type; *typ {
 		case PaymasterPimlicoERC20:
 			estimateGas = getPimlicoERC20PaymasterData(
@@ -236,6 +236,11 @@ func (c *client) NewUserOp(
 		if walletDeploymentOpts == nil {
 			return UserOperation{}, ErrNoWalletDeploymentOpts
 		}
+
+		if walletDeploymentOpts.Owner == (common.Address{}) {
+			return UserOperation{}, ErrNoWalletOwner
+		}
+
 		ctx = context.WithValue(ctx, ctxKeyOwner, walletDeploymentOpts.Owner)
 		ctx = context.WithValue(ctx, ctxKeyIndex, walletDeploymentOpts.Index)
 	}

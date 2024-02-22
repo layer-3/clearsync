@@ -6,6 +6,8 @@ var (
 	// ErrNoWalletDeploymentOpts is returned when the wallet deployment opts
 	// are required to build and submit userop but they are not specified.
 	ErrNoWalletDeploymentOpts = errors.New("wallet deployment opts not specified")
+	// ErrNoWalletOwner is returned when the wallet owner is not specified.
+	ErrNoWalletOwner = errors.New("wallet owner not specified")
 	// ErrNoSigner is returned when the signer is not specified.
 	ErrNoSigner = errors.New("signer not specified")
 	// ErrPaymasterNotSupported is returned on attempt to build client with an unsupported paymaster type.
