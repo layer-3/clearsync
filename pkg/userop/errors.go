@@ -8,6 +8,16 @@ var (
 	ErrNoWalletDeploymentOpts = errors.New("wallet deployment opts not specified")
 	// ErrNoWalletOwner is returned when the wallet owner is not specified.
 	ErrNoWalletOwner = errors.New("wallet owner not specified")
+	// ErrNoWalletAddress is returned when the entrypoint address is invalid.
+	ErrInvalidEntryPointAddress = errors.New("invalid entry point address")
+	// ErrEmptyEntryPoint is returned when the factory address is invalid.
+	ErrInvalidFactoryAddress = errors.New("invalid factory address")
+	// ErrEmptyLogicAddress is returned when the logic address is invalid.
+	ErrInvalidLogicAddress = errors.New("invalid logic address")
+	// ErrEmptyECDSAValidatorAddress is returned when the ECDSA validator address is invalid.
+	ErrInvalidECDSAValidatorAddress = errors.New("invalid ECDSA validator address")
+	// ErrEmptyPaymasterAddress is returned when the paymaster address is invalid.
+	ErrInvalidPaymasterAddress = errors.New("invalid paymaster address")
 	// ErrNoSigner is returned when the signer is not specified.
 	ErrNoSigner = errors.New("signer not specified")
 	// ErrPaymasterNotSupported is returned on attempt to build client with an unsupported paymaster type.

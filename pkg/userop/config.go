@@ -26,6 +26,33 @@ func (c *ClientConfig) Init() {
 	c.SmartWallet.Init()
 }
 
+func (conf ClientConfig) validateAddresses() error {
+	if conf.EntryPoint == (common.Address{}) {
+		return ErrInvalidEntryPointAddress
+	}
+
+	if conf.SmartWallet.Factory == (common.Address{}) {
+		return ErrInvalidFactoryAddress
+	}
+
+	if conf.SmartWallet.Logic == (common.Address{}) {
+		return ErrInvalidLogicAddress
+	}
+
+	if conf.SmartWallet.ECDSAValidator == (common.Address{}) {
+		return ErrInvalidECDSAValidatorAddress
+	}
+
+	if conf.Paymaster.Type != nil && *conf.Paymaster.Type != PaymasterDisabled {
+		if conf.Paymaster.Address == (common.Address{}) {
+			return ErrInvalidPaymasterAddress
+		}
+	}
+
+	return nil
+
+}
+
 // GasConfig represents the configuration for the userop transaction gas fees.
 type GasConfig struct {
 	MaxPriorityFeePerGasMultiplier decimal.Decimal `yaml:"max_priority_fee_per_gas_multiplier" env:"MAX_PRIORITY_FEE_PER_GAS_MULTIPLIER"` // percentage
