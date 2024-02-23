@@ -201,7 +201,7 @@ func (op UserOperation) SignWithECDSA(hash []byte, privateKey *ecdsa.PrivateKey)
 		signature[64] += 27
 	}
 
-	slog.Debug("user operation signed:", "hash", hash, "signature", hexutil.Encode(signature))
+	slog.Debug("user operation signed:", "hash", common.Bytes2Hex(hash), "signature", hexutil.Encode(signature))
 	return signature, nil
 }
 
