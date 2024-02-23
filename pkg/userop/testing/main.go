@@ -176,7 +176,7 @@ func newCallFromABI(contract common.Address, stringABI string, value decimal.Dec
 // Creates and sends the user operation.
 // NOTE: when sending the first userOp from a Smart Wallet,
 // `config.example.go/walletDeploymentOpts` must contain Smart Wallet owner EOA address and SW index (0 by default).
-func send(client userop.UserOperationClient, smartWallet common.Address, calls []userop.Call) error {
+func send(client userop.Client, smartWallet common.Address, calls []userop.Call) error {
 	ctx := context.Background()
 
 	op, err := client.NewUserOp(ctx, smartWallet, signer, calls, walletDeploymentOpts)

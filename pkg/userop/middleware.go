@@ -11,7 +11,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/shopspring/decimal"
 
@@ -49,7 +48,7 @@ func getNonce(entryPoint *entry_point.EntryPoint) middleware {
 
 type smartWalletInitCodeGenerator func(op UserOperation, owner common.Address, index decimal.Decimal) ([]byte, error)
 
-func getInitCode(providerRPC *ethclient.Client, smartWalletConfig SmartWalletConfig) (middleware, error) {
+func getInitCode(providerRPC EthBackend, smartWalletConfig SmartWalletConfig) (middleware, error) {
 	var getInitCode smartWalletInitCodeGenerator
 	switch typ := *smartWalletConfig.Type; typ {
 	case SmartWalletSimpleAccount:
@@ -178,7 +177,7 @@ func getBiconomyInitCode(factory, ecdsaValidator common.Address) smartWalletInit
 	}
 }
 
-func getGasPrice(providerRPC *ethclient.Client, gasConfig GasConfig) middleware {
+func getGasPrice(providerRPC EthBackend, gasConfig GasConfig) middleware {
 	return func(ctx context.Context, op *UserOperation) error {
 		slog.Debug("getting gas price")
 
@@ -190,7 +189,7 @@ func getGasPrice(providerRPC *ethclient.Client, gasConfig GasConfig) middleware 
 		blockBaseFee := block.BaseFee()
 
 		var maxPriorityFeePerGasStr string
-		if err := providerRPC.Client().CallContext(
+		if err := providerRPC.RPC().CallContext(
 			ctx,
 			&maxPriorityFeePerGasStr,
 			"eth_maxPriorityFeePerGas",
@@ -291,7 +290,7 @@ func getBiconomyPaymasterAndData(
 }
 
 func getPimlicoERC20PaymasterData(
-	bundlerRPC *rpc.Client,
+	bundlerRPC RpcBackend,
 	entryPoint common.Address,
 	paymaster common.Address,
 	verificationGasOverhead decimal.Decimal,
@@ -368,7 +367,7 @@ func (est gasEstimate) fromAny(a any) (*big.Int, error) {
 	}
 }
 
-func estimateUserOperationGas(bundlerRPC *rpc.Client, entryPoint common.Address) middleware {
+func estimateUserOperationGas(bundlerRPC RpcBackend, entryPoint common.Address) middleware {
 	// The gas estimate is increased by 10_000 to account for
 	// a rare yet hard to debug bundler gas estimation inaccuracy.
 	// It is NOT a random value, see how it works in the original Alto code:

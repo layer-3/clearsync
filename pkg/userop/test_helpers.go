@@ -48,7 +48,7 @@ func mockedConfig() ClientConfig {
 	return config
 }
 
-func bundlerMockedClient(t *testing.T, providerURL string) UserOperationClient {
+func bundlerMockedClient(t *testing.T, providerURL string) Client {
 	config := ClientConfig{
 		ProviderURL: *must(url.Parse(providerURL)),
 		BundlerURL:  *must(url.Parse("http://127.0.0.1:42424")),
