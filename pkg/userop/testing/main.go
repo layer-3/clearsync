@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -15,6 +16,7 @@ import (
 )
 
 func main() {
+	setLogLevel(slog.LevelDebug)
 
 	var (
 		owner       = common.HexToAddress("0x2185da3337cad307fd48dFDabA6D4C66A9fD2c71")
@@ -40,7 +42,7 @@ func main() {
 	)
 
 	// create smartWallet client (with specific Wallet and Paymaster types)
-	client, err := userop.NewClient(config)
+	client, err := userop.NewClient(exampleConfig)
 	if err != nil {
 		panic(fmt.Errorf("failed to create userop client: %w", err))
 	}
@@ -95,6 +97,17 @@ func main() {
 	if err := send(client, smartWallet, []userop.Call{approveToGame, mintPack}); err != nil {
 		panic(err)
 	}
+}
+
+func setLogLevel(level slog.Level) {
+	lvl := new(slog.LevelVar)
+	lvl.Set(slog.LevelDebug)
+
+	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+		Level: lvl,
+	}))
+
+	slog.SetDefault(logger)
 }
 
 // Encodes an `approve` call to the `token` contract, approving `amount` to be spent by `spender`.
