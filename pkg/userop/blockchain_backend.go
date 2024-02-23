@@ -13,7 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
-type RpcBackend interface {
+type RPCBackend interface {
 	CallContext(ctx context.Context, result interface{}, method string, args ...interface{}) error
 }
 
@@ -21,12 +21,12 @@ type rpcBackendImpl struct {
 	*rpc.Client
 }
 
-func NewRpcBackend(rpcUrl url.URL) (RpcBackend, error) {
-	if rpcUrl.Scheme != "http" && rpcUrl.Scheme != "https" {
-		return nil, fmt.Errorf("rpcUrl must be an HTTP url")
+func NewRPCBackend(rpcURL url.URL) (RPCBackend, error) {
+	if rpcURL.Scheme != "http" && rpcURL.Scheme != "https" && rpcURL.Scheme != "ws" && rpcURL.Scheme != "wss" {
+		return nil, fmt.Errorf("RPC uURL must be an HTTP or WS url")
 	}
 
-	client, err := rpc.Dial(rpcUrl.String())
+	client, err := rpc.Dial(rpcURL.String())
 	if err != nil {
 		return nil, err
 	}
@@ -52,12 +52,12 @@ type ethBackendImpl struct {
 	*ethclient.Client
 }
 
-func NewEthBackend(rpcUrl url.URL) (EthBackend, error) {
-	if rpcUrl.Scheme != "ws" && rpcUrl.Scheme != "wss" {
-		return nil, fmt.Errorf("rpcUrl must be a WS url")
+func NewEthBackend(rpcURL url.URL) (EthBackend, error) {
+	if rpcURL.Scheme != "ws" && rpcURL.Scheme != "wss" {
+		return nil, fmt.Errorf("RPC URL must be a WS url")
 	}
 
-	client, err := ethclient.Dial(rpcUrl.String())
+	client, err := ethclient.Dial(rpcURL.String())
 	if err != nil {
 		return nil, err
 	}
