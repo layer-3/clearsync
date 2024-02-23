@@ -11,7 +11,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/shopspring/decimal"
 
 	"github.com/layer-3/clearsync/pkg/abi/entry_point"
@@ -225,7 +224,7 @@ func getGasPrice(providerRPC EthBackend, gasConfig GasConfig) middleware {
 }
 
 func getBiconomyPaymasterAndData(
-	bundlerRPC *rpc.Client,
+	bundlerRPC RPCBackend,
 	paymasterCtx map[string]any,
 	entryPoint common.Address,
 ) middleware {
@@ -289,8 +288,71 @@ func getBiconomyPaymasterAndData(
 	}
 }
 
+func getGasEstimation(bundler RPCBackend, config ClientConfig) (middleware, error) {
+	estimateGas := estimateUserOperationGas(bundler, config.EntryPoint)
+
+	if config.Paymaster.Type != nil && *config.Paymaster.Type != PaymasterDisabled {
+		switch typ := *config.Paymaster.Type; typ {
+		case PaymasterPimlicoERC20:
+			estimateGas = getPimlicoERC20PaymasterData(
+				bundler,
+				config.EntryPoint,
+				config.Paymaster.Address,
+				config.Paymaster.PimlicoERC20.VerificationGasOverhead,
+			)
+		case PaymasterPimlicoVerifying:
+			// NOTE: PimlicoVerifying is the easiest to implement
+			return nil, fmt.Errorf("%w: %s", ErrPaymasterNotSupported, typ)
+		case PaymasterBiconomyERC20:
+			return nil, ErrPaymasterNotSupported
+		case PaymasterBiconomySponsoring:
+			// NOTE: tried to add BiconomySponsoring, but it is not responding correctly
+			return nil, ErrPaymasterNotSupported
+		default:
+			return nil, fmt.Errorf("unknown paymaster type: %s", typ)
+		}
+	}
+
+	return estimateGas, nil
+}
+
+func estimateUserOperationGas(bundlerRPC RPCBackend, entryPoint common.Address) middleware {
+	// The gas estimate is increased by 10_000 to account for
+	// a rare yet hard to debug bundler gas estimation inaccuracy.
+	// It is NOT a random value, see how it works in the original Alto code:
+	// https://github.com/pimlicolabs/alto/blob/a0a9a4906af809d97611c7f0e0f032e50c4c45cb/src/entrypoint-0.6/rpc/gasEstimation.ts#L277-L279
+	gasEstimationOverhead := decimal.NewFromInt(300_000)
+
+	return func(ctx context.Context, op *UserOperation) error {
+		slog.Debug("estimating gas")
+
+		// ERC4337-standardized gas estimation
+		var est gasEstimate
+		if err := bundlerRPC.CallContext(
+			ctx,
+			&est,
+			"eth_estimateUserOperationGas",
+			op,
+			entryPoint,
+		); err != nil {
+			return fmt.Errorf("error estimating gas: %w", err)
+		}
+
+		callGasLimit, verificationGasLimit, preVerificationGas, err := est.convert()
+		if err != nil {
+			return fmt.Errorf("failed to convert gas estimates: %w", err)
+		}
+
+		op.CallGasLimit = decimal.NewFromBigInt(callGasLimit, 0).Add(gasEstimationOverhead)
+		op.VerificationGasLimit = decimal.NewFromBigInt(verificationGasLimit, 0)
+		op.PreVerificationGas = decimal.NewFromBigInt(preVerificationGas, 0)
+
+		return nil
+	}
+}
+
 func getPimlicoERC20PaymasterData(
-	bundlerRPC RpcBackend,
+	bundlerRPC RPCBackend,
 	entryPoint common.Address,
 	paymaster common.Address,
 	verificationGasOverhead decimal.Decimal,
@@ -364,41 +426,6 @@ func (est gasEstimate) fromAny(a any) (*big.Int, error) {
 		return new(big.Int).SetInt64(int64(v)), nil
 	default:
 		return nil, fmt.Errorf("unexpected type: %T", v)
-	}
-}
-
-func estimateUserOperationGas(bundlerRPC RpcBackend, entryPoint common.Address) middleware {
-	// The gas estimate is increased by 10_000 to account for
-	// a rare yet hard to debug bundler gas estimation inaccuracy.
-	// It is NOT a random value, see how it works in the original Alto code:
-	// https://github.com/pimlicolabs/alto/blob/a0a9a4906af809d97611c7f0e0f032e50c4c45cb/src/entrypoint-0.6/rpc/gasEstimation.ts#L277-L279
-	gasEstimationOverhead := decimal.NewFromInt(300_000)
-
-	return func(ctx context.Context, op *UserOperation) error {
-		slog.Debug("estimating gas")
-
-		// ERC4337-standardized gas estimation
-		var est gasEstimate
-		if err := bundlerRPC.CallContext(
-			ctx,
-			&est,
-			"eth_estimateUserOperationGas",
-			op,
-			entryPoint,
-		); err != nil {
-			return fmt.Errorf("error estimating gas: %w", err)
-		}
-
-		callGasLimit, verificationGasLimit, preVerificationGas, err := est.convert()
-		if err != nil {
-			return fmt.Errorf("failed to convert gas estimates: %w", err)
-		}
-
-		op.CallGasLimit = decimal.NewFromBigInt(callGasLimit, 0).Add(gasEstimationOverhead)
-		op.VerificationGasLimit = decimal.NewFromBigInt(verificationGasLimit, 0)
-		op.PreVerificationGas = decimal.NewFromBigInt(preVerificationGas, 0)
-
-		return nil
 	}
 }
 

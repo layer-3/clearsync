@@ -55,7 +55,7 @@ type WalletDeploymentOpts struct {
 // backend represents a user operation client.
 type backend struct {
 	provider EthBackend
-	bundler  RpcBackend
+	bundler  RPCBackend
 	chainID  *big.Int
 
 	smartWallet SmartWalletConfig
@@ -94,7 +94,7 @@ func NewClient(config ClientConfig) (Client, error) {
 	}
 	slog.Debug("fetched chain ID", "chainID", chainID.String())
 
-	bundlerRPC, err := NewRpcBackend(config.BundlerURL)
+	bundlerRPC, err := NewRPCBackend(config.BundlerURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to the bundler RPC: %w", err)
 	}
@@ -104,27 +104,9 @@ func NewClient(config ClientConfig) (Client, error) {
 		return nil, fmt.Errorf("failed to connect to the entry point contract: %w", err)
 	}
 
-	estimateGas := estimateUserOperationGas(bundlerRPC, config.EntryPoint)
-	if config.Paymaster.Type != nil && *config.Paymaster.Type != PaymasterDisabled {
-		switch typ := config.Paymaster.Type; *typ {
-		case PaymasterPimlicoERC20:
-			estimateGas = getPimlicoERC20PaymasterData(
-				bundlerRPC,
-				config.EntryPoint,
-				config.Paymaster.Address,
-				config.Paymaster.PimlicoERC20.VerificationGasOverhead,
-			)
-		case PaymasterPimlicoVerifying:
-			// NOTE: PimlicoVerifying is the easiest to implement
-			return nil, fmt.Errorf("%w: %s", ErrPaymasterNotSupported, typ)
-		case PaymasterBiconomyERC20:
-			return nil, ErrPaymasterNotSupported
-		case PaymasterBiconomySponsoring:
-			// NOTE: tried to add BiconomySponsoring, but it is not responding correctly
-			return nil, ErrPaymasterNotSupported
-		default:
-			return nil, fmt.Errorf("unknown paymaster type: %s", typ)
-		}
+	getGasEstimation, err := getGasEstimation(bundlerRPC, config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build gas estimation middleware: %w", err)
 	}
 
 	getInitCode, err := getInitCode(providerRPC, config.SmartWallet)
@@ -144,7 +126,7 @@ func NewClient(config ClientConfig) (Client, error) {
 			getInitCode,
 			getGasPrice(providerRPC, config.Gas),
 			sign(config.EntryPoint, chainID),
-			estimateGas,
+			getGasEstimation,
 			sign(config.EntryPoint, chainID), // update signature after gas estimation
 		},
 	}, nil
@@ -397,9 +379,15 @@ func waitForUserOpEvent(
 	entryPoint common.Address,
 	userOpHash common.Hash,
 ) {
+	ticker := time.NewTicker(time.Millisecond * 5000)
+	defer ticker.Stop()
 	defer close(done)
 
-	waitInterval := time.Millisecond * 5000
+	userOpEvents, err := abi.JSON(strings.NewReader(entrypointUserOpEventsABI))
+	if err != nil {
+		slog.Error("error parsing ABI", "err", err)
+		return
+	}
 
 	fromBlock, err := client.BlockNumber(ctx)
 	if err != nil {
@@ -412,15 +400,6 @@ func waitForUserOpEvent(
 		Addresses: []common.Address{entryPoint},
 		Topics:    [][]common.Hash{{}, {userOpHash}},
 		FromBlock: big.NewInt(int64(fromBlock)),
-	}
-
-	ticker := time.NewTicker(waitInterval)
-	defer ticker.Stop()
-
-	userOpEvents, err := abi.JSON(strings.NewReader(entrypointUserOpEventsABI))
-	if err != nil {
-		slog.Error("error parsing ABI", "err", err)
-		return
 	}
 
 	for {
