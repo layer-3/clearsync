@@ -17,10 +17,6 @@ type RPCBackend interface {
 	CallContext(ctx context.Context, result interface{}, method string, args ...interface{}) error
 }
 
-type rpcBackendImpl struct {
-	*rpc.Client
-}
-
 func NewRPCBackend(rpcURL url.URL) (RPCBackend, error) {
 	if rpcURL.Scheme != "http" && rpcURL.Scheme != "https" && rpcURL.Scheme != "ws" && rpcURL.Scheme != "wss" {
 		return nil, fmt.Errorf("RPC URL must be an HTTP or WS url")
@@ -31,7 +27,7 @@ func NewRPCBackend(rpcURL url.URL) (RPCBackend, error) {
 		return nil, err
 	}
 
-	return &rpcBackendImpl{Client: client}, nil
+	return client, nil
 }
 
 type EthBackend interface {
