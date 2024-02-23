@@ -16,7 +16,7 @@ import (
 )
 
 func main() {
-	setLogLevel(slog.LevelDebug)
+	setLogLevel(slog.LevelInfo)
 
 	var (
 		owner       = common.HexToAddress("0x2185da3337cad307fd48dFDabA6D4C66A9fD2c71")
@@ -27,13 +27,11 @@ func main() {
 
 		ducklingsGame    = common.HexToAddress("0xb66bf78cad7cbab51988ddc792652cbabdff7675") // Duckies
 		ducklingsGameABI = `[{
-		  "inputs": [
-		    {
-		      "internalType": "uint8",
-		      "name": "size",
-		      "type": "uint8"
-		    }
-		  ],
+		  "inputs": [{
+	        "internalType": "uint8",
+	        "name": "size",
+	        "type": "uint8"
+	      }],
 		  "name": "mintPack",
 		  "outputs": [],
 		  "stateMutability": "nonpayable",
@@ -101,7 +99,7 @@ func main() {
 
 func setLogLevel(level slog.Level) {
 	lvl := new(slog.LevelVar)
-	lvl.Set(slog.LevelDebug)
+	lvl.Set(level)
 
 	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
 		Level: lvl,
