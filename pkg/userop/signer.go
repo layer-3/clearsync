@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 func SignerForBiconomy(privateKey *ecdsa.PrivateKey) Signer {
@@ -17,7 +18,7 @@ func SignerForBiconomy(privateKey *ecdsa.PrivateKey) Signer {
 		slog.Debug("signing user operation")
 
 		hash := op.UserOpHash(entryPoint, chainID)
-		signedHash, err := op.SignWithECDSA(hash.Bytes(), privateKey)
+		signedHash, err := signWithECDSA(hash.Bytes(), privateKey)
 		if err != nil {
 			return nil, fmt.Errorf("failed to sign user operation: %w", err)
 		}
@@ -49,7 +50,7 @@ func SignerForKernel(privateKey *ecdsa.PrivateKey) Signer {
 		slog.Debug("signing user operation")
 
 		hash := op.UserOpHash(entryPoint, chainID)
-		signature, err := op.SignWithECDSA(hash.Bytes(), privateKey)
+		signature, err := signWithECDSA(hash.Bytes(), privateKey)
 		if err != nil {
 			return nil, fmt.Errorf("failed to sign user operation: %w", err)
 		}
@@ -69,4 +70,32 @@ func SignerForKernel(privateKey *ecdsa.PrivateKey) Signer {
 			"hash", hash.String())
 		return signature, nil
 	}
+}
+
+// signWithECDSA signs the hash with the given private key using the ECDSA algorithm.
+func signWithECDSA(hash []byte, privateKey *ecdsa.PrivateKey) ([]byte, error) {
+	ethMessageHash := computeEthSignedMessageHash(hash)
+
+	signature, err := crypto.Sign(ethMessageHash, privateKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to sign user operation: %w", err)
+	}
+
+	// To make the signature compatible with
+	// Ethereum's ECDSA recovery, ensure V is 27 or 28.
+	if signature[64] < 27 {
+		signature[64] += 27
+	}
+
+	slog.Debug("user operation signed:", "hash", common.Bytes2Hex(hash), "signature", hexutil.Encode(signature))
+	return signature, nil
+}
+
+// computeEthSignedMessageHash accepts an arbitrary message, prepends a known message,
+// and hashes the result using keccak256. The known message added to the input before hashing is
+// "\x19Ethereum Signed Message:\n" + len(message).
+func computeEthSignedMessageHash(message []byte) []byte {
+	return crypto.Keccak256([]byte(
+		fmt.Sprintf("\x19Ethereum Signed Message:\n%d%s", len(message), string(message)),
+	))
 }

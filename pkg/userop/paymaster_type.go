@@ -2,7 +2,7 @@ package userop
 
 import "fmt"
 
-// PaymasterType represents a type for supported ERC-4337 paymaster
+// PaymasterType represents an enum for supported ERC-4337 paymaster
 // that can be used with the client to sponsor user operations.
 type PaymasterType struct {
 	slug string

@@ -2,7 +2,7 @@ package userop
 
 import "fmt"
 
-// SmartWalletType represents a type for supported ERC-4337 smart wallets
+// SmartWalletType represents an enum for supported ERC-4337 smart wallets
 // that can be used with the client to send user operations from.
 type SmartWalletType struct {
 	slug string
