@@ -24,7 +24,7 @@ type opendax struct {
 	url    string
 
 	outbox         chan<- TradeEvent
-	tradeSampler   tradeSampler
+	filter         Filter
 	period         time.Duration
 	reqID          atomic.Uint64
 	streams        safe.Map[Market, struct{}]
@@ -36,7 +36,7 @@ func newOpendax(config OpendaxConfig, outbox chan<- TradeEvent) Driver {
 		once:           newOnce(),
 		url:            config.URL,
 		outbox:         outbox,
-		tradeSampler:   *newTradeSampler(config.TradeSampler),
+		filter:         FilterFactory(config.Filter),
 		period:         config.ReconnectPeriod * time.Second,
 		reqID:          atomic.Uint64{},
 		dialer:         &wsDialWrapper{},
@@ -201,7 +201,7 @@ func (o *opendax) listen() {
 			continue
 		}
 
-		if !o.tradeSampler.allow(*tr) {
+		if !o.filter.Allow(*tr) {
 			continue
 		}
 		o.outbox <- *tr

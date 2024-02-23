@@ -259,6 +259,7 @@ func TestOpendax_listen(t *testing.T) {
 			dialer: &ODDialerSuccessMock{},
 			period: 0,
 			outbox: outbox,
+			filter: disabledFilter,
 		}
 
 		client.once.Start(func() {})
