@@ -82,7 +82,7 @@ func (sw *SmartWalletConfig) Init() {
 // PaymasterConfig represents the configuration
 // for the paymaster to be used with the client.
 type PaymasterConfig struct {
-	Type    *PaymasterType `yaml:"type" env:"TYPE"`
+	Type    *PaymasterType `yaml:"type" env:"TYPE"` // nil is equivalent to PaymasterDisabled
 	URL     url.URL        `yaml:"url" env:"URL"`
 	Address common.Address `yaml:"address" env:"ADDRESS"`
 
