@@ -29,7 +29,7 @@ type kraken struct {
 
 	availablePairs safe.Map[string, krakenPair]
 	streams        safe.Map[Market, struct{}]
-	tradeSampler   tradeSampler
+	filter         Filter
 	outbox         chan<- TradeEvent
 }
 
@@ -49,8 +49,8 @@ func newKraken(config KrakenConfig, outbox chan<- TradeEvent) Driver {
 		availablePairs: safe.NewMap[string, krakenPair](),
 		streams:        safe.NewMap[Market, struct{}](),
 
-		tradeSampler: *newTradeSampler(config.TradeSampler),
-		outbox:       outbox,
+		filter: FilterFactory(config.Filter),
+		outbox: outbox,
 	}
 }
 
@@ -258,7 +258,7 @@ func (k *kraken) listen() {
 		}
 
 		for _, tr := range tradeEvents {
-			if !k.tradeSampler.allow(tr) {
+			if !k.filter.Allow(tr) {
 				continue
 			}
 			k.outbox <- tr

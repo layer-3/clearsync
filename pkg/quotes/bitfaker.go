@@ -9,23 +9,23 @@ import (
 )
 
 type bitfaker struct {
-	once         *once
-	mu           sync.RWMutex
-	streams      []Market
-	outbox       chan<- TradeEvent
-	stopCh       chan struct{}
-	period       time.Duration
-	tradeSampler tradeSampler
+	once    *once
+	mu      sync.RWMutex
+	streams []Market
+	outbox  chan<- TradeEvent
+	stopCh  chan struct{}
+	period  time.Duration
+	filter  Filter
 }
 
 func newBitfaker(config BitfakerConfig, outbox chan<- TradeEvent) Driver {
 	return &bitfaker{
-		once:         newOnce(),
-		streams:      make([]Market, 0),
-		outbox:       outbox,
-		stopCh:       make(chan struct{}, 1),
-		period:       config.Period,
-		tradeSampler: *newTradeSampler(config.TradeSampler),
+		once:    newOnce(),
+		streams: make([]Market, 0),
+		outbox:  outbox,
+		stopCh:  make(chan struct{}, 1),
+		period:  config.Period,
+		filter:  FilterFactory(config.Filter),
 	}
 }
 
@@ -131,7 +131,7 @@ func (b *bitfaker) createTradeEvent(market Market) {
 		CreatedAt: time.Now(),
 	}
 
-	if !b.tradeSampler.allow(tr) {
+	if !b.filter.Allow(tr) {
 		return
 	}
 	b.outbox <- tr

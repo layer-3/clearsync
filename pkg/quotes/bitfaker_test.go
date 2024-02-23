@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var disabledFilter = FilterFactory(FilterConfig{FilterType: DisabledFilterType})
+
 func TestBitfaker_Subscribe(t *testing.T) {
 	t.Parallel()
 
@@ -17,7 +19,7 @@ func TestBitfaker_Subscribe(t *testing.T) {
 		t.Parallel()
 
 		ch := make(chan TradeEvent, 16)
-		client := bitfaker{outbox: ch, once: newOnce()}
+		client := bitfaker{outbox: ch, once: newOnce(), filter: disabledFilter}
 		require.NoError(t, client.Start())
 
 		m := NewMarket("btc", "usd")
@@ -33,7 +35,7 @@ func TestBitfaker_Subscribe(t *testing.T) {
 		t.Parallel()
 
 		outbox := make(chan TradeEvent, 16)
-		client := bitfaker{outbox: outbox, once: newOnce()}
+		client := bitfaker{outbox: outbox, once: newOnce(), filter: disabledFilter}
 		require.NoError(t, client.Start())
 
 		market1 := NewMarket("btc", "usd")
@@ -52,7 +54,7 @@ func TestBitfaker_Subscribe(t *testing.T) {
 		t.Parallel()
 
 		ch := make(chan TradeEvent, 16)
-		client := bitfaker{outbox: ch, once: newOnce()}
+		client := bitfaker{outbox: ch, once: newOnce(), filter: disabledFilter}
 		require.NoError(t, client.Start())
 
 		market := NewMarket("btc", "usd")
@@ -71,7 +73,7 @@ func TestBitfaker_Unsubscribe(t *testing.T) {
 		t.Parallel()
 
 		ch := make(chan TradeEvent, 16)
-		client := bitfaker{outbox: ch, once: newOnce()}
+		client := bitfaker{outbox: ch, once: newOnce(), filter: disabledFilter}
 		require.NoError(t, client.Start())
 
 		market1 := NewMarket("btc", "usd")
@@ -90,7 +92,7 @@ func TestBitfaker_Unsubscribe(t *testing.T) {
 		t.Parallel()
 
 		ch := make(chan TradeEvent, 16)
-		client := bitfaker{outbox: ch, once: newOnce()}
+		client := bitfaker{outbox: ch, once: newOnce(), filter: disabledFilter}
 		require.NoError(t, client.Start())
 
 		market := NewMarket("xrp", "usd")
@@ -103,7 +105,7 @@ func TestBitfaker_Unsubscribe(t *testing.T) {
 		t.Parallel()
 
 		ch := make(chan TradeEvent, 16)
-		client := bitfaker{outbox: ch, once: newOnce()}
+		client := bitfaker{outbox: ch, once: newOnce(), filter: disabledFilter}
 		require.NoError(t, client.Start())
 
 		market1 := NewMarket("btc", "usd")
@@ -122,15 +124,11 @@ func TestBitfaker_Start(t *testing.T) {
 	t.Parallel()
 
 	outbox := make(chan TradeEvent, 1)
-	tradeSampler := *newTradeSampler(TradeSamplerConfig{
-		Enabled:           false,
-		DefaultPercentage: 0,
-	})
 	client := bitfaker{
-		once:         newOnce(),
-		outbox:       outbox,
-		period:       0 * time.Second,
-		tradeSampler: tradeSampler,
+		once:   newOnce(),
+		outbox: outbox,
+		period: 0 * time.Second,
+		filter: disabledFilter,
 	}
 	market := NewMarket("btc", "usd")
 
@@ -154,7 +152,7 @@ func TestCreateTradeEvent(t *testing.T) {
 	t.Parallel()
 
 	outbox := make(chan TradeEvent)
-	client := bitfaker{outbox: outbox, once: newOnce()}
+	client := bitfaker{outbox: outbox, once: newOnce(), filter: disabledFilter}
 	require.NoError(t, client.Start())
 
 	go func() { client.createTradeEvent(NewMarket("btc", "usd")) }()

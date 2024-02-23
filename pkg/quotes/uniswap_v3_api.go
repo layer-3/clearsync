@@ -18,22 +18,22 @@ import (
 var loggerUniswapV3Api = log.Logger("uniswap_v3_api")
 
 type uniswapV3Api struct {
-	once         *once
-	url          string
-	outbox       chan<- TradeEvent
-	windowSize   time.Duration
-	tradeSampler tradeSampler
-	streams      safe.Map[Market, chan struct{}]
+	once       *once
+	url        string
+	outbox     chan<- TradeEvent
+	windowSize time.Duration
+	filter     Filter
+	streams    safe.Map[Market, chan struct{}]
 }
 
 func newUniswapV3Api(config UniswapV3ApiConfig, outbox chan<- TradeEvent) Driver {
 	return &uniswapV3Api{
-		once:         newOnce(),
-		url:          config.URL,
-		outbox:       outbox,
-		windowSize:   config.WindowSize,
-		tradeSampler: *newTradeSampler(config.TradeSampler),
-		streams:      safe.NewMap[Market, chan struct{}](),
+		once:       newOnce(),
+		url:        config.URL,
+		outbox:     outbox,
+		windowSize: config.WindowSize,
+		filter:     FilterFactory(config.Filter),
+		streams:    safe.NewMap[Market, chan struct{}](),
 	}
 }
 
@@ -131,7 +131,7 @@ func (u *uniswapV3Api) Subscribe(market Market) error {
 						CreatedAt: createdAt,
 					}
 
-					if !u.tradeSampler.allow(tr) {
+					if !u.filter.Allow(tr) {
 						continue
 					}
 					u.outbox <- tr

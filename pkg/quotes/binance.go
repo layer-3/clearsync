@@ -14,10 +14,10 @@ import (
 var loggerBinance = log.Logger("binance")
 
 type binance struct {
-	once         *once
-	streams      safe.Map[Market, chan struct{}]
-	tradeSampler tradeSampler
-	outbox       chan<- TradeEvent
+	once    *once
+	streams safe.Map[Market, chan struct{}]
+	filter  Filter
+	outbox  chan<- TradeEvent
 
 	symbolToMarket safe.Map[string, Market]
 }
@@ -27,7 +27,7 @@ func newBinance(config BinanceConfig, outbox chan<- TradeEvent) Driver {
 	return &binance{
 		once:           newOnce(),
 		streams:        safe.NewMap[Market, chan struct{}](),
-		tradeSampler:   *newTradeSampler(config.TradeSampler),
+		filter:         FilterFactory(config.Filter),
 		outbox:         outbox,
 		symbolToMarket: safe.NewMap[string, Market](),
 	}
@@ -121,7 +121,7 @@ func (b *binance) handleTrade(event *gobinance.WsTradeEvent) {
 		return
 	}
 
-	if !b.tradeSampler.allow(tradeEvent) {
+	if !b.filter.Allow(tradeEvent) {
 		return
 	}
 	b.outbox <- tradeEvent
