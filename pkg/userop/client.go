@@ -147,12 +147,9 @@ func (c *backend) GetAccountAddress(ctx context.Context, owner common.Address, i
 		return common.Address{}, fmt.Errorf("failed to build initCode middleware: %w", err)
 	}
 
+	op := UserOperation{Sender: common.Address{}}
 	ctx = context.WithValue(ctx, ctxKeyOwner, owner)
 	ctx = context.WithValue(ctx, ctxKeyIndex, index)
-
-	op := UserOperation{
-		Sender: common.Address{},
-	}
 
 	if err := getInitCode(ctx, &op); err != nil {
 		return common.Address{}, fmt.Errorf("failed to get init code: %w", err)
@@ -181,8 +178,7 @@ func (c *backend) GetAccountAddress(ctx context.Context, owner common.Address, i
 	}
 
 	var scError rpc.DataError
-	ok := errors.As(err, &scError)
-	if !ok {
+	if ok := errors.As(err, &scError); !ok {
 		panic(fmt.Errorf("unexpected error type '%T' containing message %w)", err, err))
 	}
 	errorData := scError.ErrorData().(string)
@@ -193,7 +189,7 @@ func (c *backend) GetAccountAddress(ctx context.Context, owner common.Address, i
 	}
 
 	// check if the error signature is correct
-	if errorData[0:10] != senderAddressResultError.ID.String()[0:10] {
+	if id := senderAddressResultError.ID.String(); errorData[0:10] != id[0:10] {
 		panic(fmt.Errorf("'getSenderAddress' unexpected error signature: %s", errorData[0:10]))
 	}
 
@@ -257,23 +253,20 @@ func (c *backend) NewUserOp(
 // SendUserOp submits a user operation to a bundler
 // and executes the provided callback function.
 func (c *backend) SendUserOp(ctx context.Context, op UserOperation) (<-chan Receipt, error) {
-	slog.Debug("sending user operation")
-
 	ctx, cancel := context.WithCancel(ctx)
-
 	userOpHash := op.UserOpHash(c.entryPoint, c.chainID)
+	done := make(chan Receipt, 1)
 
-	waiter := make(chan Receipt, 1)
-	go waitForUserOpEvent(ctx, cancel, c.provider, waiter, c.entryPoint, userOpHash)
+	go waitForUserOpEvent(ctx, cancel, c.provider, done, c.entryPoint, userOpHash)
 
 	// ERC4337-standardized call to the bundler
+	slog.Debug("sending user operation")
 	if err := c.bundler.CallContext(ctx, &userOpHash, "eth_sendUserOperation", op, c.entryPoint); err != nil {
 		return nil, fmt.Errorf("call to `eth_sendUserOperation` failed: %w", err)
 	}
 
 	slog.Info("user operation sent successfully", "userOpHash", userOpHash.Hex())
-
-	return waiter, nil
+	return done, nil
 }
 
 func isAccountDeployed(provider EthBackend, swAddress common.Address) (bool, error) {
@@ -294,11 +287,7 @@ func isAccountDeployed(provider EthBackend, swAddress common.Address) (bool, err
 	}
 
 	// assume that the smart account is deployed if it has non-zero byte code
-	if byteCode == "" || byteCode == "0x" {
-		return false, nil
-	}
-
-	return true, nil
+	return !(byteCode == "" || byteCode == "0x"), nil
 }
 
 func (c *backend) buildCallData(calls []Call) ([]byte, error) {
@@ -312,7 +301,7 @@ func (c *backend) buildCallData(calls []Call) ([]byte, error) {
 	}
 }
 
-// handleCallSimpleAccount packs calldata for SimpleAccount smart wallet.
+// handleCallSimpleAccount packs CallData for SimpleAccount smart wallet.
 func handleCallSimpleAccount(calls []Call) ([]byte, error) {
 	parsedABI, err := abi.JSON(strings.NewReader(simple_account.SimpleAccountMetaData.ABI))
 	if err != nil {
@@ -326,7 +315,7 @@ func handleCallSimpleAccount(calls []Call) ([]byte, error) {
 		calldatas = append(calldatas, call.CallData)
 	}
 
-	// pack the data for the `executeBatch` smart account function
+	// Pack the data for the `executeBatch` smart account function.
 	// Biconomy v2.0: https://github.com/bcnmy/scw-contracts/blob/v2-deployments/contracts/smart-account/SmartAccount.sol#L128
 	// NOTE: you can NOT send native token with SimpleAccount v0.6.0 because of `executeBatch` signature
 	data, err := parsedABI.Pack("executeBatch", addresses, calldatas)
@@ -414,77 +403,68 @@ func waitForUserOpEvent(
 				continue
 			}
 
-			// keccak256("UserOperationEvent(bytes32,address,address,uint256,bool,uint256,uint256)")
-			userOpEventID := common.HexToHash("0x49628fd1471006c1482da88028e9ce4dbb080b815c9b0344d39e5a8e6ec1419f")
-
-			// There are several events where userOpHash is used as a topic
-			// Namely, UserOperationEvent, AccountDeployed and UserOperationRevertReason
-			// see https://github.com/eth-infinitism/account-abstraction/blob/v0.6.0/contracts/interfaces/IEntryPoint.sol#L19-L47
-			userOpEventLog := filterLogsByEventID(logs, userOpEventID)
-			if userOpEventLog == nil {
-				continue
-			}
-
-			topics := userOpEventLog.Topics
-			sender := common.BytesToAddress(topics[2].Bytes())
-			data := userOpEventLog.Data
-
-			userOpReceipt := Receipt{
-				UserOpHash: userOpHash,
-				TxHash:     userOpEventLog.TxHash,
-				Sender:     sender,
-			}
-
-			// Decode the ABI-encoded message
-			unpackedUserOpParams, err := userOpEvents.Unpack("UserOperationEvent", data)
+			receipt, err := processLogs(logs, userOpHash, userOpEvents)
 			if err != nil {
-				slog.Error("Error decoding UserOperationEvent params:", err)
 				return
 			}
-
-			if len(unpackedUserOpParams) == 4 {
-				slog.Debug("parsed userOperationEvent logs", "data", hexutil.Encode(data), "parsedParams", unpackedUserOpParams)
-
-				userOpReceipt.Nonce = decimal.NewFromBigInt(unpackedUserOpParams[0].(*big.Int), 0)
-				userOpReceipt.Success = unpackedUserOpParams[1].(bool)
-				userOpReceipt.ActualGasCost = decimal.NewFromBigInt(
-					unpackedUserOpParams[2].(*big.Int),
-					0,
-				)
-				userOpReceipt.ActualGasUsed = decimal.NewFromBigInt(
-					unpackedUserOpParams[3].(*big.Int),
-					0,
-				)
-			} else {
-				slog.Warn("unexpected number of unpackedUserOpParams", "unpackedUserOpParams", unpackedUserOpParams)
+			if receipt != nil {
+				done <- *receipt
+				return
 			}
-
-			if !userOpReceipt.Success {
-				// try fetching revert reason
-				// keccak256("UserOperationRevertReason(bytes32,address,uint256,bytes)")
-				userOpRevertReasonID := common.HexToHash("0x1c4fada7374c0a9ee8841fc38afe82932dc0f8e69012e927f061a8bae611a201")
-				userOpRevertReasonLog := filterLogsByEventID(logs, userOpRevertReasonID)
-
-				if userOpRevertReasonLog != nil {
-					unpackedRevertReasonParams, err := userOpEvents.Unpack("UserOperationRevertReason", userOpRevertReasonLog.Data)
-					if err != nil {
-						slog.Error("Error decoding UserOperationRevertReason params:", err)
-						return
-					}
-
-					if len(unpackedRevertReasonParams) == 2 {
-						slog.Debug("parsed userOperationRevertReason logs", "data", hexutil.Encode(userOpRevertReasonLog.Data), "parsedParams", unpackedRevertReasonParams)
-						userOpReceipt.RevertData = unpackedRevertReasonParams[1].([]byte)
-					} else {
-						slog.Warn("unexpected number of unpackedRevertReasonParams", "unpackedRevertReasonParams", unpackedRevertReasonParams)
-					}
-				}
-			}
-
-			done <- userOpReceipt
-			return
 		}
 	}
+}
+
+func processLogs(logs []types.Log, userOpHash common.Hash, userOpEvents abi.ABI) (*Receipt, error) {
+	// There are several events where userOpHash is used as a topic
+	// Namely, UserOperationEvent, AccountDeployed and UserOperationRevertReason
+	// see https://github.com/eth-infinitism/account-abstraction/blob/v0.6.0/contracts/interfaces/IEntryPoint.sol#L19-L47
+	userOpEventLog := filterLogsByEventID(logs, userOpEventID)
+	if userOpEventLog == nil {
+		return nil, nil
+	}
+
+	// Decode the ABI-encoded message
+	unpackedUserOpParams, err := userOpEvents.Unpack("UserOperationEvent", userOpEventLog.Data)
+	if err != nil {
+		slog.Error("Error decoding UserOperationEvent params:", err)
+		return nil, err
+	}
+
+	receipt := Receipt{
+		UserOpHash: userOpHash,
+		TxHash:     userOpEventLog.TxHash,
+		Sender:     common.BytesToAddress(userOpEventLog.Topics[2].Bytes()),
+	}
+
+	if len(unpackedUserOpParams) == 4 {
+		slog.Debug("parsed userOperationEvent logs", "data", hexutil.Encode(userOpEventLog.Data), "parsedParams", unpackedUserOpParams)
+		receipt.Nonce = decimal.NewFromBigInt(unpackedUserOpParams[0].(*big.Int), 0)
+		receipt.Success = unpackedUserOpParams[1].(bool)
+		receipt.ActualGasCost = decimal.NewFromBigInt(unpackedUserOpParams[2].(*big.Int), 0)
+		receipt.ActualGasUsed = decimal.NewFromBigInt(unpackedUserOpParams[3].(*big.Int), 0)
+	} else {
+		slog.Warn("unexpected number of unpackedUserOpParams", "unpackedUserOpParams", unpackedUserOpParams)
+	}
+
+	if !receipt.Success { // Try to fetch revert reason.
+		if userOpRevertReasonLog := filterLogsByEventID(logs, userOpRevertReasonID); userOpRevertReasonLog != nil {
+			unpackedRevertReasonParams, err := userOpEvents.Unpack("UserOperationRevertReason", userOpRevertReasonLog.Data)
+			if err != nil {
+				slog.Error("Error decoding UserOperationRevertReason params:", err)
+				return nil, err
+			}
+
+			if len(unpackedRevertReasonParams) == 2 {
+				slog.Debug("parsed userOperationRevertReason logs", "data", hexutil.Encode(userOpRevertReasonLog.Data), "parsedParams", unpackedRevertReasonParams)
+				receipt.RevertData = unpackedRevertReasonParams[1].([]byte)
+			} else {
+				slog.Warn("unexpected number of unpackedRevertReasonParams", "unpackedRevertReasonParams", unpackedRevertReasonParams)
+			}
+		}
+	}
+
+	return &receipt, nil
 }
 
 // Return only one log for simplicity, although several logs

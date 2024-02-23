@@ -23,7 +23,7 @@ type rpcBackendImpl struct {
 
 func NewRPCBackend(rpcURL url.URL) (RPCBackend, error) {
 	if rpcURL.Scheme != "http" && rpcURL.Scheme != "https" && rpcURL.Scheme != "ws" && rpcURL.Scheme != "wss" {
-		return nil, fmt.Errorf("RPC uURL must be an HTTP or WS url")
+		return nil, fmt.Errorf("RPC URL must be an HTTP or WS url")
 	}
 
 	client, err := rpc.Dial(rpcURL.String())
@@ -53,8 +53,8 @@ type ethBackendImpl struct {
 }
 
 func NewEthBackend(rpcURL url.URL) (EthBackend, error) {
-	if rpcURL.Scheme != "ws" && rpcURL.Scheme != "wss" {
-		return nil, fmt.Errorf("RPC URL must be a WS url")
+	if rpcURL.Scheme != "http" && rpcURL.Scheme != "https" && rpcURL.Scheme != "ws" && rpcURL.Scheme != "wss" {
+		return nil, fmt.Errorf("RPC URL must be an HTTP or WS url")
 	}
 
 	client, err := ethclient.Dial(rpcURL.String())
