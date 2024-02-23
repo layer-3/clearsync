@@ -1,7 +1,6 @@
 package userop
 
 import (
-	"fmt"
 	"math/big"
 	"math/rand"
 	"net/url"
@@ -12,22 +11,20 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// NOTE: this is a public endpoint, which can suffer from rate limiting and deprecation.
-var defaultProviderURL = getEnvOrDefault("PROVIDER_URL", "https://sepolia.gateway.tenderly.co")
-
-func getEnvOrDefault(env, def string) string {
-	val := os.Getenv(env)
-	if val == "" {
-		return def
+func defaultProviderURL() string {
+	if value := os.Getenv("PROVIDER_URL"); value != "" {
+		return value
 	}
-	return val
+
+	// NOTE: this is a public endpoint, which can suffer from rate limiting and deprecation.
+	return "https://sepolia.gateway.tenderly.co"
 }
 
 func randomAddress() common.Address {
 	return common.BigToAddress(big.NewInt(rand.Int63()))
 }
 
-func mockedConfig() ClientConfig {
+func mockConfig() ClientConfig {
 	config := ClientConfig{
 		ProviderURL: *must(url.Parse("http://127.0.0.1:42424")),
 		BundlerURL:  *must(url.Parse("http://127.0.0.1:42424")),
@@ -44,11 +41,10 @@ func mockedConfig() ClientConfig {
 	}
 
 	config.Gas.Init()
-
 	return config
 }
 
-func bundlerMockedClient(t *testing.T, providerURL string) Client {
+func bundlerMock(t *testing.T, providerURL string) Client {
 	config := ClientConfig{
 		ProviderURL: *must(url.Parse(providerURL)),
 		BundlerURL:  *must(url.Parse("http://127.0.0.1:42424")),
@@ -70,11 +66,4 @@ func bundlerMockedClient(t *testing.T, providerURL string) Client {
 	require.NoError(t, err)
 
 	return client
-}
-
-func must[T any](x T, err error) T {
-	if err != nil {
-		panic(fmt.Errorf("failed to parse private key: %w", err))
-	}
-	return x
 }

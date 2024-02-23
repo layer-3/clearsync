@@ -26,7 +26,7 @@ func (conf *ClientConfig) Init() {
 	conf.SmartWallet.Init()
 }
 
-func (conf ClientConfig) validateAddresses() error {
+func (conf ClientConfig) validate() error {
 	if conf.EntryPoint == (common.Address{}) {
 		return ErrInvalidEntryPointAddress
 	}
@@ -50,7 +50,6 @@ func (conf ClientConfig) validateAddresses() error {
 	}
 
 	return nil
-
 }
 
 // GasConfig represents the configuration for the userop transaction gas fees.
@@ -192,28 +191,16 @@ type BiconomySmartAccountInfo struct {
 
 // NewClientConfigFromFile reads the
 // client configuration from a file.
-func NewClientConfigFromFile(path string) (ClientConfig, error) {
-	var config ClientConfig
+func NewClientConfigFromFile(path string) (config ClientConfig, err error) {
 	config.Init()
-
-	if err := cleanenv.ReadConfig(path, &config); err != nil {
-		return config, err
-	}
-
-	return config, nil
+	return config, cleanenv.ReadConfig(path, &config)
 }
 
 // NewClientConfigFromEnv reads the client
 // configuration from environment variables.
-func NewClientConfigFromEnv() (ClientConfig, error) {
-	var config ClientConfig
+func NewClientConfigFromEnv() (config ClientConfig, err error) {
 	config.Init()
-
-	if err := cleanenv.ReadEnv(&config); err != nil {
-		return config, err
-	}
-
-	return config, nil
+	return config, cleanenv.ReadEnv(&config)
 }
 
 // Signer represents a handler that signs a user operation.

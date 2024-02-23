@@ -17,31 +17,6 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-var (
-	address, _ = abi.NewType("address", "", nil)
-	uint256, _ = abi.NewType("uint256", "", nil)
-	bytes32, _ = abi.NewType("bytes32", "", nil)
-	bytes, _   = abi.NewType("bytes", "", nil)
-
-	// userOpPrimitives is the primitive ABI types for each UserOperation field.
-	userOpPrimitives = []abi.ArgumentMarshaling{
-		{Name: "sender", InternalType: "Sender", Type: "address"},
-		{Name: "nonce", InternalType: "Nonce", Type: "uint256"},
-		{Name: "initCode", InternalType: "InitCode", Type: "bytes"},
-		{Name: "callData", InternalType: "CallData", Type: "bytes"},
-		{Name: "callGasLimit", InternalType: "CallGasLimit", Type: "uint256"},
-		{Name: "verificationGasLimit", InternalType: "VerificationGasLimit", Type: "uint256"},
-		{Name: "preVerificationGas", InternalType: "PreVerificationGas", Type: "uint256"},
-		{Name: "maxFeePerGas", InternalType: "MaxFeePerGas", Type: "uint256"},
-		{Name: "maxPriorityFeePerGas", InternalType: "MaxPriorityFeePerGas", Type: "uint256"},
-		{Name: "paymasterAndData", InternalType: "PaymasterAndData", Type: "bytes"},
-		{Name: "signature", InternalType: "Signature", Type: "bytes"},
-	}
-
-	// userOpType is the ABI type of UserOperation.
-	userOpType, _ = abi.NewType("tuple", "op", userOpPrimitives)
-)
-
 // UserOperation represents an EIP-4337 style transaction for a smart contract account.
 type UserOperation struct {
 	Sender               common.Address  `json:"sender"`
@@ -75,42 +50,6 @@ func (op *UserOperation) GetFactoryData() []byte {
 	}
 
 	return op.InitCode[common.AddressLength:]
-}
-
-// Pack returns a standard message of the userOp. This cannot be used to generate a userOpHash.
-func (op *UserOperation) Pack() []byte {
-	args := abi.Arguments{
-		{Name: "UserOp", Type: userOpType},
-	}
-	packed, _ := args.Pack(&struct {
-		Sender               common.Address
-		Nonce                *big.Int
-		InitCode             []byte
-		CallData             []byte
-		CallGasLimit         *big.Int
-		VerificationGasLimit *big.Int
-		PreVerificationGas   *big.Int
-		MaxFeePerGas         *big.Int
-		MaxPriorityFeePerGas *big.Int
-		PaymasterAndData     []byte
-		Signature            []byte
-	}{
-		op.Sender,
-		op.Nonce.BigInt(),
-		op.InitCode,
-		op.CallData,
-		op.CallGasLimit.BigInt(),
-		op.VerificationGasLimit.BigInt(),
-		op.PreVerificationGas.BigInt(),
-		op.MaxFeePerGas.BigInt(),
-		op.MaxPriorityFeePerGas.BigInt(),
-		op.PaymasterAndData,
-		op.Signature,
-	})
-
-	enc := hexutil.Encode(packed)
-	enc = "0x" + enc[66:]
-	return hexutil.MustDecode(enc)
 }
 
 // UserOpHash returns the hash of the userOp + entryPoint address + chainID.
@@ -157,7 +96,7 @@ func (op UserOperation) MarshalJSON() ([]byte, error) {
 		ic = fmt.Sprintf("%s%s", fa, common.Bytes2Hex(op.GetFactoryData()))
 	}
 
-	res, err := json.Marshal(&struct {
+	return json.Marshal(&struct {
 		Sender               string `json:"sender"`
 		Nonce                string `json:"nonce"`
 		InitCode             string `json:"initCode"`
@@ -182,8 +121,6 @@ func (op UserOperation) MarshalJSON() ([]byte, error) {
 		PaymasterAndData:     hexutil.Encode(op.PaymasterAndData),
 		Signature:            hexutil.Encode(op.Signature),
 	})
-
-	return res, err
 }
 
 // SignWithECDSA signs the hash with the given private key using the ECDSA algorithm.

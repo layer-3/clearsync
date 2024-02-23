@@ -15,7 +15,7 @@ func TestClientNewUserOp(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Error when no wallet deployed and no wallet deployment opts", func(t *testing.T) {
-		client := bundlerMockedClient(t, defaultProviderURL)
+		client := bundlerMock(t, defaultProviderURL())
 		ctx := context.Background()
 
 		// create random owner so that no wallet is deployed
@@ -41,7 +41,7 @@ func TestClientNewUserOp(t *testing.T) {
 	})
 
 	t.Run("Error when no wallet deployed and owner is zero in wallet deployment opts", func(t *testing.T) {
-		client := bundlerMockedClient(t, defaultProviderURL)
+		client := bundlerMock(t, defaultProviderURL())
 		ctx := context.Background()
 
 		// create random owner so that no wallet is deployed
@@ -70,7 +70,7 @@ func TestNewClient(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Error when entrypoint address is empty", func(t *testing.T) {
-		conf := mockedConfig()
+		conf := mockConfig()
 		conf.EntryPoint = common.Address{}
 
 		_, err := NewClient(conf)
@@ -79,7 +79,7 @@ func TestNewClient(t *testing.T) {
 	})
 
 	t.Run("Error when factory address is empty", func(t *testing.T) {
-		conf := mockedConfig()
+		conf := mockConfig()
 		conf.SmartWallet.Factory = common.Address{}
 
 		_, err := NewClient(conf)
@@ -88,7 +88,7 @@ func TestNewClient(t *testing.T) {
 	})
 
 	t.Run("Error when logic address is empty", func(t *testing.T) {
-		conf := mockedConfig()
+		conf := mockConfig()
 		conf.SmartWallet.Logic = common.Address{}
 
 		_, err := NewClient(conf)
@@ -97,7 +97,7 @@ func TestNewClient(t *testing.T) {
 	})
 
 	t.Run("Error when ECDSA validator address is empty", func(t *testing.T) {
-		conf := mockedConfig()
+		conf := mockConfig()
 		conf.SmartWallet.ECDSAValidator = common.Address{}
 
 		_, err := NewClient(conf)
@@ -106,7 +106,7 @@ func TestNewClient(t *testing.T) {
 	})
 
 	t.Run("Error when paymaster address is empty", func(t *testing.T) {
-		conf := mockedConfig()
+		conf := mockConfig()
 		conf.Paymaster.Type = &PaymasterPimlicoERC20
 		conf.Paymaster.Address = common.Address{}
 
@@ -116,8 +116,8 @@ func TestNewClient(t *testing.T) {
 	})
 
 	t.Run("Paymaster address can be empty if no paymaster config", func(t *testing.T) {
-		conf := mockedConfig()
-		conf.ProviderURL = *must(url.Parse(defaultProviderURL))
+		conf := mockConfig()
+		conf.ProviderURL = *must(url.Parse(defaultProviderURL()))
 		conf.Paymaster = PaymasterConfig{}
 
 		_, err := NewClient(conf)
@@ -126,8 +126,8 @@ func TestNewClient(t *testing.T) {
 	})
 
 	t.Run("Paymaster address can be empty if paymaster is disabled", func(t *testing.T) {
-		conf := mockedConfig()
-		conf.ProviderURL = *must(url.Parse(defaultProviderURL))
+		conf := mockConfig()
+		conf.ProviderURL = *must(url.Parse(defaultProviderURL()))
 		conf.Paymaster.Type = &PaymasterDisabled
 
 		_, err := NewClient(conf)

@@ -1,8 +1,31 @@
 package userop
 
-import "github.com/ethereum/go-ethereum/common"
+import (
+	"strings"
+
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/layer-3/clearsync/pkg/abi/entry_point"
+	"github.com/layer-3/clearsync/pkg/abi/simple_account"
+)
+
+func must[T any](x T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return x
+}
 
 var (
+	address = must(abi.NewType("address", "", nil))
+	uint256 = must(abi.NewType("uint256", "", nil))
+	bytes32 = must(abi.NewType("bytes32", "", nil))
+	bytes   = must(abi.NewType("bytes", "", nil))
+
+	simpleAccountABI = must(abi.JSON(strings.NewReader(simple_account.SimpleAccountMetaData.ABI)))
+	entryPointABI    = must(abi.JSON(strings.NewReader(entry_point.EntryPointMetaData.ABI)))
+
 	// keccak256("UserOperationEvent(bytes32,address,address,uint256,bool,uint256, uint256)")
 	userOpEventID = common.HexToHash("0x49628fd1471006c1482da88028e9ce4dbb080b815c9b0344d39e5a8e6ec1419f")
 	// keccak256("UserOperationRevertReason(bytes32,address,uint256,bytes)")
@@ -10,7 +33,7 @@ var (
 )
 
 // ABI with UserOp events from EntryPoint contract.
-const entrypointUserOpEventsABI = `[
+var entryPointUserOpEventsABI = must(abi.JSON(strings.NewReader(`[
   {
     "anonymous": false,
     "inputs": [
@@ -122,10 +145,10 @@ const entrypointUserOpEventsABI = `[
     "name": "UserOperationRevertReason",
     "type": "event"
   }
-]`
+]`)))
 
 // kernelExecuteABI is used to execute a transaction on Zerodev Kernel smart account.
-const kernelExecuteABI = `[
+var kernelExecuteABI = must(abi.JSON(strings.NewReader(`[
   {
     "inputs": [
       {
@@ -182,10 +205,10 @@ const kernelExecuteABI = `[
     "stateMutability": "payable",
     "type": "function"
   }
-]`
+]`)))
 
 // kernelDeployWalletABI is used to deploy a new smart account on Zerodev Kernel.
-const kernelDeployWalletABI = `[{
+var kernelDeployWalletABI = must(abi.JSON(strings.NewReader(`[{
   "inputs":[
     {
       "internalType":"address",
@@ -213,10 +236,10 @@ const kernelDeployWalletABI = `[{
   ],
   "stateMutability":"payable",
   "type":"function"
-}]`
+}]`)))
 
 // kernelInitABI is the init ABI, used to initialise Zerodev Kernel smart account.
-const kernelInitABI = `[{
+var kernelInitABI = must(abi.JSON(strings.NewReader(`[{
   "inputs": [
     {
       "internalType": "contract IKernelValidator",
@@ -233,10 +256,10 @@ const kernelInitABI = `[{
   "outputs": [],
   "stateMutability": "payable",
   "type": "function"
-}]`
+}]`)))
 
 // biconomyDeployWalletABI is used to deploy a new smart account on Biconomy.
-const biconomyDeployWalletABI = `[{
+var biconomyDeployWalletABI = must(abi.JSON(strings.NewReader(`[{
   "inputs": [
     {
       "internalType": "address",
@@ -262,10 +285,10 @@ const biconomyDeployWalletABI = `[{
   }],
   "stateMutability": "nonpayable",
   "type": "function"
-}]`
+}]`)))
 
 // biconomyInitABI is the init ABI, used to initialise Biconomy smart account.
-const biconomyInitABI = `[
+var biconomyInitABI = must(abi.JSON(strings.NewReader(`[
   {
     "inputs": [
       {
@@ -308,4 +331,4 @@ const biconomyInitABI = `[
     "stateMutability": "nonpayable",
     "type": "function"
   },
-]`
+]`)))
