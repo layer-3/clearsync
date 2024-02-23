@@ -20,10 +20,10 @@ type ClientConfig struct {
 	Paymaster   PaymasterConfig   `yaml:"paymaster" env-prefix:"USEROP_CLIENT_PAYMASTER_CONFIG_"`
 }
 
-func (c *ClientConfig) Init() {
-	c.Gas.Init()
-	c.Paymaster.Init()
-	c.SmartWallet.Init()
+func (conf *ClientConfig) Init() {
+	conf.Gas.Init()
+	conf.Paymaster.Init()
+	conf.SmartWallet.Init()
 }
 
 func (conf ClientConfig) validateAddresses() error {
