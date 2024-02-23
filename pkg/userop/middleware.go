@@ -6,9 +6,7 @@ import (
 	"log/slog"
 	"math/big"
 	"strconv"
-	"strings"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/shopspring/decimal"
@@ -99,27 +97,17 @@ func getInitCode(provider EthBackend, smartWalletConfig SmartWalletConfig) (midd
 // for a Zerodev Kernel smart account. The init code deploys
 // a smart account if it is not already deployed.
 func getKernelInitCode(factory common.Address, accountLogic common.Address, ecdsaValidator common.Address) smartWalletInitCodeGenerator {
-	initABI, err := abi.JSON(strings.NewReader(kernelInitABI))
-	if err != nil {
-		panic(err)
-	}
-
-	createAccountABI, err := abi.JSON(strings.NewReader(kernelDeployWalletABI))
-	if err != nil {
-		panic(err)
-	}
-
 	return func(_ UserOperation, owner common.Address, index decimal.Decimal) ([]byte, error) {
 		// Initialize Kernel Smart Account with default validation module and its calldata
 		// see https://github.com/zerodevapp/kernel/blob/807b75a4da6fea6311a3573bc8b8964a34074d94/src/abstract/KernelStorage.sol#L35
-		initData, err := initABI.Pack("initialize", ecdsaValidator, owner.Bytes())
+		initData, err := kernelInitABI.Pack("initialize", ecdsaValidator, owner.Bytes())
 		if err != nil {
 			panic(fmt.Errorf("failed to pack init data: %w", err))
 		}
 
 		// Deploy Kernel Smart Account by calling `factory.createAccount`
 		// see https://github.com/zerodevapp/kernel/blob/807b75a4da6fea6311a3573bc8b8964a34074d94/src/factory/KernelFactory.sol#L25
-		callData, err := createAccountABI.Pack("createAccount", accountLogic, initData, index.BigInt())
+		callData, err := kernelDeployWalletABI.Pack("createAccount", accountLogic, initData, index.BigInt())
 		if err != nil {
 			panic(fmt.Errorf("failed to pack createAccount data: %w", err))
 		}
@@ -140,27 +128,17 @@ func getKernelInitCode(factory common.Address, accountLogic common.Address, ecds
 // The init code deploys a smart account if it is not already deployed.
 // NOTE: this was NOT tested. User at your own risk or wait for the lib to be updated.
 func getBiconomyInitCode(factory, ecdsaValidator common.Address) smartWalletInitCodeGenerator {
-	initABI, err := abi.JSON(strings.NewReader(biconomyInitABI))
-	if err != nil {
-		panic(err)
-	}
-
-	createAccountABI, err := abi.JSON(strings.NewReader(biconomyDeployWalletABI))
-	if err != nil {
-		panic(err)
-	}
-
 	return func(_ UserOperation, owner common.Address, index decimal.Decimal) ([]byte, error) {
 		// Initialize SCW validation module with owner address
 		// see https://github.com/bcnmy/scw-contracts/blob/v2-deployments/contracts/smart-account/modules/EcdsaOwnershipRegistryModule.sol#L43
-		ecdsaOwnershipInitData, err := initABI.Pack("initForSmartAccount", owner.Bytes())
+		ecdsaOwnershipInitData, err := biconomyInitABI.Pack("initForSmartAccount", owner.Bytes())
 		if err != nil {
 			panic(fmt.Errorf("failed to pack init data: %w", err))
 		}
 
 		// Deploy Biconomy SCW by calling `factory.createAccount`
 		// see https://github.com/bcnmy/scw-contracts/blob/v2-deployments/contracts/smart-account/factory/SmartAccountFactory.sol#L112
-		callData, err := createAccountABI.Pack("createAccount", ecdsaValidator, ecdsaOwnershipInitData, index.BigInt())
+		callData, err := biconomyDeployWalletABI.Pack("createAccount", ecdsaValidator, ecdsaOwnershipInitData, index.BigInt())
 		if err != nil {
 			panic(fmt.Errorf("failed to pack createAccount data: %w", err))
 		}
