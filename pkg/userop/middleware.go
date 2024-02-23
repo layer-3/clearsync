@@ -48,7 +48,7 @@ func getNonce(entryPoint *entry_point.EntryPoint) middleware {
 
 type smartWalletInitCodeGenerator func(op UserOperation, owner common.Address, index decimal.Decimal) ([]byte, error)
 
-func getInitCode(providerRPC EthBackend, smartWalletConfig SmartWalletConfig) (middleware, error) {
+func getInitCode(provider EthBackend, smartWalletConfig SmartWalletConfig) (middleware, error) {
 	var getInitCode smartWalletInitCodeGenerator
 	switch typ := *smartWalletConfig.Type; typ {
 	case SmartWalletSimpleAccount:
@@ -66,7 +66,7 @@ func getInitCode(providerRPC EthBackend, smartWalletConfig SmartWalletConfig) (m
 		var err error
 
 		// check if smart account is already deployed
-		isDeployed, err := isAccountDeployed(providerRPC, op.Sender)
+		isDeployed, err := isAccountDeployed(provider, op.Sender)
 		if err != nil {
 			return fmt.Errorf("failed to check if smart account is already deployed: %w", err)
 		}
@@ -109,7 +109,7 @@ func getKernelInitCode(factory common.Address, accountLogic common.Address, ecds
 		panic(err)
 	}
 
-	return func(op UserOperation, owner common.Address, index decimal.Decimal) ([]byte, error) {
+	return func(_ UserOperation, owner common.Address, index decimal.Decimal) ([]byte, error) {
 		// Initialize Kernel Smart Account with default validation module and its calldata
 		// see https://github.com/zerodevapp/kernel/blob/807b75a4da6fea6311a3573bc8b8964a34074d94/src/abstract/KernelStorage.sol#L35
 		initData, err := initABI.Pack("initialize", ecdsaValidator, owner.Bytes())
@@ -150,7 +150,7 @@ func getBiconomyInitCode(factory, ecdsaValidator common.Address) smartWalletInit
 		panic(err)
 	}
 
-	return func(op UserOperation, owner common.Address, index decimal.Decimal) ([]byte, error) {
+	return func(_ UserOperation, owner common.Address, index decimal.Decimal) ([]byte, error) {
 		// Initialize SCW validation module with owner address
 		// see https://github.com/bcnmy/scw-contracts/blob/v2-deployments/contracts/smart-account/modules/EcdsaOwnershipRegistryModule.sol#L43
 		ecdsaOwnershipInitData, err := initABI.Pack("initForSmartAccount", owner.Bytes())
@@ -177,23 +177,20 @@ func getBiconomyInitCode(factory, ecdsaValidator common.Address) smartWalletInit
 	}
 }
 
-func getGasPrice(providerRPC EthBackend, gasConfig GasConfig) middleware {
+func getGasPrice(provider EthBackend, gasConfig GasConfig) middleware {
+	maxBlockGas := decimal.NewFromInt(maxBlockGas)
 	return func(ctx context.Context, op *UserOperation) error {
 		slog.Debug("getting gas price")
 
 		// Get the latest block to read its base fee
-		block, err := providerRPC.BlockByNumber(ctx, nil)
+		block, err := provider.BlockByNumber(ctx, nil)
 		if err != nil {
 			return err
 		}
 		blockBaseFee := block.BaseFee()
 
 		var maxPriorityFeePerGasStr string
-		if err := providerRPC.RPC().CallContext(
-			ctx,
-			&maxPriorityFeePerGasStr,
-			"eth_maxPriorityFeePerGas",
-		); err != nil {
+		if err := provider.RPC().CallContext(ctx, &maxPriorityFeePerGasStr, "eth_maxPriorityFeePerGas"); err != nil {
 			return err
 		}
 
@@ -214,8 +211,6 @@ func getGasPrice(providerRPC EthBackend, gasConfig GasConfig) middleware {
 
 		op.MaxFeePerGas = decimal.NewFromBigInt(maxFeePerGas, 0)
 		op.MaxPriorityFeePerGas = decimal.NewFromBigInt(maxPriorityFeePerGas, 0)
-
-		maxBlockGas := decimal.NewFromInt(maxBlockGas)
 		op.CallGasLimit = maxBlockGas
 		op.VerificationGasLimit = maxBlockGas
 		op.PreVerificationGas = maxBlockGas
@@ -225,7 +220,7 @@ func getGasPrice(providerRPC EthBackend, gasConfig GasConfig) middleware {
 }
 
 func getBiconomyPaymasterAndData(
-	bundlerRPC RPCBackend,
+	bundler RPCBackend,
 	paymasterCtx map[string]any,
 	entryPoint common.Address,
 ) middleware {
@@ -259,14 +254,7 @@ func getBiconomyPaymasterAndData(
 		// Biconomy-standardized gas estimation with paymaster
 		// see https://docs.biconomy.io/Paymaster/api/sponsor-useroperation#sponsorship-paymaster
 		var est gasEstimate
-		if err := bundlerRPC.CallContext(
-			ctx,
-			&est,
-			"pm_sponsorUserOperation",
-			opModified,
-			entryPoint,
-			paymasterCtx,
-		); err != nil {
+		if err := bundler.CallContext(ctx, &est, "pm_sponsorUserOperation", opModified, entryPoint, paymasterCtx); err != nil {
 			return fmt.Errorf("failed to call pm_sponsorUserOperation: %w", err)
 		}
 
@@ -317,7 +305,7 @@ func getGasEstimation(bundler RPCBackend, config ClientConfig) (middleware, erro
 	return estimateGas, nil
 }
 
-func estimateUserOperationGas(bundlerRPC RPCBackend, entryPoint common.Address) middleware {
+func estimateUserOperationGas(bundler RPCBackend, entryPoint common.Address) middleware {
 	// The gas estimate is increased by 10_000 to account for
 	// a rare yet hard to debug bundler gas estimation inaccuracy.
 	// It is NOT a random value, see how it works in the original Alto code:
@@ -329,7 +317,7 @@ func estimateUserOperationGas(bundlerRPC RPCBackend, entryPoint common.Address) 
 
 		// ERC4337-standardized gas estimation
 		var est gasEstimate
-		if err := bundlerRPC.CallContext(
+		if err := bundler.CallContext(
 			ctx,
 			&est,
 			"eth_estimateUserOperationGas",
@@ -353,13 +341,13 @@ func estimateUserOperationGas(bundlerRPC RPCBackend, entryPoint common.Address) 
 }
 
 func getPimlicoERC20PaymasterData(
-	bundlerRPC RPCBackend,
+	bundler RPCBackend,
 	entryPoint common.Address,
 	paymaster common.Address,
 	verificationGasOverhead decimal.Decimal,
 ) middleware {
 	return func(ctx context.Context, op *UserOperation) error {
-		estimate := estimateUserOperationGas(bundlerRPC, entryPoint)
+		estimate := estimateUserOperationGas(bundler, entryPoint)
 		if err := estimate(ctx, op); err != nil {
 			return err
 		}
