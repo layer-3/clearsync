@@ -14,7 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/shopspring/decimal"
 
@@ -22,8 +21,8 @@ import (
 	"github.com/layer-3/clearsync/pkg/abi/simple_account"
 )
 
-// UserOperationClient represents a client for creating and posting user operations.
-type UserOperationClient interface {
+// Client represents a client for creating and posting user operations.
+type Client interface {
 	IsAccountDeployed(ctx context.Context, owner common.Address, index decimal.Decimal) (bool, error)
 	GetAccountAddress(ctx context.Context, owner common.Address, index decimal.Decimal) (common.Address, error)
 	NewUserOp(
@@ -53,11 +52,11 @@ type WalletDeploymentOpts struct {
 	Index decimal.Decimal
 }
 
-// client represents a user operation client.
-type client struct {
-	providerRPC *ethclient.Client
-	bundlerRPC  *rpc.Client
-	chainID     *big.Int
+// backend represents a user operation client.
+type backend struct {
+	provider EthBackend
+	bundler  RpcBackend
+	chainID  *big.Int
 
 	smartWallet SmartWalletConfig
 	entryPoint  common.Address
@@ -78,13 +77,13 @@ type Receipt struct {
 
 // NewClient is a factory that builds a new
 // user operation client based on the provided configuration.
-func NewClient(config ClientConfig) (UserOperationClient, error) {
+func NewClient(config ClientConfig) (Client, error) {
 	err := config.validateAddresses()
 	if err != nil {
 		return nil, fmt.Errorf("failed to validate config: %w", err)
 	}
 
-	providerRPC, err := ethclient.Dial(config.ProviderURL.String())
+	providerRPC, err := NewEthBackend(config.ProviderURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to the blockchain RPC: %w", err)
 	}
@@ -95,7 +94,7 @@ func NewClient(config ClientConfig) (UserOperationClient, error) {
 	}
 	slog.Debug("fetched chain ID", "chainID", chainID.String())
 
-	bundlerRPC, err := rpc.Dial(config.BundlerURL.String())
+	bundlerRPC, err := NewRpcBackend(config.BundlerURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to the bundler RPC: %w", err)
 	}
@@ -133,9 +132,9 @@ func NewClient(config ClientConfig) (UserOperationClient, error) {
 		return nil, fmt.Errorf("failed to build initCode middleware: %w", err)
 	}
 
-	return &client{
-		providerRPC: providerRPC,
-		bundlerRPC:  bundlerRPC,
+	return &backend{
+		provider:    providerRPC,
+		bundler:     bundlerRPC,
 		chainID:     chainID,
 		smartWallet: config.SmartWallet,
 		entryPoint:  config.EntryPoint,
@@ -151,17 +150,17 @@ func NewClient(config ClientConfig) (UserOperationClient, error) {
 	}, nil
 }
 
-func (c *client) IsAccountDeployed(ctx context.Context, owner common.Address, index decimal.Decimal) (bool, error) {
-	swAddress, err := c.GetAccountAddress(ctx, owner, index)
+func (c *backend) IsAccountDeployed(ctx context.Context, owner common.Address, index decimal.Decimal) (bool, error) {
+	accountAddress, err := c.GetAccountAddress(ctx, owner, index)
 	if err != nil {
 		return false, fmt.Errorf("failed to get account address: %w", err)
 	}
 
-	return isAccountDeployed(c.providerRPC, swAddress)
+	return isAccountDeployed(c.provider, accountAddress)
 }
 
-func (c *client) GetAccountAddress(ctx context.Context, owner common.Address, index decimal.Decimal) (common.Address, error) {
-	getInitCode, err := getInitCode(c.providerRPC, c.smartWallet)
+func (c *backend) GetAccountAddress(ctx context.Context, owner common.Address, index decimal.Decimal) (common.Address, error) {
+	getInitCode, err := getInitCode(c.provider, c.smartWallet)
 	if err != nil {
 		return common.Address{}, fmt.Errorf("failed to build initCode middleware: %w", err)
 	}
@@ -194,7 +193,7 @@ func (c *client) GetAccountAddress(ctx context.Context, owner common.Address, in
 		Data: getSenderAddressData,
 	}
 
-	_, err = c.providerRPC.CallContract(ctx, msg, nil)
+	_, err = c.provider.CallContract(ctx, msg, nil)
 	if err == nil {
 		panic(fmt.Errorf("'getSenderAddress' call returned no error, but expected one"))
 	}
@@ -225,7 +224,7 @@ func (c *client) GetAccountAddress(ctx context.Context, owner common.Address, in
 }
 
 // NewUserOp builds and fills in a new UserOperation.
-func (c *client) NewUserOp(
+func (c *backend) NewUserOp(
 	ctx context.Context,
 	smartWallet common.Address,
 	signer Signer,
@@ -234,7 +233,7 @@ func (c *client) NewUserOp(
 ) (UserOperation, error) {
 	slog.Debug("apply middlewares to user operation")
 
-	isDeployed, err := isAccountDeployed(c.providerRPC, smartWallet)
+	isDeployed, err := isAccountDeployed(c.provider, smartWallet)
 	if err != nil {
 		return UserOperation{}, fmt.Errorf("failed to check if smart account is already deployed: %w", err)
 	}
@@ -275,7 +274,7 @@ func (c *client) NewUserOp(
 
 // SendUserOp submits a user operation to a bundler
 // and executes the provided callback function.
-func (c *client) SendUserOp(ctx context.Context, op UserOperation) (<-chan Receipt, error) {
+func (c *backend) SendUserOp(ctx context.Context, op UserOperation) (<-chan Receipt, error) {
 	slog.Debug("sending user operation")
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -283,10 +282,10 @@ func (c *client) SendUserOp(ctx context.Context, op UserOperation) (<-chan Recei
 	userOpHash := op.UserOpHash(c.entryPoint, c.chainID)
 
 	waiter := make(chan Receipt, 1)
-	go waitForUserOpEvent(ctx, cancel, c.providerRPC, waiter, c.entryPoint, userOpHash)
+	go waitForUserOpEvent(ctx, cancel, c.provider, waiter, c.entryPoint, userOpHash)
 
 	// ERC4337-standardized call to the bundler
-	if err := c.bundlerRPC.CallContext(ctx, &userOpHash, "eth_sendUserOperation", op, c.entryPoint); err != nil {
+	if err := c.bundler.CallContext(ctx, &userOpHash, "eth_sendUserOperation", op, c.entryPoint); err != nil {
 		return nil, fmt.Errorf("call to `eth_sendUserOperation` failed: %w", err)
 	}
 
@@ -295,9 +294,9 @@ func (c *client) SendUserOp(ctx context.Context, op UserOperation) (<-chan Recei
 	return waiter, nil
 }
 
-func isAccountDeployed(provider *ethclient.Client, swAddress common.Address) (bool, error) {
+func isAccountDeployed(provider EthBackend, swAddress common.Address) (bool, error) {
 	var result any
-	if err := provider.Client().CallContext(
+	if err := provider.RPC().CallContext(
 		context.Background(),
 		&result,
 		"eth_getCode",
@@ -320,7 +319,7 @@ func isAccountDeployed(provider *ethclient.Client, swAddress common.Address) (bo
 	return true, nil
 }
 
-func (c *client) buildCallData(calls []Call) ([]byte, error) {
+func (c *backend) buildCallData(calls []Call) ([]byte, error) {
 	switch *c.smartWallet.Type {
 	case SmartWalletSimpleAccount, SmartWalletBiconomy:
 		return handleCallSimpleAccount(calls)
@@ -393,7 +392,7 @@ func handleCallKernel(calls []Call) ([]byte, error) {
 func waitForUserOpEvent(
 	ctx context.Context,
 	cancel context.CancelFunc,
-	client *ethclient.Client,
+	client EthBackend,
 	done chan<- Receipt,
 	entryPoint common.Address,
 	userOpHash common.Hash,
