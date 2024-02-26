@@ -1,4 +1,4 @@
-package main
+package public_blockchain
 
 import (
 	"context"
