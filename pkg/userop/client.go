@@ -201,7 +201,11 @@ func (c *backend) NewUserOp(
 	calls []Call,
 	walletDeploymentOpts *WalletDeploymentOpts,
 ) (UserOperation, error) {
-	slog.Debug("apply middlewares to user operation")
+	slog.Debug("applying middlewares to user operation")
+	if signer == nil {
+		return UserOperation{}, ErrNoSigner
+	}
+	ctx = context.WithValue(ctx, ctxKeySigner, signer)
 
 	isDeployed, err := isAccountDeployed(c.provider, smartWallet)
 	if err != nil {
@@ -221,24 +225,19 @@ func (c *backend) NewUserOp(
 		ctx = context.WithValue(ctx, ctxKeyIndex, walletDeploymentOpts.Index)
 	}
 
-	if signer == nil {
-		return UserOperation{}, ErrNoSigner
-	}
-	ctx = context.WithValue(ctx, ctxKeySigner, signer)
-	op := UserOperation{Sender: smartWallet}
-
 	callData, err := c.buildCallData(calls)
 	if err != nil {
 		return UserOperation{}, fmt.Errorf("failed to build call data: %w", err)
 	}
-	op.CallData = callData
 
+	op := UserOperation{Sender: smartWallet, CallData: callData}
 	for _, fn := range c.middlewares {
 		if err := fn(ctx, &op); err != nil {
 			return UserOperation{}, fmt.Errorf("failed to apply middleware to user operation: %w", err)
 		}
 	}
 
+	slog.Debug("middlewares applied successfully", "userop", op)
 	return op, nil
 }
 
@@ -263,7 +262,7 @@ func (c *backend) SendUserOp(ctx context.Context, op UserOperation) (<-chan Rece
 
 func isAccountDeployed(provider EthBackend, swAddress common.Address) (bool, error) {
 	var result any
-	if err := provider.RPC().CallContext(
+	if err := provider.Client().CallContext(
 		context.Background(),
 		&result,
 		"eth_getCode",

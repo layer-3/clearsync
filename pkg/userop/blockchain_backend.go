@@ -40,7 +40,7 @@ type EthBackend interface {
 	ChainID(ctx context.Context) (*big.Int, error)
 	BlockNumber(ctx context.Context) (uint64, error)
 	WaitMinedPeriod() time.Duration
-	RPC() *rpc.Client
+	Client() *rpc.Client
 	bind.ContractBackend
 }
 
@@ -63,8 +63,4 @@ func NewEthBackend(rpcURL url.URL) (EthBackend, error) {
 
 func (n *ethBackendImpl) WaitMinedPeriod() time.Duration {
 	return time.Second
-}
-
-func (n *ethBackendImpl) RPC() *rpc.Client {
-	return n.Client.Client()
 }
