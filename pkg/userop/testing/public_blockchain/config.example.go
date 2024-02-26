@@ -1,4 +1,4 @@
-package main
+package public_blockchain
 
 import (
 	"github.com/ethereum/go-ethereum/common"
