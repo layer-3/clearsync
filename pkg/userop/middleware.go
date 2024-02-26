@@ -167,6 +167,8 @@ func getGasPrice(provider EthBackend, gasConfig GasConfig) middleware {
 		}
 		blockBaseFee := block.BaseFee()
 
+		slog.Debug("block base fee", "baseFee", blockBaseFee.String())
+
 		var maxPriorityFeePerGasStr string
 		if err := provider.RPC().CallContext(ctx, &maxPriorityFeePerGasStr, "eth_maxPriorityFeePerGas"); err != nil {
 			return err
@@ -186,6 +188,8 @@ func getGasPrice(provider EthBackend, gasConfig GasConfig) middleware {
 		// Calculate maxFeePerGas
 		maxFeePerGas := new(big.Int).Mul(blockBaseFee, gasConfig.MaxFeePerGasMultiplier.BigInt())
 		maxFeePerGas.Add(maxFeePerGas, maxPriorityFeePerGas)
+
+		slog.Debug("calculated gas price", "maxFeePerGas", maxFeePerGas, "maxPriorityFeePerGas", maxPriorityFeePerGas)
 
 		op.MaxFeePerGas = decimal.NewFromBigInt(maxFeePerGas, 0)
 		op.MaxPriorityFeePerGas = decimal.NewFromBigInt(maxPriorityFeePerGas, 0)
@@ -284,14 +288,8 @@ func getGasEstimation(bundler RPCBackend, config ClientConfig) (middleware, erro
 }
 
 func estimateUserOperationGas(bundler RPCBackend, entryPoint common.Address) middleware {
-	// The gas estimate is increased by 10_000 to account for
-	// a rare yet hard to debug bundler gas estimation inaccuracy.
-	// It is NOT a random value, see how it works in the original Alto code:
-	// https://github.com/pimlicolabs/alto/blob/a0a9a4906af809d97611c7f0e0f032e50c4c45cb/src/entrypoint-0.6/rpc/gasEstimation.ts#L277-L279
-	gasEstimationOverhead := decimal.NewFromInt(0)
-
 	return func(ctx context.Context, op *UserOperation) error {
-		slog.Debug("estimating gas")
+		slog.Debug("estimating userOp gas limits")
 
 		// ERC4337-standardized gas estimation
 		var est gasEstimate
@@ -305,14 +303,16 @@ func estimateUserOperationGas(bundler RPCBackend, entryPoint common.Address) mid
 			return fmt.Errorf("error estimating gas: %w", err)
 		}
 
-		callGasLimit, verificationGasLimit, preVerificationGas, err := est.convert()
+		preVerificationGas, verificationGasLimit, callGasLimit, err := est.convert()
 		if err != nil {
 			return fmt.Errorf("failed to convert gas estimates: %w", err)
 		}
 
-		op.CallGasLimit = decimal.NewFromBigInt(callGasLimit, 0).Add(gasEstimationOverhead)
-		op.VerificationGasLimit = decimal.NewFromBigInt(verificationGasLimit, 0)
+		slog.Debug("estimated userOp gas", "callGasLimit", callGasLimit, "verificationGasLimit", verificationGasLimit, "preVerificationGas", preVerificationGas)
+
 		op.PreVerificationGas = decimal.NewFromBigInt(preVerificationGas, 0)
+		op.VerificationGasLimit = decimal.NewFromBigInt(verificationGasLimit, 0)
+		op.CallGasLimit = decimal.NewFromBigInt(callGasLimit, 0)
 
 		return nil
 	}
