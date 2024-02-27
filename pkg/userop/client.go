@@ -20,8 +20,40 @@ import (
 
 // Client represents a client for creating and posting user operations.
 type Client interface {
+	// IsAccountDeployed checks whether the smart wallet for the specified owner EOA and index is deployed.
+	//
+	// Parameters:
+	//   - owner - is the EOA address of the smart wallet owner.
+	//   - index - is the index of the smart wallet, 0 by default. SW index allows to deploy multiple smart wallets for the same owner.
+	//
+	// Returns:
+	//   - bool - true if the smart wallet is deployed, false if not
+	//   - error - if failed to check.
 	IsAccountDeployed(ctx context.Context, owner common.Address, index decimal.Decimal) (bool, error)
+
+	// GetAccountAddress returns the address of the smart wallet for the specified owner EOA and index.
+	//
+	// Parameters:
+	//   - owner - is the EOA address of the smart wallet owner.
+	//   - index - is the index of the smart wallet, 0 by default. SW index allows to deploy multiple smart wallets for the same owner.
+	//
+	// Returns:
+	//   - common.Address - an address of the smart wallet
+	//   - error - if failed to calculate it.
 	GetAccountAddress(ctx context.Context, owner common.Address, index decimal.Decimal) (common.Address, error)
+
+	// NewUserOp builds a new UserOperation and fills all the fields.
+	//
+	// Parameters:
+	//   - ctx - is the context of the operation.
+	//   - smartWallet - is the address of the smart wallet that will execute the user operation.
+	//   - signer - is the signer function that will sign the user operation.
+	//   - calls - is the list of calls to be executed in the user operation.
+	//   - walletDeploymentOpts - are the options for the smart wallet deployment. Can be nil if the smart wallet is already deployed.
+	//
+	// Returns:
+	//   - UserOperation - user operation with all fields filled in.
+	//   - error - if failed to build the user operation.
 	NewUserOp(
 		ctx context.Context,
 		sender common.Address,
@@ -29,6 +61,16 @@ type Client interface {
 		calls []Call,
 		walletDeploymentOpts *WalletDeploymentOpts,
 	) (UserOperation, error)
+
+	// SendUserOp submits a user operation to a bundler and returns a channel to await for the userOp receipt.
+	//
+	// Parameters:
+	//   - ctx - is the context of the operation.
+	//   - op - is the user operation to be sent.
+	//
+	// Returns:
+	//   - <-chan Receipt - a channel to await for the userOp receipt.
+	//   - error - if failed to send the user operation
 	SendUserOp(ctx context.Context, op UserOperation) (done <-chan Receipt, err error)
 }
 
@@ -69,7 +111,7 @@ type Receipt struct {
 	Success       bool
 	ActualGasCost decimal.Decimal
 	ActualGasUsed decimal.Decimal
-	RevertData    []byte // non-empty if Success is false
+	RevertData    []byte // non-empty if Success is false and EntryPoint was able to catch revert reason.
 }
 
 // NewClient is a factory that builds a new
@@ -193,7 +235,6 @@ func (c *backend) GetAccountAddress(ctx context.Context, owner common.Address, i
 	return common.HexToAddress(errorData[34:]), nil
 }
 
-// NewUserOp builds and fills in a new UserOperation.
 func (c *backend) NewUserOp(
 	ctx context.Context,
 	smartWallet common.Address,
@@ -241,8 +282,6 @@ func (c *backend) NewUserOp(
 	return op, nil
 }
 
-// SendUserOp submits a user operation to a bundler
-// and executes the provided callback function.
 func (c *backend) SendUserOp(ctx context.Context, op UserOperation) (<-chan Receipt, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	userOpHash := op.UserOpHash(c.entryPoint, c.chainID)
