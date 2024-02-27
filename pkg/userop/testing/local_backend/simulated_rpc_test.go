@@ -4,11 +4,12 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
+	"math/big"
 	"os"
 	"path"
 	"testing"
-	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/node"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -22,15 +23,16 @@ func TestRPC(t *testing.T) {
 	require.NoError(t, err)
 
 	// Act
-	for i := 0; i < 5; i++ {
-		var x uint64
-		err = cl.CallContext(context.Background(), &x, "eth_blockNumber")
-		require.NoError(t, err)
+	var block common.Hash
+	err = cl.CallContext(context.Background(), &block, "eth_advance")
+	require.NoError(t, err)
 
-		// Assert
-		fmt.Println(x)
-		<-time.After(100 * time.Millisecond)
-	}
+	var x uint64
+	err = cl.CallContext(context.Background(), &x, "eth_blockNumber")
+
+	// Assert
+	require.NotZero(t, x)
+	require.NoError(t, err)
 }
 
 // node.Node -> rpc.API -> SimulatedBackend (ethclient.Client)
@@ -71,7 +73,7 @@ func newSimulatedRPC(t *testing.T) *node.Node {
 	simulatedNode.RegisterAPIs([]rpc.API{{
 		Namespace:     "eth",
 		Version:       "1.0",
-		Service:       blockNumberRPC{backend},
+		Service:       simulatedRPC{backend},
 		Authenticated: false, // no authentication required for a public handler
 	}})
 	if err := simulatedNode.Start(); err != nil {
@@ -81,18 +83,28 @@ func newSimulatedRPC(t *testing.T) *node.Node {
 	return simulatedNode
 }
 
-type blockNumberRPC struct {
+type simulatedRPC struct {
 	backend *SimulatedBackend
 }
 
 // BlockNumber implements the `eth_blockNumber` method.
-func (rpc blockNumberRPC) BlockNumber() (uint64, error) {
-	// advance one block
-	_ = rpc.backend.Commit()
-
+func (rpc simulatedRPC) BlockNumber() (uint64, error) {
 	number, err := rpc.backend.Client().BlockNumber(context.Background())
 	if err != nil {
 		return 0, fmt.Errorf("failed to get block number: %w", err)
+	}
+
+	return number, nil
+}
+
+func (rpc simulatedRPC) Advance() common.Hash {
+	return rpc.backend.Commit()
+}
+
+func (rpc simulatedRPC) ChainID() (*big.Int, error) {
+	number, err := rpc.backend.Client().ChainID(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("failed to get chain id: %w", err)
 	}
 
 	return number, nil

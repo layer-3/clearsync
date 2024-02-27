@@ -1,7 +1,6 @@
 package local_backend
 
 import (
-	"context"
 	"math/big"
 	"time"
 
@@ -54,12 +53,4 @@ func NewSimulatedBackend() (*SimulatedBackend, error) {
 		deployer:        accounts[0],
 		waitMinedPeriod: waitMinedPeriod,
 	}, nil
-}
-
-func (sb *SimulatedBackend) ChainID(_ context.Context) (*big.Int, error) {
-	return SimulatedChainID, nil
-}
-
-func (sb *SimulatedBackend) WaitMinedPeriod() time.Duration {
-	return sb.waitMinedPeriod
 }
