@@ -1,4 +1,4 @@
-package local_backend
+package main
 
 import (
 	"math/big"

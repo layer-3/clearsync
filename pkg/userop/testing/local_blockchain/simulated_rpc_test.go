@@ -1,111 +1,102 @@
-package local_backend
+package main
 
 import (
 	"context"
-	"crypto/rand"
 	"fmt"
-	"math/big"
-	"os"
-	"path"
+	"net/url"
 	"testing"
+	"time"
 
+	"github.com/consensys/gnark-crypto/ecc/bw6-633/ecdsa"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/node"
-	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/stretchr/testify/require"
+	"github.com/status-im/keycard-go/hexutils"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func TestRPC(t *testing.T) {
-	// Arrange
-	n := newSimulatedRPC(t)
-	cl, err := rpc.DialOptions(context.Background(), n.HTTPEndpoint())
-	require.NoError(t, err)
+	ctx := context.Background()
 
-	// Act
-	var block common.Hash
-	err = cl.CallContext(context.Background(), &block, "eth_advance")
-	require.NoError(t, err)
-
-	var x uint64
-	err = cl.CallContext(context.Background(), &x, "eth_blockNumber")
-
-	// Assert
-	require.NotZero(t, x)
-	require.NoError(t, err)
-}
-
-// node.Node -> rpc.API -> SimulatedBackend (ethclient.Client)
-func newSimulatedRPC(t *testing.T) *node.Node {
-	var secret [32]byte
-	if _, err := rand.Read(secret[:]); err != nil {
-		t.Fatalf("failed to create jwt secret: %v", err)
-	}
-
-	// Geth must read it from a file, and does not support in-memory JWT secrets, so we create a temporary file.
-	jwtPath := path.Join(t.TempDir(), "jwt_secret")
-	if err := os.WriteFile(jwtPath, []byte(hexutil.Encode(secret[:])), 0600); err != nil {
-		t.Fatalf("failed to prepare jwt secret file: %v", err)
-	}
-
-	// We get ports assigned by the node automatically
-	conf := &node.Config{
-		HTTPHost:  "127.0.0.1",
-		HTTPPort:  0,
-		WSHost:    "127.0.0.1",
-		WSPort:    0,
-		AuthAddr:  "127.0.0.1",
-		AuthPort:  0,
-		JWTSecret: jwtPath,
-
-		WSModules:   []string{"eth"},
-		HTTPModules: []string{"eth"},
-	}
-	simulatedNode, err := node.New(conf)
+	rpcURL, err := startEthNode(ctx, t)
 	if err != nil {
-		t.Fatalf("could not create a new node: %v", err)
+		panic(err)
 	}
 
-	backend, err := NewSimulatedBackend()
-	require.NoError(t, err)
+	var entryPoint common.Address // TODO: deploy EntryPoint contract
+	var signer ecdsa.PrivateKey   // TODO: generate a private key
+	var utility ecdsa.PrivateKey  // TODO: generate a private key
 
-	// register dummy apis, so we can test the modules are available and reachable with authentication
-	simulatedNode.RegisterAPIs([]rpc.API{{
-		Namespace:     "eth",
-		Version:       "1.0",
-		Service:       simulatedRPC{backend},
-		Authenticated: false, // no authentication required for a public handler
-	}})
-	if err := simulatedNode.Start(); err != nil {
-		t.Fatalf("failed to start test node: %v", err)
+	if err := startBundler(ctx, t, *rpcURL, entryPoint, signer, utility); err != nil {
+		panic(err)
 	}
 
-	return simulatedNode
+	<-time.After(60 * time.Second)
 }
 
-type simulatedRPC struct {
-	backend *SimulatedBackend
-}
-
-// BlockNumber implements the `eth_blockNumber` method.
-func (rpc simulatedRPC) BlockNumber() (uint64, error) {
-	number, err := rpc.backend.Client().BlockNumber(context.Background())
+func startEthNode(ctx context.Context, t *testing.T) (*url.URL, error) {
+	rpcURL, err := url.Parse("http://localhost:8545")
 	if err != nil {
-		return 0, fmt.Errorf("failed to get block number: %w", err)
+		return nil, fmt.Errorf("failed to parse local RPC URL: %w", err)
 	}
 
-	return number, nil
-}
-
-func (rpc simulatedRPC) Advance() common.Hash {
-	return rpc.backend.Commit()
-}
-
-func (rpc simulatedRPC) ChainID() (*big.Int, error) {
-	number, err := rpc.backend.Client().ChainID(context.Background())
+	gethContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image: "ethereum/client-go:stable",
+			// 8545 TCP, used by the HTTP based JSON RPC API
+			// 8546 TCP, used by the WebSocket based JSON RPC API
+			// 8547 TCP, used by the GraphQL API
+			// 30303 TCP and UDP, used by the P2P protocol running the network
+			ExposedPorts: []string{"8545/tcp", "8546/tcp", "8547/tcp", "30303/tcp", "30303/udp"},
+			Entrypoint:   []string{"geth", "--dev", "--http", "--http.api=eth,web3,net"},
+			WaitingFor:   wait.ForLog("server started"),
+		},
+		Started: true,
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to get chain id: %w", err)
+		return nil, fmt.Errorf("failed to start Go-Ethereum container: %w", err)
 	}
 
-	return number, nil
+	t.Cleanup(func() {
+		if err := gethContainer.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate Go-Ethereum container: %s", err)
+		}
+	})
+
+	return rpcURL, nil
+}
+
+func startBundler(
+	ctx context.Context,
+	t *testing.T,
+	rpcURL url.URL,
+	entryPoint common.Address,
+	signer ecdsa.PrivateKey,
+	utility ecdsa.PrivateKey,
+) error {
+	altoContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image: "ghcr.io/pimlicolabs/alto:v1.0.1",
+			Entrypoint: []string{"pnpm", "start",
+				"--networkName", "mainnet", // check geth container logs to find out configured network
+				"--entryPoint", entryPoint.Hex(), // the contract should be already deployed on geth node
+				"--signerPrivateKeys", hexutils.BytesToHex(signer.Bytes()),
+				"--utilityPrivateKey", hexutils.BytesToHex(utility.Bytes()),
+				"--minBalance", "0",
+				"--rpcUrl", rpcURL.String(),
+			},
+			WaitingFor: wait.ForLog("server started"),
+		},
+		Started: true,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to start Alto bundler container: %w", err)
+	}
+
+	t.Cleanup(func() {
+		if err := altoContainer.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate Alto container: %s", err)
+		}
+	})
+
+	return nil
 }
