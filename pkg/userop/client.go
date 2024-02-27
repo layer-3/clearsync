@@ -13,9 +13,8 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/layer-3/clearsync/pkg/abi/entry_point_v0_6_0"
 	"github.com/shopspring/decimal"
-
-	"github.com/layer-3/clearsync/pkg/abi/entry_point"
 )
 
 // Client represents a client for creating and posting user operations.
@@ -138,7 +137,7 @@ func NewClient(config ClientConfig) (Client, error) {
 		return nil, fmt.Errorf("failed to connect to the bundler RPC: %w", err)
 	}
 
-	entryPointContract, err := entry_point.NewEntryPoint(config.EntryPoint, providerRPC)
+	entryPointContract, err := entry_point_v0_6_0.NewEntryPoint(config.EntryPoint, providerRPC)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to the entry point contract: %w", err)
 	}

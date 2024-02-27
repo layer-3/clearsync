@@ -6,7 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/layer-3/clearsync/pkg/abi/entry_point"
+	"github.com/layer-3/clearsync/pkg/abi/entry_point_v0_6_0"
 	"github.com/layer-3/clearsync/pkg/abi/simple_account"
 )
 
@@ -24,7 +24,7 @@ var (
 	bytes   = must(abi.NewType("bytes", "", nil))
 
 	simpleAccountABI = must(abi.JSON(strings.NewReader(simple_account.SimpleAccountMetaData.ABI)))
-	entryPointABI    = must(abi.JSON(strings.NewReader(entry_point.EntryPointMetaData.ABI)))
+	entryPointABI    = must(abi.JSON(strings.NewReader(entry_point_v0_6_0.EntryPointMetaData.ABI)))
 
 	// keccak256("UserOperationEvent(bytes32,address,address,uint256,bool,uint256, uint256)")
 	userOpEventID = common.HexToHash("0x49628fd1471006c1482da88028e9ce4dbb080b815c9b0344d39e5a8e6ec1419f")
