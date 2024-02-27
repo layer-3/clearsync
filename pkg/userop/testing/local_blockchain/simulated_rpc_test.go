@@ -110,8 +110,8 @@ func startBundler(
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image: "ghcr.io/pimlicolabs/alto:v1.0.1",
 			Entrypoint: []string{"pnpm", "start",
-				"--networkName", "mainnet", // check geth container logs to find out configured network
-				"--entryPoint", entryPoint.Hex(), // the contract should be already deployed on geth node
+				"--networkName", "mainnet", // check Go-Ethereum container logs to find out configured network
+				"--entryPoint", entryPoint.Hex(), // the contract should already be deployed on Go-Ethereum node
 				"--signerPrivateKeys", hexutils.BytesToHex(signer.Bytes()),
 				"--utilityPrivateKey", hexutils.BytesToHex(utility.Bytes()),
 				"--minBalance", "0",
