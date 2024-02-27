@@ -170,7 +170,7 @@ func getGasPrice(provider EthBackend, gasConfig GasConfig) middleware {
 		slog.Debug("block base fee", "baseFee", blockBaseFee.String())
 
 		var maxPriorityFeePerGasStr string
-		if err := provider.RPC().CallContext(ctx, &maxPriorityFeePerGasStr, "eth_maxPriorityFeePerGas"); err != nil {
+		if err := provider.Client().CallContext(ctx, &maxPriorityFeePerGasStr, "eth_maxPriorityFeePerGas"); err != nil {
 			return err
 		}
 
