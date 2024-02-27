@@ -12,6 +12,8 @@ import (
 	"github.com/status-im/keycard-go/hexutils"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+
+	"github.com/layer-3/clearsync/pkg/userop"
 )
 
 func TestRPC(t *testing.T) {
@@ -23,10 +25,36 @@ func TestRPC(t *testing.T) {
 	}
 
 	var entryPoint common.Address // TODO: deploy EntryPoint contract
+	var paymaster common.Address  // TODO: deploy Paymaster contract
+	var validator common.Address  // TODO: deploy Validator contract
+	var factory common.Address    // TODO: deploy Factory contract
+	var logic common.Address      // TODO: deploy Logic contract
 	var signer ecdsa.PrivateKey   // TODO: generate a private key
 	var utility ecdsa.PrivateKey  // TODO: generate a private key
 
-	if err := startBundler(ctx, t, *rpcURL, entryPoint, signer, utility); err != nil {
+	bundlerURL, err := startBundler(ctx, t, *rpcURL, entryPoint, signer, utility)
+	if err != nil {
+		panic(err)
+	}
+
+	config, err := userop.NewClientConfigFromEnv()
+	if err != nil {
+		panic(err)
+	}
+	config.ProviderURL = *rpcURL
+	config.BundlerURL = *bundlerURL
+	config.EntryPoint = entryPoint
+	config.SmartWallet = userop.SmartWalletConfig{
+		Type:           &userop.SmartWalletKernel,
+		ECDSAValidator: validator,
+		Logic:          factory,
+		Factory:        logic,
+	}
+	config.Paymaster.Type = &userop.PaymasterPimlicoERC20
+	config.Paymaster.Address = paymaster
+
+	_ /*client*/, err = userop.NewClient(config)
+	if err != nil {
 		panic(err)
 	}
 
@@ -72,7 +100,12 @@ func startBundler(
 	entryPoint common.Address,
 	signer ecdsa.PrivateKey,
 	utility ecdsa.PrivateKey,
-) error {
+) (*url.URL, error) {
+	bundlerURL, err := url.Parse("http://localhost:3000")
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse local bundler URL: %w", err)
+	}
+
 	altoContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image: "ghcr.io/pimlicolabs/alto:v1.0.1",
@@ -89,7 +122,7 @@ func startBundler(
 		Started: true,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to start Alto bundler container: %w", err)
+		return nil, fmt.Errorf("failed to start Alto bundler container: %w", err)
 	}
 
 	t.Cleanup(func() {
@@ -98,5 +131,5 @@ func startBundler(
 		}
 	})
 
-	return nil
+	return bundlerURL, nil
 }
