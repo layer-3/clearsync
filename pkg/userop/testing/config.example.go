@@ -29,6 +29,9 @@ var (
 			Type:    &userop.PaymasterPimlicoERC20,
 			URL:     url.URL{},
 			Address: common.HexToAddress("0xa683b47e447De6c8A007d9e294e87B6Db333Eb18"),
+			PimlicoERC20: userop.PimlicoERC20Config{
+				VerificationGasOverhead: decimal.RequireFromString("10000"),
+			},
 		},
 		Gas: userop.GasConfig{
 			// These are values by default.
