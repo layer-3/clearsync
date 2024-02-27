@@ -11,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/shopspring/decimal"
 
-	"github.com/layer-3/clearsync/pkg/abi/entry_point"
+	"github.com/layer-3/clearsync/pkg/abi/entry_point_v0_6_0"
 )
 
 type ctxKey int
@@ -28,7 +28,7 @@ const (
 type middleware func(ctx context.Context, op *UserOperation) error
 
 // TODO: possible improvement: when there is a userOp for this SW already in the mempool, we should return incremented nonce
-func getNonce(entryPoint *entry_point.EntryPoint) middleware {
+func getNonce(entryPoint *entry_point_v0_6_0.EntryPoint) middleware {
 	return func(_ context.Context, op *UserOperation) error {
 		slog.Debug("getting nonce")
 		key := new(big.Int)
