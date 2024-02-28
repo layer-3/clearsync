@@ -179,7 +179,7 @@ func newCallFromABI(contract common.Address, stringABI string, value decimal.Dec
 func send(client userop.Client, smartWallet common.Address, calls []userop.Call) error {
 	ctx := context.Background()
 
-	op, err := client.NewUserOp(ctx, smartWallet, signer, calls, walletDeploymentOpts)
+	op, err := client.NewUserOp(ctx, smartWallet, exampleSigner, calls, walletDeploymentOpts)
 	if err != nil {
 		panic(fmt.Errorf("failed to build userop: %w", err))
 	}
