@@ -301,7 +301,7 @@ func (c *backend) SendUserOp(ctx context.Context, op UserOperation) (<-chan Rece
 
 func isAccountDeployed(provider EthBackend, swAddress common.Address) (bool, error) {
 	var result any
-	if err := provider.Client().CallContext(
+	if err := provider.RPC().CallContext(
 		context.Background(),
 		&result,
 		"eth_getCode",
