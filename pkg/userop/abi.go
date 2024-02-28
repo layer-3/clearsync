@@ -330,5 +330,5 @@ var biconomyInitABI = must(abi.JSON(strings.NewReader(`[
     }],
     "stateMutability": "nonpayable",
     "type": "function"
-  },
+  }
 ]`)))
