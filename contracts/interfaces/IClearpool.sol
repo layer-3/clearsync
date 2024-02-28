@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.22;
 
+import {ExitFormat as Outcome} from '@statechannels/exit-format/contracts/ExitFormat.sol';
+import {INitroTypes} from '../nitro/interfaces/INitroTypes.sol';
+
 /**
  * @title The IClearpool interface outlines the functionality of the Clearpool liquidity sharing pool smart contract.
  * @author Nikita Sazonov (nksazonov)
@@ -13,6 +16,13 @@ pragma solidity ^0.8.22;
  * The reward rate can only be updated << WHEN? >>
  */
 interface IClearpool {
+	struct PoolSettlement {
+		INitroTypes.FixedPart fixedPart;
+		uint48 settlementTurnNum;
+		// TODO: change to simpler type
+		Outcome.SingleAssetExit[] outcome;
+	}
+
 	event Deposited(address indexed user, address indexed token, uint256 amount);
 	event Claimed(address indexed user, address indexed token, uint256 amount);
 	event Withdrawn(address indexed user, address indexed token, uint256 amount);
@@ -51,11 +61,10 @@ interface IClearpool {
 	function setRewardRate(address asset, uint256 rate) external;
 
 	/**
-	 * @notice Execute a settlement with the given `settlements` and `signature`.
-	 * @dev Settlements are represented as an array of bytes to make the execution logic
-	 * more flexible. Emits `SettlementExecuted` event.
-	 * @param settlements The array of settlements to execute.
-	 * @param signature The signature of the settlements.
+	 * @notice Execute a settlement with the given `settlement` and `signature`.
+	 * @dev Require the settlement to be valid. Emit `SettlementExecuted` event.
+	 * @param settlement The settlement to execute.
+	 * @param sigs The signatures to validate the settlement.
 	 */
-	function execute(bytes[] calldata settlements, bytes calldata signature) external;
+	function execute(PoolSettlement calldata settlement, bytes[] calldata sigs) external;
 }
