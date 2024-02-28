@@ -203,6 +203,11 @@ func NewClientConfigFromEnv() (config ClientConfig, err error) {
 	return config, cleanenv.ReadEnv(&config)
 }
 
+// ECDSASigner represents a handler that signs a message using ecdsa private key.
+type ECDSASigner interface {
+	Sign(msg []byte) ([]byte, error)
+}
+
 // Signer represents a handler that signs a user operation.
 // The handler DOES NOT modify the operation itself,
 // but rather builds and returns the signature.

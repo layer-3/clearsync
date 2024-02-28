@@ -1,7 +1,6 @@
 package userop
 
 import (
-	"crypto/ecdsa"
 	"fmt"
 	"log/slog"
 	"math/big"
@@ -13,12 +12,12 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-func SignerForBiconomy(privateKey *ecdsa.PrivateKey) Signer {
+func SignerForBiconomy(ecdsaSigner ECDSASigner) Signer {
 	return func(op UserOperation, entryPoint common.Address, chainID *big.Int) ([]byte, error) {
 		slog.Debug("signing user operation")
 
 		hash := op.UserOpHash(entryPoint, chainID)
-		signedHash, err := signWithECDSA(hash.Bytes(), privateKey)
+		signedHash, err := signWithECDSA(hash.Bytes(), ecdsaSigner)
 		if err != nil {
 			return nil, fmt.Errorf("failed to sign user operation: %w", err)
 		}
@@ -45,12 +44,12 @@ func SignerForBiconomy(privateKey *ecdsa.PrivateKey) Signer {
 	}
 }
 
-func SignerForKernel(privateKey *ecdsa.PrivateKey) Signer {
+func SignerForKernel(ecdsaSigner ECDSASigner) Signer {
 	return func(op UserOperation, entryPoint common.Address, chainID *big.Int) ([]byte, error) {
 		slog.Debug("signing user operation")
 
 		hash := op.UserOpHash(entryPoint, chainID)
-		signature, err := signWithECDSA(hash.Bytes(), privateKey)
+		signature, err := signWithECDSA(hash.Bytes(), ecdsaSigner)
 		if err != nil {
 			return nil, fmt.Errorf("failed to sign user operation: %w", err)
 		}
@@ -73,10 +72,10 @@ func SignerForKernel(privateKey *ecdsa.PrivateKey) Signer {
 }
 
 // signWithECDSA signs the hash with the given private key using the ECDSA algorithm.
-func signWithECDSA(hash []byte, privateKey *ecdsa.PrivateKey) ([]byte, error) {
+func signWithECDSA(hash []byte, ecdsaSigner ECDSASigner) ([]byte, error) {
 	ethMessageHash := computeEthSignedMessageHash(hash)
 
-	signature, err := crypto.Sign(ethMessageHash, privateKey)
+	signature, err := ecdsaSigner.Sign(ethMessageHash)
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign user operation: %w", err)
 	}
