@@ -2,70 +2,60 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"crypto/ecdsa"
+	"crypto/x509"
+	"encoding/pem"
+	"log"
 	"net/url"
 	"testing"
 	"time"
 
-	"github.com/consensys/gnark-crypto/ecc/bw6-633/ecdsa"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/status-im/keycard-go/hexutils"
+	ecrypto "github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 
+	"github.com/layer-3/clearsync/pkg/abi/entry_point_v0_6_0"
+	"github.com/layer-3/clearsync/pkg/abi/kernel_ecdsa_validator_v2_2"
+	"github.com/layer-3/clearsync/pkg/abi/kernel_factory_v2_2"
+	"github.com/layer-3/clearsync/pkg/abi/kernel_v2_2"
 	"github.com/layer-3/clearsync/pkg/userop"
 )
 
-func TestRPC(t *testing.T) {
+func TestSimulatedRPC(t *testing.T) {
 	ctx := context.Background()
 
-	rpcURL, err := startEthNode(ctx, t)
-	if err != nil {
-		panic(err)
-	}
+	// 1. Start a local Ethereum node
+	rpcURL, _ /*accountBalance*/ := startEthNode(ctx, t)
+	ethClient, err := ethclient.Dial(rpcURL.String())
+	require.NoError(t, err)
 
-	var entryPoint common.Address // TODO: deploy EntryPoint contract
-	var paymaster common.Address  // TODO: deploy Paymaster contract
-	var validator common.Address  // TODO: deploy Validator contract
-	var factory common.Address    // TODO: deploy Factory contract
-	var logic common.Address      // TODO: deploy Logic contract
-	var signer ecdsa.PrivateKey   // TODO: generate a private key
-	var utility ecdsa.PrivateKey  // TODO: generate a private key
+	// 2. Deploy the required contracts
+	addresses := deployContracts(ctx, t, ethClient)
 
-	bundlerURL, err := startBundler(ctx, t, *rpcURL, entryPoint, signer, utility)
-	if err != nil {
-		panic(err)
-	}
+	// 3. Start the bundler
+	signer, err := ecrypto.GenerateKey()
+	require.NoError(t, err, "failed to generate SIGNER private key for bundler")
+	utility, err := ecrypto.GenerateKey()
+	require.NoError(t, err, "failed to generate UTILITY private key for bundler")
+	bundlerURL := startBundler(ctx, t, rpcURL, addresses.entryPoint, signer, utility)
 
-	config, err := userop.NewClientConfigFromEnv()
-	if err != nil {
-		panic(err)
-	}
-	config.ProviderURL = *rpcURL
-	config.BundlerURL = *bundlerURL
-	config.EntryPoint = entryPoint
-	config.SmartWallet = userop.SmartWalletConfig{
-		Type:           &userop.SmartWalletKernel,
-		ECDSAValidator: validator,
-		Logic:          factory,
-		Factory:        logic,
-	}
-	config.Paymaster.Type = &userop.PaymasterPimlicoERC20
-	config.Paymaster.Address = paymaster
-
+	// 4. Start the user operation client
+	config := buildConfig(t, rpcURL, *bundlerURL, addresses)
 	_ /*client*/, err = userop.NewClient(config)
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
+
+	// 5. Run transactions
+	// TODO: set up tests
 
 	<-time.After(60 * time.Second)
 }
 
-func startEthNode(ctx context.Context, t *testing.T) (*url.URL, error) {
+func startEthNode(ctx context.Context, t *testing.T) (url.URL, *AccountBalance) {
 	rpcURL, err := url.Parse("http://localhost:8545")
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse local RPC URL: %w", err)
-	}
+	require.NoError(t, err, "failed to parse local RPC URL")
 
 	gethContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
@@ -80,17 +70,14 @@ func startEthNode(ctx context.Context, t *testing.T) (*url.URL, error) {
 		},
 		Started: true,
 	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to start Go-Ethereum container: %w", err)
-	}
+	require.NoError(t, err, "failed to start Go-Ethereum container")
 
 	t.Cleanup(func() {
-		if err := gethContainer.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate Go-Ethereum container: %s", err)
-		}
+		err := gethContainer.Terminate(ctx)
+		require.NoError(t, err, "failed to terminate Go-Ethereum container")
 	})
 
-	return rpcURL, nil
+	return *rpcURL, NewAccountBalance(gethContainer, *rpcURL)
 }
 
 func startBundler(
@@ -98,13 +85,11 @@ func startBundler(
 	t *testing.T,
 	rpcURL url.URL,
 	entryPoint common.Address,
-	signer ecdsa.PrivateKey,
-	utility ecdsa.PrivateKey,
-) (*url.URL, error) {
+	signer *ecdsa.PrivateKey,
+	utility *ecdsa.PrivateKey,
+) *url.URL {
 	bundlerURL, err := url.Parse("http://localhost:3000")
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse local bundler URL: %w", err)
-	}
+	require.NoError(t, err, "failed to parse local bundler URL")
 
 	altoContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
@@ -112,8 +97,8 @@ func startBundler(
 			Entrypoint: []string{"pnpm", "start",
 				"--networkName", "mainnet", // check Go-Ethereum container logs to find out configured network
 				"--entryPoint", entryPoint.Hex(), // the contract should already be deployed on Go-Ethereum node
-				"--signerPrivateKeys", hexutils.BytesToHex(signer.Bytes()),
-				"--utilityPrivateKey", hexutils.BytesToHex(utility.Bytes()),
+				"--signerPrivateKeys", privateKeyToString(signer),
+				"--utilityPrivateKey", privateKeyToString(utility),
 				"--minBalance", "0",
 				"--rpcUrl", rpcURL.String(),
 			},
@@ -121,9 +106,7 @@ func startBundler(
 		},
 		Started: true,
 	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to start Alto bundler container: %w", err)
-	}
+	require.NoError(t, err, "failed to start Alto bundler container")
 
 	t.Cleanup(func() {
 		if err := altoContainer.Terminate(ctx); err != nil {
@@ -131,5 +114,74 @@ func startBundler(
 		}
 	})
 
-	return bundlerURL, nil
+	return bundlerURL
+}
+
+type contracts struct {
+	entryPoint common.Address
+	validator  common.Address
+	factory    common.Address
+	logic      common.Address
+	paymaster  common.Address
+}
+
+func deployContracts(ctx context.Context, t *testing.T, ethClient *ethclient.Client) contracts {
+	chainID, err := ethClient.ChainID(ctx)
+	require.NoError(t, err)
+
+	entryPoint, _, _, err := entry_point_v0_6_0.DeployEntryPoint(nil, ethClient)
+	require.NoError(t, err)
+
+	validator, _, _, err := kernel_ecdsa_validator_v2_2.DeployKernelECDSAValidator(nil, ethClient)
+	require.NoError(t, err)
+
+	factoryOwner, err := NewAccount(chainID)
+	require.NoError(t, err)
+
+	factory, _, _, err := kernel_factory_v2_2.DeployKernelFactory(nil, ethClient, factoryOwner.Address, entryPoint)
+	require.NoError(t, err)
+
+	logic, _, _, err := kernel_v2_2.DeployKernel(nil, ethClient, entryPoint)
+	require.NoError(t, err)
+
+	var paymaster common.Address // TODO: deploy Paymaster contract
+
+	return contracts{
+		entryPoint: entryPoint,
+		validator:  validator,
+		factory:    factory,
+		logic:      logic,
+		paymaster:  paymaster,
+	}
+}
+
+func privateKeyToString(privateKey *ecdsa.PrivateKey) string {
+	// Serialize the private key to PEM format
+	x509Encoded, err := x509.MarshalECPrivateKey(privateKey)
+	if err != nil {
+		log.Fatalf("Failed to marshal ECDSA private key: %v", err)
+	}
+	pemEncoded := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: x509Encoded})
+
+	// Convert the PEM to a string (PEM is already a string format)
+	return string(pemEncoded)
+}
+
+func buildConfig(t *testing.T, rpcURL, bundlerURL url.URL, addresses contracts) userop.ClientConfig {
+	config, err := userop.NewClientConfigFromEnv()
+	require.NoError(t, err)
+
+	config.ProviderURL = rpcURL
+	config.BundlerURL = bundlerURL
+	config.EntryPoint = addresses.entryPoint
+	config.SmartWallet = userop.SmartWalletConfig{
+		Type:           &userop.SmartWalletKernel,
+		ECDSAValidator: addresses.validator,
+		Logic:          addresses.factory,
+		Factory:        addresses.logic,
+	}
+	config.Paymaster.Type = &userop.PaymasterPimlicoERC20
+	config.Paymaster.Address = addresses.paymaster
+
+	return config
 }
