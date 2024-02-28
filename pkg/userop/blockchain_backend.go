@@ -66,5 +66,5 @@ func (n *ethBackendImpl) WaitMinedPeriod() time.Duration {
 }
 
 func (n *ethBackendImpl) RPC() *rpc.Client {
-  return n.Client.Client()
+	return n.Client.Client()
 }
