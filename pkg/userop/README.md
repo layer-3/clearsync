@@ -2,16 +2,23 @@
 
 ## Overview
 
-The UserOp library is a Golang package designed to simplify the creation and interaction with user operations in a decentralized application. It provides functionalities to work with smart walets, create user operations, and send them to the client bundler for execution.
+The UserOp library is a Golang package designed to simplify the creation and interaction with user operations in a
+decentralized application. It provides functionalities to work with smart walets, create user operations, and send them
+to the client bundler for execution.
 
 ## Features
 
-- **Smart Wallet Support**: Enables the use of smart wallets for transactions, including deploying new wallets and performing transactions through them.
-- **Multi-Call Operations**: Supports bundling multiple operations into a single userOp, reducing the need for multiple transactions.
+- **Smart Wallet Support**: Enables the use of smart wallets for transactions, including deploying new wallets and
+  performing transactions through them.
+- **Multi-Call Operations**: Supports bundling multiple operations into a single userOp, reducing the need for multiple
+  transactions.
 - **Gas Optimization**: Offers configurable gas pricing strategies to optimize transaction costs.
-- **Paymaster Integration**: Integrates with paymasters to enable gasless transactions, where transaction fees can be paid using ERC20 tokens.
-- **Infrastructure Flexibility**: Allows configuration for different infrastructure providers by setting the provider and bundler URLs.
-- **Account abstraction interoperability**: Provides a unified interface for interacting with smart wallets, regardless of the underlying smart wallet implementation.
+- **Paymaster Integration**: Integrates with paymasters to enable gasless transactions, where transaction fees can be
+  paid using ERC20 tokens.
+- **Infrastructure Flexibility**: Allows configuration for different infrastructure providers by setting the provider
+  and bundler URLs.
+- **Account abstraction interoperability**: Provides a unified interface for interacting with smart wallets, regardless
+  of the underlying smart wallet implementation.
 
 ### Currently supported Smart Contract providers
 
@@ -19,7 +26,8 @@ The UserOp library is a Golang package designed to simplify the creation and int
 
 - [Kernel v2.2](https://github.com/zerodevapp/kernel/blob/807b75a4da6fea6311a3573bc8b8964a34074d94/src/Kernel.sol)
 - [Biconomy v2.0](https://github.com/bcnmy/scw-contracts/blob/v2-deployments/contracts/smart-account/SmartAccount.sol)
-- [SimpleAccount v0.6](https://github.com/eth-infinitism/account-abstraction/blob/releases/v0.6/contracts/samples/SimpleAccount.sol) (not finished)
+- [SimpleAccount v0.6](https://github.com/eth-infinitism/account-abstraction/blob/releases/v0.6/contracts/samples/SimpleAccount.sol) (
+  not finished)
 
 #### Paymasters
 
@@ -27,15 +35,19 @@ The UserOp library is a Golang package designed to simplify the creation and int
 - [Pimlico Verifying Paymaster](https://docs.pimlico.io/paymaster/verifying-paymaster)
 - [Biconomy ERC20 Paymaster](https://docs.biconomy.io/Paymaster/methods#usage-mode-erc20) (not tested)
 - [Biconomy Sponsoring Paymaster](https://docs.biconomy.io/Paymaster/methods#usage-mode-sponsored) (not tested)
-- [Kernel v0.7 ERC20 Paymaster](https://github.com/eth-infinitism/account-abstraction/blob/releases/v0.7/contracts/samples/TokenPaymaster.sol) (to be added)
+- [Kernel v0.7 ERC20 Paymaster](https://github.com/eth-infinitism/account-abstraction/blob/releases/v0.7/contracts/samples/TokenPaymaster.sol) (
+  to be added)
 
 #### Signers
 
 - [Biconomy ECDSAValidationModule](https://github.com/bcnmy/scw-contracts/blob/v2-deployments/contracts/smart-account/SmartAccount.sol#L337)
 - [Kernel ECDSAValidator](https://github.com/zerodevapp/kernel/blob/807b75a4da6fea6311a3573bc8b8964a34074d94/src/Kernel.sol#L127)
-- [Kernel use / enable Validator](https://github.com/zerodevapp/kernel/blob/807b75a4da6fea6311a3573bc8b8964a34074d94/src/Kernel.sol#L126) (to be added)
-- [Kernel SessionKeyValidator](https://github.com/zerodevapp/kernel/blob/807b75a4da6fea6311a3573bc8b8964a34074d94/src/validator/SessionKeyValidator.sol#L138) (to be added)
-- [SimpleAccount owner validation](https://github.com/eth-infinitism/account-abstraction/blob/releases/v0.6/contracts/samples/SimpleAccount.sol#L93-L99) (to be added)
+- [Kernel use / enable Validator](https://github.com/zerodevapp/kernel/blob/807b75a4da6fea6311a3573bc8b8964a34074d94/src/Kernel.sol#L126) (
+  to be added)
+- [Kernel SessionKeyValidator](https://github.com/zerodevapp/kernel/blob/807b75a4da6fea6311a3573bc8b8964a34074d94/src/validator/SessionKeyValidator.sol#L138) (
+  to be added)
+- [SimpleAccount owner validation](https://github.com/eth-infinitism/account-abstraction/blob/releases/v0.6/contracts/samples/SimpleAccount.sol#L93-L99) (
+  to be added)
 
 ## Installation
 
@@ -50,7 +62,8 @@ go get github.com/layer-3/clearsync/pkg/userop
 ### UserOp Client
 
 All the functionalities provided by the UserOp library are accessed through the UserOp client.
-The client is responsible for checking smart account information, creating user operations and sending them to the client bundler.
+The client is responsible for checking smart account information, creating user operations and sending them to the
+client bundler.
 
 UserOp client implements the following interface:
 
@@ -71,7 +84,8 @@ type Client interface {
 
 ### Configuration
 
-The UserOp client requires a configuration struct to be created. The configuration struct allows you to specify the provider, bundler, wallet, paymaster and other details.
+The UserOp client requires a configuration struct to be created. The configuration struct allows you to specify the
+provider, bundler, wallet, paymaster and other details.
 
 Below is an example of a configuration struct (`testing/config.example.go`):
 
@@ -118,7 +132,8 @@ var (
 
 ### Creating a UserOp Client
 
-To create a UserOp client, you need to provide a configuration struct. If you want to change any of configuration components, you should modify the configuration and create a new client.
+To create a UserOp client, you need to provide a configuration struct. If you want to change any of configuration
+components, you should modify the configuration and create a new client.
 
 ```go
 import "github.com/layer-3/clearsync/pkg/userop"
