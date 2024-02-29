@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.22;
 
-import {ExitFormat as Outcome} from '@statechannels/exit-format/contracts/ExitFormat.sol';
 import {INitroTypes} from '../nitro/interfaces/INitroTypes.sol';
 
 /**
@@ -13,14 +12,19 @@ import {INitroTypes} from '../nitro/interfaces/INitroTypes.sol';
  *
  * A User who sets the reward rate becomes a Broker, and can borrow tokens from the pool to conduct settlements.
  * When a User becomes a Broker, they can no longer withdraw their liquidity from the pool or update the reward rate.
- * The reward rate can only be updated << WHEN? >>
+ * The reward rate can only be updated TODO: << WHEN? >>
  */
 interface IClearpool {
 	struct PoolSettlement {
 		INitroTypes.FixedPart fixedPart;
 		uint48 settlementTurnNum;
-		// TODO: change to simpler type
-		Outcome.SingleAssetExit[] outcome;
+		AssetAmount[][2] allocations; // post-swap allocations
+		bytes[2] sigs;
+	}
+
+	struct AssetAmount {
+		address asset;
+		uint256 amount;
 	}
 
 	event Deposited(address indexed user, address indexed token, uint256 amount);
@@ -64,7 +68,6 @@ interface IClearpool {
 	 * @notice Execute a settlement with the given `settlement` and `signature`.
 	 * @dev Require the settlement to be valid. Emit `SettlementExecuted` event.
 	 * @param settlement The settlement to execute.
-	 * @param sigs The signatures to validate the settlement.
 	 */
-	function execute(PoolSettlement calldata settlement, bytes[] calldata sigs) external;
+	function execute(PoolSettlement calldata settlement) external;
 }

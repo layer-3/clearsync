@@ -2,6 +2,8 @@
 pragma solidity 0.8.22;
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
+import '@openzeppelin/contracts/interfaces/IERC1271.sol';
 import '../clearing/YellowAdjudicator.sol';
 import '../interfaces/IClearpool.sol';
 
@@ -90,18 +92,26 @@ contract ClearPool is IClearpool {
 
 		pools[asset].bidders[msg.sender].rewardRate = rate;
 		pools[asset].totalRewardRate += rate;
+		// remove bidder's balance from totalHolding, so they do not get the reward
+		pools[asset].totalHolding -= pools[asset].accounts[msg.sender].balance;
 		emit RewardRateSet(msg.sender, asset, rate);
 	}
 
 	// Execute settlement
 	// TODO: add possibility to deposit to an escrow state channel
-	function execute(PoolSettlement memory settlement, bytes[] calldata sigs) external {
-		if (isSettlementExecuted[keccak256(abi.encode(settlement))]) {
+	function execute(PoolSettlement memory settlement) external {
+		bytes memory encodedSettlement = abi.encode(
+			settlement.fixedPart,
+			settlement.settlementTurnNum,
+			settlement.allocations
+		);
+
+		if (isSettlementExecuted[keccak256(encodedSettlement)]) {
 			revert('Settlement already executed');
 		}
 
-		if (!_includesBidder(settlement.fixedPart.participants)) {
-			revert('No bidder in participants');
+		if (settlement.fixedPart.participants.length != 2) {
+			revert('Invalid number of participants');
 		}
 
 		bytes32 channelId = _getChannelId(settlement.fixedPart);
@@ -112,20 +122,27 @@ contract ClearPool is IClearpool {
 			revert('Settlement turnNum not checkpointed');
 		}
 
-		// TODO:
-		// check all parties have assets to be swapped
-		// check that supplied settlement is signed by both supplied participants
-		// Swap all balances internally given the outcome
-	}
+		bool includesBidder = false;
 
-	function _includesBidder(address[] memory participants) internal pure returns (bool) {
-		for (uint256 i = 0; i < participants.length; i++) {
-			// TODO: implement
-			if (participants[i] == address(0)) {
-				return true;
-			}
+		for (uint256 i = 0; i < 2; i++) {
+			includesBidder = _requireSufficientBalance(
+				settlement.allocations[1 - i], // allocations are not swapped yet
+				settlement.fixedPart.participants[i]
+			);
+
+			_requireCorrectSignature(
+				encodedSettlement,
+				settlement.sigs[i],
+				settlement.fixedPart.participants[i]
+			);
 		}
-		return false;
+
+		if (!includesBidder) {
+			revert('No bidder in participants');
+		}
+
+		// Swap all balances internally given the outcome
+		_swapBalances(settlement.fixedPart.participants, settlement.allocations);
 	}
 
 	function _getChannelId(
@@ -139,5 +156,62 @@ contract ClearPool is IClearpool {
 				fixedPart.challengeDuration
 			)
 		);
+	}
+
+	function _requireSufficientBalance(
+		AssetAmount[] memory allocations,
+		address participant
+	) internal view returns (bool isBidder) {
+		isBidder = true;
+
+		for (uint256 i = 0; i < allocations.length; i++) {
+			if (pools[allocations[i].asset].accounts[participant].balance < allocations[i].amount) {
+				revert('Insufficient balance');
+			}
+
+			if (pools[allocations[i].asset].bidders[participant].rewardRate == 0) {
+				isBidder = false;
+			}
+		}
+	}
+
+	function _requireCorrectSignature(
+		bytes memory message,
+		bytes memory signature,
+		address signer
+	) internal view {
+		bytes32 messageHash = keccak256(message);
+		bytes32 ethSignedMessageHash = keccak256(
+			abi.encodePacked('\x19Ethereum Signed Message:\n32', messageHash)
+		);
+
+		// EOA. If the Signer is a SW, it must have already sent a transaction to this contract, thus it is deployed.
+		if (signer.code.length == 0) {
+			if (signer == ECDSA.recover(ethSignedMessageHash, signature)) {
+				return;
+			}
+		} else {
+			if (IERC1271(signer).isValidSignature(messageHash, signature) == 0x1626ba7e) {
+				return;
+			}
+		}
+
+		revert('Invalid signature');
+	}
+
+	function _swapBalances(
+		address[] memory participants,
+		AssetAmount[][2] memory allocations
+	) internal {
+		for (uint256 i = 0; i < 2; i++) {
+			for (uint256 j = 0; j < allocations[i].length; j++) {
+				pools[allocations[i][j].asset].accounts[participants[i]].balance -= allocations[i][
+					j
+				].amount;
+				pools[allocations[i][j].asset].accounts[participants[1 - i]].balance += allocations[
+					i
+				][j].amount;
+			}
+		}
 	}
 }
