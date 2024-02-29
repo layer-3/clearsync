@@ -14,8 +14,9 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/layer-3/clearsync/pkg/abi/entry_point_v0_6_0"
 	"github.com/shopspring/decimal"
+
+	"github.com/layer-3/clearsync/pkg/abi/entry_point_v0_6_0"
 )
 
 // Client represents a client for creating and posting user operations.
