@@ -12,9 +12,25 @@ import (
 )
 
 func TestClientNewUserOp(t *testing.T) {
+	// Skipping the test since it uses public RPC endpoint
+	// which often fails with 429 Too Many Requests.
+	t.Skip()
+
 	t.Parallel()
 
+	t.Run("Error when signer is not specified", func(t *testing.T) {
+		t.Parallel()
+
+		client := bundlerMock(t, defaultProviderURL())
+		ctx := context.Background()
+
+		_, err := client.NewUserOp(ctx, common.Address{}, nil, nil, nil)
+		require.EqualError(t, err, ErrNoSigner.Error())
+	})
+
 	t.Run("Error when no wallet deployed and no wallet deployment opts", func(t *testing.T) {
+		t.Parallel()
+
 		client := bundlerMock(t, defaultProviderURL())
 		ctx := context.Background()
 
@@ -34,13 +50,15 @@ func TestClientNewUserOp(t *testing.T) {
 		require.NoError(t, err)
 
 		// create userop without wallet deployment opts
-		_, err = client.NewUserOp(ctx, smartWallet, nil, nil, nil)
+		_, err = client.NewUserOp(ctx, smartWallet, SignerForKernel(nil), nil, nil)
 
 		// assert error
 		require.EqualError(t, err, ErrNoWalletDeploymentOpts.Error())
 	})
 
 	t.Run("Error when no wallet deployed and owner is zero in wallet deployment opts", func(t *testing.T) {
+		t.Parallel()
+
 		client := bundlerMock(t, defaultProviderURL())
 		ctx := context.Background()
 
@@ -70,6 +88,8 @@ func TestNewClient(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Error when entrypoint address is empty", func(t *testing.T) {
+		t.Parallel()
+
 		conf := mockConfig()
 		conf.EntryPoint = common.Address{}
 
@@ -79,6 +99,8 @@ func TestNewClient(t *testing.T) {
 	})
 
 	t.Run("Error when factory address is empty", func(t *testing.T) {
+		t.Parallel()
+
 		conf := mockConfig()
 		conf.SmartWallet.Factory = common.Address{}
 
@@ -88,6 +110,8 @@ func TestNewClient(t *testing.T) {
 	})
 
 	t.Run("Error when logic address is empty", func(t *testing.T) {
+		t.Parallel()
+
 		conf := mockConfig()
 		conf.SmartWallet.Logic = common.Address{}
 
@@ -97,6 +121,8 @@ func TestNewClient(t *testing.T) {
 	})
 
 	t.Run("Error when ECDSA validator address is empty", func(t *testing.T) {
+		t.Parallel()
+
 		conf := mockConfig()
 		conf.SmartWallet.ECDSAValidator = common.Address{}
 
@@ -106,6 +132,8 @@ func TestNewClient(t *testing.T) {
 	})
 
 	t.Run("Error when paymaster address is empty", func(t *testing.T) {
+		t.Parallel()
+
 		conf := mockConfig()
 		conf.Paymaster.Type = &PaymasterPimlicoERC20
 		conf.Paymaster.Address = common.Address{}
@@ -116,6 +144,8 @@ func TestNewClient(t *testing.T) {
 	})
 
 	t.Run("Paymaster address can be empty if no paymaster config", func(t *testing.T) {
+		t.Parallel()
+
 		conf := mockConfig()
 		conf.ProviderURL = *must(url.Parse(defaultProviderURL()))
 		conf.Paymaster = PaymasterConfig{}
@@ -126,6 +156,8 @@ func TestNewClient(t *testing.T) {
 	})
 
 	t.Run("Paymaster address can be empty if paymaster is disabled", func(t *testing.T) {
+		t.Parallel()
+
 		conf := mockConfig()
 		conf.ProviderURL = *must(url.Parse(defaultProviderURL()))
 		conf.Paymaster.Type = &PaymasterDisabled
