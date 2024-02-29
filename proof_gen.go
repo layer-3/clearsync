@@ -139,7 +139,7 @@ func fixOddNumOfNodes(buffer [][]byte, bufferSize, step int) int {
 	// Determine the node to append.
 	appendNodeIndex := (bufferSize - 1) << step
 	// The appended node will be put at the end of the buffer.
-	buffer[len(buffer)-1] = buffer[appendNodeIndex]
+	buffer[len(buffer)-1] = make([]byte, len(buffer[appendNodeIndex]))
 	bufferSize++
 
 	return bufferSize

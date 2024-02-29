@@ -128,7 +128,7 @@ func appendNodeIfOdd(buffer [][]byte) [][]byte {
 		return buffer
 	}
 
-	appendNode := buffer[len(buffer)-1]
+	appendNode := make([]byte, len(buffer[len(buffer)-1]))
 
 	buffer = append(buffer, appendNode)
 

@@ -30,7 +30,7 @@ import (
 	"testing"
 )
 
-func TestMerkleTreeNew_modeTreeBuild(t *testing.T) {
+func TestMerkleTreeNew_modeTreeBuildSequential(t *testing.T) {
 	var hashFuncCounter int
 	type args struct {
 		blocks []DataBlock
