@@ -119,7 +119,8 @@ func startBundler(ctx context.Context, t *testing.T, rpcURL url.URL, entryPoint 
 				"--minBalance", "0",
 				"--rpcUrl", rpcURL.String(),
 			},
-			WaitingFor: wait.ForLog("server started"),
+			ImagePlatform: "linux/amd64",
+			WaitingFor:    wait.ForLog("server started"),
 		},
 		Started: true,
 	})
