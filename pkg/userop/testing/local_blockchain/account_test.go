@@ -51,7 +51,7 @@ func NewAccountWithBalance(ctx context.Context, chainID, balance *big.Int, node 
 		account.Address, balance.Uint64(),
 	)
 
-	exitCode, result, err := node.Container.Exec(ctx, []string{"geth", "attach", "--exec", gethCmd, node.URL.String()})
+	exitCode, result, err := node.Container.Exec(ctx, []string{"geth", "attach", "--exec", gethCmd, node.LocalURL.String()})
 	if err != nil || exitCode != 0 {
 		return Account{}, fmt.Errorf("failed to exec increment balance: %w (exit code %d)", err, exitCode)
 	}
