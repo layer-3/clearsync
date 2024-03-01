@@ -32,18 +32,18 @@ func TestSimulatedRPC(t *testing.T) {
 
 	// 1. Start a local Ethereum node
 	ethNode := startEthNode(ctx, t)
-	slog.Info("connecting to Ethereum node", "rpcURL", ethNode.URL.String())
+	slog.Info("connecting to Ethereum node", "rpcURL", ethNode.LocalURL.String())
 
 	// 2. Deploy the required contracts
 	addresses := deployContracts(ctx, t, ethNode)
 
 	// 3. Start the bundler
-	bundlerURL := startBundler(ctx, t, ethNode.URL, addresses.entryPoint)
+	bundlerURL := startBundler(ctx, t, ethNode.ContainerURL, addresses.entryPoint)
 
 	fmt.Println("here")
 
 	// 4. Run transactions
-	_ = buildClient(t, ethNode.URL, *bundlerURL, addresses)
+	_ = buildClient(t, ethNode.LocalURL, *bundlerURL, addresses)
 	// TODO: set up tests
 
 	fmt.Println("waiting for timeout")
@@ -51,20 +51,25 @@ func TestSimulatedRPC(t *testing.T) {
 }
 
 type EthNode struct {
-	Container testcontainers.Container
-	Client    *ethclient.Client
-	URL       url.URL
+	Container    testcontainers.Container
+	Client       *ethclient.Client
+	LocalURL     url.URL
+	ContainerURL url.URL
 }
 
 func startEthNode(ctx context.Context, t *testing.T) *EthNode {
-	var err error
-	var gethContainer testcontainers.Container
-	var ethClient *ethclient.Client
-	var rpcURL *url.URL
+	var (
+		err           error
+		gethContainer testcontainers.Container
+		ethClient     *ethclient.Client
+		rpcURL        *url.URL
+		containerURL  *url.URL
+	)
 
 	if u := os.Getenv("GETH_NODE_RPC_URL"); u != "" {
 		rpcURL, err = url.Parse(u)
 		require.NoError(t, err, "failed to parse local RPC URL")
+		containerURL = rpcURL
 	} else {
 		// TODO: use in-memory database instead of container volumes
 		gethContainer, err = testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -87,10 +92,15 @@ func startEthNode(ctx context.Context, t *testing.T) *EthNode {
 			require.NoError(t, err, "failed to terminate Go-Ethereum container")
 		})
 
+		containerIP, err := gethContainer.ContainerIP(ctx)
+		require.NoError(t, err, "failed to get Go-Ethereum container IP")
 		containerPort, err := gethContainer.MappedPort(ctx, "8545")
 		require.NoError(t, err, "failed to get Go-Ethereum container port")
+
 		rpcURL, err = url.Parse(fmt.Sprintf("http://0.0.0.0:%s", containerPort.Port()))
 		require.NoError(t, err, "failed to parse local RPC URL")
+		containerURL, err = url.Parse(fmt.Sprintf("http://%s:%s", containerIP, containerPort.Port()))
+		require.NoError(t, err, "failed to parse container RPC URL")
 	}
 
 	ethClient, err = ethclient.Dial(rpcURL.String())
@@ -98,9 +108,10 @@ func startEthNode(ctx context.Context, t *testing.T) *EthNode {
 
 	slog.Info("Go-Ethereum container started", "rpcURL", rpcURL.String())
 	return &EthNode{
-		Container: gethContainer,
-		Client:    ethClient,
-		URL:       *rpcURL,
+		Container:    gethContainer,
+		Client:       ethClient,
+		LocalURL:     *rpcURL,
+		ContainerURL: *containerURL,
 	}
 }
 
@@ -120,7 +131,7 @@ func startBundler(ctx context.Context, t *testing.T, rpcURL url.URL, entryPoint 
 				"--rpcUrl", rpcURL.String(),
 			},
 			ImagePlatform: "linux/amd64",
-			WaitingFor:    wait.ForLog("server started"),
+			// WaitingFor:    wait.ForLog("server started"),
 		},
 		Started: true,
 	})
@@ -209,7 +220,7 @@ func buildClient(t *testing.T, rpcURL, bundlerURL url.URL, addresses contracts) 
 		Logic:          addresses.factory,
 		Factory:        addresses.logic,
 	}
-	config.Paymaster.Type = &userop.PaymasterPimlicoERC20
+	config.Paymaster.Type = &userop.PaymasterDisabled
 	config.Paymaster.Address = addresses.paymaster
 
 	client, err := userop.NewClient(config)
