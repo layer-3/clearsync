@@ -9,11 +9,11 @@ import (
 	"log"
 	"log/slog"
 	"net/url"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	ecrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/require"
@@ -38,11 +38,9 @@ func TestSimulatedRPC(t *testing.T) {
 	addresses := deployContracts(ctx, t, ethNode)
 
 	// 3. Start the bundler
-	signer, err := ecrypto.GenerateKey()
-	require.NoError(t, err, "failed to generate SIGNER private key for bundler")
-	utility, err := ecrypto.GenerateKey()
-	require.NoError(t, err, "failed to generate UTILITY private key for bundler")
-	bundlerURL := startBundler(ctx, t, ethNode.URL, addresses.entryPoint, signer, utility)
+	bundlerURL := startBundler(ctx, t, ethNode.URL, addresses.entryPoint)
+
+	fmt.Println("here")
 
 	// 4. Run transactions
 	_ = buildClient(t, ethNode.URL, *bundlerURL, addresses)
@@ -59,31 +57,43 @@ type EthNode struct {
 }
 
 func startEthNode(ctx context.Context, t *testing.T) *EthNode {
-	gethContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "ethereum/client-go:stable",
-			// 8545 TCP, used by the HTTP based JSON RPC API
-			// 8546 TCP, used by the WebSocket based JSON RPC API
-			// 8547 TCP, used by the GraphQL API
-			// 30303 TCP and UDP, used by the P2P protocol running the network
-			ExposedPorts: []string{"8545:8545/tcp", "8546:8546/tcp", "8547:8547/tcp", "30303:30303/tcp", "30303:30303/udp"},
-			Cmd:          []string{"--dev", "--http", "--http.api=eth,web3,net", "--http.addr=0.0.0.0", "--http.corsdomain='*'", "--http.vhosts='*'"},
-			WaitingFor:   wait.ForLog("server started"),
-		},
-		Started: true,
-	})
-	require.NoError(t, err, "failed to start Go-Ethereum container")
+	var err error
+	var gethContainer testcontainers.Container
+	var ethClient *ethclient.Client
+	var rpcURL *url.URL
 
-	t.Cleanup(func() {
-		err := gethContainer.Terminate(ctx)
-		require.NoError(t, err, "failed to terminate Go-Ethereum container")
-	})
+	if u := os.Getenv("GETH_NODE_RPC_URL"); u != "" {
+		rpcURL, err = url.Parse(u)
+		require.NoError(t, err, "failed to parse local RPC URL")
+	} else {
+		// TODO: use in-memory database instead of container volumes
+		gethContainer, err = testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image: "ethereum/client-go:stable",
+				// 8545 TCP, used by the HTTP based JSON RPC API
+				// 8546 TCP, used by the WebSocket based JSON RPC API
+				// 8547 TCP, used by the GraphQL API
+				// 30303 TCP and UDP, used by the P2P protocol running the network
+				ExposedPorts: []string{"8545:8545/tcp", "8546:8546/tcp", "8547:8547/tcp", "30303:30303/tcp", "30303:30303/udp"},
+				Cmd:          []string{"--dev", "--http", "--http.api=eth,web3,net", "--http.addr=0.0.0.0", "--http.corsdomain='*'", "--http.vhosts='*'"},
+				WaitingFor:   wait.ForLog("server started"),
+			},
+			Started: true,
+		})
+		require.NoError(t, err, "failed to start Go-Ethereum container")
 
-	containerPort, err := gethContainer.MappedPort(ctx, "8545")
-	require.NoError(t, err, "failed to get Go-Ethereum container port")
-	rpcURL, err := url.Parse(fmt.Sprintf("http://0.0.0.0:%s", containerPort.Port()))
-	require.NoError(t, err, "failed to parse local RPC URL")
-	ethClient, err := ethclient.Dial(rpcURL.String())
+		t.Cleanup(func() {
+			err := gethContainer.Terminate(ctx)
+			require.NoError(t, err, "failed to terminate Go-Ethereum container")
+		})
+
+		containerPort, err := gethContainer.MappedPort(ctx, "8545")
+		require.NoError(t, err, "failed to get Go-Ethereum container port")
+		rpcURL, err = url.Parse(fmt.Sprintf("http://0.0.0.0:%s", containerPort.Port()))
+		require.NoError(t, err, "failed to parse local RPC URL")
+	}
+
+	ethClient, err = ethclient.Dial(rpcURL.String())
 	require.NoError(t, err)
 
 	slog.Info("Go-Ethereum container started", "rpcURL", rpcURL.String())
@@ -94,14 +104,7 @@ func startEthNode(ctx context.Context, t *testing.T) *EthNode {
 	}
 }
 
-func startBundler(
-	ctx context.Context,
-	t *testing.T,
-	rpcURL url.URL,
-	entryPoint common.Address,
-	signer *ecdsa.PrivateKey,
-	utility *ecdsa.PrivateKey,
-) *url.URL {
+func startBundler(ctx context.Context, t *testing.T, rpcURL url.URL, entryPoint common.Address) *url.URL {
 	bundlerURL, err := url.Parse("http://localhost:3000")
 	require.NoError(t, err, "failed to parse local bundler URL")
 
@@ -111,8 +114,8 @@ func startBundler(
 			Entrypoint: []string{"pnpm", "start",
 				"--networkName", "mainnet", // check Go-Ethereum container logs to find out configured network
 				"--entryPoint", entryPoint.Hex(), // the contract should already be deployed on Go-Ethereum node
-				"--signerPrivateKeys", privateKeyToString(signer),
-				"--utilityPrivateKey", privateKeyToString(utility),
+				"--signerPrivateKeys", "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+				"--utilityPrivateKey", "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
 				"--minBalance", "0",
 				"--rpcUrl", rpcURL.String(),
 			},
