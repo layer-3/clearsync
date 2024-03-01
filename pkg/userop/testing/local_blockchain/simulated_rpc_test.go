@@ -40,8 +40,6 @@ func TestSimulatedRPC(t *testing.T) {
 	// 3. Start the bundler
 	bundlerURL := startBundler(ctx, t, ethNode.ContainerURL, addresses.entryPoint)
 
-	fmt.Println("here")
-
 	// 4. Run transactions
 	_ = buildClient(t, ethNode.LocalURL, *bundlerURL, addresses)
 	// TODO: set up tests
