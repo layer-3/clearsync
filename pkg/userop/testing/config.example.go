@@ -1,27 +1,15 @@
 package main
 
 import (
-	"crypto/ecdsa"
 	"net/url"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/shopspring/decimal"
 
+	"github.com/layer-3/clearsync/pkg/signer"
 	"github.com/layer-3/clearsync/pkg/userop"
 )
-
-type exampleECDSASigner struct {
-	privateKey *ecdsa.PrivateKey
-}
-
-func newExampleECDSASigner(privateKey *ecdsa.PrivateKey) exampleECDSASigner {
-	return exampleECDSASigner{privateKey: privateKey}
-}
-
-func (s exampleECDSASigner) Sign(msg []byte) ([]byte, error) {
-	return crypto.Sign(msg, s.privateKey)
-}
 
 var (
 	exampleConfig = userop.ClientConfig{
@@ -56,7 +44,7 @@ var (
 	walletDeploymentOpts = &userop.WalletDeploymentOpts{}
 
 	exampleSigner = userop.SignerForKernel(
-		newExampleECDSASigner(
+		signer.NewLocalSigner(
 			must(crypto.HexToECDSA(
 				"YOUR_PRIVATE_KEY",
 			)),
