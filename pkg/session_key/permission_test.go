@@ -6,84 +6,17 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/layer-3/clearsync/pkg/abi/itoken"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestPermissionHash(t *testing.T) {
-	tcs := []struct {
-		permission        Permission
-		encodedPermission string
-		hash              string
-	}{
-		{
-			permission: Permission{
-				Index:      0,
-				Target:     common.HexToAddress("0x03A6a84cD762D9707A21605b548aaaB891562aAb"),
-				Sig:        [4]byte{0x20, 0x91, 0xaf, 0x26},
-				ValueLimit: big.NewInt(0),
-				ExecutionRule: ExecutionRule{
-					ValidAfter: big.NewInt(3),
-					Interval:   big.NewInt(2),
-					Runs:       big.NewInt(9),
-				},
-				Rules: []ParamRule{
-					{
-						Offset:    big.NewInt(0),
-						Condition: EqualParamCondition,
-						Param:     [32]byte(hexutil.MustDecode("0x0000000000000000000000000000000000000000000000000000000000000064")[:32]),
-					},
-					{
-						Offset:    big.NewInt(32),
-						Condition: GreaterThanParamCondition,
-						Param:     [32]byte(hexutil.MustDecode("0x0000000000000000000000000000000000000000000000000000000000000064")[:32]),
-					},
-				},
-			},
-			encodedPermission: "0x0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003a6a84cd762d9707a21605b548aaab891562aab2091af2600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000090000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000064",
-			hash:              "0xe5486fabe8cd4128ee54244f940fc7477b2652ab4fdfa13e9927bf252e4d66da",
-		},
-		{
-			permission: Permission{
-				Index:      185,
-				Target:     common.HexToAddress("0xa0075DDDF74b904842c323A2a8189E643beFF4DA"),
-				Sig:        [4]byte{0x20, 0x91, 0xaf, 0x26},
-				ValueLimit: big.NewInt(0),
-				ExecutionRule: ExecutionRule{
-					ValidAfter: big.NewInt(3),
-					Interval:   big.NewInt(2),
-					Runs:       big.NewInt(9),
-				},
-				Rules: []ParamRule{
-					{
-						Offset:    big.NewInt(0),
-						Condition: NotEqualParamCondition,
-						Param:     [32]byte(hexutil.MustDecode("0x0000000000000000000000000000000000000000000000000000000000000064")[:32]),
-					},
-					{
-						Offset:    big.NewInt(32),
-						Condition: EqualParamCondition,
-						Param:     [32]byte(hexutil.MustDecode("0x0000000000000000000000000000000000000000000000000000000000000064")[:32]),
-					},
-				},
-			},
-			encodedPermission: "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000b9000000000000000000000000a0075dddf74b904842c323a2a8189e643beff4da2091af2600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000090000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000050000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000064",
-			hash:              "0x651fe941928597ecb0406ec9678509c0913fc735ff48f24194f08ff364c92499",
-		},
-	}
+func TestPermissionsMerkleRootAndProof(t *testing.T) {
+	erc20ABI, err := itoken.IERC20MetaData.GetAbi()
+	require.NoError(t, err)
 
-	for _, tc := range tcs {
-		encodedPermission, err := tc.permission.Encode()
-		assert.NoError(t, err)
-		assert.Equal(t, tc.encodedPermission, hexutil.Encode(encodedPermission))
+	funcABI := erc20ABI.Methods["approve"]
 
-		hash := crypto.Keccak256(encodedPermission)
-		assert.NoError(t, err)
-		assert.Equal(t, tc.hash, hexutil.Encode(hash))
-	}
-}
-
-func TestPermissionsMerkleTreeRootAndProof(t *testing.T) {
 	tcs := []struct {
 		permissions []Permission
 		root        string
@@ -93,90 +26,68 @@ func TestPermissionsMerkleTreeRootAndProof(t *testing.T) {
 		{
 			permissions: []Permission{
 				{
-					Index:      0,
-					Target:     common.HexToAddress("0x03A6a84cD762D9707A21605b548aaaB891562aAb"),
-					Sig:        [4]byte{0x20, 0x91, 0xaf, 0x26},
-					ValueLimit: big.NewInt(0),
-					ExecutionRule: ExecutionRule{
-						ValidAfter: big.NewInt(177),
-						Interval:   big.NewInt(5850),
-						Runs:       big.NewInt(3),
-					},
+					Target:      common.HexToAddress("0x03A6a84cD762D9707A21605b548aaaB891562aAb"),
+					FunctionABI: funcABI,
+					ValueLimit:  big.NewInt(0),
 					Rules: []ParamRule{
 						{
-							Offset:    big.NewInt(0),
 							Condition: EqualParamCondition,
-							Param:     [32]byte(hexutil.MustDecode("0x0000000000000000000000000000000000000000000000000000000000000064")[:32]),
+							Param:     [32]byte(hexutil.MustDecode("0x000000000000000000000000D6BbDE9174b1CdAa358d2Cf4D57D1a9F7178FBfF")[:32]),
 						},
 						{
-							Offset:    big.NewInt(32),
 							Condition: GreaterThanParamCondition,
 							Param:     [32]byte(hexutil.MustDecode("0x0000000000000000000000000000000000000000000000000000000000000064")[:32]),
 						},
 					},
 				},
 				{
-					Index:      1,
-					Target:     common.HexToAddress("0xD6BbDE9174b1CdAa358d2Cf4D57D1a9F7178FBfF"),
-					Sig:        [4]byte{0x20, 0x91, 0xaf, 0x26},
-					ValueLimit: big.NewInt(0),
-					ExecutionRule: ExecutionRule{
-						ValidAfter: big.NewInt(177),
-						Interval:   big.NewInt(5850),
-						Runs:       big.NewInt(3),
-					},
+					Target:      common.HexToAddress("0xD6BbDE9174b1CdAa358d2Cf4D57D1a9F7178FBfF"),
+					FunctionABI: funcABI,
+					ValueLimit:  big.NewInt(0),
 					Rules: []ParamRule{
 						{
-							Offset:    big.NewInt(0),
-							Condition: GreaterThanParamCondition,
+							Condition: NotEqualParamCondition,
 							Param:     [32]byte(hexutil.MustDecode("0x0000000000000000000000000000000000000000000000000000000000000064")[:32]),
 						},
 						{
-							Offset:    big.NewInt(32),
 							Condition: LessThanParamCondition,
 							Param:     [32]byte(hexutil.MustDecode("0x0000000000000000000000000000000000000000000000000000000000000064")[:32]),
 						},
 					},
 				},
 				{
-					Index:      2,
-					Target:     common.HexToAddress("0x15cF58144EF33af1e14b5208015d11F9143E27b9"),
-					Sig:        [4]byte{0x20, 0x91, 0xaf, 0x26},
-					ValueLimit: big.NewInt(0),
-					ExecutionRule: ExecutionRule{
-						ValidAfter: big.NewInt(177),
-						Interval:   big.NewInt(5850),
-						Runs:       big.NewInt(3),
-					},
+					Target:      common.HexToAddress("0x15cF58144EF33af1e14b5208015d11F9143E27b9"),
+					FunctionABI: funcABI,
+					ValueLimit:  big.NewInt(0),
 					Rules: []ParamRule{
 						{
-							Offset:    big.NewInt(0),
 							Condition: LessThanParamCondition,
 							Param:     [32]byte(hexutil.MustDecode("0x0000000000000000000000000000000000000000000000000000000000000064")[:32]),
 						},
 						{
-							Offset:    big.NewInt(32),
 							Condition: GreaterEqualParamCondition,
 							Param:     [32]byte(hexutil.MustDecode("0x0000000000000000000000000000000000000000000000000000000000000064")[:32]),
 						},
 					},
 				},
 			},
-			root:       "0x8d5b5624af55afe4c927b5139d4dbb8e72b8e4ad844f8a20745a4700a7533edf",
+			root:       "0xbc1b64afc7aed802815dcf65a6fe5b91fec933352d4392c741142873627c6dcc",
 			proofIndex: 0,
 			proof: [][32]byte{
-				[32]byte(hexutil.MustDecode("0x3e1b0fd674a588568c3ca9ffcafc2fd125cc6e2b6b2b133977c02047d262b690")),
-				[32]byte(hexutil.MustDecode("0x3001620487f821a0b18b4a3db22bea23f12abf535fac8e90064127ff10b9dbbc")),
+				[32]byte(hexutil.MustDecode("0x7b33528d92deb6fb4f510a22d8de3f1eddff8d15be3cd7bcc0bfc4b907d1d1da")),
+				[32]byte(hexutil.MustDecode("0xb42da658b0d0fa36b677dc6053edbe05f471a958bc8a053505ad3321d2df8ef0")),
 			},
 		},
 	}
 
 	for _, tc := range tcs {
-		tree, err := BuildPermissionsMerkleTree(tc.permissions)
-		assert.NoError(t, err)
-		assert.Equal(t, tc.root, hexutil.Encode(tree.Root))
+		pt, err := NewPermissionTree(tc.permissions)
+		require.NoError(t, err)
 
-		proof, err := tree.Proof(tc.permissions[tc.proofIndex])
+		assert.NoError(t, err)
+		assert.Equal(t, tc.root, hexutil.Encode(pt.Tree.Root))
+
+		proof, err := pt.Tree.Proof(tc.permissions[tc.proofIndex].toABI(uint32(tc.proofIndex)))
 		assert.NoError(t, err)
 		assert.Equal(t, len(tc.proof), len(proof.Siblings))
 		for i, sibling := range proof.Siblings {
