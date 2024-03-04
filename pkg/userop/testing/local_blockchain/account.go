@@ -1,4 +1,4 @@
-package main
+package local_blockchain
 
 import (
 	"bufio"
