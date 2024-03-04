@@ -2,14 +2,11 @@ package main
 
 import (
 	"context"
-	"crypto/ecdsa"
-	"crypto/x509"
-	"encoding/pem"
 	"fmt"
-	"log"
 	"log/slog"
 	"net/url"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -31,14 +28,22 @@ func TestSimulatedRPC(t *testing.T) {
 	ctx := context.Background()
 
 	// 1. Start a local Ethereum node
-	ethNode := startEthNode(ctx, t)
+	for i := 0; i < 3; i++ { // starting multiple nodes to test reusing existing nodes
+		ethNode := NewEthNode(ctx, t)
+		slog.Info("connecting to Ethereum node", "rpcURL", ethNode.LocalURL.String())
+	}
+	ethNode := NewEthNode(ctx, t)
 	slog.Info("connecting to Ethereum node", "rpcURL", ethNode.LocalURL.String())
 
 	// 2. Deploy the required contracts
-	addresses := deployContracts(ctx, t, ethNode)
+	addresses := DeployContracts(ctx, t, ethNode)
 
 	// 3. Start the bundler
-	bundlerURL := startBundler(ctx, t, ethNode.ContainerURL, addresses.entryPoint)
+	for i := 0; i < 3; i++ { // starting multiple bundlers to test reusing existing bundlers
+		bundlerURL := NewBundler(ctx, t, ethNode.ContainerURL, addresses.entryPoint)
+		slog.Info("connecting to bundler", "bundlerURL", bundlerURL.String())
+	}
+	bundlerURL := NewBundler(ctx, t, ethNode.ContainerURL, addresses.entryPoint)
 
 	// 4. Run transactions
 	_ = buildClient(t, ethNode.LocalURL, *bundlerURL, addresses)
@@ -55,7 +60,21 @@ type EthNode struct {
 	ContainerURL url.URL
 }
 
-func startEthNode(ctx context.Context, t *testing.T) *EthNode {
+var (
+	ethActiveNode  *EthNode
+	ethActiveUsers int64
+	ethMutex       sync.Mutex
+)
+
+func NewEthNode(ctx context.Context, t *testing.T) *EthNode {
+	ethMutex.Lock()
+	defer ethMutex.Unlock()
+
+	if ethActiveNode != nil {
+		slog.Info("reusing existing Ethereum node")
+		return ethActiveNode
+	}
+
 	var (
 		err           error
 		gethContainer testcontainers.Container
@@ -86,8 +105,15 @@ func startEthNode(ctx context.Context, t *testing.T) *EthNode {
 		require.NoError(t, err, "failed to start Go-Ethereum container")
 
 		t.Cleanup(func() {
-			err := gethContainer.Terminate(ctx)
-			require.NoError(t, err, "failed to terminate Go-Ethereum container")
+			ethMutex.Lock()
+			defer ethMutex.Unlock()
+
+			ethActiveUsers--
+			if ethActiveUsers <= 0 {
+				ethActiveNode = nil
+				err := gethContainer.Terminate(ctx)
+				require.NoError(t, err, "failed to terminate Go-Ethereum container")
+			}
 		})
 
 		containerIP, err := gethContainer.ContainerIP(ctx)
@@ -105,17 +131,35 @@ func startEthNode(ctx context.Context, t *testing.T) *EthNode {
 	require.NoError(t, err)
 
 	slog.Info("Go-Ethereum container started", "rpcURL", rpcURL.String())
-	return &EthNode{
+	ethNode := &EthNode{
 		Container:    gethContainer,
 		Client:       ethClient,
 		LocalURL:     *rpcURL,
 		ContainerURL: *containerURL,
 	}
+
+	ethActiveUsers++
+	ethActiveNode = ethNode
+	return ethNode
 }
 
-func startBundler(ctx context.Context, t *testing.T, rpcURL url.URL, entryPoint common.Address) *url.URL {
+var (
+	bundlerActiveNode  testcontainers.Container
+	bundlerActiveUsers int64
+	bundlerMutex       sync.Mutex
+)
+
+func NewBundler(ctx context.Context, t *testing.T, rpcURL url.URL, entryPoint common.Address) *url.URL {
+	bundlerMutex.Lock()
+	defer bundlerMutex.Unlock()
+
 	bundlerURL, err := url.Parse("http://localhost:3000")
 	require.NoError(t, err, "failed to parse local bundler URL")
+
+	if bundlerActiveNode != nil {
+		slog.Info("reusing existing Alto bundler")
+		return bundlerURL
+	}
 
 	altoContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
@@ -129,22 +173,31 @@ func startBundler(ctx context.Context, t *testing.T, rpcURL url.URL, entryPoint 
 				"--rpcUrl", rpcURL.String(),
 			},
 			ImagePlatform: "linux/amd64",
-			// WaitingFor:    wait.ForLog("server started"),
+			WaitingFor:    wait.ForLog("Server listening at"),
 		},
 		Started: true,
 	})
 	require.NoError(t, err, "failed to start Alto bundler container")
 
 	t.Cleanup(func() {
-		if err := altoContainer.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate Alto container: %s", err)
+		bundlerMutex.Lock()
+		defer bundlerMutex.Unlock()
+
+		bundlerActiveUsers--
+		if bundlerActiveUsers <= 0 {
+			bundlerActiveNode = nil
+			if err := altoContainer.Terminate(ctx); err != nil {
+				t.Fatalf("failed to terminate Alto container: %s", err)
+			}
 		}
 	})
 
+	bundlerActiveUsers++
+	bundlerActiveNode = altoContainer
 	return bundlerURL
 }
 
-type contracts struct {
+type Contracts struct {
 	entryPoint common.Address
 	validator  common.Address
 	factory    common.Address
@@ -152,11 +205,11 @@ type contracts struct {
 	paymaster  common.Address
 }
 
-func deployContracts(
+func DeployContracts(
 	ctx context.Context,
 	t *testing.T,
 	node *EthNode,
-) contracts {
+) Contracts {
 	chainID, err := node.Client.ChainID(ctx)
 	require.NoError(t, err)
 	slog.Info("chainID", "chainID", chainID)
@@ -184,7 +237,7 @@ func deployContracts(
 	var paymaster common.Address // TODO: deploy Paymaster contract
 
 	slog.Info("done deploying contracts")
-	return contracts{
+	return Contracts{
 		entryPoint: entryPoint,
 		validator:  validator,
 		factory:    factory,
@@ -193,19 +246,7 @@ func deployContracts(
 	}
 }
 
-func privateKeyToString(privateKey *ecdsa.PrivateKey) string {
-	// Serialize the private key to PEM format
-	x509Encoded, err := x509.MarshalECPrivateKey(privateKey)
-	if err != nil {
-		log.Fatalf("Failed to marshal ECDSA private key: %v", err)
-	}
-	pemEncoded := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: x509Encoded})
-
-	// Convert the PEM to a string (PEM is already a string format)
-	return string(pemEncoded)
-}
-
-func buildClient(t *testing.T, rpcURL, bundlerURL url.URL, addresses contracts) userop.Client {
+func buildClient(t *testing.T, rpcURL, bundlerURL url.URL, addresses Contracts) userop.Client {
 	config, err := userop.NewClientConfigFromEnv()
 	require.NoError(t, err)
 
