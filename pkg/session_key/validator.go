@@ -13,7 +13,44 @@ import (
 )
 
 const (
-	singlePermissionProofABI = "[{\"components\":[{\"internalType\":\"uint32\",\"name\":\"index\",\"type\":\"uint32\"},{\"internalType\":\"address\",\"name\":\"target\",\"type\":\"address\"},{\"internalType\":\"bytes4\",\"name\":\"sig\",\"type\":\"bytes4\"},{\"internalType\":\"uint256\",\"name\":\"valueLimit\",\"type\":\"uint256\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"offset\",\"type\":\"uint256\"},{\"internalType\":\"enum ParamCondition\",\"name\":\"condition\",\"type\":\"uint8\"},{\"internalType\":\"bytes32\",\"name\":\"param\",\"type\":\"bytes32\"}],\"internalType\":\"struct ParamRule[]\",\"name\":\"rules\",\"type\":\"tuple[]\"},{\"components\":[{\"internalType\":\"ValidAfter\",\"name\":\"validAfter\",\"type\":\"uint48\"},{\"internalType\":\"uint48\",\"name\":\"interval\",\"type\":\"uint48\"},{\"internalType\":\"uint48\",\"name\":\"runs\",\"type\":\"uint48\"}],\"internalType\":\"struct ExecutionRule\",\"name\":\"executionRule\",\"type\":\"tuple\"}],\"internalType\":\"struct Permission\",\"name\":\"permission\",\"type\":\"tuple\"},{\"internalType\":\"bytes32[]\",\"name\":\"merkleProof\",\"type\":\"bytes32[]\"}]"
+	multiPermissionProofABI = `
+		[
+			{
+				"components":[
+					{"internalType":"uint32","name":"index","type":"uint32"},
+					{"internalType":"address","name":"target","type":"address"},
+					{"internalType":"bytes4","name":"sig","type":"bytes4"},
+					{"internalType":"uint256","name":"valueLimit","type":"uint256"},
+					{
+						"components":[
+							{"internalType":"uint256","name":"offset","type":"uint256"},
+							{"internalType":"enum ParamCondition","name":"condition","type":"uint8"},
+							{"internalType":"bytes32","name":"param","type":"bytes32"}
+						],
+						"internalType":"struct ParamRule[]",
+						"name":"rules",
+						"type":"tuple[]"
+					},{
+						"components":[
+							{"internalType":"ValidAfter","name":"validAfter","type":"uint48"},
+							{"internalType":"uint48","name":"interval","type":"uint48"},
+							{"internalType":"uint48","name":"runs","type":"uint48"}
+						],
+						"internalType":"struct ExecutionRule",
+						"name":"executionRule",
+						"type":"tuple"
+					}
+				],
+				"internalType":"struct Permission[]",
+				"name":"permission",
+				"type":"tuple[]"
+			},{
+				"internalType":"bytes32[][]",
+				"name":"merkleProof",
+				"type":"bytes32[][]"
+			}
+		]
+	`
 )
 
 func PackValidatorEnableSignature(enableData []byte, validator, executor common.Address, digestSig signer.Signature) []byte {
@@ -33,19 +70,27 @@ func PackValidatorEnableSignature(enableData []byte, validator, executor common.
 	return signature
 }
 
-func PackSessionKeySignatureWithSinglePermission(sessionKey common.Address, userOpHash []byte, permission Permission, proof mt.Proof) ([]byte, error) {
+func PackSessionKeySignature(sessionKey common.Address, userOpHash []byte, permissions []Permission, proofs []mt.Proof) ([]byte, error) {
 	var args abi.Arguments
-	dec := json.NewDecoder(strings.NewReader(singlePermissionProofABI))
+	dec := json.NewDecoder(strings.NewReader(multiPermissionProofABI))
 	if err := dec.Decode(&args); err != nil {
 		return nil, err
 	}
 
-	normProof := make([][32]byte, len(proof.Siblings))
-	for i, sibling := range proof.Siblings {
-		copy(normProof[i][:], sibling[:])
+	kernelPermissions := make([]kernelPermission, len(permissions))
+	for i, permission := range permissions {
+		kernelPermissions[i] = permission.toABI(uint32(i))
 	}
 
-	permissionProof, err := args.Pack(permission, normProof)
+	normProofs := make([][][32]byte, len(proofs))
+	for i, proof := range proofs {
+		normProofs[i] = make([][32]byte, len(proof.Siblings))
+		for j, sibling := range proof.Siblings {
+			copy(normProofs[i][j][:], sibling[:])
+		}
+	}
+
+	permissionProof, err := args.Pack(kernelPermissions, normProofs)
 	if err != nil {
 		return nil, err
 	}
