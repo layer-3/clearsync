@@ -56,18 +56,18 @@ const (
 )
 
 func PackEnableValidatorSignature(enableData []byte, validator, executor common.Address, digestSig signer.Signature) []byte {
+	uint48Zero := big.NewInt(0).FillBytes(make([]byte, 6))
+
 	signature := make([]byte, 0, KernelEnableSigOffset+32+32+1)
-	// "enable validator" (0x00000002) mode
-	// see https://github.com/zerodevapp/kernel/blob/807b75a4da6fea6311a3573bc8b8964a34074d94/src/Kernel.sol#L127
-	signature = append(signature, []byte{0x00, 0x00, 0x00, 0x02}...)
-	signature = append(signature, enableData[52:58]...)
-	signature = append(signature, enableData[58:64]...)
-	signature = append(signature, validator.Bytes()...)
-	signature = append(signature, executor.Bytes()...)
-	signature = append(signature, big.NewInt(int64(len(enableData))).FillBytes(make([]byte, 32))...)
-	signature = append(signature, enableData...)
-	signature = append(signature, big.NewInt(65).FillBytes(make([]byte, 32))...)
-	signature = append(signature, digestSig.R...)
+	signature = append(signature, []byte{0x00, 0x00, 0x00, 0x02}...)                                 // "enable validator" (0x00000002) mode, see https://github.com/zerodevapp/kernel/blob/807b75a4da6fea6311a3573bc8b8964a34074d94/src/Kernel.sol#L127
+	signature = append(signature, uint48Zero...)                                                     // validatorValidAfter, for now SessionKeyValidator is valid indefinitely
+	signature = append(signature, uint48Zero...)                                                     // validatorValidUntil
+	signature = append(signature, validator.Bytes()...)                                              // validatorAddress
+	signature = append(signature, executor.Bytes()...)                                               // executorAddress
+	signature = append(signature, big.NewInt(int64(len(enableData))).FillBytes(make([]byte, 32))...) // enableDataLength
+	signature = append(signature, enableData...)                                                     // enableData
+	signature = append(signature, big.NewInt(65).FillBytes(make([]byte, 32))...)                     // enableSigLength
+	signature = append(signature, digestSig.R...)                                                    // enableSig
 	signature = append(signature, digestSig.S...)
 	signature = append(signature, digestSig.V)
 

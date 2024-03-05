@@ -29,7 +29,7 @@ func TestSessionKeyEncode(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		enableData := tc.sessionData.Encode()
+		enableData := tc.sessionData.PackEnableData()
 		assert.Equal(t, tc.enableData, hexutil.Encode(enableData))
 	}
 }

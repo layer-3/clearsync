@@ -5,13 +5,15 @@ import (
 	"fmt"
 	"log/slog"
 	"math/big"
-	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/layer-3/clearsync/pkg/signer"
 	"github.com/layer-3/clearsync/pkg/userop"
 	mt "github.com/layer-3/go-merkletree"
+
+	"github.com/layer-3/clearsync/pkg/artifacts/session_key_validator"
 )
 
 type Client interface {
@@ -35,7 +37,7 @@ type Client interface {
 	// Returns:
 	// - a user operation signer function
 	// - an error if the signer could not be created
-	GetUserOpSigner(sessionSigner signer.Signer) (userop.Signer, error)
+	GetUserOpSigner(sessionSigner signer.Signer) userop.Signer
 }
 
 type backend struct {
@@ -73,74 +75,72 @@ func NewClient(config Config) (Client, error) {
 }
 
 func (b *backend) GetIncompleteEnablingUserOpSigner(sessionSigner signer.Signer) (userop.Signer, error) {
+	sessionKeyValidator, err := session_key_validator.NewSessionKeyValidator(b.sessionKeyValidatorAddress, b.provider)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to session key validator: %w", err)
+	}
+
 	return func(op userop.UserOperation, entryPoint common.Address, chainID *big.Int) ([]byte, error) {
 		slog.Debug("signing enable session key + user operation with session key")
 
+		nonces, err := sessionKeyValidator.Nonces(nil, sessionSigner.CommonAddress())
+		if err != nil {
+			return nil, fmt.Errorf("failed to get nonces: %w", err)
+		}
+
+		sessionData := SessionData{
+			SessionKey: sessionSigner.CommonAddress(),
+			ValidAfter: time.Unix(int64(b.sessionKeyValidAfter), 0),
+			ValidUntil: time.Unix(int64(b.sessionKeyValidUntil), 0),
+			MerkleRoot: b.PermTree.Root,
+			Paymaster:  b.paymasterAddress,
+			Nonce:      big.NewInt(0).Add(nonces.LastNonce, big.NewInt(1)),
+		}
+
+		enableData := sessionData.PackEnableData()
+		emptySig := signer.NewSignatureFromBytes(make([]byte, 65)) // placeholder for enableSig
+
+		fullSig := PackEnableValidatorSignature(enableData, b.sessionKeyValidatorAddress, b.executorAddress, emptySig)
+
 		userOpHash := op.UserOpHash(entryPoint, chainID)
-		validationSig, err := b.getValidationSig(sessionSigner, op.CallData, userOpHash)
+		useSessionKeySig, err := b.getUseSessionKeySig(sessionSigner, op.CallData, userOpHash)
 		if err != nil {
 			return nil, fmt.Errorf("failed to build validation sig: %w", err)
 		}
 
-		// "enable validator" mode
-		// see https://github.com/zerodevapp/kernel/blob/807b75a4da6fea6311a3573bc8b8964a34074d94/src/Kernel.sol#L127
-		validatorMode := "0x00000002"
-		uint48Zero := "000000000000"
-
-		// TODO:
-		enableData := make([]byte, 32)
-		// enableData length padded to 32 bytes
-		enableDataLength := fmt.Sprintf("%032x", len(enableData))
-
-		// TODO:
-		enableSig := strings.Repeat("0", 65)
-		// enableSig length padded to 32 bytes
-		enableSigLength := fmt.Sprintf("%032x", len(enableSig))
-
-		// validatorMode + validatorValidAfter + validatorValidUntil + validatorAddress + executorAddress (zero) + enableDataLength (padded to 32 bytes) + enableData
-		// TODO: verify zero address is correct
-		fullSigStr := validatorMode + uint48Zero + uint48Zero + ECDSAValidatorAddress[2:] + common.BytesToAddress(nil).String()[2:] + enableDataLength + hexutil.Encode(enableData)[2:] + enableSigLength + enableSig + hexutil.Encode(validationSig)[2:]
-
-		fullSignature, err := hexutil.Decode(fullSigStr)
-		if err != nil {
-			return nil, fmt.Errorf("failed to decode signature: %w", err)
-		}
+		fullSig = append(fullSig, useSessionKeySig...)
 
 		slog.Debug("signed enable session key + user operation with session key for Kernel",
-			"signature", hexutil.Encode(fullSignature),
+			"signature", hexutil.Encode(fullSig),
 			"hash", userOpHash.String())
-		return fullSignature, nil
+		return fullSig, nil
 	}, nil
 }
 
-func (b *backend) GetUserOpSigner(sessionSigner signer.Signer) (userop.Signer, error) {
+func (b *backend) GetUserOpSigner(sessionSigner signer.Signer) userop.Signer {
 	return func(op userop.UserOperation, entryPoint common.Address, chainID *big.Int) ([]byte, error) {
 		slog.Debug("signing user operation with session key")
 
 		userOpHash := op.UserOpHash(entryPoint, chainID)
-		validationSig, err := b.getValidationSig(sessionSigner, op.CallData, userOpHash)
+		useSessionKeySig, err := b.getUseSessionKeySig(sessionSigner, op.CallData, userOpHash)
 		if err != nil {
-			return nil, fmt.Errorf("failed to build validation sig: %w", err)
+			return nil, fmt.Errorf("failed to build use session key sig: %w", err)
 		}
 
-		// "use given validator" mode
+		fullSig := make([]byte, 0, 4+len(useSessionKeySig))
+		// "use given validator" (0x00000001) mode
 		// see https://github.com/zerodevapp/kernel/blob/807b75a4da6fea6311a3573bc8b8964a34074d94/src/Kernel.sol#L127
-		validatorMode := "0x00000001"
-		fullSigStr := validatorMode + hexutil.Encode(validationSig)[2:]
-
-		fullSignature, err := hexutil.Decode(fullSigStr)
-		if err != nil {
-			return nil, fmt.Errorf("failed to decode signature: %w", err)
-		}
+		fullSig = append(fullSig, []byte{0x00, 0x00, 0x00, 0x01}...)
+		fullSig = append(fullSig, useSessionKeySig...)
 
 		slog.Debug("signed user operation with session key for Kernel",
-			"signature", hexutil.Encode(fullSignature),
+			"signature", hexutil.Encode(fullSig),
 			"hash", userOpHash.String())
-		return fullSignature, nil
-	}, nil
+		return fullSig, nil
+	}
 }
 
-func (b *backend) getValidationSig(sessionSigner signer.Signer, userOpCallData []byte, userOpHash common.Hash) ([]byte, error) {
+func (b *backend) getUseSessionKeySig(sessionSigner signer.Signer, userOpCallData []byte, userOpHash common.Hash) ([]byte, error) {
 	calls, err := userop.UnpackKernelCalls(userOpCallData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unpack user operation call data: %w", err)
@@ -185,7 +185,7 @@ func (b *backend) getValidationSig(sessionSigner signer.Signer, userOpCallData [
 
 	fullSignature, err := PackUseSessionKeySignature(sessionSigner.CommonAddress(), signature, permissions, proofs)
 	if err != nil {
-		return nil, fmt.Errorf("failed to pack session key signature: %w", err)
+		return nil, fmt.Errorf("failed to pack use session key signature: %w", err)
 	}
 
 	return fullSignature, nil

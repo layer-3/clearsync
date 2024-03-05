@@ -33,16 +33,10 @@ type SessionData struct {
 	Nonce *big.Int
 }
 
-func (sd SessionData) Encode() []byte {
-	validAfterEncoded := make([]byte, 6)
-	big.NewInt(sd.ValidAfter.Unix()).FillBytes(validAfterEncoded)
-
-	validUntilEncoded := make([]byte, 6)
-	big.NewInt(sd.ValidUntil.Unix()).FillBytes(validUntilEncoded)
-
-	// TODO:
-	nonceEncoded := make([]byte, 32)
-	sd.Nonce.FillBytes(nonceEncoded)
+func (sd SessionData) PackEnableData() []byte {
+	validAfterEncoded := big.NewInt(sd.ValidAfter.Unix()).FillBytes(make([]byte, 6))
+	validUntilEncoded := big.NewInt(sd.ValidUntil.Unix()).FillBytes(make([]byte, 6))
+	nonceEncoded := sd.Nonce.FillBytes(make([]byte, 32))
 
 	enableData := make([]byte, 0, KernelEnableDataLength)
 	enableData = append(enableData, sd.SessionKey.Bytes()...)
@@ -56,7 +50,7 @@ func (sd SessionData) Encode() []byte {
 }
 
 func GetKernelSessionDataHash(sessionData SessionData, sig [4]byte, chainId *big.Int, kernelAddress, validator, executor common.Address) []byte {
-	enableData := sessionData.Encode()
+	enableData := sessionData.PackEnableData()
 	enableDataHash := getEnableDataHash(enableData, sig, sessionData.SessionKey, validator, executor)
 	domainSeparator := getKernelDomainSeparator(chainId, kernelAddress)
 
