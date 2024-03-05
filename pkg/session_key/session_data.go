@@ -69,9 +69,10 @@ func UnpackEnableData(signature []byte) (SessionData, error) {
 	}, nil
 }
 
+// see https://github.com/Vectorized/solady/blob/v0.0.123/src/utils/EIP712.sol#L133-L141
 func getKernelSessionDataHash(sessionData SessionData, sig [4]byte, chainId *big.Int, kernelAddress, validator, executor common.Address) []byte {
 	enableData := sessionData.PackEnableData()
-	enableDataHash := getEnableDataHash(enableData, sig, sessionData.SessionKey, validator, executor)
+	enableDataHash := getEnableDataHash(enableData, sig, validator, executor)
 	domainSeparator := getKernelDomainSeparator(chainId, kernelAddress)
 
 	typedData := make([]byte, 0, 2+32+32)
@@ -82,6 +83,7 @@ func getKernelSessionDataHash(sessionData SessionData, sig [4]byte, chainId *big
 	return crypto.Keccak256(typedData)
 }
 
+// see https://github.com/Vectorized/solady/blob/v0.0.123/src/utils/EIP712.sol#L188-L196
 func getKernelDomainSeparator(chainId *big.Int, kernelAddress common.Address) []byte {
 	domainSeparator := make([]byte, 0, 32+32+32+32+32)
 
@@ -93,10 +95,10 @@ func getKernelDomainSeparator(chainId *big.Int, kernelAddress common.Address) []
 	domainSeparator = append(domainSeparator, kernelAddress.Bytes()...)
 
 	return crypto.Keccak256(domainSeparator)
-
 }
 
-func getEnableDataHash(enableData []byte, sig [4]byte, sessionKey, validator, executor common.Address) []byte {
+// see https://github.com/zerodevapp/kernel/blob/807b75a4da6fea6311a3573bc8b8964a34074d94/src/Kernel.sol#L205-L215
+func getEnableDataHash(enableData []byte, sig [4]byte, validator, executor common.Address) []byte {
 	digest := make([]byte, 0, 32+32+32+32+32)
 
 	digest = append(digest, crypto.Keccak256([]byte(ValidatorApprovedStruct))...)

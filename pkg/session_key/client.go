@@ -28,6 +28,7 @@ type Client interface {
 	// Returns:
 	// - the hash of the enable session data
 	GetEnableDataDigest(kernelAddress common.Address, sessionData SessionData, sig [4]byte, chainId *big.Int) []byte
+
 	// GetIncompleteEnablingUserOpSigner returns a user operation signer that assembles enable session data,
 	// but does not sign it. `enableSigLength` is set to 65 and `enableSig` is zeroed. This Signer also signs
 	// the user operation with the session key.

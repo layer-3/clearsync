@@ -106,14 +106,12 @@ func Test_buildEnableDataHash(t *testing.T) {
 	tcs := []struct {
 		enableData []byte
 		sig        [4]byte
-		sessionKey common.Address
 		validator  common.Address
 		executor   common.Address
 		hash       string
 	}{
 		{
 			sig:        [4]byte{0x51, 0x94, 0x54, 0x47},
-			sessionKey: common.HexToAddress("0x4C3C9C9fE28eA197cC260491393B8f6ED48e732f"),
 			validator:  common.HexToAddress("0xa0Cb889707d426A7A386870A03bc70d1b0697598"),
 			executor:   common.HexToAddress("0x"),
 			enableData: hexutil.MustDecode("0x4c3c9c9fe28ea197cc260491393b8f6ed48e732f8d5b5624af55afe4c927b5139d4dbb8e72b8e4ad844f8a20745a4700a7533edf0000000000b100000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001"),
@@ -122,7 +120,7 @@ func Test_buildEnableDataHash(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		hash := getEnableDataHash(tc.enableData, tc.sig, tc.sessionKey, tc.validator, tc.executor)
+		hash := getEnableDataHash(tc.enableData, tc.sig, tc.validator, tc.executor)
 		assert.Equal(t, tc.hash, hexutil.Encode(hash))
 	}
 }
