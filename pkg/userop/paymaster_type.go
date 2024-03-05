@@ -31,6 +31,8 @@ func (t *PaymasterType) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	}
 
 	switch rawValue {
+	case PaymasterDisabled.String():
+		*t = PaymasterDisabled
 	case PaymasterPimlicoERC20.String():
 		*t = PaymasterPimlicoERC20
 	case PaymasterPimlicoVerifying.String():
@@ -49,6 +51,8 @@ func (t *PaymasterType) UnmarshalYAML(unmarshal func(interface{}) error) error {
 // UnmarshalJSON unmarshalls the JSON representation of a PaymasterType.
 func (t *PaymasterType) UnmarshalJSON(b []byte) error {
 	switch string(b) {
+	case PaymasterDisabled.String():
+		*t = PaymasterDisabled
 	case PaymasterPimlicoERC20.String():
 		*t = PaymasterPimlicoERC20
 	case PaymasterPimlicoVerifying.String():
@@ -67,6 +71,8 @@ func (t *PaymasterType) UnmarshalJSON(b []byte) error {
 // SetValue implements the cleanenv.Setter interface.
 func (t *PaymasterType) SetValue(s string) error {
 	switch s {
+	case PaymasterDisabled.String():
+		*t = PaymasterDisabled
 	case PaymasterPimlicoERC20.String():
 		*t = PaymasterPimlicoERC20
 	case PaymasterPimlicoVerifying.String():
