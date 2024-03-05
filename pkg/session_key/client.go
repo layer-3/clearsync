@@ -17,6 +17,17 @@ import (
 )
 
 type Client interface {
+	// GetEnableDataDigest returns the hash of the enable session data, which is used to validate the session key.
+	//
+	// Parameters:
+	// - kernelAddress: the address of the kernel contract
+	// - sessionData: the session data
+	// - sig: the selector of the kernel function that will be called
+	// - chainId: the chain id
+	//
+	// Returns:
+	// - the hash of the enable session data
+	GetEnableDataDigest(kernelAddress common.Address, sessionData SessionData, sig [4]byte, chainId *big.Int) []byte
 	// GetIncompleteEnablingUserOpSigner returns a user operation signer that assembles enable session data,
 	// but does not sign it. `enableSigLength` is set to 65 and `enableSig` is zeroed. This Signer also signs
 	// the user operation with the session key.
@@ -72,6 +83,10 @@ func NewClient(config Config) (Client, error) {
 		Permissions:                config.Permissions,
 		PermTree:                   permTree,
 	}, nil
+}
+
+func (b *backend) GetEnableDataDigest(kernelAddress common.Address, sessionData SessionData, sig [4]byte, chainId *big.Int) []byte {
+	return getKernelSessionDataHash(sessionData, sig, chainId, kernelAddress, b.sessionKeyValidatorAddress, b.executorAddress)
 }
 
 func (b *backend) GetIncompleteEnablingUserOpSigner(sessionSigner signer.Signer) (userop.Signer, error) {

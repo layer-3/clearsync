@@ -102,7 +102,7 @@ func (calls Calls) PackForKernel() ([]byte, error) {
 
 	// pack the data for the `executeBatch` smart account function
 	// Zerodev Kernel v2.2: https://github.com/zerodevapp/kernel/blob/807b75a4da6fea6311a3573bc8b8964a34074d94/src/Kernel.sol#L82
-	data, err := kernelExecuteABI.Pack("executeBatch", params)
+	data, err := KernelExecuteABI.Pack("executeBatch", params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to pack executeBatch data for Kernel: %w", err)
 	}
@@ -111,7 +111,7 @@ func (calls Calls) PackForKernel() ([]byte, error) {
 
 // UnpackKernelCalls unpacks CallData for Zerodev Kernel smart wallet.
 func UnpackKernelCalls(data []byte) (Calls, error) {
-	values, err := kernelExecuteABI.Unpack("executeBatch", data)
+	values, err := KernelExecuteABI.Unpack("executeBatch", data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unpack executeBatch data for Kernel: %w", err)
 	}

@@ -6,6 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/layer-3/clearsync/pkg/userop"
 )
 
 const (
@@ -14,6 +15,11 @@ const (
 	KernelDomainName        = "Kernel"
 	KernelDomainVersion     = "0.2.2"
 	KernelEnableDataLength  = 20 + 32 + 6 + 6 + 20 + 32
+)
+
+var (
+	KernelExecuteSig      = [4]byte(userop.KernelExecuteABI.Methods["execute"].ID)
+	KernelExecuteBatchSig = [4]byte(userop.KernelExecuteABI.Methods["executeBatch"].ID)
 )
 
 type SessionData struct {
@@ -49,14 +55,26 @@ func (sd SessionData) PackEnableData() []byte {
 	return enableData
 }
 
-func GetKernelSessionDataHash(sessionData SessionData, sig [4]byte, chainId *big.Int, kernelAddress, validator, executor common.Address) []byte {
+func UnpackEnableData(signature []byte) (SessionData, error) {
+	offset := 4 + 6 + 6 + 20 + 20 + 32
+	enableData := signature[offset : offset+KernelEnableDataLength]
+
+	return SessionData{
+		SessionKey: common.BytesToAddress(enableData[:common.AddressLength]),
+		MerkleRoot: enableData[common.AddressLength : common.AddressLength+common.HashLength],
+		ValidAfter: time.Unix(int64(big.NewInt(0).SetBytes(enableData[common.AddressLength+common.HashLength:common.AddressLength+common.HashLength+6]).Uint64()), 0),
+		ValidUntil: time.Unix(int64(big.NewInt(0).SetBytes(enableData[common.AddressLength+common.HashLength+6:common.AddressLength+common.HashLength+12]).Uint64()), 0),
+		Paymaster:  common.BytesToAddress(enableData[common.AddressLength+common.HashLength+12 : common.AddressLength+common.HashLength+32]),
+		Nonce:      big.NewInt(0).SetBytes(enableData[common.AddressLength+common.HashLength+32:]),
+	}, nil
+}
+
+func getKernelSessionDataHash(sessionData SessionData, sig [4]byte, chainId *big.Int, kernelAddress, validator, executor common.Address) []byte {
 	enableData := sessionData.PackEnableData()
 	enableDataHash := getEnableDataHash(enableData, sig, sessionData.SessionKey, validator, executor)
 	domainSeparator := getKernelDomainSeparator(chainId, kernelAddress)
 
 	typedData := make([]byte, 0, 2+32+32)
-	// "use given validator" (0x00000001) mode
-	// see https://github.com/zerodevapp/kernel/blob/807b75a4da6fea6311a3573bc8b8964a34074d94/src/Kernel.sol#L127
 	typedData = append(typedData, []byte{0x19, 0x01}...)
 	typedData = append(typedData, domainSeparator...)
 	typedData = append(typedData, enableDataHash...)

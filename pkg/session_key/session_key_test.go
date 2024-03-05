@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSessionKeyEncode(t *testing.T) {
+func TestPackEnableData(t *testing.T) {
 	tcs := []struct {
 		sessionData SessionData
 		enableData  string
@@ -31,10 +31,17 @@ func TestSessionKeyEncode(t *testing.T) {
 	for _, tc := range tcs {
 		enableData := tc.sessionData.PackEnableData()
 		assert.Equal(t, tc.enableData, hexutil.Encode(enableData))
+
+		incompleteSignature := make([]byte, 4+6+6+20+20+32)
+		incompleteSignature = append(incompleteSignature, enableData...)
+
+		sessionData, err := UnpackEnableData(incompleteSignature)
+		assert.NoError(t, err)
+		assert.Equal(t, tc.sessionData, sessionData)
 	}
 }
 
-func TestComputeKernelSessionDataHash(t *testing.T) {
+func Test_getKernelSessionDataHash(t *testing.T) {
 	tcs := []struct {
 		sessionData   SessionData
 		sig           [4]byte
@@ -53,7 +60,7 @@ func TestComputeKernelSessionDataHash(t *testing.T) {
 				Paymaster:  common.HexToAddress("0x0000000000000000000000000000000000000001"),
 				Nonce:      big.NewInt(1),
 			},
-			sig:           [4]byte{0x51, 0x94, 0x54, 0x47},
+			sig:           KernelExecuteSig,
 			chainId:       big.NewInt(31337),
 			kernelAddress: common.HexToAddress("0xBf1ca3AF628e173b067629F007c4860593779D79"),
 			validator:     common.HexToAddress("0xa0Cb889707d426A7A386870A03bc70d1b0697598"),
@@ -63,7 +70,7 @@ func TestComputeKernelSessionDataHash(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		hash := GetKernelSessionDataHash(
+		hash := getKernelSessionDataHash(
 			tc.sessionData,
 			tc.sig,
 			tc.chainId,
