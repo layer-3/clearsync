@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"math/big"
 	"os"
 	"strings"
 
@@ -53,7 +54,7 @@ func main() {
 	slog.Debug("wallet address", "address", walletAddress)
 
 	// You can send native tokens to any address.
-	transferNative, err := newTransferNativeCall(receiver, amount)
+	transferNative, err := newTransferNativeCall(receiver, amount.BigInt())
 	if err != nil {
 		panic(fmt.Errorf("failed to build transfer native call: %w", err))
 	}
@@ -87,7 +88,7 @@ func main() {
 		panic(fmt.Errorf("failed to build approve to game call: %w", err))
 	}
 
-	mintPack, err := newCallFromABI(ducklingsGame, ducklingsGameABI, decimal.NewFromInt(0), "mintPack", uint8(1))
+	mintPack, err := newCallFromABI(ducklingsGame, ducklingsGameABI, big.NewInt(0), "mintPack", uint8(1))
 	if err != nil {
 		panic(fmt.Errorf("failed to build mint pack call: %w", err))
 	}
@@ -122,13 +123,13 @@ func newApproveCall(token, spender common.Address, amount decimal.Decimal) (user
 
 	return userop.Call{
 		To:       token,
-		Value:    decimal.Zero,
+		Value:    big.NewInt(0),
 		CallData: callData,
 	}, nil
 }
 
 // Encodes a `transfer` call of a native token, transferring `amount` to `receiver`.
-func newTransferNativeCall(receiver common.Address, amount decimal.Decimal) (userop.Call, error) {
+func newTransferNativeCall(receiver common.Address, amount *big.Int) (userop.Call, error) {
 	return userop.Call{
 		To:    receiver,
 		Value: amount,
@@ -149,13 +150,13 @@ func newTransferERC20Call(token, receiver common.Address, amount decimal.Decimal
 
 	return userop.Call{
 		To:       token,
-		Value:    decimal.Zero,
+		Value:    big.NewInt(0),
 		CallData: callData,
 	}, nil
 }
 
 // Encodes a call to the `contract` with the given `value`, `method` and `args`.
-func newCallFromABI(contract common.Address, stringABI string, value decimal.Decimal, method string, args ...interface{}) (userop.Call, error) {
+func newCallFromABI(contract common.Address, stringABI string, value *big.Int, method string, args ...interface{}) (userop.Call, error) {
 	ABI, err := abi.JSON(strings.NewReader(stringABI))
 	if err != nil {
 		panic(fmt.Errorf("failed to parse ABI: %w", err))

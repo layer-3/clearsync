@@ -1,6 +1,7 @@
 package session_key
 
 import (
+	"bytes"
 	"fmt"
 	"log/slog"
 	"math/big"
@@ -140,20 +141,51 @@ func (b *backend) GetUserOpSigner(sessionSigner signer.Signer) (userop.Signer, e
 }
 
 func (b *backend) getValidationSig(sessionSigner signer.Signer, userOpCallData []byte, userOpHash common.Hash) ([]byte, error) {
-	slog.Debug("signing user operation with session key")
+	calls, err := userop.UnpackKernelCalls(userOpCallData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unpack user operation call data: %w", err)
+	}
+
+	permissions := make([]Permission, len(calls))
+	proofs := make([]mt.Proof, len(calls))
+	for i, call := range calls {
+		permissionIndex := -1
+		for index, perm := range b.Permissions {
+			if perm.Target != call.To && call.To != (common.Address{}) {
+				continue
+			}
+
+			if call.Value.Cmp(perm.ValueLimit) > 0 {
+				continue
+			}
+
+			if !bytes.HasPrefix(call.CallData, perm.FunctionABI.ID) {
+				continue
+			}
+
+			permissions[i] = perm
+			permissionIndex = index
+		}
+
+		if permissionIndex == -1 {
+			return nil, fmt.Errorf("no permission found for call: %s %x", call.To.String(), call.CallData[:4])
+		}
+
+		proof, err := b.PermTree.Proof(permissions[i].toKernelPermission(uint32(permissionIndex)))
+		if err != nil {
+			return nil, fmt.Errorf("failed to get proof for permission: %w", err)
+		}
+		proofs[i] = *proof
+	}
 
 	signature, err := signer.SignEthMessage(sessionSigner, userOpHash.Bytes())
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign user operation: %w", err)
 	}
 
-	// TODO: get permissions and proofs from userOp
-	permissions := []Permission{}
-	proofs := []mt.Proof{}
-
 	fullSignature, err := PackUseSessionKeySignature(sessionSigner.CommonAddress(), signature, permissions, proofs)
 	if err != nil {
-		return nil, fmt.Errorf("failed to pack signature: %w", err)
+		return nil, fmt.Errorf("failed to pack session key signature: %w", err)
 	}
 
 	return fullSignature, nil
