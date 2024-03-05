@@ -156,6 +156,7 @@ func NewBundler(ctx context.Context, t *testing.T, rpcURL url.URL, entryPoint co
 				"--utilityPrivateKey", "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
 				"--minBalance", "0",
 				"--rpcUrl", rpcURL.String(),
+				"--logLevel", "info",
 			},
 			ImagePlatform: "linux/amd64",
 			WaitingFor:    wait.ForLog("Server listening at"),
@@ -183,12 +184,12 @@ func NewBundler(ctx context.Context, t *testing.T, rpcURL url.URL, entryPoint co
 }
 
 type Contracts struct {
-	entryPoint          common.Address
-	validator           common.Address
-	factory             common.Address
-	logic               common.Address
-	paymaster           common.Address
-	sessionKeyValidator common.Address
+	EntryPoint          common.Address
+	Validator           common.Address
+	Factory             common.Address
+	Logic               common.Address
+	Paymaster           common.Address
+	SessionKeyValidator common.Address
 }
 
 func SetupContracts(
@@ -232,12 +233,12 @@ func SetupContracts(
 
 	slog.Info("done deploying contracts")
 	return Contracts{
-		entryPoint:          entryPoint,
-		validator:           validator,
-		factory:             factory,
-		logic:               logic,
-		paymaster:           paymaster,
-		sessionKeyValidator: sessionKeyValidator,
+		EntryPoint:          entryPoint,
+		Validator:           validator,
+		Factory:             factory,
+		Logic:               logic,
+		Paymaster:           paymaster,
+		SessionKeyValidator: sessionKeyValidator,
 	}
 }
 
@@ -247,15 +248,15 @@ func buildClient(t *testing.T, rpcURL, bundlerURL url.URL, addresses Contracts) 
 
 	config.ProviderURL = rpcURL
 	config.BundlerURL = bundlerURL
-	config.EntryPoint = addresses.entryPoint
+	config.EntryPoint = addresses.EntryPoint
 	config.SmartWallet = userop.SmartWalletConfig{
 		Type:           &userop.SmartWalletKernel,
-		ECDSAValidator: addresses.validator,
-		Logic:          addresses.factory,
-		Factory:        addresses.logic,
+		ECDSAValidator: addresses.Validator,
+		Logic:          addresses.Factory,
+		Factory:        addresses.Logic,
 	}
 	config.Paymaster.Type = &userop.PaymasterDisabled
-	config.Paymaster.Address = addresses.paymaster
+	config.Paymaster.Address = addresses.Paymaster
 
 	client, err := userop.NewClient(config)
 	require.NoError(t, err)

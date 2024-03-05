@@ -193,9 +193,9 @@ func getGasPrice(provider EthBackend, gasConfig GasConfig) middleware {
 
 		op.MaxFeePerGas = decimal.NewFromBigInt(maxFeePerGas, 0)
 		op.MaxPriorityFeePerGas = decimal.NewFromBigInt(maxPriorityFeePerGas, 0)
-		op.CallGasLimit = maxBlockGas
-		op.VerificationGasLimit = maxBlockGas
-		op.PreVerificationGas = maxBlockGas
+		op.CallGasLimit = maxBlockGas.Mul(decimal.NewFromInt(10))
+		op.VerificationGasLimit = maxBlockGas.Mul(decimal.NewFromInt(10))
+		op.PreVerificationGas = maxBlockGas.Mul(decimal.NewFromInt(10))
 
 		return nil
 	}
@@ -309,6 +309,8 @@ func estimateUserOperationGas(bundler RPCBackend, entryPoint common.Address) mid
 		}
 
 		slog.Debug("estimated userOp gas", "callGasLimit", callGasLimit, "verificationGasLimit", verificationGasLimit, "preVerificationGas", preVerificationGas)
+
+		fmt.Println("estimated userOp gas", "callGasLimit", callGasLimit, "verificationGasLimit", verificationGasLimit, "preVerificationGas", preVerificationGas)
 
 		op.PreVerificationGas = decimal.NewFromBigInt(preVerificationGas, 0)
 		op.VerificationGasLimit = decimal.NewFromBigInt(verificationGasLimit, 0)
