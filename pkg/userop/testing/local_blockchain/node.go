@@ -191,7 +191,7 @@ type Contracts struct {
 	sessionKeyValidator common.Address
 }
 
-func DeployContracts(
+func SetupContracts(
 	ctx context.Context,
 	t *testing.T,
 	node *EthNode,
@@ -212,13 +212,17 @@ func DeployContracts(
 	require.NoError(t, err)
 	slog.Info("deployed KernelECDSAValidator contract", "address", validator)
 
-	factory, _, _, err := kernel_factory_v2_2.DeployKernelFactory(owner.TransactOpts, node.Client, owner.Address, entryPoint)
-	require.NoError(t, err)
-	slog.Info("deployed KernelFactory contract", "address", factory)
-
 	logic, _, _, err := kernel_v2_2.DeployKernel(owner.TransactOpts, node.Client, entryPoint)
 	require.NoError(t, err)
 	slog.Info("deployed Kernel contract", "address", logic)
+
+	factory, _, FactoryContract, err := kernel_factory_v2_2.DeployKernelFactory(owner.TransactOpts, node.Client, owner.Address, entryPoint)
+	require.NoError(t, err)
+	slog.Info("deployed KernelFactory contract", "address", factory)
+
+	tx, err := FactoryContract.SetImplementation(owner.TransactOpts, logic, true)
+	require.NoError(t, err)
+	slog.Info("set Kernel implementation", "tx", tx.Hash().Hex())
 
 	var paymaster common.Address // TODO: deploy Paymaster contract
 

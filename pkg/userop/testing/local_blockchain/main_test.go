@@ -20,7 +20,7 @@ func TestSimulatedRPC(t *testing.T) {
 	slog.Info("connecting to Ethereum node", "rpcURL", ethNode.LocalURL.String())
 
 	// 2. Deploy the required contracts
-	addresses := DeployContracts(ctx, t, ethNode)
+	addresses := SetupContracts(ctx, t, ethNode)
 
 	// 3. Start the bundler
 	for i := 0; i < 3; i++ { // starting multiple bundlers to test reusing existing bundlers
