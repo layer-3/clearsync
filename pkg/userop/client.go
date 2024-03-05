@@ -244,7 +244,12 @@ func (c *backend) GetAccountAddress(ctx context.Context, owner common.Address, i
 		panic(fmt.Errorf("'getSenderAddress' revert data expected to have lenght of 74, but got: %d", len(errorData)))
 	}
 
-	return common.HexToAddress(errorData[34:]), nil
+	swAddress := common.HexToAddress(errorData[34:])
+	if swAddress == (common.Address{}) {
+		panic(fmt.Errorf("'getSenderAddress' returned zero address"))
+	}
+
+	return swAddress, nil
 }
 
 func (c *backend) NewUserOp(
