@@ -9,12 +9,7 @@ import (
 	mt "github.com/layer-3/go-merkletree"
 )
 
-type PermissionTree struct {
-	Tree        *mt.MerkleTree
-	Permissions []Permission
-}
-
-func NewPermissionTree(permissions []Permission) (PermissionTree, error) {
+func NewPermissionTree(permissions []Permission) (*mt.MerkleTree, error) {
 	contents := make([]mt.DataBlock, len(permissions))
 	for i, permission := range permissions {
 		contents[i] = permission.toABI(uint32(i))
@@ -30,13 +25,10 @@ func NewPermissionTree(permissions []Permission) (PermissionTree, error) {
 		SortSiblingPairs: true,
 	}, contents)
 	if err != nil {
-		return PermissionTree{}, err
+		return nil, err
 	}
 
-	return PermissionTree{
-		Tree:        tree,
-		Permissions: permissions,
-	}, nil
+	return tree, nil
 }
 
 type Permission struct {
@@ -46,6 +38,7 @@ type Permission struct {
 	Rules       []ParamRule    `json:"rules"`
 }
 
+// TODO: rename to toKernelPermission
 func (p Permission) toABI(index uint32) kernelPermission {
 	rules := make([]kernelParamRule, len(p.Rules))
 	offset := 0

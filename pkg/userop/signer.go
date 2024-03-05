@@ -46,6 +46,7 @@ func SignerForBiconomy(ecdsaSigner signer.Signer) Signer {
 
 func SignerForKernel(ecdsaSigner signer.Signer) Signer {
 	return func(op UserOperation, entryPoint common.Address, chainID *big.Int) ([]byte, error) {
+		// FIXME: not with session key
 		slog.Debug("signing user operation with session key")
 
 		hash := op.UserOpHash(entryPoint, chainID)

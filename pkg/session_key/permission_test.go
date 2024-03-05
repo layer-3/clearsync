@@ -85,9 +85,9 @@ func TestPermissionsMerkleRootAndProof(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.NoError(t, err)
-		assert.Equal(t, tc.root, hexutil.Encode(pt.Tree.Root))
+		assert.Equal(t, tc.root, hexutil.Encode(pt.Root))
 
-		proof, err := pt.Tree.Proof(tc.permissions[tc.proofIndex].toABI(uint32(tc.proofIndex)))
+		proof, err := pt.Proof(tc.permissions[tc.proofIndex].toABI(uint32(tc.proofIndex)))
 		assert.NoError(t, err)
 		assert.Equal(t, len(tc.proof), len(proof.Siblings))
 		for i, sibling := range proof.Siblings {
