@@ -51,10 +51,12 @@ const (
 			}
 		]
 	`
+
+	KernelEnableSigOffset = 4 + 6 + 6 + 20 + 20 + 32 + KernelEnableDataLength + 32
 )
 
 func PackEnableValidatorSignature(enableData []byte, validator, executor common.Address, digestSig signer.Signature) []byte {
-	signature := make([]byte, 0, 4+6+6+20+20+32+len(enableData)+32+32+32+1)
+	signature := make([]byte, 0, KernelEnableSigOffset+32+32+1)
 	// "enable validator" (0x00000002) mode
 	// see https://github.com/zerodevapp/kernel/blob/807b75a4da6fea6311a3573bc8b8964a34074d94/src/Kernel.sol#L127
 	signature = append(signature, []byte{0x00, 0x00, 0x00, 0x02}...)

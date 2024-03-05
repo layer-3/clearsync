@@ -13,6 +13,7 @@ const (
 	DomainStruct            = "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
 	KernelDomainName        = "Kernel"
 	KernelDomainVersion     = "0.2.2"
+	KernelEnableDataLength  = 20 + 32 + 6 + 6 + 20 + 32
 )
 
 type SessionData struct {
@@ -43,7 +44,7 @@ func (sd SessionData) Encode() []byte {
 	nonceEncoded := make([]byte, 32)
 	sd.Nonce.FillBytes(nonceEncoded)
 
-	enableData := make([]byte, 0, 20+32+6+6+20+32)
+	enableData := make([]byte, 0, KernelEnableDataLength)
 	enableData = append(enableData, sd.SessionKey.Bytes()...)
 	enableData = append(enableData, sd.MerkleRoot[:common.HashLength]...)
 	enableData = append(enableData, validAfterEncoded...)
