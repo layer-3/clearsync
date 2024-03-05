@@ -39,7 +39,11 @@ type Client interface {
 
 type backend struct {
 	provider                   ethBackend
+	sessionKeyValidAfter       uint64
+	sessionKeyValidUntil       uint64
 	sessionKeyValidatorAddress common.Address
+	executorAddress            common.Address
+	paymasterAddress           common.Address
 	Permissions                []Permission   // for now, permissions are the same for all session keys
 	PermTree                   *mt.MerkleTree // root (hash) of the permission tree over all parameters as leaves
 }
@@ -57,7 +61,11 @@ func NewClient(config Config) (Client, error) {
 
 	return &backend{
 		provider:                   provider,
+		sessionKeyValidAfter:       config.SessionKeyValidAfter,
+		sessionKeyValidUntil:       config.SessionKeyValidUntil,
 		sessionKeyValidatorAddress: config.SessionKeyValidatorAddress,
+		executorAddress:            config.ExecutorAddress,
+		paymasterAddress:           config.PaymasterAddress,
 		Permissions:                config.Permissions,
 		PermTree:                   permTree,
 	}, nil
@@ -68,7 +76,7 @@ func (b *backend) GetIncompleteEnablingUserOpSigner(sessionSigner signer.Signer)
 		slog.Debug("signing enable session key + user operation with session key")
 
 		userOpHash := op.UserOpHash(entryPoint, chainID)
-		validationSig, err := b.getValidationSig(sessionSigner, userOpHash)
+		validationSig, err := b.getValidationSig(sessionSigner, op.CallData, userOpHash)
 		if err != nil {
 			return nil, fmt.Errorf("failed to build validation sig: %w", err)
 		}
@@ -109,7 +117,7 @@ func (b *backend) GetUserOpSigner(sessionSigner signer.Signer) (userop.Signer, e
 		slog.Debug("signing user operation with session key")
 
 		userOpHash := op.UserOpHash(entryPoint, chainID)
-		validationSig, err := b.getValidationSig(sessionSigner, userOpHash)
+		validationSig, err := b.getValidationSig(sessionSigner, op.CallData, userOpHash)
 		if err != nil {
 			return nil, fmt.Errorf("failed to build validation sig: %w", err)
 		}
@@ -131,7 +139,7 @@ func (b *backend) GetUserOpSigner(sessionSigner signer.Signer) (userop.Signer, e
 	}, nil
 }
 
-func (b *backend) getValidationSig(sessionSigner signer.Signer, userOpHash common.Hash) ([]byte, error) {
+func (b *backend) getValidationSig(sessionSigner signer.Signer, userOpCallData []byte, userOpHash common.Hash) ([]byte, error) {
 	slog.Debug("signing user operation with session key")
 
 	signature, err := signer.SignEthMessage(sessionSigner, userOpHash.Bytes())
@@ -139,11 +147,13 @@ func (b *backend) getValidationSig(sessionSigner signer.Signer, userOpHash commo
 		return nil, fmt.Errorf("failed to sign user operation: %w", err)
 	}
 
-	fullSigStr := sessionSigner.CommonAddress().String()[2:] + signature.String()[2:] // + abi.encode(permissions, proofs)
+	// TODO: get permissions and proofs from userOp
+	permissions := []Permission{}
+	proofs := []mt.Proof{}
 
-	fullSignature, err := hexutil.Decode(fullSigStr)
+	fullSignature, err := PackUseSessionKeySignature(sessionSigner.CommonAddress(), signature, permissions, proofs)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode signature: %w", err)
+		return nil, fmt.Errorf("failed to pack signature: %w", err)
 	}
 
 	return fullSignature, nil

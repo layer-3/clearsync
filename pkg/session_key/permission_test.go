@@ -87,7 +87,7 @@ func TestPermissionsMerkleRootAndProof(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, tc.root, hexutil.Encode(pt.Root))
 
-		proof, err := pt.Proof(tc.permissions[tc.proofIndex].toABI(uint32(tc.proofIndex)))
+		proof, err := pt.Proof(tc.permissions[tc.proofIndex].toKernelPermission(uint32(tc.proofIndex)))
 		assert.NoError(t, err)
 		assert.Equal(t, len(tc.proof), len(proof.Siblings))
 		for i, sibling := range proof.Siblings {

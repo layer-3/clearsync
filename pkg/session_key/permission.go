@@ -12,7 +12,7 @@ import (
 func NewPermissionTree(permissions []Permission) (*mt.MerkleTree, error) {
 	contents := make([]mt.DataBlock, len(permissions))
 	for i, permission := range permissions {
-		contents[i] = permission.toABI(uint32(i))
+		contents[i] = permission.toKernelPermission(uint32(i))
 	}
 
 	hashFunc := func(data []byte) ([]byte, error) {
@@ -38,8 +38,7 @@ type Permission struct {
 	Rules       []ParamRule    `json:"rules"`
 }
 
-// TODO: rename to toKernelPermission
-func (p Permission) toABI(index uint32) kernelPermission {
+func (p Permission) toKernelPermission(index uint32) kernelPermission {
 	rules := make([]kernelParamRule, len(p.Rules))
 	offset := 0
 	for i, rule := range p.Rules {

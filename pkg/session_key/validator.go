@@ -53,8 +53,10 @@ const (
 	`
 )
 
-func PackValidatorEnableSignature(enableData []byte, validator, executor common.Address, digestSig signer.Signature) []byte {
+func PackEnableValidatorSignature(enableData []byte, validator, executor common.Address, digestSig signer.Signature) []byte {
 	signature := make([]byte, 0, 4+6+6+20+20+32+len(enableData)+32+32+32+1)
+	// "enable validator" (0x00000002) mode
+	// see https://github.com/zerodevapp/kernel/blob/807b75a4da6fea6311a3573bc8b8964a34074d94/src/Kernel.sol#L127
 	signature = append(signature, []byte{0x00, 0x00, 0x00, 0x02}...)
 	signature = append(signature, enableData[52:58]...)
 	signature = append(signature, enableData[58:64]...)
@@ -70,7 +72,7 @@ func PackValidatorEnableSignature(enableData []byte, validator, executor common.
 	return signature
 }
 
-func PackSessionKeySignature(sessionKey common.Address, userOpHash []byte, permissions []Permission, proofs []mt.Proof) ([]byte, error) {
+func PackUseSessionKeySignature(sessionKey common.Address, sessionKeySig signer.Signature, permissions []Permission, proofs []mt.Proof) ([]byte, error) {
 	var args abi.Arguments
 	dec := json.NewDecoder(strings.NewReader(multiPermissionProofABI))
 	if err := dec.Decode(&args); err != nil {
@@ -79,7 +81,7 @@ func PackSessionKeySignature(sessionKey common.Address, userOpHash []byte, permi
 
 	kernelPermissions := make([]kernelPermission, len(permissions))
 	for i, permission := range permissions {
-		kernelPermissions[i] = permission.toABI(uint32(i))
+		kernelPermissions[i] = permission.toKernelPermission(uint32(i))
 	}
 
 	normProofs := make([][][32]byte, len(proofs))
@@ -95,9 +97,12 @@ func PackSessionKeySignature(sessionKey common.Address, userOpHash []byte, permi
 		return nil, err
 	}
 
+	// session key (20) + sessionKeySig (65) + abi.encode(permissions, merkleProof)
 	signature := make([]byte, 0, 20+32+len(permissionProof))
 	signature = append(signature, sessionKey.Bytes()...)
-	signature = append(signature, userOpHash...)
+	signature = append(signature, sessionKeySig.R...)
+	signature = append(signature, sessionKeySig.S...)
+	signature = append(signature, sessionKeySig.V)
 	signature = append(signature, permissionProof...)
 
 	return signature, nil

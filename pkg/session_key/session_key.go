@@ -16,6 +16,7 @@ const (
 )
 
 type SessionData struct {
+	SessionKey common.Address
 	ValidAfter time.Time
 	ValidUntil time.Time
 
@@ -27,22 +28,23 @@ type SessionData struct {
 	// other address means accept userOp with paymaster with the address
 	Paymaster common.Address
 
-	// ? -> used in permissionKey to track executions
+	// `SessionKeyValidator.nonces.lastNonce++` -> used in permissionKey to track executions
 	Nonce *big.Int
 }
 
-func (sd SessionData) Encode(sessionKey common.Address) []byte {
+func (sd SessionData) Encode() []byte {
 	validAfterEncoded := make([]byte, 6)
 	big.NewInt(sd.ValidAfter.Unix()).FillBytes(validAfterEncoded)
 
 	validUntilEncoded := make([]byte, 6)
 	big.NewInt(sd.ValidUntil.Unix()).FillBytes(validUntilEncoded)
 
+	// TODO:
 	nonceEncoded := make([]byte, 32)
 	sd.Nonce.FillBytes(nonceEncoded)
 
 	enableData := make([]byte, 0, 20+32+6+6+20+32)
-	enableData = append(enableData, sessionKey.Bytes()...)
+	enableData = append(enableData, sd.SessionKey.Bytes()...)
 	enableData = append(enableData, sd.MerkleRoot[:common.HashLength]...)
 	enableData = append(enableData, validAfterEncoded...)
 	enableData = append(enableData, validUntilEncoded...)
@@ -52,12 +54,14 @@ func (sd SessionData) Encode(sessionKey common.Address) []byte {
 	return enableData
 }
 
-func ComputeKernelSessionDataHash(sessionData SessionData, sig [4]byte, chainId *big.Int, kernelAddress, sessionKey, validator, executor common.Address) []byte {
-	enableData := sessionData.Encode(sessionKey)
-	enableDataHash := buildEnableDataHash(enableData, sig, sessionKey, validator, executor)
-	domainSeparator := buildKernelDomainSeparator(chainId, kernelAddress)
+func GetKernelSessionDataHash(sessionData SessionData, sig [4]byte, chainId *big.Int, kernelAddress, validator, executor common.Address) []byte {
+	enableData := sessionData.Encode()
+	enableDataHash := getEnableDataHash(enableData, sig, sessionData.SessionKey, validator, executor)
+	domainSeparator := getKernelDomainSeparator(chainId, kernelAddress)
 
 	typedData := make([]byte, 0, 2+32+32)
+	// "use given validator" (0x00000001) mode
+	// see https://github.com/zerodevapp/kernel/blob/807b75a4da6fea6311a3573bc8b8964a34074d94/src/Kernel.sol#L127
 	typedData = append(typedData, []byte{0x19, 0x01}...)
 	typedData = append(typedData, domainSeparator...)
 	typedData = append(typedData, enableDataHash...)
@@ -65,7 +69,7 @@ func ComputeKernelSessionDataHash(sessionData SessionData, sig [4]byte, chainId 
 	return crypto.Keccak256(typedData)
 }
 
-func buildKernelDomainSeparator(chainId *big.Int, kernelAddress common.Address) []byte {
+func getKernelDomainSeparator(chainId *big.Int, kernelAddress common.Address) []byte {
 	domainSeparator := make([]byte, 0, 32+32+32+32+32)
 
 	domainSeparator = append(domainSeparator, crypto.Keccak256([]byte(DomainStruct))...)
@@ -79,7 +83,7 @@ func buildKernelDomainSeparator(chainId *big.Int, kernelAddress common.Address) 
 
 }
 
-func buildEnableDataHash(enableData []byte, sig [4]byte, sessionKey, validator, executor common.Address) []byte {
+func getEnableDataHash(enableData []byte, sig [4]byte, sessionKey, validator, executor common.Address) []byte {
 	digest := make([]byte, 0, 32+32+32+32+32)
 
 	digest = append(digest, crypto.Keccak256([]byte(ValidatorApprovedStruct))...)
