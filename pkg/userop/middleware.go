@@ -191,8 +191,8 @@ func getGasPrice(provider EthBackend, gasConfig GasConfig) middleware {
 
 		slog.Debug("calculated gas price", "maxFeePerGas", maxFeePerGas, "maxPriorityFeePerGas", maxPriorityFeePerGas)
 
-		op.MaxFeePerGas = decimal.NewFromBigInt(maxFeePerGas, 0)
-		op.MaxPriorityFeePerGas = decimal.NewFromBigInt(maxPriorityFeePerGas, 0)
+		op.MaxFeePerGas = decimal.NewFromBigInt(maxFeePerGas, 0).Mul(decimal.NewFromInt(10))
+		op.MaxPriorityFeePerGas = decimal.NewFromBigInt(maxPriorityFeePerGas, 0).Mul(decimal.NewFromInt(10))
 		op.CallGasLimit = maxBlockGas.Mul(decimal.NewFromInt(10))
 		op.VerificationGasLimit = maxBlockGas.Mul(decimal.NewFromInt(10))
 		op.PreVerificationGas = maxBlockGas.Mul(decimal.NewFromInt(10))
