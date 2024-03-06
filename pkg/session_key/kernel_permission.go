@@ -10,7 +10,86 @@ import (
 )
 
 const (
-	permissionABI = "[{\"components\":[{\"internalType\":\"uint32\",\"name\":\"index\",\"type\":\"uint32\"},{\"internalType\":\"address\",\"name\":\"target\",\"type\":\"address\"},{\"internalType\":\"bytes4\",\"name\":\"sig\",\"type\":\"bytes4\"},{\"internalType\":\"uint256\",\"name\":\"valueLimit\",\"type\":\"uint256\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"offset\",\"type\":\"uint256\"},{\"internalType\":\"enum ParamCondition\",\"name\":\"condition\",\"type\":\"uint8\"},{\"internalType\":\"bytes32\",\"name\":\"param\",\"type\":\"bytes32\"}],\"internalType\":\"struct ParamRule[]\",\"name\":\"rules\",\"type\":\"tuple[]\"},{\"components\":[{\"internalType\":\"ValidAfter\",\"name\":\"validAfter\",\"type\":\"uint48\"},{\"internalType\":\"uint48\",\"name\":\"interval\",\"type\":\"uint48\"},{\"internalType\":\"uint48\",\"name\":\"runs\",\"type\":\"uint48\"}],\"internalType\":\"struct ExecutionRule\",\"name\":\"executionRule\",\"type\":\"tuple\"}],\"internalType\":\"struct Permission\",\"name\":\"permission\",\"type\":\"tuple\"}]"
+	permissionABI = `
+  [
+   {
+    "components": [
+     {
+      "internalType": "uint32",
+      "name": "index",
+      "type": "uint32"
+     },
+     {
+      "internalType": "address",
+      "name": "target",
+      "type": "address"
+     },
+     {
+      "internalType": "bytes4",
+      "name": "sig",
+      "type": "bytes4"
+     },
+     {
+      "internalType": "uint256",
+      "name": "valueLimit",
+      "type": "uint256"
+     },
+     {
+      "components": [
+      {
+       "internalType": "uint256",
+       "name": "offset",
+       "type": "uint256"
+      },
+      {
+       "internalType": "enum ParamCondition",
+       "name": "condition",
+       "type": "uint8"
+      },
+      {
+       "internalType": "bytes32",
+       "name": "param",
+       "type": "bytes32"
+      }
+      ],
+      "internalType": "struct ParamRule[]",
+      "name": "rules",
+      "type": "tuple[]"
+     },
+     {
+      "components": [
+       {
+        "internalType": "ValidAfter",
+        "name": "validAfter",
+        "type": "uint48"
+       },
+       {
+        "internalType": "uint48",
+        "name": "interval",
+        "type": "uint48"
+       },
+       {
+        "internalType": "uint48",
+        "name": "runs",
+        "type": "uint48"
+       }
+      ],
+      "internalType": "struct ExecutionRule",
+      "name": "executionRule",
+      "type": "tuple"
+     },
+     {
+      "internalType": "enum Operation",
+      "name": "operation",
+      "type": "uint8"
+     }
+    ],
+    "internalType": "struct Permission",
+    "name": "permission",
+    "type": "tuple"
+   }
+  ]
+ `
 )
 
 type kernelPermission struct {
@@ -20,6 +99,7 @@ type kernelPermission struct {
 	ValueLimit    *big.Int            `json:"valueLimit"`
 	ExecutionRule kernelExecutionRule `json:"executionRule"`
 	Rules         []kernelParamRule   `json:"rules"` // if empty - no rules
+	Operation     kernelOperation     `json:"operation"`
 }
 
 func (p kernelPermission) Encode() ([]byte, error) {
@@ -52,3 +132,10 @@ type kernelExecutionRule struct {
 	Interval   *big.Int `json:"interval"` // if zero - unlimited
 	Runs       *big.Int `json:"runs"`     // if zero - unlimited
 }
+
+type kernelOperation uint8
+
+const (
+	CallKernelOperation = iota
+	DelegateCallKernelOperation
+)

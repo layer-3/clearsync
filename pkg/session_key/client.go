@@ -195,12 +195,13 @@ func (b *backend) getUseSessionKeySig(sessionSigner signer.Signer, userOpCallDat
 		return nil, err
 	}
 
+	// FIXME: add tests
 	permissions := make([]Permission, len(calls))
 	proofs := make([]mt.Proof, len(calls))
 	for i, call := range calls {
 		permissionIndex := -1
 		for index, perm := range b.Permissions {
-			if perm.Target != call.To && call.To != (common.Address{}) {
+			if perm.Target != call.To && perm.Target != (common.Address{}) {
 				continue
 			}
 

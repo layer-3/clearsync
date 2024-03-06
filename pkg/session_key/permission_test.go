@@ -71,11 +71,11 @@ func TestPermissionsMerkleRootAndProof(t *testing.T) {
 					},
 				},
 			},
-			root:       "0xbc1b64afc7aed802815dcf65a6fe5b91fec933352d4392c741142873627c6dcc",
+			root:       "0x52cc00752ba452ce5a6e1ca7656d44d53410214dcae2bdddadb1ecbbaea2b268",
 			proofIndex: 0,
 			proof: [][32]byte{
-				[32]byte(hexutil.MustDecode("0x7b33528d92deb6fb4f510a22d8de3f1eddff8d15be3cd7bcc0bfc4b907d1d1da")),
-				[32]byte(hexutil.MustDecode("0xb42da658b0d0fa36b677dc6053edbe05f471a958bc8a053505ad3321d2df8ef0")),
+				[32]byte(hexutil.MustDecode("0xe25a72ba3b51500a0512b23856f0505e284d2872249f6ccfedbc27d683d32cdc")),
+				[32]byte(hexutil.MustDecode("0xcb692e6c5e6f67d6ebd8ad8788a98741752260717fc70b1237e754f6d6f71c08")),
 			},
 		},
 	}

@@ -40,6 +40,13 @@ type Permission struct {
 	Rules []ParamRule `json:"rules"`
 }
 
+// NOTE: current implementation hardcodes some parameters:
+// `ExecutionRule`:
+// - `ValidAfter` = 0
+// - `Interval` = 0
+// - `Runs` = 0
+//
+// `Operation` = Call
 func (p Permission) toKernelPermission(index uint32) kernelPermission {
 	rules := make([]kernelParamRule, len(p.Rules))
 	offset := 0
@@ -63,7 +70,8 @@ func (p Permission) toKernelPermission(index uint32) kernelPermission {
 			Interval:   big.NewInt(0),
 			Runs:       big.NewInt(0),
 		},
-		Rules: rules,
+		Rules:     rules,
+		Operation: CallKernelOperation,
 	}
 }
 

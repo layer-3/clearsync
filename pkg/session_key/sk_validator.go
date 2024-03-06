@@ -39,7 +39,8 @@ const (
 						"internalType":"struct ExecutionRule",
 						"name":"executionRule",
 						"type":"tuple"
-					}
+					},
+					{"internalType":"enum Operation","name":"operation","type":"uint8"}
 				],
 				"internalType":"struct Permission[]",
 				"name":"permission",
@@ -67,9 +68,7 @@ func PackEnableValidatorSignature(enableData []byte, validator, executor common.
 	signature = append(signature, big.NewInt(int64(len(enableData))).FillBytes(make([]byte, 32))...) // enableDataLength
 	signature = append(signature, enableData...)                                                     // enableData
 	signature = append(signature, big.NewInt(65).FillBytes(make([]byte, 32))...)                     // enableSigLength
-	signature = append(signature, digestSig.R...)                                                    // enableSig
-	signature = append(signature, digestSig.S...)
-	signature = append(signature, digestSig.V)
+	signature = append(signature, digestSig.Raw()...)                                                // enableSig
 
 	return signature
 }
@@ -101,11 +100,9 @@ func PackUseSessionKeySignature(sessionKey common.Address, sessionKeySig signer.
 
 	// session key (20) + sessionKeySig (65) + abi.encode(permissions, merkleProof)
 	signature := make([]byte, 0, 20+65+len(permissionProof))
-	signature = append(signature, sessionKey.Bytes()...) // sessionKey
-	signature = append(signature, sessionKeySig.R...)    // sessionKeySig
-	signature = append(signature, sessionKeySig.S...)
-	signature = append(signature, sessionKeySig.V)
-	signature = append(signature, permissionProof...) // permissions + merkleProof
+	signature = append(signature, sessionKey.Bytes()...)  // sessionKey
+	signature = append(signature, sessionKeySig.Raw()...) // sessionKeySig
+	signature = append(signature, permissionProof...)     // permissions + merkleProof
 
 	return signature, nil
 }
