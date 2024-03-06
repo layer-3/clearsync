@@ -14,7 +14,7 @@ import (
 	"github.com/layer-3/clearsync/pkg/abi/entry_point_v0_6_0"
 )
 
-const maxBlockGas = 30e18
+const maxBlockGas = 30e17
 
 type ctxKey int
 
