@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/layer-3/clearsync/pkg/signer"
@@ -53,7 +54,7 @@ type Client interface {
 }
 
 type backend struct {
-	provider                   ethBackend
+	provider                   bind.ContractBackend
 	sessionKeyValidAfter       uint64
 	sessionKeyValidUntil       uint64
 	sessionKeyValidatorAddress common.Address
@@ -64,7 +65,7 @@ type backend struct {
 }
 
 func NewClient(config Config) (Client, error) {
-	provider, err := NewEthBackend(config.ProviderUrl)
+	provider, err := NewEthClient(config.ProviderUrl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to eth backend: %w", err)
 	}
