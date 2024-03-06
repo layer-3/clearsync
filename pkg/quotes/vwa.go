@@ -15,8 +15,8 @@ type strategyVWA struct {
 // NewStrategyVWA creates a new instance of Volume-Weighted Average Price index price calculator.
 func NewStrategyVWA(configs ...ConfFuncVWA) priceCalculator {
 	s := strategyVWA{
-		priceCache: NewPriceCacheVWA(DefaultWeightsMap, 20),
-		weights:    DefaultWeightsMap,
+		priceCache: NewPriceCacheVWA(defaultWeightsMap, 20),
+		weights:    defaultWeightsMap,
 	}
 	for _, conf := range configs {
 		conf(&s)

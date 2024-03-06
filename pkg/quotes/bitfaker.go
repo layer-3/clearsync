@@ -29,7 +29,7 @@ func newBitfaker(config BitfakerConfig, outbox chan<- TradeEvent) Driver {
 	}
 }
 
-func (b *bitfaker) Name() DriverType {
+func (b *bitfaker) Type() DriverType {
 	return DriverBitfaker
 }
 

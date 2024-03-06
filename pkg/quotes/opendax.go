@@ -45,7 +45,7 @@ func newOpendax(config OpendaxConfig, outbox chan<- TradeEvent) Driver {
 	}
 }
 
-func (o *opendax) Name() DriverType {
+func (o *opendax) Type() DriverType {
 	return DriverOpendax
 }
 

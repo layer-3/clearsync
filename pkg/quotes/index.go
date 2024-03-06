@@ -20,8 +20,8 @@ type priceCalculator interface {
 	calculateIndexPrice(trade TradeEvent) (decimal.Decimal, bool)
 }
 
-// NewIndexAggregator creates a new instance of IndexAggregator.
-func NewIndexAggregator(driversConfigs []DriverConfig, strategy priceCalculator, outbox chan<- TradeEvent) Driver {
+// newIndexAggregator creates a new instance of IndexAggregator.
+func newIndexAggregator(driversConfigs []DriverConfig, strategy priceCalculator, outbox chan<- TradeEvent) Driver {
 	aggregated := make(chan TradeEvent, 128)
 
 	var drivers []Driver
@@ -45,17 +45,12 @@ func NewIndexAggregator(driversConfigs []DriverConfig, strategy priceCalculator,
 	}
 }
 
-// newIndex creates a new instance of IndexAggregator with VWA strategy and default drivers weights.
-func newIndex(config IndexConfig, outbox chan<- TradeEvent) Driver {
-	return NewIndexAggregator(AllDrivers, NewStrategyVWA(WithCustomPriceCacheVWA(NewPriceCacheVWA(DefaultWeightsMap, config.TradesCached))), outbox)
-}
-
 // ChangeStrategy allows index price calculation strategy to be changed.
 func (a *indexAggregator) ChangeStrategy(newStrategy priceCalculator) {
 	a.priceCalculator = newStrategy
 }
 
-func (a *indexAggregator) Name() DriverType {
+func (a *indexAggregator) Type() DriverType {
 	return DriverIndex
 }
 
@@ -92,9 +87,9 @@ func (a *indexAggregator) Subscribe(m Market) error {
 	}()
 
 	for _, d := range a.drivers {
-		loggerIndex.Info("subscribing ", d.Name().slug)
+		loggerIndex.Infow("subscribing", "driver", d.Type().String())
 		if err := d.Subscribe(m); err != nil {
-			loggerIndex.Warnf("%s subsctiption error: ", d.Name().slug, err.Error())
+			loggerIndex.Warnf("%s subscription error: %w", d.Type().String(), err.Error())
 		}
 	}
 
@@ -103,8 +98,7 @@ func (a *indexAggregator) Subscribe(m Market) error {
 
 func (a *indexAggregator) Unsubscribe(m Market) error {
 	for _, d := range a.drivers {
-		err := d.Unsubscribe(m)
-		if err != nil {
+		if err := d.Unsubscribe(m); err != nil {
 			return err
 		}
 	}
@@ -113,8 +107,7 @@ func (a *indexAggregator) Unsubscribe(m Market) error {
 
 func (a *indexAggregator) Stop() error {
 	for _, d := range a.drivers {
-		err := d.Stop()
-		if err != nil {
+		if err := d.Stop(); err != nil {
 			return err
 		}
 	}
