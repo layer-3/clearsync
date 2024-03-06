@@ -2,14 +2,17 @@ package session_key
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"log/slog"
 	"math/big"
 	"time"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/layer-3/clearsync/pkg/signer"
 	"github.com/layer-3/clearsync/pkg/userop"
 	mt "github.com/layer-3/go-merkletree"
@@ -22,25 +25,23 @@ type Client interface {
 	//
 	// Parameters:
 	// - kernelAddress: the address of the kernel contract
-	// - sessionData: the session data
-	// - sig: the selector of the kernel function that will be called
-	// - chainId: the chain id
+	// - sessionKey: the address of session key
 	//
 	// Returns:
 	// - the hash of the enable session data
-	GetEnableDataDigest(kernelAddress common.Address, sessionData SessionData, sig [4]byte, chainId *big.Int) []byte
+	GetEnableDataDigest(kernelAddress, sessionKey common.Address) ([]byte, error)
 
-	// GetIncompleteEnablingUserOpSigner returns a user operation signer that assembles enable session data,
-	// but does not sign it. `enableSigLength` is set to 65 and `enableSig` is zeroed. This Signer also signs
-	// the user operation with the session key.
+	// GetEnablingUserOpSigner returns a user operation signer that signs the user operation
+	// with the session key and the enable signature.
 	//
 	// Parameters:
 	// - sessionSigner: the session key signer
+	// - enableSig: the signature of the enable session data
 	//
 	// Returns:
 	// - a user operation signer function
 	// - an error if the signer could not be created
-	GetIncompleteEnablingUserOpSigner(sessionSigner signer.Signer) (userop.Signer, error)
+	GetEnablingUserOpSigner(sessionSigner signer.Signer, enableSig signer.Signature) userop.Signer
 
 	// GetUserOpSigner returns a user operation signer that signs the user operation with the session key.
 	//
@@ -53,8 +54,21 @@ type Client interface {
 	GetUserOpSigner(sessionSigner signer.Signer) userop.Signer
 }
 
+type ethBackend interface {
+	ethereum.ChainReader
+	ethereum.ChainStateReader
+	ethereum.TransactionReader
+	ethereum.TransactionSender
+	ethereum.ContractCaller
+
+	ChainID(ctx context.Context) (*big.Int, error)
+	bind.ContractBackend
+}
+
 type backend struct {
-	provider                   bind.ContractBackend
+	provider                   ethBackend
+	chainId                    *big.Int
+	executionSig               [4]byte
 	sessionKeyValidAfter       uint64
 	sessionKeyValidUntil       uint64
 	sessionKeyValidatorAddress common.Address
@@ -65,7 +79,7 @@ type backend struct {
 }
 
 func NewClient(config Config) (Client, error) {
-	provider, err := NewEthClient(config.ProviderURL)
+	provider, err := ethclient.Dial(config.ProviderUrl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to eth backend: %w", err)
 	}
@@ -75,8 +89,20 @@ func NewClient(config Config) (Client, error) {
 		return nil, fmt.Errorf("failed to create permission tree: %w", err)
 	}
 
+	executionSig := KernelExecuteSig
+	if config.ExecuteInBatch {
+		executionSig = KernelExecuteBatchSig
+	}
+
+	chainId, err := provider.ChainID(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("failed to get chain ID: %w", err)
+	}
+
 	return &backend{
 		provider:                   provider,
+		chainId:                    chainId,
+		executionSig:               executionSig,
 		sessionKeyValidAfter:       config.SessionKeyValidAfter,
 		sessionKeyValidUntil:       config.SessionKeyValidUntil,
 		sessionKeyValidatorAddress: config.SessionKeyValidatorAddress,
@@ -87,42 +113,38 @@ func NewClient(config Config) (Client, error) {
 	}, nil
 }
 
-func (b *backend) GetEnableDataDigest(kernelAddress common.Address, sessionData SessionData, sig [4]byte, chainId *big.Int) []byte {
-	return getKernelSessionDataHash(sessionData, sig, chainId, kernelAddress, b.sessionKeyValidatorAddress, b.executorAddress)
-}
-
-func (b *backend) GetIncompleteEnablingUserOpSigner(sessionSigner signer.Signer) (userop.Signer, error) {
-	sessionKeyValidator, err := session_key_validator.NewSessionKeyValidator(b.sessionKeyValidatorAddress, b.provider)
+func (b *backend) GetEnableDataDigest(kernelAddress, sessionKey common.Address) ([]byte, error) {
+	sessionData, err := b.getSessionData(sessionKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to session key validator: %w", err)
+		return nil, err
 	}
 
+	return getKernelSessionDataHash(
+		sessionData,
+		b.executionSig,
+		b.chainId,
+		kernelAddress,
+		b.sessionKeyValidatorAddress,
+		b.executorAddress,
+	), nil
+}
+
+func (b *backend) GetEnablingUserOpSigner(sessionSigner signer.Signer, enableSig signer.Signature) userop.Signer {
 	return func(op userop.UserOperation, entryPoint common.Address, chainID *big.Int) ([]byte, error) {
 		slog.Debug("signing enable session key + user operation with session key")
 
-		nonces, err := sessionKeyValidator.Nonces(nil, sessionSigner.CommonAddress())
+		sessionData, err := b.getSessionData(sessionSigner.CommonAddress())
 		if err != nil {
-			return nil, fmt.Errorf("failed to get nonces: %w", err)
-		}
-
-		sessionData := SessionData{
-			SessionKey: sessionSigner.CommonAddress(),
-			ValidAfter: time.Unix(int64(b.sessionKeyValidAfter), 0),
-			ValidUntil: time.Unix(int64(b.sessionKeyValidUntil), 0),
-			MerkleRoot: b.PermTree.Root,
-			Paymaster:  b.paymasterAddress,
-			Nonce:      big.NewInt(0).Add(nonces.LastNonce, big.NewInt(1)),
+			return nil, err
 		}
 
 		enableData := sessionData.PackEnableData()
-		emptySig := signer.NewSignatureFromBytes(make([]byte, 65)) // placeholder for enableSig
-
-		fullSig := PackEnableValidatorSignature(enableData, b.sessionKeyValidatorAddress, b.executorAddress, emptySig)
+		fullSig := PackEnableValidatorSignature(enableData, b.sessionKeyValidatorAddress, b.executorAddress, enableSig)
 
 		userOpHash := op.UserOpHash(entryPoint, chainID)
 		useSessionKeySig, err := b.getUseSessionKeySig(sessionSigner, op.CallData, userOpHash)
 		if err != nil {
-			return nil, fmt.Errorf("failed to build validation sig: %w", err)
+			return nil, err
 		}
 
 		fullSig = append(fullSig, useSessionKeySig...)
@@ -131,7 +153,7 @@ func (b *backend) GetIncompleteEnablingUserOpSigner(sessionSigner signer.Signer)
 			"signature", hexutil.Encode(fullSig),
 			"hash", userOpHash.String())
 		return fullSig, nil
-	}, nil
+	}
 }
 
 func (b *backend) GetUserOpSigner(sessionSigner signer.Signer) userop.Signer {
@@ -141,7 +163,7 @@ func (b *backend) GetUserOpSigner(sessionSigner signer.Signer) userop.Signer {
 		userOpHash := op.UserOpHash(entryPoint, chainID)
 		useSessionKeySig, err := b.getUseSessionKeySig(sessionSigner, op.CallData, userOpHash)
 		if err != nil {
-			return nil, fmt.Errorf("failed to build use session key sig: %w", err)
+			return nil, err
 		}
 
 		fullSig := make([]byte, 0, 4+len(useSessionKeySig))
@@ -157,10 +179,33 @@ func (b *backend) GetUserOpSigner(sessionSigner signer.Signer) userop.Signer {
 	}
 }
 
+func (b *backend) getSessionData(sessionKey common.Address) (SessionData, error) {
+	sessionKeyValidator, err := session_key_validator.NewSessionKeyValidator(b.sessionKeyValidatorAddress, b.provider)
+	if err != nil {
+		return SessionData{}, fmt.Errorf("failed to connect to session key validator: %w", err)
+	}
+
+	nonces, err := sessionKeyValidator.Nonces(nil, sessionKey)
+	if err != nil {
+		return SessionData{}, fmt.Errorf("failed to get nonces: %w", err)
+	}
+
+	sessionData := SessionData{
+		SessionKey: sessionKey,
+		ValidAfter: time.Unix(int64(b.sessionKeyValidAfter), 0),
+		ValidUntil: time.Unix(int64(b.sessionKeyValidUntil), 0),
+		MerkleRoot: b.PermTree.Root,
+		Paymaster:  b.paymasterAddress,
+		Nonce:      big.NewInt(0).Add(nonces.LastNonce, big.NewInt(1)),
+	}
+
+	return sessionData, nil
+}
+
 func (b *backend) getUseSessionKeySig(sessionSigner signer.Signer, userOpCallData []byte, userOpHash common.Hash) ([]byte, error) {
 	calls, err := userop.UnpackCallsForKernel(userOpCallData)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unpack user operation call data: %w", err)
+		return nil, err
 	}
 
 	permissions := make([]Permission, len(calls))
@@ -202,7 +247,7 @@ func (b *backend) getUseSessionKeySig(sessionSigner signer.Signer, userOpCallDat
 
 	fullSignature, err := PackUseSessionKeySignature(sessionSigner.CommonAddress(), signature, permissions, proofs)
 	if err != nil {
-		return nil, fmt.Errorf("failed to pack use session key signature: %w", err)
+		return nil, err
 	}
 
 	return fullSignature, nil

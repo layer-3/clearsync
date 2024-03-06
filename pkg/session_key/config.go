@@ -12,7 +12,8 @@ const SessionKeyValidatorAddress = "0x5C06CE2b673fD5E6e56076e40DD46aB67f5a72A5"
 const ECDSAValidatorAddress = "0xd9AB5096a832b9ce79914329DAEE236f8Eea0390"
 
 type Config struct {
-	ProviderURL                string
+	ExecuteInBatch             bool
+	ProviderUrl                string
 	SessionKeyValidAfter       uint64
 	SessionKeyValidUntil       uint64
 	SessionKeyValidatorAddress common.Address
