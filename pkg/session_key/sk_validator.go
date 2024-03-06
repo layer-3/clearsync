@@ -100,12 +100,12 @@ func PackUseSessionKeySignature(sessionKey common.Address, sessionKeySig signer.
 	}
 
 	// session key (20) + sessionKeySig (65) + abi.encode(permissions, merkleProof)
-	signature := make([]byte, 0, 20+32+len(permissionProof))
-	signature = append(signature, sessionKey.Bytes()...)
-	signature = append(signature, sessionKeySig.R...)
+	signature := make([]byte, 0, 20+65+len(permissionProof))
+	signature = append(signature, sessionKey.Bytes()...) // sessionKey
+	signature = append(signature, sessionKeySig.R...)    // sessionKeySig
 	signature = append(signature, sessionKeySig.S...)
 	signature = append(signature, sessionKeySig.V)
-	signature = append(signature, permissionProof...)
+	signature = append(signature, permissionProof...) // permissions + merkleProof
 
 	return signature, nil
 }

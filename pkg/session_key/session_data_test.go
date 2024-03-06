@@ -41,6 +41,42 @@ func TestPackEnableData(t *testing.T) {
 	}
 }
 
+func TestUnpackEnableData(t *testing.T) {
+	enableData := "0x4c3c9c9fe28ea197cc260491393b8f6ed48e732f8d5b5624af55afe4c927b5139d4dbb8e72b8e4ad844f8a20745a4700a7533edf0000000000b100000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001"
+	offset := 4 + 6 + 6 + 20 + 20 + 32
+
+	signature := make([]byte, offset+len(enableData))
+	copy(signature[offset:], hexutil.MustDecode(enableData))
+
+	tcs := []struct {
+		signature   []byte
+		sessionData SessionData
+	}{
+		{
+			signature: signature,
+			sessionData: SessionData{
+				SessionKey: common.HexToAddress("0x4C3C9C9fE28eA197cC260491393B8f6ED48e732f"),
+				ValidAfter: time.Unix(177, 0),
+				ValidUntil: time.Unix(0, 0),
+				MerkleRoot: hexutil.MustDecode("0x8d5b5624af55afe4c927b5139d4dbb8e72b8e4ad844f8a20745a4700a7533edf"),
+				Paymaster:  common.HexToAddress("0x0000000000000000000000000000000000000001"),
+				Nonce:      big.NewInt(1),
+			},
+		},
+	}
+
+	for _, tc := range tcs {
+		sessionData, err := UnpackEnableData(tc.signature)
+		assert.NoError(t, err)
+		assert.Equal(t, tc.sessionData, sessionData)
+	}
+}
+
+func TestUnpackEnableDataErrorWrongSigLength(t *testing.T) {
+	_, err := UnpackEnableData(hexutil.MustDecode("0x"))
+	assert.EqualError(t, err, "invalid signature length: 0")
+}
+
 func Test_getKernelSessionDataHash(t *testing.T) {
 	tcs := []struct {
 		sessionData   SessionData

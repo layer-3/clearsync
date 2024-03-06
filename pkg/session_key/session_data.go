@@ -1,6 +1,7 @@
 package session_key
 
 import (
+	"fmt"
 	"math/big"
 	"time"
 
@@ -57,6 +58,11 @@ func (sd SessionData) PackEnableData() []byte {
 
 func UnpackEnableData(signature []byte) (SessionData, error) {
 	offset := 4 + 6 + 6 + 20 + 20 + 32
+
+	if len(signature) < offset+KernelEnableDataLength {
+		return SessionData{}, fmt.Errorf("invalid signature length: %d", len(signature))
+	}
+
 	enableData := signature[offset : offset+KernelEnableDataLength]
 
 	return SessionData{
