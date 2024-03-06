@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+  "sync/atomic"
 
 	gobinance "github.com/adshao/go-binance/v2"
 	"github.com/ipfs/go-log/v2"
@@ -11,7 +12,10 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-var loggerBinance = log.Logger("binance")
+var (
+  loggerBinance = log.Logger("binance")
+  binanceWebsocketKeepalive = atomic.Bool{}
+)
 
 type binance struct {
 	once    *once
@@ -23,7 +27,10 @@ type binance struct {
 }
 
 func newBinance(config BinanceConfig, outbox chan<- TradeEvent) Driver {
-	gobinance.WebsocketKeepalive = true
+  if binanceWebsocketKeepalive.CompareAndSwap(false, true) {
+    gobinance.WebsocketKeepalive = true
+  }
+
 	return &binance{
 		once:           newOnce(),
 		streams:        safe.NewMap[Market, chan struct{}](),
