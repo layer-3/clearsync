@@ -58,8 +58,6 @@ var (
 		)),
 	)
 
-	exampleSessionKeyUserOpSigner = userop.SignerForKernel(exampleSessionKeySigner)
-
 	exampleSessionKeyConfig = session_key.Config{
 		ProviderURL:                "https://NETWORK.infura.io/v3/YOUR_INFURA_API_KEY",
 		SessionKeyValidAfter:       0,

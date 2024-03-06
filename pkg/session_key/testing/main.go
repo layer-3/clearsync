@@ -17,12 +17,11 @@ import (
 )
 
 var (
-	userOpConfig           = exampleUserOpConfig
-	signer                 = exampleSigner
-	userOpSigner           = exampleUserOpSigner
-	sessionKeyConfig       = exampleSessionKeyConfig
-	sessionKeySigner       = exampleSessionKeySigner
-	sessionKeyUserOpSigner = exampleSessionKeyUserOpSigner
+	userOpConfig     = exampleUserOpConfig
+	signer           = exampleSigner
+	userOpSigner     = exampleUserOpSigner
+	sessionKeyConfig = exampleSessionKeyConfig
+	sessionKeySigner = exampleSessionKeySigner
 )
 
 func main() {
@@ -73,7 +72,7 @@ func main() {
 		panic(fmt.Errorf("failed to get incomplete enabling user op signer: %w", err))
 	}
 
-	// skSigner := sessionKeyClient.GetUserOpSigner(exampleSessionKeySigner)
+	sessionKeyUserOpSigner := sessionKeyClient.GetUserOpSigner(sessionKeySigner)
 
 	// enable and use session key
 	transferERC20, err := newTransferERC20Call(token, receiver, amount)
