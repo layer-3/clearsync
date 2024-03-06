@@ -48,9 +48,9 @@ func (calls Calls) PackForSimpleAccount() ([]byte, error) {
 	return data, nil
 }
 
-// UnpackSimpleAccountCalls unpacks CallData for SimpleAccount smart wallet.
-func UnpackSimpleAccountCalls(data []byte) (Calls, error) {
-	values, err := simpleAccountABI.Unpack("executeBatch", data)
+// UnpackCallsForSimpleAccount unpacks CallData for SimpleAccount smart wallet.
+func UnpackCallsForSimpleAccount(data []byte) (Calls, error) {
+	values, err := simpleAccountABI.Methods["executeBatch"].Inputs.Unpack(data[4:])
 	if err != nil {
 		return nil, fmt.Errorf("failed to unpack executeBatch data for SimpleAccount: %w", err)
 	}
@@ -73,6 +73,7 @@ func UnpackSimpleAccountCalls(data []byte) (Calls, error) {
 	for i := range addresses {
 		calls[i] = Call{
 			To:       addresses[i],
+			Value:    big.NewInt(0),
 			CallData: calldatas[i],
 		}
 	}
@@ -109,14 +110,18 @@ func (calls Calls) PackForKernel() ([]byte, error) {
 	return data, nil
 }
 
-// UnpackKernelCalls unpacks CallData for Zerodev Kernel smart wallet.
-func UnpackKernelCalls(data []byte) (Calls, error) {
-	values, err := KernelExecuteABI.Unpack("executeBatch", data)
+// UnpackCallsForKernel unpacks CallData for Zerodev Kernel smart wallet.
+func UnpackCallsForKernel(data []byte) (Calls, error) {
+	values, err := KernelExecuteABI.Methods["executeBatch"].Inputs.Unpack(data[4:])
 	if err != nil {
 		return nil, fmt.Errorf("failed to unpack executeBatch data for Kernel: %w", err)
 	}
 
-	params, ok := values[0].([]callStructKernel)
+	params, ok := values[0].([]struct {
+		To    common.Address `json:"to"`
+		Value *big.Int       `json:"value"`
+		Data  []byte         `json:"data"`
+	})
 	if !ok {
 		return nil, fmt.Errorf("failed to unpack params for Kernel")
 	}

@@ -157,7 +157,7 @@ func (b *backend) GetUserOpSigner(sessionSigner signer.Signer) userop.Signer {
 }
 
 func (b *backend) getUseSessionKeySig(sessionSigner signer.Signer, userOpCallData []byte, userOpHash common.Hash) ([]byte, error) {
-	calls, err := userop.UnpackKernelCalls(userOpCallData)
+	calls, err := userop.UnpackCallsForKernel(userOpCallData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unpack user operation call data: %w", err)
 	}
