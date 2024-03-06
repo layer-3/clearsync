@@ -65,7 +65,7 @@ type backend struct {
 }
 
 func NewClient(config Config) (Client, error) {
-	provider, err := NewEthClient(config.ProviderUrl)
+	provider, err := NewEthClient(config.ProviderURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to eth backend: %w", err)
 	}
