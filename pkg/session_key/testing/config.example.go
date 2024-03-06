@@ -60,6 +60,7 @@ var (
 
 	exampleSessionKeyConfig = session_key.Config{
 		ProviderURL:                "https://NETWORK.infura.io/v3/YOUR_INFURA_API_KEY",
+		ExecuteInBatch:             true,
 		SessionKeyValidAfter:       0,
 		SessionKeyValidUntil:       0,
 		SessionKeyValidatorAddress: common.HexToAddress("0x5C06CE2b673fD5E6e56076e40DD46aB67f5a72A5"),

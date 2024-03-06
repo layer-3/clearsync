@@ -44,6 +44,8 @@ type Client interface {
 
 	// NewUserOp builds a new UserOperation and fills all the fields.
 	//
+	// NOTE: only `executeBatch` is supported for now.
+	//
 	// Parameters:
 	//   - ctx - is the context of the operation.
 	//   - smartWallet - is the address of the smart wallet that will execute the user operation.

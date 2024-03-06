@@ -8,8 +8,6 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -54,19 +52,8 @@ type Client interface {
 	GetUserOpSigner(sessionSigner signer.Signer) userop.Signer
 }
 
-type ethBackend interface {
-	ethereum.ChainReader
-	ethereum.ChainStateReader
-	ethereum.TransactionReader
-	ethereum.TransactionSender
-	ethereum.ContractCaller
-
-	ChainID(ctx context.Context) (*big.Int, error)
-	bind.ContractBackend
-}
-
 type backend struct {
-	provider                   ethBackend
+	provider                   *ethclient.Client
 	chainId                    *big.Int
 	executionSig               [4]byte
 	sessionKeyValidAfter       uint64
@@ -79,9 +66,9 @@ type backend struct {
 }
 
 func NewClient(config Config) (Client, error) {
-	provider, err := ethclient.Dial(config.ProviderUrl)
+	provider, err := NewEthClient(config.ProviderURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to eth backend: %w", err)
+		return nil, fmt.Errorf("failed to create Ethereum client: %w", err)
 	}
 
 	permTree, err := NewPermissionTree(config.Permissions)
