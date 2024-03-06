@@ -35,7 +35,9 @@ type Permission struct {
 	Target      common.Address `json:"target"`
 	FunctionABI abi.Method     `json:"functionABI"`
 	ValueLimit  *big.Int       `json:"valueLimit"`
-	Rules       []ParamRule    `json:"rules"`
+	// NOTE: in the current implementation each function parameter can have only one verification rule.
+	// This also means that to specify rule to only second parameter, the rule for the first parameter can NOT be omitted.
+	Rules []ParamRule `json:"rules"`
 }
 
 func (p Permission) toKernelPermission(index uint32) kernelPermission {

@@ -46,7 +46,7 @@ var (
 
 	exampleSigner = signer_pkg.NewLocalSigner(
 		must(crypto.HexToECDSA(
-			"YOUR_PRIVATE_KEY",
+			"deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
 		)),
 	)
 
@@ -54,7 +54,7 @@ var (
 
 	exampleSessionKeySigner = signer_pkg.NewLocalSigner(
 		must(crypto.HexToECDSA(
-			"SESSION_KEY_PRIVATE_KEY",
+			"deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
 		)),
 	)
 
