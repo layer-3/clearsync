@@ -42,7 +42,7 @@ var (
 		},
 	}
 
-	walletDeploymentOpts = &userop.WalletDeploymentOpts{}
+	exampleWalletDeploymentOpts = &userop.WalletDeploymentOpts{}
 
 	exampleSigner = signer_pkg.NewLocalSigner(
 		must(crypto.HexToECDSA(
