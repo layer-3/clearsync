@@ -251,7 +251,7 @@ func (b *backend) filterPermissions(calls userop.Calls) ([]kernelPermission, err
 
 		// TODO: add external error?
 		if !permissionFound {
-			return nil, fmt.Errorf("no permission found for call: %s %x", call.To.String(), call.CallData[:4])
+			return nil, fmt.Errorf("no permission found for call: %s %s", call.To.String(), hexutil.Encode(call.CallData[:4]))
 		}
 	}
 
