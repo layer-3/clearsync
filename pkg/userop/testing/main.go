@@ -20,11 +20,12 @@ var (
 	config = exampleConfig
 	signer = exampleSigner
 
-	owner       = common.HexToAddress("0x2185da3337cad307fd48dFDabA6D4C66A9fD2c71")
-	smartWallet = common.HexToAddress("0x69b36b0Cb89b1666d85Ed4fF48243730E9c53405")
-	receiver    = common.HexToAddress("0x2185da3337cad307fd48dFDabA6D4C66A9fD2c71")
-	token       = common.HexToAddress("0x18e73A5333984549484348A94f4D219f4faB7b81") // Duckies
-	amount      = decimal.RequireFromString("1000")                                 // wei
+	swartWalletIndex = decimal.Zero
+	owner            = common.HexToAddress("0x2185da3337cad307fd48dFDabA6D4C66A9fD2c71")
+	smartWallet      = common.HexToAddress("0x69b36b0Cb89b1666d85Ed4fF48243730E9c53405")
+	receiver         = common.HexToAddress("0x2185da3337cad307fd48dFDabA6D4C66A9fD2c71")
+	token            = common.HexToAddress("0x18e73A5333984549484348A94f4D219f4faB7b81") // Duckies
+	amount           = decimal.RequireFromString("1000")                                 // wei
 
 	ducklingsGame    = common.HexToAddress("0xb66bf78cad7cbab51988ddc792652cbabdff7675") // Duckies
 	ducklingsGameABI = `[{
@@ -50,7 +51,7 @@ func main() {
 	}
 
 	// calculate smart wallet address
-	walletAddress, err := client.GetAccountAddress(context.Background(), owner, decimal.Zero)
+	walletAddress, err := client.GetAccountAddress(context.Background(), owner, swartWalletIndex)
 	if err != nil {
 		panic(fmt.Errorf("failed to get wallet address: %w", err))
 	}

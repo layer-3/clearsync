@@ -260,7 +260,7 @@ func getBiconomyPaymasterAndData(
 }
 
 func getGasEstimation(bundler RPCBackend, config ClientConfig) (middleware, error) {
-	estimateGas := estimateUserOperationGas(bundler, config.EntryPoint)
+	estimateGas := estimateUserOperationGas(bundler, config.EntryPoint, config.Gas)
 
 	if config.Paymaster.Type != nil && *config.Paymaster.Type != PaymasterDisabled {
 		switch typ := *config.Paymaster.Type; typ {
@@ -270,10 +270,11 @@ func getGasEstimation(bundler RPCBackend, config ClientConfig) (middleware, erro
 				config.EntryPoint,
 				config.Paymaster.Address,
 				config.Paymaster.PimlicoERC20.VerificationGasOverhead,
+				config.Gas,
 			)
 		case PaymasterPimlicoVerifying:
 			// NOTE: PimlicoVerifying is the easiest to implement
-			return nil, fmt.Errorf("%w: %s", ErrPaymasterNotSupported, typ)
+			return nil, ErrPaymasterNotSupported
 		case PaymasterBiconomyERC20:
 			return nil, ErrPaymasterNotSupported
 		case PaymasterBiconomySponsoring:
@@ -287,7 +288,19 @@ func getGasEstimation(bundler RPCBackend, config ClientConfig) (middleware, erro
 	return estimateGas, nil
 }
 
-func estimateUserOperationGas(bundler RPCBackend, entryPoint common.Address) middleware {
+func estimateUserOperationGas(bundler RPCBackend, entryPoint common.Address, gasConfig GasConfig) middleware {
+	zero := big.NewInt(0)
+	if gasConfig.CallGasLimit.Cmp(zero) != 0 && gasConfig.VerificationGasLimit.Cmp(zero) != 0 && gasConfig.PreVerificationGas.Cmp(zero) != 0 {
+		return func(_ context.Context, op *UserOperation) error {
+			slog.Debug("skipping gas estimation, using provided gas limits")
+
+			op.CallGasLimit = decimal.NewFromBigInt(&gasConfig.CallGasLimit, 0)
+			op.VerificationGasLimit = decimal.NewFromBigInt(&gasConfig.VerificationGasLimit, 0)
+			op.PreVerificationGas = decimal.NewFromBigInt(&gasConfig.PreVerificationGas, 0)
+			return nil
+		}
+	}
+
 	return func(ctx context.Context, op *UserOperation) error {
 		slog.Debug("estimating userOp gas limits")
 
@@ -308,6 +321,16 @@ func estimateUserOperationGas(bundler RPCBackend, entryPoint common.Address) mid
 			return fmt.Errorf("failed to convert gas estimates: %w", err)
 		}
 
+		if gasConfig.CallGasLimit.Cmp(zero) != 0 {
+			callGasLimit = &gasConfig.CallGasLimit
+		}
+		if gasConfig.VerificationGasLimit.Cmp(zero) != 0 {
+			verificationGasLimit = &gasConfig.VerificationGasLimit
+		}
+		if gasConfig.PreVerificationGas.Cmp(zero) != 0 {
+			preVerificationGas = &gasConfig.PreVerificationGas
+		}
+
 		slog.Debug("estimated userOp gas", "callGasLimit", callGasLimit, "verificationGasLimit", verificationGasLimit, "preVerificationGas", preVerificationGas)
 
 		op.PreVerificationGas = decimal.NewFromBigInt(preVerificationGas, 0)
@@ -323,9 +346,10 @@ func getPimlicoERC20PaymasterData(
 	entryPoint common.Address,
 	paymaster common.Address,
 	verificationGasOverhead decimal.Decimal,
+	gasConfig GasConfig,
 ) middleware {
 	return func(ctx context.Context, op *UserOperation) error {
-		estimate := estimateUserOperationGas(bundler, entryPoint)
+		estimate := estimateUserOperationGas(bundler, entryPoint, gasConfig)
 		if err := estimate(ctx, op); err != nil {
 			return err
 		}

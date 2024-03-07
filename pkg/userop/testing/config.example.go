@@ -38,6 +38,11 @@ var (
 			// These are values by default.
 			MaxPriorityFeePerGasMultiplier: decimal.RequireFromString("1.13"),
 			MaxFeePerGasMultiplier:         decimal.RequireFromString("2"),
+			// You can set either of gas limits to override the bundler's estimation.
+			// Or you can set all of them to disable the bundler's estimation.
+			// CallGasLimit:         *big.NewInt(42),
+			// VerificationGasLimit: *big.NewInt(42),
+			// PreVerificationGas:   *big.NewInt(42),
 		},
 	}
 
@@ -46,7 +51,7 @@ var (
 	exampleSigner = userop.SignerForKernel(
 		signer_pkg.NewLocalSigner(
 			must(crypto.HexToECDSA(
-				"YOUR_PRIVATE_KEY",
+				"deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
 			)),
 		),
 	)
