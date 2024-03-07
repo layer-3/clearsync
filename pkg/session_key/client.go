@@ -189,17 +189,46 @@ func (b *backend) getSessionData(sessionKey common.Address) (SessionData, error)
 	return sessionData, nil
 }
 
+// TODO: add tests for empty calldata
 func (b *backend) getUseSessionKeySig(sessionSigner signer.Signer, userOpCallData []byte, userOpHash common.Hash) ([]byte, error) {
 	calls, err := userop.UnpackCallsForKernel(userOpCallData)
 	if err != nil {
 		return nil, err
 	}
 
-	// FIXME: add tests
-	kernelPermissions := make([]kernelPermission, len(calls))
-	proofs := make([]mt.Proof, len(calls))
+	if len(calls) == 0 {
+		return nil, fmt.Errorf("no calls found in user operation")
+	}
+
+	kernelPermissions, err := b.filterPermissions(calls)
+	if err != nil {
+		return nil, err
+	}
+
+	proofs, err := b.getProofs(kernelPermissions)
+	if err != nil {
+		return nil, err
+	}
+
+	signature, err := signer.SignEthMessage(sessionSigner, userOpHash.Bytes())
+	if err != nil {
+		return nil, fmt.Errorf("failed to sign user operation with session key: %w", err)
+	}
+
+	fullSignature, err := PackUseSessionKeySignature(sessionSigner.CommonAddress(), signature, kernelPermissions, proofs)
+	if err != nil {
+		return nil, err
+	}
+
+	return fullSignature, nil
+}
+
+// FIXME: add tests
+func (b *backend) filterPermissions(calls userop.Calls) ([]kernelPermission, error) {
+	permissions := make([]kernelPermission, len(calls))
 	for i, call := range calls {
-		permissionIndex := -1
+		permissionFound := false
+
 		for index, perm := range b.Permissions {
 			if perm.Target != call.To && perm.Target != (common.Address{}) {
 				continue
@@ -209,35 +238,35 @@ func (b *backend) getUseSessionKeySig(sessionSigner signer.Signer, userOpCallDat
 				continue
 			}
 
+			// TODO: add native send support
 			if !bytes.HasPrefix(call.CallData, perm.FunctionABI.ID) {
 				continue
 			}
 
-			kernelPermissions[i] = perm.toKernelPermission(uint32(index))
-			permissionIndex = index
+			// TODO: check param rules
+
+			permissions[i] = perm.toKernelPermission(uint32(index))
+			permissionFound = true
 		}
 
-		if permissionIndex == -1 {
-			// TODO: add external error?
+		// TODO: add external error?
+		if !permissionFound {
 			return nil, fmt.Errorf("no permission found for call: %s %x", call.To.String(), call.CallData[:4])
 		}
+	}
 
-		proof, err := b.PermTree.Proof(kernelPermissions[i])
+	return permissions, nil
+}
+
+func (b *backend) getProofs(kernelPermissions []kernelPermission) ([]mt.Proof, error) {
+	proofs := make([]mt.Proof, len(kernelPermissions))
+	for i, perm := range kernelPermissions {
+		proof, err := b.PermTree.Proof(perm)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get proof for permission: %w", err)
 		}
 		proofs[i] = *proof
 	}
 
-	signature, err := signer.SignEthMessage(sessionSigner, userOpHash.Bytes())
-	if err != nil {
-		return nil, fmt.Errorf("failed to sign user operation: %w", err)
-	}
-
-	fullSignature, err := PackUseSessionKeySignature(sessionSigner.CommonAddress(), signature, kernelPermissions, proofs)
-	if err != nil {
-		return nil, err
-	}
-
-	return fullSignature, nil
+	return proofs, nil
 }
