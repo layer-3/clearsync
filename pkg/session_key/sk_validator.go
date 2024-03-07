@@ -73,16 +73,11 @@ func PackEnableValidatorSignature(enableData []byte, validator, executor common.
 	return signature
 }
 
-func PackUseSessionKeySignature(sessionKey common.Address, sessionKeySig signer.Signature, permissions []Permission, proofs []mt.Proof) ([]byte, error) {
+func PackUseSessionKeySignature(sessionKey common.Address, sessionKeySig signer.Signature, kernelPermissions []kernelPermission, proofs []mt.Proof) ([]byte, error) {
 	var args abi.Arguments
 	dec := json.NewDecoder(strings.NewReader(multiPermissionProofABI))
 	if err := dec.Decode(&args); err != nil {
 		return nil, err
-	}
-
-	kernelPermissions := make([]kernelPermission, len(permissions))
-	for i, permission := range permissions {
-		kernelPermissions[i] = permission.toKernelPermission(uint32(i))
 	}
 
 	normProofs := make([][][32]byte, len(proofs))
