@@ -24,10 +24,10 @@ func TestSimulatedRPC(t *testing.T) {
 
 	// 3. Start the bundler
 	for i := 0; i < 3; i++ { // starting multiple bundlers to test reusing existing bundlers
-		bundlerURL := NewBundler(ctx, t, ethNode.ContainerURL, addresses.entryPoint)
+		bundlerURL := NewBundler(ctx, t, ethNode, addresses.EntryPoint)
 		slog.Info("connecting to bundler", "bundlerURL", bundlerURL.String())
 	}
-	bundlerURL := NewBundler(ctx, t, ethNode.ContainerURL, addresses.entryPoint)
+	bundlerURL := NewBundler(ctx, t, ethNode, addresses.EntryPoint)
 
 	// 4. Run transactions
 	// privateKey, err := crypto.HexToECDSA("26b556ff5c77f622504ed5e474919db6e4533fdc62b2f5965a26a6b22eb86f3f")

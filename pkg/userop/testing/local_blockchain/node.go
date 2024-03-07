@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/shopspring/decimal"
@@ -134,61 +135,74 @@ var (
 	bundlerMutex       sync.Mutex
 )
 
-func NewBundler(ctx context.Context, t *testing.T, rpcURL url.URL, entryPoint common.Address) *url.URL {
+func NewBundler(ctx context.Context, t *testing.T, node *EthNode, entryPoint common.Address) *url.URL {
 	bundlerMutex.Lock()
 	defer bundlerMutex.Unlock()
 
-	bundlerURL, err := url.Parse("http://localhost:3000")
-	require.NoError(t, err, "failed to parse local bundler URL")
+	const port = "3000"
+	if bundlerActiveNode == nil {
+		balance := decimal.NewFromFloat(100e18 /* 100 ETH */).BigInt()
+		bundlerAccount, err := NewAccountWithBalance(ctx, balance, node)
+		require.NoError(t, err, "failed to fund bundler account")
+		privateKey := hexutil.Encode(crypto.FromECDSA(bundlerAccount.PrivateKey))
 
-	if bundlerActiveNode != nil {
+		altoContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image: "ghcr.io/pimlicolabs/alto:v1.0.1",
+				Entrypoint: []string{"pnpm", "start",
+					"--port", port,
+					"--networkName", "mainnet", // check Go-Ethereum container logs to find out configured network
+					"--entryPoint", entryPoint.Hex(), // the contract should already be deployed on Go-Ethereum node
+					"--signerPrivateKeys", privateKey,
+					"--utilityPrivateKey", privateKey,
+					"--minBalance", "1000000000000000000", // 1 ETH
+					"--rpcUrl", node.ContainerURL.String(),
+					"--logLevel", "info",
+					"--noEthCallOverrideSupport", "true",
+					"--useUserOperationGasLimitsForSubmission", "true",
+				},
+				ImagePlatform: "linux/amd64",
+				ExposedPorts:  []string{fmt.Sprintf("%s:%s/tcp", port, port)},
+				WaitingFor:    wait.ForLog("Server listening at"),
+			},
+			Started: true,
+		})
+		require.NoError(t, err, "failed to start Alto bundler container")
+
+		t.Cleanup(func() {
+			bundlerMutex.Lock()
+			defer bundlerMutex.Unlock()
+
+			bundlerActiveUsers--
+			if bundlerActiveUsers <= 0 {
+				bundlerActiveNode = nil
+				if err := altoContainer.Terminate(ctx); err != nil {
+					t.Fatalf("failed to terminate Alto container: %s", err)
+				}
+			}
+		})
+
+		bundlerActiveUsers++
+		bundlerActiveNode = altoContainer
+	} else {
 		slog.Info("reusing existing Alto bundler")
-		return bundlerURL
 	}
 
-	altoContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "ghcr.io/pimlicolabs/alto:v1.0.1",
-			Entrypoint: []string{"pnpm", "start",
-				"--networkName", "mainnet", // check Go-Ethereum container logs to find out configured network
-				"--entryPoint", entryPoint.Hex(), // the contract should already be deployed on Go-Ethereum node
-				"--signerPrivateKeys", "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
-				"--utilityPrivateKey", "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
-				"--minBalance", "0",
-				"--rpcUrl", rpcURL.String(),
-			},
-			ImagePlatform: "linux/amd64",
-			WaitingFor:    wait.ForLog("Server listening at"),
-		},
-		Started: true,
-	})
-	require.NoError(t, err, "failed to start Alto bundler container")
+	containerPort, err := bundlerActiveNode.MappedPort(ctx, port)
+	require.NoError(t, err, "failed to get Alto bundler container port")
+	bundlerURL, err := url.Parse(fmt.Sprintf("http://0.0.0.0:%s", containerPort.Port()))
+	require.NoError(t, err, "failed to parse local bundler URL")
 
-	t.Cleanup(func() {
-		bundlerMutex.Lock()
-		defer bundlerMutex.Unlock()
-
-		bundlerActiveUsers--
-		if bundlerActiveUsers <= 0 {
-			bundlerActiveNode = nil
-			if err := altoContainer.Terminate(ctx); err != nil {
-				t.Fatalf("failed to terminate Alto container: %s", err)
-			}
-		}
-	})
-
-	bundlerActiveUsers++
-	bundlerActiveNode = altoContainer
 	return bundlerURL
 }
 
 type Contracts struct {
-	entryPoint          common.Address
-	validator           common.Address
-	factory             common.Address
-	logic               common.Address
-	paymaster           common.Address
-	sessionKeyValidator common.Address
+	EntryPoint          common.Address
+	Validator           common.Address
+	Factory             common.Address
+	Logic               common.Address
+	Paymaster           common.Address
+	SessionKeyValidator common.Address
 }
 
 func SetupContracts(
@@ -201,7 +215,7 @@ func SetupContracts(
 	slog.Info("chainID", "chainID", chainID)
 
 	balance := decimal.NewFromFloat(50e18 /* 50 ETH */).BigInt()
-	owner, err := NewAccountWithBalance(ctx, chainID, balance, node)
+	owner, err := NewAccountWithBalance(ctx, balance, node)
 	require.NoError(t, err, "failed to create owner account")
 
 	entryPoint, _, _, err := entry_point_v0_6_0.DeployEntryPoint(owner.TransactOpts, node.Client)
@@ -232,12 +246,12 @@ func SetupContracts(
 
 	slog.Info("done deploying contracts")
 	return Contracts{
-		entryPoint:          entryPoint,
-		validator:           validator,
-		factory:             factory,
-		logic:               logic,
-		paymaster:           paymaster,
-		sessionKeyValidator: sessionKeyValidator,
+		EntryPoint:          entryPoint,
+		Validator:           validator,
+		Factory:             factory,
+		Logic:               logic,
+		Paymaster:           paymaster,
+		SessionKeyValidator: sessionKeyValidator,
 	}
 }
 
@@ -247,15 +261,15 @@ func buildClient(t *testing.T, rpcURL, bundlerURL url.URL, addresses Contracts) 
 
 	config.ProviderURL = rpcURL
 	config.BundlerURL = bundlerURL
-	config.EntryPoint = addresses.entryPoint
+	config.EntryPoint = addresses.EntryPoint
 	config.SmartWallet = userop.SmartWalletConfig{
 		Type:           &userop.SmartWalletKernel,
-		ECDSAValidator: addresses.validator,
-		Logic:          addresses.factory,
-		Factory:        addresses.logic,
+		ECDSAValidator: addresses.Validator,
+		Logic:          addresses.Factory,
+		Factory:        addresses.Logic,
 	}
 	config.Paymaster.Type = &userop.PaymasterDisabled
-	config.Paymaster.Address = addresses.paymaster
+	config.Paymaster.Address = addresses.Paymaster
 
 	client, err := userop.NewClient(config)
 	require.NoError(t, err)

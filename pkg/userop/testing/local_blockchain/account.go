@@ -37,7 +37,12 @@ func NewAccount(chainID *big.Int) (Account, error) {
 	}, nil
 }
 
-func NewAccountWithBalance(ctx context.Context, chainID, balance *big.Int, node *EthNode) (Account, error) {
+func NewAccountWithBalance(ctx context.Context, balance *big.Int, node *EthNode) (Account, error) {
+	chainID, err := node.Client.ChainID(ctx)
+	if err != nil {
+		return Account{}, err
+	}
+
 	account, err := NewAccount(chainID)
 	if err != nil {
 		return Account{}, err
