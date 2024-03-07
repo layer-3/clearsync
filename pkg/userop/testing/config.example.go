@@ -7,7 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/shopspring/decimal"
 
-	"github.com/layer-3/clearsync/pkg/signer"
+	signer_pkg "github.com/layer-3/clearsync/pkg/signer"
 	"github.com/layer-3/clearsync/pkg/userop"
 )
 
@@ -44,7 +44,7 @@ var (
 	walletDeploymentOpts = &userop.WalletDeploymentOpts{}
 
 	exampleSigner = userop.SignerForKernel(
-		signer.NewLocalSigner(
+		signer_pkg.NewLocalSigner(
 			must(crypto.HexToECDSA(
 				"YOUR_PRIVATE_KEY",
 			)),

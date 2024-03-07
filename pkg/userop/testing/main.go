@@ -16,18 +16,18 @@ import (
 	"github.com/layer-3/clearsync/pkg/userop"
 )
 
-func main() {
-	setLogLevel(slog.LevelInfo)
+var (
+	config = exampleConfig
+	signer = exampleSigner
 
-	var (
-		owner       = common.HexToAddress("0x2185da3337cad307fd48dFDabA6D4C66A9fD2c71")
-		smartWallet = common.HexToAddress("0x69b36b0Cb89b1666d85Ed4fF48243730E9c53405")
-		receiver    = common.HexToAddress("0x2185da3337cad307fd48dFDabA6D4C66A9fD2c71")
-		token       = common.HexToAddress("0x18e73A5333984549484348A94f4D219f4faB7b81") // Duckies
-		amount      = decimal.RequireFromString("1000")                                 // wei
+	owner       = common.HexToAddress("0x2185da3337cad307fd48dFDabA6D4C66A9fD2c71")
+	smartWallet = common.HexToAddress("0x69b36b0Cb89b1666d85Ed4fF48243730E9c53405")
+	receiver    = common.HexToAddress("0x2185da3337cad307fd48dFDabA6D4C66A9fD2c71")
+	token       = common.HexToAddress("0x18e73A5333984549484348A94f4D219f4faB7b81") // Duckies
+	amount      = decimal.RequireFromString("1000")                                 // wei
 
-		ducklingsGame    = common.HexToAddress("0xb66bf78cad7cbab51988ddc792652cbabdff7675") // Duckies
-		ducklingsGameABI = `[{
+	ducklingsGame    = common.HexToAddress("0xb66bf78cad7cbab51988ddc792652cbabdff7675") // Duckies
+	ducklingsGameABI = `[{
 		  "inputs": [{
 	        "internalType": "uint8",
 	        "name": "size",
@@ -38,10 +38,13 @@ func main() {
 		  "stateMutability": "nonpayable",
 		  "type": "function"
 		}]`
-	)
+)
+
+func main() {
+	setLogLevel(slog.LevelInfo)
 
 	// create smartWallet client (with specific Wallet and Paymaster types)
-	client, err := userop.NewClient(exampleConfig)
+	client, err := userop.NewClient(config)
 	if err != nil {
 		panic(fmt.Errorf("failed to create userop client: %w", err))
 	}
@@ -180,7 +183,7 @@ func newCallFromABI(contract common.Address, stringABI string, value *big.Int, m
 func send(client userop.Client, smartWallet common.Address, calls []userop.Call) error {
 	ctx := context.Background()
 
-	op, err := client.NewUserOp(ctx, smartWallet, exampleSigner, calls, walletDeploymentOpts)
+	op, err := client.NewUserOp(ctx, smartWallet, signer, calls, walletDeploymentOpts)
 	if err != nil {
 		panic(fmt.Errorf("failed to build userop: %w", err))
 	}
