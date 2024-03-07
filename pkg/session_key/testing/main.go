@@ -17,14 +17,13 @@ import (
 )
 
 var (
-	userOpConfig         = secretUserOpConfig
-	walletDeploymentOpts = secretWalletDeploymentOpts
-	signer               = secretSigner
-	userOpSigner         = secretUserOpSigner
-	sessionKeyConfig     = secretSessionKeyConfig
-	sessionKeySigner     = secretSessionKeySigner
+	userOpConfig         = exampleUserOpConfig
+	walletDeploymentOpts = exampleWalletDeploymentOpts
+	signer               = exampleSigner
+	userOpSigner         = exampleUserOpSigner
+	sessionKeyConfig     = exampleSessionKeyConfig
+	sessionKeySigner     = exampleSessionKeySigner
 
-	chainId     = big.NewInt(137) // Matic
 	owner       = common.HexToAddress("0x2185da3337cad307fd48dFDabA6D4C66A9fD2c71")
 	walletIndex = decimal.NewFromInt(5)
 	smartWallet = common.HexToAddress("0xb4a1b76729001646ad3d4e078c05145a0bc0ccbb")
@@ -52,13 +51,13 @@ func main() {
 	slog.Debug("wallet address", "address", walletAddress)
 
 	// You can send native tokens to any address.
-	// transferNative := userop.Call{
-	// 	To:    receiver,
-	// 	Value: amount.BigInt(),
-	// }
-	// if err := createAndSendUserop(userOpClient, userOpSigner, smartWallet, []userop.Call{transferNative}); err != nil {
-	// 	panic(err)
-	// }
+	transferNative := userop.Call{
+		To:    receiver,
+		Value: amount.BigInt(),
+	}
+	if err := createAndSendUserop(userOpClient, userOpSigner, smartWallet, []userop.Call{transferNative}); err != nil {
+		panic(err)
+	}
 
 	// smart wallet should be deployed now
 
@@ -66,6 +65,7 @@ func main() {
 	if err != nil {
 		panic(fmt.Errorf("failed to create session key client: %w", err))
 	}
+
 	enableDigest, err := sessionKeyClient.GetEnableDataDigest(smartWallet, sessionKeySigner.CommonAddress())
 	if err != nil {
 		panic(fmt.Errorf("failed to get enable data digest: %w", err))
@@ -82,21 +82,23 @@ func main() {
 		panic(fmt.Errorf("failed to build transfer erc20 call: %w", err))
 	}
 
-	incompleteEnablingSKSigner := sessionKeyClient.GetEnablingUserOpSigner(sessionKeySigner, enableSig)
+	enablingSKSigner := sessionKeyClient.GetEnablingUserOpSigner(sessionKeySigner, enableSig)
 
-	if err = createAndSendUserop(userOpClient, incompleteEnablingSKSigner, smartWallet, userop.Calls{transferERC20}); err != nil {
+	if err = createAndSendUserop(userOpClient, enablingSKSigner, smartWallet, userop.Calls{transferERC20}); err != nil {
 		panic(fmt.Errorf("failed to build userop: %w", err))
 	}
 
-	// sessionKeyUserOpSigner := sessionKeyClient.GetUserOpSigner(sessionKeySigner)
+	sessionKeyUserOpSigner := sessionKeyClient.GetUserOpSigner(sessionKeySigner)
 
-	// // use session key
-	// approveCall, err := newApproveCall(token, receiver, amount)
-	// if err != nil {
-	// 	panic(fmt.Errorf("failed to build approve call: %w", err))
-	// }
+	// use session key
+	approveCall, err := newApproveCall(token, receiver, amount)
+	if err != nil {
+		panic(fmt.Errorf("failed to build approve call: %w", err))
+	}
 
-	// createAndSendUserop(userOpClient, sessionKeyUserOpSigner, smartWallet, []userop.Call{approveCall})
+	if err = createAndSendUserop(userOpClient, sessionKeyUserOpSigner, smartWallet, []userop.Call{approveCall}); err != nil {
+		panic(fmt.Errorf("failed to build userop: %w", err))
+	}
 }
 
 func setLogLevel(level slog.Level) {
