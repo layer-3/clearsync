@@ -17,8 +17,10 @@ import (
 )
 
 var (
-	config = exampleConfig
-	signer = exampleSigner
+	config               = exampleConfig
+	signer               = exampleSigner
+	walletDeploymentOpts = exampleWalletDeploymentOpts
+	gasLimitOverrides    = exampleGasLimitOverrides
 
 	swartWalletIndex = decimal.Zero
 	owner            = common.HexToAddress("0x2185da3337cad307fd48dFDabA6D4C66A9fD2c71")
@@ -184,7 +186,7 @@ func newCallFromABI(contract common.Address, stringABI string, value *big.Int, m
 func send(client userop.Client, smartWallet common.Address, calls []userop.Call) error {
 	ctx := context.Background()
 
-	op, err := client.NewUserOp(ctx, smartWallet, signer, calls, walletDeploymentOpts)
+	op, err := client.NewUserOp(ctx, smartWallet, signer, calls, walletDeploymentOpts, gasLimitOverrides)
 	if err != nil {
 		panic(fmt.Errorf("failed to build userop: %w", err))
 	}

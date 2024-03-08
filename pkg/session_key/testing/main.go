@@ -118,7 +118,7 @@ func setLogLevel(level slog.Level) {
 func createAndSendUserop(client userop.Client, signer userop.Signer, smartWallet common.Address, calls []userop.Call) error {
 	ctx := context.Background()
 
-	op, err := client.NewUserOp(ctx, smartWallet, signer, calls, walletDeploymentOpts)
+	op, err := client.NewUserOp(ctx, smartWallet, signer, calls, walletDeploymentOpts, nil)
 	if err != nil {
 		panic(fmt.Errorf("failed to build userop: %w", err))
 	}

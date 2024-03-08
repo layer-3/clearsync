@@ -24,7 +24,7 @@ func TestClientNewUserOp(t *testing.T) {
 		client := bundlerMock(t, defaultProviderURL())
 		ctx := context.Background()
 
-		_, err := client.NewUserOp(ctx, common.Address{}, nil, nil, nil)
+		_, err := client.NewUserOp(ctx, common.Address{}, nil, nil, nil, nil)
 		require.EqualError(t, err, ErrNoSigner.Error())
 	})
 
@@ -50,7 +50,7 @@ func TestClientNewUserOp(t *testing.T) {
 		require.NoError(t, err)
 
 		// create userop without wallet deployment opts
-		_, err = client.NewUserOp(ctx, smartWallet, SignerForKernel(nil), nil, nil)
+		_, err = client.NewUserOp(ctx, smartWallet, SignerForKernel(nil), nil, nil, nil)
 
 		// assert error
 		require.EqualError(t, err, ErrNoWalletDeploymentOpts.Error())
@@ -77,7 +77,7 @@ func TestClientNewUserOp(t *testing.T) {
 		wdo := &WalletDeploymentOpts{}
 
 		// create userop with wallet deployment opts with zero owner
-		_, err := client.NewUserOp(ctx, common.Address{}, nil, nil, wdo)
+		_, err := client.NewUserOp(ctx, common.Address{}, nil, nil, wdo, nil)
 
 		// assert error
 		require.EqualError(t, err, ErrNoWalletOwner.Error())

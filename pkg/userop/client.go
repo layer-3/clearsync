@@ -62,6 +62,7 @@ type Client interface {
 		signer Signer,
 		calls []Call,
 		walletDeploymentOpts *WalletDeploymentOpts,
+		gasLimitOverrides *GasLimitOverrides,
 	) (UserOperation, error)
 
 	// SendUserOp submits a user operation to a bundler and returns a channel to await for the userOp receipt.
@@ -82,6 +83,13 @@ type Client interface {
 type WalletDeploymentOpts struct {
 	Owner common.Address
 	Index decimal.Decimal
+}
+
+// These override the bundler's estimation. NOTE: if all are supplied, bundler's estimation is NOT performed.
+type GasLimitOverrides struct {
+	CallGasLimit         big.Int
+	VerificationGasLimit big.Int
+	PreVerificationGas   big.Int
 }
 
 // backend represents a user operation client.
@@ -234,6 +242,7 @@ func (c *backend) NewUserOp(
 	signer Signer,
 	calls []Call,
 	walletDeploymentOpts *WalletDeploymentOpts,
+	gasLimitOverrides *GasLimitOverrides,
 ) (UserOperation, error) {
 	slog.Debug("applying middlewares to user operation")
 	if signer == nil {
@@ -265,6 +274,20 @@ func (c *backend) NewUserOp(
 	}
 
 	op := UserOperation{Sender: smartWallet, CallData: callData}
+
+	if gasLimitOverrides != nil {
+		zero := big.NewInt(0)
+		if gasLimitOverrides.CallGasLimit.Cmp(zero) != 0 {
+			op.CallGasLimit = decimal.NewFromBigInt(&gasLimitOverrides.CallGasLimit, 0)
+		}
+		if gasLimitOverrides.VerificationGasLimit.Cmp(zero) != 0 {
+			op.VerificationGasLimit = decimal.NewFromBigInt(&gasLimitOverrides.VerificationGasLimit, 0)
+		}
+		if gasLimitOverrides.PreVerificationGas.Cmp(zero) != 0 {
+			op.PreVerificationGas = decimal.NewFromBigInt(&gasLimitOverrides.PreVerificationGas, 0)
+		}
+	}
+
 	for _, fn := range c.middlewares {
 		if err := fn(ctx, &op); err != nil {
 			return UserOperation{}, fmt.Errorf("failed to apply middleware to user operation: %w", err)

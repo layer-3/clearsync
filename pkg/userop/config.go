@@ -56,10 +56,6 @@ func (conf ClientConfig) validate() error {
 type GasConfig struct {
 	MaxPriorityFeePerGasMultiplier decimal.Decimal `yaml:"max_priority_fee_per_gas_multiplier" env:"MAX_PRIORITY_FEE_PER_GAS_MULTIPLIER"` // percentage
 	MaxFeePerGasMultiplier         decimal.Decimal `yaml:"max_fee_per_gas_multiplier" env:"MAX_FEE_PER_GAS_MULTIPLIER"`                   // percentage
-	// These override the bundler's estimation. NOTE: if all are supplied, bundler's estimation is NOT performed.
-	CallGasLimit         big.Int `yaml:"call_gas_limit" env:"CALL_GAS_LIMIT"`
-	VerificationGasLimit big.Int `yaml:"verification_gas_limit" env:"VERIFICATION_GAS_LIMIT"`
-	PreVerificationGas   big.Int `yaml:"pre_verification_gas" env:"PRE_VERIFICATION_GAS"`
 }
 
 // Init initializes the GasConfig with default values.

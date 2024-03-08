@@ -46,8 +46,6 @@ var (
 		},
 	}
 
-	walletDeploymentOpts = &userop.WalletDeploymentOpts{}
-
 	exampleSigner = userop.SignerForKernel(
 		signer_pkg.NewLocalSigner(
 			must(crypto.HexToECDSA(
@@ -56,6 +54,9 @@ var (
 		),
 	)
 )
+
+var exampleWalletDeploymentOpts *userop.WalletDeploymentOpts
+var exampleGasLimitOverrides *userop.GasLimitOverrides
 
 func must[T any](x T, err error) T {
 	if err != nil {

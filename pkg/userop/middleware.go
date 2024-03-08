@@ -14,8 +14,6 @@ import (
 	"github.com/layer-3/clearsync/pkg/abi/entry_point"
 )
 
-const maxBlockGas = 30_000_000
-
 type ctxKey int
 
 const (
@@ -156,7 +154,6 @@ func getBiconomyInitCode(factory, ecdsaValidator common.Address) smartWalletInit
 }
 
 func getGasPrice(provider EthBackend, gasConfig GasConfig) middleware {
-	maxBlockGas := decimal.NewFromInt(maxBlockGas)
 	return func(ctx context.Context, op *UserOperation) error {
 		slog.Debug("getting gas price")
 
@@ -193,9 +190,6 @@ func getGasPrice(provider EthBackend, gasConfig GasConfig) middleware {
 
 		op.MaxFeePerGas = decimal.NewFromBigInt(maxFeePerGas, 0)
 		op.MaxPriorityFeePerGas = decimal.NewFromBigInt(maxPriorityFeePerGas, 0)
-		op.CallGasLimit = maxBlockGas
-		op.VerificationGasLimit = maxBlockGas
-		op.PreVerificationGas = maxBlockGas
 
 		return nil
 	}
@@ -260,7 +254,7 @@ func getBiconomyPaymasterAndData(
 }
 
 func getGasEstimation(bundler RPCBackend, config ClientConfig) (middleware, error) {
-	estimateGas := estimateUserOperationGas(bundler, config.EntryPoint, config.Gas)
+	estimateGas := estimateUserOperationGas(bundler, config.EntryPoint)
 
 	if config.Paymaster.Type != nil && *config.Paymaster.Type != PaymasterDisabled {
 		switch typ := *config.Paymaster.Type; typ {
@@ -270,7 +264,6 @@ func getGasEstimation(bundler RPCBackend, config ClientConfig) (middleware, erro
 				config.EntryPoint,
 				config.Paymaster.Address,
 				config.Paymaster.PimlicoERC20.VerificationGasOverhead,
-				config.Gas,
 			)
 		case PaymasterPimlicoVerifying:
 			// NOTE: PimlicoVerifying is the easiest to implement
@@ -288,20 +281,14 @@ func getGasEstimation(bundler RPCBackend, config ClientConfig) (middleware, erro
 	return estimateGas, nil
 }
 
-func estimateUserOperationGas(bundler RPCBackend, entryPoint common.Address, gasConfig GasConfig) middleware {
-	zero := big.NewInt(0)
-	if gasConfig.CallGasLimit.Cmp(zero) != 0 && gasConfig.VerificationGasLimit.Cmp(zero) != 0 && gasConfig.PreVerificationGas.Cmp(zero) != 0 {
-		return func(_ context.Context, op *UserOperation) error {
-			slog.Debug("skipping gas estimation, using provided gas limits")
-
-			op.CallGasLimit = decimal.NewFromBigInt(&gasConfig.CallGasLimit, 0)
-			op.VerificationGasLimit = decimal.NewFromBigInt(&gasConfig.VerificationGasLimit, 0)
-			op.PreVerificationGas = decimal.NewFromBigInt(&gasConfig.PreVerificationGas, 0)
-			return nil
-		}
-	}
+func estimateUserOperationGas(bundler RPCBackend, entryPoint common.Address) middleware {
 
 	return func(ctx context.Context, op *UserOperation) error {
+		if !op.CallGasLimit.IsZero() && !op.VerificationGasLimit.IsZero() && !op.PreVerificationGas.IsZero() {
+			slog.Debug("skipping gas estimation, using provided gas limits")
+			return nil
+		}
+
 		slog.Debug("estimating userOp gas limits")
 
 		// ERC4337-standardized gas estimation
@@ -321,14 +308,14 @@ func estimateUserOperationGas(bundler RPCBackend, entryPoint common.Address, gas
 			return fmt.Errorf("failed to convert gas estimates: %w", err)
 		}
 
-		if gasConfig.CallGasLimit.Cmp(zero) != 0 {
-			callGasLimit = &gasConfig.CallGasLimit
+		if !op.CallGasLimit.IsZero() {
+			callGasLimit = op.CallGasLimit.BigInt()
 		}
-		if gasConfig.VerificationGasLimit.Cmp(zero) != 0 {
-			verificationGasLimit = &gasConfig.VerificationGasLimit
+		if !op.VerificationGasLimit.IsZero() {
+			verificationGasLimit = op.VerificationGasLimit.BigInt()
 		}
-		if gasConfig.PreVerificationGas.Cmp(zero) != 0 {
-			preVerificationGas = &gasConfig.PreVerificationGas
+		if !op.PreVerificationGas.IsZero() {
+			preVerificationGas = op.PreVerificationGas.BigInt()
 		}
 
 		slog.Debug("estimated userOp gas", "callGasLimit", callGasLimit, "verificationGasLimit", verificationGasLimit, "preVerificationGas", preVerificationGas)
@@ -346,10 +333,9 @@ func getPimlicoERC20PaymasterData(
 	entryPoint common.Address,
 	paymaster common.Address,
 	verificationGasOverhead decimal.Decimal,
-	gasConfig GasConfig,
 ) middleware {
 	return func(ctx context.Context, op *UserOperation) error {
-		estimate := estimateUserOperationGas(bundler, entryPoint, gasConfig)
+		estimate := estimateUserOperationGas(bundler, entryPoint)
 		if err := estimate(ctx, op); err != nil {
 			return err
 		}
