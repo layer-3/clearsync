@@ -52,11 +52,29 @@ var (
 	ethMutex       sync.Mutex
 )
 
+func ethNodeClenaupFactory(ctx context.Context, t *testing.T) func() {
+	return func() {
+		ethMutex.Lock()
+		defer ethMutex.Unlock()
+
+		ethActiveUsers--
+		if ethActiveUsers <= 0 {
+			err := ethActiveNode.Container.Terminate(ctx)
+			require.NoError(t, err, "failed to terminate Go-Ethereum container")
+
+			ethActiveNode = nil
+		}
+	}
+}
+
 func NewEthNode(ctx context.Context, t *testing.T) *EthNode {
 	ethMutex.Lock()
 	defer ethMutex.Unlock()
 
 	if ethActiveNode != nil {
+		ethActiveUsers++
+		t.Cleanup(ethNodeClenaupFactory(ctx, t))
+
 		slog.Info("reusing existing Ethereum node")
 		return ethActiveNode
 	}
@@ -90,18 +108,6 @@ func NewEthNode(ctx context.Context, t *testing.T) *EthNode {
 		})
 		require.NoError(t, err, "failed to start Go-Ethereum container")
 
-		t.Cleanup(func() {
-			ethMutex.Lock()
-			defer ethMutex.Unlock()
-
-			ethActiveUsers--
-			if ethActiveUsers <= 0 {
-				ethActiveNode = nil
-				err := gethContainer.Terminate(ctx)
-				require.NoError(t, err, "failed to terminate Go-Ethereum container")
-			}
-		})
-
 		containerIP, err := gethContainer.ContainerIP(ctx)
 		require.NoError(t, err, "failed to get Go-Ethereum container IP")
 		containerPort, err := gethContainer.MappedPort(ctx, "8545")
@@ -117,83 +123,102 @@ func NewEthNode(ctx context.Context, t *testing.T) *EthNode {
 	require.NoError(t, err)
 
 	slog.Info("Go-Ethereum container started", "rpcURL", rpcURL.String())
-	ethNode := &EthNode{
+	ethActiveNode = &EthNode{
 		Container:    gethContainer,
 		Client:       ethClient,
 		LocalURL:     *rpcURL,
 		ContainerURL: *containerURL,
 	}
 
+	t.Cleanup(ethNodeClenaupFactory(ctx, t))
 	ethActiveUsers++
-	ethActiveNode = ethNode
-	return ethNode
+
+	return ethActiveNode
+}
+
+type BundlerNode struct {
+	Container    testcontainers.Container
+	ContainerURL *url.URL
 }
 
 var (
-	bundlerActiveNode  testcontainers.Container
+	bundlerActiveNode  *BundlerNode
 	bundlerActiveUsers int64
 	bundlerMutex       sync.Mutex
 )
+
+func bundlerNodeClenaupFactory(ctx context.Context, t *testing.T) func() {
+	return func() {
+		bundlerMutex.Lock()
+		defer bundlerMutex.Unlock()
+
+		bundlerActiveUsers--
+		if bundlerActiveUsers <= 0 {
+			if err := bundlerActiveNode.Container.Terminate(ctx); err != nil {
+				t.Fatalf("failed to terminate Alto container: %s", err)
+			}
+
+			bundlerActiveNode = nil
+		}
+	}
+}
 
 func NewBundler(ctx context.Context, t *testing.T, node *EthNode, entryPoint common.Address) *url.URL {
 	bundlerMutex.Lock()
 	defer bundlerMutex.Unlock()
 
-	const port = "3000"
-	if bundlerActiveNode == nil {
-		balance := decimal.NewFromFloat(100e18 /* 100 ETH */).BigInt()
-		bundlerAccount, err := NewAccountWithBalance(ctx, balance, node)
-		require.NoError(t, err, "failed to fund bundler account")
-		privateKey := hexutil.Encode(crypto.FromECDSA(bundlerAccount.PrivateKey))
-
-		altoContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-			ContainerRequest: testcontainers.ContainerRequest{
-				Image: "ghcr.io/pimlicolabs/alto:v1.0.1",
-				Entrypoint: []string{"pnpm", "start",
-					"--port", port,
-					"--networkName", "mainnet", // check Go-Ethereum container logs to find out configured network
-					"--entryPoint", entryPoint.Hex(), // the contract should already be deployed on Go-Ethereum node
-					"--signerPrivateKeys", privateKey,
-					"--utilityPrivateKey", privateKey,
-					"--minBalance", "1000000000000000000", // 1 ETH
-					"--rpcUrl", node.ContainerURL.String(),
-					"--logLevel", "info",
-					"--noEthCallOverrideSupport", "true",
-					"--useUserOperationGasLimitsForSubmission", "true",
-				},
-				ImagePlatform: "linux/amd64",
-				ExposedPorts:  []string{fmt.Sprintf("%s:%s/tcp", port, port)},
-				WaitingFor:    wait.ForLog("Server listening at"),
-			},
-			Started: true,
-		})
-		require.NoError(t, err, "failed to start Alto bundler container")
-
-		t.Cleanup(func() {
-			bundlerMutex.Lock()
-			defer bundlerMutex.Unlock()
-
-			bundlerActiveUsers--
-			if bundlerActiveUsers <= 0 {
-				bundlerActiveNode = nil
-				if err := altoContainer.Terminate(ctx); err != nil {
-					t.Fatalf("failed to terminate Alto container: %s", err)
-				}
-			}
-		})
-
+	if bundlerActiveNode != nil {
 		bundlerActiveUsers++
-		bundlerActiveNode = altoContainer
-	} else {
+		t.Cleanup(bundlerNodeClenaupFactory(ctx, t))
+
 		slog.Info("reusing existing Alto bundler")
+		return bundlerActiveNode.ContainerURL
 	}
 
-	containerPort, err := bundlerActiveNode.MappedPort(ctx, port)
+	const port = "3000"
+	balance := decimal.NewFromFloat(100e18 /* 100 ETH */).BigInt()
+	bundlerAccount, err := NewAccountWithBalance(ctx, balance, node)
+	require.NoError(t, err, "failed to fund bundler account")
+	privateKey := hexutil.Encode(crypto.FromECDSA(bundlerAccount.PrivateKey))
+
+	altoContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image: "ghcr.io/pimlicolabs/alto:v1.0.1",
+			Entrypoint: []string{"pnpm", "start",
+				"--port", port,
+				"--networkName", "mainnet", // check Go-Ethereum container logs to find out configured network
+				"--entryPoint", entryPoint.Hex(), // the contract should already be deployed on Go-Ethereum node
+				"--signerPrivateKeys", privateKey,
+				"--utilityPrivateKey", privateKey,
+				"--minBalance", "1000000000000000000", // 1 ETH
+				"--rpcUrl", node.ContainerURL.String(),
+				"--logLevel", "info",
+				"--noEthCallOverrideSupport", "true",
+				"--useUserOperationGasLimitsForSubmission", "true",
+			},
+			ImagePlatform: "linux/amd64",
+			ExposedPorts:  []string{fmt.Sprintf("%s:%s/tcp", port, port)},
+			WaitingFor:    wait.ForLog("Server listening at"),
+		},
+		Started: true,
+	})
+	require.NoError(t, err, "failed to start Alto bundler container")
+
+	containerPort, err := altoContainer.MappedPort(ctx, port)
 	require.NoError(t, err, "failed to get Alto bundler container port")
 	bundlerURL, err := url.Parse(fmt.Sprintf("http://0.0.0.0:%s", containerPort.Port()))
+
+	bundlerActiveNode = &BundlerNode{
+		Container:    altoContainer,
+		ContainerURL: bundlerURL,
+	}
+
+	t.Cleanup(bundlerNodeClenaupFactory(ctx, t))
+	bundlerActiveUsers++
+
 	require.NoError(t, err, "failed to parse local bundler URL")
 
-	return bundlerURL
+	return bundlerActiveNode.ContainerURL
 }
 
 type Contracts struct {
@@ -205,11 +230,23 @@ type Contracts struct {
 	SessionKeyValidator common.Address
 }
 
+var (
+	cachedContracts *Contracts
+	contractsMutex  sync.Mutex
+)
+
 func SetupContracts(
 	ctx context.Context,
 	t *testing.T,
 	node *EthNode,
 ) Contracts {
+	contractsMutex.Lock()
+	defer contractsMutex.Unlock()
+
+	if cachedContracts != nil {
+		return *cachedContracts
+	}
+
 	chainID, err := node.Client.ChainID(ctx)
 	require.NoError(t, err)
 	slog.Info("chainID", "chainID", chainID)
@@ -245,7 +282,7 @@ func SetupContracts(
 	slog.Info("deployed SessionKeyValidator contract", "address", sessionKeyValidator)
 
 	slog.Info("done deploying contracts")
-	return Contracts{
+	contracts := Contracts{
 		EntryPoint:          entryPoint,
 		Validator:           validator,
 		Factory:             factory,
@@ -253,6 +290,10 @@ func SetupContracts(
 		Paymaster:           paymaster,
 		SessionKeyValidator: sessionKeyValidator,
 	}
+
+	cachedContracts = &contracts
+
+	return *cachedContracts
 }
 
 func buildClient(t *testing.T, rpcURL, bundlerURL url.URL, addresses Contracts) userop.Client {
