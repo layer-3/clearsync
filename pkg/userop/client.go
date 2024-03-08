@@ -244,10 +244,14 @@ func (c *backend) NewUserOp(
 	walletDeploymentOpts *WalletDeploymentOpts,
 	gasLimitOverrides *GasLimitOverrides,
 ) (UserOperation, error) {
-	slog.Debug("applying middlewares to user operation")
 	if signer == nil {
 		return UserOperation{}, ErrNoSigner
 	}
+
+	if len(calls) == 0 {
+		return UserOperation{}, ErrNoCalls
+	}
+
 	ctx = context.WithValue(ctx, ctxKeySigner, signer)
 
 	isDeployed, err := isAccountDeployed(c.provider, smartWallet)
@@ -287,6 +291,8 @@ func (c *backend) NewUserOp(
 			op.PreVerificationGas = decimal.NewFromBigInt(&gasLimitOverrides.PreVerificationGas, 0)
 		}
 	}
+
+	slog.Debug("applying middlewares to user operation")
 
 	for _, fn := range c.middlewares {
 		if err := fn(ctx, &op); err != nil {

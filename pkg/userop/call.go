@@ -94,9 +94,14 @@ type callStructKernel struct {
 func (calls Calls) PackForKernel() ([]byte, error) {
 	params := make([]callStructKernel, len(calls))
 	for i, call := range calls {
+		value := big.NewInt(0)
+		if call.Value != nil {
+			value.Set(call.Value)
+		}
+
 		params[i] = callStructKernel{
 			To:    call.To,
-			Value: call.Value,
+			Value: value,
 			Data:  call.CallData,
 		}
 	}

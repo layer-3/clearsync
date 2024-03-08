@@ -20,6 +20,8 @@ var (
 	ErrInvalidPaymasterAddress = errors.New("invalid paymaster address")
 	// ErrNoSigner is returned when the signer is not specified.
 	ErrNoSigner = errors.New("signer not specified")
+	// ErrNoCalls is returned when the calls are not specified.
+	ErrNoCalls = errors.New("calls not specified")
 	// ErrPaymasterNotSupported is returned on attempt to build client with an unsupported paymaster type.
 	// Make sure that the paymaster type you are trying to use
 	// has no `unsupported` or `untested` tags in `paymaster_type.go` source file.
