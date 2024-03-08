@@ -101,7 +101,7 @@ func NewClient(config Config) (Client, error) {
 }
 
 func (b *backend) GetEnableDataDigest(kernelAddress, sessionKey common.Address) ([]byte, error) {
-	sessionData, err := b.getSessionData(sessionKey)
+	sessionData, err := b.getSessionData(kernelAddress, sessionKey)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +120,7 @@ func (b *backend) GetEnablingUserOpSigner(sessionSigner signer.Signer, enableSig
 	return func(op userop.UserOperation, entryPoint common.Address, chainID *big.Int) ([]byte, error) {
 		slog.Debug("signing enable session key + user operation with session key")
 
-		sessionData, err := b.getSessionData(sessionSigner.CommonAddress())
+		sessionData, err := b.getSessionData(op.Sender, sessionSigner.CommonAddress())
 		if err != nil {
 			return nil, err
 		}
@@ -166,13 +166,13 @@ func (b *backend) GetUserOpSigner(sessionSigner signer.Signer) userop.Signer {
 	}
 }
 
-func (b *backend) getSessionData(sessionKey common.Address) (SessionData, error) {
+func (b *backend) getSessionData(smartWallet, sessionKey common.Address) (SessionData, error) {
 	sessionKeyValidator, err := session_key_validator.NewSessionKeyValidator(b.sessionKeyValidatorAddress, b.provider)
 	if err != nil {
 		return SessionData{}, fmt.Errorf("failed to connect to session key validator: %w", err)
 	}
 
-	nonces, err := sessionKeyValidator.Nonces(nil, sessionKey)
+	nonces, err := sessionKeyValidator.Nonces(nil, smartWallet)
 	if err != nil {
 		return SessionData{}, fmt.Errorf("failed to get nonces: %w", err)
 	}
