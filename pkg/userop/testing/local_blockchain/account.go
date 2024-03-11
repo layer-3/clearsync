@@ -10,7 +10,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	ecrypto "github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 type Account struct {
@@ -19,8 +19,13 @@ type Account struct {
 	TransactOpts *bind.TransactOpts
 }
 
-func NewAccount(chainID *big.Int) (Account, error) {
-	pvk, err := ecrypto.GenerateKey()
+func NewAccount(ctx context.Context, node *EthNode) (Account, error) {
+	chainID, err := node.Client.ChainID(ctx)
+	if err != nil {
+		return Account{}, err
+	}
+
+	pvk, err := crypto.GenerateKey()
 	if err != nil {
 		return Account{}, fmt.Errorf("failed to generate deployer private key: %w", err)
 	}
@@ -32,18 +37,13 @@ func NewAccount(chainID *big.Int) (Account, error) {
 
 	return Account{
 		PrivateKey:   pvk,
-		Address:      ecrypto.PubkeyToAddress(pvk.PublicKey),
+		Address:      crypto.PubkeyToAddress(pvk.PublicKey),
 		TransactOpts: opts,
 	}, nil
 }
 
 func NewAccountWithBalance(ctx context.Context, balance *big.Int, node *EthNode) (Account, error) {
-	chainID, err := node.Client.ChainID(ctx)
-	if err != nil {
-		return Account{}, err
-	}
-
-	account, err := NewAccount(chainID)
+	account, err := NewAccount(ctx, node)
 	if err != nil {
 		return Account{}, err
 	}

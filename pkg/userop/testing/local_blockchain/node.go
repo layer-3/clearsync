@@ -2,7 +2,6 @@ package local_blockchain
 
 import (
 	"context"
-	"crypto/ecdsa"
 	"fmt"
 	"log/slog"
 	"net/url"
@@ -26,18 +25,6 @@ import (
 	"github.com/layer-3/clearsync/pkg/artifacts/session_key_validator"
 	"github.com/layer-3/clearsync/pkg/userop"
 )
-
-type exampleECDSASigner struct {
-	privateKey *ecdsa.PrivateKey
-}
-
-func newExampleECDSASigner(privateKey *ecdsa.PrivateKey) exampleECDSASigner {
-	return exampleECDSASigner{privateKey: privateKey}
-}
-
-func (s exampleECDSASigner) Sign(msg []byte) ([]byte, error) {
-	return crypto.Sign(msg, s.privateKey)
-}
 
 type EthNode struct {
 	Container    testcontainers.Container
@@ -70,6 +57,7 @@ func ethNodeClenaupFactory(ctx context.Context, t *testing.T) func() {
 func NewEthNode(ctx context.Context, t *testing.T) *EthNode {
 	ethMutex.Lock()
 	defer ethMutex.Unlock()
+	slog.Info("starting Go-Ethereum node...")
 
 	if ethActiveNode != nil {
 		ethActiveUsers++
@@ -166,6 +154,7 @@ func bundlerNodeClenaupFactory(ctx context.Context, t *testing.T) func() {
 func NewBundler(ctx context.Context, t *testing.T, node *EthNode, entryPoint common.Address) *url.URL {
 	bundlerMutex.Lock()
 	defer bundlerMutex.Unlock()
+	slog.Info("starting bundler...")
 
 	if bundlerActiveNode != nil {
 		bundlerActiveUsers++
@@ -184,9 +173,10 @@ func NewBundler(ctx context.Context, t *testing.T, node *EthNode, entryPoint com
 	altoContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image: "ghcr.io/pimlicolabs/alto:v1.0.1",
-			Entrypoint: []string{"pnpm", "start",
+			Entrypoint: []string{
+					"pnpm", "start",
 				"--port", port,
-				"--networkName", "mainnet", // check Go-Ethereum container logs to find out configured network
+				"--networkName", "mainnet",
 				"--entryPoint", entryPoint.Hex(), // the contract should already be deployed on Go-Ethereum node
 				"--signerPrivateKeys", privateKey,
 				"--utilityPrivateKey", privateKey,
@@ -235,18 +225,13 @@ var (
 	contractsMutex  sync.Mutex
 )
 
-func SetupContracts(
-	ctx context.Context,
-	t *testing.T,
-	node *EthNode,
-) Contracts {
+func SetupContracts(ctx context.Context, t *testing.T, node *EthNode) Contracts {
 	contractsMutex.Lock()
 	defer contractsMutex.Unlock()
 
 	if cachedContracts != nil {
 		return *cachedContracts
 	}
-
 	chainID, err := node.Client.ChainID(ctx)
 	require.NoError(t, err)
 	slog.Info("chainID", "chainID", chainID)
@@ -306,8 +291,8 @@ func buildClient(t *testing.T, rpcURL, bundlerURL url.URL, addresses Contracts) 
 	config.SmartWallet = userop.SmartWalletConfig{
 		Type:           &userop.SmartWalletKernel,
 		ECDSAValidator: addresses.Validator,
-		Logic:          addresses.Factory,
-		Factory:        addresses.Logic,
+		Logic:          addresses.Logic,
+		Factory:        addresses.Factory,
 	}
 	config.Paymaster.Type = &userop.PaymasterDisabled
 	config.Paymaster.Address = addresses.Paymaster
