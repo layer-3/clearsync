@@ -8,8 +8,7 @@ import (
 )
 
 // Call represents sufficient data to build a single transaction,
-// which is a part of a user operation
-// to be executed in a batch with other ones.
+// which is a part of a user operation to be executed in a batch with other ones.
 type Call struct {
 	To       common.Address
 	Value    *big.Int // wei
@@ -50,6 +49,10 @@ func (calls Calls) PackForSimpleAccount() ([]byte, error) {
 
 // UnpackCallsForSimpleAccount unpacks CallData for SimpleAccount smart wallet.
 func UnpackCallsForSimpleAccount(data []byte) (Calls, error) {
+	if len(data) < 4 {
+		return nil, fmt.Errorf("invalid data length")
+	}
+
 	values, err := simpleAccountABI.Methods["executeBatch"].Inputs.Unpack(data[4:])
 	if err != nil {
 		return nil, fmt.Errorf("failed to unpack executeBatch data for SimpleAccount: %w", err)

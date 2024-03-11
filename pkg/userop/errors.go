@@ -6,8 +6,8 @@ var (
 	// ErrNoWalletDeploymentOpts is returned when the wallet deployment opts
 	// are required to build and submit userop, but they are not specified.
 	ErrNoWalletDeploymentOpts = errors.New("wallet deployment opts not specified")
-	// ErrNoWalletOwner is returned when the wallet owner is not specified.
-	ErrNoWalletOwner = errors.New("wallet owner not specified")
+	// ErrNoWalletOwnerInWDO is returned when the wallet owner is not specified.
+	ErrNoWalletOwnerInWDO = errors.New("wallet deployment opts: wallet owner not specified")
 	// ErrInvalidEntryPointAddress is returned when the entrypoint address is invalid.
 	ErrInvalidEntryPointAddress = errors.New("invalid entry point address")
 	// ErrInvalidFactoryAddress is returned when the factory address is invalid.

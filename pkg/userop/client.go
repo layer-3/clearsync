@@ -265,7 +265,7 @@ func (c *backend) NewUserOp(
 		}
 
 		if walletDeploymentOpts.Owner == (common.Address{}) {
-			return UserOperation{}, ErrNoWalletOwner
+			return UserOperation{}, ErrNoWalletOwnerInWDO
 		}
 
 		ctx = context.WithValue(ctx, ctxKeyOwner, walletDeploymentOpts.Owner)

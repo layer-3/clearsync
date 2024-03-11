@@ -57,7 +57,7 @@ func TestClientNewUserOp(t *testing.T) {
 		_, err := client.NewUserOp(ctx, common.Address{}, nil, nil, wdo, nil)
 
 		// assert error
-		require.EqualError(t, err, ErrNoWalletOwner.Error())
+		require.EqualError(t, err, ErrNoWalletOwnerInWDO.Error())
 	})
 
 	t.Run("Error when no calls specified", func(t *testing.T) {
