@@ -2,7 +2,6 @@ package userop
 
 import (
 	"math/big"
-	"net/url"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ilyakaznacheev/cleanenv"
@@ -12,8 +11,8 @@ import (
 // ClientConfig represents the configuration
 // for the user operation client.
 type ClientConfig struct {
-	ProviderURL url.URL           `yaml:"provider_url" env:"USEROP_CLIENT_PROVIDER_URL"`
-	BundlerURL  url.URL           `yaml:"bundler_url" env:"USEROP_CLIENT_BUNDLER_URL"`
+	ProviderURL string            `yaml:"provider_url" env:"USEROP_CLIENT_PROVIDER_URL"`
+	BundlerURL  string            `yaml:"bundler_url" env:"USEROP_CLIENT_BUNDLER_URL"`
 	EntryPoint  common.Address    `yaml:"entry_point" env:"USEROP_CLIENT_ENTRY_POINT"`
 	Gas         GasConfig         `yaml:"gas" env-prefix:"USEROP_CLIENT_GAS_CONFIG_"`
 	SmartWallet SmartWalletConfig `yaml:"smart_wallet" env-prefix:"USEROP_CLIENT_SMART_WALLET_"`
@@ -83,7 +82,7 @@ func (sw *SmartWalletConfig) Init() {
 // for the paymaster to be used with the client.
 type PaymasterConfig struct {
 	Type    *PaymasterType `yaml:"type" env:"TYPE"` // nil is equivalent to PaymasterDisabled
-	URL     url.URL        `yaml:"url" env:"URL"`
+	URL     string         `yaml:"url" env:"URL"`
 	Address common.Address `yaml:"address" env:"ADDRESS"`
 
 	PimlicoERC20       PimlicoERC20Config       `yaml:"pimlico_erc20" env-prefix:"PIMLICO_ERC20_"`

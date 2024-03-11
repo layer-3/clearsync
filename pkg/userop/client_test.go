@@ -3,7 +3,6 @@ package userop
 import (
 	"context"
 	"errors"
-	"net/url"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -143,7 +142,7 @@ func TestNewClient(t *testing.T) {
 		t.Parallel()
 
 		conf := mockConfig()
-		conf.ProviderURL = *must(url.Parse(defaultProviderURL()))
+		conf.ProviderURL = defaultProviderURL()
 		conf.Paymaster = PaymasterConfig{}
 
 		_, err := NewClient(conf)
@@ -155,7 +154,7 @@ func TestNewClient(t *testing.T) {
 		t.Parallel()
 
 		conf := mockConfig()
-		conf.ProviderURL = *must(url.Parse(defaultProviderURL()))
+		conf.ProviderURL = defaultProviderURL()
 		conf.Paymaster.Type = &PaymasterDisabled
 
 		_, err := NewClient(conf)

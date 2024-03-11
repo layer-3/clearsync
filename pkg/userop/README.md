@@ -106,7 +106,7 @@ var (
     Paymaster: userop.PaymasterConfig{
       // Example of a Pimlico USDC.e ERC20 Paymaster config.
       Type:    &userop.PaymasterPimlicoERC20,
-      URL:     url.URL{}, // Pimlico ERC20 Paymaster does not require a URL.
+      URL:     "", // Pimlico ERC20 Paymaster does not require a URL.
       Address: common.HexToAddress("0xa683b47e447De6c8A007d9e294e87B6Db333Eb18"),
       PimlicoERC20: userop.PimlicoERC20Config{
         VerificationGasOverhead: decimal.RequireFromString("10000"), // verification gas overhead to be added to user op verification gas limit
