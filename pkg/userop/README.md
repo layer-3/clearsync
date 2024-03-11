@@ -93,8 +93,8 @@ Below is an example of a configuration struct (`testing/config.example.go`):
 ```go
 var (
   exampleConfig = userop.ClientConfig{
-    ProviderURL: *must(url.Parse("https://YOUR_PROVIDER_URL")),
-    BundlerURL:  *must(url.Parse("https://YOUR_BUNDLER_URL")),
+    ProviderURL: "https://YOUR_PROVIDER_URL",
+    BundlerURL:  "https://YOUR_BUNDLER_URL",
     EntryPoint:  common.HexToAddress("ENTRY_POINT_ADDRESS"),
     SmartWallet: userop.SmartWalletConfig{
       // Example of a Kernel Smart Wallet config with Kernel v2.2.
