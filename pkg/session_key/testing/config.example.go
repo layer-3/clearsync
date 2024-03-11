@@ -1,8 +1,6 @@
 package main
 
 import (
-	"net/url"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/shopspring/decimal"
