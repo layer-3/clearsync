@@ -3,7 +3,6 @@ package local_blockchain
 import (
 	"context"
 	"log/slog"
-	"math/big"
 	"testing"
 	"time"
 
@@ -53,10 +52,11 @@ func TestSimulatedRPC(t *testing.T) {
 
 	// 6. Submit user operation
 	signer := userop.SignerForKernel(signer.NewLocalSigner(eoa.PrivateKey))
-	calls := []userop.Call{{To: receiver.Address, Value: decimal.RequireFromString("1" /* 1 wei */).BigInt()}}
+	calls := []userop.Call{{To: receiver.Address, Value: decimal.NewFromInt(1 /* 1 wei */).BigInt()}}
 	params := &userop.WalletDeploymentOpts{Index: decimal.Zero, Owner: eoa.Address}
 	op, err := client.NewUserOp(ctx, sender.Address, signer, calls, params, nil)
 	require.NoError(t, err, "failed to create new user operation")
+	slog.Info("ready to send", "userop", op)
 
 	done, err := client.SendUserOp(ctx, op)
 	require.NoError(t, err, "failed to send user operation")

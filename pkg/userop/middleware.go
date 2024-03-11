@@ -282,7 +282,6 @@ func getGasEstimation(bundler RPCBackend, config ClientConfig) (middleware, erro
 }
 
 func estimateUserOperationGas(bundler RPCBackend, entryPoint common.Address) middleware {
-
 	return func(ctx context.Context, op *UserOperation) error {
 		if !op.CallGasLimit.IsZero() && !op.VerificationGasLimit.IsZero() && !op.PreVerificationGas.IsZero() {
 			slog.Debug("skipping gas estimation, using provided gas limits")

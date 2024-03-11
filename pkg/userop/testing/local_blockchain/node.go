@@ -83,7 +83,7 @@ func NewEthNode(ctx context.Context, t *testing.T) *EthNode {
 		// TODO: use in-memory database instead of container volumes
 		gethContainer, err = testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
-				Image: "ethereum/client-go:stable",
+				Image: "ethereum/client-go:v1.13.4", // v1.10.26
 				// 8545 TCP, used by the HTTP based JSON RPC API
 				// 8546 TCP, used by the WebSocket based JSON RPC API
 				// 8547 TCP, used by the GraphQL API
@@ -174,7 +174,7 @@ func NewBundler(ctx context.Context, t *testing.T, node *EthNode, entryPoint com
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image: "ghcr.io/pimlicolabs/alto:v1.0.1",
 			Entrypoint: []string{
-					"pnpm", "start",
+				"pnpm", "start",
 				"--port", port,
 				"--networkName", "mainnet",
 				"--entryPoint", entryPoint.Hex(), // the contract should already be deployed on Go-Ethereum node
@@ -185,10 +185,6 @@ func NewBundler(ctx context.Context, t *testing.T, node *EthNode, entryPoint com
 				"--logLevel", "info",
 				"--noEthCallOverrideSupport", "true",
 				"--useUserOperationGasLimitsForSubmission", "true",
-        "--bundlerFrequency", "100",
-        "--pollingInterval", "1",
-        "--maxBundleWaitTime", "1",
-        "--maxBundleSize", "1",
 			},
 			ImagePlatform: "linux/amd64",
 			ExposedPorts:  []string{fmt.Sprintf("%s:%s/tcp", port, port)},
