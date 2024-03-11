@@ -61,8 +61,8 @@ type backend struct {
 	sessionKeyValidatorAddress common.Address
 	executorAddress            common.Address
 	paymasterAddress           common.Address
-	Permissions                []Permission   // for now, permissions are the same for all session keys
-	PermTree                   *mt.MerkleTree // root (hash) of the permission tree over all parameters as leaves
+	permissions                []Permission   // for now, permissions are the same for all session keys
+	permTree                   *mt.MerkleTree // root (hash) of the permission tree over all parameters as leaves
 }
 
 func NewClient(config Config) (Client, error) {
@@ -71,9 +71,9 @@ func NewClient(config Config) (Client, error) {
 		return nil, fmt.Errorf("failed to create Ethereum client: %w", err)
 	}
 
-	permTree, err := NewPermissionTree(config.Permissions)
+	chainId, err := provider.ChainID(context.Background())
 	if err != nil {
-		return nil, fmt.Errorf("failed to create permission tree: %w", err)
+		return nil, fmt.Errorf("failed to get chain ID: %w", err)
 	}
 
 	executionSig := KernelExecuteSig
@@ -81,9 +81,9 @@ func NewClient(config Config) (Client, error) {
 		executionSig = KernelExecuteBatchSig
 	}
 
-	chainId, err := provider.ChainID(context.Background())
+	permTree, err := NewPermissionTree(config.Permissions)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get chain ID: %w", err)
+		return nil, fmt.Errorf("failed to create permission tree: %w", err)
 	}
 
 	return &backend{
@@ -95,8 +95,8 @@ func NewClient(config Config) (Client, error) {
 		sessionKeyValidatorAddress: config.SessionKeyValidatorAddress,
 		executorAddress:            config.ExecutorAddress,
 		paymasterAddress:           config.PaymasterAddress,
-		Permissions:                config.Permissions,
-		PermTree:                   permTree,
+		permissions:                config.Permissions,
+		permTree:                   permTree,
 	}, nil
 }
 
@@ -181,7 +181,7 @@ func (b *backend) getSessionData(smartWallet, sessionKey common.Address) (Sessio
 		SessionKey: sessionKey,
 		ValidAfter: time.Unix(int64(b.sessionKeyValidAfter), 0),
 		ValidUntil: time.Unix(int64(b.sessionKeyValidUntil), 0),
-		MerkleRoot: b.PermTree.Root,
+		MerkleRoot: b.permTree.Root,
 		Paymaster:  b.paymasterAddress,
 		Nonce:      big.NewInt(0).Add(nonces.LastNonce, big.NewInt(1)),
 	}
@@ -189,7 +189,6 @@ func (b *backend) getSessionData(smartWallet, sessionKey common.Address) (Sessio
 	return sessionData, nil
 }
 
-// TODO: add tests for empty calldata
 func (b *backend) getUseSessionKeySig(sessionSigner signer.Signer, userOpCallData []byte, userOpHash common.Hash) ([]byte, error) {
 	calls, err := userop.UnpackCallsForKernel(userOpCallData)
 	if err != nil {
@@ -223,13 +222,12 @@ func (b *backend) getUseSessionKeySig(sessionSigner signer.Signer, userOpCallDat
 	return fullSignature, nil
 }
 
-// FIXME: add tests
 func (b *backend) filterPermissions(calls userop.Calls) ([]kernelPermission, error) {
 	permissions := make([]kernelPermission, len(calls))
 	for i, call := range calls {
 		permissionFound := false
 
-		for index, perm := range b.Permissions {
+		for index, perm := range b.permissions {
 			if perm.Target != call.To && perm.Target != (common.Address{}) {
 				continue
 			}
@@ -249,7 +247,6 @@ func (b *backend) filterPermissions(calls userop.Calls) ([]kernelPermission, err
 			permissionFound = true
 		}
 
-		// TODO: add external error?
 		if !permissionFound {
 			return nil, fmt.Errorf("no permission found for call: %s %s", call.To.String(), hexutil.Encode(call.CallData[:4]))
 		}
@@ -261,7 +258,7 @@ func (b *backend) filterPermissions(calls userop.Calls) ([]kernelPermission, err
 func (b *backend) getProofs(kernelPermissions []kernelPermission) ([]mt.Proof, error) {
 	proofs := make([]mt.Proof, len(kernelPermissions))
 	for i, perm := range kernelPermissions {
-		proof, err := b.PermTree.Proof(perm)
+		proof, err := b.permTree.Proof(perm)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get proof for permission: %w", err)
 		}

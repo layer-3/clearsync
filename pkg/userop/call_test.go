@@ -7,10 +7,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPackCallsForKernel(t *testing.T) {
+func TestPackUnpackCallsForKernel(t *testing.T) {
 	tcs := []struct {
 		calls Calls
 	}{
+		{
+			// empty calls
+			calls: Calls{},
+		},
 		{ // single call
 			calls: Calls{
 				{
@@ -58,6 +62,11 @@ func TestPackCallsForKernel(t *testing.T) {
 		unpackedCalls, err := UnpackCallsForKernel(calldata)
 		assert.NoError(t, err)
 
+		if len(tc.calls) == 0 {
+			assert.Empty(t, unpackedCalls)
+			continue
+		}
+
 		for i := range tc.calls {
 			expValue := big.NewInt(0)
 			if tc.calls[i].Value != nil {
@@ -72,6 +81,11 @@ func TestPackCallsForKernel(t *testing.T) {
 			assert.Equal(t, expCallData, unpackedCalls[i].CallData)
 		}
 	}
+}
+
+func TestErrorUnpackCallsForKernel(t *testing.T) {
+	_, err := UnpackCallsForKernel([]byte{}) // less than 4 bytes
+	assert.EqualError(t, err, "invalid data length")
 }
 
 func TestPackCallsForSimpleAccount(t *testing.T) {

@@ -50,7 +50,7 @@ type Client interface {
 	//   - ctx - is the context of the operation.
 	//   - smartWallet - is the address of the smart wallet that will execute the user operation.
 	//   - signer - is the signer function that will sign the user operation.
-	//   - calls - is the list of calls to be executed in the user operation.
+	//   - calls - is the list of calls to be executed in the user operation. Must not be empty.
 	//   - walletDeploymentOpts - are the options for the smart wallet deployment. Can be nil if the smart wallet is already deployed.
 	//
 	// Returns:

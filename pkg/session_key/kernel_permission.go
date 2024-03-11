@@ -93,7 +93,7 @@ const (
 )
 
 type kernelPermission struct {
-	Index         uint32              `json:"index"` // ? -> used in permissionKey to track executions
+	Index         uint32              `json:"index"` // Id of the permission as a leaf in permissions tree
 	Target        common.Address      `json:"target"`
 	Sig           [4]byte             `json:"sig"` // 4 bytes of function signature
 	ValueLimit    *big.Int            `json:"valueLimit"`

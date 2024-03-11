@@ -117,6 +117,10 @@ func (calls Calls) PackForKernel() ([]byte, error) {
 
 // UnpackCallsForKernel unpacks CallData for Zerodev Kernel smart wallet.
 func UnpackCallsForKernel(data []byte) (Calls, error) {
+	if len(data) < 4 {
+		return nil, fmt.Errorf("invalid data length")
+	}
+
 	values, err := KernelExecuteABI.Methods["executeBatch"].Inputs.Unpack(data[4:])
 	if err != nil {
 		return nil, fmt.Errorf("failed to unpack executeBatch data for Kernel: %w", err)

@@ -7,9 +7,22 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/layer-3/clearsync/pkg/abi/itoken"
+	signer_pkg "github.com/layer-3/clearsync/pkg/signer"
 	"github.com/layer-3/clearsync/pkg/userop"
 	"github.com/stretchr/testify/require"
 )
+
+func TestGetUseSessionKeySig(t *testing.T) {
+	be := backend{}
+
+	t.Run("Error when no calls", func(t *testing.T) {
+		noCallsCallData, err := userop.Calls{}.PackForKernel()
+		require.NoError(t, err)
+
+		_, err = be.getUseSessionKeySig(signer_pkg.LocalSigner{}, noCallsCallData, common.Hash{})
+		require.EqualError(t, err, "no calls found in user operation")
+	})
+}
 
 func TestFilterPermissions(t *testing.T) {
 	ierc20ABI, err := itoken.IERC20MetaData.GetAbi()
@@ -56,7 +69,7 @@ func TestFilterPermissions(t *testing.T) {
 	}
 
 	be := backend{
-		Permissions: permissions,
+		permissions: permissions,
 	}
 
 	approveCD, err := ierc20ABI.Pack("approve", common.HexToAddress("0x11"), big.NewInt(15))
