@@ -2,13 +2,13 @@ package local_blockchain
 
 import (
 	"context"
-	"crypto/ecdsa"
 	"log/slog"
+	"math/big"
 	"testing"
 	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/layer-3/clearsync/pkg/signer"
 	"github.com/layer-3/clearsync/pkg/userop"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/require"
@@ -39,7 +39,7 @@ func TestSimulatedRPC(t *testing.T) {
 	client := buildClient(t, node.LocalURL, *bundlerURL, addresses)
 
 	// 5. Create and fund smart account
-	eoaBalance := decimal.NewFromFloat(2e18 /* 1 ETH */).BigInt()
+	eoaBalance := decimal.NewFromFloat(2e18 /* 2 ETH */).BigInt()
 	eoa, err := NewAccountWithBalance(ctx, eoaBalance, node) // EOA = Externally Owned Account
 	require.NoError(t, err, "failed to create EOA")
 
@@ -51,16 +51,19 @@ func TestSimulatedRPC(t *testing.T) {
 	receiver, err := NewAccount(ctx, node)
 	require.NoError(t, err, "failed to create receiver account")
 
-	signer := userop.SignerForKernel(newExampleECDSASigner(eoa.PrivateKey))
-	calls := []userop.Call{{To: receiver.Address, Value: decimal.RequireFromString("1" /* 1 wei */)}}
+	// 6. Submit user operation
+	signer := userop.SignerForKernel(signer.NewLocalSigner(eoa.PrivateKey))
+	calls := []userop.Call{{To: receiver.Address, Value: decimal.RequireFromString("1" /* 1 wei */).BigInt()}}
 	params := &userop.WalletDeploymentOpts{Index: decimal.Zero, Owner: eoa.Address}
-	op, err := client.NewUserOp(ctx, sender.Address, signer, calls, params)
+	op, err := client.NewUserOp(ctx, sender.Address, signer, calls, params, nil)
 	require.NoError(t, err, "failed to create new user operation")
 
 	done, err := client.SendUserOp(ctx, op)
 	require.NoError(t, err, "failed to send user operation")
+
 	receipt := <-done
 	slog.Info("transaction mined", "receipt", receipt)
+	require.True(t, receipt.Success)
 }
 
 func sendFunds(ctx context.Context, t *testing.T, node *EthNode, from, to Account, fundAmount decimal.Decimal) {
@@ -104,16 +107,4 @@ func waitMined(ctx context.Context, node *EthNode, tx *types.Transaction) (*type
 		case <-queryTicker.C:
 		}
 	}
-}
-
-type exampleECDSASigner struct {
-	privateKey *ecdsa.PrivateKey
-}
-
-func newExampleECDSASigner(privateKey *ecdsa.PrivateKey) exampleECDSASigner {
-	return exampleECDSASigner{privateKey: privateKey}
-}
-
-func (s exampleECDSASigner) Sign(msg []byte) ([]byte, error) {
-	return crypto.Sign(msg, s.privateKey)
 }
