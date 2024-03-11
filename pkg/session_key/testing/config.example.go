@@ -16,7 +16,7 @@ var (
 	exampleUserOpConfig = userop.ClientConfig{
 		ProviderURL: *must(url.Parse("https://NETWORK.infura.io/v3/YOUR_INFURA_API_KEY")),
 		BundlerURL:  *must(url.Parse("https://api.pimlico.io/v1/NETWORK/rpc?apikey=YOUR_PIMLICO_API_KEY")),
-		EntryPoint:  common.HexToAddress("ENTRY_POINT_ADDRESS"),
+		EntryPoint:  common.HexToAddress("0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789"),
 		SmartWallet: userop.SmartWalletConfig{
 			// Example of a Kernel Smart Wallet config with Kernel v2.2.
 			Type: &userop.SmartWalletKernel,
