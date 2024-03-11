@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"math/big"
 	"os"
 	"strings"
 
@@ -15,18 +16,21 @@ import (
 	"github.com/layer-3/clearsync/pkg/userop"
 )
 
-func main() {
-	setLogLevel(slog.LevelInfo)
+var (
+	config               = exampleConfig
+	signer               = exampleSigner
+	walletDeploymentOpts = exampleWalletDeploymentOpts
+	gasLimitOverrides    = exampleGasLimitOverrides
 
-	var (
-		owner       = common.HexToAddress("0x2185da3337cad307fd48dFDabA6D4C66A9fD2c71")
-		smartWallet = common.HexToAddress("0x69b36b0Cb89b1666d85Ed4fF48243730E9c53405")
-		receiver    = common.HexToAddress("0x2185da3337cad307fd48dFDabA6D4C66A9fD2c71")
-		token       = common.HexToAddress("0x18e73A5333984549484348A94f4D219f4faB7b81") // Duckies
-		amount      = decimal.RequireFromString("1000")                                 // wei
+	swartWalletIndex = decimal.Zero
+	owner            = common.HexToAddress("0x2185da3337cad307fd48dFDabA6D4C66A9fD2c71")
+	smartWallet      = common.HexToAddress("0x69b36b0Cb89b1666d85Ed4fF48243730E9c53405")
+	receiver         = common.HexToAddress("0x2185da3337cad307fd48dFDabA6D4C66A9fD2c71")
+	token            = common.HexToAddress("0x18e73A5333984549484348A94f4D219f4faB7b81") // Duckies
+	amount           = decimal.RequireFromString("1000")                                 // wei
 
-		ducklingsGame    = common.HexToAddress("0xb66bf78cad7cbab51988ddc792652cbabdff7675") // Duckies
-		ducklingsGameABI = `[{
+	ducklingsGame    = common.HexToAddress("0xb66bf78cad7cbab51988ddc792652cbabdff7675") // Duckies
+	ducklingsGameABI = `[{
 		  "inputs": [{
 	        "internalType": "uint8",
 	        "name": "size",
@@ -37,23 +41,26 @@ func main() {
 		  "stateMutability": "nonpayable",
 		  "type": "function"
 		}]`
-	)
+)
+
+func main() {
+	setLogLevel(slog.LevelInfo)
 
 	// create smartWallet client (with specific Wallet and Paymaster types)
-	client, err := userop.NewClient(exampleConfig)
+	client, err := userop.NewClient(config)
 	if err != nil {
 		panic(fmt.Errorf("failed to create userop client: %w", err))
 	}
 
 	// calculate smart wallet address
-	walletAddress, err := client.GetAccountAddress(context.Background(), owner, decimal.Zero)
+	walletAddress, err := client.GetAccountAddress(context.Background(), owner, swartWalletIndex)
 	if err != nil {
 		panic(fmt.Errorf("failed to get wallet address: %w", err))
 	}
 	slog.Debug("wallet address", "address", walletAddress)
 
 	// You can send native tokens to any address.
-	transferNative, err := newTransferNativeCall(receiver, amount)
+	transferNative, err := newTransferNativeCall(receiver, amount.BigInt())
 	if err != nil {
 		panic(fmt.Errorf("failed to build transfer native call: %w", err))
 	}
@@ -87,7 +94,7 @@ func main() {
 		panic(fmt.Errorf("failed to build approve to game call: %w", err))
 	}
 
-	mintPack, err := newCallFromABI(ducklingsGame, ducklingsGameABI, decimal.NewFromInt(0), "mintPack", uint8(1))
+	mintPack, err := newCallFromABI(ducklingsGame, ducklingsGameABI, big.NewInt(0), "mintPack", uint8(1))
 	if err != nil {
 		panic(fmt.Errorf("failed to build mint pack call: %w", err))
 	}
@@ -122,13 +129,13 @@ func newApproveCall(token, spender common.Address, amount decimal.Decimal) (user
 
 	return userop.Call{
 		To:       token,
-		Value:    decimal.Zero,
+		Value:    big.NewInt(0),
 		CallData: callData,
 	}, nil
 }
 
 // Encodes a `transfer` call of a native token, transferring `amount` to `receiver`.
-func newTransferNativeCall(receiver common.Address, amount decimal.Decimal) (userop.Call, error) {
+func newTransferNativeCall(receiver common.Address, amount *big.Int) (userop.Call, error) {
 	return userop.Call{
 		To:    receiver,
 		Value: amount,
@@ -149,13 +156,13 @@ func newTransferERC20Call(token, receiver common.Address, amount decimal.Decimal
 
 	return userop.Call{
 		To:       token,
-		Value:    decimal.Zero,
+		Value:    big.NewInt(0),
 		CallData: callData,
 	}, nil
 }
 
 // Encodes a call to the `contract` with the given `value`, `method` and `args`.
-func newCallFromABI(contract common.Address, stringABI string, value decimal.Decimal, method string, args ...interface{}) (userop.Call, error) {
+func newCallFromABI(contract common.Address, stringABI string, value *big.Int, method string, args ...interface{}) (userop.Call, error) {
 	ABI, err := abi.JSON(strings.NewReader(stringABI))
 	if err != nil {
 		panic(fmt.Errorf("failed to parse ABI: %w", err))
@@ -179,7 +186,7 @@ func newCallFromABI(contract common.Address, stringABI string, value decimal.Dec
 func send(client userop.Client, smartWallet common.Address, calls []userop.Call) error {
 	ctx := context.Background()
 
-	op, err := client.NewUserOp(ctx, smartWallet, exampleSigner, calls, walletDeploymentOpts)
+	op, err := client.NewUserOp(ctx, smartWallet, signer, calls, walletDeploymentOpts, gasLimitOverrides)
 	if err != nil {
 		panic(fmt.Errorf("failed to build userop: %w", err))
 	}

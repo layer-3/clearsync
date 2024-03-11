@@ -148,7 +148,7 @@ var entryPointUserOpEventsABI = must(abi.JSON(strings.NewReader(`[
 ]`)))
 
 // kernelExecuteABI is used to execute a transaction on Zerodev Kernel smart account.
-var kernelExecuteABI = must(abi.JSON(strings.NewReader(`[
+var KernelExecuteABI = must(abi.JSON(strings.NewReader(`[
   {
     "inputs": [
       {

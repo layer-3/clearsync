@@ -1,6 +1,7 @@
 package userop
 
 import (
+	"context"
 	"math/big"
 	"math/rand"
 	"net/url"
@@ -8,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/require"
 )
 
@@ -66,4 +68,20 @@ func bundlerMock(t *testing.T, providerURL string) Client {
 	require.NoError(t, err)
 
 	return client
+}
+
+func randomOwnerWithoutAccount(client Client, t *testing.T) common.Address {
+	ctx := context.Background()
+
+	var randomOwner common.Address
+	for {
+		randomOwner = randomAddress()
+		isDeployed, err := client.IsAccountDeployed(ctx, randomOwner, decimal.Zero)
+		require.NoError(t, err)
+
+		if !isDeployed {
+			break
+		}
+	}
+	return randomOwner
 }

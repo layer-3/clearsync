@@ -14,8 +14,6 @@ import (
 	"github.com/layer-3/clearsync/pkg/abi/entry_point"
 )
 
-const maxBlockGas = 30_000_000
-
 type ctxKey int
 
 const (
@@ -156,7 +154,6 @@ func getBiconomyInitCode(factory, ecdsaValidator common.Address) smartWalletInit
 }
 
 func getGasPrice(provider EthBackend, gasConfig GasConfig) middleware {
-	maxBlockGas := decimal.NewFromInt(maxBlockGas)
 	return func(ctx context.Context, op *UserOperation) error {
 		slog.Debug("getting gas price")
 
@@ -193,9 +190,6 @@ func getGasPrice(provider EthBackend, gasConfig GasConfig) middleware {
 
 		op.MaxFeePerGas = decimal.NewFromBigInt(maxFeePerGas, 0)
 		op.MaxPriorityFeePerGas = decimal.NewFromBigInt(maxPriorityFeePerGas, 0)
-		op.CallGasLimit = maxBlockGas
-		op.VerificationGasLimit = maxBlockGas
-		op.PreVerificationGas = maxBlockGas
 
 		return nil
 	}
@@ -273,7 +267,7 @@ func getGasEstimation(bundler RPCBackend, config ClientConfig) (middleware, erro
 			)
 		case PaymasterPimlicoVerifying:
 			// NOTE: PimlicoVerifying is the easiest to implement
-			return nil, fmt.Errorf("%w: %s", ErrPaymasterNotSupported, typ)
+			return nil, ErrPaymasterNotSupported
 		case PaymasterBiconomyERC20:
 			return nil, ErrPaymasterNotSupported
 		case PaymasterBiconomySponsoring:
@@ -288,7 +282,13 @@ func getGasEstimation(bundler RPCBackend, config ClientConfig) (middleware, erro
 }
 
 func estimateUserOperationGas(bundler RPCBackend, entryPoint common.Address) middleware {
+
 	return func(ctx context.Context, op *UserOperation) error {
+		if !op.CallGasLimit.IsZero() && !op.VerificationGasLimit.IsZero() && !op.PreVerificationGas.IsZero() {
+			slog.Debug("skipping gas estimation, using provided gas limits")
+			return nil
+		}
+
 		slog.Debug("estimating userOp gas limits")
 
 		// ERC4337-standardized gas estimation
@@ -306,6 +306,16 @@ func estimateUserOperationGas(bundler RPCBackend, entryPoint common.Address) mid
 		preVerificationGas, verificationGasLimit, callGasLimit, err := est.convert()
 		if err != nil {
 			return fmt.Errorf("failed to convert gas estimates: %w", err)
+		}
+
+		if !op.CallGasLimit.IsZero() {
+			callGasLimit = op.CallGasLimit.BigInt()
+		}
+		if !op.VerificationGasLimit.IsZero() {
+			verificationGasLimit = op.VerificationGasLimit.BigInt()
+		}
+		if !op.PreVerificationGas.IsZero() {
+			preVerificationGas = op.PreVerificationGas.BigInt()
 		}
 
 		slog.Debug("estimated userOp gas", "callGasLimit", callGasLimit, "verificationGasLimit", verificationGasLimit, "preVerificationGas", preVerificationGas)

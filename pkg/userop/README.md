@@ -77,6 +77,7 @@ type Client interface {
     signer Signer,
     calls []Call,
     walletDeploymentOpts *WalletDeploymentOpts,
+    gasLimitOverrides *GasLimitOverrides,
   ) (UserOperation, error)
   SendUserOp(ctx context.Context, op UserOperation) (done <-chan Receipt, err error)
 }
@@ -122,6 +123,14 @@ var (
   walletDeploymentOpts = &userop.WalletDeploymentOpts{
     Owner: common.HexToAddress("YOUR_OWNER_ADDRESS"),
     Index: decimal.NewFromInt(0),
+  }
+
+  // You can set either of gas limits when creating an user op to override the bundler's estimation.
+  // Or you can set all of them to disable the bundler's estimation.
+  gasLimitOverrides = &userop.GasLimitOverrides{
+    CallGasLimit:         big.NewInt(42),
+    VerificationGasLimit: big.NewInt(42),
+    PreVerificationGas:   big.NewInt(42),
   }
 
   // signer is used to sign the user op upon creation

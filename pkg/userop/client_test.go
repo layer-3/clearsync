@@ -24,7 +24,7 @@ func TestClientNewUserOp(t *testing.T) {
 		client := bundlerMock(t, defaultProviderURL())
 		ctx := context.Background()
 
-		_, err := client.NewUserOp(ctx, common.Address{}, nil, nil, nil)
+		_, err := client.NewUserOp(ctx, common.Address{}, nil, nil, nil, nil)
 		require.EqualError(t, err, ErrNoSigner.Error())
 	})
 
@@ -35,22 +35,12 @@ func TestClientNewUserOp(t *testing.T) {
 		ctx := context.Background()
 
 		// create random owner so that no wallet is deployed
-		var randomOwner common.Address
-		for {
-			randomOwner = randomAddress()
-			isDeployed, err := client.IsAccountDeployed(ctx, randomOwner, decimal.Zero)
-			require.NoError(t, err)
-
-			if !isDeployed {
-				break
-			}
-		}
-
+		randomOwner := randomOwnerWithoutAccount(client, t)
 		smartWallet, err := client.GetAccountAddress(ctx, randomOwner, decimal.Zero)
 		require.NoError(t, err)
 
 		// create userop without wallet deployment opts
-		_, err = client.NewUserOp(ctx, smartWallet, SignerForKernel(nil), nil, nil)
+		_, err = client.NewUserOp(ctx, smartWallet, SignerForKernel(nil), nil, nil, nil)
 
 		// assert error
 		require.EqualError(t, err, ErrNoWalletDeploymentOpts.Error())
@@ -62,25 +52,31 @@ func TestClientNewUserOp(t *testing.T) {
 		client := bundlerMock(t, defaultProviderURL())
 		ctx := context.Background()
 
-		// create random owner so that no wallet is deployed
-		var randomOwner common.Address
-		for {
-			randomOwner = randomAddress()
-			isDeployed, err := client.IsAccountDeployed(ctx, randomOwner, decimal.Zero)
-			require.NoError(t, err)
-
-			if !isDeployed {
-				break
-			}
-		}
-
 		wdo := &WalletDeploymentOpts{}
-
 		// create userop with wallet deployment opts with zero owner
-		_, err := client.NewUserOp(ctx, common.Address{}, nil, nil, wdo)
+		_, err := client.NewUserOp(ctx, common.Address{}, nil, nil, wdo, nil)
 
 		// assert error
-		require.EqualError(t, err, ErrNoWalletOwner.Error())
+		require.EqualError(t, err, ErrNoWalletOwnerInWDO.Error())
+	})
+
+	t.Run("Error when no calls specified", func(t *testing.T) {
+		t.Parallel()
+
+		client := bundlerMock(t, defaultProviderURL())
+		ctx := context.Background()
+
+		// create random owner so that no wallet is deployed
+		randomOwner := randomOwnerWithoutAccount(client, t)
+		wdo := &WalletDeploymentOpts{
+			Owner: randomOwner,
+		}
+
+		// create userop with wallet deployment opts with zero owner
+		_, err := client.NewUserOp(ctx, common.Address{}, SignerForKernel(nil), nil, wdo, nil)
+
+		// assert error
+		require.EqualError(t, err, ErrNoCalls.Error())
 	})
 }
 

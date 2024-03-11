@@ -7,15 +7,16 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/shopspring/decimal"
 
+	"github.com/layer-3/clearsync/pkg/session_key"
 	signer_pkg "github.com/layer-3/clearsync/pkg/signer"
 	"github.com/layer-3/clearsync/pkg/userop"
 )
 
 var (
-	exampleConfig = userop.ClientConfig{
+	exampleUserOpConfig = userop.ClientConfig{
 		ProviderURL: *must(url.Parse("https://NETWORK.infura.io/v3/YOUR_INFURA_API_KEY")),
 		BundlerURL:  *must(url.Parse("https://api.pimlico.io/v1/NETWORK/rpc?apikey=YOUR_PIMLICO_API_KEY")),
-		EntryPoint:  common.HexToAddress("ENTRY_POINT_ADDRESS"),
+		EntryPoint:  common.HexToAddress("0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789"),
 		SmartWallet: userop.SmartWalletConfig{
 			// Example of a Kernel Smart Wallet config with Kernel v2.2.
 			Type: &userop.SmartWalletKernel,
@@ -41,20 +42,35 @@ var (
 		},
 	}
 
-	exampleSigner = userop.SignerForKernel(
-		signer_pkg.NewLocalSigner(
-			must(crypto.HexToECDSA(
-				"deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
-			)),
-		),
+	exampleWalletDeploymentOpts = &userop.WalletDeploymentOpts{}
+
+	exampleSigner = signer_pkg.NewLocalSigner(
+		must(crypto.HexToECDSA(
+			"deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+		)),
 	)
+
+	exampleUserOpSigner = userop.SignerForKernel(exampleSigner)
+
+	exampleSessionKeySigner = signer_pkg.NewLocalSigner(
+		must(crypto.HexToECDSA(
+			"deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+		)),
+	)
+
+	exampleSessionKeyConfig = session_key.Config{
+		ProviderURL:                "https://NETWORK.infura.io/v3/YOUR_INFURA_API_KEY",
+		ExecuteInBatch:             true,
+		SessionKeyValidAfter:       0,
+		SessionKeyValidUntil:       0,
+		SessionKeyValidatorAddress: common.HexToAddress("0x5C06CE2b673fD5E6e56076e40DD46aB67f5a72A5"),
+		ExecutorAddress:            common.HexToAddress("0x0000000000000000000000000000000000000000"),
+		PaymasterAddress:           common.HexToAddress("0x0000000000000000000000000000000000000000"),
+		Permissions:                []session_key.Permission{
+			// list of your permissions to be applied to every session key
+		},
+	}
 )
-
-var exampleWalletDeploymentOpts *userop.WalletDeploymentOpts
-
-// You can set either of gas limits to override the bundler's estimation.
-// Or you can set all of them to disable the bundler's estimation.
-var exampleGasLimitOverrides *userop.GasLimitOverrides
 
 func must[T any](x T, err error) T {
 	if err != nil {

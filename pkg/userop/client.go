@@ -44,11 +44,13 @@ type Client interface {
 
 	// NewUserOp builds a new UserOperation and fills all the fields.
 	//
+	// NOTE: only `executeBatch` is supported for now.
+	//
 	// Parameters:
 	//   - ctx - is the context of the operation.
 	//   - smartWallet - is the address of the smart wallet that will execute the user operation.
 	//   - signer - is the signer function that will sign the user operation.
-	//   - calls - is the list of calls to be executed in the user operation.
+	//   - calls - is the list of calls to be executed in the user operation. Must not be empty.
 	//   - walletDeploymentOpts - are the options for the smart wallet deployment. Can be nil if the smart wallet is already deployed.
 	//
 	// Returns:
@@ -60,6 +62,7 @@ type Client interface {
 		signer Signer,
 		calls []Call,
 		walletDeploymentOpts *WalletDeploymentOpts,
+		gasLimitOverrides *GasLimitOverrides,
 	) (UserOperation, error)
 
 	// SendUserOp submits a user operation to a bundler and returns a channel to await for the userOp receipt.
@@ -74,21 +77,19 @@ type Client interface {
 	SendUserOp(ctx context.Context, op UserOperation) (done <-chan Receipt, err error)
 }
 
-// Call represents sufficient data to build a single transaction,
-// which is a part of a user operation
-// to be executed in a batch with other ones.
-type Call struct {
-	To       common.Address
-	Value    decimal.Decimal // Value is a wei amount to be sent with the call.
-	CallData []byte
-}
-
 // WalletDeploymentOpts represents data required
 // 1. to deploy a new smart wallet
 // 2. to get the address of the already deployed wallet.
 type WalletDeploymentOpts struct {
 	Owner common.Address
 	Index decimal.Decimal
+}
+
+// These override the bundler's estimation. NOTE: if all are supplied, bundler's estimation is NOT performed.
+type GasLimitOverrides struct {
+	CallGasLimit         big.Int
+	VerificationGasLimit big.Int
+	PreVerificationGas   big.Int
 }
 
 // backend represents a user operation client.
@@ -241,11 +242,16 @@ func (c *backend) NewUserOp(
 	signer Signer,
 	calls []Call,
 	walletDeploymentOpts *WalletDeploymentOpts,
+	gasLimitOverrides *GasLimitOverrides,
 ) (UserOperation, error) {
-	slog.Debug("applying middlewares to user operation")
 	if signer == nil {
 		return UserOperation{}, ErrNoSigner
 	}
+
+	if len(calls) == 0 {
+		return UserOperation{}, ErrNoCalls
+	}
+
 	ctx = context.WithValue(ctx, ctxKeySigner, signer)
 
 	isDeployed, err := isAccountDeployed(c.provider, smartWallet)
@@ -259,7 +265,7 @@ func (c *backend) NewUserOp(
 		}
 
 		if walletDeploymentOpts.Owner == (common.Address{}) {
-			return UserOperation{}, ErrNoWalletOwner
+			return UserOperation{}, ErrNoWalletOwnerInWDO
 		}
 
 		ctx = context.WithValue(ctx, ctxKeyOwner, walletDeploymentOpts.Owner)
@@ -272,6 +278,22 @@ func (c *backend) NewUserOp(
 	}
 
 	op := UserOperation{Sender: smartWallet, CallData: callData}
+
+	if gasLimitOverrides != nil {
+		zero := big.NewInt(0)
+		if gasLimitOverrides.CallGasLimit.Cmp(zero) != 0 {
+			op.CallGasLimit = decimal.NewFromBigInt(&gasLimitOverrides.CallGasLimit, 0)
+		}
+		if gasLimitOverrides.VerificationGasLimit.Cmp(zero) != 0 {
+			op.VerificationGasLimit = decimal.NewFromBigInt(&gasLimitOverrides.VerificationGasLimit, 0)
+		}
+		if gasLimitOverrides.PreVerificationGas.Cmp(zero) != 0 {
+			op.PreVerificationGas = decimal.NewFromBigInt(&gasLimitOverrides.PreVerificationGas, 0)
+		}
+	}
+
+	slog.Debug("applying middlewares to user operation")
+
 	for _, fn := range c.middlewares {
 		if err := fn(ctx, &op); err != nil {
 			return UserOperation{}, fmt.Errorf("failed to apply middleware to user operation: %w", err)
@@ -318,65 +340,6 @@ func isAccountDeployed(provider EthBackend, swAddress common.Address) (bool, err
 
 	// assume that the smart account is deployed if it has non-zero byte code
 	return !(byteCode == "" || byteCode == "0x"), nil
-}
-
-func (c *backend) buildCallData(calls []Call) ([]byte, error) {
-	switch *c.smartWallet.Type {
-	case SmartWalletSimpleAccount, SmartWalletBiconomy:
-		return handleCallSimpleAccount(calls)
-	case SmartWalletKernel:
-		return handleCallKernel(calls)
-	default:
-		return nil, fmt.Errorf("unknown smart wallet type: %s", c.smartWallet.Type)
-	}
-}
-
-// handleCallSimpleAccount packs CallData for SimpleAccount smart wallet.
-func handleCallSimpleAccount(calls []Call) ([]byte, error) {
-	addresses := make([]any, 0, len(calls))
-	calldatas := make([]any, 0, len(calls))
-	for _, call := range calls {
-		addresses = append(addresses, call.To)
-		calldatas = append(calldatas, call.CallData)
-	}
-
-	// Pack the data for the `executeBatch` smart account function.
-	// Biconomy v2.0: https://github.com/bcnmy/scw-contracts/blob/v2-deployments/contracts/smart-account/SmartAccount.sol#L128
-	// NOTE: you can NOT send native token with SimpleAccount v0.6.0 because of `executeBatch` signature
-	data, err := simpleAccountABI.Pack("executeBatch", addresses, calldatas)
-	if err != nil {
-		return nil, fmt.Errorf("failed to pack executeBatch data for SimpleAccount: %w", err)
-	}
-	return data, nil
-}
-
-// callStructKernel represents a call to the Zerodev Kernel smart wallet.
-// The idea is the same as in Call type,
-// but tailed specifically to the Zerodev Kernel ABI.
-type callStructKernel struct {
-	To    common.Address `json:"to"`
-	Value *big.Int       `json:"value"`
-	Data  []byte         `json:"data"`
-}
-
-// handleCallKernel packs calldata for Zerodev Kernel smart wallet.
-func handleCallKernel(calls []Call) ([]byte, error) {
-	params := make([]callStructKernel, 0, len(calls))
-	for _, call := range calls {
-		params = append(params, callStructKernel{
-			To:    call.To,
-			Value: call.Value.BigInt(),
-			Data:  call.CallData,
-		})
-	}
-
-	// pack the data for the `executeBatch` smart account function
-	// Zerodev Kernel v2.2: https://github.com/zerodevapp/kernel/blob/807b75a4da6fea6311a3573bc8b8964a34074d94/src/Kernel.sol#L82
-	data, err := kernelExecuteABI.Pack("executeBatch", params)
-	if err != nil {
-		return nil, fmt.Errorf("failed to pack executeBatch data for Kernel: %w", err)
-	}
-	return data, nil
 }
 
 // waitForUserOpEvent waits for a user operation to be committed on block.
