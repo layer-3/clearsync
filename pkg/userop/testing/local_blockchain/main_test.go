@@ -41,18 +41,22 @@ func TestSimulatedRPC(t *testing.T) {
 	eoaBalance := decimal.NewFromFloat(2e18 /* 2 ETH */).BigInt()
 	eoa, err := NewAccountWithBalance(ctx, eoaBalance, node) // EOA = Externally Owned Account
 	require.NoError(t, err, "failed to create EOA")
+	slog.Info("eoa", "address", eoa.Address)
 
 	senderAddress, err := client.GetAccountAddress(ctx, eoa.Address, decimal.Zero)
 	sender := Account{Address: senderAddress}
 	require.NoError(t, err, "failed to compute sender account address")
-	sendFunds(ctx, t, node, eoa, sender, decimal.NewFromFloat(1e18))
+	slog.Info("sender", "address", sender.Address)
+	sendFunds(ctx, t, node, eoa, sender, decimal.NewFromFloat(1e18 /* 1 ETH */))
 
 	receiver, err := NewAccount(ctx, node)
 	require.NoError(t, err, "failed to create receiver account")
+	slog.Info("receiver", "address", receiver.Address)
 
 	// 6. Submit user operation
 	signer := userop.SignerForKernel(signer.NewLocalSigner(eoa.PrivateKey))
-	calls := []userop.Call{{To: receiver.Address, Value: decimal.NewFromInt(1 /* 1 wei */).BigInt()}}
+	transferAmount := decimal.NewFromInt(1 /* 1 wei */).BigInt()
+	calls := []userop.Call{{To: receiver.Address, Value: transferAmount}}
 	params := &userop.WalletDeploymentOpts{Index: decimal.Zero, Owner: eoa.Address}
 	op, err := client.NewUserOp(ctx, sender.Address, signer, calls, params, nil)
 	require.NoError(t, err, "failed to create new user operation")
@@ -64,6 +68,10 @@ func TestSimulatedRPC(t *testing.T) {
 	receipt := <-done
 	slog.Info("transaction mined", "receipt", receipt)
 	require.True(t, receipt.Success)
+
+	receiverBalance, err := node.Client.BalanceAt(ctx, receiver.Address, nil)
+	require.NoError(t, err, "failed to fetch receiver new balance")
+	require.Equal(t, transferAmount, receiverBalance, "new balance should equal the transfer amount")
 }
 
 func sendFunds(ctx context.Context, t *testing.T, node *EthNode, from, to Account, fundAmount decimal.Decimal) {

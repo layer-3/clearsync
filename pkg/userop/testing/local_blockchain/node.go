@@ -83,7 +83,7 @@ func NewEthNode(ctx context.Context, t *testing.T) *EthNode {
 		// TODO: use in-memory database instead of container volumes
 		gethContainer, err = testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
-				Image: "ethereum/client-go:v1.13.4", // v1.10.26
+				Image: "ethereum/client-go:v1.13.14",
 				// 8545 TCP, used by the HTTP based JSON RPC API
 				// 8546 TCP, used by the WebSocket based JSON RPC API
 				// 8547 TCP, used by the GraphQL API
