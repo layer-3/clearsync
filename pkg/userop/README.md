@@ -93,8 +93,8 @@ Below is an example of a configuration struct (`testing/config.example.go`):
 ```go
 var (
   exampleConfig = userop.ClientConfig{
-    ProviderURL: *must(url.Parse("https://YOUR_PROVIDER_URL")),
-    BundlerURL:  *must(url.Parse("https://YOUR_BUNDLER_URL")),
+    ProviderURL: "https://YOUR_PROVIDER_URL",
+    BundlerURL:  "https://YOUR_BUNDLER_URL",
     EntryPoint:  common.HexToAddress("ENTRY_POINT_ADDRESS"),
     SmartWallet: userop.SmartWalletConfig{
       // Example of a Kernel Smart Wallet config with Kernel v2.2.
@@ -106,7 +106,7 @@ var (
     Paymaster: userop.PaymasterConfig{
       // Example of a Pimlico USDC.e ERC20 Paymaster config.
       Type:    &userop.PaymasterPimlicoERC20,
-      URL:     url.URL{}, // Pimlico ERC20 Paymaster does not require a URL.
+      URL:     "", // Pimlico ERC20 Paymaster does not require a URL.
       Address: common.HexToAddress("0xa683b47e447De6c8A007d9e294e87B6Db333Eb18"),
       PimlicoERC20: userop.PimlicoERC20Config{
         VerificationGasOverhead: decimal.RequireFromString("10000"), // verification gas overhead to be added to user op verification gas limit

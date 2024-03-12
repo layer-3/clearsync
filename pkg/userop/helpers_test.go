@@ -4,7 +4,6 @@ import (
 	"context"
 	"math/big"
 	"math/rand"
-	"net/url"
 	"os"
 	"testing"
 
@@ -28,8 +27,8 @@ func randomAddress() common.Address {
 
 func mockConfig() ClientConfig {
 	config := ClientConfig{
-		ProviderURL: *must(url.Parse("http://127.0.0.1:42424")),
-		BundlerURL:  *must(url.Parse("http://127.0.0.1:42424")),
+		ProviderURL: "http://127.0.0.1:42424",
+		BundlerURL:  "http://127.0.0.1:42424",
 		EntryPoint:  common.HexToAddress("0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789"),
 		SmartWallet: SmartWalletConfig{
 			Type:           &SmartWalletKernel,
@@ -48,8 +47,8 @@ func mockConfig() ClientConfig {
 
 func bundlerMock(t *testing.T, providerURL string) Client {
 	config := ClientConfig{
-		ProviderURL: *must(url.Parse(providerURL)),
-		BundlerURL:  *must(url.Parse("http://127.0.0.1:42424")),
+		ProviderURL: providerURL,
+		BundlerURL:  "http://127.0.0.1:42424",
 		EntryPoint:  common.HexToAddress("0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789"),
 		SmartWallet: SmartWalletConfig{
 			Type:           &SmartWalletKernel,

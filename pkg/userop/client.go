@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math/big"
+	"net/url"
 	"time"
 
 	"github.com/ethereum/go-ethereum"
@@ -123,7 +124,12 @@ func NewClient(config ClientConfig) (Client, error) {
 		return nil, fmt.Errorf("failed to validate config: %w", err)
 	}
 
-	providerRPC, err := NewEthBackend(config.ProviderURL)
+	providerURL, err := url.Parse(config.ProviderURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse the blockchain RPC URL: %w", err)
+	}
+
+	providerRPC, err := NewEthBackend(*providerURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to the blockchain RPC: %w", err)
 	}
@@ -134,7 +140,12 @@ func NewClient(config ClientConfig) (Client, error) {
 	}
 	slog.Debug("fetched chain ID", "chainID", chainID.String())
 
-	bundlerRPC, err := NewRPCBackend(config.BundlerURL)
+	bundlerURL, err := url.Parse(config.BundlerURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse the blockchain RPC URL: %w", err)
+	}
+
+	bundlerRPC, err := NewRPCBackend(*bundlerURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to the bundler RPC: %w", err)
 	}
