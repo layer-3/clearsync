@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/layer-3/clearsync/pkg/abi/itoken"
 	"github.com/layer-3/clearsync/pkg/session_key"
+	"github.com/layer-3/clearsync/pkg/smart_wallet"
 	"github.com/layer-3/clearsync/pkg/userop"
 	"github.com/shopspring/decimal"
 )
@@ -51,11 +52,11 @@ func main() {
 	slog.Debug("wallet address", "address", walletAddress)
 
 	// You can send native tokens to any address.
-	transferNative := userop.Call{
+	transferNative := smart_wallet.Call{
 		To:    receiver,
 		Value: amount.BigInt(),
 	}
-	if err := createAndSendUserop(userOpClient, userOpSigner, smartWallet, []userop.Call{transferNative}); err != nil {
+	if err := createAndSendUserop(userOpClient, userOpSigner, smartWallet, smart_wallet.Calls{transferNative}); err != nil {
 		panic(err)
 	}
 
@@ -84,7 +85,7 @@ func main() {
 
 	enablingSKSigner := sessionKeyClient.GetEnablingUserOpSigner(sessionKeySigner, enableSig)
 
-	if err = createAndSendUserop(userOpClient, enablingSKSigner, smartWallet, userop.Calls{transferERC20}); err != nil {
+	if err = createAndSendUserop(userOpClient, enablingSKSigner, smartWallet, smart_wallet.Calls{transferERC20}); err != nil {
 		panic(fmt.Errorf("failed to build userop: %w", err))
 	}
 
@@ -96,7 +97,7 @@ func main() {
 		panic(fmt.Errorf("failed to build approve call: %w", err))
 	}
 
-	if err = createAndSendUserop(userOpClient, sessionKeyUserOpSigner, smartWallet, []userop.Call{approveCall}); err != nil {
+	if err = createAndSendUserop(userOpClient, sessionKeyUserOpSigner, smartWallet, smart_wallet.Calls{approveCall}); err != nil {
 		panic(fmt.Errorf("failed to build userop: %w", err))
 	}
 }
@@ -115,7 +116,7 @@ func setLogLevel(level slog.Level) {
 // Creates and sends the user operation.
 // NOTE: when sending the first userOp from a Smart Wallet,
 // `config.example.go/walletDeploymentOpts` must contain Smart Wallet owner EOA address and SW index (0 by default).
-func createAndSendUserop(client userop.Client, signer userop.Signer, smartWallet common.Address, calls []userop.Call) error {
+func createAndSendUserop(client userop.Client, signer userop.Signer, smartWallet common.Address, calls smart_wallet.Calls) error {
 	ctx := context.Background()
 
 	op, err := client.NewUserOp(ctx, smartWallet, signer, calls, walletDeploymentOpts, nil)
@@ -148,7 +149,7 @@ func sendUserop(client userop.Client, op userop.UserOperation) error {
 }
 
 // Encodes a `transfer` call to the `token` contract, transferring `amount` to `receiver`.
-func newTransferERC20Call(token, receiver common.Address, amount decimal.Decimal) (userop.Call, error) {
+func newTransferERC20Call(token, receiver common.Address, amount decimal.Decimal) (smart_wallet.Call, error) {
 	erc20, err := abi.JSON(strings.NewReader(itoken.IERC20MetaData.ABI))
 	if err != nil {
 		panic(fmt.Errorf("failed to parse ERC20 ABI: %w", err))
@@ -159,7 +160,7 @@ func newTransferERC20Call(token, receiver common.Address, amount decimal.Decimal
 		panic(fmt.Errorf("failed to pack transfer data: %w", err))
 	}
 
-	return userop.Call{
+	return smart_wallet.Call{
 		To:       token,
 		Value:    big.NewInt(0),
 		CallData: callData,
@@ -167,7 +168,7 @@ func newTransferERC20Call(token, receiver common.Address, amount decimal.Decimal
 }
 
 // Encodes an `approve` call to the `token` contract, approving `amount` to be spent by `spender`.
-func newApproveCall(token, spender common.Address, amount decimal.Decimal) (userop.Call, error) {
+func newApproveCall(token, spender common.Address, amount decimal.Decimal) (smart_wallet.Call, error) {
 	erc20, err := abi.JSON(strings.NewReader(itoken.IERC20MetaData.ABI))
 	if err != nil {
 		panic(fmt.Errorf("failed to parse ERC20 ABI: %w", err))
@@ -178,7 +179,7 @@ func newApproveCall(token, spender common.Address, amount decimal.Decimal) (user
 		panic(fmt.Errorf("failed to pack transfer data: %w", err))
 	}
 
-	return userop.Call{
+	return smart_wallet.Call{
 		To:       token,
 		Value:    big.NewInt(0),
 		CallData: callData,

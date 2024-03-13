@@ -6,19 +6,20 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ilyakaznacheev/cleanenv"
+	"github.com/layer-3/clearsync/pkg/smart_wallet"
 	"github.com/shopspring/decimal"
 )
 
 // ClientConfig represents the configuration
 // for the user operation client.
 type ClientConfig struct {
-	ProviderURL string            `yaml:"provider_url" env:"USEROP_CLIENT_PROVIDER_URL"`
-	BundlerURL  string            `yaml:"bundler_url" env:"USEROP_CLIENT_BUNDLER_URL"`
-	PollPeriod  time.Duration     `yaml:"poll_period" env:"USEROP_CLIENT_POLL_PERIOD" env-default:"100ms"`
-	EntryPoint  common.Address    `yaml:"entry_point" env:"USEROP_CLIENT_ENTRY_POINT"`
-	Gas         GasConfig         `yaml:"gas" env-prefix:"USEROP_CLIENT_GAS_CONFIG_"`
-	SmartWallet SmartWalletConfig `yaml:"smart_wallet" env-prefix:"USEROP_CLIENT_SMART_WALLET_"`
-	Paymaster   PaymasterConfig   `yaml:"paymaster" env-prefix:"USEROP_CLIENT_PAYMASTER_CONFIG_"`
+	ProviderURL string              `yaml:"provider_url" env:"USEROP_CLIENT_PROVIDER_URL"`
+	BundlerURL  string              `yaml:"bundler_url" env:"USEROP_CLIENT_BUNDLER_URL"`
+	PollPeriod  time.Duration       `yaml:"poll_period" env:"USEROP_CLIENT_POLL_PERIOD" env-default:"100ms"`
+	EntryPoint  common.Address      `yaml:"entry_point" env:"USEROP_CLIENT_ENTRY_POINT"`
+	Gas         GasConfig           `yaml:"gas" env-prefix:"USEROP_CLIENT_GAS_CONFIG_"`
+	SmartWallet smart_wallet.Config `yaml:"smart_wallet" env-prefix:"USEROP_CLIENT_SMART_WALLET_"`
+	Paymaster   PaymasterConfig     `yaml:"paymaster" env-prefix:"USEROP_CLIENT_PAYMASTER_CONFIG_"`
 }
 
 func (conf *ClientConfig) Init() {
@@ -70,19 +71,6 @@ func (c *GasConfig) Init() {
 		MaxPriorityFeePerGasMultiplier: decimal.RequireFromString("1.13"),
 		MaxFeePerGasMultiplier:         decimal.RequireFromString("2"),
 	}
-}
-
-// SmartWalletConfig represents the configuration
-// for the smart wallet to be used with the client.
-type SmartWalletConfig struct {
-	Type           *SmartWalletType `yaml:"type" env:"TYPE"`
-	ECDSAValidator common.Address   `yaml:"ecdsa_validator" env:"ECDSA_VALIDATOR"`
-	Logic          common.Address   `yaml:"logic" env:"LOGIC"`
-	Factory        common.Address   `yaml:"factory" env:"FACTORY"`
-}
-
-func (sw *SmartWalletConfig) Init() {
-	sw.Type = &SmartWalletType{}
 }
 
 // PaymasterConfig represents the configuration

@@ -8,7 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/layer-3/clearsync/pkg/abi/itoken"
 	signer_pkg "github.com/layer-3/clearsync/pkg/signer"
-	"github.com/layer-3/clearsync/pkg/userop"
+	"github.com/layer-3/clearsync/pkg/smart_wallet"
 	"github.com/stretchr/testify/require"
 )
 
@@ -16,7 +16,7 @@ func TestGetUseSessionKeySig(t *testing.T) {
 	be := backend{}
 
 	t.Run("Error when no calls", func(t *testing.T) {
-		noCallsCallData, err := userop.Calls{}.PackForKernel()
+		noCallsCallData, err := smart_wallet.Calls{}.PackForKernel()
 		require.NoError(t, err)
 
 		_, err = be.getUseSessionKeySig(signer_pkg.LocalSigner{}, noCallsCallData, common.Hash{})
@@ -82,12 +82,12 @@ func TestFilterPermissions(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
 		tcs := []struct {
 			permissions []Permission
-			calls       userop.Calls
+			calls       smart_wallet.Calls
 			expected    []kernelPermission
 		}{
 			{ // single call
 				permissions: permissions,
-				calls: userop.Calls{
+				calls: smart_wallet.Calls{
 					{
 						To:       common.HexToAddress("0x1"),
 						CallData: approveCD,
@@ -98,7 +98,7 @@ func TestFilterPermissions(t *testing.T) {
 			},
 			{ // single call with zero address permission
 				permissions: permissions,
-				calls: userop.Calls{
+				calls: smart_wallet.Calls{
 					{
 						To:       common.HexToAddress("0x42"),
 						CallData: transferFromCD,
@@ -110,7 +110,7 @@ func TestFilterPermissions(t *testing.T) {
 			// uncomment when native send support is added
 			// { // native transfer call
 			// 	permissions: permissions,
-			// 	calls: userop.Calls{
+			// 	calls: smart_wallet.Calls{
 			// 		{
 			// 			To:       common.HexToAddress("0xdcbee058bCd0723559DA80000cb791a1Ee1023e0"),
 			// 			Value:    big.NewInt(1),
@@ -119,7 +119,7 @@ func TestFilterPermissions(t *testing.T) {
 			// },
 			{ // multiple calls
 				permissions: permissions,
-				calls: userop.Calls{
+				calls: smart_wallet.Calls{
 					{
 						To:       common.HexToAddress("0x1"),
 						CallData: approveCD,
@@ -147,11 +147,11 @@ func TestFilterPermissions(t *testing.T) {
 
 		tcs := []struct {
 			permissions []Permission
-			calls       userop.Calls
+			calls       smart_wallet.Calls
 		}{
 			{ // single call and it is not in permissions
 				permissions: permissions,
-				calls: userop.Calls{
+				calls: smart_wallet.Calls{
 					{
 						To:       common.HexToAddress("0xdeadbeef"),
 						CallData: approveCD,
@@ -162,7 +162,7 @@ func TestFilterPermissions(t *testing.T) {
 			// TODO: uncomment when param rule checks are added
 			// { // single call, it is in permissions, but its param rules are not satisfied
 			// 	permissions: permissions,
-			// 	calls: userop.Calls{
+			// 	calls: smart_wallet.Calls{
 			// 		{
 			// 			To:       common.HexToAddress("0x03A6a84cD762D9707A21605b548aaaB891562aAb"),
 			// 			CallData: approveCD,
@@ -173,7 +173,7 @@ func TestFilterPermissions(t *testing.T) {
 			// },
 			{ // multiple calls, one of them is not in permissions
 				permissions: permissions,
-				calls: userop.Calls{
+				calls: smart_wallet.Calls{
 					{
 						To:       common.HexToAddress("0x1"),
 						CallData: approveCD,
@@ -188,7 +188,7 @@ func TestFilterPermissions(t *testing.T) {
 			},
 			{ // multiple calls, all of them are not in permissions
 				permissions: permissions,
-				calls: userop.Calls{
+				calls: smart_wallet.Calls{
 					{
 						To:       common.HexToAddress("0x2"),
 						CallData: hexutil.MustDecode("0xdeadbeef"),

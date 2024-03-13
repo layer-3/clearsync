@@ -17,6 +17,7 @@ import (
 	"github.com/shopspring/decimal"
 
 	"github.com/layer-3/clearsync/pkg/abi/entry_point_v0_6_0"
+	"github.com/layer-3/clearsync/pkg/smart_wallet"
 )
 
 // Client represents a client for creating and posting user operations.
@@ -61,7 +62,7 @@ type Client interface {
 		ctx context.Context,
 		sender common.Address,
 		signer Signer,
-		calls []Call,
+		calls smart_wallet.Calls,
 		walletDeploymentOpts *WalletDeploymentOpts,
 		gasLimitOverrides *GasLimitOverrides,
 	) (UserOperation, error)
@@ -100,7 +101,7 @@ type backend struct {
 	chainID    *big.Int
 	pollPeriod time.Duration
 
-	smartWallet SmartWalletConfig
+	smartWallet smart_wallet.Config
 	entryPoint  common.Address
 	paymaster   common.Address
 	middlewares []middleware
@@ -259,7 +260,7 @@ func (c *backend) NewUserOp(
 	ctx context.Context,
 	smartWallet common.Address,
 	signer Signer,
-	calls []Call,
+	calls smart_wallet.Calls,
 	walletDeploymentOpts *WalletDeploymentOpts,
 	gasLimitOverrides *GasLimitOverrides,
 ) (UserOperation, error) {
@@ -291,7 +292,7 @@ func (c *backend) NewUserOp(
 		ctx = context.WithValue(ctx, ctxKeyIndex, walletDeploymentOpts.Index)
 	}
 
-	callData, err := c.buildCallData(calls)
+	callData, err := smart_wallet.BuildCallData(*c.smartWallet.Type, calls)
 	if err != nil {
 		return UserOperation{}, fmt.Errorf("failed to build call data: %w", err)
 	}

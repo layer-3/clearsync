@@ -26,6 +26,7 @@ import (
 	"github.com/layer-3/clearsync/pkg/abi/kernel_factory_v2_2"
 	"github.com/layer-3/clearsync/pkg/abi/kernel_v2_2"
 	"github.com/layer-3/clearsync/pkg/artifacts/session_key_validator_v2_4"
+	"github.com/layer-3/clearsync/pkg/smart_wallet"
 	"github.com/layer-3/clearsync/pkg/userop"
 
 	_ "embed"
@@ -326,8 +327,8 @@ func buildClient(t *testing.T, rpcURL, bundlerURL url.URL, addresses Contracts) 
 	config.ProviderURL = rpcURL.String()
 	config.BundlerURL = bundlerURL.String()
 	config.EntryPoint = addresses.EntryPoint
-	config.SmartWallet = userop.SmartWalletConfig{
-		Type:           &userop.SmartWalletKernel,
+	config.SmartWallet = smart_wallet.Config{
+		Type:           &smart_wallet.KernelType,
 		ECDSAValidator: addresses.ECDSAValidator,
 		Logic:          addresses.Logic,
 		Factory:        addresses.Factory,
