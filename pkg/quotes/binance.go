@@ -166,6 +166,6 @@ func (b *binance) buildEvent(tr *gobinance.WsTradeEvent) (TradeEvent, error) {
 		Amount:    amount,
 		Total:     price.Mul(amount),
 		TakerType: takerType,
-		CreatedAt: time.Unix(tr.TradeTime, 0),
+		CreatedAt: time.UnixMilli(tr.TradeTime),
 	}, nil
 }
