@@ -39,7 +39,7 @@ var (
 	ethMutex       sync.Mutex
 )
 
-func ethNodeClenaupFactory(ctx context.Context, t *testing.T) func() {
+func ethNodeCleanupFactory(ctx context.Context, t *testing.T) func() {
 	return func() {
 		ethMutex.Lock()
 		defer ethMutex.Unlock()
