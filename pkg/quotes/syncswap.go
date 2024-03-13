@@ -144,20 +144,25 @@ func (s *syncswap) Subscribe(market Market) error {
 				var takerType TakerType
 				var price decimal.Decimal
 				var amount decimal.Decimal
+				var total decimal.Decimal
 
 				switch {
 				case isValidNonZero(swap.Amount0In) && isValidNonZero(swap.Amount1Out):
-					amount1Out := decimal.NewFromBigInt(swap.Amount1Out, 0).Div(pool.quoteToken.Decimals)
-					amount0In := decimal.NewFromBigInt(swap.Amount0In, 0).Div(pool.baseToken.Decimals)
+					amount1Out := decimal.NewFromBigInt(swap.Amount1Out, 0).Div(decimal.NewFromInt(10).Pow(pool.baseToken.Decimals))
+					amount0In := decimal.NewFromBigInt(swap.Amount0In, 0).Div(decimal.NewFromInt(10).Pow(pool.quoteToken.Decimals))
+
 					takerType = TakerTypeSell
-					price = amount1Out.Div(amount0In)
-					amount = amount0In
+					price = amount0In.Div(amount1Out)
+					total = amount0In
+					amount = amount1Out
 				case isValidNonZero(swap.Amount0Out) && isValidNonZero(swap.Amount1In):
-					amount0Out := decimal.NewFromBigInt(swap.Amount0Out, 0).Div(pool.baseToken.Decimals)
-					amount1In := decimal.NewFromBigInt(swap.Amount1In, 0).Div(pool.quoteToken.Decimals)
+					amount0Out := decimal.NewFromBigInt(swap.Amount0Out, 0).Div(decimal.NewFromInt(10).Pow(pool.quoteToken.Decimals))
+					amount1In := decimal.NewFromBigInt(swap.Amount1In, 0).Div(decimal.NewFromInt(10).Pow(pool.baseToken.Decimals))
+
 					takerType = TakerTypeBuy
 					price = amount0Out.Div(amount1In)
-					amount = amount0Out
+					total = amount0Out
+					amount = amount1In
 				default:
 					loggerSyncswap.Errorf("market %s: unknown swap type", market.String())
 					continue
@@ -169,7 +174,7 @@ func (s *syncswap) Subscribe(market Market) error {
 					Market:    market,
 					Price:     price,
 					Amount:    amount,
-					Total:     price.Mul(amount),
+					Total:     total,
 					TakerType: takerType,
 					CreatedAt: time.Now(),
 				}
