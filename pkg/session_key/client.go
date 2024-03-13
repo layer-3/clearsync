@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/layer-3/clearsync/pkg/signer"
+	"github.com/layer-3/clearsync/pkg/smart_wallet"
 	"github.com/layer-3/clearsync/pkg/userop"
 	mt "github.com/layer-3/go-merkletree"
 
@@ -190,7 +191,7 @@ func (b *backend) getSessionData(smartWallet, sessionKey common.Address) (Sessio
 }
 
 func (b *backend) getUseSessionKeySig(sessionSigner signer.Signer, userOpCallData []byte, userOpHash common.Hash) ([]byte, error) {
-	calls, err := userop.UnpackCallsForKernel(userOpCallData)
+	calls, err := smart_wallet.UnpackCallsForKernel(userOpCallData)
 	if err != nil {
 		return nil, err
 	}
@@ -222,7 +223,7 @@ func (b *backend) getUseSessionKeySig(sessionSigner signer.Signer, userOpCallDat
 	return fullSignature, nil
 }
 
-func (b *backend) filterPermissions(calls userop.Calls) ([]kernelPermission, error) {
+func (b *backend) filterPermissions(calls smart_wallet.Calls) ([]kernelPermission, error) {
 	permissions := make([]kernelPermission, len(calls))
 	for i, call := range calls {
 		permissionFound := false

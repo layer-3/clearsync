@@ -13,6 +13,7 @@ import (
 	"github.com/shopspring/decimal"
 
 	"github.com/layer-3/clearsync/pkg/abi/itoken"
+	"github.com/layer-3/clearsync/pkg/smart_wallet"
 	"github.com/layer-3/clearsync/pkg/userop"
 )
 
@@ -64,7 +65,7 @@ func main() {
 	if err != nil {
 		panic(fmt.Errorf("failed to build transfer native call: %w", err))
 	}
-	if err := send(client, smartWallet, []userop.Call{transferNative}); err != nil {
+	if err := send(client, smartWallet, smart_wallet.Calls{transferNative}); err != nil {
 		panic(err)
 	}
 
@@ -74,7 +75,7 @@ func main() {
 	if err != nil {
 		panic(fmt.Errorf("failed to build approve call: %w", err))
 	}
-	if err := send(client, smartWallet, []userop.Call{approve}); err != nil {
+	if err := send(client, smartWallet, smart_wallet.Calls{approve}); err != nil {
 		panic(err)
 	}
 
@@ -83,7 +84,7 @@ func main() {
 	if err != nil {
 		panic(fmt.Errorf("failed to build transfer erc20 call: %w", err))
 	}
-	if err := send(client, smartWallet, []userop.Call{transferERC20}); err != nil {
+	if err := send(client, smartWallet, smart_wallet.Calls{transferERC20}); err != nil {
 		panic(err)
 	}
 
@@ -99,7 +100,7 @@ func main() {
 		panic(fmt.Errorf("failed to build mint pack call: %w", err))
 	}
 
-	if err := send(client, smartWallet, []userop.Call{approveToGame, mintPack}); err != nil {
+	if err := send(client, smartWallet, smart_wallet.Calls{approveToGame, mintPack}); err != nil {
 		panic(err)
 	}
 }
@@ -116,7 +117,7 @@ func setLogLevel(level slog.Level) {
 }
 
 // Encodes an `approve` call to the `token` contract, approving `amount` to be spent by `spender`.
-func newApproveCall(token, spender common.Address, amount decimal.Decimal) (userop.Call, error) {
+func newApproveCall(token, spender common.Address, amount decimal.Decimal) (smart_wallet.Call, error) {
 	erc20, err := abi.JSON(strings.NewReader(itoken.IERC20MetaData.ABI))
 	if err != nil {
 		panic(fmt.Errorf("failed to parse ERC20 ABI: %w", err))
@@ -127,7 +128,7 @@ func newApproveCall(token, spender common.Address, amount decimal.Decimal) (user
 		panic(fmt.Errorf("failed to pack transfer data: %w", err))
 	}
 
-	return userop.Call{
+	return smart_wallet.Call{
 		To:       token,
 		Value:    big.NewInt(0),
 		CallData: callData,
@@ -135,15 +136,15 @@ func newApproveCall(token, spender common.Address, amount decimal.Decimal) (user
 }
 
 // Encodes a `transfer` call of a native token, transferring `amount` to `receiver`.
-func newTransferNativeCall(receiver common.Address, amount *big.Int) (userop.Call, error) {
-	return userop.Call{
+func newTransferNativeCall(receiver common.Address, amount *big.Int) (smart_wallet.Call, error) {
+	return smart_wallet.Call{
 		To:    receiver,
 		Value: amount,
 	}, nil
 }
 
 // Encodes a `transfer` call to the `token` contract, transferring `amount` to `receiver`.
-func newTransferERC20Call(token, receiver common.Address, amount decimal.Decimal) (userop.Call, error) {
+func newTransferERC20Call(token, receiver common.Address, amount decimal.Decimal) (smart_wallet.Call, error) {
 	erc20, err := abi.JSON(strings.NewReader(itoken.IERC20MetaData.ABI))
 	if err != nil {
 		panic(fmt.Errorf("failed to parse ERC20 ABI: %w", err))
@@ -154,7 +155,7 @@ func newTransferERC20Call(token, receiver common.Address, amount decimal.Decimal
 		panic(fmt.Errorf("failed to pack transfer data: %w", err))
 	}
 
-	return userop.Call{
+	return smart_wallet.Call{
 		To:       token,
 		Value:    big.NewInt(0),
 		CallData: callData,
@@ -162,7 +163,7 @@ func newTransferERC20Call(token, receiver common.Address, amount decimal.Decimal
 }
 
 // Encodes a call to the `contract` with the given `value`, `method` and `args`.
-func newCallFromABI(contract common.Address, stringABI string, value *big.Int, method string, args ...interface{}) (userop.Call, error) {
+func newCallFromABI(contract common.Address, stringABI string, value *big.Int, method string, args ...interface{}) (smart_wallet.Call, error) {
 	ABI, err := abi.JSON(strings.NewReader(stringABI))
 	if err != nil {
 		panic(fmt.Errorf("failed to parse ABI: %w", err))
@@ -173,7 +174,7 @@ func newCallFromABI(contract common.Address, stringABI string, value *big.Int, m
 		panic(fmt.Errorf("failed to pack call data: %w", err))
 	}
 
-	return userop.Call{
+	return smart_wallet.Call{
 		To:       contract,
 		Value:    value,
 		CallData: callData,
@@ -183,7 +184,7 @@ func newCallFromABI(contract common.Address, stringABI string, value *big.Int, m
 // Creates and sends the user operation.
 // NOTE: when sending the first userOp from a Smart Wallet,
 // `config.example.go/walletDeploymentOpts` must contain Smart Wallet owner EOA address and SW index (0 by default).
-func send(client userop.Client, smartWallet common.Address, calls []userop.Call) error {
+func send(client userop.Client, smartWallet common.Address, calls smart_wallet.Calls) error {
 	ctx := context.Background()
 
 	op, err := client.NewUserOp(ctx, smartWallet, signer, calls, walletDeploymentOpts, gasLimitOverrides)

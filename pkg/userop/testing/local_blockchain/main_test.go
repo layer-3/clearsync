@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/layer-3/clearsync/pkg/signer"
+	"github.com/layer-3/clearsync/pkg/smart_wallet"
 	"github.com/layer-3/clearsync/pkg/userop"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/require"
@@ -56,7 +57,7 @@ func TestSimulatedRPC(t *testing.T) {
 	// 6. Submit user operation
 	signer := userop.SignerForKernel(signer.NewLocalSigner(eoa.PrivateKey))
 	transferAmount := decimal.NewFromInt(1 /* 1 wei */).BigInt()
-	calls := []userop.Call{{To: receiver.Address, Value: transferAmount}}
+	calls := smart_wallet.Calls{{To: receiver.Address, Value: transferAmount}}
 	params := &userop.WalletDeploymentOpts{Index: decimal.Zero, Owner: eoa.Address}
 	op, err := client.NewUserOp(ctx, sender.Address, signer, calls, params, nil)
 	require.NoError(t, err, "failed to create new user operation")

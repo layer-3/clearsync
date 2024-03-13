@@ -28,8 +28,4 @@ var (
 	// Make sure that the paymaster type you are trying to use
 	// has no `unsupported` or `untested` tags in `paymaster_type.go` source file.
 	ErrPaymasterNotSupported = errors.New("paymaster type not supported")
-	// ErrSmartWalletNotSupported is returned on attempt to build client with an unsupported smart wallet type.
-	// Make sure that the smart wallet type you are trying to use
-	// has no `unsupported` or `untested` tags in `wallet_type.go` source file.
-	ErrSmartWalletNotSupported = errors.New("smart wallet not supported")
 )
