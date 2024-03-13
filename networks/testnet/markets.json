@@ -1,5 +1,10 @@
 [
-  "spot://USDC/USDT",
-  "spot://WBTC/USDT",
-  "spot://WETH/USDT"
+  "spot://ETH/USDC",
+  "spot://WETH/USDC",
+  "spot://WBTC/USDC",
+  "spot://DUCKIES/USDC",
+  "spot://LINDA/USDC",
+  "spot://SHIBA/USDC",
+  "spot://LUBE/USDC",
+  "spot://USDT/USDC",
 ]
