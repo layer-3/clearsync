@@ -281,7 +281,7 @@ func SetupContracts(ctx context.Context, t *testing.T, node *EthNode) Contracts 
 	return *cachedContracts
 }
 
-func buildClient(t *testing.T, rpcURL, bundlerURL url.URL, addresses Contracts) userop.Client {
+func buildClient(t *testing.T, rpcURL, bundlerURL string, addresses Contracts) userop.Client {
 	config, err := userop.NewClientConfigFromEnv()
 	require.NoError(t, err)
 
