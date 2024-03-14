@@ -7,7 +7,7 @@ import (
 )
 
 type Config struct {
-	Driver DriverType `yaml:"driver" env:"QUOTES_DRIVER" env-default:"binance"`
+	Driver DriverType `yaml:"driver" env:"QUOTES_DRIVER" env-default:"index"`
 
 	Binance       BinanceConfig       `yaml:"binance" env-prefix:"QUOTES_BINANCE_"`
 	Kraken        KrakenConfig        `yaml:"kraken" env-prefix:"QUOTES_KRAKEN_"`
@@ -58,7 +58,8 @@ func ToConfig(driver DriverConfig) Config {
 }
 
 type IndexConfig struct {
-	TradesCached int `yaml:"trades_cached" env:"TRADES_CACHED" env-default:"20"`
+	TradesCached  int      `yaml:"trades_cached" env:"TRADES_CACHED" env-default:"20"`
+	DriverConfigs []Config `yaml:"drivers" env:"DRIVERS"`
 }
 
 func (IndexConfig) DriverType() DriverType {
