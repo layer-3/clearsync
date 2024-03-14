@@ -5,6 +5,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 
+	"github.com/layer-3/clearsync/pkg/abi/entry_point_v0_6_0"
 	"github.com/layer-3/clearsync/pkg/abi/simple_account"
 )
 
@@ -15,6 +16,7 @@ func must[T any](x T, err error) T {
 	return x
 }
 
+var entryPointABI = must(abi.JSON(strings.NewReader(entry_point_v0_6_0.EntryPointMetaData.ABI)))
 var simpleAccountABI = must(abi.JSON(strings.NewReader(simple_account.SimpleAccountMetaData.ABI)))
 
 // kernelExecuteABI is used to execute a transaction on Zerodev Kernel smart account.

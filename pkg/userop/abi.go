@@ -5,7 +5,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/layer-3/clearsync/pkg/abi/entry_point_v0_6_0"
 )
 
 func must[T any](x T, err error) T {
@@ -20,8 +19,6 @@ var (
 	uint256 = must(abi.NewType("uint256", "", nil))
 	bytes32 = must(abi.NewType("bytes32", "", nil))
 	bytes   = must(abi.NewType("bytes", "", nil))
-
-	entryPointABI = must(abi.JSON(strings.NewReader(entry_point_v0_6_0.EntryPointMetaData.ABI)))
 
 	// keccak256("UserOperationEvent(bytes32,address,address,uint256,bool,uint256, uint256)")
 	userOpEventID = common.HexToHash("0x49628fd1471006c1482da88028e9ce4dbb080b815c9b0344d39e5a8e6ec1419f")
