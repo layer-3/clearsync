@@ -98,10 +98,50 @@ func GetInitCode(smartWalletConfig Config, ownerAddress common.Address, index de
 	return initCode, nil
 }
 
-// getKernelInitCode returns a middleware that sets the init code
-// for a Zerodev Kernel smart account. The init code deploys
-// a smart account if it is not already deployed.
+func GetFactoryCallData(provider *ethclient.Client, smartWalletConfig Config, ownerAddress common.Address, index decimal.Decimal) ([]byte, error) {
+	var initCode []byte
+	var err error
+
+	switch typ := *smartWalletConfig.Type; typ {
+	case SimpleAccountType:
+		return nil, fmt.Errorf("%w: %s", ErrSmartWalletNotSupported, typ)
+	case BiconomyType: // not tested
+		initCode, err = GetBiconomyFactoryCallData(ownerAddress, index, smartWalletConfig.ECDSAValidator)
+	case KernelType:
+		initCode, err = GetKernelFactoryCallData(ownerAddress, index, smartWalletConfig.Logic, smartWalletConfig.ECDSAValidator)
+	default:
+		return nil, fmt.Errorf("unknown smart wallet type: %s", typ)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get init code: %w", err)
+	}
+
+	return initCode, nil
+}
+
+// getKernelInitCode the init code for a Zerodev Kernel smart account.
+// The init code deploys a smart account if it is not already deployed.
 func GetKernelInitCode(owner common.Address, index decimal.Decimal, factory, accountLogic, ecdsaValidator common.Address) ([]byte, error) {
+	callData, err := GetKernelFactoryCallData(owner, index, accountLogic, ecdsaValidator)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get init data: %w", err)
+	}
+
+	// Pack factory address and deployment data for `CreateSender` in EntryPoint
+	// see https://github.com/eth-infinitism/account-abstraction/blob/v0.6.0/contracts/core/SenderCreator.sol#L15
+	initCode := make([]byte, len(factory)+len(callData))
+	copy(initCode, factory.Bytes())
+	copy(initCode[len(factory):], callData)
+
+	slog.Debug("built initCode", "initCode", hexutil.Encode(initCode))
+
+	return initCode, nil
+}
+
+// getKernelInitData returns the calldata needed call the factory
+// to deploy a Zerodev Kernel smart account.
+func GetKernelFactoryCallData(owner common.Address, index decimal.Decimal, accountLogic, ecdsaValidator common.Address) ([]byte, error) {
 	// Initialize Kernel Smart Account with default validation module and its calldata
 	// see https://github.com/zerodevapp/kernel/blob/807b75a4da6fea6311a3573bc8b8964a34074d94/src/abstract/KernelStorage.sol#L35
 	initData, err := kernelInitABI.Pack("initialize", ecdsaValidator, owner.Bytes())
@@ -116,6 +156,18 @@ func GetKernelInitCode(owner common.Address, index decimal.Decimal, factory, acc
 		return nil, fmt.Errorf("failed to pack createAccount data: %w", err)
 	}
 
+	return callData, nil
+}
+
+// getBiconomyInitCode returns the init code for a Biconomy smart account.
+// The init code deploys a smart account if it is not already deployed.
+// NOTE: this was NOT tested. Use at your own risk or wait for the package to be updated.
+func GetBiconomyInitCode(owner common.Address, index decimal.Decimal, factory, ecdsaValidator common.Address) ([]byte, error) {
+	callData, err := GetBiconomyFactoryCallData(owner, index, ecdsaValidator)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get init data: %w", err)
+	}
+
 	// Pack factory address and deployment data for `CreateSender` in EntryPoint
 	// see https://github.com/eth-infinitism/account-abstraction/blob/v0.6.0/contracts/core/SenderCreator.sol#L15
 	initCode := make([]byte, len(factory)+len(callData))
@@ -127,10 +179,9 @@ func GetKernelInitCode(owner common.Address, index decimal.Decimal, factory, acc
 	return initCode, nil
 }
 
-// getBiconomyInitCode returns a middleware that sets the init code for a Biconomy smart account.
-// The init code deploys a smart account if it is not already deployed.
-// NOTE: this was NOT tested. Use at your own risk or wait for the package to be updated.
-func GetBiconomyInitCode(owner common.Address, index decimal.Decimal, factory, ecdsaValidator common.Address) ([]byte, error) {
+// getKernelInitData returns the calldata needed call the factory
+// to deploy a Biconomy smart account.
+func GetBiconomyFactoryCallData(owner common.Address, index decimal.Decimal, ecdsaValidator common.Address) ([]byte, error) {
 	// Initialize SCW validation module with owner address
 	// see https://github.com/bcnmy/scw-contracts/blob/v2-deployments/contracts/smart-account/modules/EcdsaOwnershipRegistryModule.sol#L43
 	ecdsaOwnershipInitData, err := biconomyInitABI.Pack("initForSmartAccount", owner.Bytes())
@@ -145,13 +196,5 @@ func GetBiconomyInitCode(owner common.Address, index decimal.Decimal, factory, e
 		return nil, fmt.Errorf("failed to pack createAccount data: %w", err)
 	}
 
-	// Pack factory address and deployment data for `CreateSender` in EntryPoint
-	// see https://github.com/eth-infinitism/account-abstraction/blob/v0.6.0/contracts/core/SenderCreator.sol#L15
-	initCode := make([]byte, len(factory)+len(callData))
-	copy(initCode, factory.Bytes())
-	copy(initCode[len(factory):], callData)
-
-	slog.Debug("built initCode", "initCode", hexutil.Encode(initCode))
-
-	return initCode, nil
+	return callData, nil
 }

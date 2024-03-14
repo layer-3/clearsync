@@ -7,7 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-const erc6492MagicValue = "0x6492649264926492649264926492649264926492649264926492649264926492"
+const erc6492MagicValue = "6492649264926492649264926492649264926492649264926492649264926492"
 
 func packERC6492Sig(factoryAddress common.Address, factoryCalldata, sig []byte) []byte {
 	args := abi.Arguments{

@@ -47,7 +47,7 @@ func TestSimulatedRPC(t *testing.T) {
 	sender := Account{Address: senderAddress}
 	require.NoError(t, err, "failed to compute sender account address")
 	slog.Info("sender", "address", sender.Address)
-	err = sendNative(ctx, node, eoa, sender, big.NewInt(1e18 /* 1 ETH */))
+	err = SendNative(ctx, node, eoa, sender, big.NewInt(1e18 /* 1 ETH */))
 	require.NoError(t, err, "failed to fund sender account")
 
 	receiver, err := NewAccount(ctx, node)
