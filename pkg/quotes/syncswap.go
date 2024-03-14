@@ -141,42 +141,14 @@ func (s *syncswap) Subscribe(market Market) error {
 				}
 				return
 			case swap := <-sink:
-				var takerType TakerType
-				var price decimal.Decimal
-				var amount decimal.Decimal
-				var total decimal.Decimal
-
-				switch {
-				case isValidNonZero(swap.Amount0In) && isValidNonZero(swap.Amount1Out):
-					amount1Out := decimal.NewFromBigInt(swap.Amount1Out, 0).Div(decimal.NewFromInt(10).Pow(pool.baseToken.Decimals))
-					amount0In := decimal.NewFromBigInt(swap.Amount0In, 0).Div(decimal.NewFromInt(10).Pow(pool.quoteToken.Decimals))
-
-					takerType = TakerTypeSell
-					price = amount0In.Div(amount1Out)
-					total = amount0In
-					amount = amount1Out
-				case isValidNonZero(swap.Amount0Out) && isValidNonZero(swap.Amount1In):
-					amount0Out := decimal.NewFromBigInt(swap.Amount0Out, 0).Div(decimal.NewFromInt(10).Pow(pool.quoteToken.Decimals))
-					amount1In := decimal.NewFromBigInt(swap.Amount1In, 0).Div(decimal.NewFromInt(10).Pow(pool.baseToken.Decimals))
-
-					takerType = TakerTypeBuy
-					price = amount0Out.Div(amount1In)
-					total = amount0Out
-					amount = amount1In
-				default:
-					loggerSyncswap.Errorf("market %s: unknown swap type", market.String())
-					continue
+				if pool.reverted {
+					FlipSwap(swap)
 				}
 
-				amount = amount.Abs()
-				tr := TradeEvent{
-					Source:    DriverSyncswap,
-					Market:    market,
-					Price:     price,
-					Amount:    amount,
-					Total:     total,
-					TakerType: takerType,
-					CreatedAt: time.Now(),
+				tr, err := s.ParseSwap(swap, market, pool)
+				if err != nil {
+					loggerSyncswap.Errorf("market %s: failed to parse swap: %s", market.String(), err)
+					continue
 				}
 
 				if !s.filter.Allow(tr) {
@@ -189,6 +161,55 @@ func (s *syncswap) Subscribe(market Market) error {
 
 	s.streams.Store(market, sub)
 	return nil
+}
+
+func FlipSwap(swap *isyncswap_pool.ISyncSwapPoolSwap) {
+	amount0In, amount0Out := swap.Amount0In, swap.Amount0Out
+	swap.Amount0In, swap.Amount0Out = swap.Amount1In, swap.Amount1Out
+	swap.Amount1In, swap.Amount1Out = amount0In, amount0Out
+}
+
+func (s *syncswap) ParseSwap(swap *isyncswap_pool.ISyncSwapPoolSwap, market Market, pool *syncswapPoolWrapper) (TradeEvent, error) {
+	var takerType TakerType
+	var price decimal.Decimal
+	var amount decimal.Decimal
+	var total decimal.Decimal
+
+	switch {
+	case isValidNonZero(swap.Amount0In) && isValidNonZero(swap.Amount1Out):
+		amount1Out := decimal.NewFromBigInt(swap.Amount1Out, 0).Div(decimal.NewFromInt(10).Pow(pool.quoteToken.Decimals))
+		amount0In := decimal.NewFromBigInt(swap.Amount0In, 0).Div(decimal.NewFromInt(10).Pow(pool.baseToken.Decimals))
+
+		takerType = TakerTypeSell
+		price = amount1Out.Div(amount0In)
+		total = amount1Out
+		amount = amount0In
+
+	case isValidNonZero(swap.Amount0Out) && isValidNonZero(swap.Amount1In):
+		amount0Out := decimal.NewFromBigInt(swap.Amount0Out, 0).Div(decimal.NewFromInt(10).Pow(pool.baseToken.Decimals))
+		amount1In := decimal.NewFromBigInt(swap.Amount1In, 0).Div(decimal.NewFromInt(10).Pow(pool.quoteToken.Decimals))
+
+		takerType = TakerTypeBuy
+		price = amount1In.Div(amount0Out)
+		total = amount1In
+		amount = amount0Out
+	default:
+		loggerSyncswap.Errorf("market %s: unknown swap type", market.String())
+		return TradeEvent{}, fmt.Errorf("market %s: unknown swap type", market.String())
+	}
+
+	amount = amount.Abs()
+	tr := TradeEvent{
+		Source:    DriverSyncswap,
+		Market:    market,
+		Price:     price,
+		Amount:    amount,
+		Total:     total,
+		TakerType: takerType,
+		CreatedAt: time.Now(),
+	}
+	fmt.Printf("tradeEvent: %+v\n", tr)
+	return tr, nil
 }
 
 func (s *syncswap) Unsubscribe(market Market) error {
@@ -211,6 +232,7 @@ type syncswapPoolWrapper struct {
 	contract   *isyncswap_pool.ISyncSwapPool
 	baseToken  poolToken
 	quoteToken poolToken
+	reverted   bool
 }
 
 func (s *syncswap) getPool(market Market) (*syncswapPoolWrapper, error) {
@@ -238,11 +260,32 @@ func (s *syncswap) getPool(market Market) (*syncswapPoolWrapper, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to build Syncswap pool: %w", err)
 	}
-	return &syncswapPoolWrapper{
+
+	basePoolToken, err := poolContract.Token0(nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build Syncswap pool: %w", err)
+	}
+
+	quotePoolToken, err := poolContract.Token1(nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build Syncswap pool: %w", err)
+	}
+
+	pool := &syncswapPoolWrapper{
 		contract:   poolContract,
 		baseToken:  baseToken,
 		quoteToken: quoteToken,
-	}, nil
+		reverted:   false,
+	}
+	if common.HexToAddress(baseToken.Address) == basePoolToken && common.HexToAddress(quoteToken.Address) == quotePoolToken {
+		return pool, nil
+	} else if common.HexToAddress(quoteToken.Address) == basePoolToken && common.HexToAddress(baseToken.Address) == quotePoolToken {
+		pool.reverted = true
+		return pool, nil
+	} else {
+		return nil, fmt.Errorf("failed to build Syncswap pool: %w", err)
+	}
+
 }
 
 func (s *syncswap) getTokens(market Market) (baseToken poolToken, quoteToken poolToken, err error) {
