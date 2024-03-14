@@ -151,6 +151,12 @@ func (s *syncswap) Subscribe(market Market) error {
 					amount1Out := decimal.NewFromBigInt(swap.Amount1Out, 0).Div(decimal.NewFromInt(10).Pow(pool.baseToken.Decimals))
 					amount0In := decimal.NewFromBigInt(swap.Amount0In, 0).Div(decimal.NewFromInt(10).Pow(pool.quoteToken.Decimals))
 
+					loggerSyncswap.Debugw("new swap (case 1)",
+						"swap", swap,
+						"amount1Out", amount1Out,
+						"maount0In", amount0In,
+					)
+
 					takerType = TakerTypeSell
 					price = amount0In.Div(amount1Out)
 					total = amount0In
@@ -158,6 +164,12 @@ func (s *syncswap) Subscribe(market Market) error {
 				case isValidNonZero(swap.Amount0Out) && isValidNonZero(swap.Amount1In):
 					amount0Out := decimal.NewFromBigInt(swap.Amount0Out, 0).Div(decimal.NewFromInt(10).Pow(pool.quoteToken.Decimals))
 					amount1In := decimal.NewFromBigInt(swap.Amount1In, 0).Div(decimal.NewFromInt(10).Pow(pool.baseToken.Decimals))
+
+					loggerSyncswap.Debugw("new swap (case 2)",
+						"swap", swap,
+						"amount0Out", amount0Out,
+						"maount1In", amount1In,
+					)
 
 					takerType = TakerTypeBuy
 					price = amount0Out.Div(amount1In)

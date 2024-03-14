@@ -16,7 +16,7 @@ func main() {
 	go func() {
 		http.ListenAndServe("localhost:8080", nil)
 	}()
-	log.SetLogLevel("*", "info")
+	log.SetLogLevel("*", "debug")
 
 	driverType := quotes.DriverBinance
 	if len(os.Args) == 2 {
