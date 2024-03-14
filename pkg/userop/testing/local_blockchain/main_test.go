@@ -32,10 +32,10 @@ func TestSimulatedRPC(t *testing.T) {
 		bundlerURL := NewBundler(ctx, t, node, addresses.EntryPoint)
 		slog.Info("connecting to bundler", "bundlerURL", bundlerURL.String())
 	}
-	bundlerURL := NewBundler(ctx, t, node, addresses.EntryPoint)
+	bundlerURL := *NewBundler(ctx, t, node, addresses.EntryPoint)
 
 	// 4. Build client
-	client := buildClient(t, node.LocalURL.String(), bundlerURL.String(), addresses)
+	client := buildClient(t, node.LocalURL, bundlerURL, addresses)
 
 	// 5. Create and fund smart account
 	eoaBalance := decimal.NewFromFloat(2e18 /* 2 ETH */).BigInt()

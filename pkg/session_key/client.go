@@ -15,7 +15,7 @@ import (
 	"github.com/layer-3/clearsync/pkg/userop"
 	mt "github.com/layer-3/go-merkletree"
 
-	"github.com/layer-3/clearsync/pkg/artifacts/session_key_validator"
+	"github.com/layer-3/clearsync/pkg/artifacts/session_key_validator_v2_4"
 )
 
 type Client interface {
@@ -167,7 +167,7 @@ func (b *backend) GetUserOpSigner(sessionSigner signer.Signer) userop.Signer {
 }
 
 func (b *backend) getSessionData(smartWallet, sessionKey common.Address) (SessionData, error) {
-	sessionKeyValidator, err := session_key_validator.NewSessionKeyValidator(b.sessionKeyValidatorAddress, b.provider)
+	sessionKeyValidator, err := session_key_validator_v2_4.NewSessionKeyValidator(b.sessionKeyValidatorAddress, b.provider)
 	if err != nil {
 		return SessionData{}, fmt.Errorf("failed to connect to session key validator: %w", err)
 	}
