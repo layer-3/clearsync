@@ -207,8 +207,6 @@ func estimateUserOperationGas(bundler RPCBackend, entryPoint common.Address) mid
 			return nil
 		}
 
-		fmt.Printf("userop %+v\n", op)
-
 		slog.Debug("estimating userOp gas limits")
 
 		// ERC4337-standardized gas estimation
