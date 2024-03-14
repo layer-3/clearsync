@@ -47,7 +47,7 @@ func TestSimulatedRPC(t *testing.T) {
 	sender := Account{Address: senderAddress}
 	require.NoError(t, err, "failed to compute sender account address")
 	slog.Info("sender", "address", sender.Address)
-	sendFunds(ctx, t, node, eoa, sender, decimal.NewFromFloat(1e18 /* 1 ETH */))
+	sendNative(ctx, t, node, eoa, sender, decimal.NewFromFloat(1e18 /* 1 ETH */))
 
 	receiver, err := NewAccount(ctx, node)
 	require.NoError(t, err, "failed to create receiver account")
@@ -74,7 +74,7 @@ func TestSimulatedRPC(t *testing.T) {
 	require.Equal(t, transferAmount, receiverBalance, "new balance should equal the transfer amount")
 }
 
-func sendFunds(ctx context.Context, t *testing.T, node *EthNode, from, to Account, fundAmount decimal.Decimal) {
+func sendNative(ctx context.Context, t *testing.T, node *EthNode, from, to Account, fundAmount decimal.Decimal) {
 	chainID, err := node.Client.ChainID(ctx)
 	require.NoError(t, err, "Error getting chain ID")
 
@@ -99,7 +99,7 @@ func sendFunds(ctx context.Context, t *testing.T, node *EthNode, from, to Accoun
 // waitMined waits for tx to be mined on the blockchain.
 // It stops waiting when the context is canceled.
 func waitMined(ctx context.Context, node *EthNode, tx *types.Transaction) (*types.Receipt, error) {
-	queryTicker := time.NewTicker(1 * time.Second)
+	queryTicker := time.NewTicker(50 * time.Millisecond)
 	defer queryTicker.Stop()
 
 	for {

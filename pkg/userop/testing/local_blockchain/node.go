@@ -22,7 +22,7 @@ import (
 	"github.com/layer-3/clearsync/pkg/abi/kernel_ecdsa_validator_v2_2"
 	"github.com/layer-3/clearsync/pkg/abi/kernel_factory_v2_2"
 	"github.com/layer-3/clearsync/pkg/abi/kernel_v2_2"
-	"github.com/layer-3/clearsync/pkg/artifacts/session_key_validator"
+	"github.com/layer-3/clearsync/pkg/artifacts/session_key_validator_v2_4"
 	"github.com/layer-3/clearsync/pkg/userop"
 )
 
@@ -61,7 +61,7 @@ func NewEthNode(ctx context.Context, t *testing.T) *EthNode {
 
 	if ethActiveNode != nil {
 		ethActiveUsers++
-		t.Cleanup(ethNodeClenaupFactory(ctx, t))
+		t.Cleanup(ethNodeCleanupFactory(ctx, t))
 
 		slog.Info("reusing existing Ethereum node")
 		return ethActiveNode
@@ -118,7 +118,7 @@ func NewEthNode(ctx context.Context, t *testing.T) *EthNode {
 		ContainerURL: *containerURL,
 	}
 
-	t.Cleanup(ethNodeClenaupFactory(ctx, t))
+	t.Cleanup(ethNodeCleanupFactory(ctx, t))
 	ethActiveUsers++
 
 	return ethActiveNode
@@ -135,7 +135,7 @@ var (
 	bundlerMutex       sync.Mutex
 )
 
-func bundlerNodeClenaupFactory(ctx context.Context, t *testing.T) func() {
+func bundlerNodeCleanupFactory(ctx context.Context, t *testing.T) func() {
 	return func() {
 		bundlerMutex.Lock()
 		defer bundlerMutex.Unlock()
@@ -158,7 +158,7 @@ func NewBundler(ctx context.Context, t *testing.T, node *EthNode, entryPoint com
 
 	if bundlerActiveNode != nil {
 		bundlerActiveUsers++
-		t.Cleanup(bundlerNodeClenaupFactory(ctx, t))
+		t.Cleanup(bundlerNodeCleanupFactory(ctx, t))
 
 		slog.Info("reusing existing Alto bundler")
 		return bundlerActiveNode.ContainerURL
@@ -172,7 +172,7 @@ func NewBundler(ctx context.Context, t *testing.T, node *EthNode, entryPoint com
 
 	altoContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "ghcr.io/pimlicolabs/alto:v1.0.1",
+			Image: "quay.io/openware/bundler:c7dd933",
 			Entrypoint: []string{
 				"pnpm", "start",
 				"--port", port,
@@ -203,7 +203,7 @@ func NewBundler(ctx context.Context, t *testing.T, node *EthNode, entryPoint com
 		ContainerURL: bundlerURL,
 	}
 
-	t.Cleanup(bundlerNodeClenaupFactory(ctx, t))
+	t.Cleanup(bundlerNodeCleanupFactory(ctx, t))
 	bundlerActiveUsers++
 
 	require.NoError(t, err, "failed to parse local bundler URL")
@@ -213,11 +213,11 @@ func NewBundler(ctx context.Context, t *testing.T, node *EthNode, entryPoint com
 
 type Contracts struct {
 	EntryPoint          common.Address
-	Validator           common.Address
-	Factory             common.Address
-	Logic               common.Address
-	Paymaster           common.Address
+	ECDSAValidator      common.Address
 	SessionKeyValidator common.Address
+	Logic               common.Address
+	Factory             common.Address
+	Paymaster           common.Address
 }
 
 var (
@@ -244,9 +244,13 @@ func SetupContracts(ctx context.Context, t *testing.T, node *EthNode) Contracts 
 	require.NoError(t, err)
 	slog.Info("deployed EntryPoint contract", "address", entryPoint)
 
-	validator, _, _, err := kernel_ecdsa_validator_v2_2.DeployKernelECDSAValidator(owner.TransactOpts, node.Client)
+	ecdsaValidator, _, _, err := kernel_ecdsa_validator_v2_2.DeployKernelECDSAValidator(owner.TransactOpts, node.Client)
 	require.NoError(t, err)
-	slog.Info("deployed KernelECDSAValidator contract", "address", validator)
+	slog.Info("deployed KernelECDSAValidator contract", "address", ecdsaValidator)
+
+	sessionKeyValidator, _, _, err := session_key_validator_v2_4.DeploySessionKeyValidator(owner.TransactOpts, node.Client)
+	require.NoError(t, err)
+	slog.Info("deployed SessionKeyValidator contract", "address", sessionKeyValidator)
 
 	logic, _, _, err := kernel_v2_2.DeployKernel(owner.TransactOpts, node.Client, entryPoint)
 	require.NoError(t, err)
@@ -262,18 +266,14 @@ func SetupContracts(ctx context.Context, t *testing.T, node *EthNode) Contracts 
 
 	var paymaster common.Address // TODO: deploy Paymaster contract
 
-	sessionKeyValidator, _, _, err := session_key_validator.DeploySessionKeyValidator(owner.TransactOpts, node.Client)
-	require.NoError(t, err)
-	slog.Info("deployed SessionKeyValidator contract", "address", sessionKeyValidator)
-
 	slog.Info("done deploying contracts")
 	contracts := Contracts{
 		EntryPoint:          entryPoint,
-		Validator:           validator,
-		Factory:             factory,
-		Logic:               logic,
-		Paymaster:           paymaster,
+		ECDSAValidator:      ecdsaValidator,
 		SessionKeyValidator: sessionKeyValidator,
+		Logic:               logic,
+		Factory:             factory,
+		Paymaster:           paymaster,
 	}
 
 	cachedContracts = &contracts
@@ -285,12 +285,12 @@ func buildClient(t *testing.T, rpcURL, bundlerURL string, addresses Contracts) u
 	config, err := userop.NewClientConfigFromEnv()
 	require.NoError(t, err)
 
-	config.ProviderURL = rpcURL
-	config.BundlerURL = bundlerURL
+	config.ProviderURL = rpcURL.String()
+	config.BundlerURL = bundlerURL.String()
 	config.EntryPoint = addresses.EntryPoint
 	config.SmartWallet = userop.SmartWalletConfig{
 		Type:           &userop.SmartWalletKernel,
-		ECDSAValidator: addresses.Validator,
+		ECDSAValidator: addresses.ECDSAValidator,
 		Logic:          addresses.Logic,
 		Factory:        addresses.Factory,
 	}

@@ -29,9 +29,9 @@ func (conf *ClientConfig) Init() {
 }
 
 func (conf ClientConfig) validate() error {
-  if conf.PollPeriod.String() == "" {
-    return ErrInvalidPollDuration
-  }
+	if conf.PollPeriod.String() == "" {
+		return ErrInvalidPollDuration
+	}
 
 	if conf.EntryPoint == (common.Address{}) {
 		return ErrInvalidEntryPointAddress

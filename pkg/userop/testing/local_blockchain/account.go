@@ -42,14 +42,18 @@ func NewAccount(ctx context.Context, node *EthNode) (Account, error) {
 	}, nil
 }
 
-func NewAccountWithBalance(ctx context.Context, balance *big.Int, node *EthNode) (Account, error) {
+func NewAccountWithBalance(
+	ctx context.Context,
+	balance *big.Int, // in ether, not wei or gwei
+	node *EthNode,
+) (Account, error) {
 	account, err := NewAccount(ctx, node)
 	if err != nil {
 		return Account{}, err
 	}
 
 	if balance == nil {
-		return Account{}, fmt.Errorf("amount is nil")
+		return Account{}, fmt.Errorf("specified balance is nil")
 	}
 	gethCmd := fmt.Sprintf(
 		"eth.sendTransaction({from: eth.coinbase, to: '%s', value: web3.toWei(%d, 'ether')})",
