@@ -1,6 +1,7 @@
 package universal_sigver
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -11,20 +12,29 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+var entryPointV0_6Address = common.HexToAddress("0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789")
+
 type Client interface {
 	Verify(signer common.Address, messageHash common.Hash, signature []byte) (bool, error)
-	Sign(signerAddress common.Address, signer signer.Signer, msg []byte) ([]byte, error)
+	SignERC6492(ctx context.Context, owner signer.Signer, index decimal.Decimal, msg []byte) ([]byte, error)
+	PackERC6492Sig(ctx context.Context, ownerAddress common.Address, index decimal.Decimal, sig []byte) ([]byte, error)
 }
 
 type backend struct {
 	provider          *ethclient.Client
-	smartWalletConfig smart_wallet.Config
+	smartWalletConfig *smart_wallet.Config
+	entryPointAddress *common.Address
 }
 
-func NewUniversalSigver(provider *ethclient.Client, smartWalletConfig smart_wallet.Config) Client {
+func NewUniversalSigver(provider *ethclient.Client, smartWalletConfig *smart_wallet.Config, entryPointAddress *common.Address) Client {
+	var entryPointAddress_ = entryPointAddress
+	if entryPointAddress_ == nil {
+		entryPointAddress_ = &entryPointV0_6Address
+	}
 	return &backend{
 		provider:          provider,
 		smartWalletConfig: smartWalletConfig,
+		entryPointAddress: entryPointAddress_,
 	}
 }
 
@@ -44,34 +54,32 @@ func (b *backend) Verify(signer common.Address, messageHash common.Hash, signatu
 
 // NOTE: no support for contract being deployed but not ready
 // TODO: check for ERC-712 support
-func (b *backend) Sign(signerAddress common.Address, signer signer.Signer, msg []byte) ([]byte, error) {
-	sig, err := signer.Sign(msg)
+func (b *backend) SignERC6492(ctx context.Context, owner signer.Signer, index decimal.Decimal, msg []byte) ([]byte, error) {
+	sig, err := owner.Sign(msg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign message: %w", err)
 	}
 
-	if signerAddress == signer.CommonAddress() {
-		// ECDSA
-		return sig.Raw(), nil
-	}
+	return b.PackERC6492Sig(ctx, owner.CommonAddress(), index, sig.Raw())
+}
 
-	isDeployed, err := smart_wallet.IsAccountDeployed(b.provider, signerAddress)
+func (b *backend) PackERC6492Sig(ctx context.Context, ownerAddress common.Address, index decimal.Decimal, sig []byte) ([]byte, error) {
+	swAddress, err := smart_wallet.GetAccountAddress(ctx, b.provider, *b.smartWalletConfig, *b.entryPointAddress, ownerAddress, index)
 	if err != nil {
+		return nil, fmt.Errorf("failed to get smart wallet address: %w", err)
+	}
+
+	if isDeployed, err := smart_wallet.IsAccountDeployed(ctx, b.provider, swAddress); err != nil {
 		return nil, fmt.Errorf("failed to check if smart account is already deployed: %w", err)
+	} else if isDeployed {
+		// use ERC-1271 signature
+		return nil, fmt.Errorf("smart wallet already deployed")
 	}
 
-	if isDeployed {
-		// ERC-1271 signature
-		return sig.Raw(), nil
-	}
-
-	// ERC-6492 signature
-	// FIXME:
-	index := decimal.NewFromInt(0)
-	factoryCalldata, err := smart_wallet.GetInitCode(b.provider, b.smartWalletConfig, signerAddress, signer.CommonAddress(), index)
+	factoryCalldata, err := smart_wallet.GetInitCode(b.provider, *b.smartWalletConfig, ownerAddress, index)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get init code: %w", err)
 	}
 
-	return packERC6492Sig(b.smartWalletConfig.Factory, factoryCalldata, sig.Raw()), nil
+	return packERC6492Sig(b.smartWalletConfig.Factory, factoryCalldata, sig), nil
 }
