@@ -2,11 +2,13 @@ package universal_sigver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/layer-3/clearsync/pkg/signer"
 	"github.com/layer-3/clearsync/pkg/smart_wallet"
 	"github.com/shopspring/decimal"
@@ -15,7 +17,7 @@ import (
 var entryPointV0_6Address = common.HexToAddress("0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789")
 
 type Client interface {
-	Verify(signer common.Address, messageHash common.Hash, signature []byte) (bool, error)
+	Verify(ctx context.Context, signer common.Address, messageHash common.Hash, signature []byte) (bool, error)
 	SignERC6492(ctx context.Context, owner signer.Signer, index decimal.Decimal, msg []byte) ([]byte, error)
 	PackERC6492Sig(ctx context.Context, ownerAddress common.Address, index decimal.Decimal, sig []byte) ([]byte, error)
 }
@@ -38,24 +40,30 @@ func NewUniversalSigver(provider *ethclient.Client, smartWalletConfig *smart_wal
 	}
 }
 
-func (b *backend) Verify(signer common.Address, messageHash common.Hash, signature []byte) (bool, error) {
+func (b *backend) Verify(ctx context.Context, signer common.Address, messageHash common.Hash, signature []byte) (bool, error) {
 	calldata := packIsValidSigCall(signer, messageHash, signature)
 
-	var res []byte
-	err := b.provider.Client().Call(&res, "eth_call", map[string]interface{}{
-		"data:": calldata,
-	})
+	var res string
+	err := b.provider.Client().CallContext(ctx, &res, "eth_call", map[string]interface{}{
+		"data": hexutil.Encode(calldata),
+	},
+		"latest")
 	if err != nil {
-		return false, fmt.Errorf("failed to call ValidateSigOffchain: %w", err)
+		var scError rpc.DataError
+		if ok := errors.As(err, &scError); !ok {
+			return false, fmt.Errorf("could not unpack error data: unexpected error type '%T' containing message %w)", err, err)
+		}
+		errorData := scError.ErrorData().(string)
+		return false, fmt.Errorf("failed to call ValidateSigOffchain: %w, errorData: %s", err, errorData)
 	}
 
-	return hexutil.Encode(res) == validateSigOffchainSuccess, nil
+	return res == validateSigOffchainSuccess, nil
 }
 
 // NOTE: no support for contract being deployed but not ready
 // TODO: check for ERC-712 support
 func (b *backend) SignERC6492(ctx context.Context, owner signer.Signer, index decimal.Decimal, msg []byte) ([]byte, error) {
-	sig, err := owner.Sign(msg)
+	sig, err := signer.SignEthMessage(owner, msg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign message: %w", err)
 	}
@@ -72,11 +80,11 @@ func (b *backend) PackERC6492Sig(ctx context.Context, ownerAddress common.Addres
 	if isDeployed, err := smart_wallet.IsAccountDeployed(ctx, b.provider, swAddress); err != nil {
 		return nil, fmt.Errorf("failed to check if smart account is already deployed: %w", err)
 	} else if isDeployed {
-		// use ERC-1271 signature
+		// use ERC-1271 signature instead
 		return nil, fmt.Errorf("smart wallet already deployed")
 	}
 
-	factoryCalldata, err := smart_wallet.GetInitCode(b.provider, *b.smartWalletConfig, ownerAddress, index)
+	factoryCalldata, err := smart_wallet.GetFactoryCallData(b.provider, *b.smartWalletConfig, ownerAddress, index)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get init code: %w", err)
 	}
