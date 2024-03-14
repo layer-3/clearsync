@@ -18,7 +18,7 @@ func main() {
 	}()
 	log.SetLogLevel("*", "info")
 
-	driverType := quotes.DriverBinance
+	driverType := quotes.DriverSyncswap
 	if len(os.Args) == 2 {
 		parsedDriver, err := quotes.ToDriverType(os.Args[1])
 		if err != nil {
@@ -63,7 +63,7 @@ func main() {
 
 	markets := []quotes.Market{
 		// Add your markets here
-		quotes.NewMarket("usdc", "weth"),
+		quotes.NewMarket("linda", "weth"),
 	}
 
 	for _, market := range markets {
