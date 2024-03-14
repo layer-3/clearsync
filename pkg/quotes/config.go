@@ -58,7 +58,8 @@ func ToConfig(driver DriverConfig) Config {
 }
 
 type IndexConfig struct {
-	TradesCached int `yaml:"trades_cached" env:"TRADES_CACHED" env-default:"20"`
+	TradesCached  int      `yaml:"trades_cached" env:"TRADES_CACHED" env-default:"20"`
+	DriverConfigs []Config `yaml:"drivers" env:"DRIVERS"`
 }
 
 func (IndexConfig) DriverType() DriverType {

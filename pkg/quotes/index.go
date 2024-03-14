@@ -21,16 +21,16 @@ type priceCalculator interface {
 }
 
 // NewIndexAggregator creates a new instance of IndexAggregator.
-func NewIndexAggregator(driversConfigs []DriverConfig, strategy priceCalculator, outbox chan<- TradeEvent) Driver {
+func NewIndexAggregator(driversConfigs []Config, strategy priceCalculator, outbox chan<- TradeEvent) Driver {
 	aggregated := make(chan TradeEvent, 128)
 
 	var drivers []Driver
 	for _, d := range driversConfigs {
-		if d.DriverType() == DriverIndex {
+		if d.Driver == DriverIndex {
 			continue
 		}
 
-		driver, err := NewDriver(ToConfig(d), aggregated)
+		driver, err := NewDriver(d, aggregated)
 		if err != nil {
 			continue
 		}
@@ -47,7 +47,7 @@ func NewIndexAggregator(driversConfigs []DriverConfig, strategy priceCalculator,
 
 // newIndex creates a new instance of IndexAggregator with VWA strategy and default drivers weights.
 func newIndex(config IndexConfig, outbox chan<- TradeEvent) Driver {
-	return NewIndexAggregator(AllDrivers, NewStrategyVWA(WithCustomPriceCacheVWA(NewPriceCacheVWA(DefaultWeightsMap, config.TradesCached))), outbox)
+	return NewIndexAggregator(config.DriverConfigs, NewStrategyVWA(WithCustomPriceCacheVWA(NewPriceCacheVWA(DefaultWeightsMap, config.TradesCached))), outbox)
 }
 
 // ChangeStrategy allows index price calculation strategy to be changed.
