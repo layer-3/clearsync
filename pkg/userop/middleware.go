@@ -55,7 +55,14 @@ func getInitCode(provider EthBackend, smartWalletConfig smart_wallet.Config) (mi
 			return fmt.Errorf("`index` not found, but required in context to get init code")
 		}
 
-		initCode, err := smart_wallet.GetInitCode(provider.EthClient(), smartWalletConfig, op.Sender, owner, index)
+		// if Smart Wallet is already deployed - return empty init code
+		if isDeployed, err := smart_wallet.IsAccountDeployed(ctx, provider.EthClient(), op.Sender); err != nil {
+			return fmt.Errorf("failed to check if smart account is already deployed: %w", err)
+		} else if isDeployed {
+			return nil
+		}
+
+		initCode, err := smart_wallet.GetInitCode(provider.EthClient(), smartWalletConfig, owner, index)
 		if err != nil {
 			return fmt.Errorf("failed to get init code: %w", err)
 		}
