@@ -5,9 +5,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-const erc6492MagicValue = "6492649264926492649264926492649264926492649264926492649264926492"
+const erc6492MagicValue = "0x6492649264926492649264926492649264926492649264926492649264926492"
 
 func packERC6492Sig(factoryAddress common.Address, factoryCalldata, sig []byte) []byte {
 	args := abi.Arguments{
@@ -21,5 +22,5 @@ func packERC6492Sig(factoryAddress common.Address, factoryCalldata, sig []byte) 
 		panic(fmt.Errorf("failed to pack ERC-6492 sig: %w", err))
 	}
 
-	return append(packed, common.Hex2Bytes(erc6492MagicValue)...)
+	return append(packed, hexutil.MustDecode(erc6492MagicValue)...)
 }
