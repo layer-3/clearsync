@@ -5,7 +5,10 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto"
 	signer_pkg "github.com/layer-3/clearsync/pkg/signer"
 	"github.com/layer-3/clearsync/pkg/smart_wallet"
 	"github.com/layer-3/clearsync/pkg/userop"
@@ -101,4 +104,40 @@ func TestVerify(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, ok)
 	})
+}
+
+func TestPackIsValidSigCall(t *testing.T) {
+	pvk, err := crypto.GenerateKey()
+	require.NoError(t, err)
+	signer := signer_pkg.NewLocalSigner(pvk)
+
+	msg := []byte("hello again")
+	msgHash := common.BytesToHash(signer_pkg.ComputeEthereumSignedMessageHash(msg))
+	sig, err := signer_pkg.SignEthMessage(signer, msg)
+	require.NoError(t, err)
+
+	calldata := packIsValidSigCall(signer.CommonAddress(), msgHash, sig.Raw())
+	bytecodeLen := len(hexutil.MustDecode(validateSigOffchainBytecode))
+	require.Equal(t, validateSigOffchainBytecode, hexutil.Encode(calldata[:bytecodeLen]))
+
+	args := abi.Arguments{
+		{Name: "signer", Type: address},
+		{Name: "hash", Type: bytes32},
+		{Name: "signature", Type: bytes},
+	}
+
+	unpacked, err := args.Unpack(calldata[bytecodeLen:])
+	require.NoError(t, err)
+
+	unpackedAddress, ok := unpacked[0].(common.Address)
+	require.True(t, ok)
+	require.Equal(t, signer.CommonAddress(), unpackedAddress)
+
+	unpackedHash, ok := unpacked[1].([32]byte)
+	require.True(t, ok)
+	require.Equal(t, msgHash.Hex(), hexutil.Encode(unpackedHash[:]))
+
+	unpackedSig, ok := unpacked[2].([]byte)
+	require.True(t, ok)
+	require.Equal(t, sig.Raw(), unpackedSig)
 }
