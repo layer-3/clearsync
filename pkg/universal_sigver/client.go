@@ -76,5 +76,5 @@ func (b *backend) PackERC6492Sig(ctx context.Context, ownerAddress common.Addres
 		return nil, fmt.Errorf("failed to get init code: %w", err)
 	}
 
-	return packERC6492Sig(b.smartWalletConfig.Factory, factoryCalldata, sig), nil
+	return PackERC6492Sig(b.smartWalletConfig.Factory, factoryCalldata, sig), nil
 }
