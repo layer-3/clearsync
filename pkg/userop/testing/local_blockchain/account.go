@@ -7,9 +7,12 @@ import (
 	"fmt"
 	"log/slog"
 	"math/big"
+	"os"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -56,9 +59,53 @@ func NewAccountWithBalance(
 		return Account{}, fmt.Errorf("specified balance is nil")
 	}
 	gethCmd := fmt.Sprintf(
-		"eth.sendTransaction({from: eth.coinbase, to: '%s', value: web3.toWei(%d, 'ether')})",
+		"eth.sendTransaction({from: eth.coinbase, to: '%s', value: web3.toWei(%d, 'wei')})",
 		account.Address, balance.Uint64(),
 	)
+
+	if pkStr := os.Getenv("DEPLOYER_PK"); pkStr != "" {
+		privateKey, err := crypto.HexToECDSA(pkStr)
+		if err != nil {
+			return Account{}, fmt.Errorf("failed to parse deployer private key: %w", err)
+		}
+
+		deployerAddress := crypto.PubkeyToAddress(privateKey.PublicKey)
+
+		nonce, err := node.Client.PendingNonceAt(context.Background(), deployerAddress)
+		if err != nil {
+			return Account{}, fmt.Errorf("failed to get nonce: %w", err)
+		}
+
+		tx := types.NewTx(&types.LegacyTx{
+			Nonce:    nonce,
+			To:       &account.Address,
+			Value:    balance,
+			Gas:      21000, // default gas limit for native transfer
+			GasPrice: big.NewInt(50000000000),
+		})
+
+		chainID, err := node.Client.NetworkID(context.Background())
+		if err != nil {
+			return Account{}, fmt.Errorf("failed to get chain ID: %w", err)
+		}
+
+		signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privateKey)
+		if err != nil {
+			return Account{}, fmt.Errorf("failed to sign tx: %w", err)
+		}
+
+		err = node.Client.SendTransaction(context.Background(), signedTx)
+		if err != nil {
+			return Account{}, fmt.Errorf("failed to send tx: %w", err)
+		}
+
+		_, err = waitMinedV2(ctx, node, signedTx)
+		if err != nil {
+			return Account{}, fmt.Errorf("failed to wait for tx: %w", err)
+		}
+
+		return account, nil
+	}
 
 	exitCode, result, err := node.Container.Exec(ctx, []string{"geth", "attach", "--exec", gethCmd, node.LocalURL.String()})
 	if err != nil || exitCode != 0 {
@@ -71,4 +118,26 @@ func NewAccountWithBalance(
 	}
 
 	return account, nil
+}
+
+func waitMinedV2(ctx context.Context, node *EthNode, tx *types.Transaction) (*types.Receipt, error) {
+	queryTicker := time.NewTicker(1 * time.Second)
+	defer queryTicker.Stop()
+
+	for {
+		receipt, err := node.Client.TransactionReceipt(ctx, tx.Hash())
+		if err == nil {
+			return receipt, nil
+		}
+
+		bn, _ := node.Client.BlockNumber(context.Background())
+		fmt.Println(bn)
+
+		// Wait for the next round.
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-queryTicker.C:
+		}
+	}
 }

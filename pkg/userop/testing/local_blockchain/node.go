@@ -24,6 +24,8 @@ import (
 	"github.com/layer-3/clearsync/pkg/abi/kernel_v2_2"
 	"github.com/layer-3/clearsync/pkg/artifacts/session_key_validator_v2_4"
 	"github.com/layer-3/clearsync/pkg/userop"
+
+	_ "embed"
 )
 
 type EthNode struct {
@@ -46,8 +48,10 @@ func ethNodeCleanupFactory(ctx context.Context, t *testing.T) func() {
 
 		ethActiveUsers--
 		if ethActiveUsers <= 0 {
-			err := ethActiveNode.Container.Terminate(ctx)
-			require.NoError(t, err, "failed to terminate Go-Ethereum container")
+			if ethActiveNode.Container != nil {
+				err := ethActiveNode.Container.Terminate(ctx)
+				require.NoError(t, err, "failed to terminate Go-Ethereum container")
+			}
 
 			ethActiveNode = nil
 		}
@@ -142,8 +146,9 @@ func bundlerNodeCleanupFactory(ctx context.Context, t *testing.T) func() {
 
 		bundlerActiveUsers--
 		if bundlerActiveUsers <= 0 {
-			if err := bundlerActiveNode.Container.Terminate(ctx); err != nil {
-				t.Fatalf("failed to terminate Alto container: %s", err)
+			if bundlerActiveNode.Container != nil {
+				err := bundlerActiveNode.Container.Terminate(ctx)
+				require.NoError(t, err, "failed to terminate Alto container")
 			}
 
 			bundlerActiveNode = nil
@@ -164,39 +169,56 @@ func NewBundler(ctx context.Context, t *testing.T, node *EthNode, entryPoint com
 		return bundlerActiveNode.ContainerURL
 	}
 
-	const port = "3000"
-	balance := decimal.NewFromFloat(100e18 /* 100 ETH */).BigInt()
-	bundlerAccount, err := NewAccountWithBalance(ctx, balance, node)
-	require.NoError(t, err, "failed to fund bundler account")
-	privateKey := hexutil.Encode(crypto.FromECDSA(bundlerAccount.PrivateKey))
+	var (
+		altoContainer testcontainers.Container
+		bundlerURL    *url.URL
+	)
 
-	altoContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "quay.io/openware/bundler:c7dd933",
-			Entrypoint: []string{
-				"pnpm", "start",
-				"--port", port,
-				"--networkName", "mainnet",
-				"--entryPoint", entryPoint.Hex(), // the contract should already be deployed on Go-Ethereum node
-				"--signerPrivateKeys", privateKey,
-				"--utilityPrivateKey", privateKey,
-				"--minBalance", "1000000000000000000", // 1 ETH
-				"--rpcUrl", node.ContainerURL.String(),
-				"--logLevel", "info",
-				"--noEthCallOverrideSupport", "true",
-				"--useUserOperationGasLimitsForSubmission", "true",
+	if uEnv := os.Getenv("BUNDLER_RPC_URL"); uEnv != "" {
+		u, err := url.Parse(uEnv)
+		if err != nil {
+			// configuration error, so we shut down the app
+			panic(err)
+		}
+
+		bundlerURL = u
+	} else {
+		const port = "3000"
+		balance := decimal.NewFromFloat(100e18 /* 100 ETH */).BigInt()
+		bundlerAccount, err := NewAccountWithBalance(ctx, balance, node)
+		require.NoError(t, err, "failed to fund bundler account")
+		privateKey := hexutil.Encode(crypto.FromECDSA(bundlerAccount.PrivateKey))
+
+		altoContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image: "quay.io/openware/bundler:c7dd933",
+				Entrypoint: []string{
+					"pnpm", "start",
+					"--port", port,
+					"--networkName", "mainnet",
+					"--entryPoint", entryPoint.Hex(), // the contract should already be deployed on Go-Ethereum node
+					"--signerPrivateKeys", privateKey,
+					"--utilityPrivateKey", privateKey,
+					"--minBalance", "1000000000000000000", // 1 ETH
+					"--rpcUrl", node.ContainerURL.String(),
+					"--logLevel", "info",
+					"--noEthCallOverrideSupport", "true",
+					"--useUserOperationGasLimitsForSubmission", "true",
+				},
+				ImagePlatform: "linux/amd64",
+				ExposedPorts:  []string{fmt.Sprintf("%s:%s/tcp", port, port)},
+				WaitingFor:    wait.ForLog("Server listening at"),
 			},
-			ImagePlatform: "linux/amd64",
-			ExposedPorts:  []string{fmt.Sprintf("%s:%s/tcp", port, port)},
-			WaitingFor:    wait.ForLog("Server listening at"),
-		},
-		Started: true,
-	})
-	require.NoError(t, err, "failed to start Alto bundler container")
+			Started: true,
+		})
+		require.NoError(t, err, "failed to start Alto bundler container")
 
-	containerPort, err := altoContainer.MappedPort(ctx, port)
-	require.NoError(t, err, "failed to get Alto bundler container port")
-	bundlerURL, err := url.Parse(fmt.Sprintf("http://0.0.0.0:%s", containerPort.Port()))
+		containerPort, err := altoContainer.MappedPort(ctx, port)
+		require.NoError(t, err, "failed to get Alto bundler container port")
+
+		bundlerURL, err = url.Parse(fmt.Sprintf("http://0.0.0.0:%s", containerPort.Port()))
+		require.NoError(t, err, "failed to parse local bundler URL")
+	}
 
 	bundlerActiveNode = &BundlerNode{
 		Container:    altoContainer,
@@ -205,8 +227,6 @@ func NewBundler(ctx context.Context, t *testing.T, node *EthNode, entryPoint com
 
 	t.Cleanup(bundlerNodeCleanupFactory(ctx, t))
 	bundlerActiveUsers++
-
-	require.NoError(t, err, "failed to parse local bundler URL")
 
 	return bundlerActiveNode.ContainerURL
 }
@@ -220,6 +240,15 @@ type Contracts struct {
 	Paymaster           common.Address
 }
 
+// This contract addresses are hardcoded to be used in the CI environment
+var hardcodedContracts = Contracts{
+	EntryPoint:          common.HexToAddress("0x07bd68335Ff013481b0fED98c190EaeB36e52b3D"),
+	Validator:           common.HexToAddress("0x0E3c0cb9F2Ae0053f2b236b698C2028112b333a7"),
+	Factory:             common.HexToAddress("0x9CBDd0D809f3490d52E3609044D4cf78f4df3a5f"),
+	Logic:               common.HexToAddress("0x8Bdf2ceE549101447fA141fFfc9f6e3B2BE8BBF2"),
+	SessionKeyValidator: common.HexToAddress("0x800edae75E7B45FEcF1283eD5E48dB58BC619291"),
+}
+
 var (
 	cachedContracts *Contracts
 	contractsMutex  sync.Mutex
@@ -228,6 +257,10 @@ var (
 func SetupContracts(ctx context.Context, t *testing.T, node *EthNode) Contracts {
 	contractsMutex.Lock()
 	defer contractsMutex.Unlock()
+
+	if v := os.Getenv("BUNDLER_USE_HARDCODED_CONTRACTS"); v == "true" {
+		return hardcodedContracts
+	}
 
 	if cachedContracts != nil {
 		return *cachedContracts

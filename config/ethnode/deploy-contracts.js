@@ -6,9 +6,13 @@ var { Web3 } = require('web3');
 var web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'));
 let eth = web3.eth;
 
-// TODO: move to the env
-const deployer = '0x25ba87CA70739Bc8448D018Ad4A11F35Ea5a2DF9';
-const deployerPk = '6aa35771f25b5098020350399171952bdaafd8b381eb777577befd5ee995a122';
+const deployer = process.env.DEPLOYER_ADDRESS;
+const deployerPk = process.env.DEPLOYER_PK;
+const expectedEntryPointAddress = process.env.ENTRY_POINT_ADDRESS;
+const expectedKernelECDSAValidatorAddress = process.env.KERNEL_ECDSA_VALIDATOR_ADDRESS;
+const expectedKernelAddress = process.env.KERNEL_ADDRESS;
+const expectedKernelFactoryAddress = process.env.KERNEL_FACTORY_ADDRESS;
+const expectedSessionKeyValidatorAddress = process.env.SESSION_KEY_VALIDATOR_ADDRESS;
 
 async function main() {
   await eth.personal.importRawKey(deployerPk, 'password');
@@ -45,6 +49,11 @@ async function DeployEntryPoint() {
     gasPrice: '30000000000',
   });
 
+  assert(
+    receipt.options.address === expectedEntryPointAddress,
+    `Get unexpected EntryPoint address, expected: ${expectedEntryPointAddress}, got: ${receipt.options.address}`,
+  );
+
   return receipt.options.address;
 }
 
@@ -56,11 +65,16 @@ async function DeployKernelECDSAValidator() {
   let contract = new eth.Contract(abi);
   let gas = await eth.estimateGas({ data: bytecode });
 
-  await contract.deploy({ data: bytecode }).send({
+  let receipt = await contract.deploy({ data: bytecode }).send({
     from: deployer,
     gas,
     gasPrice: '30000000000',
   });
+
+  assert(
+    receipt.options.address === expectedKernelECDSAValidatorAddress,
+    `Get unexpected ECDSAValidator address, expected: ${expectedKernelECDSAValidatorAddress}, got: ${receipt.options.address}`,
+  );
 }
 
 // 0x8Bdf2ceE549101447fA141fFfc9f6e3B2BE8BBF2
@@ -76,6 +90,11 @@ async function DeployKernel(entryPointAddress) {
     gas,
     gasPrice: '30000000000',
   });
+
+  assert(
+    receipt.options.address === expectedKernelAddress,
+    `Get unexpected Kernel address, expected: ${expectedKernelAddress}, got: ${receipt.options.address}`,
+  );
 
   return receipt.options.address;
 }
@@ -97,6 +116,11 @@ async function DeployKernelFactory(deployerAddress, entryPointAddress, kernelAdd
       gas,
       gasPrice: '30000000000',
     });
+
+  assert(
+    receipt.options.address === expectedKernelFactoryAddress,
+    `Get unexpected KernelFactory address, expected: ${expectedKernelFactoryAddress}, got: ${receipt.options.address}`,
+  );
 
   let data = await contract.methods.setImplementation(kernelAddress, true).encodeABI();
 
@@ -122,9 +146,20 @@ async function DeploySessionKeyValidator() {
   let gas = await eth.estimateGas({ data: bytecode });
   let contract = new eth.Contract(abi);
 
-  await contract.deploy({ data: bytecode }).send({
+  let receipt = await contract.deploy({ data: bytecode }).send({
     from: deployer,
     gas,
     gasPrice: '30000000000',
   });
+
+  assert(
+    receipt.options.address === expectedSessionKeyValidatorAddress,
+    `Get unexpected SessionKeyValidator address, expected: ${expectedSessionKeyValidatorAddress}, got: ${receipt.options.address}`,
+  );
+}
+
+function assert(value, msg) {
+  if (!value) {
+    throw new Error(msg);
+  }
 }
