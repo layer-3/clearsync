@@ -1,7 +1,7 @@
 ---
 kind: pipeline
 type: docker
-name: 'Bindings'
+name: 'Tests'
 
 clone:
   disable: true
@@ -17,7 +17,7 @@ environment:
 
 services:
   - name: eth_node
-    image: quay.io/openware/geth:v0.1.1-amd64
+    image: quay.io/openware/geth:v0.1.2-amd64
   - name: bundler
     image: ghcr.io/pimlicolabs/alto:v1.0.1
     entrypoint:
@@ -25,35 +25,8 @@ services:
       - -c
     commands:
       - cd /app
-      - pwd
-      - sleep 10
+      - while ! nc -z eth_node 8545; do sleep 1; done; sleep 1
       - pnpm start --port 3000 --networkName mainnet --entryPoint $${ENTRY_POINT_ADDRESS} --signerPrivateKeys 0x$${DEPLOYER_PK} --utilityPrivateKey 0x$${DEPLOYER_PK} --minBalance 1000000000000000000 --rpcUrl http://eth_node:8545 --logLevel info --noEthCallOverrideSupport true --useUserOperationGasLimitsForSubmission true
-    # entrypoint:
-    #   - sleep
-    #   - '10'
-    #   - '&&'
-    #   - pnpm
-    #   - start
-    #   - --port
-    #   - '3000'
-    #   - --networkName
-    #   - mainnet
-    #   - --entryPoint
-    #   - $${ENTRY_POINT_ADDRESS}
-    #   - --signerPrivateKeys
-    #   - 0x$${DEPLOYER_PK}
-    #   - --utilityPrivateKey
-    #   - 0x$${DEPLOYER_PK}
-    #   - --minBalance
-    #   - '1000000000000000000'
-    #   - --rpcUrl
-    #   - http://eth_node:8545
-    #   - --logLevel
-    #   - info
-    #   - --noEthCallOverrideSupport
-    #   - 'true'
-    #   - --useUserOperationGasLimitsForSubmission
-    #   - 'true'
 
 steps:
   - name: Clone
@@ -61,25 +34,6 @@ steps:
     commands:
       - git clone https://github.com/$DRONE_REPO .
       - git checkout ${DRONE_SOURCE_BRANCH:-${DRONE_BRANCH}}
-
-  # - name: GRPC
-  #   image: golang:1.21
-  #   pull: if-not-exists
-  #   commands:
-  #     - apt update && apt install -y zip
-  #     - make proto
-
-  # - name: Hardhat compile
-  #   image: node:18.15
-  #   pull: if-not-exists
-  #   commands:
-  #     - make -C contracts compile
-
-  # - name: SC
-  #   image: golang:1.21
-  #   pull: if-not-exists
-  #   commands:
-  #     - make -C contracts bindings
 
   - name: Test Go packages
     image: golang:1.21
@@ -95,6 +49,46 @@ steps:
     when:
       event:
         - pull_request
+
+trigger:
+  event:
+    - pull_request
+  branch:
+    - master
+
+---
+kind: pipeline
+type: docker
+name: 'Bindings'
+
+clone:
+  disable: true
+
+steps:
+  - name: Clone
+    image: alpine/git
+    commands:
+      - git clone https://github.com/$DRONE_REPO .
+      - git checkout ${DRONE_SOURCE_BRANCH:-${DRONE_BRANCH}}
+
+  - name: GRPC
+    image: golang:1.21
+    pull: if-not-exists
+    commands:
+      - apt update && apt install -y zip
+      - make proto
+
+  - name: Hardhat compile
+    image: node:18.15
+    pull: if-not-exists
+    commands:
+      - make -C contracts compile
+
+  - name: SC
+    image: golang:1.21
+    pull: if-not-exists
+    commands:
+      - make -C contracts bindings
 
   - name: Publish
     image: alpine/git:v2.32.0

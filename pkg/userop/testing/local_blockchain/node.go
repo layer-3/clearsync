@@ -4,13 +4,16 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"math/big"
 	"net/url"
 	"os"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/shopspring/decimal"
@@ -240,15 +243,6 @@ type Contracts struct {
 	Paymaster           common.Address
 }
 
-// This contract addresses are hardcoded to be used in the CI environment
-var hardcodedContracts = Contracts{
-	EntryPoint:          common.HexToAddress("0x07bd68335Ff013481b0fED98c190EaeB36e52b3D"),
-	Validator:           common.HexToAddress("0x0E3c0cb9F2Ae0053f2b236b698C2028112b333a7"),
-	Factory:             common.HexToAddress("0x9CBDd0D809f3490d52E3609044D4cf78f4df3a5f"),
-	Logic:               common.HexToAddress("0x8Bdf2ceE549101447fA141fFfc9f6e3B2BE8BBF2"),
-	SessionKeyValidator: common.HexToAddress("0x800edae75E7B45FEcF1283eD5E48dB58BC619291"),
-}
-
 var (
 	cachedContracts *Contracts
 	contractsMutex  sync.Mutex
@@ -259,7 +253,7 @@ func SetupContracts(ctx context.Context, t *testing.T, node *EthNode) Contracts 
 	defer contractsMutex.Unlock()
 
 	if v := os.Getenv("BUNDLER_USE_HARDCODED_CONTRACTS"); v == "true" {
-		return hardcodedContracts
+		return getContractAddressesFromEnv()
 	}
 
 	if cachedContracts != nil {
@@ -314,6 +308,17 @@ func SetupContracts(ctx context.Context, t *testing.T, node *EthNode) Contracts 
 	return *cachedContracts
 }
 
+func getContractAddressesFromEnv() Contracts {
+	return Contracts{
+		EntryPoint:          common.HexToAddress(os.Getenv("ENTRY_POINT_ADDRESS")),
+		Validator:           common.HexToAddress(os.Getenv("KERNEL_ECDSA_VALIDATOR_ADDRESS")),
+		Factory:             common.HexToAddress(os.Getenv("KERNEL_FACTORY_ADDRESS")),
+		Logic:               common.HexToAddress(os.Getenv("KERNEL_ADDRESS")),
+		Paymaster:           common.HexToAddress(os.Getenv("PAYMASTER_ADDRESS")),
+		SessionKeyValidator: common.HexToAddress(os.Getenv("SESSION_KEY_VALIDATOR_ADDRESS")),
+	}
+}
+
 func buildClient(t *testing.T, rpcURL, bundlerURL url.URL, addresses Contracts) userop.Client {
 	config, err := userop.NewClientConfigFromEnv()
 	require.NoError(t, err)
@@ -333,4 +338,62 @@ func buildClient(t *testing.T, rpcURL, bundlerURL url.URL, addresses Contracts) 
 	client, err := userop.NewClient(config)
 	require.NoError(t, err)
 	return client
+}
+
+func sendNative(ctx context.Context, node *EthNode, from, to Account, fundAmount *big.Int) error {
+	chainID, err := node.Client.ChainID(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get chain ID: %w", err)
+	}
+
+	nonce, err := node.Client.PendingNonceAt(ctx, from.Address)
+	if err != nil {
+		return fmt.Errorf("failed to get nonce: %w", err)
+	}
+
+	gasLimit := uint64(21000)
+	gasPrice, err := node.Client.SuggestGasPrice(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to suggest gas price: %w", err)
+	}
+
+	tx := types.NewTransaction(nonce, to.Address, fundAmount, gasLimit, gasPrice, nil)
+	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), from.PrivateKey)
+	if err != nil {
+		return fmt.Errorf("failed to sign transaction: %w", err)
+	}
+
+	err = node.Client.SendTransaction(ctx, signedTx)
+	if err != nil {
+		return fmt.Errorf("failed to send transaction: %w", err)
+	}
+
+	_, err = waitMined(ctx, node, signedTx)
+	if err != nil {
+		return fmt.Errorf("failed to wait for transaction to be mined: %w", err)
+	}
+
+	return nil
+}
+
+func waitMined(ctx context.Context, node *EthNode, tx *types.Transaction) (*types.Receipt, error) {
+	queryTicker := time.NewTicker(1 * time.Second)
+	defer queryTicker.Stop()
+
+	for {
+		receipt, err := node.Client.TransactionReceipt(ctx, tx.Hash())
+		if err == nil {
+			return receipt, nil
+		}
+
+		bn, _ := node.Client.BlockNumber(context.Background())
+		fmt.Println(bn)
+
+		// Wait for the next round.
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-queryTicker.C:
+		}
+	}
 }

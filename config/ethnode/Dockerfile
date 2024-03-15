@@ -17,7 +17,8 @@ COPY --from=compiler /usr/bin/solc /usr/bin/solc
 
 # Clone the Kernel smart contract repository and checkout the specific commit
 # TODO: Change the repository URL to the correct one
-RUN git clone --depth 1 --branch clearsync https://github.com/MaxMoskalenko/kernel.git
+RUN git clone https://github.com/zerodevapp/kernel.git
+RUN git -C kernel checkout 807b75a4da6fea6311a3573bc8b8964a34074d94
 
 # Clone the account-abstraction repository on specific tag
 RUN git clone --depth 1 --branch v0.6.0 https://github.com/eth-infinitism/account-abstraction.git
