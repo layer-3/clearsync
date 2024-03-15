@@ -2,7 +2,6 @@ package quotes
 
 import (
 	"fmt"
-	"math/big"
 	"strings"
 	"time"
 
@@ -10,22 +9,21 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ipfs/go-log/v2"
-	"github.com/shopspring/decimal"
-
-	"github.com/layer-3/clearsync/pkg/abi/isyncswap_factory"
-	"github.com/layer-3/clearsync/pkg/abi/isyncswap_pool"
+	"github.com/layer-3/clearsync/pkg/abi/iquickswap_v3_factory"
+	"github.com/layer-3/clearsync/pkg/abi/iquickswap_v3_pool"
 	"github.com/layer-3/clearsync/pkg/safe"
+	"github.com/shopspring/decimal"
 )
 
-var loggerSyncswap = log.Logger("syncswap")
+var loggerQuickswap = log.Logger("quickswap")
 
-type syncswap struct {
-	once                      *once
-	url                       string
-	assetsURL                 string
-	classicPoolFactoryAddress string
-	client                    *ethclient.Client
-	factory                   *isyncswap_factory.ISyncSwapFactory
+type quickswap struct {
+	once               *once
+	url                string
+	assetsURL          string
+	poolFactoryAddress string
+	client             *ethclient.Client
+	factory            *iquickswap_v3_factory.IQuickswapV3Factory
 
 	outbox  chan<- TradeEvent
 	filter  Filter
@@ -33,12 +31,12 @@ type syncswap struct {
 	assets  safe.Map[string, poolToken]
 }
 
-func newSyncswap(config SyncswapConfig, outbox chan<- TradeEvent) Driver {
-	return &syncswap{
-		once:                      newOnce(),
-		url:                       config.URL,
-		assetsURL:                 config.AssetsURL,
-		classicPoolFactoryAddress: config.ClassicPoolFactoryAddress,
+func newQuickswap(config QuickswapConfig, outbox chan<- TradeEvent) Driver {
+	return &quickswap{
+		once:               newOnce(),
+		url:                config.URL,
+		assetsURL:          config.AssetsURL,
+		poolFactoryAddress: config.PoolFactoryAddress,
 
 		outbox:  outbox,
 		filter:  FilterFactory(config.Filter),
@@ -47,11 +45,11 @@ func newSyncswap(config SyncswapConfig, outbox chan<- TradeEvent) Driver {
 	}
 }
 
-func (s *syncswap) Name() DriverType {
-	return DriverSyncswap
+func (s *quickswap) Name() DriverType {
+	return DriverQuickswap
 }
 
-func (s *syncswap) Start() error {
+func (s *quickswap) Start() error {
 	var startErr error
 	started := s.once.Start(func() {
 		if !(strings.HasPrefix(s.url, "ws://") || strings.HasPrefix(s.url, "wss://")) {
@@ -66,11 +64,11 @@ func (s *syncswap) Start() error {
 		}
 		s.client = client
 
-		// Check addresses here: https://syncswap.gitbook.io/syncswap/smart-contracts/smart-contracts
-		classicPoolFactoryAddress := common.HexToAddress(s.classicPoolFactoryAddress)
-		factory, err := isyncswap_factory.NewISyncSwapFactory(classicPoolFactoryAddress, client)
+		// Check addresses here: https://quickswap.gitbook.io/quickswap/smart-contracts/smart-contracts
+		poolFactoryAddress := common.HexToAddress(s.poolFactoryAddress)
+		factory, err := iquickswap_v3_factory.NewIQuickswapV3Factory(poolFactoryAddress, client)
 		if err != nil {
-			startErr = fmt.Errorf("failed to instantiate a Quickswap Factory contract: %w", err)
+			startErr = fmt.Errorf("failed to instantiate a Quickwap Factory contract: %w", err)
 			return
 		}
 		s.factory = factory
@@ -91,7 +89,7 @@ func (s *syncswap) Start() error {
 	return startErr
 }
 
-func (s *syncswap) Stop() error {
+func (s *quickswap) Stop() error {
 	stopped := s.once.Stop(func() {
 		s.streams.Range(func(market Market, _ event.Subscription) bool {
 			err := s.Unsubscribe(market)
@@ -107,7 +105,7 @@ func (s *syncswap) Stop() error {
 	return nil
 }
 
-func (s *syncswap) Subscribe(market Market) error {
+func (s *quickswap) Subscribe(market Market) error {
 	if !s.once.Subscribe() {
 		return errNotStarted
 	}
@@ -121,7 +119,7 @@ func (s *syncswap) Subscribe(market Market) error {
 		return fmt.Errorf("failed to get pool for market %v: %s", market.String(), err)
 	}
 
-	sink := make(chan *isyncswap_pool.ISyncSwapPoolSwap, 128)
+	sink := make(chan *iquickswap_v3_pool.IQuickswapV3PoolSwap, 128)
 	sub, err := pool.contract.WatchSwap(nil, sink, []common.Address{}, []common.Address{})
 	if err != nil {
 		return fmt.Errorf("failed to subscribe to swaps for market %s: %w", market, err)
@@ -132,22 +130,22 @@ func (s *syncswap) Subscribe(market Market) error {
 		for {
 			select {
 			case err := <-sub.Err():
-				loggerSyncswap.Errorf("market %s: %s", market.String(), err)
+				loggerQuickswap.Errorf("market %s: %s", market.String(), err)
 				if _, ok := s.streams.Load(market); !ok {
 					break // market was unsubscribed earlier
 				}
 				if err := s.Subscribe(market); err != nil {
-					loggerSyncswap.Errorf("market %s: failed to resubscribe: %s", market.String(), err)
+					loggerQuickswap.Errorf("market %s: failed to resubscribe: %s", market.String(), err)
 				}
 				return
 			case swap := <-sink:
 				if pool.reverted {
-					s.flipSwap(swap)
+					flipSwap(swap)
 				}
 
 				tr, err := s.parseSwap(swap, market, pool)
 				if err != nil {
-					loggerSyncswap.Errorf("market %s: failed to parse swap: %s", market.String(), err)
+					loggerQuickswap.Errorf("market %s: failed to parse swap: %s", market.String(), err)
 					continue
 				}
 
@@ -163,56 +161,7 @@ func (s *syncswap) Subscribe(market Market) error {
 	return nil
 }
 
-func (*syncswap) flipSwap(swap *isyncswap_pool.ISyncSwapPoolSwap) {
-	amount0In, amount0Out := swap.Amount0In, swap.Amount0Out
-	swap.Amount0In, swap.Amount0Out = swap.Amount1In, swap.Amount1Out
-	swap.Amount1In, swap.Amount1Out = amount0In, amount0Out
-}
-
-func (*syncswap) parseSwap(swap *isyncswap_pool.ISyncSwapPoolSwap, market Market, pool *syncswapPoolWrapper) (TradeEvent, error) {
-	var takerType TakerType
-	var price decimal.Decimal
-	var amount decimal.Decimal
-	var total decimal.Decimal
-
-	switch {
-	case isValidNonZero(swap.Amount0In) && isValidNonZero(swap.Amount1Out):
-		amount1Out := decimal.NewFromBigInt(swap.Amount1Out, 0).Div(decimal.NewFromInt(10).Pow(pool.quoteToken.Decimals))
-		amount0In := decimal.NewFromBigInt(swap.Amount0In, 0).Div(decimal.NewFromInt(10).Pow(pool.baseToken.Decimals))
-
-		takerType = TakerTypeSell
-		price = amount1Out.Div(amount0In)
-		total = amount1Out
-		amount = amount0In
-
-	case isValidNonZero(swap.Amount0Out) && isValidNonZero(swap.Amount1In):
-		amount0Out := decimal.NewFromBigInt(swap.Amount0Out, 0).Div(decimal.NewFromInt(10).Pow(pool.baseToken.Decimals))
-		amount1In := decimal.NewFromBigInt(swap.Amount1In, 0).Div(decimal.NewFromInt(10).Pow(pool.quoteToken.Decimals))
-
-		takerType = TakerTypeBuy
-		price = amount1In.Div(amount0Out)
-		total = amount1In
-		amount = amount0Out
-	default:
-		loggerSyncswap.Errorf("market %s: unknown swap type", market.String())
-		return TradeEvent{}, fmt.Errorf("market %s: unknown swap type", market.String())
-	}
-
-	amount = amount.Abs()
-	tr := TradeEvent{
-		Source:    DriverSyncswap,
-		Market:    market,
-		Price:     price,
-		Amount:    amount,
-		Total:     total,
-		TakerType: takerType,
-		CreatedAt: time.Now(),
-	}
-	fmt.Printf("tradeEvent: %+v\n", tr)
-	return tr, nil
-}
-
-func (s *syncswap) Unsubscribe(market Market) error {
+func (s *quickswap) Unsubscribe(market Market) error {
 	if !s.once.Unsubscribe() {
 		return errNotStarted
 	}
@@ -228,14 +177,59 @@ func (s *syncswap) Unsubscribe(market Market) error {
 	return nil
 }
 
-type syncswapPoolWrapper struct {
-	contract   *isyncswap_pool.ISyncSwapPool
+func (s *quickswap) parseSwap(swap *iquickswap_v3_pool.IQuickswapV3PoolSwap, market Market, pool *quickswapPoolWrapper) (TradeEvent, error) {
+	var takerType TakerType
+	var price decimal.Decimal
+	var amount decimal.Decimal
+	var total decimal.Decimal
+
+	fmt.Println("swap: ", swap)
+
+	// switch {
+	// case isValidNonZero(swap.Amount0In) && isValidNonZero(swap.Amount1Out):
+	// 	amount1Out := decimal.NewFromBigInt(swap.Amount1Out, 0).Div(decimal.NewFromInt(10).Pow(pool.quoteToken.Decimals))
+	// 	amount0In := decimal.NewFromBigInt(swap.Amount0In, 0).Div(decimal.NewFromInt(10).Pow(pool.baseToken.Decimals))
+
+	// 	takerType = TakerTypeSell
+	// 	price = amount1Out.Div(amount0In)
+	// 	total = amount1Out
+	// 	amount = amount0In
+
+	// case isValidNonZero(swap.Amount0Out) && isValidNonZero(swap.Amount1In):
+	// 	amount0Out := decimal.NewFromBigInt(swap.Amount0Out, 0).Div(decimal.NewFromInt(10).Pow(pool.baseToken.Decimals))
+	// 	amount1In := decimal.NewFromBigInt(swap.Amount1In, 0).Div(decimal.NewFromInt(10).Pow(pool.quoteToken.Decimals))
+
+	// 	takerType = TakerTypeBuy
+	// 	price = amount1In.Div(amount0Out)
+	// 	total = amount1In
+	// 	amount = amount0Out
+	// default:
+	// 	loggerSyncswap.Errorf("market %s: unknown swap type", market.String())
+	// 	return TradeEvent{}, fmt.Errorf("market %s: unknown swap type", market.String())
+	// }
+
+	amount = amount.Abs()
+	tr := TradeEvent{
+		Source:    DriverQuickswap,
+		Market:    market,
+		Price:     price,
+		Amount:    amount,
+		Total:     total,
+		TakerType: takerType,
+		CreatedAt: time.Now(),
+	}
+	fmt.Printf("tradeEvent: %+v\n", tr)
+	return tr, nil
+}
+
+type quickswapPoolWrapper struct {
+	contract   *iquickswap_v3_pool.IQuickswapV3Pool
 	baseToken  poolToken
 	quoteToken poolToken
 	reverted   bool
 }
 
-func (s *syncswap) getPool(market Market) (*syncswapPoolWrapper, error) {
+func (s *quickswap) getPool(market Market) (*quickswapPoolWrapper, error) {
 	baseToken, quoteToken, err := s.getTokens(market)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tokens: %w", err)
@@ -254,24 +248,24 @@ func (s *syncswap) getPool(market Market) (*syncswapPoolWrapper, error) {
 	if poolAddress == zeroAddress {
 		return nil, fmt.Errorf("pool for market %s does not exist", market)
 	}
-	loggerSyncswap.Infof("got pool %s for market %s", poolAddress, market)
+	loggerQuickswap.Infof("got pool %s for market %s", poolAddress, market)
 
-	poolContract, err := isyncswap_pool.NewISyncSwapPool(poolAddress, s.client)
+	poolContract, err := iquickswap_v3_pool.NewIQuickswapV3Pool(poolAddress, s.client)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build Syncswap pool: %w", err)
+		return nil, fmt.Errorf("failed to build quickswap pool: %w", err)
 	}
 
 	basePoolToken, err := poolContract.Token0(nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build Syncswap pool: %w", err)
+		return nil, fmt.Errorf("failed to build quickswap pool: %w", err)
 	}
 
 	quotePoolToken, err := poolContract.Token1(nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build Syncswap pool: %w", err)
+		return nil, fmt.Errorf("failed to build quickswap pool: %w", err)
 	}
 
-	pool := &syncswapPoolWrapper{
+	pool := &quickswapPoolWrapper{
 		contract:   poolContract,
 		baseToken:  baseToken,
 		quoteToken: quoteToken,
@@ -284,28 +278,24 @@ func (s *syncswap) getPool(market Market) (*syncswapPoolWrapper, error) {
 		pool.reverted = true
 		return pool, nil
 	} else {
-		return nil, fmt.Errorf("failed to build Syncswap pool: %w", err)
+		return nil, fmt.Errorf("failed to build quickswap pool: %w", err)
 	}
 }
 
-func (s *syncswap) getTokens(market Market) (baseToken poolToken, quoteToken poolToken, err error) {
+func (s *quickswap) getTokens(market Market) (baseToken poolToken, quoteToken poolToken, err error) {
 	baseToken, ok := s.assets.Load(strings.ToUpper(market.Base()))
 	if !ok {
 		err = fmt.Errorf("tokens '%s' does not exist", market.Base())
 		return
 	}
-	loggerSyncswap.Infof("market %s: base token address is %s", market, baseToken.Address)
+	loggerQuickswap.Infof("market %s: base token address is %s", market, baseToken.Address)
 
 	quoteToken, ok = s.assets.Load(strings.ToUpper(market.Quote()))
 	if !ok {
 		err = fmt.Errorf("tokens '%s' does not exist", market.Quote())
 		return
 	}
-	loggerSyncswap.Infof("market %s: quote token address is %s", market, quoteToken.Address)
+	loggerQuickswap.Infof("market %s: quote token address is %s", market, quoteToken.Address)
 
 	return baseToken, quoteToken, nil
-}
-
-func isValidNonZero(x *big.Int) bool {
-	return x != nil && x.Sign() != 0
 }

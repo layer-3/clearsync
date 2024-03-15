@@ -137,9 +137,13 @@ func (SyncswapConfig) DriverType() DriverType {
 }
 
 type QuickswapConfig struct {
-	URL       string       `yaml:"url" env:"URL" env-default:""`
-	AssetsURL string       `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/mainnet/assets.json"`
-	Filter    FilterConfig `yaml:"filter" env-prefix:"FILTER_"`
+	URL       string `yaml:"url" env:"URL" env-default:""`
+	AssetsURL string `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/mainnet/assets.json"`
+	// PoolFactoryAddress is the address of the factory contract.
+	// See docs at https://docs.quickswap.exchange/technical-reference/smart-contracts/v3/factory.
+	// Note that the contract used in this lib is compiled from https://github.com/code-423n4/2022-09-quickswap.
+	PoolFactoryAddress string       `yaml:"pool_factory_address" env:"POOL_FACTORY_ADDRESS" env-default:"0x411b0fAcC3489691f28ad58c47006AF5E3Ab3A28"`
+	Filter             FilterConfig `yaml:"filter" env-prefix:"FILTER_"`
 }
 
 func (QuickswapConfig) DriverType() DriverType {
