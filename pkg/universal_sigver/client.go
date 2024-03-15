@@ -9,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/layer-3/clearsync/pkg/signer"
 	"github.com/layer-3/clearsync/pkg/smart_wallet"
 	"github.com/shopspring/decimal"
 )
@@ -18,7 +17,6 @@ var entryPointV0_6Address = common.HexToAddress("0x5FF137D4b0FDCD49DcA30c7CF57E5
 
 type Client interface {
 	Verify(ctx context.Context, signer common.Address, messageHash common.Hash, signature []byte) (bool, error)
-	SignERC6492(ctx context.Context, owner signer.Signer, index decimal.Decimal, msg []byte) ([]byte, error)
 	PackERC6492Sig(ctx context.Context, ownerAddress common.Address, index decimal.Decimal, sig []byte) ([]byte, error)
 }
 
@@ -58,17 +56,6 @@ func (b *backend) Verify(ctx context.Context, signer common.Address, messageHash
 	}
 
 	return res == validateSigOffchainSuccess, nil
-}
-
-// NOTE: no support for contract being deployed but not ready
-// TODO: check for ERC-712 support
-func (b *backend) SignERC6492(ctx context.Context, owner signer.Signer, index decimal.Decimal, msg []byte) ([]byte, error) {
-	sig, err := signer.SignEthMessage(owner, msg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to sign message: %w", err)
-	}
-
-	return b.PackERC6492Sig(ctx, owner.CommonAddress(), index, sig.Raw())
 }
 
 func (b *backend) PackERC6492Sig(ctx context.Context, ownerAddress common.Address, index decimal.Decimal, sig []byte) ([]byte, error) {
