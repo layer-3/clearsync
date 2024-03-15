@@ -45,6 +45,10 @@ func TestDriverType_Marshal(t *testing.T) {
 			input:        DriverSyncswap,
 			expectedJSON: `"syncswap"`,
 			expectedYAML: "syncswap\n",
+		}, {
+			input:        DriverQuickswap,
+			expectedJSON: `"quickswap"`,
+			expectedYAML: "quickswap\n",
 		},
 	}
 
@@ -113,6 +117,11 @@ func TestDriverType_Unmarshal(t *testing.T) {
 			expected:  DriverSyncswap,
 			shouldErr: false,
 		}, {
+			inputJSON: `"quickswap"`,
+			inputYAML: "quickswap",
+			expected:  DriverQuickswap,
+			shouldErr: false,
+		}, {
 			inputJSON: `"invalid"`,
 			inputYAML: "invalid",
 			expected:  DriverType{},
@@ -142,7 +151,6 @@ func TestDriverType_Unmarshal(t *testing.T) {
 			require.Equal(t, test.expected, fromYAML)
 		})
 	}
-
 }
 
 func TestTakerType_Marshal(t *testing.T) {
@@ -247,5 +255,4 @@ func TestTakerType_Unmarshal(t *testing.T) {
 			require.Equal(t, test.expected, fromYAML)
 		})
 	}
-
 }

@@ -100,4 +100,30 @@ func TestNewDriver(t *testing.T) {
 		_, ok := priceFeeds.(*uniswapV3Geth)
 		assert.True(t, ok)
 	})
+
+	t.Run(DriverSyncswap.String(), func(t *testing.T) {
+		t.Parallel()
+
+		config := SyncswapConfig{}
+		outbox := make(chan<- TradeEvent, 1)
+
+		priceFeeds, err := NewDriver(ToConfig(config), outbox)
+		require.NoError(t, err)
+
+		_, ok := priceFeeds.(*syncswap)
+		assert.True(t, ok)
+	})
+
+	t.Run(DriverQuickswap.String(), func(t *testing.T) {
+		t.Parallel()
+
+		config := QuickswapConfig{}
+		outbox := make(chan<- TradeEvent, 1)
+
+		priceFeeds, err := NewDriver(ToConfig(config), outbox)
+		require.NoError(t, err)
+
+		_, ok := priceFeeds.(*quickswap)
+		assert.True(t, ok)
+	})
 }
