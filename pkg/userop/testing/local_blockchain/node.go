@@ -311,7 +311,7 @@ func SetupContracts(ctx context.Context, t *testing.T, node *EthNode) Contracts 
 func getContractAddressesFromEnv() Contracts {
 	return Contracts{
 		EntryPoint:          common.HexToAddress(os.Getenv("ENTRY_POINT_ADDRESS")),
-		Validator:           common.HexToAddress(os.Getenv("KERNEL_ECDSA_VALIDATOR_ADDRESS")),
+		ECDSAValidator:      common.HexToAddress(os.Getenv("KERNEL_ECDSA_VALIDATOR_ADDRESS")),
 		Factory:             common.HexToAddress(os.Getenv("KERNEL_FACTORY_ADDRESS")),
 		Logic:               common.HexToAddress(os.Getenv("KERNEL_ADDRESS")),
 		Paymaster:           common.HexToAddress(os.Getenv("PAYMASTER_ADDRESS")),
@@ -385,9 +385,6 @@ func waitMined(ctx context.Context, node *EthNode, tx *types.Transaction) (*type
 		if err == nil {
 			return receipt, nil
 		}
-
-		bn, _ := node.Client.BlockNumber(context.Background())
-		fmt.Println(bn)
 
 		// Wait for the next round.
 		select {
