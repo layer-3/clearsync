@@ -13,3 +13,4 @@ This package introduces the following types and helper functionality:
 - `IsAccountDeployed(swAddress)` - a function that checks if the smart wallet is deployed.
 - `GetAccountAddress(owner, index)` - a function that calculates the address of the smart wallet.
 - `GetInitCode(smartWalletConfig)` - a function that returns the init code of the smart wallet.
+- `GetFactoryCallData(smartWalletConfig)` - a function that returns the call data for the smart wallet factory.
