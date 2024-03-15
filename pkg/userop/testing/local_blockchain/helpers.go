@@ -2,40 +2,51 @@ package local_blockchain
 
 import (
 	"context"
-	"testing"
+	"fmt"
+	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/shopspring/decimal"
-	"github.com/stretchr/testify/require"
 )
 
-func SendNative(ctx context.Context, t *testing.T, node *EthNode, from, to Account, fundAmount decimal.Decimal) {
+func SendNative(ctx context.Context, node *EthNode, from, to Account, fundAmount *big.Int) error {
 	chainID, err := node.Client.ChainID(ctx)
-	require.NoError(t, err, "Error getting chain ID")
+	if err != nil {
+		return fmt.Errorf("failed to get chain ID: %w", err)
+	}
 
 	nonce, err := node.Client.PendingNonceAt(ctx, from.Address)
-	require.NoError(t, err, "Error getting nonce")
+	if err != nil {
+		return fmt.Errorf("failed to get nonce: %w", err)
+	}
 
 	gasLimit := uint64(21000)
 	gasPrice, err := node.Client.SuggestGasPrice(ctx)
-	require.NoError(t, err, "Error suggesting gas price")
+	if err != nil {
+		return fmt.Errorf("failed to suggest gas price: %w", err)
+	}
 
-	tx := types.NewTransaction(nonce, to.Address, fundAmount.BigInt(), gasLimit, gasPrice, nil)
+	tx := types.NewTransaction(nonce, to.Address, fundAmount, gasLimit, gasPrice, nil)
 	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), from.PrivateKey)
-	require.NoError(t, err, "Error signing transaction")
+	if err != nil {
+		return fmt.Errorf("failed to sign transaction: %w", err)
+	}
 
 	err = node.Client.SendTransaction(ctx, signedTx)
-	require.NoError(t, err, "Error sending transaction")
+	if err != nil {
+		return fmt.Errorf("failed to send transaction: %w", err)
+	}
 
-	_, err = waitMined(ctx, node, signedTx)
-	require.NoError(t, err, "Error waiting for transaction to be mined")
+	_, err = WaitMined(ctx, node, signedTx)
+	if err != nil {
+		return fmt.Errorf("failed to wait for transaction to be mined: %w", err)
+	}
+
+	return nil
 }
 
-// waitMined waits for tx to be mined on the blockchain.
-// It stops waiting when the context is canceled.
-func waitMined(ctx context.Context, node *EthNode, tx *types.Transaction) (*types.Receipt, error) {
-	queryTicker := time.NewTicker(50 * time.Millisecond)
+func WaitMined(ctx context.Context, node *EthNode, tx *types.Transaction) (*types.Receipt, error) {
+	queryTicker := time.NewTicker(1 * time.Second)
 	defer queryTicker.Stop()
 
 	for {

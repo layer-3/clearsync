@@ -70,7 +70,7 @@ func TestVerify(t *testing.T) {
 		// 4. Calculate SW address and transfer some funds to it
 		swAddr, err := client.GetAccountAddress(ctx, eoa.Address, index)
 		require.NoError(t, err)
-		local_blockchain.SendNative(ctx, t, node, eoa, local_blockchain.Account{Address: swAddr}, decimal.NewFromInt(1e18)) // send 100 wei
+		local_blockchain.SendNative(ctx, node, eoa, local_blockchain.Account{Address: swAddr}, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(18), nil)) // send 1 eth
 
 		// 5. Create and send user operation
 		calls := smart_wallet.Calls{{To: signer.CommonAddress(), Value: big.NewInt(1)}}
