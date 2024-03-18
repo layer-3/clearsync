@@ -41,7 +41,6 @@ type EthBackend interface {
 	BlockNumber(ctx context.Context) (uint64, error)
 	WaitMinedPeriod() time.Duration
 	RPC() *rpc.Client
-	EthClient() *ethclient.Client
 	bind.ContractBackend
 }
 
@@ -68,8 +67,4 @@ func (n *ethBackendImpl) WaitMinedPeriod() time.Duration {
 
 func (n *ethBackendImpl) RPC() *rpc.Client {
 	return n.Client.Client()
-}
-
-func (n *ethBackendImpl) EthClient() *ethclient.Client {
-	return n.Client
 }
