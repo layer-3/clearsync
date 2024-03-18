@@ -61,7 +61,7 @@ func (conf ClientConfig) validate() error {
 
 // GasConfig represents the configuration for the userop transaction gas fees.
 type GasConfig struct {
-	MaxPriorityFeePerGasMultiplier decimal.Decimal `yaml:"max_priority_fee_per_gas_multiplier" env:"GAS_CONFIG_MAX_PRIORITY_FEE_PER_GAS_MULTIPLIER"` // percentage
+	MaxPriorityFeePerGasMultiplier decimal.Decimal `yaml:"max_priority_fee_per_gas_multiplier" env:"GAS_CONFIG_MAX_PRIORITY_FEE_PER_GAS_MULTIPLIER"` // percentage, 2.42 means 242% increase
 	MaxFeePerGasMultiplier         decimal.Decimal `yaml:"max_fee_per_gas_multiplier" env:"GAS_CONFIG_MAX_FEE_PER_GAS_MULTIPLIER"`                   // percentage
 }
 
