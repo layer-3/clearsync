@@ -4,13 +4,16 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"math/big"
 	"net/url"
 	"os"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/shopspring/decimal"
@@ -24,6 +27,8 @@ import (
 	"github.com/layer-3/clearsync/pkg/abi/kernel_v2_2"
 	"github.com/layer-3/clearsync/pkg/artifacts/session_key_validator_v2_4"
 	"github.com/layer-3/clearsync/pkg/userop"
+
+	_ "embed"
 )
 
 type EthNode struct {
@@ -46,8 +51,10 @@ func ethNodeCleanupFactory(ctx context.Context, t *testing.T) func() {
 
 		ethActiveUsers--
 		if ethActiveUsers <= 0 {
-			err := ethActiveNode.Container.Terminate(ctx)
-			require.NoError(t, err, "failed to terminate Go-Ethereum container")
+			if ethActiveNode.Container != nil {
+				err := ethActiveNode.Container.Terminate(ctx)
+				require.NoError(t, err, "failed to terminate Go-Ethereum container")
+			}
 
 			ethActiveNode = nil
 		}
@@ -142,8 +149,9 @@ func bundlerNodeCleanupFactory(ctx context.Context, t *testing.T) func() {
 
 		bundlerActiveUsers--
 		if bundlerActiveUsers <= 0 {
-			if err := bundlerActiveNode.Container.Terminate(ctx); err != nil {
-				t.Fatalf("failed to terminate Alto container: %s", err)
+			if bundlerActiveNode.Container != nil {
+				err := bundlerActiveNode.Container.Terminate(ctx)
+				require.NoError(t, err, "failed to terminate Alto container")
 			}
 
 			bundlerActiveNode = nil
@@ -164,39 +172,56 @@ func NewBundler(ctx context.Context, t *testing.T, node *EthNode, entryPoint com
 		return bundlerActiveNode.ContainerURL
 	}
 
-	const port = "3000"
-	balance := decimal.NewFromFloat(100e18 /* 100 ETH */).BigInt()
-	bundlerAccount, err := NewAccountWithBalance(ctx, balance, node)
-	require.NoError(t, err, "failed to fund bundler account")
-	privateKey := hexutil.Encode(crypto.FromECDSA(bundlerAccount.PrivateKey))
+	var (
+		altoContainer testcontainers.Container
+		bundlerURL    *url.URL
+	)
 
-	altoContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "quay.io/openware/bundler:c7dd933",
-			Entrypoint: []string{
-				"pnpm", "start",
-				"--port", port,
-				"--networkName", "mainnet",
-				"--entryPoint", entryPoint.Hex(), // the contract should already be deployed on Go-Ethereum node
-				"--signerPrivateKeys", privateKey,
-				"--utilityPrivateKey", privateKey,
-				"--minBalance", "1000000000000000000", // 1 ETH
-				"--rpcUrl", node.ContainerURL.String(),
-				"--logLevel", "info",
-				"--noEthCallOverrideSupport", "true",
-				"--useUserOperationGasLimitsForSubmission", "true",
+	if uEnv := os.Getenv("BUNDLER_RPC_URL"); uEnv != "" {
+		u, err := url.Parse(uEnv)
+		if err != nil {
+			// configuration error, so we shut down the app
+			panic(err)
+		}
+
+		bundlerURL = u
+	} else {
+		const port = "3000"
+		balance := decimal.NewFromFloat(100e18 /* 100 ETH */).BigInt()
+		bundlerAccount, err := NewAccountWithBalance(ctx, balance, node)
+		require.NoError(t, err, "failed to fund bundler account")
+		privateKey := hexutil.Encode(crypto.FromECDSA(bundlerAccount.PrivateKey))
+
+		altoContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image: "quay.io/openware/bundler:c7dd933",
+				Entrypoint: []string{
+					"pnpm", "start",
+					"--port", port,
+					"--networkName", "mainnet",
+					"--entryPoint", entryPoint.Hex(), // the contract should already be deployed on Go-Ethereum node
+					"--signerPrivateKeys", privateKey,
+					"--utilityPrivateKey", privateKey,
+					"--minBalance", "1000000000000000000", // 1 ETH
+					"--rpcUrl", node.ContainerURL.String(),
+					"--logLevel", "info",
+					"--noEthCallOverrideSupport", "true",
+					"--useUserOperationGasLimitsForSubmission", "true",
+				},
+				ImagePlatform: "linux/amd64",
+				ExposedPorts:  []string{fmt.Sprintf("%s:%s/tcp", port, port)},
+				WaitingFor:    wait.ForLog("Server listening at"),
 			},
-			ImagePlatform: "linux/amd64",
-			ExposedPorts:  []string{fmt.Sprintf("%s:%s/tcp", port, port)},
-			WaitingFor:    wait.ForLog("Server listening at"),
-		},
-		Started: true,
-	})
-	require.NoError(t, err, "failed to start Alto bundler container")
+			Started: true,
+		})
+		require.NoError(t, err, "failed to start Alto bundler container")
 
-	containerPort, err := altoContainer.MappedPort(ctx, port)
-	require.NoError(t, err, "failed to get Alto bundler container port")
-	bundlerURL, err := url.Parse(fmt.Sprintf("http://0.0.0.0:%s", containerPort.Port()))
+		containerPort, err := altoContainer.MappedPort(ctx, port)
+		require.NoError(t, err, "failed to get Alto bundler container port")
+
+		bundlerURL, err = url.Parse(fmt.Sprintf("http://0.0.0.0:%s", containerPort.Port()))
+		require.NoError(t, err, "failed to parse local bundler URL")
+	}
 
 	bundlerActiveNode = &BundlerNode{
 		Container:    altoContainer,
@@ -205,8 +230,6 @@ func NewBundler(ctx context.Context, t *testing.T, node *EthNode, entryPoint com
 
 	t.Cleanup(bundlerNodeCleanupFactory(ctx, t))
 	bundlerActiveUsers++
-
-	require.NoError(t, err, "failed to parse local bundler URL")
 
 	return bundlerActiveNode.ContainerURL
 }
@@ -228,6 +251,10 @@ var (
 func SetupContracts(ctx context.Context, t *testing.T, node *EthNode) Contracts {
 	contractsMutex.Lock()
 	defer contractsMutex.Unlock()
+
+	if v := os.Getenv("BUNDLER_USE_HARDCODED_CONTRACTS"); v == "true" {
+		return getContractAddressesFromEnv()
+	}
 
 	if cachedContracts != nil {
 		return *cachedContracts
@@ -281,6 +308,17 @@ func SetupContracts(ctx context.Context, t *testing.T, node *EthNode) Contracts 
 	return *cachedContracts
 }
 
+func getContractAddressesFromEnv() Contracts {
+	return Contracts{
+		EntryPoint:          common.HexToAddress(os.Getenv("ENTRY_POINT_ADDRESS")),
+		ECDSAValidator:      common.HexToAddress(os.Getenv("KERNEL_ECDSA_VALIDATOR_ADDRESS")),
+		Factory:             common.HexToAddress(os.Getenv("KERNEL_FACTORY_ADDRESS")),
+		Logic:               common.HexToAddress(os.Getenv("KERNEL_ADDRESS")),
+		Paymaster:           common.HexToAddress(os.Getenv("PAYMASTER_ADDRESS")),
+		SessionKeyValidator: common.HexToAddress(os.Getenv("SESSION_KEY_VALIDATOR_ADDRESS")),
+	}
+}
+
 func buildClient(t *testing.T, rpcURL, bundlerURL url.URL, addresses Contracts) userop.Client {
 	config, err := userop.NewClientConfigFromEnv()
 	require.NoError(t, err)
@@ -300,4 +338,59 @@ func buildClient(t *testing.T, rpcURL, bundlerURL url.URL, addresses Contracts) 
 	client, err := userop.NewClient(config)
 	require.NoError(t, err)
 	return client
+}
+
+func sendNative(ctx context.Context, node *EthNode, from, to Account, fundAmount *big.Int) error {
+	chainID, err := node.Client.ChainID(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get chain ID: %w", err)
+	}
+
+	nonce, err := node.Client.PendingNonceAt(ctx, from.Address)
+	if err != nil {
+		return fmt.Errorf("failed to get nonce: %w", err)
+	}
+
+	gasLimit := uint64(21000)
+	gasPrice, err := node.Client.SuggestGasPrice(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to suggest gas price: %w", err)
+	}
+
+	tx := types.NewTransaction(nonce, to.Address, fundAmount, gasLimit, gasPrice, nil)
+	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), from.PrivateKey)
+	if err != nil {
+		return fmt.Errorf("failed to sign transaction: %w", err)
+	}
+
+	err = node.Client.SendTransaction(ctx, signedTx)
+	if err != nil {
+		return fmt.Errorf("failed to send transaction: %w", err)
+	}
+
+	_, err = waitMined(ctx, node, signedTx)
+	if err != nil {
+		return fmt.Errorf("failed to wait for transaction to be mined: %w", err)
+	}
+
+	return nil
+}
+
+func waitMined(ctx context.Context, node *EthNode, tx *types.Transaction) (*types.Receipt, error) {
+	queryTicker := time.NewTicker(1 * time.Second)
+	defer queryTicker.Stop()
+
+	for {
+		receipt, err := node.Client.TransactionReceipt(ctx, tx.Hash())
+		if err == nil {
+			return receipt, nil
+		}
+
+		// Wait for the next round.
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-queryTicker.C:
+		}
+	}
 }

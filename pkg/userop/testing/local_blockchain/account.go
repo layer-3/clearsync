@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math/big"
+	"os"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -56,9 +57,28 @@ func NewAccountWithBalance(
 		return Account{}, fmt.Errorf("specified balance is nil")
 	}
 	gethCmd := fmt.Sprintf(
-		"eth.sendTransaction({from: eth.coinbase, to: '%s', value: web3.toWei(%d, 'ether')})",
+		"eth.sendTransaction({from: eth.coinbase, to: '%s', value: web3.toWei(%d, 'wei')})",
 		account.Address, balance.Uint64(),
 	)
+
+	if pkStr := os.Getenv("DEPLOYER_PK"); pkStr != "" {
+		privateKey, err := crypto.HexToECDSA(pkStr)
+		if err != nil {
+			return Account{}, fmt.Errorf("failed to parse deployer private key: %w", err)
+		}
+
+		deployerAccount := Account{
+			PrivateKey: privateKey,
+			Address:    crypto.PubkeyToAddress(privateKey.PublicKey),
+		}
+
+		err = sendNative(ctx, node, deployerAccount, account, balance)
+		if err != nil {
+			return Account{}, fmt.Errorf("failed to send native: %w", err)
+		}
+
+		return account, nil
+	}
 
 	exitCode, result, err := node.Container.Exec(ctx, []string{"geth", "attach", "--exec", gethCmd, node.LocalURL.String()})
 	if err != nil || exitCode != 0 {
