@@ -7,6 +7,7 @@ import (
 
 	"github.com/layer-3/clearsync/pkg/session_key"
 	signer_pkg "github.com/layer-3/clearsync/pkg/signer"
+	"github.com/layer-3/clearsync/pkg/smart_wallet"
 	"github.com/layer-3/clearsync/pkg/userop"
 )
 
@@ -15,9 +16,9 @@ var (
 		ProviderURL: "https://NETWORK.infura.io/v3/YOUR_INFURA_API_KEY",
 		BundlerURL:  "https://api.pimlico.io/v1/NETWORK/rpc?apikey=YOUR_PIMLICO_API_KEY",
 		EntryPoint:  common.HexToAddress("0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789"),
-		SmartWallet: userop.SmartWalletConfig{
+		SmartWallet: smart_wallet.Config{
 			// Example of a Kernel Smart Wallet config with Kernel v2.2.
-			Type: &userop.SmartWalletKernel,
+			Type: &smart_wallet.KernelType,
 			// Zerodev Kernel factory address:
 			Factory: common.HexToAddress("0x5de4839a76cf55d0c90e2061ef4386d962E15ae3"),
 			// Zerodev Kernel implementation (logic) address:

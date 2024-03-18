@@ -1,11 +1,17 @@
-package userop
+package smart_wallet
 
 import (
 	"math/big"
+	"math/rand"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 )
+
+func randomAddress() common.Address {
+	return common.BigToAddress(big.NewInt(rand.Int63()))
+}
 
 func TestPackUnpackCallsForKernel(t *testing.T) {
 	tcs := []struct {

@@ -9,8 +9,8 @@ import (
 func TestNewClientConfigFromEnv(t *testing.T) {
 	t.Run("Should NOT override provided values", func(t *testing.T) {
 		// Arrange
-		t.Setenv("USEROP_CLIENT_PAYMASTER_CONFIG_TYPE", "pimlico_erc20")
-		t.Setenv("USEROP_CLIENT_SMART_WALLET_TYPE", "kernel")
+		t.Setenv("PAYMASTER_CONFIG_TYPE", "pimlico_erc20")
+		t.Setenv("SMART_WALLET_TYPE", "kernel")
 
 		defaultConfig := ClientConfig{}
 		defaultConfig.Init()

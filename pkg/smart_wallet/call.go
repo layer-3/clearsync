@@ -1,4 +1,4 @@
-package userop
+package smart_wallet
 
 import (
 	"fmt"
@@ -17,14 +17,14 @@ type Call struct {
 
 type Calls []Call
 
-func (c *backend) buildCallData(calls Calls) ([]byte, error) {
-	switch *c.smartWallet.Type {
-	case SmartWalletSimpleAccount, SmartWalletBiconomy:
+func BuildCallData(swt Type, calls Calls) ([]byte, error) {
+	switch swt {
+	case SimpleAccountType, BiconomyType:
 		return calls.PackForSimpleAccount()
-	case SmartWalletKernel:
+	case KernelType:
 		return calls.PackForKernel()
 	default:
-		return nil, fmt.Errorf("unknown smart wallet type: %s", c.smartWallet.Type)
+		return nil, fmt.Errorf("unknown smart wallet type: %s", swt)
 	}
 }
 
