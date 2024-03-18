@@ -26,7 +26,7 @@ type backend struct {
 	entryPointAddress *common.Address
 }
 
-func NewUniversalSigver(provider *ethclient.Client, smartWalletConfig *smart_wallet.Config, entryPointAddress *common.Address) Client {
+func NewUniversalSigVer(provider *ethclient.Client, smartWalletConfig *smart_wallet.Config, entryPointAddress *common.Address) Client {
 	var entryPointAddress_ = entryPointAddress
 	if entryPointAddress_ == nil {
 		entryPointAddress_ = &entryPointV0_6Address
