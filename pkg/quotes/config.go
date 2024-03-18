@@ -68,7 +68,8 @@ func (IndexConfig) DriverType() DriverType {
 }
 
 type BinanceConfig struct {
-	Filter FilterConfig `yaml:"filter" env-prefix:"FILTER_"`
+	Filter     FilterConfig `yaml:"filter" env-prefix:"FILTER_"`
+	USDCtoUSDT bool         `yaml:"usdc_to_usdt" env-prefix:"USDC_TO_USDT_" env-default:"true"`
 }
 
 func (BinanceConfig) DriverType() DriverType {
@@ -116,7 +117,7 @@ func (UniswapV3ApiConfig) DriverType() DriverType {
 
 type UniswapV3GethConfig struct {
 	URL            string       `yaml:"url" env:"GETH_URL" env-default:""`
-	AssetsURL      string       `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/mainnet/assets.json"`
+	AssetsURL      string       `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/assets.json"`
 	FactoryAddress string       `yaml:"factory_address" env:"FACTORY_ADDRESS" env-default:"0x1F98431c8aD98523631AE4a59f267346ea31F984"`
 	Filter         FilterConfig `yaml:"filter" env-prefix:"FILTER_"`
 }
@@ -127,7 +128,7 @@ func (UniswapV3GethConfig) DriverType() DriverType {
 
 type SyncswapConfig struct {
 	URL                       string       `yaml:"url" env:"URL" env-default:""`
-	AssetsURL                 string       `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/mainnet/assets.json"`
+	AssetsURL                 string       `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/assets.json"`
 	ClassicPoolFactoryAddress string       `yaml:"classic_pool_factory_address" env:"CLASSIC_POOL_FACTORY_ADDRESS" env-default:"0x37BAc764494c8db4e54BDE72f6965beA9fa0AC2d"`
 	Filter                    FilterConfig `yaml:"filter" env-prefix:"FILTER_"`
 }
