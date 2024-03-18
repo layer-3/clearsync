@@ -76,9 +76,9 @@ func (c *GasConfig) Init() {
 // PaymasterConfig represents the configuration
 // for the paymaster to be used with the client.
 type PaymasterConfig struct {
-	Type    *PaymasterType `yaml:"type" env:"TYPE"` // nil is equivalent to PaymasterDisabled
-	URL     string         `yaml:"url" env:"URL"`
-	Address common.Address `yaml:"address" env:"ADDRESS"`
+	Type    *PaymasterType `yaml:"type" env:"PAYMASTER_CONFIG_TYPE"` // nil is equivalent to PaymasterDisabled
+	URL     string         `yaml:"url" env:"PAYMASTER_CONFIG_URL"`
+	Address common.Address `yaml:"address" env:"PAYMASTER_CONFIG_ADDRESS"`
 
 	PimlicoERC20       PimlicoERC20Config       `yaml:"pimlico_erc20" env-prefix:"PAYMASTER_CONFIG_PIMLICO_ERC20_"`
 	PimlicoVerifying   PimlicoVerifyingConfig   `yaml:"pimlico_verifying" env-prefix:"PAYMASTER_CONFIG_PIMLICO_VERIFYING_"`
