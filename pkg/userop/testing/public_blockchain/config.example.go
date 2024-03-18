@@ -8,6 +8,7 @@ import (
 	"github.com/shopspring/decimal"
 
 	signer_pkg "github.com/layer-3/clearsync/pkg/signer"
+	"github.com/layer-3/clearsync/pkg/smart_wallet"
 	"github.com/layer-3/clearsync/pkg/userop"
 )
 
@@ -17,9 +18,9 @@ var (
 		BundlerURL:  "https://api.pimlico.io/v1/NETWORK/rpc?apikey=YOUR_PIMLICO_API_KEY",
 		PollPeriod:  100 * time.Millisecond,
 		EntryPoint:  common.HexToAddress("ENTRY_POINT_ADDRESS"),
-		SmartWallet: userop.SmartWalletConfig{
+		SmartWallet: smart_wallet.Config{
 			// Example of a Kernel Smart Wallet config with Kernel v2.2.
-			Type: &userop.SmartWalletKernel,
+			Type: &smart_wallet.KernelType,
 			// Zerodev Kernel factory address:
 			Factory: common.HexToAddress("0x5de4839a76cf55d0c90e2061ef4386d962E15ae3"),
 			// Zerodev Kernel implementation (logic) address:

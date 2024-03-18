@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/layer-3/clearsync/pkg/smart_wallet"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/require"
 )
@@ -30,8 +31,8 @@ func mockConfig() ClientConfig {
 		ProviderURL: "http://127.0.0.1:42424",
 		BundlerURL:  "http://127.0.0.1:42424",
 		EntryPoint:  common.HexToAddress("0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789"),
-		SmartWallet: SmartWalletConfig{
-			Type:           &SmartWalletKernel,
+		SmartWallet: smart_wallet.Config{
+			Type:           &smart_wallet.KernelType,
 			Factory:        common.HexToAddress("0x5de4839a76cf55d0c90e2061ef4386d962E15ae3"),
 			Logic:          common.HexToAddress("0x0DA6a956B9488eD4dd761E59f52FDc6c8068E6B5"),
 			ECDSAValidator: common.HexToAddress("0xd9AB5096a832b9ce79914329DAEE236f8Eea0390"),
@@ -50,8 +51,8 @@ func bundlerMock(t *testing.T, providerURL string) Client {
 		ProviderURL: providerURL,
 		BundlerURL:  "http://127.0.0.1:42424",
 		EntryPoint:  common.HexToAddress("0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789"),
-		SmartWallet: SmartWalletConfig{
-			Type:           &SmartWalletKernel,
+		SmartWallet: smart_wallet.Config{
+			Type:           &smart_wallet.KernelType,
 			Factory:        common.HexToAddress("0x5de4839a76cf55d0c90e2061ef4386d962E15ae3"),
 			Logic:          common.HexToAddress("0x0DA6a956B9488eD4dd761E59f52FDc6c8068E6B5"),
 			ECDSAValidator: common.HexToAddress("0xd9AB5096a832b9ce79914329DAEE236f8Eea0390"),

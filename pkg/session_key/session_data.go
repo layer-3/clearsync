@@ -7,7 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/layer-3/clearsync/pkg/userop"
+	"github.com/layer-3/clearsync/pkg/smart_wallet"
 )
 
 const (
@@ -19,8 +19,8 @@ const (
 )
 
 var (
-	KernelExecuteSig      = [4]byte(userop.KernelExecuteABI.Methods["execute"].ID)
-	KernelExecuteBatchSig = [4]byte(userop.KernelExecuteABI.Methods["executeBatch"].ID)
+	KernelExecuteSig      = [4]byte(smart_wallet.KernelExecuteABI.Methods["execute"].ID)
+	KernelExecuteBatchSig = [4]byte(smart_wallet.KernelExecuteABI.Methods["executeBatch"].ID)
 )
 
 type SessionData struct {
