@@ -3,23 +3,31 @@ package signer
 import (
 	"crypto/ecdsa"
 
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	ecrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
-	nc "github.com/statechannels/go-nitro/crypto"
 )
 
-type Signature struct{ nc.Signature }
+type Signature struct {
+	R []byte
+	S []byte
+	V byte
+}
 
 func NewSignature(R, S []byte, V byte) Signature {
-	return Signature{nc.Signature{R: R, S: S, V: V}}
+	return Signature{R: R, S: S, V: V}
 }
 
 func NewSignatureFromBytes(sig []byte) Signature {
-	return Signature{nc.SplitSignature(sig)}
+	r := sig[:32]
+	s := sig[32:64]
+	v := sig[64]
+
+	return NewSignature(r, s, v)
 }
 
 func (sig Signature) String() string {
-	return sig.Signature.ToHexString()
+	return hexutil.Encode(sig.Raw())
 }
 
 func (sig Signature) Raw() (concatenatedSignature []byte) {
