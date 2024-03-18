@@ -1,6 +1,7 @@
 package smart_wallet
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -12,6 +13,13 @@ import (
 func must[T any](x T, err error) T {
 	if err != nil {
 		panic(err)
+	}
+	return x
+}
+
+func boolMust[T any](x T, b bool) T {
+	if !b {
+		panic(fmt.Errorf("unexpected false boolean value"))
 	}
 	return x
 }
