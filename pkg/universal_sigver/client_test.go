@@ -17,14 +17,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// FIXME: rename `local_blockchain` to something better
 func TestVerify(t *testing.T) {
 	ctx := context.Background()
 
 	// 1. Setup node, contracts, signer
 	node := local_blockchain.NewEthNode(ctx, t)
 	contracts := local_blockchain.SetupContracts(ctx, t, node)
-	eoa, err := local_blockchain.NewAccountWithBalance(ctx, big.NewInt(42), node)
+	eoa, err := local_blockchain.NewAccountWithBalance(ctx, decimal.NewFromFloat(2e18).BigInt(), node)
 	require.NoError(t, err)
 	signer := signer_pkg.NewLocalSigner(eoa.PrivateKey)
 
@@ -70,7 +69,7 @@ func TestVerify(t *testing.T) {
 		// 4. Calculate SW address and transfer some funds to it
 		swAddr, err := client.GetAccountAddress(ctx, eoa.Address, index)
 		require.NoError(t, err)
-		local_blockchain.SendNative(ctx, node, eoa, local_blockchain.Account{Address: swAddr}, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(18), nil)) // send 1 eth
+		local_blockchain.SendNative(ctx, node, eoa, local_blockchain.Account{Address: swAddr}, decimal.NewFromFloat(1e18).BigInt()) // send 1 eth
 
 		// 5. Create and send user operation
 		calls := smart_wallet.Calls{{To: signer.CommonAddress(), Value: big.NewInt(1)}}
