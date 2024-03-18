@@ -76,7 +76,7 @@ func (b *backend) PackERC6492Sig(ctx context.Context, ownerAddress common.Addres
 		return nil, fmt.Errorf("smart wallet already deployed")
 	}
 
-	factoryCalldata, err := smart_wallet.GetFactoryCallData(b.provider, *b.smartWalletConfig, ownerAddress, index)
+	factoryCalldata, err := smart_wallet.GetFactoryCallData(*b.smartWalletConfig, ownerAddress, index)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get init code: %w", err)
 	}

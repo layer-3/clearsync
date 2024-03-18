@@ -4,11 +4,10 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/shopspring/decimal"
 )
 
-func GetFactoryCallData(provider *ethclient.Client, smartWalletConfig Config, ownerAddress common.Address, index decimal.Decimal) ([]byte, error) {
+func GetFactoryCallData(smartWalletConfig Config, ownerAddress common.Address, index decimal.Decimal) ([]byte, error) {
 	var initCode []byte
 	var err error
 
