@@ -17,9 +17,9 @@ type ClientConfig struct {
 	BundlerURL  string              `yaml:"bundler_url" env:"USEROP_CLIENT_BUNDLER_URL"`
 	PollPeriod  time.Duration       `yaml:"poll_period" env:"USEROP_CLIENT_POLL_PERIOD" env-default:"100ms"`
 	EntryPoint  common.Address      `yaml:"entry_point" env:"USEROP_CLIENT_ENTRY_POINT"`
-	Gas         GasConfig           `yaml:"gas" env-prefix:"USEROP_CLIENT_GAS_CONFIG_"`
-	SmartWallet smart_wallet.Config `yaml:"smart_wallet" env-prefix:"USEROP_CLIENT_SMART_WALLET_"`
-	Paymaster   PaymasterConfig     `yaml:"paymaster" env-prefix:"USEROP_CLIENT_PAYMASTER_CONFIG_"`
+	Gas         GasConfig           `yaml:"gas"`
+	SmartWallet smart_wallet.Config `yaml:"smart_wallet"`
+	Paymaster   PaymasterConfig     `yaml:"paymaster"`
 }
 
 func (conf *ClientConfig) Init() {
@@ -61,8 +61,8 @@ func (conf ClientConfig) validate() error {
 
 // GasConfig represents the configuration for the userop transaction gas fees.
 type GasConfig struct {
-	MaxPriorityFeePerGasMultiplier decimal.Decimal `yaml:"max_priority_fee_per_gas_multiplier" env:"MAX_PRIORITY_FEE_PER_GAS_MULTIPLIER"` // percentage
-	MaxFeePerGasMultiplier         decimal.Decimal `yaml:"max_fee_per_gas_multiplier" env:"MAX_FEE_PER_GAS_MULTIPLIER"`                   // percentage
+	MaxPriorityFeePerGasMultiplier decimal.Decimal `yaml:"max_priority_fee_per_gas_multiplier" env:"GAS_CONFIG_MAX_PRIORITY_FEE_PER_GAS_MULTIPLIER"` // percentage
+	MaxFeePerGasMultiplier         decimal.Decimal `yaml:"max_fee_per_gas_multiplier" env:"GAS_CONFIG_MAX_FEE_PER_GAS_MULTIPLIER"`                   // percentage
 }
 
 // Init initializes the GasConfig with default values.
@@ -80,10 +80,10 @@ type PaymasterConfig struct {
 	URL     string         `yaml:"url" env:"URL"`
 	Address common.Address `yaml:"address" env:"ADDRESS"`
 
-	PimlicoERC20       PimlicoERC20Config       `yaml:"pimlico_erc20" env-prefix:"PIMLICO_ERC20_"`
-	PimlicoVerifying   PimlicoVerifyingConfig   `yaml:"pimlico_verifying" env-prefix:"PIMLICO_VERIFYING_"`
-	BiconomyERC20      BiconomyERC20Config      `yaml:"biconomy_erc20" env-prefix:"BICONOMY_ERC20_"`
-	BiconomySponsoring BiconomySponsoringConfig `yaml:"biconomy_sponsoring" env-prefix:"BICONOMY_SPONSORING_"`
+	PimlicoERC20       PimlicoERC20Config       `yaml:"pimlico_erc20" env-prefix:"PAYMASTER_CONFIG_PIMLICO_ERC20_"`
+	PimlicoVerifying   PimlicoVerifyingConfig   `yaml:"pimlico_verifying" env-prefix:"PAYMASTER_CONFIG_PIMLICO_VERIFYING_"`
+	BiconomyERC20      BiconomyERC20Config      `yaml:"biconomy_erc20" env-prefix:"PAYMASTER_CONFIG_BICONOMY_ERC20_"`
+	BiconomySponsoring BiconomySponsoringConfig `yaml:"biconomy_sponsoring" env-prefix:"PAYMASTER_CONFIG_BICONOMY_SPONSORING_"`
 }
 
 // Init initializes the PaymasterConfig with default values.
