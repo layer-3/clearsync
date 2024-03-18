@@ -26,7 +26,12 @@ type backend struct {
 	entryPointAddress *common.Address
 }
 
-func NewUniversalSigVer(provider *ethclient.Client, smartWalletConfig *smart_wallet.Config, entryPointAddress *common.Address) Client {
+func NewUniversalSigVer(providerURL string, smartWalletConfig *smart_wallet.Config, entryPointAddress *common.Address) Client {
+	provider, err := ethclient.Dial(providerURL)
+	if err != nil {
+		panic(fmt.Errorf("failed to connect to Ethereum node: %w", err))
+	}
+
 	var entryPointAddress_ = entryPointAddress
 	if entryPointAddress_ == nil {
 		entryPointAddress_ = &entryPointV0_6Address
