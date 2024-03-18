@@ -9,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/shopspring/decimal"
 )
@@ -19,7 +18,7 @@ var (
 	senderAddressResultError = boolMust(res, ok)
 )
 
-func IsAccountDeployed(ctx context.Context, provider *ethclient.Client, swAddress common.Address) (bool, error) {
+func IsAccountDeployed(ctx context.Context, provider ethereum.ChainStateReader, swAddress common.Address) (bool, error) {
 	byteCode, err := provider.CodeAt(ctx, swAddress, nil)
 	if err != nil {
 		return false, fmt.Errorf("failed to check if smart account is already deployed: %w", err)
@@ -29,8 +28,8 @@ func IsAccountDeployed(ctx context.Context, provider *ethclient.Client, swAddres
 	return len(byteCode) != 0, nil
 }
 
-func GetAccountAddress(ctx context.Context, provider *ethclient.Client, config Config, entryPointAddress, owner common.Address, index decimal.Decimal) (common.Address, error) {
-	initCode, err := GetInitCode(provider, config, owner, index)
+func GetAccountAddress(ctx context.Context, provider ethereum.ContractCaller, config Config, entryPointAddress, owner common.Address, index decimal.Decimal) (common.Address, error) {
+	initCode, err := GetInitCode(config, owner, index)
 	if err != nil {
 		return common.Address{}, fmt.Errorf("failed to build initCode middleware: %w", err)
 	}
@@ -77,7 +76,7 @@ func GetAccountAddress(ctx context.Context, provider *ethclient.Client, config C
 	return swAddress, nil
 }
 
-func GetInitCode(provider *ethclient.Client, smartWalletConfig Config, ownerAddress common.Address, index decimal.Decimal) ([]byte, error) {
+func GetInitCode(smartWalletConfig Config, ownerAddress common.Address, index decimal.Decimal) ([]byte, error) {
 	var initCode []byte
 	var err error
 

@@ -195,7 +195,7 @@ func (c *backend) IsAccountDeployed(ctx context.Context, owner common.Address, i
 }
 
 func (c *backend) GetAccountAddress(ctx context.Context, owner common.Address, index decimal.Decimal) (common.Address, error) {
-	return smart_wallet.GetAccountAddress(ctx, c.provider.EthClient(), c.smartWallet, c.entryPoint, owner, index)
+	return smart_wallet.GetAccountAddress(ctx, c.provider, c.smartWallet, c.entryPoint, owner, index)
 }
 
 func (c *backend) NewUserOp(
