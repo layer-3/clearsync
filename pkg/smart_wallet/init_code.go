@@ -14,6 +14,11 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+var (
+	res, ok                  = entryPointABI.Errors["SenderAddressResult"]
+	senderAddressResultError = boolMust(res, ok)
+)
+
 func IsAccountDeployed(ctx context.Context, provider *ethclient.Client, swAddress common.Address) (bool, error) {
 	byteCode, err := provider.CodeAt(ctx, swAddress, nil)
 	if err != nil {
@@ -42,6 +47,7 @@ func GetAccountAddress(ctx context.Context, provider *ethclient.Client, config C
 		Data: getSenderAddressData,
 	}
 
+	// this call must always revert (see EntryPoint contract), so we expect an error
 	_, err = provider.CallContract(ctx, msg, nil)
 	if err == nil {
 		panic(fmt.Errorf("'getSenderAddress' call returned no error, but expected one"))
@@ -49,28 +55,23 @@ func GetAccountAddress(ctx context.Context, provider *ethclient.Client, config C
 
 	var scError rpc.DataError
 	if ok := errors.As(err, &scError); !ok {
-		panic(fmt.Errorf("unexpected error type '%T' containing message %w)", err, err))
+		return common.Address{}, fmt.Errorf("unexpected error type '%T' containing message %w)", err, err)
 	}
 	errorData := scError.ErrorData().(string)
 
-	senderAddressResultError, ok := entryPointABI.Errors["SenderAddressResult"]
-	if !ok {
-		panic(fmt.Errorf("ABI does not contain 'SenderAddressResult' error"))
-	}
-
 	// check if the error signature is correct
 	if id := senderAddressResultError.ID.String(); errorData[0:10] != id[0:10] {
-		panic(fmt.Errorf("'getSenderAddress' unexpected error signature: %s", errorData[0:10]))
+		return common.Address{}, fmt.Errorf("'getSenderAddress' unexpected error signature: %s", errorData[0:10])
 	}
 
 	// check if the error data has the correct length
 	if len(errorData) < 74 {
-		panic(fmt.Errorf("'getSenderAddress' revert data expected to have lenght of 74, but got: %d", len(errorData)))
+		return common.Address{}, fmt.Errorf("'getSenderAddress' revert data expected to have lenght of 74, but got: %d", len(errorData))
 	}
 
 	swAddress := common.HexToAddress(errorData[34:])
 	if swAddress == (common.Address{}) {
-		panic(fmt.Errorf("'getSenderAddress' returned zero address"))
+		return common.Address{}, fmt.Errorf("'getSenderAddress' returned zero address")
 	}
 
 	return swAddress, nil
@@ -106,14 +107,14 @@ func GetKernelInitCode(owner common.Address, index decimal.Decimal, factory, acc
 	// see https://github.com/zerodevapp/kernel/blob/807b75a4da6fea6311a3573bc8b8964a34074d94/src/abstract/KernelStorage.sol#L35
 	initData, err := kernelInitABI.Pack("initialize", ecdsaValidator, owner.Bytes())
 	if err != nil {
-		panic(fmt.Errorf("failed to pack init data: %w", err))
+		return nil, fmt.Errorf("failed to pack init data: %w", err)
 	}
 
 	// Deploy Kernel Smart Account by calling `factory.createAccount`
 	// see https://github.com/zerodevapp/kernel/blob/807b75a4da6fea6311a3573bc8b8964a34074d94/src/factory/KernelFactory.sol#L25
 	callData, err := kernelDeployWalletABI.Pack("createAccount", accountLogic, initData, index.BigInt())
 	if err != nil {
-		panic(fmt.Errorf("failed to pack createAccount data: %w", err))
+		return nil, fmt.Errorf("failed to pack createAccount data: %w", err)
 	}
 
 	// Pack factory address and deployment data for `CreateSender` in EntryPoint
@@ -135,14 +136,14 @@ func GetBiconomyInitCode(owner common.Address, index decimal.Decimal, factory, e
 	// see https://github.com/bcnmy/scw-contracts/blob/v2-deployments/contracts/smart-account/modules/EcdsaOwnershipRegistryModule.sol#L43
 	ecdsaOwnershipInitData, err := biconomyInitABI.Pack("initForSmartAccount", owner.Bytes())
 	if err != nil {
-		panic(fmt.Errorf("failed to pack init data: %w", err))
+		return nil, fmt.Errorf("failed to pack init data: %w", err)
 	}
 
 	// Deploy Biconomy SCW by calling `factory.createAccount`
 	// see https://github.com/bcnmy/scw-contracts/blob/v2-deployments/contracts/smart-account/factory/SmartAccountFactory.sol#L112
 	callData, err := biconomyDeployWalletABI.Pack("createAccount", ecdsaValidator, ecdsaOwnershipInitData, index.BigInt())
 	if err != nil {
-		panic(fmt.Errorf("failed to pack createAccount data: %w", err))
+		return nil, fmt.Errorf("failed to pack createAccount data: %w", err)
 	}
 
 	// Pack factory address and deployment data for `CreateSender` in EntryPoint
