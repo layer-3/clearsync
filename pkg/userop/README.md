@@ -95,6 +95,7 @@ var (
   exampleConfig = userop.ClientConfig{
     ProviderURL: "https://YOUR_PROVIDER_URL",
     BundlerURL:  "https://YOUR_BUNDLER_URL",
+    PollPeriod:  100 * time.Millisecond,
     EntryPoint:  common.HexToAddress("ENTRY_POINT_ADDRESS"),
     SmartWallet: userop.SmartWalletConfig{
       // Example of a Kernel Smart Wallet config with Kernel v2.2.

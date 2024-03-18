@@ -16,7 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/shopspring/decimal"
 
-	"github.com/layer-3/clearsync/pkg/abi/entry_point"
+	"github.com/layer-3/clearsync/pkg/abi/entry_point_v0_6_0"
 )
 
 // Client represents a client for creating and posting user operations.
@@ -95,9 +95,10 @@ type GasLimitOverrides struct {
 
 // backend represents a user operation client.
 type backend struct {
-	provider EthBackend
-	bundler  RPCBackend
-	chainID  *big.Int
+	provider   EthBackend
+	bundler    RPCBackend
+	chainID    *big.Int
+	pollPeriod time.Duration
 
 	smartWallet SmartWalletConfig
 	entryPoint  common.Address
@@ -150,7 +151,7 @@ func NewClient(config ClientConfig) (Client, error) {
 		return nil, fmt.Errorf("failed to connect to the bundler RPC: %w", err)
 	}
 
-	entryPointContract, err := entry_point.NewEntryPoint(config.EntryPoint, providerRPC)
+	entryPointContract, err := entry_point_v0_6_0.NewEntryPoint(config.EntryPoint, providerRPC)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to the entry point contract: %w", err)
 	}
@@ -166,9 +167,11 @@ func NewClient(config ClientConfig) (Client, error) {
 	}
 
 	return &backend{
-		provider:    providerRPC,
-		bundler:     bundlerRPC,
-		chainID:     chainID,
+		provider:   providerRPC,
+		bundler:    bundlerRPC,
+		chainID:    chainID,
+		pollPeriod: config.PollPeriod,
+
 		smartWallet: config.SmartWallet,
 		entryPoint:  config.EntryPoint,
 		paymaster:   config.Paymaster.Address,
@@ -244,7 +247,12 @@ func (c *backend) GetAccountAddress(ctx context.Context, owner common.Address, i
 		panic(fmt.Errorf("'getSenderAddress' revert data expected to have lenght of 74, but got: %d", len(errorData)))
 	}
 
-	return common.HexToAddress(errorData[34:]), nil
+	swAddress := common.HexToAddress(errorData[34:])
+	if swAddress == (common.Address{}) {
+		panic(fmt.Errorf("'getSenderAddress' returned zero address"))
+	}
+
+	return swAddress, nil
 }
 
 func (c *backend) NewUserOp(
@@ -320,7 +328,7 @@ func (c *backend) SendUserOp(ctx context.Context, op UserOperation) (<-chan Rece
 	userOpHash := op.UserOpHash(c.entryPoint, c.chainID)
 	done := make(chan Receipt, 1)
 
-	go waitForUserOpEvent(ctx, cancel, c.provider, done, c.entryPoint, userOpHash)
+	go waitForUserOpEvent(ctx, c.pollPeriod, cancel, c.provider, done, c.entryPoint, userOpHash)
 
 	// ERC4337-standardized call to the bundler
 	slog.Debug("sending user operation")
@@ -356,13 +364,14 @@ func isAccountDeployed(provider EthBackend, swAddress common.Address) (bool, err
 // waitForUserOpEvent waits for a user operation to be committed on block.
 func waitForUserOpEvent(
 	ctx context.Context,
+	pollPeriod time.Duration,
 	cancel context.CancelFunc,
 	client EthBackend,
 	done chan<- Receipt,
 	entryPoint common.Address,
 	userOpHash common.Hash,
 ) {
-	ticker := time.NewTicker(time.Millisecond * 5000)
+	ticker := time.NewTicker(pollPeriod)
 	defer ticker.Stop()
 	defer close(done)
 

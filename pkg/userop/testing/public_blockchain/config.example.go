@@ -1,6 +1,8 @@
-package main
+package public_blockchain
 
 import (
+	"time"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/shopspring/decimal"
@@ -13,6 +15,7 @@ var (
 	exampleConfig = userop.ClientConfig{
 		ProviderURL: "https://NETWORK.infura.io/v3/YOUR_INFURA_API_KEY",
 		BundlerURL:  "https://api.pimlico.io/v1/NETWORK/rpc?apikey=YOUR_PIMLICO_API_KEY",
+		PollPeriod:  100 * time.Millisecond,
 		EntryPoint:  common.HexToAddress("ENTRY_POINT_ADDRESS"),
 		SmartWallet: userop.SmartWalletConfig{
 			// Example of a Kernel Smart Wallet config with Kernel v2.2.

@@ -1,7 +1,65 @@
 ---
 kind: pipeline
 type: docker
-name: "Bindings"
+name: 'Tests'
+
+clone:
+  disable: true
+
+environment:
+  DEPLOYER_PK: 6aa35771f25b5098020350399171952bdaafd8b381eb777577befd5ee995a122
+  DEPLOYER_ADDRESS: '0x25ba87CA70739Bc8448D018Ad4A11F35Ea5a2DF9'
+  ENTRY_POINT_ADDRESS: '0x07bd68335Ff013481b0fED98c190EaeB36e52b3D'
+  KERNEL_ECDSA_VALIDATOR_ADDRESS: '0x0E3c0cb9F2Ae0053f2b236b698C2028112b333a7'
+  KERNEL_ADDRESS: '0x8Bdf2ceE549101447fA141fFfc9f6e3B2BE8BBF2'
+  KERNEL_FACTORY_ADDRESS: '0x9CBDd0D809f3490d52E3609044D4cf78f4df3a5f'
+  SESSION_KEY_VALIDATOR_ADDRESS: '0x800edae75E7B45FEcF1283eD5E48dB58BC619291'
+
+services:
+  - name: eth_node
+    image: quay.io/openware/geth:v0.1.2-amd64
+  - name: bundler
+    image: ghcr.io/pimlicolabs/alto:v1.0.1
+    entrypoint:
+      - /bin/sh
+      - -c
+    commands:
+      - cd /app
+      - while ! nc -z eth_node 8545; do sleep 1; done; sleep 1
+      - pnpm start --port 3000 --networkName mainnet --entryPoint $${ENTRY_POINT_ADDRESS} --signerPrivateKeys 0x$${DEPLOYER_PK} --utilityPrivateKey 0x$${DEPLOYER_PK} --minBalance 1000000000000000000 --rpcUrl http://eth_node:8545 --logLevel info --noEthCallOverrideSupport true --useUserOperationGasLimitsForSubmission true
+
+steps:
+  - name: Clone
+    image: alpine/git
+    commands:
+      - git clone https://github.com/$DRONE_REPO .
+      - git checkout ${DRONE_SOURCE_BRANCH:-${DRONE_BRANCH}}
+
+  - name: Test Go packages
+    image: golang:1.21
+    pull: if-not-exists
+    environment:
+      GETH_NODE_RPC_URL: http://eth_node:8545
+      BUNDLER_USE_HARDCODED_CONTRACTS: true
+      BUNDLER_RPC_URL: http://bundler:3000
+      GETH_NODE_IMAGE: eth_node
+    commands:
+      - go vet ./...
+      - go test -race ./...
+    when:
+      event:
+        - pull_request
+
+trigger:
+  event:
+    - pull_request
+  branch:
+    - master
+
+---
+kind: pipeline
+type: docker
+name: 'Bindings'
 
 clone:
   disable: true
@@ -31,16 +89,6 @@ steps:
     pull: if-not-exists
     commands:
       - make -C contracts bindings
-
-  - name: Test Go packages
-    image: golang:1.21
-    pull: if-not-exists
-    commands:
-      - go vet ./...
-      - go test -race ./...
-    when:
-      event:
-        - pull_request
 
   - name: Publish
     image: alpine/git:v2.32.0

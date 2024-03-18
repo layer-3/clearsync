@@ -10,6 +10,7 @@
     "resolveJsonModule": true,
     "ignoreDeprecations": "5.0"
   },
-  "include": ["./contracts", "./scripts", "./src", "./test"],
+  "include": ["./contracts", "./scripts", "./src", "./test", "./config"],
+  "exclude": ["./**/*.js"],
   "files": ["./hardhat.config.ts"]
 }

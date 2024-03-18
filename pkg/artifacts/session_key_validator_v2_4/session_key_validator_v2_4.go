@@ -1,7 +1,7 @@
 // Code generated - DO NOT EDIT.
 // This file is a generated binding and any manual changes will be lost.
 
-package session_key_validator
+package session_key_validator_v2_4
 
 import (
 	"errors"

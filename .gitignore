@@ -5,6 +5,7 @@ coverage.json
 typechain
 typechain-types
 .tags
+.vscode
 
 # Hardhat files
 cache

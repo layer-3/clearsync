@@ -8,6 +8,8 @@ var (
 	ErrNoWalletDeploymentOpts = errors.New("wallet deployment opts not specified")
 	// ErrNoWalletOwnerInWDO is returned when the wallet owner is not specified.
 	ErrNoWalletOwnerInWDO = errors.New("wallet deployment opts: wallet owner not specified")
+	// ErrInvalidPollDuration is returned when blockchain poll duration is non-present or its format is invalid.
+	ErrInvalidPollDuration = errors.New("invalid blockchain poll duration")
 	// ErrInvalidEntryPointAddress is returned when the entrypoint address is invalid.
 	ErrInvalidEntryPointAddress = errors.New("invalid entry point address")
 	// ErrInvalidFactoryAddress is returned when the factory address is invalid.
