@@ -9,10 +9,10 @@ import (
 // SmartWalletConfig represents the configuration
 // for the smart wallet to be used with the client.
 type Config struct {
-	Type           *Type          `yaml:"type" env:"TYPE"`
-	ECDSAValidator common.Address `yaml:"ecdsa_validator" env:"ECDSA_VALIDATOR"`
-	Logic          common.Address `yaml:"logic" env:"LOGIC"`
-	Factory        common.Address `yaml:"factory" env:"FACTORY"`
+	Type           *Type          `yaml:"type" env:"SMART_WALLET_TYPE"`
+	ECDSAValidator common.Address `yaml:"ecdsa_validator" env:"SMART_WALLET_ECDSA_VALIDATOR"`
+	Logic          common.Address `yaml:"logic" env:"SMART_WALLET_LOGIC"`
+	Factory        common.Address `yaml:"factory" env:"SMART_WALLET_FACTORY"`
 }
 
 func (sw *Config) Init() {
