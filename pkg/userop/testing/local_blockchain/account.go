@@ -72,7 +72,7 @@ func NewAccountWithBalance(
 			Address:    crypto.PubkeyToAddress(privateKey.PublicKey),
 		}
 
-		err = sendNative(ctx, node, deployerAccount, account, balance)
+		err = SendNative(ctx, node, deployerAccount, account, balance)
 		if err != nil {
 			return Account{}, fmt.Errorf("failed to send native: %w", err)
 		}
