@@ -102,9 +102,9 @@ type GasPriceOverrides struct {
 
 // These override the bundler's estimation. NOTE: if all are supplied, bundler's estimation is NOT performed.
 type GasLimitOverrides struct {
-	CallGasLimit         big.Int
-	VerificationGasLimit big.Int
-	PreVerificationGas   big.Int
+	CallGasLimit         *big.Int
+	VerificationGasLimit *big.Int
+	PreVerificationGas   *big.Int
 }
 
 // backend represents a user operation client.
@@ -114,10 +114,14 @@ type backend struct {
 	chainID    *big.Int
 	pollPeriod time.Duration
 
-	smartWallet smart_wallet.Config
-	entryPoint  common.Address
-	paymaster   common.Address
-	middlewares []middleware
+	smartWallet  smart_wallet.Config
+	entryPoint   common.Address
+	paymaster    common.Address
+	getNonce     middleware
+	getInitCode  middleware
+	getGasPrices middleware
+	getGasLimits middleware
+	sign         middleware
 }
 
 type Receipt struct {
@@ -170,7 +174,7 @@ func NewClient(config ClientConfig) (Client, error) {
 		return nil, fmt.Errorf("failed to connect to the entry point contract: %w", err)
 	}
 
-	getGasEstimation, err := getGasEstimation(bundlerRPC, config)
+	getGasLimits, err := getGasLimits(bundlerRPC, config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build gas estimation middleware: %w", err)
 	}
@@ -189,14 +193,12 @@ func NewClient(config ClientConfig) (Client, error) {
 		smartWallet: config.SmartWallet,
 		entryPoint:  config.EntryPoint,
 		paymaster:   config.Paymaster.Address,
-		middlewares: []middleware{ // Middleware order matters - first in, first executed.
-			getNonce(entryPointContract),
-			getInitCode,
-			getGasPrice(providerRPC, config.Gas),
-			sign(config.EntryPoint, chainID),
-			getGasEstimation,
-			sign(config.EntryPoint, chainID), // update signature after gas estimation
-		},
+
+		getNonce:     getNonce(entryPointContract),
+		getInitCode:  getInitCode,
+		getGasPrices: getGasPrices(providerRPC, config.Gas),
+		getGasLimits: getGasLimits,
+		sign:         sign(config.EntryPoint, chainID),
 	}, nil
 }
 
@@ -231,24 +233,6 @@ func (c *backend) NewUserOp(
 
 	ctx = context.WithValue(ctx, ctxKeySigner, signer)
 
-	isDeployed, err := isAccountDeployed(c.provider, smartWallet)
-	if err != nil {
-		return UserOperation{}, fmt.Errorf("failed to check if smart account is already deployed: %w", err)
-	}
-
-	if !isDeployed {
-		if walletDeploymentOpts == nil {
-			return UserOperation{}, ErrNoWalletDeploymentOpts
-		}
-
-		if walletDeploymentOpts.Owner == (common.Address{}) {
-			return UserOperation{}, ErrNoWalletOwnerInWDO
-		}
-
-		ctx = context.WithValue(ctx, ctxKeyOwner, walletDeploymentOpts.Owner)
-		ctx = context.WithValue(ctx, ctxKeyIndex, walletDeploymentOpts.Index)
-	}
-
 	callData, err := smart_wallet.BuildCallData(*c.smartWallet.Type, calls)
 	if err != nil {
 		return UserOperation{}, fmt.Errorf("failed to build call data: %w", err)
@@ -256,25 +240,62 @@ func (c *backend) NewUserOp(
 
 	op := UserOperation{Sender: smartWallet, CallData: callData}
 
-	gasLimitOverrides := overrides.GasLimits
-	if gasLimitOverrides != nil {
-		zero := big.NewInt(0)
-		if gasLimitOverrides.CallGasLimit.Cmp(zero) != 0 {
-			op.CallGasLimit = decimal.NewFromBigInt(&gasLimitOverrides.CallGasLimit, 0)
-		}
-		if gasLimitOverrides.VerificationGasLimit.Cmp(zero) != 0 {
-			op.VerificationGasLimit = decimal.NewFromBigInt(&gasLimitOverrides.VerificationGasLimit, 0)
-		}
-		if gasLimitOverrides.PreVerificationGas.Cmp(zero) != 0 {
-			op.PreVerificationGas = decimal.NewFromBigInt(&gasLimitOverrides.PreVerificationGas, 0)
+	slog.Debug("applying middlewares to user operation")
+
+	overridesPresent := overrides != nil
+
+	if overridesPresent && overrides.Nonce != nil {
+		op.Nonce = decimal.NewFromBigInt(overrides.Nonce, 0)
+	} else {
+		if err := c.getNonce(ctx, &op); err != nil {
+			return UserOperation{}, err
 		}
 	}
 
-	slog.Debug("applying middlewares to user operation")
+	if overridesPresent && overrides.InitCode != nil {
+		op.InitCode = overrides.InitCode
+	} else {
+		isDeployed, err := isAccountDeployed(c.provider, smartWallet)
+		if err != nil {
+			return UserOperation{}, fmt.Errorf("failed to check if smart account is already deployed: %w", err)
+		}
 
-	for _, fn := range c.middlewares {
-		if err := fn(ctx, &op); err != nil {
-			return UserOperation{}, fmt.Errorf("failed to apply middleware to user operation: %w", err)
+		if !isDeployed {
+			if walletDeploymentOpts == nil {
+				return UserOperation{}, ErrNoWalletDeploymentOpts
+			}
+
+			if walletDeploymentOpts.Owner == (common.Address{}) {
+				return UserOperation{}, ErrNoWalletOwnerInWDO
+			}
+
+			ctx = context.WithValue(ctx, ctxKeyOwner, walletDeploymentOpts.Owner)
+			ctx = context.WithValue(ctx, ctxKeyIndex, walletDeploymentOpts.Index)
+		}
+
+		if err := c.getInitCode(ctx, &op); err != nil {
+			return UserOperation{}, err
+		}
+	}
+
+	if overridesPresent && overrides.GasPrices != nil {
+		if overrides.GasPrices.MaxFeePerGas != nil {
+			op.MaxFeePerGas = decimal.NewFromBigInt(overrides.GasPrices.MaxFeePerGas, 0)
+		}
+		if overrides.GasPrices.MaxPriorityFeePerGas != nil {
+			op.MaxPriorityFeePerGas = decimal.NewFromBigInt(overrides.GasPrices.MaxPriorityFeePerGas, 0)
+		}
+	}
+
+	if overridesPresent && overrides.GasLimits != nil {
+		if overrides.GasLimits.CallGasLimit != nil {
+			op.CallGasLimit = decimal.NewFromBigInt(overrides.GasLimits.CallGasLimit, 0)
+		}
+		if overrides.GasLimits.VerificationGasLimit != nil {
+			op.VerificationGasLimit = decimal.NewFromBigInt(overrides.GasLimits.VerificationGasLimit, 0)
+		}
+		if overrides.GasLimits.PreVerificationGas != nil {
+			op.PreVerificationGas = decimal.NewFromBigInt(overrides.GasLimits.PreVerificationGas, 0)
 		}
 	}
 
