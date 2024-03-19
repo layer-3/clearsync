@@ -66,7 +66,7 @@ func NewEthNode(ctx context.Context, t *testing.T) *EthNode {
 
 	if ethActiveNode != nil {
 		ethActiveUsers++
-		t.Cleanup(ethNodeCleanupFactory(ctx, t))
+		// t.Cleanup(ethNodeCleanupFactory(ctx, t))
 
 		slog.Info("reusing existing Ethereum node")
 		return ethActiveNode
@@ -85,6 +85,7 @@ func NewEthNode(ctx context.Context, t *testing.T) *EthNode {
 		require.NoError(t, err, "failed to parse local RPC URL")
 		containerURL = rpcURL
 	} else {
+		os.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 		// TODO: use in-memory database instead of container volumes
 		gethContainer, err = testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
@@ -123,7 +124,7 @@ func NewEthNode(ctx context.Context, t *testing.T) *EthNode {
 		ContainerURL: *containerURL,
 	}
 
-	t.Cleanup(ethNodeCleanupFactory(ctx, t))
+	// t.Cleanup(ethNodeCleanupFactory(ctx, t))
 	ethActiveUsers++
 
 	return ethActiveNode
@@ -164,7 +165,7 @@ func NewBundler(ctx context.Context, t *testing.T, node *EthNode, entryPoint com
 
 	if bundlerActiveNode != nil {
 		bundlerActiveUsers++
-		t.Cleanup(bundlerNodeCleanupFactory(ctx, t))
+		// t.Cleanup(bundlerNodeCleanupFactory(ctx, t))
 
 		slog.Info("reusing existing Alto bundler")
 		return bundlerActiveNode.ContainerURL
@@ -184,13 +185,14 @@ func NewBundler(ctx context.Context, t *testing.T, node *EthNode, entryPoint com
 
 		bundlerURL = u
 	} else {
+		os.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 		const port = "3000"
 		balance := decimal.NewFromFloat(100e18 /* 100 ETH */).BigInt()
 		bundlerAccount, err := NewAccountWithBalance(ctx, balance, node)
 		require.NoError(t, err, "failed to fund bundler account")
 		privateKey := hexutil.Encode(crypto.FromECDSA(bundlerAccount.PrivateKey))
 
-		altoContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		altoContainer, err = testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image: "quay.io/openware/bundler:c7dd933",
 				Entrypoint: []string{
@@ -226,7 +228,7 @@ func NewBundler(ctx context.Context, t *testing.T, node *EthNode, entryPoint com
 		ContainerURL: bundlerURL,
 	}
 
-	t.Cleanup(bundlerNodeCleanupFactory(ctx, t))
+	// t.Cleanup(bundlerNodeCleanupFactory(ctx, t))
 	bundlerActiveUsers++
 
 	return bundlerActiveNode.ContainerURL

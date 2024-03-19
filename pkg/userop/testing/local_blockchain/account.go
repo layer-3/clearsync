@@ -5,9 +5,9 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"fmt"
-	"log/slog"
 	"math/big"
 	"os"
+	"regexp"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -86,8 +86,18 @@ func NewAccountWithBalance(
 	}
 
 	scanner := bufio.NewScanner(result)
-	for scanner.Scan() {
-		slog.Debug(scanner.Text())
+	var txHash string
+	for scanner.Scan() && txHash == "" {
+		txHash = regexp.MustCompile("0x[0-9a-fA-F]{64}").FindString(scanner.Text())
+	}
+
+	if txHash == "" {
+		return Account{}, fmt.Errorf("failed to find transaction hash in geth output")
+	}
+
+	_, err = waitMined(ctx, node, txHash)
+	if err != nil {
+		return Account{}, fmt.Errorf("failed to wait for transaction to be mined: %w", err)
 	}
 
 	return account, nil
