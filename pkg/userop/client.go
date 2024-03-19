@@ -66,6 +66,22 @@ type Client interface {
 		overrides *Overrides,
 	) (UserOperation, error)
 
+	// SignUserOp signs the user operation with the provided signer.
+	//
+	// Parameters:
+	//   - ctx - is the context of the operation.
+	//   - op - is the user operation to be signed.
+	//   - signer - is the signer function that will sign the user operation.
+	//
+	// Returns:
+	//   - UserOperation - user operation with modified signature.
+	//   - error - if failed to sign the user operation
+	SignUserOp(
+		ctx context.Context,
+		op UserOperation,
+		signer Signer,
+	) (UserOperation, error)
+
 	// SendUserOp submits a user operation to a bundler and returns a channel to await for the userOp receipt.
 	//
 	// Parameters:
@@ -300,6 +316,19 @@ func (c *backend) NewUserOp(
 	}
 
 	slog.Debug("middlewares applied successfully", "userop", op)
+	return op, nil
+}
+
+func (c *backend) SignUserOp(ctx context.Context, op UserOperation, signer Signer) (UserOperation, error) {
+	if signer == nil {
+		return UserOperation{}, ErrNoSigner
+	}
+
+	ctx = context.WithValue(ctx, ctxKeySigner, signer)
+	if err := c.sign(ctx, &op); err != nil {
+		return UserOperation{}, err
+	}
+
 	return op, nil
 }
 
