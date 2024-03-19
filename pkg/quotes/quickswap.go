@@ -139,7 +139,7 @@ func (s *quickswap) Subscribe(market Market) error {
 				}
 				return
 			case swap := <-sink:
-				tr, err := s.parseSwap(swap, market, pool)
+				tr, err := s.parseSwap(swap, pool)
 				if err != nil {
 					loggerQuickswap.Errorf("market %s: failed to parse swap: %s", market.String(), err)
 					continue
@@ -173,49 +173,55 @@ func (s *quickswap) Unsubscribe(market Market) error {
 	return nil
 }
 
-func (s *quickswap) parseSwap(swap *iquickswap_v3_pool.IQuickswapV3PoolSwap, market Market, pool *quickswapPoolWrapper) (TradeEvent, error) {
-	var takerType TakerType
-	var price decimal.Decimal
-	var amount decimal.Decimal
-	var total decimal.Decimal
-
+func (s *quickswap) parseSwap(swap *iquickswap_v3_pool.IQuickswapV3PoolSwap, pool *quickswapPoolWrapper) (TradeEvent, error) {
 	if !isValidNonZero(swap.Amount0) || !isValidNonZero(swap.Amount1) {
 		return TradeEvent{}, fmt.Errorf("either Amount0 (%s) or Amount1 (%s) is invalid", swap.Amount0, swap.Amount1)
 	}
-	if pool.reverted {
-		swap.Amount0, swap.Amount0 = swap.Amount1, swap.Amount1
-	}
+
+	fmt.Printf("swap = %+v\n", swap)
+
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("Recovered in from panic during swap parsing in Quickswap (swap = %+v)\n", swap)
+		}
+	}()
 
 	// Normalize swap amounts
 	amount0 := decimal.NewFromBigInt(swap.Amount0, 0).Div(decimal.NewFromInt(10).Pow(pool.baseToken.Decimals))
 	amount1 := decimal.NewFromBigInt(swap.Amount1, 0).Div(decimal.NewFromInt(10).Pow(pool.quoteToken.Decimals))
 
-	if amount0.IsNegative() && amount1.IsPositive() { // its a "sell" trade
-		amount0 = amount0.Abs()
+	takerType := TakerTypeBuy
+	price := calculatePrice(
+		decimal.NewFromBigInt(swap.Price, 0),
+		pool.baseToken.Decimals,
+		pool.quoteToken.Decimals)
+	amount := amount0
+	total := amount1
+
+	if price.IsZero() { // then it's a sell trade
 		takerType = TakerTypeSell
-	} else if amount0.IsPositive() && amount1.IsNegative() { // it's a "buy" trade
-		amount1 = amount1.Abs()
-		takerType = TakerTypeBuy
-	} else {
-		return TradeEvent{}, fmt.Errorf("failed to convert swap to trade (swap: %+v)", swap)
+		price = calculatePrice(
+			decimal.NewFromBigInt(swap.Price, 0),
+			pool.quoteToken.Decimals,
+			pool.baseToken.Decimals)
+		amount = amount1
+		total = amount0
 	}
 
-	price = amount1.Div(amount0) // price calculation: amount of quote token per 1 base token
-	amount = amount0.Abs()
-	total = amount1.Abs() // total is simply the amount of quote token received
-
 	tr := TradeEvent{
-		Source:    DriverQuickswap,
-		Market:    market,
+		Source: DriverQuickswap,
+		Market: Market{
+			baseUnit:  pool.baseToken.Symbol,
+			quoteUnit: pool.quoteToken.Symbol,
+		},
 		Price:     price,
-		Amount:    amount,
-		Total:     total,
+		Amount:    amount.Abs(),
+		Total:     total.Abs(),
 		TakerType: takerType,
 		CreatedAt: time.Now(),
 	}
 
-	fmt.Printf("swap: %+v\n", swap)
-	fmt.Printf("tradeEvent: %+v\n", tr)
+	fmt.Printf("trade = %+v\n", tr)
 	return tr, nil
 }
 
