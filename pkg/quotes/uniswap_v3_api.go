@@ -86,7 +86,9 @@ func (u *uniswapV3Api) Subscribe(market Market) error {
 
 	go func() {
 		from := time.Now()
-		timer := time.After(u.windowSize)
+    ticker := time.NewTicker(u.windowSize)
+    defer ticker.Stop()
+
 		for {
 			if stopCh, ok := u.streams.Load(market); ok {
 				select {
@@ -98,7 +100,7 @@ func (u *uniswapV3Api) Subscribe(market Market) error {
 			}
 
 			select {
-			case <-timer:
+			case <-ticker.C:
 				to := from.Add(u.windowSize)
 				swaps, err := u.fetchSwaps(market, from, to)
 				if err != nil {
@@ -136,7 +138,6 @@ func (u *uniswapV3Api) Subscribe(market Market) error {
 					}
 					u.outbox <- tr
 				}
-				timer = time.After(u.windowSize)
 				from = to
 			default:
 			}
