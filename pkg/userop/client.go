@@ -52,6 +52,7 @@ type Client interface {
 	//   - signer - is the signer function that will sign the user operation.
 	//   - calls - is the list of calls to be executed in the user operation. Must not be empty.
 	//   - walletDeploymentOpts - are the options for the smart wallet deployment. Can be nil if the smart wallet is already deployed.
+	// 	 - overrides - are the overrides for the middleware during the user operation creation. Can be nil.
 	//
 	// Returns:
 	//   - UserOperation - user operation with all fields filled in.
@@ -62,7 +63,7 @@ type Client interface {
 		signer Signer,
 		calls smart_wallet.Calls,
 		walletDeploymentOpts *WalletDeploymentOpts,
-		gasLimitOverrides *GasLimitOverrides,
+		overrides *Overrides,
 	) (UserOperation, error)
 
 	// SendUserOp submits a user operation to a bundler and returns a channel to await for the userOp receipt.
@@ -83,6 +84,20 @@ type Client interface {
 type WalletDeploymentOpts struct {
 	Owner common.Address
 	Index decimal.Decimal
+}
+
+// Each field overrides the corresponding middleware during the user operation creation.
+type Overrides struct {
+	Nonce     *big.Int
+	InitCode  []byte
+	GasPrices *GasPriceOverrides
+	GasLimits *GasLimitOverrides
+}
+
+// These override provider's estimation. NOTE: if all are supplied, provider's estimation is NOT performed.
+type GasPriceOverrides struct {
+	MaxFeePerGas         *big.Int
+	MaxPriorityFeePerGas *big.Int
 }
 
 // These override the bundler's estimation. NOTE: if all are supplied, bundler's estimation is NOT performed.
@@ -204,7 +219,7 @@ func (c *backend) NewUserOp(
 	signer Signer,
 	calls smart_wallet.Calls,
 	walletDeploymentOpts *WalletDeploymentOpts,
-	gasLimitOverrides *GasLimitOverrides,
+	overrides *Overrides,
 ) (UserOperation, error) {
 	if signer == nil {
 		return UserOperation{}, ErrNoSigner
@@ -241,6 +256,7 @@ func (c *backend) NewUserOp(
 
 	op := UserOperation{Sender: smartWallet, CallData: callData}
 
+	gasLimitOverrides := overrides.GasLimits
 	if gasLimitOverrides != nil {
 		zero := big.NewInt(0)
 		if gasLimitOverrides.CallGasLimit.Cmp(zero) != 0 {
