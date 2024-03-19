@@ -208,7 +208,7 @@ func (c *backend) IsAccountDeployed(ctx context.Context, owner common.Address, i
 		return false, fmt.Errorf("failed to get account address: %w", err)
 	}
 
-	return isAccountDeployed(c.provider, accountAddress)
+	return smart_wallet.IsAccountDeployed(ctx, c.provider, accountAddress)
 }
 
 func (c *backend) GetAccountAddress(ctx context.Context, owner common.Address, index decimal.Decimal) (common.Address, error) {
@@ -255,7 +255,7 @@ func (c *backend) NewUserOp(
 	if overridesPresent && overrides.InitCode != nil {
 		op.InitCode = overrides.InitCode
 	} else {
-		isDeployed, err := isAccountDeployed(c.provider, smartWallet)
+		isDeployed, err := smart_wallet.IsAccountDeployed(ctx, c.provider, smartWallet)
 		if err != nil {
 			return UserOperation{}, fmt.Errorf("failed to check if smart account is already deployed: %w", err)
 		}
@@ -318,27 +318,6 @@ func (c *backend) SendUserOp(ctx context.Context, op UserOperation) (<-chan Rece
 
 	slog.Info("user operation sent successfully", "userOpHash", userOpHash.Hex())
 	return done, nil
-}
-
-func isAccountDeployed(provider EthBackend, swAddress common.Address) (bool, error) {
-	var result any
-	if err := provider.RPC().CallContext(
-		context.Background(),
-		&result,
-		"eth_getCode",
-		swAddress,
-		"latest",
-	); err != nil {
-		return false, fmt.Errorf("failed to check if smart account is already deployed: %w", err)
-	}
-
-	byteCode, ok := result.(string)
-	if !ok {
-		return false, fmt.Errorf("unexpected type: %T", result)
-	}
-
-	// assume that the smart account is deployed if it has non-zero byte code
-	return !(byteCode == "" || byteCode == "0x"), nil
 }
 
 // waitForUserOpEvent waits for a user operation to be committed on block.
