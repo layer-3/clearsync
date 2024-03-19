@@ -117,7 +117,7 @@ func getGasPrices(provider EthBackend, gasConfig GasConfig) middleware {
 			blockBaseFee := block.BaseFee()
 			slog.Debug("block base fee", "baseFee", blockBaseFee.String())
 
-			maxFeePerGas := new(big.Int).Mul(blockBaseFee, gasConfig.MaxFeePerGasMultiplier.BigInt())
+			maxFeePerGas = new(big.Int).Mul(blockBaseFee, gasConfig.MaxFeePerGasMultiplier.BigInt())
 			maxFeePerGas.Add(maxFeePerGas, maxPriorityFeePerGas)
 		}
 
@@ -223,7 +223,7 @@ func estimateUserOperationGas(bundler RPCBackend, entryPoint common.Address) mid
 			return nil
 		}
 
-		slog.Debug("estimating userOp gas limits")
+		slog.Debug("estimating userOp gas limits", "userOp", op)
 
 		// ERC4337-standardized gas estimation
 		var est gasEstimate

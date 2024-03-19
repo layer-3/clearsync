@@ -130,9 +130,10 @@ type backend struct {
 	chainID    *big.Int
 	pollPeriod time.Duration
 
-	smartWallet  smart_wallet.Config
-	entryPoint   common.Address
-	paymaster    common.Address
+	smartWallet smart_wallet.Config
+	entryPoint  common.Address
+	paymaster   common.Address
+
 	getNonce     middleware
 	getInitCode  middleware
 	getGasPrices middleware
@@ -190,14 +191,14 @@ func NewClient(config ClientConfig) (Client, error) {
 		return nil, fmt.Errorf("failed to connect to the entry point contract: %w", err)
 	}
 
-	getGasLimits, err := getGasLimits(bundlerRPC, config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build gas estimation middleware: %w", err)
-	}
-
 	getInitCode, err := getInitCode(providerRPC, config.SmartWallet)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build initCode middleware: %w", err)
+	}
+
+	getGasLimits, err := getGasLimits(bundlerRPC, config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build gas limits estimation middleware: %w", err)
 	}
 
 	return &backend{
@@ -260,6 +261,7 @@ func (c *backend) NewUserOp(
 
 	overridesPresent := overrides != nil
 
+	// getNonce
 	if overridesPresent && overrides.Nonce != nil {
 		op.Nonce = decimal.NewFromBigInt(overrides.Nonce, 0)
 	} else {
@@ -268,6 +270,7 @@ func (c *backend) NewUserOp(
 		}
 	}
 
+	// getInitCode
 	if overridesPresent && overrides.InitCode != nil {
 		op.InitCode = overrides.InitCode
 	} else {
@@ -294,6 +297,7 @@ func (c *backend) NewUserOp(
 		}
 	}
 
+	// getGasPrices
 	if overridesPresent && overrides.GasPrices != nil {
 		if overrides.GasPrices.MaxFeePerGas != nil {
 			op.MaxFeePerGas = decimal.NewFromBigInt(overrides.GasPrices.MaxFeePerGas, 0)
@@ -302,7 +306,20 @@ func (c *backend) NewUserOp(
 			op.MaxPriorityFeePerGas = decimal.NewFromBigInt(overrides.GasPrices.MaxPriorityFeePerGas, 0)
 		}
 	}
+	err = c.getGasPrices(ctx, &op)
+	if err != nil {
+		return UserOperation{}, err
+	}
 
+	// sign before estimating gas limits, so that signature is well-formed.
+	// If signature is corrupted, this can cause SmartWallet estimation to fail,
+	// and the bundler will return an error.
+	err = c.sign(ctx, &op)
+	if err != nil {
+		return UserOperation{}, err
+	}
+
+	// getGasLimits
 	if overridesPresent && overrides.GasLimits != nil {
 		if overrides.GasLimits.CallGasLimit != nil {
 			op.CallGasLimit = decimal.NewFromBigInt(overrides.GasLimits.CallGasLimit, 0)
@@ -313,6 +330,16 @@ func (c *backend) NewUserOp(
 		if overrides.GasLimits.PreVerificationGas != nil {
 			op.PreVerificationGas = decimal.NewFromBigInt(overrides.GasLimits.PreVerificationGas, 0)
 		}
+	}
+	err = c.getGasLimits(ctx, &op)
+	if err != nil {
+		return UserOperation{}, err
+	}
+
+	// sign
+	err = c.sign(ctx, &op)
+	if err != nil {
+		return UserOperation{}, err
 	}
 
 	slog.Debug("middlewares applied successfully", "userop", op)
