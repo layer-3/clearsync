@@ -7,6 +7,21 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+// GetFactoryCallData returns the calldata for a smart wallet factory to deploy a wallet
+// of a given type for a given smart wallet owner with a given wallet index.
+// The smart wallet factory is later called with this calldata to deploy the smart wallet.
+//
+// NOTE: this does NOT constitute an InitCode (defined by ERC-4337) sufficient to deploy a smart wallet in a user operation.
+// For this purpose, use `GetInitCode` instead.
+//
+// Parameters:
+// - smartWalletConfig: the configuration for the smart wallet
+// - ownerAddress: the address of the owner of the smart wallet
+// - index: the index of the smart wallet
+//
+// Returns:
+// - the calldata for the smart wallet factory
+// - an error if the calldata could not be built
 func GetFactoryCallData(smartWalletConfig Config, ownerAddress common.Address, index decimal.Decimal) ([]byte, error) {
 	var initCode []byte
 	var err error
@@ -33,7 +48,7 @@ func GetFactoryCallData(smartWalletConfig Config, ownerAddress common.Address, i
 	return initCode, nil
 }
 
-// getKernelInitData returns the calldata needed call the factory
+// GetKernelInitData returns the calldata needed call the factory
 // to deploy a Zerodev Kernel smart account.
 func GetKernelFactoryCallData(owner common.Address, index decimal.Decimal, accountLogic, ecdsaValidator common.Address) ([]byte, error) {
 	// Initialize Kernel Smart Account with default validation module and its calldata
@@ -53,7 +68,7 @@ func GetKernelFactoryCallData(owner common.Address, index decimal.Decimal, accou
 	return callData, nil
 }
 
-// getKernelInitData returns the calldata needed call the factory
+// GetKernelInitData returns the calldata needed call the factory
 // to deploy a Biconomy smart account.
 func GetBiconomyFactoryCallData(owner common.Address, index decimal.Decimal, ecdsaValidator common.Address) ([]byte, error) {
 	// Initialize SCW validation module with owner address

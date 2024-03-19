@@ -16,7 +16,31 @@ import (
 var entryPointV0_6Address = common.HexToAddress("0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789")
 
 type Client interface {
+	// Verify checks if the signature was signed by the signer.
+	// This function supports ECDSA, ERC-1271 and ERC-6492 signatures.
+	//
+	// Parameters:
+	// - ctx: the context
+	// - signer: the address of the signer. EOA address if ECDSA signature is supplied, smart wallet address if ERC-1271 or ERC-6492 signature is supplied.
+	// - messageHash: the hash of the message that was signed
+	// - signature: the signature
+	//
+	// Returns:
+	// - true if the signature is valid, false otherwise
+	// - an error if an error occurred during the verification
 	Verify(ctx context.Context, signer common.Address, messageHash common.Hash, signature []byte) (bool, error)
+
+	// PackERC6492Sig packs an ERC-6492 signature by adding smart wallet factory address, calldata and ERC-6492 suffix.
+	//
+	// Parameters:
+	// - ctx: the context
+	// - ownerAddress: the address of the owner of the smart wallet
+	// - index: the index of the smart wallet
+	// - sig: the signature
+	//
+	// Returns:
+	// - the packed signature
+	// - an error if an error occurred during the packing
 	PackERC6492Sig(ctx context.Context, ownerAddress common.Address, index decimal.Decimal, sig []byte) ([]byte, error)
 }
 

@@ -29,7 +29,11 @@ import (
 )
 
 func main() {
-  sigver, err := universal_sigver.NewUniversalSigver(client, config, entryPointAddress)
+  providerURL := "wss://your-infura-url"
+  config := universal_sigver.Config{/* build your config here */}
+  entryPointAddress := common.Address{/* address of a pre-deployed EntryPoint contract */}
+
+  sigver, err := universal_sigver.NewUniversalSigVer(providerURL, config, entryPointAddress)
   if err != nil {
     panic(err)
   }

@@ -9,6 +9,17 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+// GetInitCode builds the InitCode (defined in the ERC-4337) for a smart wallet.
+// The InitCode is used to deploy a smart wallet if it is not already deployed.
+//
+// Parameters:
+// - smartWalletConfig: the configuration for the smart wallet
+// - ownerAddress: the address of the owner of the smart wallet
+// - index: the index of the smart wallet
+//
+// Returns:
+// - the InitCode for the smart wallet
+// - an error if the InitCode could not be built
 func GetInitCode(smartWalletConfig Config, ownerAddress common.Address, index decimal.Decimal) ([]byte, error) {
 	var initCode []byte
 	var err error
@@ -31,6 +42,17 @@ func GetInitCode(smartWalletConfig Config, ownerAddress common.Address, index de
 	return initCode, nil
 }
 
+// GetInitCodeFromFactoryCallData builds the InitCode (defined in the ERC-4337) from a factory calldata,
+// that contains the deployment data for the smart wallet.
+// This is another way to get the InitCode for a smart wallet, as owner and index are basically included in the factory call data.
+//
+// Parameters:
+// - smartWalletConfig: the configuration for the smart wallet
+// - factoryCallData: the calldata for the factory
+//
+// Returns:
+// - the InitCode for the smart wallet
+// - an error if the InitCode could not be built
 func GetInitCodeFromFactoryCallData(smartWalletConfig Config, factoryCallData []byte) ([]byte, error) {
 	var initCode []byte
 	var err error
