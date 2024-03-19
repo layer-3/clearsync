@@ -17,7 +17,7 @@ func must[T any](x T, err error) T {
 	return x
 }
 
-func boolMust[T any](x T, b bool) T {
+func mustTrue[T any](x T, b bool) T {
 	if !b {
 		panic(fmt.Errorf("unexpected false boolean value"))
 	}

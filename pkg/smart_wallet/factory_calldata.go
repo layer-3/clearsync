@@ -11,6 +11,10 @@ func GetFactoryCallData(smartWalletConfig Config, ownerAddress common.Address, i
 	var initCode []byte
 	var err error
 
+	if smartWalletConfig.Type == nil {
+		return nil, ErrNoSmartWalletType
+	}
+
 	switch typ := *smartWalletConfig.Type; typ {
 	case SimpleAccountType:
 		return nil, fmt.Errorf("%w: %s", ErrSmartWalletNotSupported, typ)

@@ -46,7 +46,7 @@ func SendNative(ctx context.Context, node *EthNode, from, to Account, fundAmount
 }
 
 func WaitMined(ctx context.Context, node *EthNode, tx *types.Transaction) (*types.Receipt, error) {
-	queryTicker := time.NewTicker(1 * time.Second)
+	queryTicker := time.NewTicker(50 * time.Millisecond)
 	defer queryTicker.Stop()
 
 	for {

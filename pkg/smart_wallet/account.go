@@ -13,7 +13,7 @@ import (
 
 var (
 	res, ok                  = entryPointABI.Errors["SenderAddressResult"]
-	senderAddressResultError = boolMust(res, ok)
+	senderAddressResultError = mustTrue(res, ok)
 )
 
 func IsAccountDeployed(ctx context.Context, provider ethereum.ChainStateReader, swAddress common.Address) (bool, error) {

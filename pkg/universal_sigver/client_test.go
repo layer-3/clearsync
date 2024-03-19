@@ -48,7 +48,7 @@ func TestVerify(t *testing.T) {
 	})
 
 	t.Run("Successfuly verify ERC-1271 signature", func(t *testing.T) {
-		index := decimal.NewFromInt(0)
+		index := decimal.Zero
 
 		// 3. Start bundler, create client and kernel signer
 		bundlerUrl := local_blockchain.NewBundler(ctx, t, node, contracts.EntryPoint)
