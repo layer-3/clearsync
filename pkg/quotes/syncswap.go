@@ -175,6 +175,12 @@ func (s *syncswap) ParseSwap(swap *isyncswap_pool.ISyncSwapPoolSwap, market Mark
 	var amount decimal.Decimal
 	var total decimal.Decimal
 
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("Recovered after parse swap panic. Swap = %+v\n", swap)
+		}
+	}()
+
 	switch {
 	case isValidNonZero(swap.Amount0In) && isValidNonZero(swap.Amount1Out):
 		amount1Out := decimal.NewFromBigInt(swap.Amount1Out, 0).Div(decimal.NewFromInt(10).Pow(pool.quoteToken.Decimals))
@@ -285,7 +291,6 @@ func (s *syncswap) getPool(market Market) (*syncswapPoolWrapper, error) {
 	} else {
 		return nil, fmt.Errorf("failed to build Syncswap pool: %w", err)
 	}
-
 }
 
 func (s *syncswap) getTokens(market Market) (baseToken poolToken, quoteToken poolToken, err error) {
