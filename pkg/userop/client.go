@@ -191,12 +191,12 @@ func NewClient(config ClientConfig) (Client, error) {
 		return nil, fmt.Errorf("failed to connect to the entry point contract: %w", err)
 	}
 
-	getInitCode, err := getInitCode(providerRPC, config.SmartWallet)
+	getInitCode, err := getInitCodeMiddleware(providerRPC, config.SmartWallet)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build initCode middleware: %w", err)
 	}
 
-	getGasLimits, err := getGasLimits(bundlerRPC, config)
+	getGasLimits, err := getGasLimitsMiddleware(bundlerRPC, config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build gas limits estimation middleware: %w", err)
 	}
@@ -211,11 +211,11 @@ func NewClient(config ClientConfig) (Client, error) {
 		entryPoint:  config.EntryPoint,
 		paymaster:   config.Paymaster.Address,
 
-		getNonce:     getNonce(entryPointContract),
+		getNonce:     getNonceMiddleware(entryPointContract),
 		getInitCode:  getInitCode,
-		getGasPrices: getGasPrices(providerRPC, config.Gas),
+		getGasPrices: getGasPricesMiddleware(providerRPC, config.Gas),
 		getGasLimits: getGasLimits,
-		sign:         sign(config.EntryPoint, chainID),
+		sign:         getSignMiddleware(config.EntryPoint, chainID),
 	}, nil
 }
 

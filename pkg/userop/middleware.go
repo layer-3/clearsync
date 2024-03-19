@@ -29,7 +29,7 @@ const (
 type middleware func(ctx context.Context, op *UserOperation) error
 
 // TODO: possible improvement: when there is a userOp for this SW already in the mempool, we should return incremented nonce
-func getNonce(entryPoint *entry_point_v0_6_0.EntryPoint) middleware {
+func getNonceMiddleware(entryPoint *entry_point_v0_6_0.EntryPoint) middleware {
 	return func(_ context.Context, op *UserOperation) error {
 		slog.Debug("getting nonce")
 		key := new(big.Int)
@@ -43,7 +43,7 @@ func getNonce(entryPoint *entry_point_v0_6_0.EntryPoint) middleware {
 	}
 }
 
-func getInitCode(provider EthBackend, smartWalletConfig smart_wallet.Config) (middleware, error) {
+func getInitCodeMiddleware(provider EthBackend, smartWalletConfig smart_wallet.Config) (middleware, error) {
 	return func(ctx context.Context, op *UserOperation) error {
 		owner, ok := ctx.Value(ctxKeyOwner).(common.Address)
 		if !ok {
@@ -72,7 +72,7 @@ func getInitCode(provider EthBackend, smartWalletConfig smart_wallet.Config) (mi
 	}, nil
 }
 
-func getGasPrices(provider EthBackend, gasConfig GasConfig) middleware {
+func getGasPricesMiddleware(provider EthBackend, gasConfig GasConfig) middleware {
 	return func(ctx context.Context, op *UserOperation) error {
 		if !op.MaxFeePerGas.IsZero() && !op.MaxPriorityFeePerGas.IsZero() {
 			slog.Debug("skipping gas price estimation, using provided gas prices")
@@ -188,7 +188,7 @@ func getBiconomyPaymasterAndData(
 	}
 }
 
-func getGasLimits(bundler RPCBackend, config ClientConfig) (middleware, error) {
+func getGasLimitsMiddleware(bundler RPCBackend, config ClientConfig) (middleware, error) {
 	estimateGas := estimateUserOperationGas(bundler, config.EntryPoint)
 
 	if config.Paymaster.Type != nil && *config.Paymaster.Type != PaymasterDisabled {
@@ -340,7 +340,7 @@ func (est gasEstimate) fromAny(a any) (*big.Int, error) {
 	}
 }
 
-func sign(entryPoint common.Address, chainID *big.Int) middleware {
+func getSignMiddleware(entryPoint common.Address, chainID *big.Int) middleware {
 	return func(ctx context.Context, op *UserOperation) error {
 		signer, ok := ctx.Value(ctxKeySigner).(Signer)
 		if !ok {
