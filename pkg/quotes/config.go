@@ -121,7 +121,7 @@ type UniswapV3GethConfig struct {
 	AssetsURL           string       `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/assets.json"`
 	FactoryAddress      string       `yaml:"factory_address" env:"FACTORY_ADDRESS" env-default:"0x1F98431c8aD98523631AE4a59f267346ea31F984"`
 	Filter              FilterConfig `yaml:"filter" env-prefix:"FILTER_"`
-	PrefetchSwapsBlocks uint64       `yaml:"prefetch_swaps_blocks" env:"PREFETCH_SWAPS_BLOCKS" env-default:"100`
+	PrefetchSwapsBlocks uint64       `yaml:"prefetch_swaps_blocks" env:"PREFETCH_SWAPS_BLOCKS" env-default:"100"`
 }
 
 func (UniswapV3GethConfig) DriverType() DriverType {
@@ -133,7 +133,7 @@ type SyncswapConfig struct {
 	AssetsURL                 string       `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/assets.json"`
 	ClassicPoolFactoryAddress string       `yaml:"classic_pool_factory_address" env:"CLASSIC_POOL_FACTORY_ADDRESS" env-default:"0x37BAc764494c8db4e54BDE72f6965beA9fa0AC2d"`
 	Filter                    FilterConfig `yaml:"filter" env-prefix:"FILTER_"`
-	PrefetchSwapsBlocks       uint64       `yaml:"prefetch_swaps_blocks" env:"PREFETCH_SWAPS_BLOCKS" env-default:"100`
+	PrefetchSwapsBlocks       uint64       `yaml:"prefetch_swaps_blocks" env:"PREFETCH_SWAPS_BLOCKS" env-default:"100"`
 }
 
 func (SyncswapConfig) DriverType() DriverType {
@@ -148,7 +148,7 @@ type QuickswapConfig struct {
 	// Note that the contract used in this lib is compiled from https://github.com/code-423n4/2022-09-quickswap.
 	PoolFactoryAddress  string       `yaml:"pool_factory_address" env:"POOL_FACTORY_ADDRESS" env-default:"0x411b0fAcC3489691f28ad58c47006AF5E3Ab3A28"`
 	Filter              FilterConfig `yaml:"filter" env-prefix:"FILTER_"`
-	PrefetchSwapsBlocks uint64       `yaml:"prefetch_swaps_blocks" env:"PREFETCH_SWAPS_BLOCKS" env-default:"100`
+	PrefetchSwapsBlocks uint64       `yaml:"prefetch_swaps_blocks" env:"PREFETCH_SWAPS_BLOCKS" env-default:"100"`
 }
 
 func (QuickswapConfig) DriverType() DriverType {
