@@ -41,7 +41,7 @@
       "symbol": "LUBE",
       "decimals": 18,
       "precision": 6,
-      "logoURI": "",
+      "logoURI": "https://assets.coingecko.com/coins/images/33070/standard/200x200.png?1700536826",
       "extensions": {}
     },
     {
@@ -68,7 +68,7 @@
       "symbol": "LINDA",
       "decimals": 18,
       "precision": 6,
-      "logoURI": "",
+      "logoURI": "https://assets.coingecko.com/coins/images/33699/standard/linda-logo-200.png?1705166731",
       "extensions": {}
     }
   ]

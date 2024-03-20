@@ -1,6 +1,4 @@
 {
-  "chainId": 59140,
-  "blockchainRPC": "wss://linea-goerli.infura.io/ws/v3/a655b83e4be64f6a9b05d5b4ab43cf74",
   "adjudicatorAddress": "0xecd113352c973c769208a77aae8626f9fbf81c6e",
   "clearingAppAddress": "0x478c6745c0fa5c83b886fc9d417e03c14371e9d2",
   "escrowAppAddress": "0x94328be5c288Aa28185799435d87a7F5CB366B72",
