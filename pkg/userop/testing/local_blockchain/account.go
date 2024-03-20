@@ -85,6 +85,8 @@ func NewAccountWithBalance(
 		return Account{}, fmt.Errorf("failed to exec increment balance: %w (exit code %d)", err, exitCode)
 	}
 
+	// TODO: wait for tx mine
+
 	scanner := bufio.NewScanner(result)
 	for scanner.Scan() {
 		slog.Debug(scanner.Text())

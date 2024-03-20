@@ -96,7 +96,7 @@ func NewEthNode(ctx context.Context, t *testing.T) *EthNode {
 				// 8547 TCP, used by the GraphQL API
 				// 30303 TCP and UDP, used by the P2P protocol running the network
 				ExposedPorts: []string{"8545:8545/tcp", "8546:8546/tcp", "8547:8547/tcp", "30303:30303/tcp", "30303:30303/udp"},
-				Cmd:          []string{"--dev", "--http", "--http.api=eth,web3,net", "--http.addr=0.0.0.0", "--http.corsdomain='*'", "--http.vhosts='*'"},
+				Cmd:          []string{"--dev", "--http", "--ws", "--http.api=eth,web3,net", "--http.addr=0.0.0.0", "--http.corsdomain='*'", "--http.vhosts='*'", "--ws.addr=0.0.0.0", "--ws.origins='*'"},
 				WaitingFor:   wait.ForLog("server started"),
 			},
 			Started: true,
@@ -105,10 +105,14 @@ func NewEthNode(ctx context.Context, t *testing.T) *EthNode {
 
 		containerIP, err := gethContainer.ContainerIP(ctx)
 		require.NoError(t, err, "failed to get Go-Ethereum container IP")
+		// As a rpc port we are using ws port for subscription
+		// As a container port we are using http port for bundler
+		rpcPort, err := gethContainer.MappedPort(ctx, "8546")
+		require.NoError(t, err, "failed to get Go-Ethereum container port")
 		containerPort, err := gethContainer.MappedPort(ctx, "8545")
 		require.NoError(t, err, "failed to get Go-Ethereum container port")
 
-		rpcURL, err = url.Parse(fmt.Sprintf("http://0.0.0.0:%s", containerPort.Port()))
+		rpcURL, err = url.Parse(fmt.Sprintf("ws://0.0.0.0:%s", rpcPort.Port()))
 		require.NoError(t, err, "failed to parse local RPC URL")
 		containerURL, err = url.Parse(fmt.Sprintf("http://%s:%s", containerIP, containerPort.Port()))
 		require.NoError(t, err, "failed to parse container RPC URL")
