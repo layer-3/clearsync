@@ -26,12 +26,13 @@ var (
 )
 
 type uniswapV3Geth struct {
-	once           *once
-	url            string
-	assetsURL      string
-	factoryAddress string
-	client         *ethclient.Client
-	factory        *iuniswap_v3_factory.IUniswapV3Factory
+	once                *once
+	url                 string
+	assetsURL           string
+	factoryAddress      string
+	client              *ethclient.Client
+	factory             *iuniswap_v3_factory.IUniswapV3Factory
+	prefetchSwapsBlocks uint64
 
 	outbox  chan<- TradeEvent
 	filter  Filter
@@ -41,10 +42,11 @@ type uniswapV3Geth struct {
 
 func newUniswapV3Geth(config UniswapV3GethConfig, outbox chan<- TradeEvent) Driver {
 	return &uniswapV3Geth{
-		once:           newOnce(),
-		url:            config.URL,
-		assetsURL:      config.AssetsURL,
-		factoryAddress: config.FactoryAddress,
+		once:                newOnce(),
+		url:                 config.URL,
+		assetsURL:           config.AssetsURL,
+		factoryAddress:      config.FactoryAddress,
+		prefetchSwapsBlocks: config.PrefetchSwapsBlocks,
 
 		outbox:  outbox,
 		filter:  NewFilter(config.Filter),
@@ -138,7 +140,7 @@ func (u *uniswapV3Geth) Subscribe(market Market) error {
 		}
 
 		iter, err := pool.contract.FilterSwap(
-			&bind.FilterOpts{Start: block - 1000},
+			&bind.FilterOpts{Start: block - u.prefetchSwapsBlocks},
 			[]common.Address{},
 			[]common.Address{})
 		if err != nil {

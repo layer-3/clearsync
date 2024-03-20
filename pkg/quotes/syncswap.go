@@ -28,6 +28,7 @@ type syncswap struct {
 	classicPoolFactoryAddress string
 	client                    *ethclient.Client
 	factory                   *isyncswap_factory.ISyncSwapFactory
+	prefetchSwapsBlocks       uint64
 
 	outbox  chan<- TradeEvent
 	filter  Filter
@@ -41,6 +42,7 @@ func newSyncswap(config SyncswapConfig, outbox chan<- TradeEvent) Driver {
 		url:                       config.URL,
 		assetsURL:                 config.AssetsURL,
 		classicPoolFactoryAddress: config.ClassicPoolFactoryAddress,
+		prefetchSwapsBlocks:       config.PrefetchSwapsBlocks,
 
 		outbox:  outbox,
 		filter:  NewFilter(config.Filter),
@@ -134,7 +136,7 @@ func (s *syncswap) Subscribe(market Market) error {
 		}
 
 		iter, err := pool.contract.FilterSwap(
-			&bind.FilterOpts{Start: block - 1000},
+			&bind.FilterOpts{Start: block - s.prefetchSwapsBlocks},
 			[]common.Address{},
 			[]common.Address{})
 		if err != nil {

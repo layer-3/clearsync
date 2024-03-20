@@ -20,12 +20,13 @@ import (
 var loggerQuickswap = log.Logger("quickswap")
 
 type quickswap struct {
-	once               *once
-	url                string
-	assetsURL          string
-	poolFactoryAddress string
-	client             *ethclient.Client
-	factory            *iquickswap_v3_factory.IQuickswapV3Factory
+	once                *once
+	url                 string
+	assetsURL           string
+	poolFactoryAddress  string
+	client              *ethclient.Client
+	factory             *iquickswap_v3_factory.IQuickswapV3Factory
+	prefetchSwapsBlocks uint64
 
 	outbox  chan<- TradeEvent
 	filter  Filter
@@ -35,10 +36,11 @@ type quickswap struct {
 
 func newQuickswap(config QuickswapConfig, outbox chan<- TradeEvent) Driver {
 	return &quickswap{
-		once:               newOnce(),
-		url:                config.URL,
-		assetsURL:          config.AssetsURL,
-		poolFactoryAddress: config.PoolFactoryAddress,
+		once:                newOnce(),
+		url:                 config.URL,
+		assetsURL:           config.AssetsURL,
+		poolFactoryAddress:  config.PoolFactoryAddress,
+		prefetchSwapsBlocks: config.PrefetchSwapsBlocks,
 
 		outbox:  outbox,
 		filter:  NewFilter(config.Filter),
@@ -132,7 +134,7 @@ func (s *quickswap) Subscribe(market Market) error {
 		}
 
 		iter, err := pool.contract.FilterSwap(
-			&bind.FilterOpts{Start: block - 1000},
+			&bind.FilterOpts{Start: block - s.prefetchSwapsBlocks},
 			[]common.Address{},
 			[]common.Address{})
 		if err != nil {
