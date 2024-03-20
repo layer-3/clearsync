@@ -54,7 +54,7 @@
         "symbol": "WETH",
         "decimals": 18,
         "precision": 6,
-        "logoURI": "https://lineascan.build/token/images/weth_32.png"
+        "logoURI": "https://token-repository.dappradar.com/tokens?protocol=ethereum&contract=0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2&file=logo.png"
       },
       {
         "address": "0x82cc61354d78b846016b559e3ccd766fa7e793d5",
