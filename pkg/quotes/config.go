@@ -16,6 +16,7 @@ type Config struct {
 	UniswapV3Api  UniswapV3ApiConfig  `yaml:"uniswap_v3_api" env-prefix:"QUOTES_UNISWAP_V3_API_"`
 	UniswapV3Geth UniswapV3GethConfig `yaml:"uniswap_v3_geth" env-prefix:"QUOTES_UNISWAP_V3_GETH_"`
 	Syncswap      SyncswapConfig      `yaml:"syncswap" env-prefix:"QUOTES_SYNCSWAP_"`
+	Quickswap     QuickswapConfig     `yaml:"quickswap" env-prefix:"QUOTES_QUICKSWAP_"`
 	Index         IndexConfig         `yaml:"index" env-prefix:"QUOTES_INDEX_"`
 }
 
@@ -133,6 +134,20 @@ type SyncswapConfig struct {
 
 func (SyncswapConfig) DriverType() DriverType {
 	return DriverSyncswap
+}
+
+type QuickswapConfig struct {
+	URL       string `yaml:"url" env:"URL" env-default:""`
+	AssetsURL string `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/mainnet/assets.json"`
+	// PoolFactoryAddress is the address of the factory contract.
+	// See docs at https://docs.quickswap.exchange/technical-reference/smart-contracts/v3/factory.
+	// Note that the contract used in this lib is compiled from https://github.com/code-423n4/2022-09-quickswap.
+	PoolFactoryAddress string       `yaml:"pool_factory_address" env:"POOL_FACTORY_ADDRESS" env-default:"0x411b0fAcC3489691f28ad58c47006AF5E3Ab3A28"`
+	Filter             FilterConfig `yaml:"filter" env-prefix:"FILTER_"`
+}
+
+func (QuickswapConfig) DriverType() DriverType {
+	return DriverQuickswap
 }
 
 type SamplerFilterConfig struct {

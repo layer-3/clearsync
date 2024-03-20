@@ -70,7 +70,7 @@ func (s *syncswap) Start() error {
 		classicPoolFactoryAddress := common.HexToAddress(s.classicPoolFactoryAddress)
 		factory, err := isyncswap_factory.NewISyncSwapFactory(classicPoolFactoryAddress, client)
 		if err != nil {
-			startErr = fmt.Errorf("failed to instantiate a TokenFactory contract: %w", err)
+			startErr = fmt.Errorf("failed to instantiate a Quickswap Factory contract: %w", err)
 			return
 		}
 		s.factory = factory
@@ -142,10 +142,10 @@ func (s *syncswap) Subscribe(market Market) error {
 				return
 			case swap := <-sink:
 				if pool.reverted {
-					FlipSwap(swap)
+					s.flipSwap(swap)
 				}
 
-				tr, err := s.ParseSwap(swap, market, pool)
+				tr, err := s.parseSwap(swap, market, pool)
 				if err != nil {
 					loggerSyncswap.Errorf("market %s: failed to parse swap: %s", market.String(), err)
 					continue
@@ -163,13 +163,13 @@ func (s *syncswap) Subscribe(market Market) error {
 	return nil
 }
 
-func FlipSwap(swap *isyncswap_pool.ISyncSwapPoolSwap) {
+func (*syncswap) flipSwap(swap *isyncswap_pool.ISyncSwapPoolSwap) {
 	amount0In, amount0Out := swap.Amount0In, swap.Amount0Out
 	swap.Amount0In, swap.Amount0Out = swap.Amount1In, swap.Amount1Out
 	swap.Amount1In, swap.Amount1Out = amount0In, amount0Out
 }
 
-func (s *syncswap) ParseSwap(swap *isyncswap_pool.ISyncSwapPoolSwap, market Market, pool *syncswapPoolWrapper) (TradeEvent, error) {
+func (*syncswap) parseSwap(swap *isyncswap_pool.ISyncSwapPoolSwap, market Market, pool *syncswapPoolWrapper) (TradeEvent, error) {
 	var takerType TakerType
 	var price decimal.Decimal
 	var amount decimal.Decimal
@@ -283,6 +283,7 @@ func (s *syncswap) getPool(market Market) (*syncswapPoolWrapper, error) {
 		quoteToken: quoteToken,
 		reverted:   false,
 	}
+
 	if common.HexToAddress(baseToken.Address) == basePoolToken && common.HexToAddress(quoteToken.Address) == quotePoolToken {
 		return pool, nil
 	} else if common.HexToAddress(quoteToken.Address) == basePoolToken && common.HexToAddress(baseToken.Address) == quotePoolToken {

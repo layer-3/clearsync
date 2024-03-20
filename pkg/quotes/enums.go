@@ -26,6 +26,7 @@ var (
 	DriverUniswapV3Api  = DriverType{"uniswap_v3_api"}
 	DriverUniswapV3Geth = DriverType{"uniswap_v3_geth"}
 	DriverSyncswap      = DriverType{"syncswap"}
+	DriverQuickswap     = DriverType{"quickswap"}
 )
 
 func ToDriverType(raw string) (DriverType, error) {
@@ -38,6 +39,7 @@ func ToDriverType(raw string) (DriverType, error) {
 		DriverUniswapV3Api.String():  DriverUniswapV3Api,
 		DriverUniswapV3Geth.String(): DriverUniswapV3Geth,
 		DriverSyncswap.String():      DriverSyncswap,
+		DriverQuickswap.String():     DriverQuickswap,
 	}
 
 	driver, ok := allDrivers[raw]
@@ -96,9 +98,20 @@ func (t TakerType) String() string {
 }
 
 var (
+	// TakerTypeUnknown represents the trade,
+	// for which you can't determine its type,
+	// and therefore the taker side cannot be deduced.
 	TakerTypeUnknown = TakerType{""}
-	TakerTypeBuy     = TakerType{"sell"}
-	TakerTypeSell    = TakerType{"buy"}
+	// TakerTypeBuy represents the "buy" trade.
+	// It's value is set to "sell" because the sell order it
+	// was matched with was present in the order book before,
+	// therefore the taker is the "sell" side.
+	TakerTypeBuy = TakerType{"sell"}
+	// TakerTypeSell represents the "sell" trade.
+	// It's value is set to "buy" because the buy order it
+	// was matched with was present in the order book before,
+	// therefore the taker is the "buy" side.
+	TakerTypeSell = TakerType{"buy"}
 )
 
 func ToTakerType(raw string) (TakerType, error) {
