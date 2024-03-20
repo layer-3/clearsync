@@ -1,11 +1,13 @@
 package quotes
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/event"
@@ -125,6 +127,28 @@ func (s *syncswap) Subscribe(market Market) error {
 		return fmt.Errorf("failed to get pool for market %v: %s", market.String(), err)
 	}
 
+	go func() {
+		block, err := s.client.BlockNumber(context.Background())
+		if err != nil {
+			loggerSyncswap.Errorf("failed to get block number: %s", err)
+		}
+
+		iter, err := pool.contract.FilterSwap(
+			&bind.FilterOpts{Start: block - 1000},
+			[]common.Address{},
+			[]common.Address{})
+		if err != nil {
+			loggerSyncswap.Errorf("failed to filter swap events for market %s: %s", market, err)
+		}
+		if ok := iter.Next(); ok {
+			tr, err := s.parseSwap(iter.Event, pool)
+			if err != nil {
+				loggerSyncswap.Errorf("failed to parse swap event for market %s: %s", market, err)
+			}
+			s.outbox <- tr
+		}
+	}()
+
 	sink := make(chan *isyncswap_pool.ISyncSwapPoolSwap, 128)
 	sub, err := pool.contract.WatchSwap(nil, sink, []common.Address{}, []common.Address{})
 	if err != nil {
@@ -149,7 +173,7 @@ func (s *syncswap) Subscribe(market Market) error {
 					s.flipSwap(swap)
 				}
 
-				tr, err := s.parseSwap(swap, market, pool)
+				tr, err := s.parseSwap(swap, pool)
 				if err != nil {
 					loggerSyncswap.Errorf("market %s: failed to parse swap: %s", market.String(), err)
 					continue
@@ -173,11 +197,15 @@ func (*syncswap) flipSwap(swap *isyncswap_pool.ISyncSwapPoolSwap) {
 	swap.Amount1In, swap.Amount1Out = amount0In, amount0Out
 }
 
-func (*syncswap) parseSwap(swap *isyncswap_pool.ISyncSwapPoolSwap, market Market, pool *syncswapPoolWrapper) (TradeEvent, error) {
+func (*syncswap) parseSwap(swap *isyncswap_pool.ISyncSwapPoolSwap, pool *syncswapPoolWrapper) (TradeEvent, error) {
 	var takerType TakerType
 	var price decimal.Decimal
 	var amount decimal.Decimal
 	var total decimal.Decimal
+	market := Market{
+		baseUnit:  pool.baseToken.Symbol,
+		quoteUnit: pool.quoteToken.Symbol,
+	}
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -204,8 +232,9 @@ func (*syncswap) parseSwap(swap *isyncswap_pool.ISyncSwapPoolSwap, market Market
 		total = amount1In
 		amount = amount0Out
 	default:
-		loggerSyncswap.Errorf("market %s: unknown swap type", market.String())
-		return TradeEvent{}, fmt.Errorf("market %s: unknown swap type", market.String())
+		err := fmt.Errorf("market %s: unknown swap type", market.String())
+		loggerSyncswap.Error(err.Error())
+		return TradeEvent{}, err
 	}
 
 	amount = amount.Abs()

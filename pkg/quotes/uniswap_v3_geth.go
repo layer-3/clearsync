@@ -1,14 +1,13 @@
 package quotes
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
-	"io"
 	"math/big"
-	"net/http"
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/event"
@@ -132,6 +131,28 @@ func (u *uniswapV3Geth) Subscribe(market Market) error {
 		return fmt.Errorf("failed get pool for market %v: %s", market.String(), err)
 	}
 
+	go func() {
+		block, err := u.client.BlockNumber(context.Background())
+		if err != nil {
+			loggerSyncswap.Errorf("failed to get block number: %s", err)
+		}
+
+		iter, err := pool.contract.FilterSwap(
+			&bind.FilterOpts{Start: block - 1000},
+			[]common.Address{},
+			[]common.Address{})
+		if err != nil {
+			loggerSyncswap.Errorf("failed to filter swap events for market %s: %s", market, err)
+		}
+		if ok := iter.Next(); ok {
+			tr, err := u.parseSwap(iter.Event, pool)
+			if err != nil {
+				loggerSyncswap.Errorf("failed to parse swap event for market %s: %s", market, err)
+			}
+			u.outbox <- tr
+		}
+	}()
+
 	sink := make(chan *iuniswap_v3_pool.IUniswapV3PoolSwap, 128)
 	sub, err := pool.contract.WatchSwap(nil, sink, []common.Address{}, []common.Address{})
 	if err != nil {
@@ -152,28 +173,9 @@ func (u *uniswapV3Geth) Subscribe(market Market) error {
 				}
 				return
 			case swap := <-sink:
-				amount := decimal.NewFromBigInt(swap.Amount0, 0)
-				price := calculatePrice(
-					decimal.NewFromBigInt(swap.SqrtPriceX96, 0),
-					pool.baseToken.Decimals,
-					pool.quoteToken.Decimals)
-				takerType := TakerTypeBuy
-				if amount.Sign() < 0 {
-					// When amount0 is negative (and amount1 is positive),
-					// it means token0 is leaving the pool in exchange for token1.
-					// This is equivalent to a "sell" of token0 (or a "buy" of token1).
-					takerType = TakerTypeSell
-				}
-
-				amount = amount.Abs()
-				tr := TradeEvent{
-					Source:    DriverUniswapV3Geth,
-					Market:    market,
-					Price:     price,
-					Amount:    amount,
-					Total:     price.Mul(amount),
-					TakerType: takerType,
-					CreatedAt: time.Now(),
+				tr, err := u.parseSwap(swap, pool)
+				if err != nil {
+					loggerUniswapV3Geth.Errorf("failed to parse swap event for market %s: %w", market, err)
 				}
 
 				if !u.filter.Allow(tr) {
@@ -202,6 +204,35 @@ func (u *uniswapV3Geth) Unsubscribe(market Market) error {
 	u.streams.Delete(market)
 
 	return nil
+}
+
+func (*uniswapV3Geth) parseSwap(swap *iuniswap_v3_pool.IUniswapV3PoolSwap, pool *uniswapV3GethPoolWrapper) (TradeEvent, error) {
+	amount := decimal.NewFromBigInt(swap.Amount0, 0)
+	price := calculatePrice(
+		decimal.NewFromBigInt(swap.SqrtPriceX96, 0),
+		pool.baseToken.Decimals,
+		pool.quoteToken.Decimals)
+	takerType := TakerTypeBuy
+	if amount.Sign() < 0 {
+		// When amount0 is negative (and amount1 is positive),
+		// it means token0 is leaving the pool in exchange for token1.
+		// This is equivalent to a "sell" of token0 (or a "buy" of token1).
+		takerType = TakerTypeSell
+	}
+
+	amount = amount.Abs()
+	return TradeEvent{
+		Source: DriverUniswapV3Geth,
+		Market: Market{
+			baseUnit:  pool.baseToken.Symbol,
+			quoteUnit: pool.quoteToken.Symbol,
+		},
+		Price:     price,
+		Amount:    amount,
+		Total:     price.Mul(amount),
+		TakerType: takerType,
+		CreatedAt: time.Now(),
+	}, nil
 }
 
 type poolToken struct {
@@ -274,20 +305,17 @@ func (u *uniswapV3Geth) getTokens(market Market) (baseToken poolToken, quoteToke
 }
 
 func getAssets(assetsURL string) ([]poolToken, error) {
-	resp, err := http.Get(assetsURL)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	var assets map[string][]poolToken
-	if err := json.Unmarshal(body, &assets); err != nil {
-		return nil, err
-	}
-	return assets["tokens"], nil
+	return []poolToken{{
+		Address:  "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
+		Symbol:   "weth",
+		Decimals: decimal.NewFromInt(18),
+	}, {
+		Address:  "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
+		Symbol:   "matic",
+		Decimals: decimal.NewFromInt(18),
+	}, {
+		Address:  "0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6",
+		Symbol:   "wbtc",
+		Decimals: decimal.NewFromInt(8),
+	}}, nil
 }

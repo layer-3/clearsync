@@ -1,10 +1,12 @@
 package quotes
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/event"
@@ -122,6 +124,28 @@ func (s *quickswap) Subscribe(market Market) error {
 	if err != nil {
 		return fmt.Errorf("failed to get pool for market %v: %s", market.String(), err)
 	}
+
+	go func() {
+		block, err := s.client.BlockNumber(context.Background())
+		if err != nil {
+			loggerQuickswap.Errorf("failed to get block number: %s", err)
+		}
+
+		iter, err := pool.contract.FilterSwap(
+			&bind.FilterOpts{Start: block - 1000},
+			[]common.Address{},
+			[]common.Address{})
+		if err != nil {
+			loggerQuickswap.Errorf("failed to filter swap events for market %s: %s", market, err)
+		}
+		if ok := iter.Next(); ok {
+			tr, err := s.parseSwap(iter.Event, pool)
+			if err != nil {
+				loggerQuickswap.Errorf("failed to parse swap event for market %s: %s", market, err)
+			}
+			s.outbox <- tr
+		}
+	}()
 
 	sink := make(chan *iquickswap_v3_pool.IQuickswapV3PoolSwap, 128)
 	sub, err := pool.contract.WatchSwap(nil, sink, []common.Address{}, []common.Address{})

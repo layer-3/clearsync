@@ -43,6 +43,12 @@ func (b *bitfaker) Start() error {
 			ticker := time.NewTicker(b.period)
 			defer ticker.Stop()
 
+			b.mu.RLock()
+			for _, v := range b.streams {
+				b.createTradeEvent(v)
+			}
+			b.mu.RUnlock()
+
 			for {
 				select {
 				case <-b.stopCh:
