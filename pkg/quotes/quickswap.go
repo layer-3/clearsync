@@ -178,8 +178,6 @@ func (s *quickswap) parseSwap(swap *iquickswap_v3_pool.IQuickswapV3PoolSwap, poo
 		return TradeEvent{}, fmt.Errorf("either Amount0 (%s) or Amount1 (%s) is invalid", swap.Amount0, swap.Amount1)
 	}
 
-	fmt.Printf("swap = %+v\n", swap)
-
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Printf("Recovered in from panic during swap parsing in Quickswap (swap = %+v)\n", swap)
@@ -190,7 +188,10 @@ func (s *quickswap) parseSwap(swap *iquickswap_v3_pool.IQuickswapV3PoolSwap, poo
 	amount0 := decimal.NewFromBigInt(swap.Amount0, 0).Div(decimal.NewFromInt(10).Pow(pool.baseToken.Decimals))
 	amount1 := decimal.NewFromBigInt(swap.Amount1, 0).Div(decimal.NewFromInt(10).Pow(pool.quoteToken.Decimals))
 
-	takerType := TakerTypeBuy
+	// Assume it's a buy trade.
+	// If it's not, price will equal to zero
+	// and should be recalculated later.
+	takerType := TakerTypeSell
 	price := calculatePrice(
 		decimal.NewFromBigInt(swap.Price, 0),
 		pool.baseToken.Decimals,
@@ -198,8 +199,8 @@ func (s *quickswap) parseSwap(swap *iquickswap_v3_pool.IQuickswapV3PoolSwap, poo
 	amount := amount0
 	total := amount1
 
-	if price.IsZero() { // then it's a sell trade
-		takerType = TakerTypeSell
+	if price.IsZero() { // then it's a buy trade
+		takerType = TakerTypeBuy
 		price = calculatePrice(
 			decimal.NewFromBigInt(swap.Price, 0),
 			pool.quoteToken.Decimals,
@@ -221,7 +222,6 @@ func (s *quickswap) parseSwap(swap *iquickswap_v3_pool.IQuickswapV3PoolSwap, poo
 		CreatedAt: time.Now(),
 	}
 
-	fmt.Printf("trade = %+v\n", tr)
 	return tr, nil
 }
 

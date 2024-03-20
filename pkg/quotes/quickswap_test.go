@@ -34,25 +34,30 @@ func Test_quickswap_parseSwap(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Buy trade",
+			name: "Sell trade",
 			args: args{
 				swap: &iquickswap_v3_pool.IQuickswapV3PoolSwap{
 					// This is a REAL swap event from Polygon chain.
-					// See at https://polygonscan.com/tx/0xe1051bb29489bcf4af4622346325d3179a58f6893bdaed48bb4190ababb73578
+					// See at https://polygonscan.com/tx/0xa77f02fe9abda2ab43d77bc3ef4cf19bc75f60085b0437b2321e9a89248c6dc6
 					Sender:    common.HexToAddress("0xf5b509bB0909a69B1c207E495f687a596C168E12"),
-					Recipient: common.HexToAddress("0xf5b509bB0909a69B1c207E495f687a596C168E12"),
-					Amount0:   newBigInt("+960868500000000000000"),
-					Amount1:   newBigInt("-283933565629654405"),
-					Price:     newBigInt("+1362218571192993247714913208"),
-					Liquidity: newBigInt("+756062884725008673952739"),
-					Tick:      newBigInt("-81269"),
+					Recipient: common.HexToAddress("0x403022AF121cDCA9C4AcF4B94B2934429594eA29"),
+					Amount0:   newBigInt("+6035986027320184923721"),
+					Amount1:   newBigInt("-1760760589077853834"),
+					Price:     newBigInt("+1354461025717973021575669155"),
+					Liquidity: newBigInt("+710909202585697062870544"),
+					Tick:      newBigInt("-81383"),
 					Raw: types.Log{
-						Address:     common.HexToAddress("0x479e1B71A702a595e19b6d5932CD5c863ab57ee0"),
-						BlockNumber: 54805723,
-						TxHash:      common.BytesToHash([]byte("0xe1051bb29489bcf4af4622346325d3179a58f6893bdaed48bb4190ababb73578")),
-						TxIndex:     66,
-						BlockHash:   common.BytesToHash([]byte("0xc3bda0dbdc54a62253e4b4fb9c06819203d91b98600b901ce4bf7b482e1c35f1")),
-						Index:       313,
+						Address: common.HexToAddress("0x479e1B71A702a595e19b6d5932CD5c863ab57ee0"),
+						Topics: []common.Hash{
+							common.HexToHash("0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67"),
+							common.HexToHash("0x000000000000000000000000f5b509bb0909a69b1c207e495f687a596c168e12"),
+							common.HexToHash("0x000000000000000000000000403022af121cdca9c4acf4b94b2934429594ea29"),
+						},
+						BlockNumber: 54877299,
+						TxHash:      common.BytesToHash([]byte("0xa77f02fe9abda2ab43d77bc3ef4cf19bc75f60085b0437b2321e9a89248c6dc6")),
+						TxIndex:     2,
+						BlockHash:   common.BytesToHash([]byte("0x3c083a9522b1cc23cf0139eabf382387846722bdc8a4946129ffc38b727ae9bf")),
+						Index:       21,
 						Removed:     false,
 					},
 				},
@@ -73,26 +78,13 @@ func Test_quickswap_parseSwap(t *testing.T) {
 			want: TradeEvent{
 				Source:    DriverQuickswap,
 				Market:    Market{baseUnit: "matic", quoteUnit: "weth"},
-				Price:     decimal.RequireFromString("0.0002954967986042"),
-				Amount:    decimal.RequireFromString("960.8685"),
-				Total:     decimal.RequireFromString("0.2839335656296544"),
-				TakerType: TakerTypeBuy,
+				Price:     decimal.RequireFromString("0.0002922630136527"),
+				Amount:    decimal.RequireFromString("6035.9860273201849237"),
+				Total:     decimal.RequireFromString("1.7607605890778538"),
+				TakerType: TakerTypeSell,
 			},
 			wantErr: false,
 		},
-		// {
-		// 	name: "Sell trade",
-		// 	args: args{
-		// 		swap: &iquickswap_v3_pool.IQuickswapV3PoolSwap{},
-		// 		market: Market{
-		// 			baseUnit:  "usdt",
-		// 			quoteUnit: "usdc",
-		// 		},
-		// 		pool: &quickswapPoolWrapper{},
-		// 	},
-		// 	want:    TradeEvent{},
-		// 	wantErr: false,
-		// },
 	}
 
 	for _, test := range tests {
