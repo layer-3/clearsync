@@ -1,25 +1,8 @@
 [
     {
-        "url": "http://localhost:8080/",
-        "name": "localhost.eth",
-        "address": "0xd5e099c71b797516c10ed0f0d895f429c2781142",
-        "packages": [
-            {
-              "name": "retail",
-              "margin": [5, 1000],
-              "safety": "5.5"
-            },
-            {
-              "name": "prime",
-              "margin": [1000, 1000000],
-              "safety": "3.5"
-            }
-          ]
-    },
-    {
         "url": "https://api.kayen.io/",
         "name": "kayen.eth",
-        "address": "0xd5e099c71b797516c10ed0f0d895f429c2781142",
+        "address": "0x2532FF2B0D8107c76f2233eB7120Cfb8A0d7a05D",
         "packages": [
             {
               "name": "retail",
