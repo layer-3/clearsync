@@ -36,19 +36,21 @@ func (b *bitfaker) Name() DriverType {
 func (b *bitfaker) Start() error {
 	started := b.once.Start(func() {
 		go func() {
+			ticker := time.NewTicker(b.period)
+      defer ticker.Stop()
+
 			for {
 				select {
 				case <-b.stopCh:
 					return
+				case <-ticker.C:
+					b.mu.RLock()
+					for _, v := range b.streams {
+						b.createTradeEvent(v)
+					}
+					b.mu.RUnlock()
 				default:
 				}
-
-				b.mu.RLock()
-				for _, v := range b.streams {
-					b.createTradeEvent(v)
-				}
-				b.mu.RUnlock()
-				<-time.After(b.period)
 			}
 		}()
 	})
