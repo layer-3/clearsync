@@ -34,7 +34,7 @@ func newBinance(config BinanceConfig, outbox chan<- TradeEvent) Driver {
 	return &binance{
 		once:           newOnce(),
 		streams:        safe.NewMap[Market, chan struct{}](),
-		filter:         FilterFactory(config.Filter),
+		filter:         NewFilter(config.Filter),
 		outbox:         outbox,
 		symbolToMarket: safe.NewMap[string, Market](),
 	}

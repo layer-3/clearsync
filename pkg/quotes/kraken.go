@@ -49,7 +49,7 @@ func newKraken(config KrakenConfig, outbox chan<- TradeEvent) Driver {
 		availablePairs: safe.NewMap[string, krakenPair](),
 		streams:        safe.NewMap[Market, struct{}](),
 
-		filter: FilterFactory(config.Filter),
+		filter: NewFilter(config.Filter),
 		outbox: outbox,
 	}
 }
