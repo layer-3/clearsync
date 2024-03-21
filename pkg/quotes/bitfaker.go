@@ -25,7 +25,7 @@ func newBitfaker(config BitfakerConfig, outbox chan<- TradeEvent) Driver {
 		outbox:  outbox,
 		stopCh:  make(chan struct{}, 1),
 		period:  config.Period,
-		filter:  FilterFactory(config.Filter),
+		filter:  NewFilter(config.Filter),
 	}
 }
 

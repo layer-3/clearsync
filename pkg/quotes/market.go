@@ -9,14 +9,23 @@ import (
 )
 
 type Market struct {
-	baseUnit  string // e.g. `btc` in `btc/usdt`
-	quoteUnit string // e.g. `usdt` in `btc/usdt`
+	baseUnit  string // e.g. `lube` // Base currency
+	quoteUnit string // e.g. `eth` // Quote currency
+	// If convertTo specified, the index driver will convert quote currency to the specified one.
+	convertTo string // e.g. `usdc`
 }
 
 // String returns a string representation of the market
 // Market{btc, usdt} -> "btc/usdt"
 func (m Market) String() string {
 	return fmt.Sprintf("%s/%s", m.baseUnit, m.quoteUnit)
+}
+
+func (m Market) Print() string {
+	if m.convertTo != "" {
+		return fmt.Sprintf("%s/%s -> %s/%s", m.baseUnit, m.quoteUnit, m.baseUnit, m.convertTo)
+	}
+	return m.String()
 }
 
 func (m Market) Base() string {
@@ -35,6 +44,14 @@ func NewMarket(base, quote string) Market {
 	return Market{
 		baseUnit:  strings.ToLower(base),
 		quoteUnit: strings.ToLower(quote),
+	}
+}
+
+func NewDerivedMerket(base, quote, convertQuoteTo string) Market {
+	return Market{
+		baseUnit:  strings.ToLower(base),
+		quoteUnit: strings.ToLower(quote),
+		convertTo: strings.ToLower(convertQuoteTo),
 	}
 }
 

@@ -27,16 +27,21 @@ func newMarketHistory() marketHistory {
 	}
 }
 
+type marketKey struct {
+	baseUnit  string
+	quoteUnit string
+}
+
 type PriceCacheVWA struct {
 	weights safe.Map[DriverType, decimal.Decimal]
-	market  safe.Map[Market, marketHistory]
+	market  safe.Map[marketKey, marketHistory]
 	nTrades int
 }
 
 // NewPriceCacheVWA initializes a new cache to store last n trades for each market.
 func NewPriceCacheVWA(driversWeights map[DriverType]decimal.Decimal, nTrades int) *PriceCacheVWA {
 	cache := new(PriceCacheVWA)
-	cache.market = safe.NewMap[Market, marketHistory]()
+	cache.market = safe.NewMap[marketKey, marketHistory]()
 	cache.weights = safe.NewMapWithData[DriverType, decimal.Decimal](driversWeights)
 	cache.nTrades = nTrades
 
@@ -45,8 +50,9 @@ func NewPriceCacheVWA(driversWeights map[DriverType]decimal.Decimal, nTrades int
 
 // AddTrade adds a new trade to the cache for a market.
 func (p *PriceCacheVWA) AddTrade(market Market, price, volume, weight decimal.Decimal) {
-	p.market.UpdateInTx(func(m map[Market]marketHistory) {
-		history, ok := m[market]
+	key := marketKey{baseUnit: market.baseUnit, quoteUnit: market.quoteUnit}
+	p.market.UpdateInTx(func(m map[marketKey]marketHistory) {
+		history, ok := m[key]
 		// Ensure the market exists in the cache
 		if !ok {
 			history = newMarketHistory()
@@ -60,13 +66,13 @@ func (p *PriceCacheVWA) AddTrade(market Market, price, volume, weight decimal.De
 
 		history.trades = trades
 
-		m[market] = history
+		m[key] = history
 	})
 }
 
 // GetVWA calculates the VWA based on a list of trades.
 func (p *PriceCacheVWA) GetVWA(market Market) (decimal.Decimal, bool) {
-	record, ok := p.market.Load(market)
+	record, ok := p.market.Load(marketKey{baseUnit: market.baseUnit, quoteUnit: market.quoteUnit})
 	if !ok || len(record.trades) == 0 {
 		return decimal.Zero, false
 	}
@@ -82,20 +88,29 @@ func (p *PriceCacheVWA) GetVWA(market Market) (decimal.Decimal, bool) {
 		return decimal.Zero, false
 	}
 
-	return totalPriceVolume.Div(totalVolume), true
+	quotePrice := decimal.NewFromInt(1)
+	if market.convertTo != "" {
+		quotePrice, ok = p.GetVWA(Market{baseUnit: market.quoteUnit, quoteUnit: market.convertTo})
+		if !ok {
+			return decimal.Zero, false
+		}
+	}
+
+	return totalPriceVolume.Div(totalVolume).Mul(quotePrice), true
 }
 
 // ActivateDriver makes the driver active for the market.
 func (p *PriceCacheVWA) ActivateDriver(driver DriverType, market Market) {
-	p.market.UpdateInTx(func(m map[Market]marketHistory) {
-		history, ok := m[market]
+	key := marketKey{baseUnit: market.baseUnit, quoteUnit: market.quoteUnit}
+	p.market.UpdateInTx(func(m map[marketKey]marketHistory) {
+		history, ok := m[key]
 		if !ok {
 			history = newMarketHistory()
 		}
 
 		history.activeDrivers[driver] = true
 
-		m[market] = history
+		m[key] = history
 	})
 }
 
@@ -103,10 +118,10 @@ func (p *PriceCacheVWA) ActivateDriver(driver DriverType, market Market) {
 // TODO: cache the weights inside the marketHistory
 func (p *PriceCacheVWA) ActiveWeights(market Market) decimal.Decimal {
 	count := decimal.Zero
-
+	key := marketKey{baseUnit: market.baseUnit, quoteUnit: market.quoteUnit}
 	// there are not changes in the `market`` map, but we need to read value and `activeDrivers` map transactionally
-	p.market.UpdateInTx(func(m map[Market]marketHistory) {
-		history, ok := m[market]
+	p.market.UpdateInTx(func(m map[marketKey]marketHistory) {
+		history, ok := m[key]
 		if !ok {
 			return
 		}

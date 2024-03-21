@@ -36,7 +36,7 @@ func newOpendax(config OpendaxConfig, outbox chan<- TradeEvent) Driver {
 		once:           newOnce(),
 		url:            config.URL,
 		outbox:         outbox,
-		filter:         FilterFactory(config.Filter),
+		filter:         NewFilter(config.Filter),
 		period:         config.ReconnectPeriod * time.Second,
 		reqID:          atomic.Uint64{},
 		dialer:         &wsDialWrapper{},

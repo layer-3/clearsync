@@ -39,7 +39,7 @@ func newQuickswap(config QuickswapConfig, outbox chan<- TradeEvent) Driver {
 		poolFactoryAddress: config.PoolFactoryAddress,
 
 		outbox:  outbox,
-		filter:  FilterFactory(config.Filter),
+		filter:  NewFilter(config.Filter),
 		streams: safe.NewMap[Market, event.Subscription](),
 		assets:  safe.NewMap[string, poolToken](),
 	}

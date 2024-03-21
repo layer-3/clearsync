@@ -3,8 +3,8 @@ package quotes
 import (
 	"fmt"
 	"strings"
+	"sync/atomic"
 	"time"
-  "sync/atomic"
 
 	gobinance "github.com/adshao/go-binance/v2"
 	"github.com/ipfs/go-log/v2"
@@ -13,28 +13,30 @@ import (
 )
 
 var (
-  loggerBinance = log.Logger("binance")
-  binanceWebsocketKeepalive = atomic.Bool{}
+	loggerBinance             = log.Logger("binance")
+	binanceWebsocketKeepalive = atomic.Bool{}
 )
 
 type binance struct {
-	once    *once
-	streams safe.Map[Market, chan struct{}]
-	filter  Filter
-	outbox  chan<- TradeEvent
+	once       *once
+	streams    safe.Map[Market, chan struct{}]
+	filter     Filter
+	outbox     chan<- TradeEvent
+	usdcToUSDT bool
 
 	symbolToMarket safe.Map[string, Market]
 }
 
 func newBinance(config BinanceConfig, outbox chan<- TradeEvent) Driver {
-  if binanceWebsocketKeepalive.CompareAndSwap(false, true) {
-    gobinance.WebsocketKeepalive = true
-  }
+	if binanceWebsocketKeepalive.CompareAndSwap(false, true) {
+		gobinance.WebsocketKeepalive = true
+	}
 
 	return &binance{
 		once:           newOnce(),
 		streams:        safe.NewMap[Market, chan struct{}](),
-		filter:         FilterFactory(config.Filter),
+		filter:         NewFilter(config.Filter),
+		usdcToUSDT:     config.USDCtoUSDT,
 		outbox:         outbox,
 		symbolToMarket: safe.NewMap[string, Market](),
 	}
@@ -70,6 +72,10 @@ func (b *binance) Stop() error {
 func (b *binance) Subscribe(market Market) error {
 	if !b.once.Subscribe() {
 		return errNotStarted
+	}
+
+	if b.usdcToUSDT && market.Quote() == "usdc" {
+		_ = b.Subscribe(NewMarket(market.Base(), "usdt"))
 	}
 
 	pair := strings.ToUpper(market.Base()) + strings.ToUpper(market.Quote())
@@ -150,6 +156,10 @@ func (b *binance) buildEvent(tr *gobinance.WsTradeEvent) (TradeEvent, error) {
 	market, ok := b.symbolToMarket.Load(strings.ToLower(tr.Symbol))
 	if !ok {
 		return TradeEvent{}, fmt.Errorf("failed to load market: %+v", tr.Symbol)
+	}
+
+	if b.usdcToUSDT && market.quoteUnit == "usdt" {
+		market.quoteUnit = "usdc"
 	}
 
 	// IsBuyerMaker: true => the trade was initiated by the sell-side; the buy-side was the order book already.

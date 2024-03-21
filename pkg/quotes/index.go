@@ -10,10 +10,7 @@ import (
 var loggerIndex = log.Logger("index-aggregator")
 
 type indexAggregator struct {
-	drivers         []Driver
-	priceCalculator priceCalculator
-	aggregated      chan TradeEvent
-	outbox          chan<- TradeEvent
+	drivers []Driver
 }
 
 type priceCalculator interface {
@@ -37,22 +34,29 @@ func NewIndexAggregator(driversConfigs []Config, strategy priceCalculator, outbo
 		drivers = append(drivers, driver)
 	}
 
+	go func() {
+		for event := range aggregated {
+			indexPrice, ok := strategy.calculateIndexPrice(event)
+			if ok {
+				if event.Market.convertTo != "" {
+					event.Market.quoteUnit = event.Market.convertTo
+				}
+
+				event.Price = indexPrice
+				event.Source = DriverIndex
+				outbox <- event
+			}
+		}
+	}()
+
 	return &indexAggregator{
-		drivers:         drivers,
-		priceCalculator: strategy,
-		outbox:          outbox,
-		aggregated:      aggregated,
+		drivers: drivers,
 	}
 }
 
 // newIndex creates a new instance of IndexAggregator with VWA strategy and default drivers weights.
 func newIndex(config IndexConfig, outbox chan<- TradeEvent) Driver {
 	return NewIndexAggregator(config.DriverConfigs, NewStrategyVWA(WithCustomPriceCacheVWA(NewPriceCacheVWA(DefaultWeightsMap, config.TradesCached))), outbox)
-}
-
-// ChangeStrategy allows index price calculation strategy to be changed.
-func (a *indexAggregator) ChangeStrategy(newStrategy priceCalculator) {
-	a.priceCalculator = newStrategy
 }
 
 func (a *indexAggregator) Name() DriverType {
@@ -80,24 +84,12 @@ func (a *indexAggregator) Start() error {
 }
 
 func (a *indexAggregator) Subscribe(m Market) error {
-	go func() {
-		for event := range a.aggregated {
-			indexPrice, ok := a.priceCalculator.calculateIndexPrice(event)
-			if ok {
-				event.Price = indexPrice
-				event.Source = DriverIndex
-				a.outbox <- event
-			}
-		}
-	}()
-
 	for _, d := range a.drivers {
 		loggerIndex.Info("subscribing ", d.Name().slug)
 		if err := d.Subscribe(m); err != nil {
 			loggerIndex.Warnf("%s subsctiption error: ", d.Name().slug, err.Error())
 		}
 	}
-
 	return nil
 }
 
