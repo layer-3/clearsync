@@ -37,7 +37,7 @@ func (b *bitfaker) Start() error {
 	started := b.once.Start(func() {
 		go func() {
 			ticker := time.NewTicker(b.period)
-      defer ticker.Stop()
+			defer ticker.Stop()
 
 			for {
 				select {
@@ -50,6 +50,7 @@ func (b *bitfaker) Start() error {
 					}
 					b.mu.RUnlock()
 				default:
+					continue
 				}
 			}
 		}()

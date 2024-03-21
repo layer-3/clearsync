@@ -86,8 +86,8 @@ func (u *uniswapV3Api) Subscribe(market Market) error {
 
 	go func() {
 		from := time.Now()
-    ticker := time.NewTicker(u.windowSize)
-    defer ticker.Stop()
+		ticker := time.NewTicker(u.windowSize)
+		defer ticker.Stop()
 
 		for {
 			if stopCh, ok := u.streams.Load(market); ok {

@@ -42,7 +42,7 @@ type PriceCacheVWA struct {
 func NewPriceCacheVWA(driversWeights map[DriverType]decimal.Decimal, nTrades int) *PriceCacheVWA {
 	cache := new(PriceCacheVWA)
 	cache.market = safe.NewMap[marketKey, marketHistory]()
-	cache.weights = safe.NewMapWithData[DriverType, decimal.Decimal](driversWeights)
+	cache.weights = safe.NewMapWithData(driversWeights)
 	cache.nTrades = nTrades
 
 	return cache
@@ -131,8 +131,6 @@ func (p *PriceCacheVWA) ActiveWeights(market Market) decimal.Decimal {
 				count = count.Add(weight)
 			}
 		}
-
-		return
 	})
 
 	return count
