@@ -12,7 +12,7 @@ const (
 	DisabledFilterType  FilterType = "disabled"
 )
 
-func FilterFactory(conf FilterConfig) Filter {
+func NewFilter(conf FilterConfig) Filter {
 	switch FilterType(conf.FilterType) {
 	case SamplerFilterType:
 		return newSamplerFilter(conf.SamplerFilter)

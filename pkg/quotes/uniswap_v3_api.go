@@ -32,7 +32,7 @@ func newUniswapV3Api(config UniswapV3ApiConfig, outbox chan<- TradeEvent) Driver
 		url:        config.URL,
 		outbox:     outbox,
 		windowSize: config.WindowSize,
-		filter:     FilterFactory(config.Filter),
+		filter:     NewFilter(config.Filter),
 		streams:    safe.NewMap[Market, chan struct{}](),
 	}
 }

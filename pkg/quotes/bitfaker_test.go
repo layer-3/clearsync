@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var disabledFilter = FilterFactory(FilterConfig{FilterType: DisabledFilterType})
+var disabledFilter = NewFilter(FilterConfig{FilterType: DisabledFilterType})
 
 func TestBitfaker_Subscribe(t *testing.T) {
 	t.Parallel()

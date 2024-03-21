@@ -48,7 +48,7 @@ func newUniswapV3Geth(config UniswapV3GethConfig, outbox chan<- TradeEvent) Driv
 		factoryAddress: config.FactoryAddress,
 
 		outbox:  outbox,
-		filter:  FilterFactory(config.Filter),
+		filter:  NewFilter(config.Filter),
 		streams: safe.NewMap[Market, event.Subscription](),
 		assets:  safe.NewMap[string, poolToken](),
 	}
