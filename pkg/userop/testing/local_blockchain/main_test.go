@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"math/big"
+	"os"
 	"testing"
 
 	"github.com/layer-3/clearsync/pkg/signer"
@@ -13,7 +14,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func setLogLevel(level slog.Level) {
+	lvl := new(slog.LevelVar)
+	lvl.Set(level)
+
+	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+		Level: lvl,
+	}))
+
+	slog.SetDefault(logger)
+}
+
 func TestSimulatedRPC(t *testing.T) {
+	setLogLevel(slog.LevelDebug)
 	ctx := context.Background()
 
 	// 1. Start a local Ethereum node
