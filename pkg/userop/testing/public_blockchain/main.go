@@ -187,7 +187,10 @@ func newCallFromABI(contract common.Address, stringABI string, value *big.Int, m
 func send(client userop.Client, smartWallet common.Address, calls smart_wallet.Calls) error {
 	ctx := context.Background()
 
-	op, err := client.NewUserOp(ctx, smartWallet, signer, calls, walletDeploymentOpts, gasLimitOverrides)
+	overrides := &userop.Overrides{
+		GasLimits: gasLimitOverrides,
+	}
+	op, err := client.NewUserOp(ctx, smartWallet, signer, calls, walletDeploymentOpts, overrides)
 	if err != nil {
 		panic(fmt.Errorf("failed to build userop: %w", err))
 	}

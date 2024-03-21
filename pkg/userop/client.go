@@ -52,6 +52,7 @@ type Client interface {
 	//   - signer - is the signer function that will sign the user operation.
 	//   - calls - is the list of calls to be executed in the user operation. Must not be empty.
 	//   - walletDeploymentOpts - are the options for the smart wallet deployment. Can be nil if the smart wallet is already deployed.
+	// 	 - overrides - are the overrides for the middleware during the user operation creation. Can be nil.
 	//
 	// Returns:
 	//   - UserOperation - user operation with all fields filled in.
@@ -62,7 +63,23 @@ type Client interface {
 		signer Signer,
 		calls smart_wallet.Calls,
 		walletDeploymentOpts *WalletDeploymentOpts,
-		gasLimitOverrides *GasLimitOverrides,
+		overrides *Overrides,
+	) (UserOperation, error)
+
+	// SignUserOp signs the user operation with the provided signer.
+	//
+	// Parameters:
+	//   - ctx - is the context of the operation.
+	//   - op - is the user operation to be signed.
+	//   - signer - is the signer function that will sign the user operation.
+	//
+	// Returns:
+	//   - UserOperation - user operation with modified signature.
+	//   - error - if failed to sign the user operation
+	SignUserOp(
+		ctx context.Context,
+		op UserOperation,
+		signer Signer,
 	) (UserOperation, error)
 
 	// SendUserOp submits a user operation to a bundler and returns a channel to await for the userOp receipt.
@@ -85,11 +102,25 @@ type WalletDeploymentOpts struct {
 	Index decimal.Decimal
 }
 
+// Each field overrides the corresponding middleware during the user operation creation.
+type Overrides struct {
+	Nonce     *big.Int
+	InitCode  []byte
+	GasPrices *GasPriceOverrides
+	GasLimits *GasLimitOverrides
+}
+
+// These override provider's estimation. NOTE: if all are supplied, provider's estimation is NOT performed.
+type GasPriceOverrides struct {
+	MaxFeePerGas         *big.Int
+	MaxPriorityFeePerGas *big.Int
+}
+
 // These override the bundler's estimation. NOTE: if all are supplied, bundler's estimation is NOT performed.
 type GasLimitOverrides struct {
-	CallGasLimit         big.Int
-	VerificationGasLimit big.Int
-	PreVerificationGas   big.Int
+	CallGasLimit         *big.Int
+	VerificationGasLimit *big.Int
+	PreVerificationGas   *big.Int
 }
 
 // backend represents a user operation client.
@@ -102,7 +133,12 @@ type backend struct {
 	smartWallet smart_wallet.Config
 	entryPoint  common.Address
 	paymaster   common.Address
-	middlewares []middleware
+
+	getNonce     middleware
+	getInitCode  middleware
+	getGasPrices middleware
+	getGasLimits middleware
+	sign         middleware
 }
 
 type Receipt struct {
@@ -155,14 +191,14 @@ func NewClient(config ClientConfig) (Client, error) {
 		return nil, fmt.Errorf("failed to connect to the entry point contract: %w", err)
 	}
 
-	getGasEstimation, err := getGasEstimation(bundlerRPC, config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build gas estimation middleware: %w", err)
-	}
-
-	getInitCode, err := getInitCode(providerRPC, config.SmartWallet)
+	getInitCode, err := getInitCodeMiddleware(providerRPC, config.SmartWallet)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build initCode middleware: %w", err)
+	}
+
+	getGasLimits, err := getGasLimitsMiddleware(bundlerRPC, config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build gas limits estimation middleware: %w", err)
 	}
 
 	return &backend{
@@ -174,14 +210,12 @@ func NewClient(config ClientConfig) (Client, error) {
 		smartWallet: config.SmartWallet,
 		entryPoint:  config.EntryPoint,
 		paymaster:   config.Paymaster.Address,
-		middlewares: []middleware{ // Middleware order matters - first in, first executed.
-			getNonce(entryPointContract),
-			getInitCode,
-			getGasPrice(providerRPC, config.Gas),
-			sign(config.EntryPoint, chainID),
-			getGasEstimation,
-			sign(config.EntryPoint, chainID), // update signature after gas estimation
-		},
+
+		getNonce:     getNonceMiddleware(entryPointContract),
+		getInitCode:  getInitCode,
+		getGasPrices: getGasPricesMiddleware(providerRPC, config.Gas),
+		getGasLimits: getGasLimits,
+		sign:         getSignMiddleware(config.EntryPoint, chainID),
 	}, nil
 }
 
@@ -191,7 +225,7 @@ func (c *backend) IsAccountDeployed(ctx context.Context, owner common.Address, i
 		return false, fmt.Errorf("failed to get account address: %w", err)
 	}
 
-	return isAccountDeployed(c.provider, accountAddress)
+	return smart_wallet.IsAccountDeployed(ctx, c.provider, accountAddress)
 }
 
 func (c *backend) GetAccountAddress(ctx context.Context, owner common.Address, index decimal.Decimal) (common.Address, error) {
@@ -204,7 +238,7 @@ func (c *backend) NewUserOp(
 	signer Signer,
 	calls smart_wallet.Calls,
 	walletDeploymentOpts *WalletDeploymentOpts,
-	gasLimitOverrides *GasLimitOverrides,
+	overrides *Overrides,
 ) (UserOperation, error) {
 	if signer == nil {
 		return UserOperation{}, ErrNoSigner
@@ -216,24 +250,6 @@ func (c *backend) NewUserOp(
 
 	ctx = context.WithValue(ctx, ctxKeySigner, signer)
 
-	isDeployed, err := isAccountDeployed(c.provider, smartWallet)
-	if err != nil {
-		return UserOperation{}, fmt.Errorf("failed to check if smart account is already deployed: %w", err)
-	}
-
-	if !isDeployed {
-		if walletDeploymentOpts == nil {
-			return UserOperation{}, ErrNoWalletDeploymentOpts
-		}
-
-		if walletDeploymentOpts.Owner == (common.Address{}) {
-			return UserOperation{}, ErrNoWalletOwnerInWDO
-		}
-
-		ctx = context.WithValue(ctx, ctxKeyOwner, walletDeploymentOpts.Owner)
-		ctx = context.WithValue(ctx, ctxKeyIndex, walletDeploymentOpts.Index)
-	}
-
 	callData, err := smart_wallet.BuildCallData(*c.smartWallet.Type, calls)
 	if err != nil {
 		return UserOperation{}, fmt.Errorf("failed to build call data: %w", err)
@@ -241,28 +257,105 @@ func (c *backend) NewUserOp(
 
 	op := UserOperation{Sender: smartWallet, CallData: callData}
 
-	if gasLimitOverrides != nil {
-		zero := big.NewInt(0)
-		if gasLimitOverrides.CallGasLimit.Cmp(zero) != 0 {
-			op.CallGasLimit = decimal.NewFromBigInt(&gasLimitOverrides.CallGasLimit, 0)
-		}
-		if gasLimitOverrides.VerificationGasLimit.Cmp(zero) != 0 {
-			op.VerificationGasLimit = decimal.NewFromBigInt(&gasLimitOverrides.VerificationGasLimit, 0)
-		}
-		if gasLimitOverrides.PreVerificationGas.Cmp(zero) != 0 {
-			op.PreVerificationGas = decimal.NewFromBigInt(&gasLimitOverrides.PreVerificationGas, 0)
+	slog.Debug("applying middlewares to user operation")
+
+	overridesPresent := overrides != nil
+
+	// getNonce
+	if overridesPresent && overrides.Nonce != nil {
+		op.Nonce = decimal.NewFromBigInt(overrides.Nonce, 0)
+	} else {
+		if err := c.getNonce(ctx, &op); err != nil {
+			return UserOperation{}, err
 		}
 	}
 
-	slog.Debug("applying middlewares to user operation")
-
-	for _, fn := range c.middlewares {
-		if err := fn(ctx, &op); err != nil {
-			return UserOperation{}, fmt.Errorf("failed to apply middleware to user operation: %w", err)
+	// getInitCode
+	if overridesPresent && overrides.InitCode != nil {
+		op.InitCode = overrides.InitCode
+	} else {
+		isDeployed, err := smart_wallet.IsAccountDeployed(ctx, c.provider, smartWallet)
+		if err != nil {
+			return UserOperation{}, fmt.Errorf("failed to check if smart account is already deployed: %w", err)
 		}
+
+		if !isDeployed {
+			if walletDeploymentOpts == nil {
+				return UserOperation{}, ErrNoWalletDeploymentOpts
+			}
+
+			if walletDeploymentOpts.Owner == (common.Address{}) {
+				return UserOperation{}, ErrNoWalletOwnerInWDO
+			}
+
+			ctx = context.WithValue(ctx, ctxKeyOwner, walletDeploymentOpts.Owner)
+			ctx = context.WithValue(ctx, ctxKeyIndex, walletDeploymentOpts.Index)
+		}
+
+		if err := c.getInitCode(ctx, &op); err != nil {
+			return UserOperation{}, err
+		}
+	}
+
+	// getGasPrices
+	if overridesPresent && overrides.GasPrices != nil {
+		if overrides.GasPrices.MaxFeePerGas != nil {
+			op.MaxFeePerGas = decimal.NewFromBigInt(overrides.GasPrices.MaxFeePerGas, 0)
+		}
+		if overrides.GasPrices.MaxPriorityFeePerGas != nil {
+			op.MaxPriorityFeePerGas = decimal.NewFromBigInt(overrides.GasPrices.MaxPriorityFeePerGas, 0)
+		}
+	}
+	err = c.getGasPrices(ctx, &op)
+	if err != nil {
+		return UserOperation{}, err
+	}
+
+	// sign before estimating gas limits, so that signature is well-formed.
+	// If signature is corrupted, this can cause SmartWallet estimation to fail,
+	// and the bundler will return an error.
+	err = c.sign(ctx, &op)
+	if err != nil {
+		return UserOperation{}, err
+	}
+
+	// getGasLimits
+	if overridesPresent && overrides.GasLimits != nil {
+		if overrides.GasLimits.CallGasLimit != nil {
+			op.CallGasLimit = decimal.NewFromBigInt(overrides.GasLimits.CallGasLimit, 0)
+		}
+		if overrides.GasLimits.VerificationGasLimit != nil {
+			op.VerificationGasLimit = decimal.NewFromBigInt(overrides.GasLimits.VerificationGasLimit, 0)
+		}
+		if overrides.GasLimits.PreVerificationGas != nil {
+			op.PreVerificationGas = decimal.NewFromBigInt(overrides.GasLimits.PreVerificationGas, 0)
+		}
+	}
+	err = c.getGasLimits(ctx, &op)
+	if err != nil {
+		return UserOperation{}, err
+	}
+
+	// sign
+	err = c.sign(ctx, &op)
+	if err != nil {
+		return UserOperation{}, err
 	}
 
 	slog.Debug("middlewares applied successfully", "userop", op)
+	return op, nil
+}
+
+func (c *backend) SignUserOp(ctx context.Context, op UserOperation, signer Signer) (UserOperation, error) {
+	if signer == nil {
+		return UserOperation{}, ErrNoSigner
+	}
+
+	ctx = context.WithValue(ctx, ctxKeySigner, signer)
+	if err := c.sign(ctx, &op); err != nil {
+		return UserOperation{}, err
+	}
+
 	return op, nil
 }
 
@@ -281,27 +374,6 @@ func (c *backend) SendUserOp(ctx context.Context, op UserOperation) (<-chan Rece
 
 	slog.Info("user operation sent successfully", "userOpHash", userOpHash.Hex())
 	return done, nil
-}
-
-func isAccountDeployed(provider EthBackend, swAddress common.Address) (bool, error) {
-	var result any
-	if err := provider.RPC().CallContext(
-		context.Background(),
-		&result,
-		"eth_getCode",
-		swAddress,
-		"latest",
-	); err != nil {
-		return false, fmt.Errorf("failed to check if smart account is already deployed: %w", err)
-	}
-
-	byteCode, ok := result.(string)
-	if !ok {
-		return false, fmt.Errorf("unexpected type: %T", result)
-	}
-
-	// assume that the smart account is deployed if it has non-zero byte code
-	return !(byteCode == "" || byteCode == "0x"), nil
 }
 
 // waitForUserOpEvent waits for a user operation to be committed on block.

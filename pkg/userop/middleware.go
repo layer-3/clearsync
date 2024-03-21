@@ -29,7 +29,7 @@ const (
 type middleware func(ctx context.Context, op *UserOperation) error
 
 // TODO: possible improvement: when there is a userOp for this SW already in the mempool, we should return incremented nonce
-func getNonce(entryPoint *entry_point_v0_6_0.EntryPoint) middleware {
+func getNonceMiddleware(entryPoint *entry_point_v0_6_0.EntryPoint) middleware {
 	return func(_ context.Context, op *UserOperation) error {
 		slog.Debug("getting nonce")
 		key := new(big.Int)
@@ -43,7 +43,7 @@ func getNonce(entryPoint *entry_point_v0_6_0.EntryPoint) middleware {
 	}
 }
 
-func getInitCode(provider EthBackend, smartWalletConfig smart_wallet.Config) (middleware, error) {
+func getInitCodeMiddleware(provider EthBackend, smartWalletConfig smart_wallet.Config) (middleware, error) {
 	return func(ctx context.Context, op *UserOperation) error {
 		owner, ok := ctx.Value(ctxKeyOwner).(common.Address)
 		if !ok {
@@ -72,38 +72,54 @@ func getInitCode(provider EthBackend, smartWalletConfig smart_wallet.Config) (mi
 	}, nil
 }
 
-func getGasPrice(provider EthBackend, gasConfig GasConfig) middleware {
+func getGasPricesMiddleware(provider EthBackend, gasConfig GasConfig) middleware {
 	return func(ctx context.Context, op *UserOperation) error {
-		slog.Debug("getting gas price")
-
-		// Get the latest block to read its base fee
-		block, err := provider.BlockByNumber(ctx, nil)
-		if err != nil {
-			return err
-		}
-		blockBaseFee := block.BaseFee()
-
-		slog.Debug("block base fee", "baseFee", blockBaseFee.String())
-
-		var maxPriorityFeePerGasStr string
-		if err := provider.RPC().CallContext(ctx, &maxPriorityFeePerGasStr, "eth_maxPriorityFeePerGas"); err != nil {
-			return err
+		if !op.MaxFeePerGas.IsZero() && !op.MaxPriorityFeePerGas.IsZero() {
+			slog.Debug("skipping gas price estimation, using provided gas prices")
+			return nil
 		}
 
-		maxPriorityFeePerGas, ok := new(big.Int).SetString(maxPriorityFeePerGasStr, 0)
-		if !ok {
-			return fmt.Errorf("failed to parse maxPriorityFeePerGas: %s", maxPriorityFeePerGasStr)
-		}
+		slog.Debug("getting gas prices")
 
-		// Increase maxPriorityFeePerGas to give user more
-		// flexibility in setting the gas price.
-		maxPriorityFeePerGas.Mul(
-			maxPriorityFeePerGas,
-			gasConfig.MaxPriorityFeePerGasMultiplier.BigInt())
+		// Calculate maxPriorityFeePerGas
+		var maxPriorityFeePerGas *big.Int
+		if !op.MaxPriorityFeePerGas.IsZero() {
+			maxPriorityFeePerGas = op.MaxPriorityFeePerGas.BigInt()
+		} else {
+			var maxPriorityFeePerGasStr string
+			if err := provider.RPC().CallContext(ctx, &maxPriorityFeePerGasStr, "eth_maxPriorityFeePerGas"); err != nil {
+				return err
+			}
+
+			var ok bool
+			maxPriorityFeePerGas, ok = new(big.Int).SetString(maxPriorityFeePerGasStr, 0)
+			if !ok {
+				return fmt.Errorf("failed to parse maxPriorityFeePerGas: %s", maxPriorityFeePerGasStr)
+			}
+
+			// Increase maxPriorityFeePerGas to give user more
+			// flexibility in setting the gas price.
+			maxPriorityFeePerGas.Mul(
+				maxPriorityFeePerGas,
+				gasConfig.MaxPriorityFeePerGasMultiplier.BigInt())
+		}
 
 		// Calculate maxFeePerGas
-		maxFeePerGas := new(big.Int).Mul(blockBaseFee, gasConfig.MaxFeePerGasMultiplier.BigInt())
-		maxFeePerGas.Add(maxFeePerGas, maxPriorityFeePerGas)
+		var maxFeePerGas *big.Int
+		if !op.MaxFeePerGas.IsZero() {
+			maxFeePerGas = op.MaxFeePerGas.BigInt()
+		} else {
+			// Get the latest block to read its base fee
+			block, err := provider.BlockByNumber(ctx, nil)
+			if err != nil {
+				return err
+			}
+			blockBaseFee := block.BaseFee()
+			slog.Debug("block base fee", "baseFee", blockBaseFee.String())
+
+			maxFeePerGas = new(big.Int).Mul(blockBaseFee, gasConfig.MaxFeePerGasMultiplier.BigInt())
+			maxFeePerGas.Add(maxFeePerGas, maxPriorityFeePerGas)
+		}
 
 		slog.Debug("calculated gas price", "maxFeePerGas", maxFeePerGas, "maxPriorityFeePerGas", maxPriorityFeePerGas)
 
@@ -172,7 +188,7 @@ func getBiconomyPaymasterAndData(
 	}
 }
 
-func getGasEstimation(bundler RPCBackend, config ClientConfig) (middleware, error) {
+func getGasLimitsMiddleware(bundler RPCBackend, config ClientConfig) (middleware, error) {
 	estimateGas := estimateUserOperationGas(bundler, config.EntryPoint)
 
 	if config.Paymaster.Type != nil && *config.Paymaster.Type != PaymasterDisabled {
@@ -207,7 +223,7 @@ func estimateUserOperationGas(bundler RPCBackend, entryPoint common.Address) mid
 			return nil
 		}
 
-		slog.Debug("estimating userOp gas limits")
+		slog.Debug("estimating userOp gas limits", "userOp", op)
 
 		// ERC4337-standardized gas estimation
 		var est gasEstimate
@@ -324,7 +340,7 @@ func (est gasEstimate) fromAny(a any) (*big.Int, error) {
 	}
 }
 
-func sign(entryPoint common.Address, chainID *big.Int) middleware {
+func getSignMiddleware(entryPoint common.Address, chainID *big.Int) middleware {
 	return func(ctx context.Context, op *UserOperation) error {
 		signer, ok := ctx.Value(ctxKeySigner).(Signer)
 		if !ok {
