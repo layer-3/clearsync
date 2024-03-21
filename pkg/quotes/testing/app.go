@@ -81,7 +81,7 @@ func main() {
 			slog.Warn("failed to subscribe", "market", market, "err", err)
 			continue
 		}
-		slog.Info("subscribed", "market", market.Print())
+		slog.Info("subscribed", "market", market.String())
 	}
 
 	slog.Info("waiting for trades")
