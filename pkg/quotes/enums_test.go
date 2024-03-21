@@ -9,146 +9,99 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func TestDriverType_Marshal(t *testing.T) {
+func TestDriverType(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		input        DriverType
-		expectedJSON string
-		expectedYAML string
+		input      DriverType
+		expectJSON string
+		expectYAML string
+		expectErr  bool
 	}{
 		{
-			input:        DriverBinance,
-			expectedJSON: `"binance"`,
-			expectedYAML: "binance\n",
+			input:      DriverBinance,
+			expectJSON: `"binance"`,
+			expectYAML: "binance\n",
+			expectErr:  false,
 		}, {
-			input:        DriverKraken,
-			expectedJSON: `"kraken"`,
-			expectedYAML: "kraken\n",
+			input:      DriverKraken,
+			expectJSON: `"kraken"`,
+			expectYAML: "kraken\n",
+			expectErr:  false,
 		}, {
-			input:        DriverOpendax,
-			expectedJSON: `"opendax"`,
-			expectedYAML: "opendax\n",
+			input:      DriverOpendax,
+			expectJSON: `"opendax"`,
+			expectYAML: "opendax\n",
+			expectErr:  false,
 		}, {
-			input:        DriverBitfaker,
-			expectedJSON: `"bitfaker"`,
-			expectedYAML: "bitfaker\n",
+			input:      DriverBitfaker,
+			expectJSON: `"bitfaker"`,
+			expectYAML: "bitfaker\n",
+			expectErr:  false,
 		}, {
-			input:        DriverUniswapV3Api,
-			expectedJSON: `"uniswap_v3_api"`,
-			expectedYAML: "uniswap_v3_api\n",
+			input:      DriverUniswapV3Api,
+			expectJSON: `"uniswap_v3_api"`,
+			expectYAML: "uniswap_v3_api\n",
+			expectErr:  false,
 		}, {
-			input:        DriverUniswapV3Geth,
-			expectedJSON: `"uniswap_v3_geth"`,
-			expectedYAML: "uniswap_v3_geth\n",
+			input:      DriverUniswapV3Geth,
+			expectJSON: `"uniswap_v3_geth"`,
+			expectYAML: "uniswap_v3_geth\n",
+			expectErr:  false,
 		}, {
-			input:        DriverSyncswap,
-			expectedJSON: `"syncswap"`,
-			expectedYAML: "syncswap\n",
+			input:      DriverSyncswap,
+			expectJSON: `"syncswap"`,
+			expectYAML: "syncswap\n",
+			expectErr:  false,
 		}, {
-			input:        DriverQuickswap,
-			expectedJSON: `"quickswap"`,
-			expectedYAML: "quickswap\n",
+			input:      DriverQuickswap,
+			expectJSON: `"quickswap"`,
+			expectYAML: "quickswap\n",
+			expectErr:  false,
+		}, {
+			input:      DriverType{},
+			expectJSON: `""`,
+			expectYAML: "\"\"\n",
+			expectErr:  true,
 		},
 	}
 
 	for _, test := range tests {
 		test := test
-		t.Run(fmt.Sprintf("JSON %s", test.input.String()), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Marhsal JSON %s", test.input.String()), func(t *testing.T) {
 			t.Parallel()
 
 			dataJSON, err := json.Marshal(&test.input)
 			require.NoError(t, err)
-			require.Equal(t, test.expectedJSON, string(dataJSON))
+			require.Equal(t, test.expectJSON, string(dataJSON))
 		})
 
-		t.Run(fmt.Sprintf("YAML %s", test.input.String()), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Unmarhsal JSON %s", test.input.String()), func(t *testing.T) {
+			t.Parallel()
+
+			var fromJSON DriverType
+			if err := json.Unmarshal([]byte(test.expectJSON), &fromJSON); (err != nil) != test.expectErr {
+				t.Errorf("UnmarshalJSON %v, expected error: %v, got error: %v", test.input, test.expectErr, err)
+			}
+			require.Equal(t, test.input, fromJSON)
+		})
+
+		t.Run(fmt.Sprintf("Marhsal YAML %s", test.input.String()), func(t *testing.T) {
 			t.Parallel()
 
 			dataYAML, err := yaml.Marshal(test.input)
 			require.NoError(t, err)
-			require.Equal(t, test.expectedYAML, string(dataYAML))
-		})
-	}
-}
-
-func TestDriverType_Unmarshal(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		inputJSON string
-		inputYAML string
-		expected  DriverType
-		shouldErr bool
-	}{
-		{
-			inputJSON: `"binance"`,
-			inputYAML: "binance",
-			expected:  DriverBinance,
-			shouldErr: false,
-		}, {
-			inputJSON: `"kraken"`,
-			inputYAML: "kraken",
-			expected:  DriverKraken,
-			shouldErr: false,
-		}, {
-			inputJSON: `"opendax"`,
-			inputYAML: "opendax",
-			expected:  DriverOpendax,
-			shouldErr: false,
-		}, {
-			inputJSON: `"bitfaker"`,
-			inputYAML: "bitfaker",
-			expected:  DriverBitfaker,
-			shouldErr: false,
-		}, {
-			inputJSON: `"uniswap_v3_api"`,
-			inputYAML: "uniswap_v3_api",
-			expected:  DriverUniswapV3Api,
-			shouldErr: false,
-		}, {
-			inputJSON: `"uniswap_v3_geth"`,
-			inputYAML: "uniswap_v3_geth",
-			expected:  DriverUniswapV3Geth,
-			shouldErr: false,
-		}, {
-			inputJSON: `"syncswap"`,
-			inputYAML: "syncswap",
-			expected:  DriverSyncswap,
-			shouldErr: false,
-		}, {
-			inputJSON: `"quickswap"`,
-			inputYAML: "quickswap",
-			expected:  DriverQuickswap,
-			shouldErr: false,
-		}, {
-			inputJSON: `"invalid"`,
-			inputYAML: "invalid",
-			expected:  DriverType{},
-			shouldErr: true,
-		},
-	}
-
-	for _, test := range tests {
-		test := test
-		t.Run(fmt.Sprintf("JSON %s", test.expected.String()), func(t *testing.T) {
-			t.Parallel()
-
-			var fromJSON DriverType
-			if err := json.Unmarshal([]byte(test.inputJSON), &fromJSON); (err != nil) != test.shouldErr {
-				t.Errorf("UnmarshalJSON %v, expected error: %v, got error: %v", test.expected, test.shouldErr, err)
-			}
-			require.Equal(t, test.expected, fromJSON)
+			require.Equal(t, test.expectYAML, string(dataYAML))
 		})
 
-		t.Run(fmt.Sprintf("YAML %s", test.expected.String()), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Unmarshal YAML %s", test.input.String()), func(t *testing.T) {
 			t.Parallel()
 
 			var fromYAML DriverType
-			if err := yaml.Unmarshal([]byte(test.inputYAML), &fromYAML); (err != nil) != test.shouldErr {
-				t.Errorf("UnmarshalYAML %v, expected error: %v, got error: %v", test.expected, test.shouldErr, err)
+			if err := yaml.Unmarshal([]byte(test.expectYAML), &fromYAML); (err != nil) != test.expectErr {
+				t.Errorf("UnmarshalYAML %v, expected error: %v, got error: %v", test.input, test.expectErr, err)
 			}
-			require.Equal(t, test.expected, fromYAML)
+			require.Equal(t, test.input, fromYAML)
 		})
 	}
 }
