@@ -3,7 +3,6 @@ package signer
 import (
 	"bytes"
 	"crypto/ecdsa"
-	"encoding/json"
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -58,15 +57,11 @@ func (s1 Signature) Equal(s2 Signature) bool {
 
 func (s Signature) MarshalJSON() ([]byte, error) {
 	hex := hexutil.Encode(s.Raw())
-	return json.Marshal(hex)
+	return []byte(hex), nil
 }
 
 func (s *Signature) UnmarshalJSON(b []byte) error {
-	var hex string
-	err := json.Unmarshal(b, &hex)
-	if err != nil {
-		return err
-	}
+	hex := string(b)
 	joined, err := hexutil.Decode(hex)
 	if err != nil {
 		return err
@@ -81,9 +76,7 @@ func (s *Signature) UnmarshalJSON(b []byte) error {
 		return fmt.Errorf("signature must be 65 bytes long or a zero string, received %d bytes", len(joined))
 	}
 
-	s.R = joined[:32]
-	s.S = joined[32:64]
-	s.V = joined[64]
+	*s = NewSignatureFromBytes(joined)
 	return nil
 }
 
