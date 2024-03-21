@@ -96,12 +96,10 @@ func (b *binance) Subscribe(market Market) error {
 	b.streams.Store(market, stopCh)
 
 	go func() {
-		select {
-		case <-doneCh:
-			for {
-				if err := b.Subscribe(market); err == nil {
-					return
-				}
+		<-doneCh
+		for {
+			if err := b.Subscribe(market); err == nil {
+				return
 			}
 		}
 	}()
