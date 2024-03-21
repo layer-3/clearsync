@@ -236,7 +236,13 @@ func (k *kraken) listen() {
 		if err != nil {
 			loggerKraken.Errorf("error reading message: %v", err)
 
-			k.connect()
+			for {
+				if err := k.connect(); err == nil {
+					break
+				}
+				<-time.After(5 * time.Second)
+			}
+
 			k.streams.Range(func(market Market, _ struct{}) bool {
 				if err := k.Subscribe(market); err != nil {
 					loggerKraken.Warnf("Error subscribing to market %s: %s", market, err)

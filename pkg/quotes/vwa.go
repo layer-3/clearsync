@@ -28,7 +28,7 @@ func NewStrategyVWA(configs ...ConfFuncVWA) priceCalculator {
 func WithCustomWeightsVWA(driversWeights map[DriverType]decimal.Decimal) ConfFuncVWA {
 	return func(strategy *strategyVWA) {
 		strategy.weights = driversWeights
-		strategy.priceCache.weights = safe.NewMapWithData[DriverType, decimal.Decimal](driversWeights)
+		strategy.priceCache.weights = safe.NewMapWithData(driversWeights)
 	}
 }
 

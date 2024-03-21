@@ -1,6 +1,7 @@
 package quotes
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -13,31 +14,6 @@ type Market struct {
 	quoteUnit string // e.g. `eth` // Quote currency
 	// If convertTo specified, the index driver will convert quote currency to the specified one.
 	convertTo string // e.g. `usdc`
-}
-
-// String returns a string representation of the market
-// Market{btc, usdt} -> "btc/usdt"
-func (m Market) String() string {
-	return fmt.Sprintf("%s/%s", m.baseUnit, m.quoteUnit)
-}
-
-func (m Market) Print() string {
-	if m.convertTo != "" {
-		return fmt.Sprintf("%s/%s -> %s/%s", m.baseUnit, m.quoteUnit, m.baseUnit, m.convertTo)
-	}
-	return m.String()
-}
-
-func (m Market) Base() string {
-	return m.baseUnit
-}
-
-func (m Market) Quote() string {
-	return m.quoteUnit
-}
-
-func (m Market) IsEmpty() bool {
-	return m.baseUnit == "" || m.quoteUnit == ""
 }
 
 func NewMarket(base, quote string) Market {
@@ -64,6 +40,43 @@ func NewMarketFromString(s string) (Market, bool) {
 		return Market{}, false
 	}
 	return NewMarket(parts[0], parts[1]), true
+}
+
+// String returns a string representation of the market.
+// Example: `Market{btc, usdt}` -> "btc/usdt"
+func (m Market) String() string {
+	return fmt.Sprintf("%s/%s", m.baseUnit, m.quoteUnit)
+}
+
+func (m Market) Base() string {
+	return m.baseUnit
+}
+
+func (m Market) Quote() string {
+	return m.quoteUnit
+}
+
+func (m Market) IsEmpty() bool {
+	return m.baseUnit == "" || m.quoteUnit == ""
+}
+
+func (m Market) MarshalJSON() ([]byte, error) {
+	return json.Marshal(m.String())
+}
+
+func (m *Market) UnmarshalJSON(raw []byte) error {
+	var rawParsed string
+	if err := json.Unmarshal(raw, &rawParsed); err != nil {
+		return err
+	}
+
+	parts := strings.Split(rawParsed, "/")
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return fmt.Errorf("invalid market format: got '%s' instead of e.g. 'btc/usdt'", rawParsed)
+	}
+
+	*m = Market{baseUnit: parts[0], quoteUnit: parts[1]}
+	return nil
 }
 
 // TradeEvent is a generic container

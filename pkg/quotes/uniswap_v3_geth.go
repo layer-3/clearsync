@@ -77,7 +77,7 @@ func (u *uniswapV3Geth) Start() error {
 		factoryAddress := common.HexToAddress(u.factoryAddress)
 		uniswapFactory, err := iuniswap_v3_factory.NewIUniswapV3Factory(factoryAddress, client)
 		if err != nil {
-			err = fmt.Errorf("failed to build Uniswap v3 factory: %w", err)
+			startErr = fmt.Errorf("failed to build Uniswap v3 factory: %w", err)
 			return
 		}
 		u.factory = uniswapFactory
@@ -194,10 +194,9 @@ func (u *uniswapV3Geth) Unsubscribe(market Market) error {
 		return fmt.Errorf("%s: %w", market, errNotSubbed)
 	}
 
-	sub := stream.(event.Subscription)
-	sub.Unsubscribe()
-
+	stream.Unsubscribe()
 	u.streams.Delete(market)
+
 	return nil
 }
 
