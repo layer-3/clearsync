@@ -18,7 +18,7 @@ func main() {
 	}()
 	log.SetLogLevel("*", "info")
 
-	driverType := quotes.DriverSyncswap
+	driverType := quotes.DriverIndex
 	if len(os.Args) == 2 {
 		parsedDriver, err := quotes.ToDriverType(os.Args[1])
 		if err != nil {
@@ -32,6 +32,14 @@ func main() {
 		panic(err)
 	}
 	config.Driver = driverType
+
+	syncswap, err := quotes.NewConfigFromEnv()
+	if err != nil {
+		panic(err)
+	}
+	syncswap.Driver = quotes.DriverSyncswap
+	syncswap.Syncswap.URL = "your_ws_rpc_url"
+	config.Index.DriverConfigs = append(config.Index.DriverConfigs, syncswap)
 
 	outbox := make(chan quotes.TradeEvent, 128)
 	outboxStop := make(chan struct{}, 1)
@@ -63,7 +71,9 @@ func main() {
 
 	markets := []quotes.Market{
 		// Add your markets here
-		quotes.NewMarket("linda", "weth"),
+		quotes.NewMarket("weth", "usdc"),
+		quotes.NewDerivedMerket("lube", "weth", "usdc"),
+		quotes.NewDerivedMerket("linda", "weth", "usdc"),
 	}
 
 	for _, market := range markets {
@@ -71,7 +81,7 @@ func main() {
 			slog.Warn("failed to subscribe", "market", market, "err", err)
 			continue
 		}
-		slog.Info("subscribed", "market", market)
+		slog.Info("subscribed", "market", market.Print())
 	}
 
 	slog.Info("waiting for trades")
