@@ -1,6 +1,6 @@
 [
     {
-        "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+        "url": "https://kayen.io",
         "name": "Kayen",
         "description": "Kayen is a clearing house for digital assets. It is a regulated entity that provides clearing and settlement services for digital assets and derivatives. Kayen is a subsidiary of OpenDAX, a leading global digital asset exchange operator.",
         "available": true,
