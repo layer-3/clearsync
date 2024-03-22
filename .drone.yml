@@ -17,7 +17,7 @@ environment:
 
 services:
   - name: eth_node
-    image: quay.io/openware/geth:v0.1.2-amd64
+    image: quay.io/openware/geth:v0.1.4-amd64
   - name: bundler
     image: ghcr.io/pimlicolabs/alto:v1.0.1
     entrypoint:
