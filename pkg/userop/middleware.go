@@ -45,6 +45,13 @@ func getNonceMiddleware(entryPoint *entry_point_v0_6_0.EntryPoint) middleware {
 
 func getInitCodeMiddleware(provider EthBackend, smartWalletConfig smart_wallet.Config) (middleware, error) {
 	return func(ctx context.Context, op *UserOperation) error {
+		// if Smart Wallet is already deployed - return empty init code
+		if isDeployed, err := smart_wallet.IsAccountDeployed(ctx, provider, op.Sender); err != nil {
+			return fmt.Errorf("failed to check if smart account is already deployed: %w", err)
+		} else if isDeployed {
+			return nil
+		}
+
 		owner, ok := ctx.Value(ctxKeyOwner).(common.Address)
 		if !ok {
 			return fmt.Errorf("`owner` not found, but required in context to get init code")
@@ -53,13 +60,6 @@ func getInitCodeMiddleware(provider EthBackend, smartWalletConfig smart_wallet.C
 		index, ok := ctx.Value(ctxKeyIndex).(decimal.Decimal)
 		if !ok {
 			return fmt.Errorf("`index` not found, but required in context to get init code")
-		}
-
-		// if Smart Wallet is already deployed - return empty init code
-		if isDeployed, err := smart_wallet.IsAccountDeployed(ctx, provider, op.Sender); err != nil {
-			return fmt.Errorf("failed to check if smart account is already deployed: %w", err)
-		} else if isDeployed {
-			return nil
 		}
 
 		initCode, err := smart_wallet.GetInitCode(smartWalletConfig, owner, index)

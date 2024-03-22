@@ -290,10 +290,10 @@ func (c *backend) NewUserOp(
 
 			ctx = context.WithValue(ctx, ctxKeyOwner, walletDeploymentOpts.Owner)
 			ctx = context.WithValue(ctx, ctxKeyIndex, walletDeploymentOpts.Index)
-		}
 
-		if err := c.getInitCode(ctx, &op); err != nil {
-			return UserOperation{}, err
+			if err := c.getInitCode(ctx, &op); err != nil {
+				return UserOperation{}, err
+			}
 		}
 	}
 
