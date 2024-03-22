@@ -6,9 +6,9 @@
   },
   "smart_wallet": {
     "type": "kernel",
-    "ecdsa_validator": "0x5de4839a76cf55d0c90e2061ef4386d962E15ae3",
+    "ecdsa_validator": "0xd9AB5096a832b9ce79914329DAEE236f8Eea0390",
     "logic": "0x0DA6a956B9488eD4dd761E59f52FDc6c8068E6B5",
-    "factory": "0xd9AB5096a832b9ce79914329DAEE236f8Eea0390"
+    "factory": "0x5de4839a76cf55d0c90e2061ef4386d962E15ae3"
   },
   "paymaster": {
     "type": "off"
