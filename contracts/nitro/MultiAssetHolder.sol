@@ -401,12 +401,17 @@ contract MultiAssetHolder is IMultiAssetHolder, StatusManager {
 	 */
 	function _executeSingleAssetExit(Outcome.SingleAssetExit memory singleAssetExit) internal {
 		address asset = singleAssetExit.asset;
+
+		if (Outcome._isForeignAsset(singleAssetExit)) {
+			return;
+		}
+
 		for (uint256 j = 0; j < singleAssetExit.allocations.length; j++) {
-			bytes32 destination = singleAssetExit.allocations[j].destination;
-			uint256 amount = singleAssetExit.allocations[j].amount;
+				bytes32 destination = singleAssetExit.allocations[j].destination;
 			if (_isExternalDestination(destination)) {
-				_transferAsset(asset, _bytes32ToAddress(destination), amount);
+				Outcome.transferAllocation(asset, singleAssetExit.allocations[j], singleAssetExit.assetMetadata);
 			} else {
+				uint256 amount = singleAssetExit.allocations[j].amount;
 				holdings[asset][destination] += amount;
 			}
 		}

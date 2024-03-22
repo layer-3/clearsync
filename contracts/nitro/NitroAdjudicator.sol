@@ -49,6 +49,7 @@ contract NitroAdjudicator is INitroAdjudicator, ForceMove, MultiAssetHolder {
 		uint256[] memory initialHoldings = new uint256[](outcome.length);
 		uint256[] memory totalPayouts = new uint256[](outcome.length);
 		for (uint256 assetIndex = 0; assetIndex < outcome.length; assetIndex++) {
+		// TODO: skip if the asset if foreign
 			Outcome.SingleAssetExit memory assetOutcome = outcome[assetIndex];
 			Outcome.Allocation[] memory allocations = assetOutcome.allocations;
 			address asset = outcome[assetIndex].asset;

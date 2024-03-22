@@ -1,9 +1,10 @@
-import { BigNumber, Contract, Wallet, providers } from 'ethers';
+import { BigNumber, Contract, Wallet, providers, utils } from 'ethers';
 import { ethers } from 'hardhat';
 import {
   Allocation,
   AllocationType,
   AssetMetadata,
+  AssetType,
   SingleAssetExit,
 } from '@statechannels/exit-format';
 
@@ -16,6 +17,12 @@ import type {
 } from '../../src/nitro/contract/challenge';
 import type { Outcome } from '../../src/nitro/contract/outcome';
 import type { Bytes32, State, VariablePart } from '../../src/nitro';
+
+// Asset on a foreign chain
+export const FOREIGN_ASSET = '0x4242424242424242424242424242424242424242';
+
+// Random number between 100000 and 999999
+export const FOREIGN_CHAIN_ID = Math.floor(Math.random() * 900_000 + 100_000);
 
 /**
  * Deploys a given contract using the first available signer from ethers.
@@ -270,4 +277,29 @@ export const largeOutcome = (
         },
       ]
     : [];
+};
+
+// FIXME: temporary solution to enable encoding metadata. This should be replaced with a more elaborate solution.
+export const fillForeignMetadata = (outcome: Outcome, adjudicatorAddress: string): Outcome => {
+  return outcome.map((assetOutcome) => {
+    let assetMetadata = {
+        assetType: 0,
+        metadata: '0x',
+      };
+
+    if (assetOutcome.asset === FOREIGN_ASSET) {
+      assetMetadata = {
+        assetType: AssetType.Qualified,
+        metadata: utils.defaultAbiCoder.encode(
+          ['uint256', 'address'],
+          [FOREIGN_CHAIN_ID, adjudicatorAddress],
+        ),
+      };
+    }
+
+    return {
+      ...assetOutcome,
+      assetMetadata,
+    };
+  });
 };

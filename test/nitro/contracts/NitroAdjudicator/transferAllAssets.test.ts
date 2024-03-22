@@ -6,6 +6,8 @@ import { before, describe, it } from 'mocha';
 import { getChannelId } from '../../../../src/nitro/contract/channel';
 import { Outcome, hashOutcome } from '../../../../src/nitro/contract/outcome';
 import {
+  FOREIGN_ASSET,
+  fillForeignMetadata,
   generateParticipants,
   randomChannelId,
   randomExternalDestination,
@@ -56,6 +58,7 @@ before(async () => {
     B: randomExternalDestination(),
     ETH: MAGIC_ADDRESS_INDICATING_ETH,
     ERC20: token.address,
+    Foreign: FOREIGN_ASSET,
   };
 });
 
@@ -70,6 +73,16 @@ describe('transferAllAssets', () => {
       newOutcome: {},
       heldAfter: { ETH: { c: 0 }, ERC20: { c: 0 } },
       payouts: { ETH: { A: 1 }, ERC20: { A: 2 } },
+      reasonString: undefined,
+    },
+    {
+      description:
+        'testNitroAdjudicator accepts a transferAllAssets tx for a finalized channel, and 1x Native and 1x Foreign assets transferred',
+      setOutcome: { ERC20: { A: 1 }, Foreign: { B: 2 } },
+      heldBefore: { ERC20: { c: 1 }, Foreign: { c: 2 } },
+      newOutcome: { Foreign: { B: 2 } },
+      heldAfter: { ERC20: { c: 0 }, Foreign: { c: 0 } },
+      payouts: { ERC20: { A: 1 }, Foreign: { B: 2 } },
       reasonString: undefined,
     },
   ];
@@ -102,6 +115,11 @@ describe('transferAllAssets', () => {
       await Promise.all(
         // For each asset
         Object.keys(heldBefore).map(async (asset) => {
+          // do not deposit foreign asset
+          if (asset == FOREIGN_ASSET) {
+            return;
+          }
+
           await Promise.all(
             Object.keys(heldBefore[asset]).map(async (destination) => {
               // for each channel
@@ -124,7 +142,7 @@ describe('transferAllAssets', () => {
       );
 
       // Compute the outcome.
-      const outcome: Outcome = computeOutcome(setOutcome);
+      const outcome: Outcome = fillForeignMetadata(computeOutcome(setOutcome), testNitroAdjudicator.address);
       const outcomeHash = hashOutcome(outcome);
       // Call public wrapper to set state (only works on test contract)
       const stateHash = constants.HashZero;
@@ -160,11 +178,14 @@ describe('transferAllAssets', () => {
         expect(eventsFromTx[1].event).to.equal('AllocationUpdated');
 
         // Check new status
-        const outcomeAfter: Outcome = computeOutcome(newOutcome);
+        const outcomeAfter: Outcome = fillForeignMetadata(
+          computeOutcome(newOutcome),
+          testNitroAdjudicator.address,
+        );
 
         const expectedStatusAfter =
           // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-          newOutcome.length === undefined
+          outcomeAfter.length === 0
             ? constants.HashZero
             : channelDataToStatus({
                 turnNumRecord,
@@ -179,6 +200,11 @@ describe('transferAllAssets', () => {
         await Promise.all(
           // For each asset
           Object.keys(payouts).map(async (asset) => {
+            // do not check foreign asset
+            if (asset == FOREIGN_ASSET) {
+              return;
+            }
+
             await Promise.all(
               Object.keys(payouts[asset]).map(async (destination) => {
                 const address = convertBytes32ToAddress(destination);
@@ -200,6 +226,11 @@ describe('transferAllAssets', () => {
         await Promise.all(
           // For each asset
           Object.keys(heldAfter).map(async (asset) => {
+            // do not check foreign asset
+            if (asset == FOREIGN_ASSET) {
+              return;
+            }
+
             await Promise.all(
               Object.keys(heldAfter[asset]).map(async (destination) => {
                 // for each channel
