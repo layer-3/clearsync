@@ -36,3 +36,7 @@ func (s LocalSigner) PublicKey() *ecdsa.PublicKey {
 func (s LocalSigner) CommonAddress() common.Address {
 	return s.address
 }
+
+func (s LocalSigner) PrivateKey() *ecdsa.PrivateKey {
+	return s.privateKey
+}
