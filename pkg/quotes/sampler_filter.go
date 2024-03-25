@@ -30,6 +30,6 @@ func (ts samplerFilter) Allow(trade TradeEvent) bool {
 		return true
 	}
 
-	loggerSamplerFilter.Infow("skipping trade", "trade", trade)
+	// loggerSamplerFilter.Infow("skipping trade", "trade", trade)
 	return false
 }
