@@ -54,6 +54,14 @@ func newKraken(config KrakenConfig, outbox chan<- TradeEvent) Driver {
 	}
 }
 
+func (k *kraken) Name() DriverType {
+	return DriverKraken
+}
+
+func (b *kraken) Type() Type {
+	return TypeCEX
+}
+
 func (k *kraken) Start() error {
 	var startErr error
 	started := k.once.Start(func() {
@@ -116,10 +124,6 @@ type krakenSubscriptionParams struct {
 	// Available variants: book|ohlc|openOrders|ownTrades|spread|ticker|trade|*
 	// * for all available channels depending on the connected environment
 	Name string `json:"name"`
-}
-
-func (k *kraken) Name() DriverType {
-	return DriverKraken
 }
 
 func (k *kraken) Subscribe(market Market) error {

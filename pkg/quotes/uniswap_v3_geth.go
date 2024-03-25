@@ -58,6 +58,10 @@ func (u *uniswapV3Geth) Name() DriverType {
 	return DriverUniswapV3Geth
 }
 
+func (b *uniswapV3Geth) Type() Type {
+	return TypeDEX
+}
+
 func (u *uniswapV3Geth) Start() error {
 	var startErr error
 	started := u.once.Start(func() {

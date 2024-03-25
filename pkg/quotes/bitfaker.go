@@ -33,6 +33,10 @@ func (b *bitfaker) Name() DriverType {
 	return DriverBitfaker
 }
 
+func (b *bitfaker) Type() Type {
+	return TypeUnspecified
+}
+
 func (b *bitfaker) Start() error {
 	started := b.once.Start(func() {
 		go func() {

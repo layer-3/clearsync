@@ -10,7 +10,8 @@ import (
 var loggerIndex = log.Logger("index-aggregator")
 
 type indexAggregator struct {
-	drivers []Driver
+	drivers        []Driver
+	marketsMapping map[string][]string
 }
 
 type priceCalculator interface {
@@ -18,7 +19,7 @@ type priceCalculator interface {
 }
 
 // NewIndexAggregator creates a new instance of IndexAggregator.
-func NewIndexAggregator(driversConfigs []Config, strategy priceCalculator, outbox chan<- TradeEvent) Driver {
+func NewIndexAggregator(driversConfigs []Config, marketsMapping map[string][]string, strategy priceCalculator, outbox chan<- TradeEvent) Driver {
 	aggregated := make(chan TradeEvent, 128)
 
 	var drivers []Driver
@@ -50,17 +51,26 @@ func NewIndexAggregator(driversConfigs []Config, strategy priceCalculator, outbo
 	}()
 
 	return &indexAggregator{
-		drivers: drivers,
+		drivers:        drivers,
+		marketsMapping: marketsMapping,
 	}
 }
 
 // newIndex creates a new instance of IndexAggregator with VWA strategy and default drivers weights.
 func newIndex(config IndexConfig, outbox chan<- TradeEvent) Driver {
-	return NewIndexAggregator(config.DriverConfigs, NewStrategyVWA(WithCustomPriceCacheVWA(NewPriceCacheVWA(DefaultWeightsMap, config.TradesCached))), outbox)
+	marketsMapping := config.MarketsMapping
+	if marketsMapping == nil {
+		marketsMapping = DefaultMarketsMapping
+	}
+	return NewIndexAggregator(config.DriverConfigs, marketsMapping, NewStrategyVWA(WithCustomPriceCacheVWA(NewPriceCacheVWA(DefaultWeightsMap, config.TradesCached))), outbox)
 }
 
 func (a *indexAggregator) Name() DriverType {
 	return DriverIndex
+}
+
+func (b *indexAggregator) Type() Type {
+	return TypeHybrid
 }
 
 // Start starts all drivers from the provided config.
@@ -87,6 +97,16 @@ func (a *indexAggregator) Subscribe(m Market) error {
 	for _, d := range a.drivers {
 		loggerIndex.Info("subscribing ", d.Name().slug)
 		if err := d.Subscribe(m); err != nil {
+			if d.Type() == TypeDEX {
+				for _, convertFrom := range a.marketsMapping[m.quoteUnit] {
+					if err := d.Subscribe(NewDerivedMerket(m.baseUnit, convertFrom, m.quoteUnit)); err != nil {
+						loggerIndex.Infof("%s: skipping %s :", d.Name().slug, convertFrom, err.Error())
+						continue
+					}
+					loggerIndex.Infof("%s helper market found: %s/%s", d.Name().slug, m.baseUnit, convertFrom)
+				}
+				continue
+			}
 			loggerIndex.Warnf("%s subsctiption error: ", d.Name().slug, err.Error())
 		}
 	}

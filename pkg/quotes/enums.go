@@ -29,6 +29,15 @@ var (
 	DriverQuickswap     = DriverType{"quickswap"}
 )
 
+type Type string
+
+var (
+	TypeCEX         Type = "cex"
+	TypeDEX         Type = "dex"
+	TypeHybrid      Type = "hybrid"
+	TypeUnspecified Type = ""
+)
+
 func ToDriverType(raw string) (DriverType, error) {
 	allDrivers := map[string]DriverType{
 		DriverIndex.String():         DriverIndex,

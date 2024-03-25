@@ -46,6 +46,10 @@ func (b *binance) Name() DriverType {
 	return DriverBinance
 }
 
+func (b *binance) Type() Type {
+	return TypeCEX
+}
+
 func (b *binance) Start() error {
 	if started := b.once.Start(func() {}); !started {
 		return errAlreadyStarted

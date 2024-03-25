@@ -51,6 +51,10 @@ func (s *syncswap) Name() DriverType {
 	return DriverSyncswap
 }
 
+func (b *syncswap) Type() Type {
+	return TypeDEX
+}
+
 func (s *syncswap) Start() error {
 	var startErr error
 	started := s.once.Start(func() {
@@ -214,7 +218,7 @@ func (*syncswap) parseSwap(swap *isyncswap_pool.ISyncSwapPoolSwap, market Market
 		TakerType: takerType,
 		CreatedAt: time.Now(),
 	}
-	fmt.Printf("tradeEvent: %+v\n", tr)
+
 	return tr, nil
 }
 
