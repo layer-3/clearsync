@@ -49,6 +49,10 @@ func (s *quickswap) Name() DriverType {
 	return DriverQuickswap
 }
 
+func (b *quickswap) Type() Type {
+	return TypeDEX
+}
+
 func (s *quickswap) Start() error {
 	var startErr error
 	started := s.once.Start(func() {

@@ -49,6 +49,10 @@ func (o *opendax) Name() DriverType {
 	return DriverOpendax
 }
 
+func (b *opendax) Type() Type {
+	return TypeHybrid
+}
+
 func (o *opendax) Start() error {
 	var startErr error
 	started := o.once.Start(func() {

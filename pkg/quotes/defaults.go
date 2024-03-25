@@ -11,3 +11,7 @@ var (
 		DriverSyncswap:      decimal.NewFromInt(50),
 	}
 )
+
+var (
+	DefaultMarketsMapping = map[string][]string{"usdc": {"eth", "weth", "matic"}}
+)

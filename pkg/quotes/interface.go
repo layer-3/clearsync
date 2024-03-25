@@ -5,6 +5,7 @@ import "fmt"
 
 type Driver interface {
 	Name() DriverType
+	Type() Type
 	Start() error
 	Stop() error
 	Subscribe(market Market) error

@@ -38,7 +38,7 @@ func main() {
 		panic(err)
 	}
 	syncswap.Driver = quotes.DriverSyncswap
-	syncswap.Syncswap.URL = "your_ws_rpc_url"
+	syncswap.Syncswap.URL = ""
 	config.Index.DriverConfigs = append(config.Index.DriverConfigs, syncswap)
 
 	outbox := make(chan quotes.TradeEvent, 128)
@@ -72,8 +72,8 @@ func main() {
 	markets := []quotes.Market{
 		// Add your markets here
 		quotes.NewMarket("weth", "usdc"),
-		quotes.NewDerivedMerket("lube", "weth", "usdc"),
-		quotes.NewDerivedMerket("linda", "weth", "usdc"),
+		quotes.NewMarket("lube", "usdc"),
+		quotes.NewMarket("linda", "usdc"),
 	}
 
 	for _, market := range markets {

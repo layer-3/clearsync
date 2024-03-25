@@ -41,6 +41,10 @@ func (u *uniswapV3Api) Name() DriverType {
 	return DriverUniswapV3Api
 }
 
+func (b *uniswapV3Api) Type() Type {
+	return TypeDEX
+}
+
 func (u *uniswapV3Api) Start() error {
 	if started := u.once.Start(func() {}); !started {
 		return errAlreadyStarted
