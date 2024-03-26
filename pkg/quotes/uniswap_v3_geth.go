@@ -2,8 +2,11 @@ package quotes
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"math/big"
+	"net/http"
 	"strings"
 	"time"
 
@@ -307,17 +310,20 @@ func (u *uniswapV3Geth) getTokens(market Market) (baseToken poolToken, quoteToke
 }
 
 func getAssets(assetsURL string) ([]poolToken, error) {
-	return []poolToken{{
-		Address:  "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
-		Symbol:   "weth",
-		Decimals: decimal.NewFromInt(18),
-	}, {
-		Address:  "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
-		Symbol:   "matic",
-		Decimals: decimal.NewFromInt(18),
-	}, {
-		Address:  "0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6",
-		Symbol:   "wbtc",
-		Decimals: decimal.NewFromInt(8),
-	}}, nil
+	resp, err := http.Get(assetsURL)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var assets map[string][]poolToken
+	if err := json.Unmarshal(body, &assets); err != nil {
+		return nil, err
+	}
+	return assets["tokens"], nil
 }
