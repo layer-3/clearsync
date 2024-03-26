@@ -1,6 +1,7 @@
 package quotes
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/event"
@@ -27,12 +29,13 @@ var (
 )
 
 type uniswapV3Geth struct {
-	once           *once
-	url            string
-	assetsURL      string
-	factoryAddress string
-	client         *ethclient.Client
-	factory        *iuniswap_v3_factory.IUniswapV3Factory
+	once                *once
+	url                 string
+	assetsURL           string
+	factoryAddress      string
+	client              *ethclient.Client
+	factory             *iuniswap_v3_factory.IUniswapV3Factory
+	prefetchSwapsBlocks uint64
 
 	outbox  chan<- TradeEvent
 	filter  Filter
@@ -42,10 +45,11 @@ type uniswapV3Geth struct {
 
 func newUniswapV3Geth(config UniswapV3GethConfig, outbox chan<- TradeEvent) Driver {
 	return &uniswapV3Geth{
-		once:           newOnce(),
-		url:            config.URL,
-		assetsURL:      config.AssetsURL,
-		factoryAddress: config.FactoryAddress,
+		once:                newOnce(),
+		url:                 config.URL,
+		assetsURL:           config.AssetsURL,
+		factoryAddress:      config.FactoryAddress,
+		prefetchSwapsBlocks: config.PrefetchSwapsBlocks,
 
 		outbox:  outbox,
 		filter:  NewFilter(config.Filter),
@@ -132,6 +136,28 @@ func (u *uniswapV3Geth) Subscribe(market Market) error {
 		return fmt.Errorf("failed get pool for market %v: %s", market.String(), err)
 	}
 
+	go func() {
+		block, err := u.client.BlockNumber(context.Background())
+		if err != nil {
+			loggerSyncswap.Errorf("failed to get block number: %s", err)
+		}
+
+		iter, err := pool.contract.FilterSwap(
+			&bind.FilterOpts{Start: block - u.prefetchSwapsBlocks},
+			[]common.Address{},
+			[]common.Address{})
+		if err != nil {
+			loggerSyncswap.Errorf("failed to filter swap events for market %s: %s", market, err)
+		}
+		if ok := iter.Next(); ok {
+			tr, err := u.parseSwap(iter.Event, pool)
+			if err != nil {
+				loggerSyncswap.Errorf("failed to parse swap event for market %s: %s", market, err)
+			}
+			u.outbox <- tr
+		}
+	}()
+
 	sink := make(chan *iuniswap_v3_pool.IUniswapV3PoolSwap, 128)
 	sub, err := pool.contract.WatchSwap(nil, sink, []common.Address{}, []common.Address{})
 	if err != nil {
@@ -152,28 +178,9 @@ func (u *uniswapV3Geth) Subscribe(market Market) error {
 				}
 				return
 			case swap := <-sink:
-				amount := decimal.NewFromBigInt(swap.Amount0, 0)
-				price := calculatePrice(
-					decimal.NewFromBigInt(swap.SqrtPriceX96, 0),
-					pool.baseToken.Decimals,
-					pool.quoteToken.Decimals)
-				takerType := TakerTypeBuy
-				if amount.Sign() < 0 {
-					// When amount0 is negative (and amount1 is positive),
-					// it means token0 is leaving the pool in exchange for token1.
-					// This is equivalent to a "sell" of token0 (or a "buy" of token1).
-					takerType = TakerTypeSell
-				}
-
-				amount = amount.Abs()
-				tr := TradeEvent{
-					Source:    DriverUniswapV3Geth,
-					Market:    market,
-					Price:     price,
-					Amount:    amount,
-					Total:     price.Mul(amount),
-					TakerType: takerType,
-					CreatedAt: time.Now(),
+				tr, err := u.parseSwap(swap, pool)
+				if err != nil {
+					loggerUniswapV3Geth.Errorf("failed to parse swap event for market %s: %w", market, err)
 				}
 
 				if !u.filter.Allow(tr) {
@@ -202,6 +209,35 @@ func (u *uniswapV3Geth) Unsubscribe(market Market) error {
 	u.streams.Delete(market)
 
 	return nil
+}
+
+func (*uniswapV3Geth) parseSwap(swap *iuniswap_v3_pool.IUniswapV3PoolSwap, pool *uniswapV3GethPoolWrapper) (TradeEvent, error) {
+	amount := decimal.NewFromBigInt(swap.Amount0, 0)
+	price := calculatePrice(
+		decimal.NewFromBigInt(swap.SqrtPriceX96, 0),
+		pool.baseToken.Decimals,
+		pool.quoteToken.Decimals)
+	takerType := TakerTypeBuy
+	if amount.Sign() < 0 {
+		// When amount0 is negative (and amount1 is positive),
+		// it means token0 is leaving the pool in exchange for token1.
+		// This is equivalent to a "sell" of token0 (or a "buy" of token1).
+		takerType = TakerTypeSell
+	}
+
+	amount = amount.Abs()
+	return TradeEvent{
+		Source: DriverUniswapV3Geth,
+		Market: Market{
+			baseUnit:  pool.baseToken.Symbol,
+			quoteUnit: pool.quoteToken.Symbol,
+		},
+		Price:     price,
+		Amount:    amount,
+		Total:     price.Mul(amount),
+		TakerType: takerType,
+		CreatedAt: time.Now(),
+	}, nil
 }
 
 type poolToken struct {
