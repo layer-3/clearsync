@@ -9,6 +9,7 @@ var (
 		DriverUniswapV3Api:  decimal.NewFromInt(50),
 		DriverUniswapV3Geth: decimal.NewFromInt(50),
 		DriverSyncswap:      decimal.NewFromInt(50),
+		DriverQuickswap:     decimal.NewFromInt(50),
 	}
 )
 
