@@ -44,7 +44,7 @@ func NewIndexAggregator(driversConfigs []Config, marketsMapping map[string][]str
 				}
 
 				event.Price = indexPrice
-				event.Source = DriverIndex
+				event.Source = DriverType{"index/" + event.Source.slug}
 				outbox <- event
 			}
 		}

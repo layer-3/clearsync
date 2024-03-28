@@ -51,6 +51,7 @@ func main() {
 		// That's why we start processing in an async manner beforehand.
 		for e := range outbox {
 			slog.Info("new trade",
+				"source", e.Source,
 				"market", e.Market,
 				"side", e.TakerType.String(),
 				"price", e.Price.String(),
