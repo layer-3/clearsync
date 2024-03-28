@@ -1,7 +1,8 @@
 # Pls do not increase the version of the base image, it will break the contract deployments
 # FROM ethereum/solc:0.8.19 AS compiler
 
-FROM ethereum/client-go:v1.13.14
+# FROM ethereum/client-go:v1.13.14
+FROM ghcr.io/foundry-rs/foundry:nightly-156cb1396b7076c6f9cb56f3719f8c90f7f52064
 
 WORKDIR /app
 
