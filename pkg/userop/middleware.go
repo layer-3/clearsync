@@ -30,9 +30,11 @@ type middleware func(ctx context.Context, op *UserOperation) error
 
 // TODO: possible improvement: when there is a userOp for this SW already in the mempool, we should return incremented nonce
 func getNonceMiddleware(entryPoint *entry_point_v0_6_0.EntryPoint) middleware {
+	nonceKeyRotator := NewNonceKeyRotator()
+
 	return func(_ context.Context, op *UserOperation) error {
 		slog.Debug("getting nonce")
-		key := new(big.Int)
+		key := nonceKeyRotator.Next()
 		nonce, err := entryPoint.GetNonce(nil, op.Sender, key)
 		if err != nil {
 			return err

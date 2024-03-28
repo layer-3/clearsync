@@ -21,13 +21,21 @@ func SendNative(ctx context.Context, node *EthNode, from, to Account, fundAmount
 	}
 
 	gasLimit := uint64(21000)
-	gasPrice, err := node.Client.SuggestGasPrice(ctx)
+	suggestedGasTipCap, err := node.Client.SuggestGasTipCap(context.Background())
 	if err != nil {
-		return fmt.Errorf("failed to suggest gas price: %w", err)
+		return err
 	}
 
-	tx := types.NewTransaction(nonce, to.Address, fundAmount, gasLimit, gasPrice, nil)
-	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), from.PrivateKey)
+	tx := types.NewTx(&types.DynamicFeeTx{
+		ChainID:   chainID,
+		Nonce:     nonce,
+		To:        &to.Address,
+		Value:     fundAmount,
+		GasFeeCap: suggestedGasTipCap,
+		GasTipCap: suggestedGasTipCap,
+		Gas:       gasLimit,
+	})
+	signedTx, err := types.SignTx(tx, types.LatestSignerForChainID(chainID), from.PrivateKey)
 	if err != nil {
 		return fmt.Errorf("failed to sign transaction: %w", err)
 	}

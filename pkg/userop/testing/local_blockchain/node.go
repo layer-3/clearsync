@@ -1,16 +1,21 @@
 package local_blockchain
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"log/slog"
+	"math/big"
 	"net/url"
 	"os"
+	"regexp"
 	"sync"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/shopspring/decimal"
@@ -34,30 +39,82 @@ type EthNode struct {
 	Client       *ethclient.Client
 	LocalURL     url.URL
 	ContainerURL url.URL
+
+	mu sync.Mutex
+}
+
+type MockedClient struct {
+	ethclient.Client
+	mu sync.Mutex
+}
+
+func (m *MockedClient) SendTransaction(ctx context.Context, tx *types.Transaction) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	return m.Client.SendTransaction(ctx, tx)
+}
+
+func (n *EthNode) FundAccount(ctx context.Context, to Account, amount *big.Int) error {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+
+	if pkStr := os.Getenv("DEPLOYER_PK"); pkStr != "" {
+		privateKey, err := crypto.HexToECDSA(pkStr)
+		if err != nil {
+			return fmt.Errorf("failed to parse deployer private key: %w", err)
+		}
+
+		deployerAccount := Account{
+			PrivateKey: privateKey,
+			Address:    crypto.PubkeyToAddress(privateKey.PublicKey),
+		}
+
+		err = SendNative(ctx, n, deployerAccount, to, amount)
+		if err != nil {
+			return fmt.Errorf("failed to send native: %w", err)
+		}
+
+		return nil
+	}
+
+	gethCmd := fmt.Sprintf(
+		"eth.sendTransaction({from: eth.coinbase, to: '%s', value: web3.toWei(%d, 'wei')})",
+		to.Address, amount.Uint64(),
+	)
+
+	exitCode, result, err := n.Container.Exec(ctx, []string{"geth", "attach", "--exec", gethCmd, n.LocalURL.String()})
+	if err != nil || exitCode != 0 {
+		return fmt.Errorf("failed to exec increment balance: %w (exit code %d)", err, exitCode)
+	}
+
+	scanner := bufio.NewScanner(result)
+	var txHash string
+	for scanner.Scan() && txHash == "" {
+		txHash = regexp.MustCompile("0x[0-9a-fA-F]{64}").FindString(scanner.Text())
+	}
+
+	if txHash == "" {
+		return fmt.Errorf("failed to find transaction hash in geth output")
+	}
+
+	tx, _, err := n.Client.TransactionByHash(context.Background(), common.Hash(hexutil.MustDecode(txHash)))
+	if err != nil {
+		return err
+	}
+
+	_, err = bind.WaitMined(ctx, n.Client, tx)
+	if err != nil {
+		return fmt.Errorf("failed to wait for transaction to be mined: %w", err)
+	}
+
+	return nil
 }
 
 var (
-	ethActiveNode  *EthNode
-	ethActiveUsers int64
-	ethMutex       sync.Mutex
+	ethActiveNode *EthNode
+	ethMutex      sync.Mutex
 )
-
-func ethNodeCleanupFactory(ctx context.Context, t *testing.T) func() {
-	return func() {
-		ethMutex.Lock()
-		defer ethMutex.Unlock()
-
-		ethActiveUsers--
-		if ethActiveUsers <= 0 {
-			if ethActiveNode.Container != nil {
-				err := ethActiveNode.Container.Terminate(ctx)
-				require.NoError(t, err, "failed to terminate Go-Ethereum container")
-			}
-
-			ethActiveNode = nil
-		}
-	}
-}
 
 func NewEthNode(ctx context.Context, t *testing.T) *EthNode {
 	ethMutex.Lock()
@@ -65,9 +122,6 @@ func NewEthNode(ctx context.Context, t *testing.T) *EthNode {
 	slog.Info("starting Go-Ethereum node...")
 
 	if ethActiveNode != nil {
-		ethActiveUsers++
-		t.Cleanup(ethNodeCleanupFactory(ctx, t))
-
 		slog.Info("reusing existing Ethereum node")
 		return ethActiveNode
 	}
@@ -86,6 +140,7 @@ func NewEthNode(ctx context.Context, t *testing.T) *EthNode {
 		containerURL = rpcURL
 	} else {
 		// TODO: use in-memory database instead of container volumes
+		// TODO: add test cleanups with container termination
 		gethContainer, err = testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image: "ethereum/client-go:v1.13.14",
@@ -94,7 +149,7 @@ func NewEthNode(ctx context.Context, t *testing.T) *EthNode {
 				// 8547 TCP, used by the GraphQL API
 				// 30303 TCP and UDP, used by the P2P protocol running the network
 				ExposedPorts: []string{"8545:8545/tcp", "8546:8546/tcp", "8547:8547/tcp", "30303:30303/tcp", "30303:30303/udp"},
-				Cmd:          []string{"--dev", "--http", "--http.api=eth,web3,net", "--http.addr=0.0.0.0", "--http.corsdomain='*'", "--http.vhosts='*'"},
+				Cmd:          []string{"--dev", "--http", "--ws", "--http.api=eth,web3,net", "--http.addr=0.0.0.0", "--http.corsdomain='*'", "--http.vhosts='*'", "--ws.addr=0.0.0.0", "--ws.origins='*'"},
 				WaitingFor:   wait.ForLog("server started"),
 			},
 			Started: true,
@@ -103,10 +158,14 @@ func NewEthNode(ctx context.Context, t *testing.T) *EthNode {
 
 		containerIP, err := gethContainer.ContainerIP(ctx)
 		require.NoError(t, err, "failed to get Go-Ethereum container IP")
+		// As a rpc port we are using ws port for subscription
+		// As a container port we are using http port for bundler
+		rpcPort, err := gethContainer.MappedPort(ctx, "8546")
+		require.NoError(t, err, "failed to get Go-Ethereum rpc port")
 		containerPort, err := gethContainer.MappedPort(ctx, "8545")
 		require.NoError(t, err, "failed to get Go-Ethereum container port")
 
-		rpcURL, err = url.Parse(fmt.Sprintf("http://0.0.0.0:%s", containerPort.Port()))
+		rpcURL, err = url.Parse(fmt.Sprintf("ws://0.0.0.0:%s", rpcPort.Port()))
 		require.NoError(t, err, "failed to parse local RPC URL")
 		containerURL, err = url.Parse(fmt.Sprintf("http://%s:%s", containerIP, containerPort.Port()))
 		require.NoError(t, err, "failed to parse container RPC URL")
@@ -123,9 +182,6 @@ func NewEthNode(ctx context.Context, t *testing.T) *EthNode {
 		ContainerURL: *containerURL,
 	}
 
-	t.Cleanup(ethNodeCleanupFactory(ctx, t))
-	ethActiveUsers++
-
 	return ethActiveNode
 }
 
@@ -135,27 +191,9 @@ type BundlerNode struct {
 }
 
 var (
-	bundlerActiveNode  *BundlerNode
-	bundlerActiveUsers int64
-	bundlerMutex       sync.Mutex
+	bundlerActiveNode *BundlerNode
+	bundlerMutex      sync.Mutex
 )
-
-func bundlerNodeCleanupFactory(ctx context.Context, t *testing.T) func() {
-	return func() {
-		bundlerMutex.Lock()
-		defer bundlerMutex.Unlock()
-
-		bundlerActiveUsers--
-		if bundlerActiveUsers <= 0 {
-			if bundlerActiveNode.Container != nil {
-				err := bundlerActiveNode.Container.Terminate(ctx)
-				require.NoError(t, err, "failed to terminate Alto container")
-			}
-
-			bundlerActiveNode = nil
-		}
-	}
-}
 
 func NewBundler(ctx context.Context, t *testing.T, node *EthNode, entryPoint common.Address) *url.URL {
 	bundlerMutex.Lock()
@@ -163,9 +201,6 @@ func NewBundler(ctx context.Context, t *testing.T, node *EthNode, entryPoint com
 	slog.Info("starting bundler...")
 
 	if bundlerActiveNode != nil {
-		bundlerActiveUsers++
-		t.Cleanup(bundlerNodeCleanupFactory(ctx, t))
-
 		slog.Info("reusing existing Alto bundler")
 		return bundlerActiveNode.ContainerURL
 	}
@@ -190,7 +225,7 @@ func NewBundler(ctx context.Context, t *testing.T, node *EthNode, entryPoint com
 		require.NoError(t, err, "failed to fund bundler account")
 		privateKey := hexutil.Encode(crypto.FromECDSA(bundlerAccount.PrivateKey))
 
-		altoContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		altoContainer, err = testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image: "quay.io/openware/bundler:c7dd933",
 				Entrypoint: []string{
@@ -225,9 +260,6 @@ func NewBundler(ctx context.Context, t *testing.T, node *EthNode, entryPoint com
 		Container:    altoContainer,
 		ContainerURL: bundlerURL,
 	}
-
-	t.Cleanup(bundlerNodeCleanupFactory(ctx, t))
-	bundlerActiveUsers++
 
 	return bundlerActiveNode.ContainerURL
 }
