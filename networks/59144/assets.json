@@ -14,7 +14,7 @@
         "symbol": "USDT",
         "decimals": 6,
         "precision": 4,
-        "logoURI": "https://token-repository.dappradar.com/tokens?protocol=ethereum&contract=0xdac17f958d2ee523a2206206994597c13d831ec7&file=logo.png"
+        "logoURI": "https://cryptologos.cc/logos/tether-usdt-logo.png"
       },
       {
         "address": "0x176211869ca2b568f2a7d4ee941e073a821ee1ff",
@@ -22,7 +22,7 @@
         "symbol": "USDC",
         "decimals": 6,
         "precision": 4,
-        "logoURI": "https://token-repository.dappradar.com/tokens?protocol=ethereum&contract=0x95ad61b0a150d79219dcf64e1e6cc01f0b64c4ce&file=logo.png"
+        "logoURI": "https://assets.coingecko.com/coins/images/6319/large/usdc.png?1696506694"
       },
       {
         "address": "0x99AD925C1Dc14Ac7cc6ca1244eeF8043C74E99d5",
@@ -30,7 +30,7 @@
         "symbol": "SHIB",
         "decimals": 18,
         "precision": 0,
-        "logoURI": "https://lineascan.build/token/images/shibainu_32.png"
+        "logoURI": "https://token-repository.dappradar.com/tokens?protocol=ethereum&contract=0x95ad61b0a150d79219dcf64e1e6cc01f0b64c4ce&file=logo.png"
       },
       {
         "address": "0x3aAB2285ddcDdaD8edf438C1bAB47e1a9D05a9b4",
