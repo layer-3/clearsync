@@ -1,7 +1,10 @@
 [
     {
-        "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+        "url": "https://kayen.io/",
         "name": "Kayen",
+        "finex_url": "wss://kayen.io/ws",
+        "clearport_b_url": "http://port-b.kayen.io:31551",
+        "clearport_a_url": "wss://port-a.kayen.io/",
         "description": "Kayen is a clearing house for digital assets. It is a regulated entity that provides clearing and settlement services for digital assets and derivatives. Kayen is a subsidiary of OpenDAX, a leading global digital asset exchange operator.",
         "available": true,
         "metadata": {
@@ -30,8 +33,11 @@
         ]
     },
     {
-        "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+        "url": "https://kayen.io/",
         "name": "BitMint Pro",
+        "finex_url": "wss://kayen.io/ws",
+        "clearport_b_url": "http://port-b.kayen.io:31551",
+        "clearport_a_url": "wss://port-a.kayen.io/",
         "description": "BitMint Pro is a leading crypto trading platform based in US East (Virginia). Specializing in a variety of digital currencies, our platform offers advanced trading tools, secure wallet services, and a user-friendly interface for optimal trading. Our expert team provides insights and support to navigate the crypto market effectively.",
         "available": true,
         "metadata": {
@@ -60,8 +66,11 @@
         ]
     },
     {
-        "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+        "url": "https://kayen.io/",
         "name": "EtherTradeX",
+        "finex_url": "wss://kayen.io/ws",
+        "clearport_b_url": "http://port-b.kayen.io:31551",
+        "clearport_a_url": "wss://port-a.kayen.io/",
         "description": "EtherTradeX is a cutting-edge cryptocurrency trading platform located in the US East (Ohio) region. Our platform specializes in providing a wide range of digital currency trading options, advanced trading tools, top-notch security features, and an intuitive user interface designed to enhance your trading experience. Our team of experts is dedicated to helping you navigate the dynamic world of cryptocurrency trading effectively and efficiently.",
         "available": true,
         "metadata": {
@@ -95,8 +104,11 @@
         ]
     },
     {
-        "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+        "url": "https://kayen.io/",
         "name": "CoinPulse",
+        "finex_url": "wss://kayen.io/ws",
+        "clearport_b_url": "http://port-b.kayen.io:31551",
+        "clearport_a_url": "wss://port-a.kayen.io/",
         "description": "CoinPulse is a state-of-the-art cryptocurrency exchange situated in the US West (Northern California) region. Our platform specializes in offering a diverse range of digital currency trading options, cutting-edge trading tools, robust security measures, and an intuitive user interface designed to elevate your cryptocurrency trading experience. Our team of experts is committed to guiding you through the dynamic cryptocurrency market with precision and expertise.",
         "available": true,
         "metadata": {
@@ -123,8 +135,11 @@
         ]
     },
     {
-        "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+        "url": "https://kayen.io/",
         "name": "CryptoWiz",
+        "finex_url": "wss://kayen.io/ws",
+        "clearport_b_url": "http://port-b.kayen.io:31551",
+        "clearport_a_url": "wss://port-a.kayen.io/",
         "description": "CryptoWiz is a cutting-edge cryptocurrency exchange located in the US West (Oregon) region. Our platform specializes in providing a wide range of digital currency trading options, advanced trading tools, top-notch security features, and an intuitive user interface designed to enhance your cryptocurrency trading experience. Our team of experts is dedicated to helping you navigate the dynamic world of cryptocurrency trading effectively and efficiently.",
         "available": true,
         "metadata": {
@@ -151,8 +166,11 @@
         ]
     },
     {
-        "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+        "url": "https://kayen.io/",
         "name": "DigitalCashGuard",
+        "finex_url": "wss://kayen.io/ws",
+        "clearport_b_url": "http://port-b.kayen.io:31551",
+        "clearport_a_url": "wss://port-a.kayen.io/",
         "description": "DigitalCashGuard is a state-of-the-art cryptocurrency exchange situated in the heart of Africa, in Cape Town. Our platform specializes in providing a wide range of digital currency trading options, advanced trading tools, top-notch security features, and an intuitive user interface designed to enhance your cryptocurrency trading experience. Our team of experts is dedicated to helping you navigate the dynamic world of cryptocurrency trading effectively and efficiently.",
         "available": true,
         "metadata": {
@@ -179,8 +197,11 @@
         ]
     },
     {
-        "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+        "url": "https://kayen.io/",
         "name": "NFT Nexus",
+        "finex_url": "wss://kayen.io/ws",
+        "clearport_b_url": "http://port-b.kayen.io:31551",
+        "clearport_a_url": "wss://port-a.kayen.io/",
         "description": "NFT Nexus is a state-of-the-art cryptocurrency exchange located in the vibrant city of Hong Kong in the asia_pacific region. Our platform specializes in providing a wide range of digital currency trading options, advanced trading tools, top-notch security features, and an intuitive user interface designed to enhance your cryptocurrency trading experience. Our team of experts is dedicated to helping you navigate the dynamic world of cryptocurrency trading effectively and efficiently.",
         "available": true,
         "metadata": {
@@ -207,8 +228,11 @@
         ]
     },
     {
-        "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+        "url": "https://kayen.io/",
         "name": "BlockLinker",
+        "finex_url": "wss://kayen.io/ws",
+        "clearport_b_url": "http://port-b.kayen.io:31551",
+        "clearport_a_url": "wss://port-a.kayen.io/",
         "description": "Description for BlockLinker.",
         "available": true,
         "metadata": {
@@ -235,8 +259,11 @@
         ]
     },
     {
-        "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+        "url": "https://kayen.io/",
         "name": "TokenTrak",
+        "finex_url": "wss://kayen.io/ws",
+        "clearport_b_url": "http://port-b.kayen.io:31551",
+        "clearport_a_url": "wss://port-a.kayen.io/",
         "description": "Description for TokenTrak.",
         "available": true,
         "metadata": {
@@ -263,8 +290,11 @@
         ]
     },
     {
-        "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+        "url": "https://kayen.io/",
         "name": "CryptoGlobe",
+        "finex_url": "wss://kayen.io/ws",
+        "clearport_b_url": "http://port-b.kayen.io:31551",
+        "clearport_a_url": "wss://port-a.kayen.io/",
         "description": "Description for CryptoGlobe.",
         "available": true,
         "metadata": {
@@ -291,8 +321,11 @@
         ]
     },
     {
-        "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+        "url": "https://kayen.io/",
         "name": "ChainVault",
+        "finex_url": "wss://kayen.io/ws",
+        "clearport_b_url": "http://port-b.kayen.io:31551",
+        "clearport_a_url": "wss://port-a.kayen.io/",
         "description": "Description for ChainVault.",
         "available": true,
         "metadata": {
@@ -319,8 +352,11 @@
         ]
     },
     {
-        "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+        "url": "https://kayen.io/",
         "name": "CoinGenius",
+        "finex_url": "wss://kayen.io/ws",
+        "clearport_b_url": "http://port-b.kayen.io:31551",
+        "clearport_a_url": "wss://port-a.kayen.io/",
         "description": "Description for CoinGenius.",
         "available": true,
         "metadata": {
@@ -347,8 +383,11 @@
         ]
     },
     {
-        "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+        "url": "https://kayen.io/",
         "name": "StellarSecure",
+        "finex_url": "wss://kayen.io/ws",
+        "clearport_b_url": "http://port-b.kayen.io:31551",
+        "clearport_a_url": "wss://port-a.kayen.io/",
         "description": "Description for StellarSecure.",
         "available": true,
         "metadata": {
@@ -375,8 +414,11 @@
         ]
     },
     {
-        "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+        "url": "https://kayen.io/",
         "name": "CryptoFusion",
+        "finex_url": "wss://kayen.io/ws",
+        "clearport_b_url": "http://port-b.kayen.io:31551",
+        "clearport_a_url": "wss://port-a.kayen.io/",
         "description": "Description for CryptoFusion.",
         "available": true,
         "metadata": {
@@ -403,8 +445,11 @@
         ]
     },
     {
-        "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+        "url": "https://kayen.io/",
         "name": "RippleWave",
+        "finex_url": "wss://kayen.io/ws",
+        "clearport_b_url": "http://port-b.kayen.io:31551",
+        "clearport_a_url": "wss://port-a.kayen.io/",
         "description": "Description for RippleWave.",
         "available": true,
         "metadata": {
@@ -431,8 +476,11 @@
         ]
     },
     {
-        "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+        "url": "https://kayen.io/",
         "name": "TokenTreasure",
+        "finex_url": "wss://kayen.io/ws",
+        "clearport_b_url": "http://port-b.kayen.io:31551",
+        "clearport_a_url": "wss://port-a.kayen.io/",
         "description": "Description for TokenTreasure.",
         "available": true,
         "metadata": {
@@ -459,8 +507,11 @@
         ]
     },
     {
-        "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+        "url": "https://kayen.io/",
         "name": "CoinCrafter",
+        "finex_url": "wss://kayen.io/ws",
+        "clearport_b_url": "http://port-b.kayen.io:31551",
+        "clearport_a_url": "wss://port-a.kayen.io/",
         "description": "Description for CoinCrafter.",
         "available": true,
         "metadata": {
@@ -487,8 +538,11 @@
         ]
     },
     {
-        "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+        "url": "https://kayen.io/",
         "name": "BitWave",
+        "finex_url": "wss://kayen.io/ws",
+        "clearport_b_url": "http://port-b.kayen.io:31551",
+        "clearport_a_url": "wss://port-a.kayen.io/",
         "description": "Description for BitWave.",
         "available": true,
         "metadata": {
@@ -515,8 +569,11 @@
         ]
     },
     {
-        "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+        "url": "https://kayen.io/",
         "name": "NFT Navigator",
+        "finex_url": "wss://kayen.io/ws",
+        "clearport_b_url": "http://port-b.kayen.io:31551",
+        "clearport_a_url": "wss://port-a.kayen.io/",
         "description": "Description for NFT Navigator.",
         "available": true,
         "metadata": {
@@ -543,8 +600,11 @@
         ]
     },
     {
-        "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+        "url": "https://kayen.io/",
         "name": "EtherGuardian",
+        "finex_url": "wss://kayen.io/ws",
+        "clearport_b_url": "http://port-b.kayen.io:31551",
+        "clearport_a_url": "wss://port-a.kayen.io/",
         "description": "Description for EtherGuardian.",
         "available": true,
         "metadata": {
@@ -571,8 +631,11 @@
         ]
     },
     {
-        "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+        "url": "https://kayen.io/",
         "name": "BlockSafeguard",
+        "finex_url": "wss://kayen.io/ws",
+        "clearport_b_url": "http://port-b.kayen.io:31551",
+        "clearport_a_url": "wss://port-a.kayen.io/",
         "description": "Description for BlockSafeguard.",
         "available": true,
         "metadata": {
@@ -599,8 +662,11 @@
         ]
     },
     {
-        "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+        "url": "https://kayen.io/",
         "name": "DigitalCoinForge",
+        "finex_url": "wss://kayen.io/ws",
+        "clearport_b_url": "http://port-b.kayen.io:31551",
+        "clearport_a_url": "wss://port-a.kayen.io/",
         "description": "Description for DigitalCoinForge.",
         "available": true,
         "metadata": {
@@ -627,8 +693,11 @@
         ]
     },
     {
-        "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+        "url": "https://kayen.io/",
         "name": "ChainCraft",
+        "finex_url": "wss://kayen.io/ws",
+        "clearport_b_url": "http://port-b.kayen.io:31551",
+        "clearport_a_url": "wss://port-a.kayen.io/",
         "description": "Description for ChainCraft.",
         "available": true,
         "metadata": {
@@ -655,8 +724,11 @@
         ]
     },
     {
-        "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+        "url": "https://kayen.io/",
         "name": "CoinCompass",
+        "finex_url": "wss://kayen.io/ws",
+        "clearport_b_url": "http://port-b.kayen.io:31551",
+        "clearport_a_url": "wss://port-a.kayen.io/",
         "description": "Description for CoinCompass.",
         "available": true,
         "metadata": {
@@ -683,8 +755,11 @@
         ]
     },
     {
-        "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+        "url": "https://kayen.io/",
         "name": "TokenTrackerX",
+        "finex_url": "wss://kayen.io/ws",
+        "clearport_b_url": "http://port-b.kayen.io:31551",
+        "clearport_a_url": "wss://port-a.kayen.io/",
         "description": "Description for TokenTrackerX.",
         "available": true,
         "metadata": {
@@ -711,8 +786,11 @@
         ]
     },
     {
-        "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+        "url": "https://kayen.io/",
         "name": "CryptoStar",
+        "finex_url": "wss://kayen.io/ws",
+        "clearport_b_url": "http://port-b.kayen.io:31551",
+        "clearport_a_url": "wss://port-a.kayen.io/",
         "description": "Description for CryptoStar.",
         "available": true,
         "metadata": {
@@ -739,8 +817,11 @@
         ]
     },
     {
-        "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+        "url": "https://kayen.io/",
         "name": "BitSafe Pro",
+        "finex_url": "wss://kayen.io/ws",
+        "clearport_b_url": "http://port-b.kayen.io:31551",
+        "clearport_a_url": "wss://port-a.kayen.io/",
         "description": "Description for BitSafe Pro.",
         "available": true,
         "metadata": {
@@ -767,8 +848,11 @@
         ]
     },
     {
-        "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+        "url": "https://kayen.io/",
         "name": "EtherVault",
+        "finex_url": "wss://kayen.io/ws",
+        "clearport_b_url": "http://port-b.kayen.io:31551",
+        "clearport_a_url": "wss://port-a.kayen.io/",
         "description": "Description for EtherVault.",
         "available": true,
         "metadata": {
