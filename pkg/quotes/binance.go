@@ -105,6 +105,10 @@ func (b *binance) Subscribe(market Market) error {
 		defer close(doneCh)
 		<-doneCh
 		for {
+      if err := b.Unsubscribe(market); err != nil {
+        loggerBinance.Errorf("failed to unsubscribe from Binance %s market: %v", pair, err)
+      }
+
 			err := b.Subscribe(market)
 			if err == nil {
 				return

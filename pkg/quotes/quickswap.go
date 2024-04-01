@@ -138,6 +138,9 @@ func (s *quickswap) Subscribe(market Market) error {
 				if _, ok := s.streams.Load(market); !ok {
 					break // market was unsubscribed earlier
 				}
+				if err := s.Unsubscribe(market); err != nil {
+					loggerQuickswap.Errorf("market %s: failed to resubscribe: %s", market.String(), err)
+				}
 				if err := s.Subscribe(market); err != nil {
 					loggerQuickswap.Errorf("market %s: failed to resubscribe: %s", market.String(), err)
 				}

@@ -147,6 +147,9 @@ func (u *uniswapV3Geth) Subscribe(market Market) error {
 				if _, ok := u.streams.Load(market); !ok {
 					break // market was unsubscribed earlier
 				}
+				if err := u.Unsubscribe(market); err != nil {
+					loggerUniswapV3Geth.Errorf("market %s: failed to resubscribe: %s", market.String(), err)
+				}
 				if err := u.Subscribe(market); err != nil {
 					loggerUniswapV3Geth.Errorf("market %s: failed to resubscribe: %s", market.String(), err)
 				}
