@@ -188,6 +188,10 @@ func (u *uniswapV3Api) isMarketAvailable(market Market) (bool, error) {
 	return len(pools.Pools) > 0, nil
 }
 
+// Not implemented
+func (u *uniswapV3Api) SetInbox(inbox <-chan TradeEvent) {
+}
+
 // NOTE: GraphQL Query is used here because
 // Uniswap V3 does not support Subscriptions
 const swapsTemplate = `query {

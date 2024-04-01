@@ -12,6 +12,8 @@ var loggerIndex = log.Logger("index-aggregator")
 type indexAggregator struct {
 	drivers        []Driver
 	marketsMapping map[string][]string
+	inbox          <-chan TradeEvent
+	aggregated     chan TradeEvent
 }
 
 type priceCalculator interface {
@@ -53,6 +55,7 @@ func NewIndexAggregator(driversConfigs []Config, marketsMapping map[string][]str
 	return &indexAggregator{
 		drivers:        drivers,
 		marketsMapping: marketsMapping,
+		aggregated:     aggregated,
 	}
 }
 
@@ -63,6 +66,10 @@ func newIndex(config IndexConfig, outbox chan<- TradeEvent) Driver {
 		marketsMapping = DefaultMarketsMapping
 	}
 	return NewIndexAggregator(config.DriverConfigs, marketsMapping, NewStrategyVWA(WithCustomPriceCacheVWA(NewPriceCacheVWA(DefaultWeightsMap, config.TradesCached))), outbox)
+}
+
+func (a *indexAggregator) SetInbox(inbox <-chan TradeEvent) {
+	a.inbox = inbox
 }
 
 func (a *indexAggregator) Name() DriverType {
@@ -76,6 +83,12 @@ func (b *indexAggregator) Type() Type {
 // Start starts all drivers from the provided config.
 func (a *indexAggregator) Start() error {
 	var wg sync.WaitGroup
+
+	go func() {
+		for t := range a.inbox {
+			a.aggregated <- t
+		}
+	}()
 
 	for _, d := range a.drivers {
 		wg.Add(1)
@@ -116,7 +129,7 @@ func (a *indexAggregator) Subscribe(m Market) error {
 func (a *indexAggregator) Unsubscribe(m Market) error {
 	for _, d := range a.drivers {
 		if err := d.Unsubscribe(m); err != nil {
-      loggerIndex.Warnf("%s unsubsctiption error: ", d.Name().slug, err.Error())
+			loggerIndex.Warnf("%s unsubsctiption error: ", d.Name().slug, err.Error())
 		}
 	}
 	return nil

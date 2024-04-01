@@ -322,3 +322,7 @@ func (s *syncswap) getTokens(market Market) (baseToken poolToken, quoteToken poo
 func isValidNonZero(x *big.Int) bool {
 	return x != nil && x.Sign() != 0
 }
+
+// Not implemented
+func (s *syncswap) SetInbox(inbox <-chan TradeEvent) {
+}

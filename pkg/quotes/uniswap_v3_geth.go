@@ -294,3 +294,7 @@ func getAssets(assetsURL string) ([]poolToken, error) {
 	}
 	return assets["tokens"], nil
 }
+
+// Not implemented
+func (u *uniswapV3Geth) SetInbox(inbox <-chan TradeEvent) {
+}
