@@ -79,7 +79,9 @@ func (b *binance) Subscribe(market Market) error {
 	}
 
 	if b.usdcToUSDT && market.Quote() == "usdc" {
-		_ = b.Subscribe(NewMarket(market.Base(), "usdt"))
+		if err := b.Subscribe(NewMarket(market.Base(), "usdt")); err != nil {
+			loggerBinance.Warnf("failed to subscribe to USDT for market %s: %s", market, err)
+		}
 	}
 
 	pair := strings.ToUpper(market.Base()) + strings.ToUpper(market.Quote())
@@ -90,7 +92,7 @@ func (b *binance) Subscribe(market Market) error {
 	}
 
 	handleErr := func(err error) {
-		loggerBinance.Errorf("error for Binance market %s: %v", pair, err)
+		loggerBinance.Errorf("error for Binance market %s: %s", pair, err)
 	}
 
 	doneCh, stopCh, err := gobinance.WsTradeServe(pair, b.handleTrade, handleErr)
@@ -100,11 +102,15 @@ func (b *binance) Subscribe(market Market) error {
 	b.streams.Store(market, stopCh)
 
 	go func() {
+		defer close(doneCh)
 		<-doneCh
 		for {
-			if err := b.Subscribe(market); err == nil {
+			err := b.Subscribe(market)
+			if err == nil {
 				return
 			}
+			loggerBinance.Errorf("failed to resubscribe to Binance %s market: %v", pair, err)
+			<-time.After(5 * time.Second)
 		}
 	}()
 
