@@ -140,8 +140,11 @@ func (s *syncswap) Subscribe(market Market) error {
 				if _, ok := s.streams.Load(market); !ok {
 					break // market was unsubscribed earlier
 				}
+				if err := s.Unsubscribe(market); err != nil {
+					loggerSyncswap.Errorf("market %s: failed to resubscribe: %s", market, err)
+				}
 				if err := s.Subscribe(market); err != nil {
-					loggerSyncswap.Errorf("market %s: failed to resubscribe: %s", market.String(), err)
+					loggerSyncswap.Errorf("market %s: failed to resubscribe: %s", market, err)
 				}
 				return
 			case swap := <-sink:

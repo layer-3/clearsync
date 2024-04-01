@@ -115,9 +115,8 @@ func (a *indexAggregator) Subscribe(m Market) error {
 
 func (a *indexAggregator) Unsubscribe(m Market) error {
 	for _, d := range a.drivers {
-		err := d.Unsubscribe(m)
-		if err != nil {
-			return err
+		if err := d.Unsubscribe(m); err != nil {
+      loggerIndex.Warnf("%s unsubsctiption error: ", d.Name().slug, err.Error())
 		}
 	}
 	return nil

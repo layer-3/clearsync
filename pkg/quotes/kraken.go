@@ -135,6 +135,15 @@ func (k *kraken) Subscribe(market Market) error {
 		return fmt.Errorf("%s: %w", market, errAlreadySubbed)
 	}
 
+	if err := k.subscribeUnchecked(market); err != nil {
+		return err
+	}
+
+	k.streams.Store(market, struct{}{})
+	return nil
+}
+
+func (k *kraken) subscribeUnchecked(market Market) error {
 	pair := fmt.Sprintf("%s/%s", strings.ToUpper(market.Base()), strings.ToUpper(market.Quote()))
 	if _, ok := k.availablePairs.Load(pair); !ok {
 		return fmt.Errorf("market %s doesn't exist in Kraken", pair)
@@ -150,7 +159,6 @@ func (k *kraken) Subscribe(market Market) error {
 		return fmt.Errorf("%s: %w: %w", market, errFailedSub, err)
 	}
 
-	k.streams.Store(market, struct{}{})
 	return nil
 }
 
@@ -163,7 +171,20 @@ func (k *kraken) Unsubscribe(market Market) error {
 		return fmt.Errorf("%s: %w", market, errNotSubbed)
 	}
 
+	if err := k.unsubscribeUnchecked(market); err != nil {
+		return err
+	}
+
+	k.streams.Delete(market)
+	return nil
+}
+
+func (k *kraken) unsubscribeUnchecked(market Market) error {
 	pair := fmt.Sprintf("%s/%s", strings.ToUpper(market.Base()), strings.ToUpper(market.Quote()))
+	if _, ok := k.availablePairs.Load(pair); !ok {
+		return fmt.Errorf("market %s doesn't exist in Kraken", pair)
+	}
+
 	unsubMsg := krakenSubscriptionMessage{
 		Event:        "unsubscribe",
 		Pair:         []string{pair},
@@ -173,7 +194,7 @@ func (k *kraken) Unsubscribe(market Market) error {
 	if err := k.writeConn(unsubMsg); err != nil {
 		return fmt.Errorf("%s: %w: %w", market, errFailedUnsub, err)
 	}
-	k.streams.Delete(market)
+
 	return nil
 }
 
@@ -200,7 +221,7 @@ func (k *kraken) connect() error {
 		k.conn, _, err = k.dialer.Dial(k.url, nil)
 		if err != nil {
 			loggerKraken.Error(err)
-			time.Sleep(k.retryPeriod)
+			<-time.After(k.retryPeriod)
 			continue
 		}
 
@@ -248,9 +269,10 @@ func (k *kraken) listen() {
 			}
 
 			k.streams.Range(func(market Market, _ struct{}) bool {
-				if err := k.Subscribe(market); err != nil {
-					loggerKraken.Warnf("Error subscribing to market %s: %s", market, err)
-					return false
+				if err := k.subscribeUnchecked(market); err != nil {
+					loggerKraken.Warnf("failed to subscribe to market %s: %s", market, err)
+					// Returning false here would stop iteration over the map,
+					// which results in not resubscribing to all markets.
 				}
 				return true
 			})

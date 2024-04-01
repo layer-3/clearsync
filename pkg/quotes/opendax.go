@@ -99,6 +99,16 @@ func (o *opendax) Subscribe(market Market) error {
 		return fmt.Errorf("%s: %w", market, errAlreadySubbed)
 	}
 
+	if err := o.subscribeUnchecked(market); err != nil {
+		return err
+	}
+
+	o.streams.Store(market, struct{}{})
+	o.symbolToMarket.Store(market.Base()+market.Quote(), market)
+	return nil
+}
+
+func (o *opendax) subscribeUnchecked(market Market) error {
 	// Opendax resource [market].[trades]
 	resource := fmt.Sprintf("%s%s.trades", market.Base(), market.Quote())
 	message := protocol.NewSubscribeMessage(o.reqID.Load(), resource)
@@ -109,8 +119,6 @@ func (o *opendax) Subscribe(market Market) error {
 		return fmt.Errorf("%s: %w: %w", market, errFailedSub, err)
 	}
 
-	o.symbolToMarket.Store(market.Base()+market.Quote(), market)
-	o.streams.Store(market, struct{}{})
 	return nil
 }
 
@@ -123,6 +131,16 @@ func (o *opendax) Unsubscribe(market Market) error {
 		return fmt.Errorf("%s: %w", market, errNotSubbed)
 	}
 
+	if err := o.unsubscribeUnchecked(market); err != nil {
+		return err
+	}
+
+	o.streams.Delete(market)
+	o.symbolToMarket.Delete(market.Base() + market.Quote())
+	return nil
+}
+
+func (o *opendax) unsubscribeUnchecked(market Market) error {
 	// Opendax resource [market].[trades]
 	resource := fmt.Sprintf("%s%s.trades", market.Base(), market.Quote())
 	message := protocol.NewUnsubscribeMessage(o.reqID.Load(), resource)
@@ -133,7 +151,6 @@ func (o *opendax) Unsubscribe(market Market) error {
 		return fmt.Errorf("%s: %w: %w", market, errFailedUnsub, err)
 	}
 
-	o.streams.Delete(market)
 	return nil
 }
 
@@ -184,7 +201,7 @@ func (o *opendax) listen() {
 
 			o.connect()
 			o.streams.Range(func(market Market, _ struct{}) bool {
-				if err := o.Subscribe(market); err != nil {
+				if err := o.subscribeUnchecked(market); err != nil {
 					loggerOpendax.Warnf("error subscribing to market %s: %s", market, err)
 					return false
 				}
