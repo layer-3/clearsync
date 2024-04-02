@@ -447,17 +447,20 @@ func waitForTx(
 	entryPoint common.Address,
 	userOpHash common.Hash,
 ) error {
-	var userop BundlerUserOp
-	if err := bundler.CallContext(ctx, &userop, "eth_getUserOperationReceipt", userOpHash); err != nil {
-		return err
-	}
+	for {
+		var userop BundlerUserOp
+		if err := bundler.CallContext(ctx, &userop, "eth_getUserOperationReceipt", userOpHash); err != nil {
+			return err
+		}
 
-  slog.Info("got tx", "resp", userop)
-	if userop.Success {
-		done <- userop.Receipt
-	}
+		slog.Info("got tx", "resp", userop)
+		if userop.Success {
+			done <- userop.Receipt
+			return nil
+		}
 
-	return nil
+		<-time.After(pollPeriod)
+	}
 }
 
 func processLogs(logs []types.Log, userOpHash common.Hash) (*Receipt, error) {
