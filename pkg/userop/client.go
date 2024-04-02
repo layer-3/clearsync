@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -364,7 +363,7 @@ func (c *backend) SendUserOp(ctx context.Context, op UserOperation) (<-chan Rece
 	userOpHash := op.UserOpHash(c.entryPoint, c.chainID)
 	done := make(chan Receipt, 1)
 
-	go waitForUserOpEvent(ctx, c.pollPeriod, cancel, c.provider, done, c.entryPoint, userOpHash)
+	go waitForTx(ctx, c.pollPeriod, cancel, c.provider, c.bundler, done, c.entryPoint, userOpHash)
 
 	// ERC4337-standardized call to the bundler
 	slog.Debug("sending user operation")
@@ -377,54 +376,88 @@ func (c *backend) SendUserOp(ctx context.Context, op UserOperation) (<-chan Rece
 }
 
 // waitForUserOpEvent waits for a user operation to be committed on block.
-func waitForUserOpEvent(
+// func waitForUserOpEvent(
+// 	ctx context.Context,
+// 	pollPeriod time.Duration,
+// 	cancel context.CancelFunc,
+// 	client EthBackend,
+// 	done chan<- Receipt,
+// 	entryPoint common.Address,
+// 	userOpHash common.Hash,
+// ) {
+// 	ticker := time.NewTicker(pollPeriod)
+// 	defer ticker.Stop()
+// 	defer close(done)
+
+// 	fromBlock, err := client.BlockNumber(ctx)
+// 	if err != nil {
+// 		slog.Error("failed to get block number", "error", err)
+// 		cancel()
+// 		return
+// 	}
+
+// 	query := ethereum.FilterQuery{
+// 		Addresses: []common.Address{entryPoint},
+// 		Topics:    [][]common.Hash{{}, {userOpHash}},
+// 		FromBlock: big.NewInt(int64(fromBlock)),
+// 	}
+
+// 	for {
+// 		select {
+// 		case <-ctx.Done():
+// 			slog.Error("timeout waiting for user operation event", "hash", userOpHash.Hex())
+// 			return
+// 		case <-ticker.C:
+// 			logs, err := client.FilterLogs(ctx, query)
+// 			if err != nil {
+// 				slog.Error("failed to filter logs", "error", err)
+// 				continue
+// 			}
+
+// 			receipt, err := processLogs(logs, userOpHash)
+// 			if err != nil {
+// 				return
+// 			}
+// 			if receipt != nil {
+// 				done <- *receipt
+// 				return
+// 			}
+// 		}
+// 	}
+// }
+
+type BundlerUserOp struct {
+	UserOpHash    string
+	Sender        string
+	Nonce         *big.Int
+	ActualGasCost *big.Int
+	ActualGasUsed *big.Int
+	Success       bool
+	Logs          []types.Log
+	Receipt       Receipt
+}
+
+func waitForTx(
 	ctx context.Context,
 	pollPeriod time.Duration,
 	cancel context.CancelFunc,
 	client EthBackend,
+	bundler RPCBackend,
 	done chan<- Receipt,
 	entryPoint common.Address,
 	userOpHash common.Hash,
-) {
-	ticker := time.NewTicker(pollPeriod)
-	defer ticker.Stop()
-	defer close(done)
-
-	fromBlock, err := client.BlockNumber(ctx)
-	if err != nil {
-		slog.Error("failed to get block number", "error", err)
-		cancel()
-		return
+) error {
+	var userop BundlerUserOp
+	if err := bundler.CallContext(ctx, &userop, "eth_getUserOperationReceipt", userOpHash); err != nil {
+		return err
 	}
 
-	query := ethereum.FilterQuery{
-		Addresses: []common.Address{entryPoint},
-		Topics:    [][]common.Hash{{}, {userOpHash}},
-		FromBlock: big.NewInt(int64(fromBlock)),
+  slog.Info("got tx", "resp", userop)
+	if userop.Success {
+		done <- userop.Receipt
 	}
 
-	for {
-		select {
-		case <-ctx.Done():
-			slog.Error("timeout waiting for user operation event", "hash", userOpHash.Hex())
-			return
-		case <-ticker.C:
-			logs, err := client.FilterLogs(ctx, query)
-			if err != nil {
-				slog.Error("failed to filter logs", "error", err)
-				continue
-			}
-
-			receipt, err := processLogs(logs, userOpHash)
-			if err != nil {
-				return
-			}
-			if receipt != nil {
-				done <- *receipt
-				return
-			}
-		}
-	}
+	return nil
 }
 
 func processLogs(logs []types.Log, userOpHash common.Hash) (*Receipt, error) {
