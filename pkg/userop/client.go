@@ -448,7 +448,7 @@ func waitForTx(
 	userOpHash common.Hash,
 ) error {
 	for {
-    slog.Info("sending request", "hash", userOpHash.Hex())
+		slog.Info("sending request", "hash", userOpHash.Hex())
 		var userop BundlerUserOp
 		if err := bundler.CallContext(
 			ctx,
@@ -456,6 +456,7 @@ func waitForTx(
 			"eth_getUserOperationReceipt",
 			"0x8c21535a9a23ac520750ed2538092527a02e6b6098c12d6e35d5a0dd08c98dc1",
 		); err != nil {
+			slog.Error("failed to get tx", "error", err)
 			return err
 		}
 
@@ -466,6 +467,7 @@ func waitForTx(
 		// }
 
 		<-time.After(5 * time.Second)
+		// <-time.After(pollPeriod)
 	}
 }
 
