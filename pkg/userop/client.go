@@ -458,7 +458,7 @@ func waitForTx(
 
 	for {
 		slog.Info("sending request", "hash", userOpHash.Hex())
-		var userop BundlerUserOp
+		var userop any
 		if err := bundler.CallContext(
 			ctx,
 			&userop,
@@ -470,10 +470,10 @@ func waitForTx(
 		}
 
 		slog.Info("got tx", "resp", userop)
-		if userop.Success {
-			done <- Receipt{TxHash: userop.Receipt.TransactionHash}
-			return nil
-		}
+		// if userop.Success {
+		// 	done <- Receipt{TxHash: userop.Receipt.TransactionHash}
+		// 	return nil
+		// }
 
 		<-time.After(5 * time.Second)
 		// <-time.After(pollPeriod)
