@@ -449,17 +449,22 @@ func waitForTx(
 ) error {
 	for {
 		var userop BundlerUserOp
-		if err := bundler.CallContext(ctx, &userop, "eth_getUserOperationReceipt", userOpHash); err != nil {
+		if err := bundler.CallContext(
+			ctx,
+			&userop,
+			"eth_getUserOperationReceipt",
+			"0x8c21535a9a23ac520750ed2538092527a02e6b6098c12d6e35d5a0dd08c98dc1",
+		); err != nil {
 			return err
 		}
 
 		slog.Info("got tx", "resp", userop)
-		if userop.Success {
-			done <- userop.Receipt
-			return nil
-		}
+		// if userop.Success {
+		// 	done <- userop.Receipt
+		// 	return nil
+		// }
 
-		<-time.After(pollPeriod)
+		<-time.After(5 * time.Second)
 	}
 }
 
