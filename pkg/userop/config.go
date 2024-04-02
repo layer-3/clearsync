@@ -23,7 +23,7 @@ type ClientConfig struct {
 }
 
 func (conf *ClientConfig) Init() {
-	conf.PollPeriod = 100 * time.Millisecond
+	conf.PollPeriod = 100
 	conf.Gas.Init()
 	conf.Paymaster.Init()
 	conf.SmartWallet.Init()

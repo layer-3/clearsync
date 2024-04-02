@@ -386,7 +386,7 @@ func waitForUserOpEvent(
 	entryPoint common.Address,
 	userOpHash common.Hash,
 ) {
-	ticker := time.NewTicker(pollPeriod)
+	ticker := time.NewTicker(pollPeriod * time.Millisecond)
 	defer ticker.Stop()
 	defer close(done)
 
@@ -417,6 +417,7 @@ func waitForUserOpEvent(
 
 			receipt, err := processLogs(logs, userOpHash)
 			if err != nil {
+				slog.Error("failed to process logs", "error", err)
 				return
 			}
 			if receipt != nil {

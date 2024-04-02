@@ -1,0 +1,87 @@
+{
+  "abi": [
+    { "inputs": [], "name": "NotImplemented", "type": "error" },
+    {
+      "anonymous": false,
+      "inputs": [
+        { "indexed": true, "internalType": "address", "name": "kernel", "type": "address" },
+        { "indexed": true, "internalType": "address", "name": "oldOwner", "type": "address" },
+        { "indexed": true, "internalType": "address", "name": "newOwner", "type": "address" }
+      ],
+      "name": "OwnerChanged",
+      "type": "event"
+    },
+    {
+      "inputs": [{ "internalType": "bytes", "name": "", "type": "bytes" }],
+      "name": "disable",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
+      "name": "ecdsaValidatorStorage",
+      "outputs": [{ "internalType": "address", "name": "owner", "type": "address" }],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [{ "internalType": "bytes", "name": "_data", "type": "bytes" }],
+      "name": "enable",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        { "internalType": "address", "name": "_caller", "type": "address" },
+        { "internalType": "bytes", "name": "", "type": "bytes" }
+      ],
+      "name": "validCaller",
+      "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        { "internalType": "bytes32", "name": "hash", "type": "bytes32" },
+        { "internalType": "bytes", "name": "signature", "type": "bytes" }
+      ],
+      "name": "validateSignature",
+      "outputs": [{ "internalType": "ValidationData", "name": "", "type": "uint256" }],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            { "internalType": "address", "name": "sender", "type": "address" },
+            { "internalType": "uint256", "name": "nonce", "type": "uint256" },
+            { "internalType": "bytes", "name": "initCode", "type": "bytes" },
+            { "internalType": "bytes", "name": "callData", "type": "bytes" },
+            { "internalType": "uint256", "name": "callGasLimit", "type": "uint256" },
+            { "internalType": "uint256", "name": "verificationGasLimit", "type": "uint256" },
+            { "internalType": "uint256", "name": "preVerificationGas", "type": "uint256" },
+            { "internalType": "uint256", "name": "maxFeePerGas", "type": "uint256" },
+            { "internalType": "uint256", "name": "maxPriorityFeePerGas", "type": "uint256" },
+            { "internalType": "bytes", "name": "paymasterAndData", "type": "bytes" },
+            { "internalType": "bytes", "name": "signature", "type": "bytes" }
+          ],
+          "internalType": "structUserOperation",
+          "name": "_userOp",
+          "type": "tuple"
+        },
+        { "internalType": "bytes32", "name": "_userOpHash", "type": "bytes32" },
+        { "internalType": "uint256", "name": "", "type": "uint256" }
+      ],
+      "name": "validateUserOp",
+      "outputs": [
+        { "internalType": "ValidationData", "name": "validationData", "type": "uint256" }
+      ],
+      "stateMutability": "payable",
+      "type": "function"
+    }
+  ],
+  "bin": "0x6080806040523461001657610639908161001c8239f35b600080fdfe60406080815260048036101561001457600080fd5b600091823560e01c80630c9595561461028357806320709efc1461021f578063333daf92146101c15780633a871cdd14610155578381638fc925aa146100f25750639ea9bd591461006457600080fd5b346100ee57807ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc3601126100ee5761009a610382565b9160243567ffffffffffffffff81116100ea57936100be839260209636910161034f565b505033815280855273ffffffffffffffffffffffffffffffffffffffff91829120541691519216148152f35b8480fd5b8280fd5b92905060207ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc3601126101515780359067ffffffffffffffff821161014c5761013d9136910161034f565b50503382528160205281205580f35b505050fd5b5050fd5b507ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc836060368301126101ba5783359167ffffffffffffffff83116101bd576101609083360301126101ba57506020926101b3916024359101610496565b9051908152f35b80fd5b5080fd5b5082346101ba57817ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc3601126101ba576024359067ffffffffffffffff82116101ba57506020926102186101b3923690830161034f565b9135610598565b8382346101bd5760207ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc3601126101bd576020918173ffffffffffffffffffffffffffffffffffffffff9182610273610382565b1681528085522054169051908152f35b509060207ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc3601126100ee5780359067ffffffffffffffff821161034b576102cd9136910161034f565b6014116100ee5773ffffffffffffffffffffffffffffffffffffffff903560601c91338452836020528320805490837fffffffffffffffffffffffff0000000000000000000000000000000000000000831617905516337f381c0d11398486654573703c51ee8210ce9461764d133f9f0e53b6a5397053318480a480f35b8380fd5b9181601f8401121561037d5782359167ffffffffffffffff831161037d576020838186019501011161037d57565b600080fd5b6004359073ffffffffffffffffffffffffffffffffffffffff8216820361037d57565b9035907fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe18136030182121561037d570180359067ffffffffffffffff821161037d5760200191813603831361037d57565b92919267ffffffffffffffff9182811161046757604051927fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe0603f81601f8501160116840190848210908211176104675760405282948184528183011161037d578281602093846000960137010152565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b6000929173ffffffffffffffffffffffffffffffffffffffff90848335838116908190036101bd578152806020528260408220541693826020527b19457468657265756d205369676e6564204d6573736167653a0a33328252603c600420918461051961014084019461051361050c87876103a5565b36916103f6565b90610549565b168614610540575061050c6105329392610513926103a5565b160361053a57565b60019150565b96505050505050565b6001608060006041602094969596604080519880519285526060810151851a88528781015182520151606052145afa51913d1561058a576000606052604052565b638baa579f6000526004601cfd5b90916000923384528360205273ffffffffffffffffffffffffffffffffffffffff918260408620541693836105d76105d13685876103f6565b83610549565b1685146106245761061592610513916020527b19457468657265756d205369676e6564204d6573736167653a0a33328752603c6004209236916103f6565b160361061e5790565b50600190565b50505050509056fea164736f6c6343000812000a"
+}

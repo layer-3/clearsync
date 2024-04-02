@@ -7,19 +7,19 @@ clone:
   disable: true
 
 environment:
-  DEPLOYER_PK: 6aa35771f25b5098020350399171952bdaafd8b381eb777577befd5ee995a122
-  DEPLOYER_ADDRESS: '0x25ba87CA70739Bc8448D018Ad4A11F35Ea5a2DF9'
-  ENTRY_POINT_ADDRESS: '0x07bd68335Ff013481b0fED98c190EaeB36e52b3D'
-  KERNEL_ECDSA_VALIDATOR_ADDRESS: '0x0E3c0cb9F2Ae0053f2b236b698C2028112b333a7'
-  KERNEL_ADDRESS: '0x8Bdf2ceE549101447fA141fFfc9f6e3B2BE8BBF2'
-  KERNEL_FACTORY_ADDRESS: '0x9CBDd0D809f3490d52E3609044D4cf78f4df3a5f'
-  SESSION_KEY_VALIDATOR_ADDRESS: '0x800edae75E7B45FEcF1283eD5E48dB58BC619291'
+  DEPLOYER_PK: ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+  DEPLOYER_ADDRESS: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
+  ENTRY_POINT_ADDRESS: '0x5fbdb2315678afecb367f032d93f642f64180aa3'
+  KERNEL_ECDSA_VALIDATOR_ADDRESS: '0xe7f1725e7734ce288f8367e1bb143e90bb3f0512'
+  KERNEL_ADDRESS: '0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0'
+  KERNEL_FACTORY_ADDRESS: '0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9'
+  SESSION_KEY_VALIDATOR_ADDRESS: '0x5fc8d32690cc91d4c39d9d3abcbd16989f875707'
 
 services:
   - name: eth_node
-    image: quay.io/openware/geth:v0.1.2-amd64
+    image: quay.io/openware/geth:v0.1.7-amd64
   - name: bundler
-    image: ghcr.io/pimlicolabs/alto:v1.0.1
+    image: quay.io/openware/bundler:c7dd933
     entrypoint:
       - /bin/sh
       - -c
@@ -39,10 +39,9 @@ steps:
     image: golang:1.21
     pull: if-not-exists
     environment:
-      GETH_NODE_RPC_URL: http://eth_node:8545
+      GETH_NODE_RPC_URL: ws://eth_node:8545
       BUNDLER_USE_HARDCODED_CONTRACTS: true
       BUNDLER_RPC_URL: http://bundler:3000
-      GETH_NODE_IMAGE: eth_node
     commands:
       - go vet ./...
       - go test -race ./...

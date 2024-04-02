@@ -1,10 +1,10 @@
-//web.archive.org/web/20180401231221/https://tokenmarket.net/blog/creating-ethereum-smart-contract-transactions-in-client-side-javascript/
-
 let fs = require('fs');
 var { Web3 } = require('web3');
 
 var web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'));
 let eth = web3.eth;
+
+let deployerAccount;
 
 const deployer = process.env.DEPLOYER_ADDRESS;
 const deployerPk = process.env.DEPLOYER_PK;
@@ -15,16 +15,7 @@ const expectedKernelFactoryAddress = process.env.KERNEL_FACTORY_ADDRESS;
 const expectedSessionKeyValidatorAddress = process.env.SESSION_KEY_VALIDATOR_ADDRESS;
 
 async function main() {
-  await eth.personal.importRawKey(deployerPk, 'password');
-  await web3.eth.personal.unlockAccount(deployer, 'password', 600);
-
-  let coinbase = await eth.getCoinbase();
-
-  await eth.sendTransaction({
-    from: coinbase,
-    to: deployer,
-    value: web3.utils.toWei(50, 'ether'),
-  });
+  deployerAccount = web3.eth.accounts.privateKeyToAccount('0x' + deployerPk);
 
   let entryPointAddress = await DeployEntryPoint();
   await DeployKernelECDSAValidator();
@@ -35,131 +26,109 @@ async function main() {
 
 main();
 
-// 0x07bd68335Ff013481b0fED98c190EaeB36e52b3D
 async function DeployEntryPoint() {
-  let abi = JSON.parse(fs.readFileSync('/app/build/EntryPoint.abi'));
-  let bytecode = '0x' + fs.readFileSync('/app/build/EntryPoint.bin', 'utf8');
+  let { abi, bin } = JSON.parse(fs.readFileSync('/app/contracts/EntryPoint.json'));
 
-  let contract = new eth.Contract(abi);
-  let gas = await eth.estimateGas({ data: bytecode });
-
-  let receipt = await contract.deploy({ data: bytecode }).send({
-    from: deployer,
-    gas,
-    gasPrice: '30000000000',
-  });
+  let contractAddress = await deployContract(abi, bin);
 
   assert(
-    receipt.options.address === expectedEntryPointAddress,
-    `Get unexpected EntryPoint address, expected: ${expectedEntryPointAddress}, got: ${receipt.options.address}`,
+    cmpAddresses(contractAddress, expectedEntryPointAddress),
+    `Get unexpected EntryPoint address, expected: ${expectedEntryPointAddress}, got: ${contractAddress}`,
   );
 
-  return receipt.options.address;
+  return contractAddress;
 }
 
-// 0x0E3c0cb9F2Ae0053f2b236b698C2028112b333a7
 async function DeployKernelECDSAValidator() {
-  let abi = JSON.parse(fs.readFileSync('/app/build/ECDSAValidator.abi'));
-  let bytecode = '0x' + fs.readFileSync('/app/build/ECDSAValidator.bin', 'utf8');
+  let { abi, bin } = JSON.parse(fs.readFileSync('/app/contracts/KernelECDSAValidator.json'));
 
-  let contract = new eth.Contract(abi);
-  let gas = await eth.estimateGas({ data: bytecode });
-
-  let receipt = await contract.deploy({ data: bytecode }).send({
-    from: deployer,
-    gas,
-    gasPrice: '30000000000',
-  });
+  let contractAddress = await deployContract(abi, bin);
 
   assert(
-    receipt.options.address === expectedKernelECDSAValidatorAddress,
-    `Get unexpected ECDSAValidator address, expected: ${expectedKernelECDSAValidatorAddress}, got: ${receipt.options.address}`,
+    cmpAddresses(contractAddress, expectedKernelECDSAValidatorAddress),
+    `Get unexpected ECDSAValidator address, expected: ${expectedKernelECDSAValidatorAddress}, got: ${contractAddress}`,
   );
 }
 
-// 0x8Bdf2ceE549101447fA141fFfc9f6e3B2BE8BBF2
 async function DeployKernel(entryPointAddress) {
-  let abi = JSON.parse(fs.readFileSync('/app/build/Kernel.abi'));
-  let bytecode = '0x' + fs.readFileSync('/app/build/Kernel.bin', 'utf8');
+  let { abi, bin } = JSON.parse(fs.readFileSync('/app/contracts/Kernel.json'));
 
-  let contract = new eth.Contract(abi);
-  let gas = await contract.deploy({ data: bytecode, arguments: [entryPointAddress] }).estimateGas();
-
-  let receipt = await contract.deploy({ data: bytecode, arguments: [entryPointAddress] }).send({
-    from: deployer,
-    gas,
-    gasPrice: '30000000000',
-  });
+  let contractAddress = await deployContract(abi, bin, [entryPointAddress]);
 
   assert(
-    receipt.options.address === expectedKernelAddress,
-    `Get unexpected Kernel address, expected: ${expectedKernelAddress}, got: ${receipt.options.address}`,
+    cmpAddresses(contractAddress, expectedKernelAddress),
+    `Get unexpected Kernel address, expected: ${expectedKernelAddress}, got: ${contractAddress}`,
   );
 
-  return receipt.options.address;
+  return contractAddress;
 }
 
-// 0x9CBDd0D809f3490d52E3609044D4cf78f4df3a5f
 async function DeployKernelFactory(deployerAddress, entryPointAddress, kernelAddress) {
-  let abi = JSON.parse(fs.readFileSync('/app/build/KernelFactory.abi'));
-  let bytecode = '0x' + fs.readFileSync('/app/build/KernelFactory.bin', 'utf8');
+  let { abi, bin } = JSON.parse(fs.readFileSync('/app/contracts/KernelFactory.json'));
 
-  let contract = new eth.Contract(abi);
-  let gas = await contract
-    .deploy({ data: bytecode, arguments: [deployerAddress, entryPointAddress] })
-    .estimateGas();
-
-  let receipt = await contract
-    .deploy({ data: bytecode, arguments: [deployerAddress, entryPointAddress] })
-    .send({
-      from: deployer,
-      gas,
-      gasPrice: '30000000000',
-    });
+  let contractAddress = await deployContract(abi, bin, [deployerAddress, entryPointAddress]);
 
   assert(
-    receipt.options.address === expectedKernelFactoryAddress,
-    `Get unexpected KernelFactory address, expected: ${expectedKernelFactoryAddress}, got: ${receipt.options.address}`,
+    cmpAddresses(contractAddress, expectedKernelFactoryAddress),
+    `Get unexpected KernelFactory address, expected: ${expectedKernelFactoryAddress}, got: ${contractAddress}`,
   );
 
+  let contract = new eth.Contract(abi);
   let data = await contract.methods.setImplementation(kernelAddress, true).encodeABI();
 
-  gas = await web3.eth.estimateGas({
+  let gas = await eth.estimateGas({ from: deployer, to: contractAddress, data });
+
+  let signedTx = await deployerAccount.signTransaction({
     from: deployer,
-    to: receipt.options.address,
-    data,
-  });
-
-  await web3.eth.sendTransaction({
-    from: deployer,
-    to: receipt.options.address,
-    data,
-    gas,
-  });
-}
-
-// 0x18D865C12377cf6d106953b83eE1b5bA7c3073Ac
-async function DeploySessionKeyValidator() {
-  let abi = JSON.parse(fs.readFileSync('/app/build/SessionKeyValidator.abi'));
-  let bytecode = '0x' + fs.readFileSync('/app/build/SessionKeyValidator.bin', 'utf8');
-
-  let gas = await eth.estimateGas({ data: bytecode });
-  let contract = new eth.Contract(abi);
-
-  let receipt = await contract.deploy({ data: bytecode }).send({
-    from: deployer,
+    to: contractAddress,
     gas,
     gasPrice: '30000000000',
+    data,
   });
 
+  await eth.sendSignedTransaction(signedTx.rawTransaction);
+}
+
+async function DeploySessionKeyValidator() {
+  let { abi, bin } = JSON.parse(fs.readFileSync('/app/contracts/SessionKeyValidator.json'));
+  
+  let contractAddress = await deployContract(abi, bin);
+
   assert(
-    receipt.options.address === expectedSessionKeyValidatorAddress,
-    `Get unexpected SessionKeyValidator address, expected: ${expectedSessionKeyValidatorAddress}, got: ${receipt.options.address}`,
+    cmpAddresses(contractAddress, expectedSessionKeyValidatorAddress),
+    `Get unexpected SessionKeyValidator address, expected: ${expectedSessionKeyValidatorAddress}, got: ${contractAddress}`,
   );
+}
+
+function cmpAddresses(adr1, adr2) {
+  return adr1.toLowerCase() === adr2.toLowerCase();
 }
 
 function assert(value, msg) {
   if (!value) {
     throw new Error(msg);
   }
+}
+
+async function deployContract(abi, bin, arguments = undefined) {
+  let contract = new eth.Contract(abi);
+  let deployData = contract
+    .deploy({
+      data: bin,
+      arguments,
+    })
+    .encodeABI();
+
+  let gas = await eth.estimateGas({ data: deployData });
+
+  let signedTx = await deployerAccount.signTransaction({
+    from: deployer,
+    gas,
+    gasPrice: '30000000000',
+    data: deployData,
+  });
+
+  let receipt = await eth.sendSignedTransaction(signedTx.rawTransaction);
+
+  return receipt.contractAddress;
 }
