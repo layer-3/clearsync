@@ -448,6 +448,7 @@ func waitForTx(
 	userOpHash common.Hash,
 ) error {
 	for {
+    slog.Info("sending request", "hash", userOpHash.Hex())
 		var userop BundlerUserOp
 		if err := bundler.CallContext(
 			ctx,
