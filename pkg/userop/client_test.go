@@ -3,9 +3,12 @@ package userop
 import (
 	"context"
 	"errors"
+	"os"
 	"testing"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/layer-3/clearsync/pkg/smart_wallet"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/require"
@@ -190,6 +193,31 @@ func TestNewClient(t *testing.T) {
 
 		_, err := NewClient(conf)
 
+		require.NoError(t, err)
+	})
+}
+
+func Test_waitForTx(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Error when tx is nil", func(t *testing.T) {
+		t.Parallel()
+
+		ctx, cancel := context.WithCancel(context.Background())
+		done := make(chan Receipt, 1)
+		userOpHash := common.HexToHash("0xea7a988fbe1632da91fd0aad20ee5331d80c43ba21d69f7e2f053eb06e50ba2f")
+
+		bundlerURL := os.Getenv("BUNDLER_URL")
+		if bundlerURL == "" {
+			t.Skip("BUNDLER_URL is not set")
+		}
+
+		bundler, err := rpc.Dial(bundlerURL)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = waitForTx(ctx, 500*time.Millisecond, cancel, bundler, done, userOpHash)
 		require.NoError(t, err)
 	})
 }

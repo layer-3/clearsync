@@ -9,8 +9,6 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/shopspring/decimal"
 
 	"github.com/layer-3/clearsync/pkg/abi/entry_point_v0_6_0"
@@ -380,57 +378,6 @@ func (c *backend) SendUserOp(ctx context.Context, op UserOperation) (<-chan Rece
 	return done, nil
 }
 
-// waitForUserOpEvent waits for a user operation to be committed on block.
-// func waitForUserOpEvent(
-// 	ctx context.Context,
-// 	pollPeriod time.Duration,
-// 	cancel context.CancelFunc,
-// 	client EthBackend,
-// 	done chan<- Receipt,
-// 	entryPoint common.Address,
-// 	userOpHash common.Hash,
-// ) {
-// 	ticker := time.NewTicker(pollPeriod)
-// 	defer ticker.Stop()
-// 	defer close(done)
-
-// 	fromBlock, err := client.BlockNumber(ctx)
-// 	if err != nil {
-// 		slog.Error("failed to get block number", "error", err)
-// 		cancel()
-// 		return
-// 	}
-
-// 	query := ethereum.FilterQuery{
-// 		Addresses: []common.Address{entryPoint},
-// 		Topics:    [][]common.Hash{{}, {userOpHash}},
-// 		FromBlock: big.NewInt(int64(fromBlock)),
-// 	}
-
-// 	for {
-// 		select {
-// 		case <-ctx.Done():
-// 			slog.Error("timeout waiting for user operation event", "hash", userOpHash.Hex())
-// 			return
-// 		case <-ticker.C:
-// 			logs, err := client.FilterLogs(ctx, query)
-// 			if err != nil {
-// 				slog.Error("failed to filter logs", "error", err)
-// 				continue
-// 			}
-
-// 			receipt, err := processLogs(logs, userOpHash)
-// 			if err != nil {
-// 				return
-// 			}
-// 			if receipt != nil {
-// 				done <- *receipt
-// 				return
-// 			}
-// 		}
-// 	}
-// }
-
 type BundlerUserOp struct {
 	UserOpHash string
 	Sender     string
@@ -458,7 +405,7 @@ func waitForTx(
 
 	for {
 		slog.Info("sending request", "hash", userOpHash.Hex())
-		var userop any
+		var userop BundlerUserOp
 		if err := bundler.CallContext(
 			ctx,
 			&userop,
@@ -470,75 +417,12 @@ func waitForTx(
 		}
 
 		slog.Info("got tx", "resp", userop)
-		// if userop.Success {
-		// 	done <- Receipt{TxHash: userop.Receipt.TransactionHash}
-		// 	return nil
-		// }
+		if userop.Success {
+			done <- Receipt{TxHash: userop.Receipt.TransactionHash}
+			return nil
+		}
 
 		<-time.After(5 * time.Second)
 		// <-time.After(pollPeriod)
 	}
-}
-
-func processLogs(logs []types.Log, userOpHash common.Hash) (*Receipt, error) {
-	// There are several events where userOpHash is used as a topic
-	// Namely, UserOperationEvent, AccountDeployed and UserOperationRevertReason
-	// see https://github.com/eth-infinitism/account-abstraction/blob/v0.6.0/contracts/interfaces/IEntryPoint.sol#L19-L47
-	userOpEventLog := filterLogsByEventID(logs, userOpEventID)
-	if userOpEventLog == nil {
-		return nil, nil
-	}
-
-	// Decode the ABI-encoded message
-	unpackedUserOpParams, err := entryPointUserOpEventsABI.Unpack("UserOperationEvent", userOpEventLog.Data)
-	if err != nil {
-		slog.Error("Error decoding UserOperationEvent params:", err)
-		return nil, err
-	}
-
-	receipt := Receipt{
-		UserOpHash: userOpHash,
-		TxHash:     userOpEventLog.TxHash,
-		Sender:     common.BytesToAddress(userOpEventLog.Topics[2].Bytes()),
-	}
-
-	if len(unpackedUserOpParams) == 4 {
-		slog.Debug("parsed userOperationEvent logs", "data", hexutil.Encode(userOpEventLog.Data), "parsedParams", unpackedUserOpParams)
-		receipt.Nonce = decimal.NewFromBigInt(unpackedUserOpParams[0].(*big.Int), 0)
-		receipt.Success = unpackedUserOpParams[1].(bool)
-		receipt.ActualGasCost = decimal.NewFromBigInt(unpackedUserOpParams[2].(*big.Int), 0)
-		receipt.ActualGasUsed = decimal.NewFromBigInt(unpackedUserOpParams[3].(*big.Int), 0)
-	} else {
-		slog.Warn("unexpected number of unpackedUserOpParams", "unpackedUserOpParams", unpackedUserOpParams)
-	}
-
-	if !receipt.Success { // Try to fetch revert reason.
-		if userOpRevertReasonLog := filterLogsByEventID(logs, userOpRevertReasonID); userOpRevertReasonLog != nil {
-			unpackedRevertReasonParams, err := entryPointUserOpEventsABI.Unpack("UserOperationRevertReason", userOpRevertReasonLog.Data)
-			if err != nil {
-				slog.Error("Error decoding UserOperationRevertReason params:", err)
-				return nil, err
-			}
-
-			if len(unpackedRevertReasonParams) == 2 {
-				slog.Debug("parsed userOperationRevertReason logs", "data", hexutil.Encode(userOpRevertReasonLog.Data), "parsedParams", unpackedRevertReasonParams)
-				receipt.RevertData = unpackedRevertReasonParams[1].([]byte)
-			} else {
-				slog.Warn("unexpected number of unpackedRevertReasonParams", "unpackedRevertReasonParams", unpackedRevertReasonParams)
-			}
-		}
-	}
-
-	return &receipt, nil
-}
-
-// Return only one log for simplicity, although several logs
-// with the same event signature can be emitted during one tx.
-func filterLogsByEventID(logs []types.Log, eventID common.Hash) *types.Log {
-	for _, log := range logs {
-		if log.Topics[0] == eventID {
-			return &log
-		}
-	}
-	return nil
 }
