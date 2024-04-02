@@ -30,7 +30,7 @@
         "symbol": "SHIB",
         "decimals": 18,
         "precision": 0,
-        "logoURI": "https://token-repository.dappradar.com/tokens?protocol=ethereum&contract=0x95ad61b0a150d79219dcf64e1e6cc01f0b64c4ce&file=logo.png"
+        "logoURI": "https://s2.coinmarketcap.com/static/img/coins/64x64/5994.png"
       },
       {
         "address": "0x3aAB2285ddcDdaD8edf438C1bAB47e1a9D05a9b4",
@@ -38,7 +38,7 @@
         "symbol": "WBTC",
         "decimals": 8,
         "precision": 6,
-        "logoURI": "https://token-repository.dappradar.com/tokens?protocol=ethereum&contract=0x2260fac5e5542a773aa44fbcfedf7c193bc2c599&file=logo.png"
+        "logoURI": "https://s2.coinmarketcap.com/static/img/coins/64x64/3717.png"
       },
       {
         "address": "0x0000000000000000000000000000000000000000",
