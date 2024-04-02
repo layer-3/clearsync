@@ -363,7 +363,12 @@ func (c *backend) SendUserOp(ctx context.Context, op UserOperation) (<-chan Rece
 	userOpHash := op.UserOpHash(c.entryPoint, c.chainID)
 	done := make(chan Receipt, 1)
 
-	go waitForTx(ctx, c.pollPeriod, cancel, c.provider, c.bundler, done, c.entryPoint, userOpHash)
+	go func() {
+		err := waitForTx(ctx, c.pollPeriod, cancel, c.bundler, done, userOpHash)
+		if err != nil {
+			slog.Error("failed to wait for user operation", "error", err)
+		}
+	}()
 
 	// ERC4337-standardized call to the bundler
 	slog.Debug("sending user operation")
@@ -427,26 +432,30 @@ func (c *backend) SendUserOp(ctx context.Context, op UserOperation) (<-chan Rece
 // }
 
 type BundlerUserOp struct {
-	UserOpHash    string
-	Sender        string
-	Nonce         *big.Int
-	ActualGasCost *big.Int
-	ActualGasUsed *big.Int
-	Success       bool
-	Logs          []types.Log
-	Receipt       Receipt
+	UserOpHash string
+	Sender     string
+	// Nonce         *big.Int
+	// ActualGasCost *big.Int
+	// ActualGasUsed *big.Int
+	Success bool
+	// Logs          []types.Log
+	Receipt BundlerReceipt
+}
+
+type BundlerReceipt struct {
+	TransactionHash common.Hash
 }
 
 func waitForTx(
 	ctx context.Context,
 	pollPeriod time.Duration,
 	cancel context.CancelFunc,
-	client EthBackend,
 	bundler RPCBackend,
 	done chan<- Receipt,
-	entryPoint common.Address,
 	userOpHash common.Hash,
 ) error {
+	defer close(done)
+
 	for {
 		slog.Info("sending request", "hash", userOpHash.Hex())
 		var userop BundlerUserOp
@@ -454,17 +463,17 @@ func waitForTx(
 			ctx,
 			&userop,
 			"eth_getUserOperationReceipt",
-			"0x8c21535a9a23ac520750ed2538092527a02e6b6098c12d6e35d5a0dd08c98dc1",
+			userOpHash,
 		); err != nil {
 			slog.Error("failed to get tx", "error", err)
 			return err
 		}
 
 		slog.Info("got tx", "resp", userop)
-		// if userop.Success {
-		// 	done <- userop.Receipt
-		// 	return nil
-		// }
+		if userop.Success {
+			done <- Receipt{TxHash: userop.Receipt.TransactionHash}
+			return nil
+		}
 
 		<-time.After(5 * time.Second)
 		// <-time.After(pollPeriod)
