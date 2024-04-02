@@ -448,7 +448,7 @@ func waitForTx(
 	userOpHash common.Hash,
 ) error {
 	for {
-		var userop any
+		var userop BundlerUserOp
 		if err := bundler.CallContext(
 			ctx,
 			&userop,
