@@ -27,7 +27,7 @@ var (
 	DriverUniswapV3Geth = DriverType{"uniswap_v3_geth"}
 	DriverSyncswap      = DriverType{"syncswap"}
 	DriverQuickswap     = DriverType{"quickswap"}
-	DriverNeodax        = DriverType{"neodax"} // Internal trades
+	DriverInternal      = DriverType{"internal"} // Internal trades
 )
 
 type Type string
