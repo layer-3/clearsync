@@ -20,8 +20,6 @@ var (
 	bytes32 = must(abi.NewType("bytes32", "", nil))
 	bytes   = must(abi.NewType("bytes", "", nil))
 
-	// keccak256("UserOperationEvent(bytes32,address,address,uint256,bool,uint256, uint256)")
-	userOpEventID = common.HexToHash("0x49628fd1471006c1482da88028e9ce4dbb080b815c9b0344d39e5a8e6ec1419f")
 	// keccak256("UserOperationRevertReason(bytes32,address,uint256,bytes)")
 	userOpRevertReasonID = common.HexToHash("0x1c4fada7374c0a9ee8841fc38afe82932dc0f8e69012e927f061a8bae611a201")
 )
