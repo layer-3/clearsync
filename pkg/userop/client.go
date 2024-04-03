@@ -386,14 +386,16 @@ func subscribeUserOpEvent(
 	if err != nil {
 		slog.Error("failed to connect to the entry point contract", "error", err)
 		cancel()
+		return
 	}
 
 	eventCh := make(chan *entry_point_v0_6_0.EntryPointUserOperationEvent)
 
-	sub, err := entryPointContract.WatchUserOperationEvent(nil, eventCh, [][32]byte{[32]byte(userOpHash.Bytes())}, nil, nil)
+	sub, err := entryPointContract.WatchUserOperationEvent(nil, eventCh, [][32]byte{userOpHash}, nil, nil)
 	if err != nil {
 		slog.Error("failed to subscribe to UserOperationEvent", "error", err)
 		cancel()
+		return
 	}
 
 	select {

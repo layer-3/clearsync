@@ -7,10 +7,12 @@ import (
 	"math/big"
 	"os"
 	"strings"
+	"testing"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/shopspring/decimal"
+	"github.com/stretchr/testify/require"
 
 	"github.com/layer-3/clearsync/pkg/abi/itoken"
 	"github.com/layer-3/clearsync/pkg/smart_wallet"
@@ -28,7 +30,7 @@ var (
 	smartWallet      = common.HexToAddress("0x69b36b0Cb89b1666d85Ed4fF48243730E9c53405")
 	receiver         = common.HexToAddress("0x2185da3337cad307fd48dFDabA6D4C66A9fD2c71")
 	token            = common.HexToAddress("0x18e73A5333984549484348A94f4D219f4faB7b81") // Duckies
-	amount           = decimal.RequireFromString("1000")                                 // wei
+	amount           = decimal.RequireFromString("1000000000000000000")                  // wei
 
 	ducklingsGame    = common.HexToAddress("0xb66bf78cad7cbab51988ddc792652cbabdff7675") // Duckies
 	ducklingsGameABI = `[{
@@ -44,8 +46,8 @@ var (
 		}]`
 )
 
-func main() {
-	setLogLevel(slog.LevelInfo)
+func TestPublicRPC(t *testing.T) {
+	setLogLevel(slog.LevelDebug)
 
 	// create smartWallet client (with specific Wallet and Paymaster types)
 	client, err := userop.NewClient(config)
@@ -65,7 +67,7 @@ func main() {
 	if err != nil {
 		panic(fmt.Errorf("failed to build transfer native call: %w", err))
 	}
-	if err := send(client, smartWallet, smart_wallet.Calls{transferNative}); err != nil {
+	if err := send(t, client, smartWallet, smart_wallet.Calls{transferNative}); err != nil {
 		panic(err)
 	}
 
@@ -75,7 +77,7 @@ func main() {
 	if err != nil {
 		panic(fmt.Errorf("failed to build approve call: %w", err))
 	}
-	if err := send(client, smartWallet, smart_wallet.Calls{approve}); err != nil {
+	if err := send(t, client, smartWallet, smart_wallet.Calls{approve}); err != nil {
 		panic(err)
 	}
 
@@ -84,13 +86,13 @@ func main() {
 	if err != nil {
 		panic(fmt.Errorf("failed to build transfer erc20 call: %w", err))
 	}
-	if err := send(client, smartWallet, smart_wallet.Calls{transferERC20}); err != nil {
+	if err := send(t, client, smartWallet, smart_wallet.Calls{transferERC20}); err != nil {
 		panic(err)
 	}
 
 	// You can also submit several calls in a single userOp.
 	mintPrice := decimal.RequireFromString("5000000000") // 50 duckies for 1 Duckling
-	approveToGame, err := newApproveCall(token, ducklingsGame, mintPrice)
+	approveToGame, err := newApproveCall(token, receiver, mintPrice)
 	if err != nil {
 		panic(fmt.Errorf("failed to build approve to game call: %w", err))
 	}
@@ -100,7 +102,7 @@ func main() {
 		panic(fmt.Errorf("failed to build mint pack call: %w", err))
 	}
 
-	if err := send(client, smartWallet, smart_wallet.Calls{approveToGame, mintPack}); err != nil {
+	if err := send(t, client, smartWallet, smart_wallet.Calls{approveToGame, mintPack}); err != nil {
 		panic(err)
 	}
 }
@@ -184,7 +186,7 @@ func newCallFromABI(contract common.Address, stringABI string, value *big.Int, m
 // Creates and sends the user operation.
 // NOTE: when sending the first userOp from a Smart Wallet,
 // `config.example.go/walletDeploymentOpts` must contain Smart Wallet owner EOA address and SW index (0 by default).
-func send(client userop.Client, smartWallet common.Address, calls smart_wallet.Calls) error {
+func send(t *testing.T, client userop.Client, smartWallet common.Address, calls smart_wallet.Calls) error {
 	ctx := context.Background()
 
 	overrides := &userop.Overrides{
@@ -209,6 +211,7 @@ func send(client userop.Client, smartWallet common.Address, calls smart_wallet.C
 	userOpReceipt := <-waitForUserOp
 
 	slog.Info("user operation verified", "userOpReceipt", userOpReceipt)
+	require.True(t, userOpReceipt.Success)
 
 	return nil
 }
