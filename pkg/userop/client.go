@@ -358,9 +358,9 @@ func (c *backend) SignUserOp(ctx context.Context, op UserOperation, signer Signe
 func (c *backend) SendUserOp(ctx context.Context, op UserOperation) (<-chan Receipt, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	userOpHash := op.UserOpHash(c.entryPoint, c.chainID)
-	done := make(chan Receipt, 1)
+	recCh := make(chan Receipt, 1)
 
-	go subscribeUserOpEvent(ctx, cancel, c.provider, done, c.entryPoint, userOpHash)
+	go subscribeUserOpEvent(ctx, cancel, c.provider, recCh, c.entryPoint, userOpHash)
 
 	// ERC4337-standardized call to the bundler
 	slog.Debug("sending user operation")
@@ -369,7 +369,7 @@ func (c *backend) SendUserOp(ctx context.Context, op UserOperation) (<-chan Rece
 	}
 
 	slog.Info("user operation sent successfully", "userOpHash", userOpHash.Hex())
-	return done, nil
+	return recCh, nil
 }
 
 // subscribeUserOpEvent waits for a user operation to be committed on block.
@@ -377,10 +377,11 @@ func subscribeUserOpEvent(
 	ctx context.Context,
 	cancel context.CancelFunc,
 	client EthBackend,
-	done chan<- Receipt,
+	recCh chan<- Receipt,
 	entryPoint common.Address,
 	userOpHash common.Hash,
 ) {
+	defer close(recCh)
 
 	entryPointContract, err := entry_point_v0_6_0.NewEntryPoint(entryPoint, client)
 	if err != nil {
@@ -401,7 +402,7 @@ func subscribeUserOpEvent(
 	select {
 	case event := <-eventCh:
 		receipt := processUserOpEvent(client, event)
-		done <- *receipt
+		recCh <- *receipt
 	case err := <-sub.Err():
 		slog.Error("subscription error", "error", err)
 		cancel()
