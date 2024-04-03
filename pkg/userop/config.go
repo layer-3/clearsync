@@ -2,7 +2,6 @@ package userop
 
 import (
 	"math/big"
-	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ilyakaznacheev/cleanenv"
@@ -15,7 +14,6 @@ import (
 type ClientConfig struct {
 	ProviderURL string              `yaml:"provider_url" env:"USEROP_CLIENT_PROVIDER_URL"`
 	BundlerURL  string              `yaml:"bundler_url" env:"USEROP_CLIENT_BUNDLER_URL"`
-	PollPeriod  time.Duration       `yaml:"poll_period" env:"USEROP_CLIENT_POLL_PERIOD" env-default:"100ms"`
 	EntryPoint  common.Address      `yaml:"entry_point" env:"USEROP_CLIENT_ENTRY_POINT"`
 	Gas         GasConfig           `yaml:"gas"`
 	SmartWallet smart_wallet.Config `yaml:"smart_wallet"`
@@ -23,17 +21,12 @@ type ClientConfig struct {
 }
 
 func (conf *ClientConfig) Init() {
-	conf.PollPeriod = 100
 	conf.Gas.Init()
 	conf.Paymaster.Init()
 	conf.SmartWallet.Init()
 }
 
 func (conf ClientConfig) validate() error {
-	if conf.PollPeriod.String() == "" {
-		return ErrInvalidPollDuration
-	}
-
 	if conf.EntryPoint == (common.Address{}) {
 		return ErrInvalidEntryPointAddress
 	}
