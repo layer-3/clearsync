@@ -143,3 +143,7 @@ func (b *bitfaker) createTradeEvent(market Market) {
 	}
 	b.outbox <- tr
 }
+
+// Not implemented
+func (b *bitfaker) SetInbox(inbox <-chan TradeEvent) {
+}

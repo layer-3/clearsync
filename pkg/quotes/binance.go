@@ -105,9 +105,9 @@ func (b *binance) Subscribe(market Market) error {
 		defer close(doneCh)
 		<-doneCh
 		for {
-      if err := b.Unsubscribe(market); err != nil {
-        loggerBinance.Errorf("failed to unsubscribe from Binance %s market: %v", pair, err)
-      }
+			if err := b.Unsubscribe(market); err != nil {
+				loggerBinance.Errorf("failed to unsubscribe from Binance %s market: %v", pair, err)
+			}
 
 			err := b.Subscribe(market)
 			if err == nil {
@@ -190,4 +190,8 @@ func (b *binance) buildEvent(tr *gobinance.WsTradeEvent) (TradeEvent, error) {
 		TakerType: takerType,
 		CreatedAt: time.UnixMilli(tr.TradeTime),
 	}, nil
+}
+
+// Not implemented
+func (b *binance) SetInbox(inbox <-chan TradeEvent) {
 }

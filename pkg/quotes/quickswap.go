@@ -309,3 +309,7 @@ func (s *quickswap) getTokens(market Market) (baseToken poolToken, quoteToken po
 
 	return baseToken, quoteToken, nil
 }
+
+// Not implemented
+func (s *quickswap) SetInbox(inbox <-chan TradeEvent) {
+}

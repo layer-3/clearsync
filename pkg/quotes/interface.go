@@ -10,6 +10,7 @@ type Driver interface {
 	Stop() error
 	Subscribe(market Market) error
 	Unsubscribe(market Market) error
+	SetInbox(inbox <-chan TradeEvent)
 }
 
 func NewDriver(config Config, outbox chan<- TradeEvent) (Driver, error) {

@@ -297,3 +297,7 @@ func (o *opendax) recognizeSide(side string) (TakerType, error) {
 		return TakerTypeUnknown, errors.New("order side invalid: " + side)
 	}
 }
+
+// Not implemented
+func (o *opendax) SetInbox(inbox <-chan TradeEvent) {
+}

@@ -508,3 +508,7 @@ func (k *kraken) getPairs() error {
 
 	return nil
 }
+
+// Not implemented
+func (k *kraken) SetInbox(inbox <-chan TradeEvent) {
+}
