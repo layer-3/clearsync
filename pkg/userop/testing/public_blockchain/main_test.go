@@ -2,7 +2,6 @@ package public_blockchain
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"math/big"
 	"os"
@@ -52,60 +51,41 @@ func TestPublicRPC(t *testing.T) {
 
 	// create smartWallet client (with specific Wallet and Paymaster types)
 	client, err := userop.NewClient(config)
-	if err != nil {
-		panic(fmt.Errorf("failed to create userop client: %w", err))
-	}
+	require.NoError(t, err, "failed to create userop client")
 
 	// calculate smart wallet address
 	walletAddress, err := client.GetAccountAddress(context.Background(), owner, swartWalletIndex)
-	if err != nil {
-		panic(fmt.Errorf("failed to get wallet address: %w", err))
-	}
+	require.NoError(t, err, "failed to calculate smart wallet address")
 	slog.Debug("wallet address", "address", walletAddress)
 
 	// You can send native tokens to any address.
 	transferNative, err := newTransferNativeCall(receiver, amount.BigInt())
-	if err != nil {
-		panic(fmt.Errorf("failed to build transfer native call: %w", err))
-	}
-	if err := send(t, client, smartWallet, smart_wallet.Calls{transferNative}); err != nil {
-		panic(err)
-	}
+	require.NoError(t, err, "failed to build transfer native call")
+	err = send(t, client, smartWallet, smart_wallet.Calls{transferNative})
+	require.NoError(t, err, "failed to send transfer native call")
 
 	// NOTE: prior to using PimlicoERC20Paymaster, make sure to approve the
 	// paymaster contract to spend your fee token.
-	approve, err := newApproveCall(token, receiver, amount)
-	if err != nil {
-		panic(fmt.Errorf("failed to build approve call: %w", err))
-	}
-	if err := send(t, client, smartWallet, smart_wallet.Calls{approve}); err != nil {
-		panic(err)
-	}
+	approve, err := newApproveCall(t, token, receiver, amount)
+	require.NoError(t, err, "failed to build approve call")
+	err = send(t, client, smartWallet, smart_wallet.Calls{approve})
+	require.NoError(t, err, "failed to send approve call")
 
 	// Now this call can be paid with ERC20 tokens using PimlicoERC20Paymaster.
-	transferERC20, err := newTransferERC20Call(token, receiver, amount)
-	if err != nil {
-		panic(fmt.Errorf("failed to build transfer erc20 call: %w", err))
-	}
-	if err := send(t, client, smartWallet, smart_wallet.Calls{transferERC20}); err != nil {
-		panic(err)
-	}
+	transferERC20, err := newTransferERC20Call(t, token, receiver, amount)
+	require.NoError(t, err, "failed to build transfer ERC20 call")
+	err = send(t, client, smartWallet, smart_wallet.Calls{transferERC20})
+	require.NoError(t, err, "failed to send transfer ERC20 call")
 
 	// You can also submit several calls in a single userOp.
 	mintPrice := decimal.RequireFromString("5000000000") // 50 duckies for 1 Duckling
-	approveToGame, err := newApproveCall(token, receiver, mintPrice)
-	if err != nil {
-		panic(fmt.Errorf("failed to build approve to game call: %w", err))
-	}
+	approveToGame, err := newApproveCall(t, token, receiver, mintPrice)
+	require.NoError(t, err, "failed to build approve to game call")
 
-	mintPack, err := newCallFromABI(ducklingsGame, ducklingsGameABI, big.NewInt(0), "mintPack", uint8(1))
-	if err != nil {
-		panic(fmt.Errorf("failed to build mint pack call: %w", err))
-	}
-
-	if err := send(t, client, smartWallet, smart_wallet.Calls{approveToGame, mintPack}); err != nil {
-		panic(err)
-	}
+	mintPack, err := newCallFromABI(t, ducklingsGame, ducklingsGameABI, big.NewInt(0), "mintPack", uint8(1))
+	require.NoError(t, err, "failed to build mint pack call")
+	err = send(t, client, smartWallet, smart_wallet.Calls{approveToGame, mintPack})
+	require.NoError(t, err, "failed to send mint pack call")
 }
 
 func setLogLevel(level slog.Level) {
@@ -120,16 +100,12 @@ func setLogLevel(level slog.Level) {
 }
 
 // Encodes an `approve` call to the `token` contract, approving `amount` to be spent by `spender`.
-func newApproveCall(token, spender common.Address, amount decimal.Decimal) (smart_wallet.Call, error) {
+func newApproveCall(t *testing.T, token, spender common.Address, amount decimal.Decimal) (smart_wallet.Call, error) {
 	erc20, err := abi.JSON(strings.NewReader(itoken.IERC20MetaData.ABI))
-	if err != nil {
-		panic(fmt.Errorf("failed to parse ERC20 ABI: %w", err))
-	}
+	require.NoError(t, err, "failed to parse ERC20 ABI")
 
 	callData, err := erc20.Pack("approve", spender, amount.BigInt())
-	if err != nil {
-		panic(fmt.Errorf("failed to pack transfer data: %w", err))
-	}
+	require.NoError(t, err, "failed to pack approve data")
 
 	return smart_wallet.Call{
 		To:       token,
@@ -147,16 +123,12 @@ func newTransferNativeCall(receiver common.Address, amount *big.Int) (smart_wall
 }
 
 // Encodes a `transfer` call to the `token` contract, transferring `amount` to `receiver`.
-func newTransferERC20Call(token, receiver common.Address, amount decimal.Decimal) (smart_wallet.Call, error) {
+func newTransferERC20Call(t *testing.T, token, receiver common.Address, amount decimal.Decimal) (smart_wallet.Call, error) {
 	erc20, err := abi.JSON(strings.NewReader(itoken.IERC20MetaData.ABI))
-	if err != nil {
-		panic(fmt.Errorf("failed to parse ERC20 ABI: %w", err))
-	}
+	require.NoError(t, err, "failed to parse ERC20 ABI")
 
 	callData, err := erc20.Pack("transfer", receiver, amount.BigInt())
-	if err != nil {
-		panic(fmt.Errorf("failed to pack transfer data: %w", err))
-	}
+	require.NoError(t, err, "failed to pack transfer data")
 
 	return smart_wallet.Call{
 		To:       token,
@@ -166,16 +138,12 @@ func newTransferERC20Call(token, receiver common.Address, amount decimal.Decimal
 }
 
 // Encodes a call to the `contract` with the given `value`, `method` and `args`.
-func newCallFromABI(contract common.Address, stringABI string, value *big.Int, method string, args ...interface{}) (smart_wallet.Call, error) {
+func newCallFromABI(t *testing.T, contract common.Address, stringABI string, value *big.Int, method string, args ...interface{}) (smart_wallet.Call, error) {
 	ABI, err := abi.JSON(strings.NewReader(stringABI))
-	if err != nil {
-		panic(fmt.Errorf("failed to parse ABI: %w", err))
-	}
+	require.NoError(t, err, "failed to parse ABI")
 
 	callData, err := ABI.Pack(method, args...)
-	if err != nil {
-		panic(fmt.Errorf("failed to pack call data: %w", err))
-	}
+	require.NoError(t, err, "failed to pack call data")
 
 	return smart_wallet.Call{
 		To:       contract,
@@ -194,20 +162,14 @@ func send(t *testing.T, client userop.Client, smartWallet common.Address, calls 
 		GasLimits: gasLimitOverrides,
 	}
 	op, err := client.NewUserOp(ctx, smartWallet, signer, calls, walletDeploymentOpts, overrides)
-	if err != nil {
-		panic(fmt.Errorf("failed to build userop: %w", err))
-	}
+	require.NoError(t, err, "failed to create user operation")
 
 	b, err := op.MarshalJSON()
-	if err != nil {
-		return fmt.Errorf("failed to marshal userop: %w", err)
-	}
+	require.NoError(t, err, "failed to marshal user operation")
 	slog.Debug("sending user operation", "op", string(b))
 
 	waitForUserOp, err := client.SendUserOp(ctx, op)
-	if err != nil {
-		return fmt.Errorf("failed to send userop: %w", err)
-	}
+	require.NoError(t, err, "failed to send user operation")
 
 	userOpReceipt := <-waitForUserOp
 
