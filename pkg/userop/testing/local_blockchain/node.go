@@ -143,31 +143,35 @@ func NewEthNode(ctx context.Context, t *testing.T) *EthNode {
 		// TODO: add test cleanups with container termination
 		gethContainer, err = testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
-				Image: "ethereum/client-go:v1.13.14",
+				Image: "quay.io/openware/geth:v0.1.7-amd64",
 				// 8545 TCP, used by the HTTP based JSON RPC API
 				// 8546 TCP, used by the WebSocket based JSON RPC API
 				// 8547 TCP, used by the GraphQL API
 				// 30303 TCP and UDP, used by the P2P protocol running the network
-				ExposedPorts: []string{"8545:8545/tcp", "8546:8546/tcp", "8547:8547/tcp", "30303:30303/tcp", "30303:30303/udp"},
-				Cmd:          []string{"--dev", "--http", "--ws", "--http.api=eth,web3,net", "--http.addr=0.0.0.0", "--http.corsdomain='*'", "--http.vhosts='*'", "--ws.addr=0.0.0.0", "--ws.origins='*'"},
-				WaitingFor:   wait.ForLog("server started"),
+				ExposedPorts: []string{"8545:8545/tcp"},
+				Cmd:          []string{"anvil"},
+				Env: map[string]string{
+					"ANVIL_IP_ADDR": "0.0.0.0",
+				},
+				WaitingFor: wait.ForLog("Listening on"),
 			},
 			Started: true,
 		})
 		require.NoError(t, err, "failed to start Go-Ethereum container")
 
+		// Hardcoded deployer private key for testing purposes
+		os.Setenv("DEPLOYER_PK", "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80")
+
 		containerIP, err := gethContainer.ContainerIP(ctx)
 		require.NoError(t, err, "failed to get Go-Ethereum container IP")
 		// As a rpc port we are using ws port for subscription
 		// As a container port we are using http port for bundler
-		rpcPort, err := gethContainer.MappedPort(ctx, "8546")
+		rpcPort, err := gethContainer.MappedPort(ctx, "8545")
 		require.NoError(t, err, "failed to get Go-Ethereum rpc port")
-		containerPort, err := gethContainer.MappedPort(ctx, "8545")
-		require.NoError(t, err, "failed to get Go-Ethereum container port")
 
 		rpcURL, err = url.Parse(fmt.Sprintf("ws://0.0.0.0:%s", rpcPort.Port()))
 		require.NoError(t, err, "failed to parse local RPC URL")
-		containerURL, err = url.Parse(fmt.Sprintf("http://%s:%s", containerIP, containerPort.Port()))
+		containerURL, err = url.Parse(fmt.Sprintf("http://%s:%s", containerIP, rpcPort.Port()))
 		require.NoError(t, err, "failed to parse container RPC URL")
 	}
 
