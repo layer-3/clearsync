@@ -24,18 +24,21 @@ Chain id: 137.
 
 #### Contracts Deployed
 
-Last updated: January 23, 2024.
+Last updated: April 5, 2024.
 
 Repository: [layer-3/duckies](https://github.com/layer-3/duckies).
 
 Deployed by: `0x2C9391752AE0Ee8a01e00D8b77187aB6D6Debc25`[↗](https://polygonscan.com/address/0x2C9391752AE0Ee8a01e00D8b77187aB6D6Debc25)
 
-| Description                | Contract Name | Transaction Hash                                                                                               | Address                                                                                                                     | Git SHA                                  |
-| -------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| Yellow Duckies ERC20 Token | YellowToken   | [0xf96e...6217](https://polygonscan.com/tx/0xf96e07149b6ab7ea5607efec3bd07e9e8bce13ebc68e9dcf007be5c325d76217) | `0x18e73A5333984549484348A94f4D219f4faB7b81`[↗](https://polygonscan.com/address/0x18e73A5333984549484348A94f4D219f4faB7b81) | 7b9389c83a540870369b82d0a1144d61f50f9c35 |
-| Yellow Ducklings NFT       | DucklingsV1   | [0x21bc...993f](https://polygonscan.com/tx/0x21bce8f9a9d2e836070ee883246a1edf9fc409cab0b25a8c1cabcf7d1d5d993f) | `0x435b74f6DC4A0723CA19e4dD2AC8Aa1361c7B0f0`[↗](https://polygonscan.com/address/0x435b74f6DC4A0723CA19e4dD2AC8Aa1361c7B0f0) | 7b9389c83a540870369b82d0a1144d61f50f9c35 |
-| Yellow Ducklings NFT Game  | DuckyFamilyV1 | [0x60e2...15e8](https://polygonscan.com/tx/0x60e21f0f9528ab063b68928c5c8081c473ffb31cdaf747ee77bf057d588415e8) | `0xb66bf78cad7cbab51988ddc792652cbabdff7675`[↗](https://polygonscan.com/address/0xb66bf78cad7cbab51988ddc792652cbabdff7675) | 7b9389c83a540870369b82d0a1144d61f50f9c35 |
-| Yellow Duckies Treasury    | TreasureVault | [0x38c3...65ae](https://polygonscan.com/tx/0x38c3467b1adf4fa71992de627fa8bf08d1bf1118c10d8004753cd44637b565ae) | `0x68d1E3F802058Ce517e9ba871Ab182299E74D852`[↗](https://polygonscan.com/address/0x68d1E3F802058Ce517e9ba871Ab182299E74D852) | 7b9389c83a540870369b82d0a1144d61f50f9c35 |
+| Description                | Contract Name     | Transaction Hash                                                                                               | Address                                                                                                                     | Git SHA                                  |
+| -------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| Yellow Duckies ERC20 Token | YellowToken       | [0xf96e...6217](https://polygonscan.com/tx/0xf96e07149b6ab7ea5607efec3bd07e9e8bce13ebc68e9dcf007be5c325d76217) | `0x18e73A5333984549484348A94f4D219f4faB7b81`[↗](https://polygonscan.com/address/0x18e73A5333984549484348A94f4D219f4faB7b81) | 7b9389c83a540870369b82d0a1144d61f50f9c35 |
+| Yellow Ducklings NFT       | DucklingsV1       | [0x21bc...993f](https://polygonscan.com/tx/0x21bce8f9a9d2e836070ee883246a1edf9fc409cab0b25a8c1cabcf7d1d5d993f) | `0x435b74f6DC4A0723CA19e4dD2AC8Aa1361c7B0f0`[↗](https://polygonscan.com/address/0x435b74f6DC4A0723CA19e4dD2AC8Aa1361c7B0f0) | 7b9389c83a540870369b82d0a1144d61f50f9c35 |
+| Yellow Ducklings NFT Game  | DuckyFamilyV1     | [0x60e2...15e8](https://polygonscan.com/tx/0x60e21f0f9528ab063b68928c5c8081c473ffb31cdaf747ee77bf057d588415e8) | `0xb66bf78cad7cbab51988ddc792652cbabdff7675`[↗](https://polygonscan.com/address/0xb66bf78cad7cbab51988ddc792652cbabdff7675) | 7b9389c83a540870369b82d0a1144d61f50f9c35 |
+| Yellow Duckies Treasury    | TreasureVault     | [0x38c3...65ae](https://polygonscan.com/tx/0x38c3467b1adf4fa71992de627fa8bf08d1bf1118c10d8004753cd44637b565ae) | `0x68d1E3F802058Ce517e9ba871Ab182299E74D852`[↗](https://polygonscan.com/address/0x68d1E3F802058Ce517e9ba871Ab182299E74D852) | 7b9389c83a540870369b82d0a1144d61f50f9c35 |
+| Yellow Network Adjudicator | YellowAdjudicator | [0x4934...903f](https://polygonscan.com/tx/0x4934d0974bfa7deab18dc024232eab30fdc4939b4197500c7940f5191133903f) | `0xf81A43EBA92538B0323fCDb1A040F2183B352Ca3`[↗](https://polygonscan.com/address/0xf81A43EBA92538B0323fCDb1A040F2183B352Ca3) | 2c6129a1831778972c4f07766ec69e25674d2438 |
+| State channels Margin App  | ConsensusApp      | [0x5839...34e4](https://polygonscan.com/tx/0x5839b7d3190bc879f8d7dc525e5c2ee9a23bb86478984267f800e42e90a734e4) | `0xd3f6EA0DCe26E7836fB309dcfcf506e44524B2A5`[↗](https://lineascan.build/address/0xd3f6EA0DCe26E7836fB309dcfcf506e44524B2A5) | 2c6129a1831778972c4f07766ec69e25674d2438 |
+| State channels Escrow App  | ConsensusApp      | [0xdd5d...dd07](https://polygonscan.com/tx/0xdd5dfa248daecea346fa998145f2cfb3a70eb6b6c65adbd53c02ea6d6a2bdd07) | `0x59735037AC294641F8CE51d68D6C45a500B8e645`[↗](https://lineascan.build/address/0x59735037AC294641F8CE51d68D6C45a500B8e645) | 2c6129a1831778972c4f07766ec69e25674d2438 |
 
 ### Linea
 
@@ -103,24 +106,74 @@ Repository: [layer-3/ClearSync](https://github.com/layer-3/clearsync).
 
 | Description                 | Contract Name     | Transaction Hash                                                                                                    | Address                                                                                                                          | Git SHA                                  |
 | --------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| Yellow Network Adjudicator  | YellowAdjudicator | [0x9625...79d5](https://sepolia.etherscan.io/tx/0x9625f00a53809053a0a48dbd3d09e59b999211ef92fc7877e735251ea7b079d5) | `0x47871f064d0b2ABf9190275C4D69f466C98fBD77`[↗](https://sepolia.etherscan.io/address/0x47871f064d0b2ABf9190275C4D69f466C98fBD77) | 418c72494d451b5c4593b602993b71d95517b83f |
-| State channels Margin App   | ConsensusApp      | [0x5797...88c1](https://sepolia.etherscan.io/tx/0x5797dde221daed50161b9f29a3962042b91dc2327ebd58dd65074fa06bc088c1) | `0xa6F5563CD2D38a0c1F2D41DF7Eff7181bf3c6a7e`[↗](https://sepolia.etherscan.io/address/0xa6F5563CD2D38a0c1F2D41DF7Eff7181bf3c6a7e) | 418c72494d451b5c4593b602993b71d95517b83f |
-| State channels Escrow App   | ConsensusApp      | [0x2210...280a](https://sepolia.etherscan.io/tx/0x2210557ece0d0e8f47e6e517cfb9052881666a871906d7746db929308828280a) | `0xcccb67333fEefb04e85521fF0c219Cdb12539b84`[↗](https://sepolia.etherscan.io/address/0xcccb67333fEefb04e85521fF0c219Cdb12539b84) | 418c72494d451b5c4593b602993b71d95517b83f |
-| USD Tether ERC20 Token      | TestERC20         | [0x7822...eee4](https://sepolia.etherscan.io/tx/0xa782216553fb5b409e21f7a8be37e5762b4ab6a5d9ff0ba2200e092685b2eee4) | `0x98e255A2D9e36d5174a7787aBA7053e60F47Fc08`[↗](https://sepolia.etherscan.io/address/0x98e255A2D9e36d5174a7787aBA7053e60F47Fc08) | 418c72494d451b5c4593b602993b71d95517b83f |
-| USD Coin ERC20 Token        | TestERC20         | [0xa372...59ab](https://sepolia.etherscan.io/tx/0xa372976c4d4ae3a820caa3fd8aa21e1e43b2c1622102ed2cc8947e987b0a59ab) | `0x42b757f0B530cb44139ceDd9F0C47249175CBC7E`[↗](https://sepolia.etherscan.io/address/0x42b757f0B530cb44139ceDd9F0C47249175CBC7E) | 418c72494d451b5c4593b602993b71d95517b83f |
-| Shiba Inu ERC20 Token       | TestERC20         | [0xa491...e4f8](https://sepolia.etherscan.io/tx/0xa49150f0cd60cf6cfd65f2a0bc17c2d8ecf92e98d8a9e51b1c4278618fb0e4f8) | `0x3e594179ad7E013f817bCddF310a7e75b2b069a9`[↗](https://sepolia.etherscan.io/address/0x3e594179ad7E013f817bCddF310a7e75b2b069a9) | 418c72494d451b5c4593b602993b71d95517b83f |
-| Wrapped Bitcoin ERC20 Token | TestERC20         | [0xdd40...ce92](https://sepolia.etherscan.io/tx/0xdd40ba4e6cf220c5f50f9aa3bfc0cb21a089e48298051a3c8dacc8c2af65ce92) | `0x9cEF6720Ba49c8C94Df1CfA0D713828B7B9fAEB1`[↗](https://sepolia.etherscan.io/address/0x9cEF6720Ba49c8C94Df1CfA0D713828B7B9fAEB1) | 418c72494d451b5c4593b602993b71d95517b83f |
-| Wrapped Ether ERC20 Token   | TestERC20         | [0x3d8d...50ad](https://sepolia.etherscan.io/tx/0x3d8dbe7ab18f85dfaf146fdc808b6816e792d95be8c56acd010466a4a63950ad) | `0x2Ff553CA05b647b0e352fe25828BB754a35Ff7dE`[↗](https://sepolia.etherscan.io/address/0x2Ff553CA05b647b0e352fe25828BB754a35Ff7dE) | 418c72494d451b5c4593b602993b71d95517b83f |
-| Wrapped Matic ERC20 Token   | TestERC20         | [0x6542...f284](https://sepolia.etherscan.io/tx/0x654222f83fe14a1aa9d2d17be4e7fe2d86e2f1f31bcfcfc3b552b501d6e4f284) | `0x4e519DD7b0137D3D7a3Fe8EA2aC38E9c598230DB`[↗](https://sepolia.etherscan.io/address/0x4e519DD7b0137D3D7a3Fe8EA2aC38E9c598230DB) | 418c72494d451b5c4593b602993b71d95517b83f |
-| Yellow Duckies ERC20 Token  | TestERC20         | [0xf451...32e3](https://sepolia.etherscan.io/tx/0xf4512ec5b2893300e0f5d17c84e245346d5f7420599e96c0098ee6b6eeb632e3) | `0x63FD175d3215779deBA7532fC660fA0E10c18676`[↗](https://sepolia.etherscan.io/address/0x63FD175d3215779deBA7532fC660fA0E10c18676) | 418c72494d451b5c4593b602993b71d95517b83f |
+| Yellow Network Adjudicator  | YellowAdjudicator | [0x9625...79d5](https://sepolia.etherscan.io/tx/0x9625f00a53809053a0a48dbd3d09e59b999211ef92fc7877e735251ea7b079d5) | `0x47871f064d0b2ABf9190275C4D69f466C98fBD77`[↗](https://sepolia.etherscan.io/address/0xf81a43eba92538b0323fcdb1a040f2183b352ca3) | 418c72494d451b5c4593b602993b71d95517b83f |
+| State channels Margin App   | ConsensusApp      | [0x5797...88c1](https://sepolia.etherscan.io/tx/0x5797dde221daed50161b9f29a3962042b91dc2327ebd58dd65074fa06bc088c1) | `0xa6F5563CD2D38a0c1F2D41DF7Eff7181bf3c6a7e`[↗](https://sepolia.etherscan.io/address/0xa6f5563cd2d38a0c1f2d41df7eff7181bf3c6a7e) | 418c72494d451b5c4593b602993b71d95517b83f |
+| State channels Escrow App   | ConsensusApp      | [0x2210...280a](https://sepolia.etherscan.io/tx/0x2210557ece0d0e8f47e6e517cfb9052881666a871906d7746db929308828280a) | `0xcccb67333fEefb04e85521fF0c219Cdb12539b84`[↗](https://sepolia.etherscan.io/address/0xcccb67333feefb04e85521ff0c219cdb12539b84) | 418c72494d451b5c4593b602993b71d95517b83f |
+| USD Tether ERC20 Token      | TestERC20         | [0x7822...eee4](https://sepolia.etherscan.io/tx/0xa782216553fb5b409e21f7a8be37e5762b4ab6a5d9ff0ba2200e092685b2eee4) | `0x98e255A2D9e36d5174a7787aBA7053e60F47Fc08`[↗](https://sepolia.etherscan.io/address/0x98e255a2d9e36d5174a7787aba7053e60f47fc08) | 418c72494d451b5c4593b602993b71d95517b83f |
+| USD Coin ERC20 Token        | TestERC20         | [0xa372...59ab](https://sepolia.etherscan.io/tx/0xa372976c4d4ae3a820caa3fd8aa21e1e43b2c1622102ed2cc8947e987b0a59ab) | `0x42b757f0B530cb44139ceDd9F0C47249175CBC7E`[↗](https://sepolia.etherscan.io/address/0x42b757f0b530cb44139cedd9f0c47249175cbc7e) | 418c72494d451b5c4593b602993b71d95517b83f |
+| Shiba Inu ERC20 Token       | TestERC20         | [0xa491...e4f8](https://sepolia.etherscan.io/tx/0xa49150f0cd60cf6cfd65f2a0bc17c2d8ecf92e98d8a9e51b1c4278618fb0e4f8) | `0x3e594179ad7E013f817bCddF310a7e75b2b069a9`[↗](https://sepolia.etherscan.io/address/0x3e594179ad7e013f817bcddf310a7e75b2b069a9) | 418c72494d451b5c4593b602993b71d95517b83f |
+| Wrapped Bitcoin ERC20 Token | TestERC20         | [0xdd40...ce92](https://sepolia.etherscan.io/tx/0xdd40ba4e6cf220c5f50f9aa3bfc0cb21a089e48298051a3c8dacc8c2af65ce92) | `0x9cEF6720Ba49c8C94Df1CfA0D713828B7B9fAEB1`[↗](https://sepolia.etherscan.io/address/0x9cef6720ba49c8c94df1cfa0d713828b7b9faeb1) | 418c72494d451b5c4593b602993b71d95517b83f |
+| Wrapped Ether ERC20 Token   | TestERC20         | [0x3d8d...50ad](https://sepolia.etherscan.io/tx/0x3d8dbe7ab18f85dfaf146fdc808b6816e792d95be8c56acd010466a4a63950ad) | `0x2Ff553CA05b647b0e352fe25828BB754a35Ff7dE`[↗](https://sepolia.etherscan.io/address/0x2ff553ca05b647b0e352fe25828bb754a35ff7de) | 418c72494d451b5c4593b602993b71d95517b83f |
+| Wrapped Matic ERC20 Token   | TestERC20         | [0x6542...f284](https://sepolia.etherscan.io/tx/0x654222f83fe14a1aa9d2d17be4e7fe2d86e2f1f31bcfcfc3b552b501d6e4f284) | `0x4e519DD7b0137D3D7a3Fe8EA2aC38E9c598230DB`[↗](https://sepolia.etherscan.io/address/0x4e519dd7b0137d3d7a3fe8ea2ac38e9c598230db) | 418c72494d451b5c4593b602993b71d95517b83f |
+| Yellow Duckies ERC20 Token  | TestERC20         | [0xf451...32e3](https://sepolia.etherscan.io/tx/0xf4512ec5b2893300e0f5d17c84e245346d5f7420599e96c0098ee6b6eeb632e3) | `0x63FD175d3215779deBA7532fC660fA0E10c18676`[↗](https://sepolia.etherscan.io/address/0x63fd175d3215779deba7532fc660fa0e10c18676) | 418c72494d451b5c4593b602993b71d95517b83f |
 
-### Linea Goerli
+### Amoy
 
-Chain id: 59140.
+Chain id: 80002.
 
 #### Contracts Deployed
 
-Last updated: January 16, 2024.
+Last updated: April 5, 2024.
+Deployed with account: `0x2185da3337cad307fd48dFDabA6D4C66A9fD2c71`[↗](https://www.oklink.com/amoy/address/0x2185da3337cad307fd48dfdaba6d4c66a9fd2c71).
+
+Repository: [layer-3/ClearSync](https://github.com/layer-3/clearsync).
+
+| Description                 | Contract Name     | Transaction Hash                                                                                                   | Address                                                                                                                         | Git SHA                                  |
+| --------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| Yellow Network Adjudicator  | YellowAdjudicator | [0xe587...e05d](https://www.oklink.com/amoy/tx/0xe58774ae2997afaac510b46366e53b41a75e89eacf5d278c06ff777073ece05d) | `0xf81A43EBA92538B0323fCDb1A040F2183B352Ca3`[↗](https://www.oklink.com/amoy/address/0xf81A43EBA92538B0323fCDb1A040F2183B352Ca3) | 2c6129a1831778972c4f07766ec69e25674d2438 |
+| State channels Margin App   | ConsensusApp      | [0xe13a...f8fd](https://www.oklink.com/amoy/tx/0xe13ad73e040bffedbd23fdba812b32d59eb3bd4cb40b44b78cb5f000733ef8fd) | `0xd3f6EA0DCe26E7836fB309dcfcf506e44524B2A5`[↗](https://www.oklink.com/amoy/address/0xd3f6EA0DCe26E7836fB309dcfcf506e44524B2A5) | 2c6129a1831778972c4f07766ec69e25674d2438 |
+| State channels Escrow App   | ConsensusApp      | [0xf302...b880](https://www.oklink.com/amoy/tx/0xf302e20a83a929bfe520f8298c459136117b1b99e7630924cdd3153d9c1fb880) | `0x59735037AC294641F8CE51d68D6C45a500B8e645`[↗](https://www.oklink.com/amoy/address/0x59735037AC294641F8CE51d68D6C45a500B8e645) | 2c6129a1831778972c4f07766ec69e25674d2438 |
+| Yellow Duckies ERC20 Token  | TestERC20         | [0x0701...7be7](https://www.oklink.com/amoy/tx/0x0701be25b93bc38dabda0319babb59c7c0503a22968acc4a705d6a8038087be7) | `0x38871D722689f6d799B2A1FE93bE096E98e00986`[↗](https://www.oklink.com/amoy/address/0x38871D722689f6d799B2A1FE93bE096E98e00986) | 2c6129a1831778972c4f07766ec69e25674d2438 |
+| USD Tether ERC20 Token      | TestERC20         | [0xf568...b7c1](https://www.oklink.com/amoy/tx/0xf568a674b2fbf3dde586832944e57ab7dc1c15f2aae40ad54383ef2be831b7c1) | `0xE22e3af98FdF9d6a429150D92d446fcEeEA967fF`[↗](https://www.oklink.com/amoy/address/0xE22e3af98FdF9d6a429150D92d446fcEeEA967fF) | 2c6129a1831778972c4f07766ec69e25674d2438 |
+| USD Coin ERC20 Token        | TestERC20         | [0xfa17...1c45](https://www.oklink.com/amoy/tx/0xfa17e0acdfef3dc81667eab37c87c6d7a1794d2b08b80cd3d90bbc9cdbd81c45) | `0x8d48ba6D6ABD283E672B917cdfBd6222DD1b80dB`[↗](https://www.oklink.com/amoy/address/0x8d48ba6D6ABD283E672B917cdfBd6222DD1b80dB) | 2c6129a1831778972c4f07766ec69e25674d2438 |
+| Lube ERC20 Token            | TestERC20         | [0x552f...2a82](https://www.oklink.com/amoy/tx/0x552f0835d8bfdaed851763a311455710d4ad782b91f2d9558ad229ae7e452a82) | `0x57634f3202E291e37801C426408b86a1eD0dB23d`[↗](https://www.oklink.com/amoy/address/0x57634f3202E291e37801C426408b86a1eD0dB23d) | 2c6129a1831778972c4f07766ec69e25674d2438 |
+| Wrapped Bitcoin ERC20 Token | TestERC20         | [0xbdd9...bb25](https://www.oklink.com/amoy/tx/0xbdd92e48f5a765a868d47c38979b1ed9ee9522989e2cf758db933885d0edbb25) | `0xE11E73Ce5f7c45580e6B4A63069C18b0A5d70CA2`[↗](https://www.oklink.com/amoy/address/0xE11E73Ce5f7c45580e6B4A63069C18b0A5d70CA2) | 2c6129a1831778972c4f07766ec69e25674d2438 |
+| Wrapped Ether ERC20 Token   | TestERC20         | [0x84be...8c5c](https://www.oklink.com/amoy/tx/0x84becfd965b45f7b0a1794234925ade9608eb6c694304c6efa47729fc3c08c5c) | `0xEB31ce20F5c72C568e82D0183aa8Da3B9e5e177f`[↗](https://www.oklink.com/amoy/address/0xEB31ce20F5c72C568e82D0183aa8Da3B9e5e177f) | 2c6129a1831778972c4f07766ec69e25674d2438 |
+| Linda ERC20 Token           | TestERC20         | [0x1e93...ce35](https://www.oklink.com/amoy/tx/0x1e93f7779557e0f8739a680551a65377c64d436345f6303877ebaaad841ece35) | `0xd15833D5184Ca08a8a26b923754EaA654F5Bb85F`[↗](https://www.oklink.com/amoy/address/0xd15833D5184Ca08a8a26b923754EaA654F5Bb85F) | 2c6129a1831778972c4f07766ec69e25674d2438 |
+
+### Linea-sepolia
+
+Chain id: 59141.
+
+#### Contracts Deployed
+
+Last updated: April 5, 2024.
+Deployed with account: `0x2185da3337cad307fd48dFDabA6D4C66A9fD2c71`[↗](https://sepolia.lineascan.build/address/0x2185da3337cad307fd48dfdaba6d4c66a9fd2c71).
+
+Repository: [layer-3/ClearSync](https://github.com/layer-3/clearsync).
+
+| Description                 | Contract Name     | Transaction Hash                                                                                                       | Address                                                                                                                             | Git SHA                                  |
+| --------------------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| Yellow Network Adjudicator  | YellowAdjudicator | [0xbc38...94e1](https://sepolia.lineascan.build/tx/0xbc380fdcf07815d31cbaa1b27c0796c76837644a7810a4e83d25bf53985f94e1) | `0xf81A43EBA92538B0323fCDb1A040F2183B352Ca3`[↗](https://sepolia.lineascan.build/address/0xf81A43EBA92538B0323fCDb1A040F2183B352Ca3) | 2c6129a1831778972c4f07766ec69e25674d2438 |
+| State channels Margin App   | ConsensusApp      | [0xb24c...b859](https://sepolia.lineascan.build/tx/0xb24c67975502ff25d1fafb40d968a6df7b5a6cc7ffd7227a9aa55bb17514b859) | `0xd3f6EA0DCe26E7836fB309dcfcf506e44524B2A5`[↗](https://sepolia.lineascan.build/address/0xd3f6EA0DCe26E7836fB309dcfcf506e44524B2A5) | 2c6129a1831778972c4f07766ec69e25674d2438 |
+| State channels Escrow App   | ConsensusApp      | [0x26a7...7d55](https://sepolia.lineascan.build/tx/0x26a71d02cb60316ddf5a98b2339fcfc04d93c67df77612e43f1d4c83369a7d55) | `0x59735037AC294641F8CE51d68D6C45a500B8e645`[↗](https://sepolia.lineascan.build/address/0x59735037AC294641F8CE51d68D6C45a500B8e645) | 2c6129a1831778972c4f07766ec69e25674d2438 |
+| Yellow Duckies ERC20 Token  | TestERC20         | [0x618f...f9c7](https://sepolia.lineascan.build/tx/0x618f9b41f5759a32a135a82434558f621a1afb12b6930023f0a8a564c101f9c7) | `0x38871D722689f6d799B2A1FE93bE096E98e00986`[↗](https://sepolia.lineascan.build/address/0x38871D722689f6d799B2A1FE93bE096E98e00986) | 2c6129a1831778972c4f07766ec69e25674d2438 |
+| USD Tether ERC20 Token      | TestERC20         | [0xf804...e2c3](https://sepolia.lineascan.build/tx/0xf804522f87f150ffb04743fb70eb1509079a8e8c41ab8c76c4295ac6ffc1e2c3) | `0xE22e3af98FdF9d6a429150D92d446fcEeEA967fF`[↗](https://sepolia.lineascan.build/address/0xE22e3af98FdF9d6a429150D92d446fcEeEA967fF) | 2c6129a1831778972c4f07766ec69e25674d2438 |
+| USD Coin ERC20 Token        | TestERC20         | [0x74be...ce10](https://sepolia.lineascan.build/tx/0x74befed595e83d62e9610207fa023c7f0f9641fb9ebc1fa085eaec891e25ce10) | `0x8d48ba6D6ABD283E672B917cdfBd6222DD1b80dB`[↗](https://sepolia.lineascan.build/address/0x8d48ba6D6ABD283E672B917cdfBd6222DD1b80dB) | 2c6129a1831778972c4f07766ec69e25674d2438 |
+| Lube ERC20 Token            | TestERC20         | [0x22ca...5729](https://sepolia.lineascan.build/tx/0x22ca8718b0e91efb18f411c75192dddb5a55e327a5c480671414dd487ca25729) | `0x57634f3202E291e37801C426408b86a1eD0dB23d`[↗](https://sepolia.lineascan.build/address/0x57634f3202E291e37801C426408b86a1eD0dB23d) | 2c6129a1831778972c4f07766ec69e25674d2438 |
+| Wrapped Bitcoin ERC20 Token | TestERC20         | [0x931d...26c3](https://sepolia.lineascan.build/tx/0x931dd97e17191ff97d5dfee56cdaa9435376221989fb6d91147c5cee9a2826c3) | `0xE11E73Ce5f7c45580e6B4A63069C18b0A5d70CA2`[↗](https://sepolia.lineascan.build/address/0xE11E73Ce5f7c45580e6B4A63069C18b0A5d70CA2) | 2c6129a1831778972c4f07766ec69e25674d2438 |
+| Wrapped Ether ERC20 Token   | TestERC20         | [0xf620...49ae](https://sepolia.lineascan.build/tx/0xf6209bb534254ff4a574b2c874bc3c76581ecbd65f6a2cc648fff3d6b4a549ae) | `0xEB31ce20F5c72C568e82D0183aa8Da3B9e5e177f`[↗](https://sepolia.lineascan.build/address/0xEB31ce20F5c72C568e82D0183aa8Da3B9e5e177f) | 2c6129a1831778972c4f07766ec69e25674d2438 |
+| Linda ERC20 Token           | TestERC20         | [0xec40...e182](https://sepolia.lineascan.build/tx/0xec40f1fde8016615d483f038da3d64f7431e599efa787fe460f4c1949b1ce182) | `0xd15833D5184Ca08a8a26b923754EaA654F5Bb85F`[↗](https://sepolia.lineascan.build/address/0xd15833D5184Ca08a8a26b923754EaA654F5Bb85F) | 2c6129a1831778972c4f07766ec69e25674d2438 |
+
+### ~~Linea Goerli~~ (Deprecated)
+
+<details>
+  <summary>Expand</summary>
+  Chain id: 59140.
+
+#### Contracts Deployed
+
+Last updated: April 5, 2024.
 Deployed with account: `0x2185da3337cad307fd48dFDabA6D4C66A9fD2c71`[↗](https://goerli.lineascan.build/address/0x2185da3337cad307fd48dFDabA6D4C66A9fD2c71).
 
 | Description                | Contract Name     | Transaction Hash                                                                                                      | Address                                                                                                                            | Git SHA                                  |
@@ -144,3 +197,5 @@ Bridged Token Smart Contract: [`BridgedToken.sol`](https://github.com/Consensys/
 | WBTC Test ERC20 Token      | [0x8c1f...bb13](https://goerli.lineascan.build/tx/0x8c1f23301248164992bf3c33de7f782b43862044898b8399406be877c508bb13) | `0x2469206634e32ab6c284e208fB27dF48A29F5359`[↗](https://goerli.lineascan.build/token/0x2469206634e32ab6c284e208fB27dF48A29F5359) |
 | LINDA Test ERC20 Token     | [0x133a...2b43](https://goerli.lineascan.build/tx/0x133aeca95c890059b6c5b450c01bd068e9847cc40d884882b8c8b707b4482b43) | `0x8264ADf56A89170292E6Cc10467A355b13f4f6Dc`[↗](https://goerli.lineascan.build/token/0x8264ADf56A89170292E6Cc10467A355b13f4f6Dc) |
 | WETH Test ERC20 Token      | [0xa2d2...78ff](https://goerli.lineascan.build/tx/0xa2d25bef697b92f9b0091d1f203398d5de6b76af2d6adedb46095ce5136f78ff) | `0x42e6f9a4805220C7E7DC99bd6E71D7FEa346fcCD`[↗](https://goerli.lineascan.build/token/0x42e6f9a4805220C7E7DC99bd6E71D7FEa346fcCD) |
+
+</details>
