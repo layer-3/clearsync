@@ -1,6 +1,8 @@
 package quotes
 
 import (
+	"time"
+
 	"github.com/layer-3/clearsync/pkg/safe"
 	"github.com/shopspring/decimal"
 )
@@ -15,7 +17,7 @@ type strategyVWA struct {
 // NewStrategyVWA creates a new instance of Volume-Weighted Average Price index price calculator.
 func NewStrategyVWA(configs ...ConfFuncVWA) priceCalculator {
 	s := strategyVWA{
-		priceCache: NewPriceCacheVWA(DefaultWeightsMap, 20),
+		priceCache: NewPriceCacheVWA(DefaultWeightsMap, 20, time.Minute),
 		weights:    DefaultWeightsMap,
 	}
 	for _, conf := range configs {
@@ -56,7 +58,13 @@ func (a strategyVWA) calculateIndexPrice(event TradeEvent) (decimal.Decimal, boo
 	}
 
 	// Add the current trade to the cache
-	a.priceCache.AddTrade(event.Market, event.Price, event.Amount, sourceMultiplier)
+
+	timeEmpty := time.Time{}
+	if event.CreatedAt == timeEmpty {
+		event.CreatedAt = time.Now()
+	}
+
+	a.priceCache.AddTrade(event.Market, event.Price, event.Amount, sourceMultiplier, event.CreatedAt)
 
 	return a.priceCache.GetVWA(event.Market)
 }

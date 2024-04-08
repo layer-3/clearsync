@@ -2,6 +2,7 @@ package quotes
 
 import (
 	"sync"
+	"time"
 
 	"github.com/ipfs/go-log/v2"
 	"github.com/shopspring/decimal"
@@ -64,7 +65,7 @@ func newIndex(config IndexConfig, outbox chan<- TradeEvent) Driver {
 	if marketsMapping == nil {
 		marketsMapping = DefaultMarketsMapping
 	}
-	return NewIndexAggregator(config.DriverConfigs, marketsMapping, NewStrategyVWA(WithCustomPriceCacheVWA(NewPriceCacheVWA(DefaultWeightsMap, config.TradesCached))), outbox)
+	return NewIndexAggregator(config.DriverConfigs, marketsMapping, NewStrategyVWA(WithCustomPriceCacheVWA(NewPriceCacheVWA(DefaultWeightsMap, config.TradesCached, time.Duration(config.BufferMinutes)*time.Minute))), outbox)
 }
 
 func (a *indexAggregator) SetInbox(inbox <-chan TradeEvent) {
