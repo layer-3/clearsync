@@ -69,8 +69,9 @@ func (IndexConfig) DriverType() DriverType {
 }
 
 type BinanceConfig struct {
-	Filter     FilterConfig `yaml:"filter" env-prefix:"FILTER_"`
-	USDCtoUSDT bool         `yaml:"usdc_to_usdt" env-prefix:"USDC_TO_USDT_" env-default:"true"`
+	Filter           FilterConfig `yaml:"filter" env-prefix:"FILTER_"`
+	USDCtoUSDT       bool         `yaml:"usdc_to_usdt" env-prefix:"USDC_TO_USDT" env-default:"true"`
+	AssociatedTokens [][]string   `yaml:"associated_tokens" env:"ASSOCIATED_TOKENS"`
 }
 
 func (BinanceConfig) DriverType() DriverType {

@@ -24,21 +24,24 @@ type binance struct {
 	outbox     chan<- TradeEvent
 	usdcToUSDT bool
 
-	symbolToMarket safe.Map[string, Market]
+	symbolToMarket   safe.Map[string, Market]
+	associatedTokens safe.Map[string, []string]
 }
 
 func newBinance(config BinanceConfig, outbox chan<- TradeEvent) Driver {
 	if binanceWebsocketKeepalive.CompareAndSwap(false, true) {
 		gobinance.WebsocketKeepalive = true
 	}
+	associatedTokens := buildAssociatedTokens(config.AssociatedTokens)
 
 	return &binance{
-		once:           newOnce(),
-		streams:        safe.NewMap[Market, chan struct{}](),
-		filter:         NewFilter(config.Filter),
-		usdcToUSDT:     config.USDCtoUSDT,
-		outbox:         outbox,
-		symbolToMarket: safe.NewMap[string, Market](),
+		once:             newOnce(),
+		streams:          safe.NewMap[Market, chan struct{}](),
+		filter:           NewFilter(config.Filter),
+		usdcToUSDT:       config.USDCtoUSDT,
+		outbox:           outbox,
+		symbolToMarket:   safe.NewMap[string, Market](),
+		associatedTokens: safe.NewMapWithData(associatedTokens),
 	}
 }
 
@@ -137,6 +140,41 @@ func (b *binance) Unsubscribe(market Market) error {
 
 	b.streams.Delete(market)
 	return nil
+}
+
+func buildAssociatedTokens(groups [][]string) map[string][]string {
+	tokens := make(map[string][]string)
+	contains := func(slice []string, str string) bool {
+		for _, v := range slice {
+			if v == str {
+				return true
+			}
+		}
+		return false
+	}
+
+	for _, group := range groups {
+		for _, name := range group {
+			// Ensure every name in the group is associated with every other
+			for _, assocName := range group {
+				if name == assocName {
+					continue
+				}
+
+				// Check if the name already exists in the map
+				if _, exists := tokens[name]; !exists {
+					// If not, initialize the slice with the current associated name
+					tokens[name] = []string{}
+				}
+				// Add the associated name if it's not already in the list
+				if !contains(tokens[name], assocName) {
+					tokens[name] = append(tokens[name], assocName)
+				}
+			}
+		}
+	}
+
+	return tokens
 }
 
 func (b *binance) handleTrade(event *gobinance.WsTradeEvent) {
