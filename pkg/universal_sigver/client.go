@@ -47,24 +47,24 @@ type Client interface {
 type backend struct {
 	provider          *ethclient.Client
 	smartWalletConfig *smart_wallet.Config
-	entryPointAddress *common.Address
+	entryPointAddress common.Address
 }
 
-func NewUniversalSigVer(providerURL string, smartWalletConfig *smart_wallet.Config, entryPointAddress *common.Address) Client {
+func NewUniversalSigVer(providerURL string, smartWalletConfig *smart_wallet.Config, entryPointAddress common.Address) (Client, error) {
 	provider, err := ethclient.Dial(providerURL)
 	if err != nil {
-		panic(fmt.Errorf("failed to connect to Ethereum node: %w", err))
+		return nil, fmt.Errorf("failed to connect to Ethereum node: %w", err)
 	}
 
 	var entryPointAddress_ = entryPointAddress
-	if entryPointAddress_ == nil {
-		entryPointAddress_ = &entryPointV0_6Address
+	if entryPointAddress_ == (common.Address{}) {
+		entryPointAddress_ = entryPointV0_6Address
 	}
 	return &backend{
 		provider:          provider,
 		smartWalletConfig: smartWalletConfig,
 		entryPointAddress: entryPointAddress_,
-	}
+	}, nil
 }
 
 func (b *backend) Verify(ctx context.Context, signer common.Address, messageHash common.Hash, signature []byte) (bool, error) {
@@ -88,7 +88,7 @@ func (b *backend) Verify(ctx context.Context, signer common.Address, messageHash
 }
 
 func (b *backend) PackERC6492Sig(ctx context.Context, ownerAddress common.Address, index decimal.Decimal, sig []byte) ([]byte, error) {
-	swAddress, err := smart_wallet.GetAccountAddress(ctx, b.provider, *b.smartWalletConfig, *b.entryPointAddress, ownerAddress, index)
+	swAddress, err := smart_wallet.GetAccountAddress(ctx, b.provider, *b.smartWalletConfig, b.entryPointAddress, ownerAddress, index)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get smart wallet address: %w", err)
 	}
