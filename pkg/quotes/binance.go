@@ -81,14 +81,11 @@ func (b *binance) Subscribe(market Market) error {
 		return errNotStarted
 	}
 
-	if err := b.subscribe(market); err != nil {
-		return err
-	}
 	if err := b.subscribeToAssociated(market); err != nil {
 		loggerBinance.Warnf("failed to subscribe to associated markets for %s: %s", market, err)
 	}
 
-	return nil
+	return b.subscribe(market)
 }
 
 func (b *binance) Unsubscribe(market Market) error {
@@ -146,7 +143,7 @@ func buildAssociatedTokens(groups [][]string) map[string][]string {
 
 func (b *binance) subscribe(market Market) error {
 	if b.usdcToUSDT && market.Quote() == "usdc" {
-		if err := b.Subscribe(NewMarket(market.Base(), "usdt")); err != nil {
+		if err := b.subscribe(NewMarket(market.Base(), "usdt")); err != nil {
 			loggerBinance.Warnf("failed to subscribe to USDT for market %s: %s", market, err)
 		}
 	}
@@ -176,7 +173,7 @@ func (b *binance) subscribe(market Market) error {
 				loggerBinance.Errorf("failed to unsubscribe from Binance %s market: %v", pair, err)
 			}
 
-			err := b.Subscribe(market)
+			err := b.subscribe(market)
 			if err == nil {
 				return
 			}
@@ -196,12 +193,25 @@ func (b *binance) subscribeToAssociated(market Market) error {
 		return fmt.Errorf("associated tokens not found for market: %s/%s", market.Base(), market.Quote())
 	}
 
+	// Include original tokens if they are not already in the slices.
+	// This case should never happen, but it's better to be safe.
+	if !contains(baseTokens, market.Base()) {
+		baseTokens = append(baseTokens, market.Base())
+	}
+	if !contains(quoteTokens, market.Quote()) {
+		quoteTokens = append(quoteTokens, market.Quote())
+	}
+
 	// Generate all market permutations and subscribe to them
 	for _, base := range baseTokens {
 		for _, quote := range quoteTokens {
 			permMarket := NewMarket(base, quote)
+			if market == permMarket {
+				continue
+			}
+
 			if err := b.subscribe(permMarket); err != nil {
-				loggerBinance.Errorf("failed to subscribe to market permutation %s: %v", permMarket, err)
+				loggerBinance.Warnf("failed to subscribe to market permutation %s: %v", permMarket, err)
 				continue
 			}
 		}
