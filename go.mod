@@ -3,7 +3,7 @@ module github.com/layer-3/clearsync
 go 1.21.3
 
 require (
-	github.com/adshao/go-binance/v2 v2.4.5
+	github.com/adshao/go-binance/v2 v2.5.0
 	github.com/ethereum/go-ethereum v1.13.11
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.0
