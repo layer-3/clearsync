@@ -28,8 +28,6 @@ Last updated: April 5, 2024.
 
 Repository: [layer-3/duckies](https://github.com/layer-3/duckies).
 
-Deployed by: `0x2C9391752AE0Ee8a01e00D8b77187aB6D6Debc25`[↗](https://polygonscan.com/address/0x2C9391752AE0Ee8a01e00D8b77187aB6D6Debc25)
-
 | Description                | Contract Name     | Transaction Hash                                                                                               | Address                                                                                                                     | Git SHA                                  |
 | -------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
 | Yellow Duckies ERC20 Token | YellowToken       | [0xf96e...6217](https://polygonscan.com/tx/0xf96e07149b6ab7ea5607efec3bd07e9e8bce13ebc68e9dcf007be5c325d76217) | `0x18e73A5333984549484348A94f4D219f4faB7b81`[↗](https://polygonscan.com/address/0x18e73A5333984549484348A94f4D219f4faB7b81) | 7b9389c83a540870369b82d0a1144d61f50f9c35 |
@@ -37,8 +35,14 @@ Deployed by: `0x2C9391752AE0Ee8a01e00D8b77187aB6D6Debc25`[↗](https://polygonsc
 | Yellow Ducklings NFT Game  | DuckyFamilyV1     | [0x60e2...15e8](https://polygonscan.com/tx/0x60e21f0f9528ab063b68928c5c8081c473ffb31cdaf747ee77bf057d588415e8) | `0xb66bf78cad7cbab51988ddc792652cbabdff7675`[↗](https://polygonscan.com/address/0xb66bf78cad7cbab51988ddc792652cbabdff7675) | 7b9389c83a540870369b82d0a1144d61f50f9c35 |
 | Yellow Duckies Treasury    | TreasureVault     | [0x38c3...65ae](https://polygonscan.com/tx/0x38c3467b1adf4fa71992de627fa8bf08d1bf1118c10d8004753cd44637b565ae) | `0x68d1E3F802058Ce517e9ba871Ab182299E74D852`[↗](https://polygonscan.com/address/0x68d1E3F802058Ce517e9ba871Ab182299E74D852) | 7b9389c83a540870369b82d0a1144d61f50f9c35 |
 | Yellow Network Adjudicator | YellowAdjudicator | [0x4934...903f](https://polygonscan.com/tx/0x4934d0974bfa7deab18dc024232eab30fdc4939b4197500c7940f5191133903f) | `0xf81A43EBA92538B0323fCDb1A040F2183B352Ca3`[↗](https://polygonscan.com/address/0xf81A43EBA92538B0323fCDb1A040F2183B352Ca3) | 2c6129a1831778972c4f07766ec69e25674d2438 |
-| State channels Margin App  | ConsensusApp      | [0x5839...34e4](https://polygonscan.com/tx/0x5839b7d3190bc879f8d7dc525e5c2ee9a23bb86478984267f800e42e90a734e4) | `0xd3f6EA0DCe26E7836fB309dcfcf506e44524B2A5`[↗](https://lineascan.build/address/0xd3f6EA0DCe26E7836fB309dcfcf506e44524B2A5) | 2c6129a1831778972c4f07766ec69e25674d2438 |
-| State channels Escrow App  | ConsensusApp      | [0xdd5d...dd07](https://polygonscan.com/tx/0xdd5dfa248daecea346fa998145f2cfb3a70eb6b6c65adbd53c02ea6d6a2bdd07) | `0x59735037AC294641F8CE51d68D6C45a500B8e645`[↗](https://lineascan.build/address/0x59735037AC294641F8CE51d68D6C45a500B8e645) | 2c6129a1831778972c4f07766ec69e25674d2438 |
+| State channels Margin App  | ConsensusApp      | [0x5839...34e4](https://polygonscan.com/tx/0x5839b7d3190bc879f8d7dc525e5c2ee9a23bb86478984267f800e42e90a734e4) | `0xd3f6EA0DCe26E7836fB309dcfcf506e44524B2A5`[↗](https://polygonscan.com/address/0xd3f6EA0DCe26E7836fB309dcfcf506e44524B2A5) | 2c6129a1831778972c4f07766ec69e25674d2438 |
+| State channels Escrow App  | ConsensusApp      | [0xdd5d...dd07](https://polygonscan.com/tx/0xdd5dfa248daecea346fa998145f2cfb3a70eb6b6c65adbd53c02ea6d6a2bdd07) | `0x59735037AC294641F8CE51d68D6C45a500B8e645`[↗](https://polygonscan.com/address/0x59735037AC294641F8CE51d68D6C45a500B8e645) | 2c6129a1831778972c4f07766ec69e25674d2438 |
+
+Repository: [layer-3/chaintools](https://github.com/layer-3/chaintools).
+
+| Description                     | Contract Name | Transaction Hash                                                                                               | Address                                                                                                                     | Git SHA                                  |
+| ------------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| Modified Solady Create3 Factory | SoladyCreate3 | [0x8615...9be9](https://polygonscan.com/tx/0x8615113e03c9014252511666f456d64406feb45b85b6bd80528bb8c7f7b09be9) | `0x6c0bbB08ea7926E378ff2068af696E613E0B0cBb`[↗](https://polygonscan.com/address/0x6c0bbB08ea7926E378ff2068af696E613E0B0cBb) | 9b31a7018b5082c9472ac99b4475270b4ae8b689 |
 
 ### Linea
 
@@ -141,6 +145,12 @@ Repository: [layer-3/ClearSync](https://github.com/layer-3/clearsync).
 | Wrapped Ether ERC20 Token   | TestERC20         | [0x84be...8c5c](https://www.oklink.com/amoy/tx/0x84becfd965b45f7b0a1794234925ade9608eb6c694304c6efa47729fc3c08c5c) | `0xEB31ce20F5c72C568e82D0183aa8Da3B9e5e177f`[↗](https://www.oklink.com/amoy/address/0xEB31ce20F5c72C568e82D0183aa8Da3B9e5e177f) | 2c6129a1831778972c4f07766ec69e25674d2438 |
 | Linda ERC20 Token           | TestERC20         | [0x1e93...ce35](https://www.oklink.com/amoy/tx/0x1e93f7779557e0f8739a680551a65377c64d436345f6303877ebaaad841ece35) | `0xd15833D5184Ca08a8a26b923754EaA654F5Bb85F`[↗](https://www.oklink.com/amoy/address/0xd15833D5184Ca08a8a26b923754EaA654F5Bb85F) | 2c6129a1831778972c4f07766ec69e25674d2438 |
 
+Repository: [layer-3/chaintools](https://github.com/layer-3/chaintools).
+
+| Description                     | Contract Name | Transaction Hash                                                                                                   | Address                                                                                                                         | Git SHA                                  |
+| ------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| Modified Solady Create3 Factory | SoladyCreate3 | [0xea20...c3ed](https://www.oklink.com/amoy/tx/0xea20b0e5303567250173ae20ebfffd2c5e1e8405b0a7339c2bcc619be0bbc3ed) | `0x6c0bbB08ea7926E378ff2068af696E613E0B0cBb`[↗](https://www.oklink.com/amoy/address/0x6c0bbB08ea7926E378ff2068af696E613E0B0cBb) | 9b31a7018b5082c9472ac99b4475270b4ae8b689 |
+
 ### Linea-sepolia
 
 Chain id: 59141.
@@ -164,6 +174,12 @@ Repository: [layer-3/ClearSync](https://github.com/layer-3/clearsync).
 | Wrapped Bitcoin ERC20 Token | TestERC20         | [0x931d...26c3](https://sepolia.lineascan.build/tx/0x931dd97e17191ff97d5dfee56cdaa9435376221989fb6d91147c5cee9a2826c3) | `0xE11E73Ce5f7c45580e6B4A63069C18b0A5d70CA2`[↗](https://sepolia.lineascan.build/address/0xE11E73Ce5f7c45580e6B4A63069C18b0A5d70CA2) | 2c6129a1831778972c4f07766ec69e25674d2438 |
 | Wrapped Ether ERC20 Token   | TestERC20         | [0xf620...49ae](https://sepolia.lineascan.build/tx/0xf6209bb534254ff4a574b2c874bc3c76581ecbd65f6a2cc648fff3d6b4a549ae) | `0xEB31ce20F5c72C568e82D0183aa8Da3B9e5e177f`[↗](https://sepolia.lineascan.build/address/0xEB31ce20F5c72C568e82D0183aa8Da3B9e5e177f) | 2c6129a1831778972c4f07766ec69e25674d2438 |
 | Linda ERC20 Token           | TestERC20         | [0xec40...e182](https://sepolia.lineascan.build/tx/0xec40f1fde8016615d483f038da3d64f7431e599efa787fe460f4c1949b1ce182) | `0xd15833D5184Ca08a8a26b923754EaA654F5Bb85F`[↗](https://sepolia.lineascan.build/address/0xd15833D5184Ca08a8a26b923754EaA654F5Bb85F) | 2c6129a1831778972c4f07766ec69e25674d2438 |
+
+Repository: [layer-3/chaintools](https://github.com/layer-3/chaintools).
+
+| Description                     | Contract Name | Transaction Hash                                                                                                       | Address                                                                                                                             | Git SHA                                  |
+| ------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| Modified Solady Create3 Factory | SoladyCreate3 | [0x62d5...6fb6](https://sepolia.lineascan.build/tx/0x62d5dbcb35330b28fd18b4c20586a88d72331e653723c815ee415702db906fb6) | `0x6c0bbB08ea7926E378ff2068af696E613E0B0cBb`[↗](https://sepolia.lineascan.build/address/0x6c0bbB08ea7926E378ff2068af696E613E0B0cBb) | 9b31a7018b5082c9472ac99b4475270b4ae8b689 |
 
 ### ~~Linea Goerli~~ (Deprecated)
 
