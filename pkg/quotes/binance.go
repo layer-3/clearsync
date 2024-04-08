@@ -81,6 +81,70 @@ func (b *binance) Subscribe(market Market) error {
 		return errNotStarted
 	}
 
+	if err := b.subscribe(market); err != nil {
+		return err
+	}
+	if err := b.subscribeToAssociated(market); err != nil {
+		loggerBinance.Warnf("failed to subscribe to associated markets for %s: %s", market, err)
+	}
+
+	return nil
+}
+
+func (b *binance) Unsubscribe(market Market) error {
+	if !b.once.Unsubscribe() {
+		return errNotStarted
+	}
+
+	stopCh, ok := b.streams.Load(market)
+	if !ok {
+		return fmt.Errorf("%s: %w", market, errNotSubbed)
+	}
+
+	stopCh <- struct{}{}
+	close(stopCh)
+
+	b.streams.Delete(market)
+	return nil
+}
+
+func contains(slice []string, str string) bool {
+	for _, v := range slice {
+		if v == str {
+			return true
+		}
+	}
+	return false
+}
+
+func buildAssociatedTokens(groups [][]string) map[string][]string {
+	tokens := make(map[string][]string)
+
+	for _, group := range groups {
+		for _, name := range group {
+			// Ensure every name in the group is associated with every other
+			for _, assocName := range group {
+				if name == assocName {
+					continue
+				}
+
+				// Check if the name already exists in the map
+				if _, exists := tokens[name]; !exists {
+					// If not, initialize the slice with the current associated name
+					tokens[name] = []string{}
+				}
+				// Add the associated name if it's not already in the list
+				if !contains(tokens[name], assocName) {
+					tokens[name] = append(tokens[name], assocName)
+				}
+			}
+		}
+	}
+
+	return tokens
+}
+
+func (b *binance) subscribe(market Market) error {
 	if b.usdcToUSDT && market.Quote() == "usdc" {
 		if err := b.Subscribe(NewMarket(market.Base(), "usdt")); err != nil {
 			loggerBinance.Warnf("failed to subscribe to USDT for market %s: %s", market, err)
@@ -125,56 +189,25 @@ func (b *binance) Subscribe(market Market) error {
 	return nil
 }
 
-func (b *binance) Unsubscribe(market Market) error {
-	if !b.once.Unsubscribe() {
-		return errNotStarted
+func (b *binance) subscribeToAssociated(market Market) error {
+	baseTokens, okBase := b.associatedTokens.Load(strings.ToLower(market.Base()))
+	quoteTokens, okQuote := b.associatedTokens.Load(strings.ToLower(market.Quote()))
+	if !okBase || !okQuote {
+		return fmt.Errorf("associated tokens not found for market: %s/%s", market.Base(), market.Quote())
 	}
 
-	stopCh, ok := b.streams.Load(market)
-	if !ok {
-		return fmt.Errorf("%s: %w", market, errNotSubbed)
+	// Generate all market permutations and subscribe to them
+	for _, base := range baseTokens {
+		for _, quote := range quoteTokens {
+			permMarket := NewMarket(base, quote)
+			if err := b.subscribe(permMarket); err != nil {
+				loggerBinance.Errorf("failed to subscribe to market permutation %s: %v", permMarket, err)
+				continue
+			}
+		}
 	}
 
-	stopCh <- struct{}{}
-	close(stopCh)
-
-	b.streams.Delete(market)
 	return nil
-}
-
-func buildAssociatedTokens(groups [][]string) map[string][]string {
-	tokens := make(map[string][]string)
-	contains := func(slice []string, str string) bool {
-		for _, v := range slice {
-			if v == str {
-				return true
-			}
-		}
-		return false
-	}
-
-	for _, group := range groups {
-		for _, name := range group {
-			// Ensure every name in the group is associated with every other
-			for _, assocName := range group {
-				if name == assocName {
-					continue
-				}
-
-				// Check if the name already exists in the map
-				if _, exists := tokens[name]; !exists {
-					// If not, initialize the slice with the current associated name
-					tokens[name] = []string{}
-				}
-				// Add the associated name if it's not already in the list
-				if !contains(tokens[name], assocName) {
-					tokens[name] = append(tokens[name], assocName)
-				}
-			}
-		}
-	}
-
-	return tokens
 }
 
 func (b *binance) handleTrade(event *gobinance.WsTradeEvent) {
