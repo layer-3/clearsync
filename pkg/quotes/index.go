@@ -41,7 +41,7 @@ func NewIndexAggregator(driversConfigs []Config, marketsMapping map[string][]str
 	go func() {
 		for event := range aggregated {
 			indexPrice, ok := strategy.calculateIndexPrice(event)
-			if ok {
+			if ok && event.Source != DriverInternal {
 				if event.Market.convertTo != "" {
 					event.Market.quoteUnit = event.Market.convertTo
 				}
