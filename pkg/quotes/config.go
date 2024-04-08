@@ -60,6 +60,7 @@ func ToConfig(driver DriverConfig) Config {
 
 type IndexConfig struct {
 	TradesCached   int                 `yaml:"trades_cached" env:"TRADES_CACHED" env-default:"20"`
+	BufferMinutes  int                 `yaml:"buffer_minutes" env:"BUFFER_MINUTES" env-default:"15"`
 	DriverConfigs  []Config            `yaml:"drivers" env:"DRIVERS"`
 	MarketsMapping map[string][]string `yaml:"markets_mapping" env:"MARKETS_MAPPING"`
 }

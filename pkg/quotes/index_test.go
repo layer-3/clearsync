@@ -2,6 +2,7 @@ package quotes
 
 import (
 	"testing"
+	"time"
 
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/require"
@@ -134,7 +135,7 @@ func Test_IndexAggregatorStrategies(t *testing.T) {
 			{Source: DriverUniswapV3Api, Market: btcusdt, Price: decimal.NewFromInt(41000), Amount: decimal.NewFromFloat(1.0)},
 			{Source: DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(41000), Amount: decimal.NewFromFloat(1.0)}}, 25)...)
 
-		testPriceCacheVWA := NewPriceCacheVWA(defaultWeights, 20)
+		testPriceCacheVWA := NewPriceCacheVWA(defaultWeights, 20, time.Minute)
 		testPriceCacheVWA.ActivateDriver(DriverBinance, btcusdt)
 		testPriceCacheVWA.ActivateDriver(DriverUniswapV3Api, btcusdt)
 

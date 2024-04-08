@@ -1,14 +1,17 @@
 package quotes
 
 import (
+	"time"
+
 	"github.com/layer-3/clearsync/pkg/safe"
 	"github.com/shopspring/decimal"
 )
 
 type trade struct {
-	Price  decimal.Decimal
-	Volume decimal.Decimal
-	Weight decimal.Decimal
+	Price     decimal.Decimal
+	Volume    decimal.Decimal
+	Weight    decimal.Decimal
+	Timestamp time.Time
 }
 
 type marketHistory struct {
@@ -33,23 +36,25 @@ type marketKey struct {
 }
 
 type PriceCacheVWA struct {
-	weights safe.Map[DriverType, decimal.Decimal]
-	market  safe.Map[marketKey, marketHistory]
-	nTrades int
+	weights    safe.Map[DriverType, decimal.Decimal]
+	market     safe.Map[marketKey, marketHistory]
+	nTrades    int
+	bufferTime time.Duration
 }
 
 // NewPriceCacheVWA initializes a new cache to store last n trades for each market.
-func NewPriceCacheVWA(driversWeights map[DriverType]decimal.Decimal, nTrades int) *PriceCacheVWA {
+func NewPriceCacheVWA(driversWeights map[DriverType]decimal.Decimal, nTrades int, bufferTime time.Duration) *PriceCacheVWA {
 	cache := new(PriceCacheVWA)
 	cache.market = safe.NewMap[marketKey, marketHistory]()
 	cache.weights = safe.NewMapWithData(driversWeights)
 	cache.nTrades = nTrades
+	cache.bufferTime = bufferTime
 
 	return cache
 }
 
 // AddTrade adds a new trade to the cache for a market.
-func (p *PriceCacheVWA) AddTrade(market Market, price, volume, weight decimal.Decimal) {
+func (p *PriceCacheVWA) AddTrade(market Market, price, volume, weight decimal.Decimal, timestamp time.Time) {
 	key := marketKey{baseUnit: market.baseUnit, quoteUnit: market.quoteUnit}
 	p.market.UpdateInTx(func(m map[marketKey]marketHistory) {
 		history, ok := m[key]
@@ -59,7 +64,7 @@ func (p *PriceCacheVWA) AddTrade(market Market, price, volume, weight decimal.De
 		}
 
 		// Append the new trade and maintain only the last N trades
-		trades := append(history.trades, trade{Price: price, Volume: volume, Weight: weight})
+		trades := append(history.trades, trade{Price: price, Volume: volume, Weight: weight, Timestamp: timestamp})
 		if len(trades) > p.nTrades {
 			trades = trades[len(trades)-p.nTrades:]
 		}
@@ -80,8 +85,10 @@ func (p *PriceCacheVWA) GetVWA(market Market) (decimal.Decimal, bool) {
 	var totalPriceVolume, totalVolume decimal.Decimal
 
 	for _, trade := range record.trades {
-		totalPriceVolume = totalPriceVolume.Add(trade.Price.Mul(trade.Volume).Mul(trade.Weight))
-		totalVolume = totalVolume.Add(trade.Volume.Mul(trade.Weight))
+		if time.Now().Sub(trade.Timestamp) <= p.bufferTime {
+			totalPriceVolume = totalPriceVolume.Add(trade.Price.Mul(trade.Volume).Mul(trade.Weight))
+			totalVolume = totalVolume.Add(trade.Volume.Mul(trade.Weight))
+		}
 	}
 
 	if totalVolume.IsZero() {
