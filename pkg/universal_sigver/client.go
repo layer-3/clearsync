@@ -56,14 +56,14 @@ func NewUniversalSigVer(providerURL string, smartWalletConfig *smart_wallet.Conf
 		return nil, fmt.Errorf("failed to connect to Ethereum node: %w", err)
 	}
 
-	var entryPointAddress_ = entryPointAddress
-	if entryPointAddress_ == (common.Address{}) {
-		entryPointAddress_ = entryPointV0_6Address
+	if entryPointAddress.Cmp(common.Address{}) == 0 {
+		entryPointAddress = entryPointV0_6Address
 	}
+
 	return &backend{
 		provider:          provider,
 		smartWalletConfig: smartWalletConfig,
-		entryPointAddress: entryPointAddress_,
+		entryPointAddress: entryPointAddress,
 	}, nil
 }
 
@@ -80,8 +80,7 @@ func (b *backend) Verify(ctx context.Context, signer common.Address, messageHash
 		if ok := errors.As(err, &scError); !ok {
 			return false, fmt.Errorf("could not unpack error data: unexpected error type '%T' containing message %w)", err, err)
 		}
-		errorData := scError.ErrorData().(string)
-		return false, fmt.Errorf("failed to call ValidateSigOffchain: %w, errorData: %s", err, errorData)
+		return false, fmt.Errorf("failed to call ValidateSigOffchain: %w, errorData: %s", err, scError.ErrorData())
 	}
 
 	return res == validateSigOffchainSuccess, nil
