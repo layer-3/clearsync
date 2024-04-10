@@ -20,12 +20,16 @@ import (
 var loggerSyncswap = log.Logger("syncswap")
 
 type syncswap struct {
-	once                      *once
-	url                       string
-	assetsURL                 string
+	once      *once
+	url       string
+	assetsURL string
+	client    *ethclient.Client
+
 	classicPoolFactoryAddress string
-	client                    *ethclient.Client
-	factory                   *isyncswap_factory.ISyncSwapFactory
+	classicFactory            *isyncswap_factory.ISyncSwapFactory
+	stablePoolMarkets         map[Market]struct{}
+	stablePoolFactoryAddress  string
+	stableFactory             *isyncswap_factory.ISyncSwapFactory
 
 	outbox  chan<- TradeEvent
 	filter  Filter
@@ -34,11 +38,26 @@ type syncswap struct {
 }
 
 func newSyncswap(config SyncswapConfig, outbox chan<- TradeEvent) Driver {
+	stablePoolMarkets := make(map[Market]struct{})
+	for _, rawMarket := range config.StablePoolMarkets {
+		market, ok := NewMarketFromString(rawMarket)
+		if !ok {
+			loggerSyncswap.Errorf("failed to parse stable pool market `%s`", rawMarket)
+			continue
+		}
+		stablePoolMarkets[market] = struct{}{}
+	}
+
 	return &syncswap{
-		once:                      newOnce(),
-		url:                       config.URL,
-		assetsURL:                 config.AssetsURL,
+		once:      newOnce(),
+		url:       config.URL,
+		assetsURL: config.AssetsURL,
+
 		classicPoolFactoryAddress: config.ClassicPoolFactoryAddress,
+		classicFactory:            nil,
+		stablePoolMarkets:         stablePoolMarkets,
+		stablePoolFactoryAddress:  config.StablePoolFactoryAddress,
+		stableFactory:             nil,
 
 		outbox:  outbox,
 		filter:  NewFilter(config.Filter),
@@ -72,12 +91,20 @@ func (s *syncswap) Start() error {
 
 		// Check addresses here: https://syncswap.gitbook.io/syncswap/smart-contracts/smart-contracts
 		classicPoolFactoryAddress := common.HexToAddress(s.classicPoolFactoryAddress)
-		factory, err := isyncswap_factory.NewISyncSwapFactory(classicPoolFactoryAddress, client)
+		classicFactory, err := isyncswap_factory.NewISyncSwapFactory(classicPoolFactoryAddress, client)
 		if err != nil {
 			startErr = fmt.Errorf("failed to instantiate a Quickswap Factory contract: %w", err)
 			return
 		}
-		s.factory = factory
+		s.classicFactory = classicFactory
+
+		stablePoolFactoryAddress := common.HexToAddress(s.stablePoolFactoryAddress)
+		stableFactory, err := isyncswap_factory.NewISyncSwapFactory(stablePoolFactoryAddress, client)
+		if err != nil {
+			startErr = fmt.Errorf("failed to instantiate a Quickswap Factory contract: %w", err)
+			return
+		}
+		s.stableFactory = stableFactory
 
 		assets, err := getAssets(s.assetsURL)
 		if err != nil {
@@ -256,16 +283,26 @@ func (s *syncswap) getPool(market Market) (*syncswapPoolWrapper, error) {
 
 	var poolAddress common.Address
 	zeroAddress := common.HexToAddress("0x0")
-	poolAddress, err = s.factory.GetPool(
-		nil,
-		common.HexToAddress(baseToken.Address),
-		common.HexToAddress(quoteToken.Address),
-	)
+	if _, ok := s.stablePoolMarkets[market]; ok {
+		loggerSyncswap.Infof("market %s is a stable pool", market)
+		poolAddress, err = s.stableFactory.GetPool(
+			nil,
+			common.HexToAddress(baseToken.Address),
+			common.HexToAddress(quoteToken.Address),
+		)
+	} else {
+		loggerSyncswap.Infof("market %s is a classic pool", market)
+		poolAddress, err = s.classicFactory.GetPool(
+			nil,
+			common.HexToAddress(baseToken.Address),
+			common.HexToAddress(quoteToken.Address),
+		)
+	}
 	if err != nil {
-		return nil, fmt.Errorf("failed to get pool address: %w", err)
+		return nil, fmt.Errorf("failed to get classic pool address: %w", err)
 	}
 	if poolAddress == zeroAddress {
-		return nil, fmt.Errorf("pool for market %s does not exist", market)
+		return nil, fmt.Errorf("classic pool for market %s does not exist", market)
 	}
 	loggerSyncswap.Infof("got pool %s for market %s", poolAddress, market)
 
