@@ -34,7 +34,8 @@ func TestVerify(t *testing.T) {
 		Logic:          contracts.Logic,
 		ECDSAValidator: contracts.ECDSAValidator,
 	}
-	sigver := NewUniversalSigVer(node.LocalURL.String(), &swCfg, &contracts.EntryPoint)
+	sigver, err := NewUniversalSigVer(node.LocalURL.String(), swCfg, contracts.EntryPoint)
+	require.NoError(t, err)
 	msg := []byte("hello")
 	sig, err := signer_pkg.SignEthMessage(signer, msg)
 	require.NoError(t, err)

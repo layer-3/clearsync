@@ -16,7 +16,11 @@ func SignerForBiconomy(ecdsaSigner signer.Signer) Signer {
 	return func(op UserOperation, entryPoint common.Address, chainID *big.Int) ([]byte, error) {
 		slog.Debug("signing user operation")
 
-		hash := op.UserOpHash(entryPoint, chainID)
+		hash, err := op.UserOpHash(entryPoint, chainID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to calculate user operation hash: %w", err)
+		}
+
 		signature, err := signer.SignEthMessage(ecdsaSigner, hash.Bytes())
 		if err != nil {
 			return nil, fmt.Errorf("failed to sign user operation: %w", err)
@@ -49,7 +53,11 @@ func SignerForKernel(ecdsaSigner signer.Signer) Signer {
 		// FIXME: not with session key
 		slog.Debug("signing user operation with session key")
 
-		hash := op.UserOpHash(entryPoint, chainID)
+		hash, err := op.UserOpHash(entryPoint, chainID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to calculate user operation hash: %w", err)
+		}
+
 		signature, err := signer.SignEthMessage(ecdsaSigner, hash.Bytes())
 		if err != nil {
 			return nil, fmt.Errorf("failed to sign user operation: %w", err)

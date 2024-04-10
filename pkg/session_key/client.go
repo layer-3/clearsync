@@ -129,7 +129,11 @@ func (b *backend) GetEnablingUserOpSigner(sessionSigner signer.Signer, enableSig
 		enableData := sessionData.PackEnableData()
 		fullSig := PackEnableValidatorSignature(enableData, b.sessionKeyValidatorAddress, b.executorAddress, enableSig)
 
-		userOpHash := op.UserOpHash(entryPoint, chainID)
+		userOpHash, err := op.UserOpHash(entryPoint, chainID)
+		if err != nil {
+			return nil, err
+		}
+
 		useSessionKeySig, err := b.getUseSessionKeySig(sessionSigner, op.CallData, userOpHash)
 		if err != nil {
 			return nil, err
@@ -148,7 +152,11 @@ func (b *backend) GetUserOpSigner(sessionSigner signer.Signer) userop.Signer {
 	return func(op userop.UserOperation, entryPoint common.Address, chainID *big.Int) ([]byte, error) {
 		slog.Debug("signing user operation with session key")
 
-		userOpHash := op.UserOpHash(entryPoint, chainID)
+		userOpHash, err := op.UserOpHash(entryPoint, chainID)
+		if err != nil {
+			return nil, err
+		}
+
 		useSessionKeySig, err := b.getUseSessionKeySig(sessionSigner, op.CallData, userOpHash)
 		if err != nil {
 			return nil, err

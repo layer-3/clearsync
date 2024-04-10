@@ -357,7 +357,11 @@ func (c *backend) SignUserOp(ctx context.Context, op UserOperation, signer Signe
 
 func (c *backend) SendUserOp(ctx context.Context, op UserOperation) (<-chan Receipt, error) {
 	ctx, cancel := context.WithCancel(ctx)
-	userOpHash := op.UserOpHash(c.entryPoint, c.chainID)
+	userOpHash, err := op.UserOpHash(c.entryPoint, c.chainID)
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("failed to calculate user operation hash: %w", err)
+	}
 	recCh := make(chan Receipt, 1)
 
 	go subscribeUserOpEvent(ctx, cancel, c.provider, recCh, c.entryPoint, userOpHash)
@@ -440,7 +444,12 @@ func processUserOpEvent(client EthBackend, event *entry_point_v0_6_0.EntryPointU
 
 			if len(unpackedRevertReasonParams) == 2 {
 				slog.Debug("parsed userOperationRevertReason logs", "data", hexutil.Encode(userOpRevertReasonLog.Data), "parsedParams", unpackedRevertReasonParams)
-				receipt.RevertData = unpackedRevertReasonParams[1].([]byte)
+				revertData, ok := unpackedRevertReasonParams[1].([]byte)
+				if !ok {
+					slog.Error("failed to parse revert reason", "unpackedRevertReasonParams", unpackedRevertReasonParams)
+					return &receipt
+				}
+				receipt.RevertData = revertData
 			} else {
 				slog.Warn("unexpected number of unpackedRevertReasonParams", "unpackedRevertReasonParams", unpackedRevertReasonParams)
 			}

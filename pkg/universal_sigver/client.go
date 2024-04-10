@@ -46,25 +46,25 @@ type Client interface {
 
 type backend struct {
 	provider          *ethclient.Client
-	smartWalletConfig *smart_wallet.Config
-	entryPointAddress *common.Address
+	smartWalletConfig smart_wallet.Config
+	entryPointAddress common.Address
 }
 
-func NewUniversalSigVer(providerURL string, smartWalletConfig *smart_wallet.Config, entryPointAddress *common.Address) Client {
+func NewUniversalSigVer(providerURL string, smartWalletConfig smart_wallet.Config, entryPointAddress common.Address) (Client, error) {
 	provider, err := ethclient.Dial(providerURL)
 	if err != nil {
-		panic(fmt.Errorf("failed to connect to Ethereum node: %w", err))
+		return nil, fmt.Errorf("failed to connect to Ethereum node: %w", err)
 	}
 
-	var entryPointAddress_ = entryPointAddress
-	if entryPointAddress_ == nil {
-		entryPointAddress_ = &entryPointV0_6Address
+	if entryPointAddress.Cmp(common.Address{}) == 0 {
+		entryPointAddress = entryPointV0_6Address
 	}
+
 	return &backend{
 		provider:          provider,
 		smartWalletConfig: smartWalletConfig,
-		entryPointAddress: entryPointAddress_,
-	}
+		entryPointAddress: entryPointAddress,
+	}, nil
 }
 
 func (b *backend) Verify(ctx context.Context, signer common.Address, messageHash common.Hash, signature []byte) (bool, error) {
@@ -80,15 +80,14 @@ func (b *backend) Verify(ctx context.Context, signer common.Address, messageHash
 		if ok := errors.As(err, &scError); !ok {
 			return false, fmt.Errorf("could not unpack error data: unexpected error type '%T' containing message %w)", err, err)
 		}
-		errorData := scError.ErrorData().(string)
-		return false, fmt.Errorf("failed to call ValidateSigOffchain: %w, errorData: %s", err, errorData)
+		return false, fmt.Errorf("failed to call ValidateSigOffchain: %w, errorData: %s", err, scError.ErrorData())
 	}
 
 	return res == validateSigOffchainSuccess, nil
 }
 
 func (b *backend) PackERC6492Sig(ctx context.Context, ownerAddress common.Address, index decimal.Decimal, sig []byte) ([]byte, error) {
-	swAddress, err := smart_wallet.GetAccountAddress(ctx, b.provider, *b.smartWalletConfig, *b.entryPointAddress, ownerAddress, index)
+	swAddress, err := smart_wallet.GetAccountAddress(ctx, b.provider, b.smartWalletConfig, b.entryPointAddress, ownerAddress, index)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get smart wallet address: %w", err)
 	}
@@ -100,7 +99,7 @@ func (b *backend) PackERC6492Sig(ctx context.Context, ownerAddress common.Addres
 		return nil, fmt.Errorf("smart wallet already deployed")
 	}
 
-	factoryCalldata, err := smart_wallet.GetFactoryCallData(*b.smartWalletConfig, ownerAddress, index)
+	factoryCalldata, err := smart_wallet.GetFactoryCallData(b.smartWalletConfig, ownerAddress, index)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get init code: %w", err)
 	}

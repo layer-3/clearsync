@@ -51,7 +51,7 @@ func (op *UserOperation) GetFactoryData() []byte {
 }
 
 // UserOpHash returns the hash of the userOp + entryPoint address + chainID.
-func (op *UserOperation) UserOpHash(entryPoint common.Address, chainID *big.Int) common.Hash {
+func (op *UserOperation) UserOpHash(entryPoint common.Address, chainID *big.Int) (common.Hash, error) {
 	args := abi.Arguments{
 		{Name: "sender", Type: address},
 		{Name: "nonce", Type: uint256},
@@ -77,14 +77,14 @@ func (op *UserOperation) UserOpHash(entryPoint common.Address, chainID *big.Int)
 		crypto.Keccak256Hash(op.PaymasterAndData),
 	)
 	if err != nil { // This should never happen
-		panic(err)
+		return common.Hash{}, fmt.Errorf("failed to pack UserOperation: %w", err)
 	}
 
 	return crypto.Keccak256Hash(
 		crypto.Keccak256(packed),
 		common.LeftPadBytes(entryPoint.Bytes(), 32),
 		common.LeftPadBytes(chainID.Bytes(), 32),
-	)
+	), nil
 }
 
 // MarshalJSON returns a JSON encoding of the UserOperation.

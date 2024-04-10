@@ -360,8 +360,13 @@ func getSignMiddleware(entryPoint common.Address, chainID *big.Int) middleware {
 		if err != nil {
 			return fmt.Errorf("failed to marshal user operation: %w", err)
 		}
+		opHash, err := op.UserOpHash(entryPoint, chainID)
+		if err != nil {
+			return fmt.Errorf("failed to calculate user operation hash: %w", err)
+		}
+
 		slog.Debug("userop signed",
-			"hash", op.UserOpHash(entryPoint, chainID).String(),
+			"hash", opHash.String(),
 			"json", string(b))
 
 		return nil

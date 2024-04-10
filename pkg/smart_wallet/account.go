@@ -47,14 +47,17 @@ func GetAccountAddress(ctx context.Context, provider ethereum.ContractCaller, co
 	// this call must always revert (see EntryPoint contract), so we expect an error
 	_, err = provider.CallContract(ctx, msg, nil)
 	if err == nil {
-		panic(fmt.Errorf("'getSenderAddress' call returned no error, but expected one"))
+		return common.Address{}, fmt.Errorf("'getSenderAddress' call returned no error, but expected one")
 	}
 
 	var scError rpc.DataError
 	if ok := errors.As(err, &scError); !ok {
 		return common.Address{}, fmt.Errorf("unexpected error type '%T' containing message %w)", err, err)
 	}
-	errorData := scError.ErrorData().(string)
+	errorData, ok := scError.ErrorData().(string)
+	if !ok {
+		return common.Address{}, fmt.Errorf("could not unpack error data: unexpected error data (%+v) type '%T'", scError.ErrorData(), scError.ErrorData())
+	}
 
 	// check if the error signature is correct
 	if id := senderAddressResultError.ID.String(); errorData[0:10] != id[0:10] {
