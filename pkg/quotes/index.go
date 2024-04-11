@@ -128,6 +128,7 @@ func (a *indexAggregator) Subscribe(m Market) error {
 		if err := d.Subscribe(m); err != nil {
 			if d.ExchangeType() == ExchangeTypeDEX {
 				for _, convertFrom := range a.marketsMapping[m.quoteUnit] {
+					// TODO: check if base and quote are same
 					if err := d.Subscribe(NewDerivedMerket(m.baseUnit, convertFrom, m.quoteUnit)); err != nil {
 						loggerIndex.Infof("%s: skipping %s :", d.ActiveDrivers()[0], convertFrom, err.Error())
 						continue
@@ -135,7 +136,6 @@ func (a *indexAggregator) Subscribe(m Market) error {
 					loggerIndex.Infof("%s helper market found: %s/%s", d.ActiveDrivers()[0], m.baseUnit, convertFrom)
 				}
 			}
-			loggerIndex.Warnf("failed to subscribe for %s %s market: %s: ", d.ActiveDrivers()[0], m, err.Error())
 		}
 	}
 	return nil
