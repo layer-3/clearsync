@@ -10,8 +10,9 @@ import (
 )
 
 type Market struct {
-	baseUnit  string // e.g. `lube` // Base currency
-	quoteUnit string // e.g. `eth` // Quote currency
+	baseUnit    string // e.g. `lube` // Base currency
+	quoteUnit   string // e.g. `eth` // Quote currency
+	legacyQuote string // e.g. `usdt` // Legacy quote currency
 	// If convertTo specified, the index driver will convert quote currency to the specified one.
 	convertTo string // e.g. `usdc`
 }
@@ -20,6 +21,14 @@ func NewMarket(base, quote string) Market {
 	return Market{
 		baseUnit:  strings.ToLower(base),
 		quoteUnit: strings.ToLower(quote),
+	}
+}
+
+func NewMarketWithLegacyQuote(base, quote, legacyQuote string) Market {
+	return Market{
+		baseUnit:    strings.ToLower(base),
+		quoteUnit:   strings.ToLower(quote),
+		legacyQuote: strings.ToLower(legacyQuote),
 	}
 }
 
@@ -45,7 +54,19 @@ func NewMarketFromString(s string) (Market, bool) {
 // String returns a string representation of the market.
 // Example: `Market{btc, usdt}` -> "btc/usdt"
 func (m Market) String() string {
+	if m.legacyQuote != "" {
+		return fmt.Sprintf("%s/%s", m.baseUnit, m.legacyQuote)
+	}
 	return fmt.Sprintf("%s/%s", m.baseUnit, m.quoteUnit)
+}
+
+func (m Market) ApplyLegacyQuote() Market {
+	if m.legacyQuote == "" {
+		return m
+	}
+
+	m.quoteUnit = m.legacyQuote
+	return m
 }
 
 func (m Market) Base() string {
@@ -54,6 +75,10 @@ func (m Market) Base() string {
 
 func (m Market) Quote() string {
 	return m.quoteUnit
+}
+
+func (m Market) LegacyQuote() string {
+	return m.legacyQuote
 }
 
 func (m Market) IsEmpty() bool {

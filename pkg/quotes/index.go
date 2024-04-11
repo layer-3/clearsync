@@ -109,8 +109,10 @@ func (a *indexAggregator) Subscribe(m Market) error {
 	for _, d := range a.drivers {
 		loggerIndex.Info("subscribing ", d.Name().slug)
 		if err := d.Subscribe(m); err != nil {
+			loggerIndex.Warnf("%s subsctiption error: ", d.Name().slug, err.Error())
 			if d.Type() == TypeDEX {
 				for _, convertFrom := range a.marketsMapping[m.quoteUnit] {
+					// TODO: check if base and quote are same
 					if err := d.Subscribe(NewDerivedMerket(m.baseUnit, convertFrom, m.quoteUnit)); err != nil {
 						loggerIndex.Infof("%s: skipping %s :", d.Name().slug, convertFrom, err.Error())
 						continue
@@ -118,7 +120,6 @@ func (a *indexAggregator) Subscribe(m Market) error {
 					loggerIndex.Infof("%s helper market found: %s/%s", d.Name().slug, m.baseUnit, convertFrom)
 				}
 			}
-			loggerIndex.Warnf("failed to subscribe for %s %s market: %s: ", d.Name().slug, m, err.Error())
 		}
 	}
 	return nil

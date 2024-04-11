@@ -78,10 +78,15 @@ func (b *binance) Subscribe(market Market) error {
 		return errNotStarted
 	}
 
-	if b.usdcToUSDT && market.Quote() == "usdc" {
+	if b.usdcToUSDT && market.Quote() == "usd" {
 		if err := b.Subscribe(NewMarket(market.Base(), "usdt")); err != nil {
 			loggerBinance.Warnf("failed to subscribe to USDT for market %s: %s", market, err)
 		}
+
+		if err := b.Subscribe(NewMarket(market.Base(), "usdc")); err != nil {
+			loggerBinance.Warnf("failed to subscribe to USDC for market %s: %s", market, err)
+		}
+		return nil
 	}
 
 	pair := strings.ToUpper(market.Base()) + strings.ToUpper(market.Quote())
@@ -178,8 +183,8 @@ func (b *binance) buildEvent(tr *gobinance.WsTradeEvent) (TradeEvent, error) {
 		return TradeEvent{}, fmt.Errorf("failed to load market: %+v", tr.Symbol)
 	}
 
-	if b.usdcToUSDT && market.quoteUnit == "usdt" {
-		market.quoteUnit = "usdc"
+	if b.usdcToUSDT && (market.quoteUnit == "usdt" || market.quoteUnit == "usdc") {
+		market.quoteUnit = "usd"
 	}
 
 	// IsBuyerMaker: true => the trade was initiated by the sell-side; the buy-side was the order book already.
