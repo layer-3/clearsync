@@ -103,15 +103,23 @@ func (b *binance) Subscribe(market Market) error {
 
 	go func() {
 		defer close(doneCh)
+		loggerBinance.Info("waiting for Binance connection to close")
 		<-doneCh
-		for {
-			if err := b.Unsubscribe(market); err != nil {
-				loggerBinance.Errorf("failed to unsubscribe from Binance %s market: %v", pair, err)
-			}
 
+		loggerBinance.Infow("resubscribing", "market", market)
+		if _, ok := b.streams.Load(market); !ok {
+			return // market was unsubscribed earlier
+		}
+
+		loggerBinance.Warnf("connection failed for market %s, resubscribing", market)
+		if err := b.Unsubscribe(market); err != nil {
+			loggerBinance.Errorf("failed to unsubscribe from Binance %s market: %v", pair, err)
+		}
+
+		for {
 			err := b.Subscribe(market)
 			if err == nil {
-				return
+				break
 			}
 			loggerBinance.Errorf("failed to resubscribe to Binance %s market: %v", pair, err)
 			<-time.After(5 * time.Second)
@@ -193,5 +201,5 @@ func (b *binance) buildEvent(tr *gobinance.WsTradeEvent) (TradeEvent, error) {
 }
 
 // Not implemented
-func (b *binance) SetInbox(inbox <-chan TradeEvent) {
+func (b *binance) SetInbox(_ <-chan TradeEvent) {
 }

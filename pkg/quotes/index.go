@@ -25,7 +25,7 @@ type priceCalculator interface {
 func NewIndexAggregator(driversConfigs []Config, marketsMapping map[string][]string, strategy priceCalculator, outbox chan<- TradeEvent) Driver {
 	aggregated := make(chan TradeEvent, 128)
 
-	var drivers []Driver
+	drivers := make([]Driver, 0, len(driversConfigs))
 	for _, d := range driversConfigs {
 		if d.Driver == DriverIndex {
 			continue
@@ -95,7 +95,6 @@ func (a *indexAggregator) Start() error {
 
 		go func(d Driver) {
 			defer wg.Done()
-
 			if err := d.Start(); err != nil {
 				loggerIndex.Warn(err.Error())
 			}
@@ -118,9 +117,8 @@ func (a *indexAggregator) Subscribe(m Market) error {
 					}
 					loggerIndex.Infof("%s helper market found: %s/%s", d.Name().slug, m.baseUnit, convertFrom)
 				}
-				continue
 			}
-			loggerIndex.Warnf("%s subsctiption error: ", d.Name().slug, err.Error())
+			loggerIndex.Warnf("failed to subscribe for %s %s market: %s: ", d.Name().slug, m, err.Error())
 		}
 	}
 	return nil
