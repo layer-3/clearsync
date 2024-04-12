@@ -163,7 +163,7 @@ func (s *syncswap) Subscribe(market Market) error {
 		for {
 			select {
 			case err := <-sub.Err():
-				loggerSyncswap.Errorf("market %s: %s", market.String(), err)
+				loggerSyncswap.Warnf("connection failed for market %s, resubscribing: %s", market, err)
 				if _, ok := s.streams.Load(market); !ok {
 					break // market was unsubscribed earlier
 				}
