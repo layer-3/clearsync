@@ -33,7 +33,7 @@ func NewDerivedMerket(base, quote, convertQuoteTo string) Market {
 
 // NewMarketFromString returns a new Market from a string
 // "btc/usdt" -> Market{btc, usdt}
-// NOTE: string should contain "/" delimiter
+// NOTE: string must contain "/" delimiter
 func NewMarketFromString(s string) (Market, bool) {
 	parts := strings.Split(s, "/")
 	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
