@@ -73,7 +73,6 @@ func NewConfigFromEnv() (Config, error) {
 type IndexConfig struct {
 	TradesCached   int                 `yaml:"trades_cached" env:"QUOTES_INDEX_TRADES_CACHED" env-default:"20"`
 	BufferMinutes  int                 `yaml:"buffer_minutes" env:"QUOTES_INDEX_BUFFER_MINUTES" env-default:"15"`
-	DriverConfigs  []DriverType        `yaml:"drivers" env:"QUOTES_INDEX_DRIVERS"`
 	MarketsMapping map[string][]string `yaml:"markets_mapping" env:"QUOTES_INDEX_MARKETS_MAPPING"`
 }
 
