@@ -55,8 +55,6 @@ func (config Config) GetByDriverType(driver DriverType) (Config, error) {
 		return Config{Drivers: []DriverType{DriverSyncswap}, Syncswap: config.Syncswap}, nil
 	case DriverQuickswap:
 		return Config{Drivers: []DriverType{DriverQuickswap}, Quickswap: config.Quickswap}, nil
-	case DriverIndex:
-		return config, nil // impossible case as the Index driver is handled above
 	default:
 		return config, nil
 	}

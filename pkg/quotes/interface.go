@@ -21,8 +21,6 @@ func NewDriver(config Config, outbox chan<- TradeEvent) (Driver, error) {
 	}
 
 	switch config.Drivers[0] {
-	case DriverIndex:
-		return newIndex(config, outbox), nil
 	case DriverBinance:
 		return newBinance(config.Binance, outbox), nil
 	case DriverKraken:

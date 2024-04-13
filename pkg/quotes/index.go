@@ -83,7 +83,11 @@ func (a *indexAggregator) SetInbox(inbox <-chan TradeEvent) {
 }
 
 func (a *indexAggregator) ActiveDrivers() []DriverType {
-	return []DriverType{DriverIndex}
+	drivers := make([]DriverType, 0, len(a.drivers))
+	for _, d := range a.drivers {
+		drivers = append(drivers, d.ActiveDrivers()...)
+	}
+	return drivers
 }
 
 func (b *indexAggregator) ExchangeType() ExchangeType {
