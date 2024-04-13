@@ -50,7 +50,7 @@ func newIndexAggregator(config Config, marketsMapping map[string][]string, strat
 					event.Market.quoteUnit = event.Market.convertTo
 				}
 				event.Price = indexPrice
-				event.Source = DriverType{"index/" + event.Source.slug}
+				event.Source = DriverType{"index/" + event.Source.String()}
 				outbox <- event
 			}
 		}
@@ -117,18 +117,18 @@ func (a *indexAggregator) Start() error {
 
 func (a *indexAggregator) Subscribe(m Market) error {
 	for _, d := range a.drivers {
-		loggerIndex.Info("subscribing ", d.Name().slug)
+		loggerIndex.Infof("subscribing to %s", d.DriverType())
 		if err := d.Subscribe(m); err != nil {
-			if d.Type() == ExchangeTypeDEX {
+			if d.ExchangeType() == ExchangeTypeDEX {
 				for _, convertFrom := range a.marketsMapping[m.quoteUnit] {
 					if err := d.Subscribe(NewDerivedMerket(m.baseUnit, convertFrom, m.quoteUnit)); err != nil {
-						loggerIndex.Infof("%s: skipping %s :", d.Name().slug, convertFrom, err.Error())
+						loggerIndex.Infof("%s: skipping %s :", d.DriverType(), convertFrom, err.Error())
 						continue
 					}
-					loggerIndex.Infof("%s helper market found: %s/%s", d.Name().slug, m.baseUnit, convertFrom)
+					loggerIndex.Infof("%s helper market found: %s/%s", d.DriverType(), m.baseUnit, convertFrom)
 				}
 			}
-			loggerIndex.Warnf("failed to subscribe for %s %s market: %s: ", d.Name().slug, m, err.Error())
+			loggerIndex.Warnf("failed to subscribe for %s %s market: %s: ", d.DriverType(), m, err.Error())
 		}
 	}
 	return nil
@@ -137,7 +137,7 @@ func (a *indexAggregator) Subscribe(m Market) error {
 func (a *indexAggregator) Unsubscribe(m Market) error {
 	for _, d := range a.drivers {
 		if err := d.Unsubscribe(m); err != nil {
-			loggerIndex.Warnf("%s unsubsctiption error: ", d.Name().slug, err.Error())
+			loggerIndex.Warnf("%s unsubsctiption error: ", d.DriverType(), err.Error())
 		}
 	}
 	return nil
