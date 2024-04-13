@@ -66,12 +66,12 @@ func newSyncswap(config SyncswapConfig, outbox chan<- TradeEvent) Driver {
 	}
 }
 
-func (s *syncswap) Name() DriverType {
+func (s *syncswap) DriverType() DriverType {
 	return DriverSyncswap
 }
 
-func (b *syncswap) Type() Type {
-	return TypeDEX
+func (b *syncswap) ExchangeType() ExchangeType {
+	return ExchangeTypeDEX
 }
 
 func (s *syncswap) Start() error {

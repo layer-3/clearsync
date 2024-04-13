@@ -34,12 +34,12 @@ func newBinance(config BinanceConfig, outbox chan<- TradeEvent) Driver {
 	}
 }
 
-func (b *binance) Name() DriverType {
+func (b *binance) DriverType() DriverType {
 	return DriverBinance
 }
 
-func (b *binance) Type() Type {
-	return TypeCEX
+func (b *binance) ExchangeType() ExchangeType {
+	return ExchangeTypeCEX
 }
 
 func (b *binance) Start() error {

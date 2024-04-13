@@ -30,13 +30,13 @@ var (
 	DriverInternal      = DriverType{"internal"} // Internal trades
 )
 
-type Type string
+type ExchangeType string
 
 var (
-	TypeCEX         Type = "cex"
-	TypeDEX         Type = "dex"
-	TypeHybrid      Type = "hybrid"
-	TypeUnspecified Type = ""
+	ExchangeTypeUnspecified ExchangeType = ""
+	ExchangeTypeCEX         ExchangeType = "cex"
+	ExchangeTypeDEX         ExchangeType = "dex"
+	ExchangeTypeHybrid      ExchangeType = "hybrid"
 )
 
 func ToDriverType(raw string) (DriverType, error) {

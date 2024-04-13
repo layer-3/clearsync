@@ -37,12 +37,12 @@ func newUniswapV3Api(config UniswapV3ApiConfig, outbox chan<- TradeEvent) Driver
 	}
 }
 
-func (u *uniswapV3Api) Name() DriverType {
+func (u *uniswapV3Api) DriverType() DriverType {
 	return DriverUniswapV3Api
 }
 
-func (b *uniswapV3Api) Type() Type {
-	return TypeDEX
+func (b *uniswapV3Api) ExchangeType() ExchangeType {
+	return ExchangeTypeDEX
 }
 
 func (u *uniswapV3Api) Start() error {

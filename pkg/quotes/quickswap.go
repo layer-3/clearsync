@@ -45,12 +45,12 @@ func newQuickswap(config QuickswapConfig, outbox chan<- TradeEvent) Driver {
 	}
 }
 
-func (s *quickswap) Name() DriverType {
+func (s *quickswap) DriverType() DriverType {
 	return DriverQuickswap
 }
 
-func (b *quickswap) Type() Type {
-	return TypeDEX
+func (b *quickswap) ExchangeType() ExchangeType {
+	return ExchangeTypeDEX
 }
 
 func (s *quickswap) Start() error {

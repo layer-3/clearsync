@@ -54,12 +54,12 @@ func newKraken(config KrakenConfig, outbox chan<- TradeEvent) Driver {
 	}
 }
 
-func (k *kraken) Name() DriverType {
+func (k *kraken) DriverType() DriverType {
 	return DriverKraken
 }
 
-func (b *kraken) Type() Type {
-	return TypeCEX
+func (b *kraken) ExchangeType() ExchangeType {
+	return ExchangeTypeCEX
 }
 
 func (k *kraken) Start() error {

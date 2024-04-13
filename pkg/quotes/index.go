@@ -82,12 +82,12 @@ func (a *indexAggregator) SetInbox(inbox <-chan TradeEvent) {
 	a.inbox = inbox
 }
 
-func (a *indexAggregator) Name() DriverType {
+func (a *indexAggregator) DriverType() DriverType {
 	return DriverIndex
 }
 
-func (b *indexAggregator) Type() Type {
-	return TypeHybrid
+func (b *indexAggregator) ExchangeType() ExchangeType {
+	return ExchangeTypeHybrid
 }
 
 // Start starts all drivers from the provided config.
@@ -119,7 +119,7 @@ func (a *indexAggregator) Subscribe(m Market) error {
 	for _, d := range a.drivers {
 		loggerIndex.Info("subscribing ", d.Name().slug)
 		if err := d.Subscribe(m); err != nil {
-			if d.Type() == TypeDEX {
+			if d.Type() == ExchangeTypeDEX {
 				for _, convertFrom := range a.marketsMapping[m.quoteUnit] {
 					if err := d.Subscribe(NewDerivedMerket(m.baseUnit, convertFrom, m.quoteUnit)); err != nil {
 						loggerIndex.Infof("%s: skipping %s :", d.Name().slug, convertFrom, err.Error())
