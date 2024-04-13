@@ -34,8 +34,8 @@ func newBinance(config BinanceConfig, outbox chan<- TradeEvent) Driver {
 	}
 }
 
-func (b *binance) DriverType() DriverType {
-	return DriverBinance
+func (b *binance) ActiveDrivers() []DriverType {
+	return []DriverType{DriverBinance}
 }
 
 func (b *binance) ExchangeType() ExchangeType {

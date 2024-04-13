@@ -54,8 +54,8 @@ func newUniswapV3Geth(config UniswapV3GethConfig, outbox chan<- TradeEvent) Driv
 	}
 }
 
-func (u *uniswapV3Geth) DriverType() DriverType {
-	return DriverUniswapV3Geth
+func (u *uniswapV3Geth) ActiveDrivers() []DriverType {
+	return []DriverType{DriverUniswapV3Geth}
 }
 
 func (b *uniswapV3Geth) ExchangeType() ExchangeType {

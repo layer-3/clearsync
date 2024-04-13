@@ -29,8 +29,8 @@ func newBitfaker(config BitfakerConfig, outbox chan<- TradeEvent) Driver {
 	}
 }
 
-func (b *bitfaker) DriverType() DriverType {
-	return DriverBitfaker
+func (b *bitfaker) ActiveDrivers() []DriverType {
+	return []DriverType{DriverBitfaker}
 }
 
 func (b *bitfaker) ExchangeType() ExchangeType {

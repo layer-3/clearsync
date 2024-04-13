@@ -45,8 +45,8 @@ func newQuickswap(config QuickswapConfig, outbox chan<- TradeEvent) Driver {
 	}
 }
 
-func (s *quickswap) DriverType() DriverType {
-	return DriverQuickswap
+func (s *quickswap) ActiveDrivers() []DriverType {
+	return []DriverType{DriverQuickswap}
 }
 
 func (b *quickswap) ExchangeType() ExchangeType {

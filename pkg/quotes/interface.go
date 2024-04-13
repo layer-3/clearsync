@@ -4,7 +4,7 @@ package quotes
 import "fmt"
 
 type Driver interface {
-	DriverType() DriverType
+	ActiveDrivers() []DriverType
 	ExchangeType() ExchangeType
 	Start() error
 	Stop() error
@@ -40,6 +40,6 @@ func NewDriver(config Config, outbox chan<- TradeEvent) (Driver, error) {
 	case DriverQuickswap:
 		return newQuickswap(config.Quickswap, outbox), nil
 	default:
-		return nil, fmt.Errorf("driver is not supported: %s", config.Drivers)
+		return nil, fmt.Errorf("unknown driver: %s", config.Drivers)
 	}
 }

@@ -54,8 +54,8 @@ func newKraken(config KrakenConfig, outbox chan<- TradeEvent) Driver {
 	}
 }
 
-func (k *kraken) DriverType() DriverType {
-	return DriverKraken
+func (k *kraken) ActiveDrivers() []DriverType {
+	return []DriverType{DriverKraken}
 }
 
 func (b *kraken) ExchangeType() ExchangeType {
