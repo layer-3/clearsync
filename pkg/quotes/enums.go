@@ -29,15 +29,6 @@ var (
 	DriverInternal      = DriverType{"internal"} // Internal trades
 )
 
-type ExchangeType string
-
-var (
-	ExchangeTypeUnspecified ExchangeType = ""
-	ExchangeTypeCEX         ExchangeType = "cex"
-	ExchangeTypeDEX         ExchangeType = "dex"
-	ExchangeTypeHybrid      ExchangeType = "hybrid"
-)
-
 func ToDriverType(raw string) (DriverType, error) {
 	allDrivers := map[string]DriverType{
 		DriverBinance.String():       DriverBinance,
@@ -88,6 +79,16 @@ func (t *DriverType) UnmarshalYAML(value *yaml.Node) error {
 	}
 
 	typ, err := ToDriverType(raw)
+	if err != nil {
+		return err
+	}
+
+	*t = typ
+	return nil
+}
+
+func (t *DriverType) SetValue(s string) error {
+	typ, err := ToDriverType(s)
 	if err != nil {
 		return err
 	}
@@ -174,3 +175,12 @@ func (t *TakerType) UnmarshalYAML(value *yaml.Node) error {
 	*t = typ
 	return nil
 }
+
+type ExchangeType string
+
+var (
+	ExchangeTypeUnspecified ExchangeType = ""
+	ExchangeTypeCEX         ExchangeType = "cex"
+	ExchangeTypeDEX         ExchangeType = "dex"
+	ExchangeTypeHybrid      ExchangeType = "hybrid"
+)

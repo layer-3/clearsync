@@ -37,6 +37,7 @@ func newIndexAggregator(config Config, marketsMapping map[string][]string, strat
 
 		driver, err := NewDriver(driverConfig, aggregated)
 		if err != nil {
+			loggerIndex.Warnf("failed to create driver %s: %s", d, err.Error())
 			continue
 		}
 		drivers = append(drivers, driver)

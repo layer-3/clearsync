@@ -33,11 +33,6 @@ func (config Config) GetByDriverType(driver DriverType) (Config, error) {
 		return Config{}, fmt.Errorf("driver is not configured: %s", driver)
 	}
 
-	if len(config.Drivers) > 1 {
-		// the Index driver is configured, no need to filter the configs
-		return config, nil
-	}
-
 	switch config.Drivers[0] {
 	case DriverBinance:
 		return Config{Drivers: []DriverType{DriverBinance}, Binance: config.Binance}, nil
