@@ -25,26 +25,25 @@ func main() {
 		panic(err)
 	}
 
-	driverType := quotes.DriverIndex
-	if len(os.Args) == 2 {
-		parsedDriver, err := quotes.ToDriverType(os.Args[1])
-		if err != nil {
-			panic(err)
+	var drivers []quotes.DriverType
+	if len(os.Args) >= 2 {
+		drivers = make([]quotes.DriverType, 0, len(os.Args[1:]))
+		for _, arg := range os.Args[1:] {
+			parsedDriver, err := quotes.ToDriverType(arg)
+			if err != nil {
+				panic(err)
+			}
+			drivers = append(drivers, parsedDriver)
 		}
-		driverType = parsedDriver
 	}
 
 	config, err := quotes.NewConfigFromEnv()
 	if err != nil {
 		panic(err)
 	}
-	config.Driver = driverType
-
-	syncswap, err := quotes.NewConfigFromEnv()
-	if err != nil {
-		panic(err)
+	if len(drivers) > 0 {
+		config.Drivers = drivers
 	}
-	syncswap.Driver = quotes.DriverSyncswap
 
 	outbox := make(chan quotes.TradeEvent, 128)
 	outboxStop := make(chan struct{}, 1)
