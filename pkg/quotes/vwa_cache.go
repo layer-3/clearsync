@@ -42,8 +42,8 @@ type PriceCacheVWA struct {
 	bufferTime time.Duration
 }
 
-// NewPriceCacheVWA initializes a new cache to store last n trades for each market.
-func NewPriceCacheVWA(driversWeights map[DriverType]decimal.Decimal, nTrades int, bufferTime time.Duration) *PriceCacheVWA {
+// newPriceCacheVWA initializes a new cache to store last n trades for each market.
+func newPriceCacheVWA(driversWeights map[DriverType]decimal.Decimal, nTrades int, bufferTime time.Duration) *PriceCacheVWA {
 	cache := new(PriceCacheVWA)
 	cache.market = safe.NewMap[marketKey, marketHistory]()
 	cache.weights = safe.NewMapWithData(driversWeights)

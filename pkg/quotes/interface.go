@@ -14,9 +14,15 @@ type Driver interface {
 }
 
 func NewDriver(config Config, outbox chan<- TradeEvent) (Driver, error) {
-	switch config.Driver {
+	if len(config.Drivers) == 0 {
+		return nil, fmt.Errorf("no drivers are configured")
+	} else if len(config.Drivers) > 1 {
+		return newIndex(config, outbox), nil
+	}
+
+	switch config.Drivers[0] {
 	case DriverIndex:
-		return newIndex(config.Index, outbox), nil
+		return newIndex(config, outbox), nil
 	case DriverBinance:
 		return newBinance(config.Binance, outbox), nil
 	case DriverKraken:
@@ -34,6 +40,6 @@ func NewDriver(config Config, outbox chan<- TradeEvent) (Driver, error) {
 	case DriverQuickswap:
 		return newQuickswap(config.Quickswap, outbox), nil
 	default:
-		return nil, fmt.Errorf("driver is not supported: %s", config.Driver)
+		return nil, fmt.Errorf("driver is not supported: %s", config.Drivers)
 	}
 }

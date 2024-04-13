@@ -8,7 +8,10 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-var loggerIndex = log.Logger("index-aggregator")
+var (
+	loggerIndex           = log.Logger("index-aggregator")
+	defaultMarketsMapping = map[string][]string{"usdc": {"eth", "weth", "matic"}}
+)
 
 type indexAggregator struct {
 	drivers        []Driver
@@ -21,17 +24,18 @@ type priceCalculator interface {
 	calculateIndexPrice(trade TradeEvent) (decimal.Decimal, bool)
 }
 
-// NewIndexAggregator creates a new instance of IndexAggregator.
-func NewIndexAggregator(driversConfigs []Config, marketsMapping map[string][]string, strategy priceCalculator, outbox chan<- TradeEvent) Driver {
+// newIndexAggregator creates a new instance of IndexAggregator.
+func newIndexAggregator(config Config, marketsMapping map[string][]string, strategy priceCalculator, outbox chan<- TradeEvent) Driver {
 	aggregated := make(chan TradeEvent, 128)
 
-	drivers := make([]Driver, 0, len(driversConfigs))
-	for _, d := range driversConfigs {
-		if d.Driver == DriverIndex {
-			continue
+	drivers := make([]Driver, 0, len(config.Drivers))
+	for _, d := range config.Drivers {
+		driverConfig, err := config.GetByDriverType(d)
+		if err != nil {
+			panic(err) // impossible case if config structure is not amended
 		}
 
-		driver, err := NewDriver(d, aggregated)
+		driver, err := NewDriver(driverConfig, aggregated)
 		if err != nil {
 			continue
 		}
@@ -60,12 +64,18 @@ func NewIndexAggregator(driversConfigs []Config, marketsMapping map[string][]str
 }
 
 // newIndex creates a new instance of IndexAggregator with VWA strategy and default drivers weights.
-func newIndex(config IndexConfig, outbox chan<- TradeEvent) Driver {
-	marketsMapping := config.MarketsMapping
+func newIndex(config Config, outbox chan<- TradeEvent) Driver {
+	marketsMapping := config.Index.MarketsMapping
 	if marketsMapping == nil {
-		marketsMapping = DefaultMarketsMapping
+		marketsMapping = defaultMarketsMapping
 	}
-	return NewIndexAggregator(config.DriverConfigs, marketsMapping, NewStrategyVWA(WithCustomPriceCacheVWA(NewPriceCacheVWA(DefaultWeightsMap, config.TradesCached, time.Duration(config.BufferMinutes)*time.Minute))), outbox)
+
+	return newIndexAggregator(
+		config,
+		marketsMapping,
+		newStrategyVWA(withCustomPriceCacheVWA(newPriceCacheVWA(defaultWeightsMap, config.Index.TradesCached, time.Duration(config.Index.BufferMinutes)*time.Minute))),
+		outbox,
+	)
 }
 
 func (a *indexAggregator) SetInbox(inbox <-chan TradeEvent) {

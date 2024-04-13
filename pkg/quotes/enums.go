@@ -50,6 +50,7 @@ func ToDriverType(raw string) (DriverType, error) {
 		DriverUniswapV3Geth.String(): DriverUniswapV3Geth,
 		DriverSyncswap.String():      DriverSyncswap,
 		DriverQuickswap.String():     DriverQuickswap,
+		DriverInternal.String():      DriverInternal,
 	}
 
 	driver, ok := allDrivers[raw]

@@ -7,6 +7,15 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+var defaultWeightsMap = map[DriverType]decimal.Decimal{
+	DriverKraken:        decimal.NewFromInt(15),
+	DriverBinance:       decimal.NewFromInt(20),
+	DriverUniswapV3Api:  decimal.NewFromInt(50),
+	DriverUniswapV3Geth: decimal.NewFromInt(50),
+	DriverSyncswap:      decimal.NewFromInt(50),
+	DriverQuickswap:     decimal.NewFromInt(50),
+}
+
 type ConfFuncVWA func(*strategyVWA)
 
 type strategyVWA struct {
@@ -14,11 +23,11 @@ type strategyVWA struct {
 	priceCache *PriceCacheVWA
 }
 
-// NewStrategyVWA creates a new instance of Volume-Weighted Average Price index price calculator.
-func NewStrategyVWA(configs ...ConfFuncVWA) priceCalculator {
+// newStrategyVWA creates a new instance of Volume-Weighted Average Price index price calculator.
+func newStrategyVWA(configs ...ConfFuncVWA) priceCalculator {
 	s := strategyVWA{
-		priceCache: NewPriceCacheVWA(DefaultWeightsMap, 20, 15*time.Minute),
-		weights:    DefaultWeightsMap,
+		priceCache: newPriceCacheVWA(defaultWeightsMap, 20, 15*time.Minute),
+		weights:    defaultWeightsMap,
 	}
 	for _, conf := range configs {
 		conf(&s)
@@ -34,8 +43,8 @@ func WithCustomWeightsVWA(driversWeights map[DriverType]decimal.Decimal) ConfFun
 	}
 }
 
-// WithCustomPriceCacheVWA configures price cache. Should be passed as an argument to the NewStrategyVWA() constructor.
-func WithCustomPriceCacheVWA(priceCache *PriceCacheVWA) ConfFuncVWA {
+// withCustomPriceCacheVWA configures price cache. Should be passed as an argument to the NewStrategyVWA() constructor.
+func withCustomPriceCacheVWA(priceCache *PriceCacheVWA) ConfFuncVWA {
 	return func(strategy *strategyVWA) {
 		strategy.priceCache = priceCache
 	}
