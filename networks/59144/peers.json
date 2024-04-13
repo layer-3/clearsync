@@ -21,14 +21,9 @@
       "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
       "packages": [
           {
-              "name": "retail",
-              "margin": [5, 100],
+              "name": "Retail Package",
+              "margin": [5, 10],
               "safety": "5.5"
-          },
-          {
-              "name": "prime",
-              "margin": [100, 1000],
-              "safety": "3.5"
           }
       ]
   },
@@ -54,14 +49,9 @@
       "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
       "packages": [
           {
-              "name": "retail",
-              "margin": [100, 1000],
+              "name": "Retail Package",
+              "margin": [5, 10],
               "safety": "5.5"
-          },
-          {
-              "name": "prime",
-              "margin": [1000, 5000],
-              "safety": "3.5"
           }
       ]
   },
@@ -87,19 +77,9 @@
       "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
       "packages": [
           {
-              "name": "retail",
-              "margin": [1, 10],
-              "safety": "3"
-          },
-          {
-              "name": "prime",
-              "margin": [10, 50],
-              "safety": "2"
-          },
-          {
-              "name": "pro",
-              "margin": [10, 50],
-              "safety": "2"
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
           }
       ]
   },
@@ -123,14 +103,9 @@
       "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
       "packages": [
           {
-              "name": "retail",
-              "margin": [5, 100],
+              "name": "Retail Package",
+              "margin": [5, 10],
               "safety": "5.5"
-          },
-          {
-              "name": "prime",
-              "margin": [100, 1000],
-              "safety": "3.5"
           }
       ]
   },
@@ -154,14 +129,9 @@
       "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
       "packages": [
           {
-              "name": "retail",
-              "margin": [5, 100],
+              "name": "Retail Package",
+              "margin": [5, 10],
               "safety": "5.5"
-          },
-          {
-              "name": "prime",
-              "margin": [100, 1000],
-              "safety": "3.5"
           }
       ]
   },
@@ -185,14 +155,9 @@
       "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
       "packages": [
           {
-              "name": "retail",
-              "margin": [5, 100],
+              "name": "Retail Package",
+              "margin": [5, 10],
               "safety": "5.5"
-          },
-          {
-              "name": "prime",
-              "margin": [100, 1000],
-              "safety": "3.5"
           }
       ]
   },
@@ -216,14 +181,9 @@
       "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
       "packages": [
           {
-              "name": "retail",
-              "margin": [5, 100],
+              "name": "Retail Package",
+              "margin": [5, 10],
               "safety": "5.5"
-          },
-          {
-              "name": "prime",
-              "margin": [100, 1000],
-              "safety": "3.5"
           }
       ]
   },
@@ -247,14 +207,9 @@
       "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
       "packages": [
           {
-              "name": "Package 1",
-              "margin": [10, 50],
-              "safety": "4.2"
-          },
-          {
-              "name": "Package 2",
-              "margin": [30, 100],
-              "safety": "4.1"
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
           }
       ]
   },
@@ -278,14 +233,9 @@
       "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
       "packages": [
           {
-              "name": "Package X",
-              "margin": [20, 60],
-              "safety": "4.3"
-          },
-          {
-              "name": "Package Y",
-              "margin": [40, 80],
-              "safety": "4.4"
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
           }
       ]
   },
@@ -309,14 +259,9 @@
       "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
       "packages": [
           {
-              "name": "Crypto Package",
-              "margin": [5, 30],
-              "safety": "4.6"
-          },
-          {
-              "name": "Globe Package",
-              "margin": [10, 60],
-              "safety": "4.7"
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
           }
       ]
   },
@@ -340,14 +285,9 @@
       "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
       "packages": [
           {
-              "name": "Vault Package",
-              "margin": [15, 75],
-              "safety": "4.8"
-          },
-          {
-              "name": "Secure Package",
-              "margin": [25, 90],
-              "safety": "4.9"
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
           }
       ]
   },
@@ -371,14 +311,9 @@
       "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
       "packages": [
           {
-              "name": "Genius Package",
-              "margin": [30, 80],
-              "safety": "4.7"
-          },
-          {
-              "name": "Premium Package",
-              "margin": [70, 150],
-              "safety": "4.5"
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
           }
       ]
   },
@@ -402,14 +337,9 @@
       "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
       "packages": [
           {
-              "name": "SecureX Package",
-              "margin": [40, 120],
-              "safety": "4.4"
-          },
-          {
-              "name": "SuperSecure Package",
-              "margin": [100, 200],
-              "safety": "4.2"
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
           }
       ]
   },
@@ -433,14 +363,9 @@
       "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
       "packages": [
           {
-              "name": "Fusion Package",
-              "margin": [20, 70],
-              "safety": "4.6"
-          },
-          {
-              "name": "CryptoBlend Package",
-              "margin": [60, 150],
-              "safety": "4.3"
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
           }
       ]
   },
@@ -464,14 +389,9 @@
       "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
       "packages": [
           {
-              "name": "WaveX Package",
-              "margin": [25, 80],
-              "safety": "4.8"
-          },
-          {
-              "name": "RippleBlend Package",
-              "margin": [70, 120],
-              "safety": "4.5"
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
           }
       ]
   },
@@ -495,14 +415,9 @@
       "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
       "packages": [
           {
-              "name": "Treasure Package",
-              "margin": [30, 100],
-              "safety": "4.7"
-          },
-          {
-              "name": "TokenSafe Package",
-              "margin": [80, 150],
-              "safety": "4.4"
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
           }
       ]
   },
@@ -526,14 +441,9 @@
       "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
       "packages": [
           {
-              "name": "Craft Package",
-              "margin": [10, 30],
-              "safety": "4.3"
-          },
-          {
-              "name": "MasterCraft Package",
-              "margin": [20, 50],
-              "safety": "4.2"
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
           }
       ]
   },
@@ -558,13 +468,8 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [50, 200],
-              "safety": "4.5"
-          },
-          {
-              "name": "Prime Package",
-              "margin": [200, 1000],
-              "safety": "3.8"
+              "margin": [5, 10],
+              "safety": "5.5"
           }
       ]
   },
@@ -589,13 +494,8 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [50, 200],
-              "safety": "4.2"
-          },
-          {
-              "name": "Prime Package",
-              "margin": [200, 1000],
-              "safety": "3.7"
+              "margin": [5, 10],
+              "safety": "5.5"
           }
       ]
   },
@@ -620,13 +520,8 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [50, 200],
-              "safety": "4.3"
-          },
-          {
-              "name": "Prime Package",
-              "margin": [200, 1000],
-              "safety": "3.9"
+              "margin": [5, 10],
+              "safety": "5.5"
           }
       ]
   },
@@ -651,13 +546,8 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [50, 200],
-              "safety": "4.1"
-          },
-          {
-              "name": "Prime Package",
-              "margin": [200, 1000],
-              "safety": "3.6"
+              "margin": [5, 10],
+              "safety": "5.5"
           }
       ]
   },
@@ -682,13 +572,8 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [50, 200],
-              "safety": "4.4"
-          },
-          {
-              "name": "Prime Package",
-              "margin": [200, 1000],
-              "safety": "3.3"
+              "margin": [5, 10],
+              "safety": "5.5"
           }
       ]
   },
@@ -713,13 +598,8 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [50, 200],
-              "safety": "4.2"
-          },
-          {
-              "name": "Prime Package",
-              "margin": [200, 1000],
-              "safety": "3.7"
+              "margin": [5, 10],
+              "safety": "5.5"
           }
       ]
   },
@@ -744,13 +624,8 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [50, 200],
-              "safety": "4.1"
-          },
-          {
-              "name": "Prime Package",
-              "margin": [200, 1000],
-              "safety": "3.8"
+              "margin": [5, 10],
+              "safety": "5.5"
           }
       ]
   },
@@ -775,13 +650,8 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [50, 200],
-              "safety": "4.3"
-          },
-          {
-              "name": "Prime Package",
-              "margin": [200, 1000],
-              "safety": "3.9"
+              "margin": [5, 10],
+              "safety": "5.5"
           }
       ]
   },
@@ -806,13 +676,8 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [50, 200],
-              "safety": "4.4"
-          },
-          {
-              "name": "Prime Package",
-              "margin": [200, 1000],
-              "safety": "3.3"
+              "margin": [5, 10],
+              "safety": "5.5"
           }
       ]
   },
@@ -837,13 +702,8 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [50, 200],
-              "safety": "4.5"
-          },
-          {
-              "name": "Prime Package",
-              "margin": [200, 1000],
-              "safety": "3.5"
+              "margin": [5, 10],
+              "safety": "5.5"
           }
       ]
   },
@@ -868,13 +728,8 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [50, 200],
-              "safety": "4.6"
-          },
-          {
-              "name": "Prime Package",
-              "margin": [200, 1000],
-              "safety": "3.6"
+              "margin": [5, 10],
+              "safety": "5.5"
           }
       ]
   }
