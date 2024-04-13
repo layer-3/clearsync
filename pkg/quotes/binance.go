@@ -11,7 +11,6 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-// var binanceWebsocketKeepalive = atomic.Bool{}
 var loggerBinance = log.Logger("binance")
 
 type binance struct {
@@ -25,10 +24,6 @@ type binance struct {
 }
 
 func newBinance(config BinanceConfig, outbox chan<- TradeEvent) Driver {
-	// if binanceWebsocketKeepalive.CompareAndSwap(false, true) {
-	// 	gobinance.WebsocketKeepalive = true
-	// }
-
 	return &binance{
 		once:           newOnce(),
 		streams:        safe.NewMap[Market, chan struct{}](),
@@ -154,9 +149,7 @@ func (b *binance) handleTrade(event *gobinance.WsTradeEvent) {
 	if !b.filter.Allow(tradeEvent) {
 		return
 	}
-	loggerBinance.Debugf("sending trade event: %+v", tradeEvent)
 	b.outbox <- tradeEvent
-	loggerBinance.Debugf("sent trade event: %+v", tradeEvent)
 }
 
 func (b *binance) buildEvent(tr *gobinance.WsTradeEvent) (TradeEvent, error) {
