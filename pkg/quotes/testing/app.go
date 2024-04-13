@@ -13,6 +13,7 @@ import (
 	"github.com/layer-3/clearsync/pkg/quotes"
 )
 
+// Usage example: `go run . binance syncswap`
 func main() {
 	go func() {
 		// Start pprof server
@@ -42,6 +43,7 @@ func main() {
 		panic(err)
 	}
 	if len(drivers) > 0 {
+		// Override default values only if drivers are provided
 		config.Drivers = drivers
 	}
 
