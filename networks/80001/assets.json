@@ -12,6 +12,7 @@
       "name": "USDC",
       "address": "0x9999f7Fea5938fD3b1E26A12c3f2fb024e194f97",
       "symbol": "USDC",
+      "alias": "USD",
       "decimals": 6,
       "precision": 2,
       "logoURI": "https://assets-cdn.trustwallet.com/blockchains/smartchain/assets/0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d/logo.png"

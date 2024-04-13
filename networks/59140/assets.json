@@ -30,6 +30,7 @@
       "address": "0x9E210Dd034Df7945606f1725447dD68C9FE3fc39",
       "name": "USD Coin",
       "symbol": "USDC",
+      "alias": "USD",
       "decimals": 6,
       "precision": 6,
       "logoURI": "https://lineascan.build/token/images/centre-usdc_28.png",
