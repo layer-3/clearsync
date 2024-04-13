@@ -9,15 +9,15 @@ import (
 type Config struct {
 	Driver DriverType `yaml:"driver" env:"QUOTES_DRIVER" env-default:"index"`
 
-	Binance       BinanceConfig       `yaml:"binance" env-prefix:"QUOTES_BINANCE_"`
-	Kraken        KrakenConfig        `yaml:"kraken" env-prefix:"QUOTES_KRAKEN_"`
-	Opendax       OpendaxConfig       `yaml:"opendax" env-prefix:"QUOTES_OPENDAX_"`
-	Bitfaker      BitfakerConfig      `yaml:"bitfaker" env-prefix:"QUOTES_BITFAKER_"`
-	UniswapV3Api  UniswapV3ApiConfig  `yaml:"uniswap_v3_api" env-prefix:"QUOTES_UNISWAP_V3_API_"`
-	UniswapV3Geth UniswapV3GethConfig `yaml:"uniswap_v3_geth" env-prefix:"QUOTES_UNISWAP_V3_GETH_"`
-	Syncswap      SyncswapConfig      `yaml:"syncswap" env-prefix:"QUOTES_SYNCSWAP_"`
-	Quickswap     QuickswapConfig     `yaml:"quickswap" env-prefix:"QUOTES_QUICKSWAP_"`
-	Index         IndexConfig         `yaml:"index" env-prefix:"QUOTES_INDEX_"`
+	Binance       BinanceConfig       `yaml:"binance"`
+	Kraken        KrakenConfig        `yaml:"kraken"`
+	Opendax       OpendaxConfig       `yaml:"opendax"`
+	Bitfaker      BitfakerConfig      `yaml:"bitfaker"`
+	UniswapV3Api  UniswapV3ApiConfig  `yaml:"uniswap_v3_api"`
+	UniswapV3Geth UniswapV3GethConfig `yaml:"uniswap_v3_geth"`
+	Syncswap      SyncswapConfig      `yaml:"syncswap"`
+	Quickswap     QuickswapConfig     `yaml:"quickswap"`
+	Index         IndexConfig         `yaml:"index"`
 }
 
 type DriverConfig interface {
@@ -59,10 +59,10 @@ func ToConfig(driver DriverConfig) Config {
 }
 
 type IndexConfig struct {
-	TradesCached   int                 `yaml:"trades_cached" env:"TRADES_CACHED" env-default:"20"`
-	BufferMinutes  int                 `yaml:"buffer_minutes" env:"BUFFER_MINUTES" env-default:"15"`
-	DriverConfigs  []Config            `yaml:"drivers" env:"DRIVERS"`
-	MarketsMapping map[string][]string `yaml:"markets_mapping" env:"MARKETS_MAPPING"`
+	TradesCached   int                 `yaml:"trades_cached" env:"QUOTES_INDEX_TRADES_CACHED" env-default:"20"`
+	BufferMinutes  int                 `yaml:"buffer_minutes" env:"QUOTES_INDEX_BUFFER_MINUTES" env-default:"15"`
+	DriverConfigs  []Config            `yaml:"drivers"`
+	MarketsMapping map[string][]string `yaml:"markets_mapping" env:"QUOTES_INDEX_MARKETS_MAPPING"`
 }
 
 func (IndexConfig) DriverType() DriverType {
@@ -70,8 +70,8 @@ func (IndexConfig) DriverType() DriverType {
 }
 
 type BinanceConfig struct {
-	Filter     FilterConfig `yaml:"filter" env-prefix:"FILTER_"`
-	USDCtoUSDT bool         `yaml:"usdc_to_usdt" env-prefix:"USDC_TO_USDT_" env-default:"true"`
+	Filter     FilterConfig `yaml:"filter" env-prefix:"QUOTES_BINANCE_FILTER_"`
+	USDCtoUSDT bool         `yaml:"usdc_to_usdt" env:"QUOTES_BINANCE_USDC_TO_USDT" env-default:"true"`
 }
 
 func (BinanceConfig) DriverType() DriverType {
@@ -79,9 +79,9 @@ func (BinanceConfig) DriverType() DriverType {
 }
 
 type KrakenConfig struct {
-	URL             string        `yaml:"url" env:"URL" env-default:"wss://ws.kraken.com"`
-	ReconnectPeriod time.Duration `yaml:"period" env:"RECONNECT_PERIOD" env-default:"5s"`
-	Filter          FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
+	URL             string        `yaml:"url" env:"QUOTES_KRAKEN_URL" env-default:"wss://ws.kraken.com"`
+	ReconnectPeriod time.Duration `yaml:"period" env:"QUOTES_KRAKEN_RECONNECT_PERIOD" env-default:"5s"`
+	Filter          FilterConfig  `yaml:"filter" env-prefix:"QUOTES_KRAKEN_FILTER_"`
 }
 
 func (KrakenConfig) DriverType() DriverType {
@@ -89,9 +89,9 @@ func (KrakenConfig) DriverType() DriverType {
 }
 
 type OpendaxConfig struct {
-	URL             string        `yaml:"url" env:"URL" env-default:"wss://alpha.yellow.org/api/v1/finex/ws"`
-	ReconnectPeriod time.Duration `yaml:"period" env:"RECONNECT_PERIOD" env-default:"5s"`
-	Filter          FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
+	URL             string        `yaml:"url" env:"QUOTES_OPENDAX_URL" env-default:"wss://alpha.yellow.org/api/v1/finex/ws"`
+	ReconnectPeriod time.Duration `yaml:"period" env:"QUOTES_OPENDAX_RECONNECT_PERIOD" env-default:"5s"`
+	Filter          FilterConfig  `yaml:"filter" env-prefix:"QUOTES_OPENDAX_FILTER_"`
 }
 
 func (OpendaxConfig) DriverType() DriverType {
@@ -99,8 +99,8 @@ func (OpendaxConfig) DriverType() DriverType {
 }
 
 type BitfakerConfig struct {
-	Period time.Duration `yaml:"period" env:"PERIOD" env-default:"5s"`
-	Filter FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
+	Period time.Duration `yaml:"period" env:"QUOTES_BITFAKER_PERIOD" env-default:"5s"`
+	Filter FilterConfig  `yaml:"filter" env-prefix:"QUOTES_BITFAKER_FILTER_"`
 }
 
 func (BitfakerConfig) DriverType() DriverType {
@@ -108,9 +108,9 @@ func (BitfakerConfig) DriverType() DriverType {
 }
 
 type UniswapV3ApiConfig struct {
-	URL        string        `yaml:"url" env:"URL" env-default:"https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3"`
-	WindowSize time.Duration `yaml:"window_size" env:"WINDOW_SIZE" env-default:"2s"`
-	Filter     FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
+	URL        string        `yaml:"url" env:"QUOTES_UNISWAP_V3_API_URL" env-default:"https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3"`
+	WindowSize time.Duration `yaml:"window_size" env:"QUOTES_UNISWAP_V3_API_WINDOW_SIZE" env-default:"2s"`
+	Filter     FilterConfig  `yaml:"filter" env-prefix:"QUOTES_UNISWAP_V3_API_FILTER_"`
 }
 
 func (UniswapV3ApiConfig) DriverType() DriverType {
@@ -118,10 +118,10 @@ func (UniswapV3ApiConfig) DriverType() DriverType {
 }
 
 type UniswapV3GethConfig struct {
-	URL            string       `yaml:"url" env:"GETH_URL" env-default:""`
-	AssetsURL      string       `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/assets.json"`
-	FactoryAddress string       `yaml:"factory_address" env:"FACTORY_ADDRESS" env-default:"0x1F98431c8aD98523631AE4a59f267346ea31F984"`
-	Filter         FilterConfig `yaml:"filter" env-prefix:"FILTER_"`
+	URL            string       `yaml:"url" env:"QUOTES_UNISWAP_V3_GETH_URL" env-default:""`
+	AssetsURL      string       `yaml:"assets_url" env:"QUOTES_UNISWAP_V3_GETH_ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/assets.json"`
+	FactoryAddress string       `yaml:"factory_address" env:"QUOTES_UNISWAP_V3_GETH_FACTORY_ADDRESS" env-default:"0x1F98431c8aD98523631AE4a59f267346ea31F984"`
+	Filter         FilterConfig `yaml:"filter" env-prefix:"QUOTES_UNISWAP_V3_GETH_FILTER_"`
 }
 
 func (UniswapV3GethConfig) DriverType() DriverType {
@@ -129,12 +129,12 @@ func (UniswapV3GethConfig) DriverType() DriverType {
 }
 
 type SyncswapConfig struct {
-	URL                       string       `yaml:"url" env:"URL" env-default:""`
-	AssetsURL                 string       `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/assets.json"`
-	ClassicPoolFactoryAddress string       `yaml:"classic_pool_factory_address" env:"CLASSIC_POOL_FACTORY_ADDRESS" env-default:"0x37BAc764494c8db4e54BDE72f6965beA9fa0AC2d"`
-	StablePoolFactoryAddress  string       `yaml:"stable_pool_factory_address" env:"STABLE_POOL_FACTORY_ADDRESS" env-default:"0xE4CF807E351b56720B17A59094179e7Ed9dD3727"`
-	StablePoolMarkets         []string     `yaml:"stable_pool_markets" env:"STABLE_POOL_MARKETS" env-default:"usdt/usdc"` // `env-default` tag value is a comma separated list of markets as in `usdt/usdc,usdc/dai`
-	Filter                    FilterConfig `yaml:"filter" env-prefix:"FILTER_"`
+	URL                       string       `yaml:"url" env:"QUOTES_SYNCSWAP_URL" env-default:""`
+	AssetsURL                 string       `yaml:"assets_url" env:"QUOTES_SYNCSWAP_ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/assets.json"`
+	ClassicPoolFactoryAddress string       `yaml:"classic_pool_factory_address" env:"QUOTES_SYNCSWAP_CLASSIC_POOL_FACTORY_ADDRESS" env-default:"0x37BAc764494c8db4e54BDE72f6965beA9fa0AC2d"`
+	StablePoolFactoryAddress  string       `yaml:"stable_pool_factory_address" env:"QUOTES_SYNCSWAP_STABLE_POOL_FACTORY_ADDRESS" env-default:"0xE4CF807E351b56720B17A59094179e7Ed9dD3727"`
+	StablePoolMarkets         []string     `yaml:"stable_pool_markets" env:"QUOTES_SYNCSWAP_STABLE_POOL_MARKETS" env-default:"usdt/usdc"` // `env-default` tag value is a comma separated list of markets as in `usdt/usdc,usdc/dai`
+	Filter                    FilterConfig `yaml:"filter" env-prefix:"QUOTES_SYNCSWAP_FILTER_"`
 }
 
 func (SyncswapConfig) DriverType() DriverType {
@@ -142,13 +142,13 @@ func (SyncswapConfig) DriverType() DriverType {
 }
 
 type QuickswapConfig struct {
-	URL       string `yaml:"url" env:"URL" env-default:""`
-	AssetsURL string `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/mainnet/assets.json"`
+	URL       string `yaml:"url" env:"QUOTES_QUICKSWAP_URL" env-default:""`
+	AssetsURL string `yaml:"assets_url" env:"QUOTES_QUICKSWAP_ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/mainnet/assets.json"`
 	// PoolFactoryAddress is the address of the factory contract.
 	// See docs at https://docs.quickswap.exchange/technical-reference/smart-contracts/v3/factory.
 	// Note that the contract used in this lib is compiled from https://github.com/code-423n4/2022-09-quickswap.
-	PoolFactoryAddress string       `yaml:"pool_factory_address" env:"POOL_FACTORY_ADDRESS" env-default:"0x411b0fAcC3489691f28ad58c47006AF5E3Ab3A28"`
-	Filter             FilterConfig `yaml:"filter" env-prefix:"FILTER_"`
+	PoolFactoryAddress string       `yaml:"pool_factory_address" env:"QUOTES_QUICKSWAP_POOL_FACTORY_ADDRESS" env-default:"0x411b0fAcC3489691f28ad58c47006AF5E3Ab3A28"`
+	Filter             FilterConfig `yaml:"filter" env-prefix:"QUOTES_QUICKSWAP_FILTER_"`
 }
 
 func (QuickswapConfig) DriverType() DriverType {
