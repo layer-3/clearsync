@@ -3,5 +3,6 @@
   "spot://WETH/USDC",
   "spot://WBTC/USDC",
   "spot://DUCKIES/USDC",
-  "spot://USDC/USDT"
+  "spot://USDC/USDT",
+  "spot://SOL/USDT"
 ]
