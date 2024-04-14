@@ -18,7 +18,6 @@ func (d DriverType) String() string {
 }
 
 var (
-	DriverIndex         = DriverType{"index"}
 	DriverBinance       = DriverType{"binance"}
 	DriverKraken        = DriverType{"kraken"}
 	DriverOpendax       = DriverType{"opendax"}
@@ -30,18 +29,8 @@ var (
 	DriverInternal      = DriverType{"internal"} // Internal trades
 )
 
-type Type string
-
-var (
-	TypeCEX         Type = "cex"
-	TypeDEX         Type = "dex"
-	TypeHybrid      Type = "hybrid"
-	TypeUnspecified Type = ""
-)
-
 func ToDriverType(raw string) (DriverType, error) {
 	allDrivers := map[string]DriverType{
-		DriverIndex.String():         DriverIndex,
 		DriverBinance.String():       DriverBinance,
 		DriverKraken.String():        DriverKraken,
 		DriverOpendax.String():       DriverOpendax,
@@ -50,6 +39,7 @@ func ToDriverType(raw string) (DriverType, error) {
 		DriverUniswapV3Geth.String(): DriverUniswapV3Geth,
 		DriverSyncswap.String():      DriverSyncswap,
 		DriverQuickswap.String():     DriverQuickswap,
+		DriverInternal.String():      DriverInternal,
 	}
 
 	driver, ok := allDrivers[raw]
@@ -89,6 +79,16 @@ func (t *DriverType) UnmarshalYAML(value *yaml.Node) error {
 	}
 
 	typ, err := ToDriverType(raw)
+	if err != nil {
+		return err
+	}
+
+	*t = typ
+	return nil
+}
+
+func (t *DriverType) SetValue(s string) error {
+	typ, err := ToDriverType(s)
 	if err != nil {
 		return err
 	}
@@ -175,3 +175,12 @@ func (t *TakerType) UnmarshalYAML(value *yaml.Node) error {
 	*t = typ
 	return nil
 }
+
+type ExchangeType string
+
+var (
+	ExchangeTypeUnspecified ExchangeType = ""
+	ExchangeTypeCEX         ExchangeType = "cex"
+	ExchangeTypeDEX         ExchangeType = "dex"
+	ExchangeTypeHybrid      ExchangeType = "hybrid"
+)

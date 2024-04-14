@@ -8,7 +8,10 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-var loggerIndex = log.Logger("index-aggregator")
+var (
+	loggerIndex           = log.Logger("index-aggregator")
+	defaultMarketsMapping = map[string][]string{"usdc": {"eth", "weth", "matic"}}
+)
 
 type indexAggregator struct {
 	drivers        []Driver
@@ -21,18 +24,20 @@ type priceCalculator interface {
 	calculateIndexPrice(trade TradeEvent) (decimal.Decimal, bool)
 }
 
-// NewIndexAggregator creates a new instance of IndexAggregator.
-func NewIndexAggregator(driversConfigs []Config, marketsMapping map[string][]string, strategy priceCalculator, outbox chan<- TradeEvent) Driver {
+// newIndexAggregator creates a new instance of IndexAggregator.
+func newIndexAggregator(config Config, marketsMapping map[string][]string, strategy priceCalculator, outbox chan<- TradeEvent) Driver {
 	aggregated := make(chan TradeEvent, 128)
 
-	drivers := make([]Driver, 0, len(driversConfigs))
-	for _, d := range driversConfigs {
-		if d.Driver == DriverIndex {
-			continue
+	drivers := make([]Driver, 0, len(config.Drivers))
+	for _, d := range config.Drivers {
+		driverConfig, err := config.GetByDriverType(d)
+		if err != nil {
+			panic(err) // impossible case if config structure is not amended
 		}
 
-		driver, err := NewDriver(d, aggregated)
+		driver, err := NewDriver(driverConfig, aggregated)
 		if err != nil {
+			loggerIndex.Warnf("failed to create driver %s: %s", d, err.Error())
 			continue
 		}
 		drivers = append(drivers, driver)
@@ -46,7 +51,7 @@ func NewIndexAggregator(driversConfigs []Config, marketsMapping map[string][]str
 					event.Market.quoteUnit = event.Market.convertTo
 				}
 				event.Price = indexPrice
-				event.Source = DriverType{"index/" + event.Source.slug}
+				event.Source = DriverType{"index/" + event.Source.String()}
 				outbox <- event
 			}
 		}
@@ -60,24 +65,34 @@ func NewIndexAggregator(driversConfigs []Config, marketsMapping map[string][]str
 }
 
 // newIndex creates a new instance of IndexAggregator with VWA strategy and default drivers weights.
-func newIndex(config IndexConfig, outbox chan<- TradeEvent) Driver {
-	marketsMapping := config.MarketsMapping
+func newIndex(config Config, outbox chan<- TradeEvent) Driver {
+	marketsMapping := config.Index.MarketsMapping
 	if marketsMapping == nil {
-		marketsMapping = DefaultMarketsMapping
+		marketsMapping = defaultMarketsMapping
 	}
-	return NewIndexAggregator(config.DriverConfigs, marketsMapping, NewStrategyVWA(WithCustomPriceCacheVWA(NewPriceCacheVWA(DefaultWeightsMap, config.TradesCached, time.Duration(config.BufferMinutes)*time.Minute))), outbox)
+
+	return newIndexAggregator(
+		config,
+		marketsMapping,
+		newStrategyVWA(withCustomPriceCacheVWA(newPriceCacheVWA(defaultWeightsMap, config.Index.TradesCached, time.Duration(config.Index.BufferMinutes)*time.Minute))),
+		outbox,
+	)
 }
 
 func (a *indexAggregator) SetInbox(inbox <-chan TradeEvent) {
 	a.inbox = inbox
 }
 
-func (a *indexAggregator) Name() DriverType {
-	return DriverIndex
+func (a *indexAggregator) ActiveDrivers() []DriverType {
+	drivers := make([]DriverType, 0, len(a.drivers))
+	for _, d := range a.drivers {
+		drivers = append(drivers, d.ActiveDrivers()...)
+	}
+	return drivers
 }
 
-func (b *indexAggregator) Type() Type {
-	return TypeHybrid
+func (b *indexAggregator) ExchangeType() ExchangeType {
+	return ExchangeTypeHybrid
 }
 
 // Start starts all drivers from the provided config.
@@ -107,18 +122,18 @@ func (a *indexAggregator) Start() error {
 
 func (a *indexAggregator) Subscribe(m Market) error {
 	for _, d := range a.drivers {
-		loggerIndex.Info("subscribing ", d.Name().slug)
+		loggerIndex.Infof("subscribing to %s", d.ActiveDrivers()[0])
 		if err := d.Subscribe(m); err != nil {
-			if d.Type() == TypeDEX {
+			if d.ExchangeType() == ExchangeTypeDEX {
 				for _, convertFrom := range a.marketsMapping[m.quoteUnit] {
 					if err := d.Subscribe(NewDerivedMerket(m.baseUnit, convertFrom, m.quoteUnit)); err != nil {
-						loggerIndex.Infof("%s: skipping %s :", d.Name().slug, convertFrom, err.Error())
+						loggerIndex.Infof("%s: skipping %s :", d.ActiveDrivers()[0], convertFrom, err.Error())
 						continue
 					}
-					loggerIndex.Infof("%s helper market found: %s/%s", d.Name().slug, m.baseUnit, convertFrom)
+					loggerIndex.Infof("%s helper market found: %s/%s", d.ActiveDrivers()[0], m.baseUnit, convertFrom)
 				}
 			}
-			loggerIndex.Warnf("failed to subscribe for %s %s market: %s: ", d.Name().slug, m, err.Error())
+			loggerIndex.Warnf("failed to subscribe for %s %s market: %s: ", d.ActiveDrivers()[0], m, err.Error())
 		}
 	}
 	return nil
@@ -127,7 +142,7 @@ func (a *indexAggregator) Subscribe(m Market) error {
 func (a *indexAggregator) Unsubscribe(m Market) error {
 	for _, d := range a.drivers {
 		if err := d.Unsubscribe(m); err != nil {
-			loggerIndex.Warnf("%s unsubsctiption error: ", d.Name().slug, err.Error())
+			loggerIndex.Warnf("failed to unsubscribe from market %s of %s: %s", m, d.ActiveDrivers()[0], err.Error())
 		}
 	}
 	return nil

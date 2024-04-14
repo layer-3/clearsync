@@ -45,12 +45,12 @@ func newOpendax(config OpendaxConfig, outbox chan<- TradeEvent) Driver {
 	}
 }
 
-func (o *opendax) Name() DriverType {
-	return DriverOpendax
+func (o *opendax) ActiveDrivers() []DriverType {
+	return []DriverType{DriverOpendax}
 }
 
-func (b *opendax) Type() Type {
-	return TypeHybrid
+func (b *opendax) ExchangeType() ExchangeType {
+	return ExchangeTypeHybrid
 }
 
 func (o *opendax) Start() error {

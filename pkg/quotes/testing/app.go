@@ -3,6 +3,7 @@
 package main
 
 import (
+	"encoding/json"
 	"log/slog"
 	"net/http"
 	_ "net/http/pprof"
@@ -12,34 +13,39 @@ import (
 	"github.com/layer-3/clearsync/pkg/quotes"
 )
 
+// Usage example: `go run . binance syncswap`
 func main() {
 	go func() {
-		http.ListenAndServe("localhost:8080", nil)
-	}()
-	log.SetLogLevel("*", "info")
-
-	driverType := quotes.DriverIndex
-	if len(os.Args) == 2 {
-		parsedDriver, err := quotes.ToDriverType(os.Args[1])
-		if err != nil {
+		// Start pprof server
+		if err := http.ListenAndServe("localhost:8080", nil); err != nil {
 			panic(err)
 		}
-		driverType = parsedDriver
+	}()
+
+	if err := log.SetLogLevel("*", "info"); err != nil {
+		panic(err)
+	}
+
+	var drivers []quotes.DriverType
+	if len(os.Args) >= 2 {
+		drivers = make([]quotes.DriverType, 0, len(os.Args[1:]))
+		for _, arg := range os.Args[1:] {
+			parsedDriver, err := quotes.ToDriverType(arg)
+			if err != nil {
+				panic(err)
+			}
+			drivers = append(drivers, parsedDriver)
+		}
 	}
 
 	config, err := quotes.NewConfigFromEnv()
 	if err != nil {
 		panic(err)
 	}
-	config.Driver = driverType
-
-	syncswap, err := quotes.NewConfigFromEnv()
-	if err != nil {
-		panic(err)
+	if len(drivers) > 0 {
+		// Override default values only if drivers are provided
+		config.Drivers = drivers
 	}
-	syncswap.Driver = quotes.DriverSyncswap
-	syncswap.Syncswap.URL = ""
-	config.Index.DriverConfigs = append(config.Index.DriverConfigs, syncswap)
 
 	outbox := make(chan quotes.TradeEvent, 128)
 	outboxStop := make(chan struct{}, 1)
@@ -65,7 +71,12 @@ func main() {
 		panic(err)
 	}
 
-	slog.Info("starting", "config", config)
+	jsonConfig, err := json.Marshal(config)
+	if err != nil {
+		panic(err)
+	}
+	slog.Info("starting", "config", jsonConfig)
+
 	if err := driver.Start(); err != nil {
 		panic(err)
 	}

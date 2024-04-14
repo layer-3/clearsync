@@ -55,7 +55,7 @@ func Test_IndexAggregatorStrategies(t *testing.T) {
 			inputTrades = append(inputTrades, trade)
 		}
 
-		results := testStrategies(inputTrades, NewStrategyVWA(WithCustomWeightsVWA(weights)))
+		results := testStrategies(inputTrades, newStrategyVWA(WithCustomWeightsVWA(weights)))
 
 		// Check VWA strategy
 		expVWA := []float64{40000, 41047.61905, 41288.88889, 41404.25532, 41880.59701, 41260, 41185.71429, 41325.44379, 41418.99441, 41422.22222, 41424.4864, 41423.54571, 41448.98336, 41457.01275, 41808.32025, 42377.0692, 43024.3874, 43031.31548, 43074.41602, 43051.03373}
@@ -71,7 +71,7 @@ func Test_IndexAggregatorStrategies(t *testing.T) {
 			{Source: DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(44000), Amount: decimal.NewFromFloat(1)},
 		}
 
-		results := testStrategies(inputTrades, NewStrategyVWA(WithCustomWeightsVWA(defaultWeights)))
+		results := testStrategies(inputTrades, newStrategyVWA(WithCustomWeightsVWA(defaultWeights)))
 
 		// Check VWA strategy
 		expVWA := []float64{40000, 41000, 42000}
@@ -87,7 +87,7 @@ func Test_IndexAggregatorStrategies(t *testing.T) {
 	}
 
 	t.Run("README example 1: equal driver weight", func(t *testing.T) {
-		results := testStrategies(inputTrades, NewStrategyVWA(WithCustomWeightsVWA(defaultWeights)))
+		results := testStrategies(inputTrades, newStrategyVWA(WithCustomWeightsVWA(defaultWeights)))
 
 		// Check VWA strategy
 		expVWA := []float64{41000, 41937.5, 45500, 46192.30769, 44472.22222}
@@ -100,7 +100,7 @@ func Test_IndexAggregatorStrategies(t *testing.T) {
 			DriverUniswapV3Api: decimal.NewFromInt(0),
 		}
 
-		results := testStrategies(inputTrades, NewStrategyVWA(WithCustomWeightsVWA(weights)))
+		results := testStrategies(inputTrades, newStrategyVWA(WithCustomWeightsVWA(weights)))
 
 		// Check VWA strategy
 		expVWA := []float64{41000, 41937.5, 40861.11111}
@@ -116,7 +116,7 @@ func Test_IndexAggregatorStrategies(t *testing.T) {
 			{Source: DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(48000), Amount: decimal.NewFromFloat(10)},
 		}
 
-		results := testStrategies(inputTrades, NewStrategyVWA(WithCustomWeightsVWA(defaultWeights)))
+		results := testStrategies(inputTrades, newStrategyVWA(WithCustomWeightsVWA(defaultWeights)))
 
 		// Check VWA strategy
 		expVWA := []float64{40000, 41000, 42000, 43000, 46571.42857}
@@ -135,11 +135,11 @@ func Test_IndexAggregatorStrategies(t *testing.T) {
 			{Source: DriverUniswapV3Api, Market: btcusdt, Price: decimal.NewFromInt(41000), Amount: decimal.NewFromFloat(1.0)},
 			{Source: DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(41000), Amount: decimal.NewFromFloat(1.0)}}, 25)...)
 
-		testPriceCacheVWA := NewPriceCacheVWA(defaultWeights, 20, time.Minute)
+		testPriceCacheVWA := newPriceCacheVWA(defaultWeights, 20, time.Minute)
 		testPriceCacheVWA.ActivateDriver(DriverBinance, btcusdt)
 		testPriceCacheVWA.ActivateDriver(DriverUniswapV3Api, btcusdt)
 
-		results := testStrategies(inputTrades, NewStrategyVWA(WithCustomWeightsVWA(defaultWeights), WithCustomPriceCacheVWA(testPriceCacheVWA)))
+		results := testStrategies(inputTrades, newStrategyVWA(WithCustomWeightsVWA(defaultWeights), withCustomPriceCacheVWA(testPriceCacheVWA)))
 
 		// Check VWA strategy
 		require.Equal(t, float64(41000), results[0][0])
