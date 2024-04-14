@@ -193,8 +193,8 @@
       },
       {
         "address": "0x8Ae9603e1C29C2d73E5e7C2825FaD7C89E21fB77",
-        "name": "Wrapped TON",
-        "symbol": "TONCOIN",
+        "name": "Wrapped Toncoin",
+        "symbol": "WTON",
         "decimals": 9,
         "precision": 6,
         "logoURI": "https://assets.coingecko.com/coins/images/17980/standard/ton_symbol.png?1696517498",
