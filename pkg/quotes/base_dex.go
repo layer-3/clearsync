@@ -281,13 +281,13 @@ func getTokens(
 ) (baseToken poolToken, quoteToken poolToken, err error) {
 	baseToken, ok := assets.Load(strings.ToUpper(market.Base()))
 	if !ok {
-		return poolToken{}, poolToken{}, fmt.Errorf("base tokens does not exist", "market", market.StringWithoutMain())
+		return poolToken{}, poolToken{}, fmt.Errorf("base tokens does not exist for market %s", market.StringWithoutMain())
 	}
 	logger.Infow("found base token", "address", baseToken.Address, "market", market.StringWithoutMain())
 
 	quoteToken, ok = assets.Load(strings.ToUpper(market.Quote()))
 	if !ok {
-		return poolToken{}, poolToken{}, fmt.Errorf("quote tokens does not exist", "market", market.StringWithoutMain())
+		return poolToken{}, poolToken{}, fmt.Errorf("quote tokens does not exist for market %s", market.StringWithoutMain())
 	}
 	logger.Infow("found quote token", "address", quoteToken.Address, "market", market.StringWithoutMain())
 
