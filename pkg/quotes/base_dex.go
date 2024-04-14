@@ -23,6 +23,7 @@ type baseDEX[Event any, Contract any] struct {
 	driverType DriverType
 	url        string
 	assetsURL  string
+	mappingURL string
 	logger     *log.ZapEventLogger
 
 	// Hooks
@@ -36,37 +37,43 @@ type baseDEX[Event any, Contract any] struct {
 	filter  Filter
 	streams safe.Map[Market, event.Subscription]
 	assets  safe.Map[string, poolToken]
+	mapping safe.Map[string, []string]
 }
 
-func newBaseDEX[Event any, Contract any](
-	driverType DriverType,
-	url string,
-	assetsURL string,
-	outbox chan<- TradeEvent,
-	config FilterConfig,
-	logger *log.ZapEventLogger,
+type baseDexConfig[Event any, Contract any] struct {
+	DriverType DriverType
+	URL        string
+	AssetsURL  string
+	MappingURL string
+	Outbox     chan<- TradeEvent
+	Filter     FilterConfig
+	Logger     *log.ZapEventLogger
 
-	startHook func() error,
-	poolGetter func(Market) (*dexPool[Event], error),
-	eventParser func(*Event, *dexPool[Event]) (TradeEvent, error),
-) *baseDEX[Event, Contract] {
+	StartHook   func() error
+	PoolGetter  func(Market) (*dexPool[Event], error)
+	EventParser func(*Event, *dexPool[Event]) (TradeEvent, error)
+}
+
+func newBaseDEX[Event any, Contract any](config baseDexConfig[Event, Contract]) *baseDEX[Event, Contract] {
 	return &baseDEX[Event, Contract]{
 		// Params
 		once:       newOnce(),
-		driverType: driverType,
-		url:        url,
-		assetsURL:  assetsURL,
+		driverType: config.DriverType,
+		url:        config.URL,
+		assetsURL:  config.AssetsURL,
+		mappingURL: config.MappingURL,
 
 		// Hooks
-		start:   startHook,
-		getPool: poolGetter,
-		parse:   eventParser,
+		start:   config.StartHook,
+		getPool: config.PoolGetter,
+		parse:   config.EventParser,
 
 		// State
 		client:  nil,
-		outbox:  outbox,
-		filter:  NewFilter(config),
+		outbox:  config.Outbox,
+		filter:  NewFilter(config.Filter),
 		streams: safe.NewMap[Market, event.Subscription](),
+		mapping: safe.NewMap[string, []string](),
 	}
 }
 
@@ -89,6 +96,8 @@ func (b *baseDEX[Event, Contract]) ExchangeType() ExchangeType {
 func (b *baseDEX[Event, Contract]) Start() error {
 	var startErr error
 	started := b.once.Start(func() {
+		// Connect to the RPC provider
+
 		if !(strings.HasPrefix(b.url, "ws://") || strings.HasPrefix(b.url, "wss://")) {
 			startErr = fmt.Errorf("%s (got '%s')", errInvalidWsURL, b.url)
 			return
@@ -101,6 +110,8 @@ func (b *baseDEX[Event, Contract]) Start() error {
 		}
 		b.client = client
 
+		// Fetch assets
+
 		assets, err := getAssets(b.assetsURL)
 		if err != nil {
 			startErr = fmt.Errorf("failed to fetch assets: %w", err)
@@ -109,6 +120,19 @@ func (b *baseDEX[Event, Contract]) Start() error {
 		for _, asset := range assets {
 			b.assets.Store(strings.ToUpper(asset.Symbol), asset)
 		}
+
+		// Fetch mappings
+
+		mapping, err := getMapping(b.mappingURL)
+		if err != nil {
+			startErr = fmt.Errorf("failed to fetch mapping: %w", err)
+			return
+		}
+		for key, mapItem := range mapping {
+			b.mapping.Store(key, mapItem)
+		}
+
+		// Run start hook
 
 		if err := b.start(); err != nil {
 			startErr = err
@@ -141,6 +165,19 @@ func (b *baseDEX[Event, Contract]) Subscribe(market Market) error {
 		return errNotStarted
 	}
 
+	// mapping map[BTC:[WBTC] ETH:[WETH] USD:[USDT USDC TUSD]]
+	b.mapping.Range(func(token string, mappings []string) bool {
+		if token == strings.ToUpper(market.Quote()) {
+			for _, mappedToken := range mappings {
+				err := b.Subscribe(NewMarketWithMainQuote(market.Base(), mappedToken, market.Quote()))
+				if err != nil {
+					loggerSyncswap.Errorf("failed to subscribe to market %s: %s", market, err)
+				}
+			}
+		}
+		return true
+	})
+
 	if _, ok := b.streams.Load(market); ok {
 		return fmt.Errorf("%s: %w", market, errAlreadySubbed)
 	}
@@ -161,23 +198,24 @@ func (b *baseDEX[Event, Contract]) Subscribe(market Market) error {
 		for {
 			select {
 			case err := <-sub.Err():
-				b.logger.Warnw("connection failed, resubscribing", "market", market, "err", err)
+				b.logger.Warnw("connection failed, resubscribing", "market", market.StringWithoutMain(), "err", err)
 				if _, ok := b.streams.Load(market); !ok {
 					break // market was unsubscribed earlier
 				}
 				if err := b.Unsubscribe(market); err != nil {
-					b.logger.Errorw("failed to resubscribe", "market", market, "err", err)
+					b.logger.Errorw("failed to resubscribe", "market", market.StringWithoutMain(), "err", err)
 				}
 				if err := b.Subscribe(market); err != nil {
-					b.logger.Errorw("failed to resubscribe", "market", market, "err", err)
+					b.logger.Errorw("failed to resubscribe", "market", market.StringWithoutMain(), "err", err)
 				}
 				return
 			case swap := <-sink:
 				tr, err := b.parse(swap, pool)
 				if err != nil {
-					b.logger.Errorw("failed to parse swap event", "market", market, "err", err)
+					b.logger.Errorw("failed to parse swap event", "market", market.StringWithoutMain(), "err", err)
 					continue
 				}
+				tr.Market = market.ApplyMainQuote()
 
 				if !b.filter.Allow(tr) {
 					continue
@@ -243,17 +281,15 @@ func getTokens(
 ) (baseToken poolToken, quoteToken poolToken, err error) {
 	baseToken, ok := assets.Load(strings.ToUpper(market.Base()))
 	if !ok {
-		err = fmt.Errorf("tokens '%s' does not exist", market.Base())
-		return
+		return poolToken{}, poolToken{}, fmt.Errorf("base tokens does not exist", "market", market.StringWithoutMain())
 	}
-	logger.Infow("found base token", "address", baseToken.Address, "market", market)
+	logger.Infow("found base token", "address", baseToken.Address, "market", market.StringWithoutMain())
 
 	quoteToken, ok = assets.Load(strings.ToUpper(market.Quote()))
 	if !ok {
-		err = fmt.Errorf("tokens '%s' does not exist", market.Quote())
-		return
+		return poolToken{}, poolToken{}, fmt.Errorf("quote tokens does not exist", "market", market.StringWithoutMain())
 	}
-	logger.Infow("found quote token", "address", quoteToken.Address, "market", market)
+	logger.Infow("found quote token", "address", quoteToken.Address, "market", market.StringWithoutMain())
 
 	return baseToken, quoteToken, nil
 }
@@ -275,4 +311,23 @@ func getAssets(assetsURL string) ([]poolToken, error) {
 		return nil, err
 	}
 	return assets["tokens"], nil
+}
+
+func getMapping(url string) (map[string][]string, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var mappings map[string]map[string][]string
+	if err := json.Unmarshal(body, &mappings); err != nil {
+		return nil, err
+	}
+	return mappings["tokens"], nil
 }

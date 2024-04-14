@@ -25,18 +25,21 @@ func newQuickswap(config QuickswapConfig, outbox chan<- TradeEvent) Driver {
 		poolFactoryAddress: common.HexToAddress(config.PoolFactoryAddress),
 	}
 
-	driver := newBaseDEX[iquickswap_v3_pool.IQuickswapV3PoolSwap, iquickswap_v3_pool.IQuickswapV3Pool](
-		DriverQuickswap,
-		config.URL,
-		config.AssetsURL,
-		outbox,
+	params := baseDexConfig[iquickswap_v3_pool.IQuickswapV3PoolSwap, iquickswap_v3_pool.IQuickswapV3Pool]{
+		DriverType: DriverQuickswap,
+		URL:        config.URL,
+		AssetsURL:  config.AssetsURL,
+		MappingURL: config.MappingURL,
+		Outbox:     outbox,
+		Filter:     config.Filter,
+		Logger:     loggerQuickswap,
+		// Hooks
+		StartHook:   hooks.start,
+		PoolGetter:  hooks.getPool,
+		EventParser: hooks.parseSwap,
+	}
 
-		config.Filter,
-		loggerQuickswap,
-		hooks.start,
-		hooks.getPool,
-		hooks.parseSwap,
-	)
+	driver := newBaseDEX[iquickswap_v3_pool.IQuickswapV3PoolSwap, iquickswap_v3_pool.IQuickswapV3Pool](params)
 	hooks.base = driver
 
 	return driver

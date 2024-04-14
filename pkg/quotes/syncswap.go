@@ -42,18 +42,21 @@ func newSyncswap(config SyncswapConfig, outbox chan<- TradeEvent) Driver {
 		stablePoolFactoryAddress:  common.HexToAddress(config.StablePoolFactoryAddress),
 	}
 
-	driver := newBaseDEX[isyncswap_pool.ISyncSwapPoolSwap, isyncswap_pool.ISyncSwapPool](
-		DriverSyncswap,
-		config.URL,
-		config.AssetsURL,
-		outbox,
-		config.Filter,
-		loggerSyncswap,
+	params := baseDexConfig[isyncswap_pool.ISyncSwapPoolSwap, isyncswap_pool.ISyncSwapPool]{
+		DriverType: DriverSyncswap,
+		URL:        config.URL,
+		AssetsURL:  config.AssetsURL,
+		MappingURL: config.MappingURL,
+		Outbox:     outbox,
+		Filter:     config.Filter,
+		Logger:     loggerSyncswap,
+		// Hooks
+		StartHook:   hooks.start,
+		PoolGetter:  hooks.getPool,
+		EventParser: hooks.parseSwap,
+	}
 
-		hooks.start,
-		hooks.getPool,
-		hooks.parseSwap,
-	)
+	driver := newBaseDEX[isyncswap_pool.ISyncSwapPoolSwap, isyncswap_pool.ISyncSwapPool](params)
 	hooks.base = driver
 
 	return driver
@@ -82,14 +85,14 @@ func (s *syncswap) getPool(market Market) (*dexPool[isyncswap_pool.ISyncSwapPool
 	var poolAddress common.Address
 	zeroAddress := common.HexToAddress("0x0")
 	if _, ok := s.stablePoolMarkets[market]; ok {
-		loggerSyncswap.Infow("found stable pool", "market", market)
+		loggerSyncswap.Infow("found stable pool", "market", market.StringWithoutMain())
 		poolAddress, err = s.stableFactory.GetPool(
 			nil,
 			common.HexToAddress(baseToken.Address),
 			common.HexToAddress(quoteToken.Address),
 		)
 	} else {
-		loggerSyncswap.Infow("found classic pool", "market", market)
+		loggerSyncswap.Infow("found classic pool", "market", market.StringWithoutMain())
 		poolAddress, err = s.classicFactory.GetPool(
 			nil,
 			common.HexToAddress(baseToken.Address),
@@ -100,9 +103,9 @@ func (s *syncswap) getPool(market Market) (*dexPool[isyncswap_pool.ISyncSwapPool
 		return nil, fmt.Errorf("failed to get classic pool address: %w", err)
 	}
 	if poolAddress == zeroAddress {
-		return nil, fmt.Errorf("classic pool for market %s does not exist", market)
+		return nil, fmt.Errorf("classic pool for market %s does not exist", market.StringWithoutMain())
 	}
-	loggerSyncswap.Infow("pool found", "address", poolAddress, "market", market)
+	loggerSyncswap.Infow("pool found", "address", poolAddress, "market", market.StringWithoutMain())
 
 	poolContract, err := isyncswap_pool.NewISyncSwapPool(poolAddress, s.base.Client())
 	if err != nil {

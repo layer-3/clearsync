@@ -31,17 +31,21 @@ func newUniswapV3Geth(config UniswapV3GethConfig, outbox chan<- TradeEvent) Driv
 		factoryAddress: common.HexToAddress(config.FactoryAddress),
 	}
 
-	driver := newBaseDEX[iuniswap_v3_pool.IUniswapV3PoolSwap, iuniswap_v3_pool.IUniswapV3Pool](
-		DriverUniswapV3Geth,
-		config.URL,
-		config.AssetsURL,
-		outbox,
-		config.Filter,
-		loggerUniswapV3Geth,
-		hooks.start,
-		hooks.getPool,
-		hooks.parseSwap,
-	)
+	params := baseDexConfig[iuniswap_v3_pool.IUniswapV3PoolSwap, iuniswap_v3_pool.IUniswapV3Pool]{
+		DriverType: DriverUniswapV3Geth,
+		URL:        config.URL,
+		AssetsURL:  config.AssetsURL,
+		MappingURL: config.MappingURL,
+		Outbox:     outbox,
+		Filter:     config.Filter,
+		Logger:     loggerUniswapV3Geth,
+		// Hooks
+		StartHook:   hooks.start,
+		PoolGetter:  hooks.getPool,
+		EventParser: hooks.parseSwap,
+	}
+
+	driver := newBaseDEX[iuniswap_v3_pool.IUniswapV3PoolSwap, iuniswap_v3_pool.IUniswapV3Pool](params)
 	hooks.base = driver
 
 	return driver
