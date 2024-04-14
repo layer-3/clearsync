@@ -1,53 +1,54 @@
 {
-    "tokens": [
-        {
-            "name": "Polygon Matic",
-            "address": "0x0000000000000000000000000000000000000000",
-            "symbol": "MATIC",
-            "decimals": 18,
-            "precision": 8,
-            "logoURI": "https://polygonscan.com/token/images/polygonmatic_new_32.png"
-        },
-        {
-            "name": "USDC",
-            "address": "0x9999f7Fea5938fD3b1E26A12c3f2fb024e194f97",
-            "symbol": "USDC",
-            "decimals": 6,
-            "precision": 2,
-            "logoURI": "https://assets-cdn.trustwallet.com/blockchains/smartchain/assets/0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d/logo.png"
-        },
-        {
-            "name": "Wrapped Ether",
-            "address": "0xA6FA4fB5f76172d178d61B04b0ecd319C5d1C0aa",
-            "symbol": "WETH",
-            "decimals": 18,
-            "precision": 4,
-            "logoURI": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/logo.png"
-        },
-        {
-            "name": "Tether USD",
-            "address": "0xA02f6adc7926efeBBd59Fd43A84f4E0c0c91e832",
-            "symbol": "USDT",
-            "decimals": 6,
-            "precision": 2,
-            "logoURI": "https://assets-cdn.trustwallet.com/blockchains/smartchain/assets/0x55d398326f99059fF775485246999027B3197955/logo.png"
-        },
-        {
-            "name": "ChainLink Token",
-            "address": "0x326C977E6efc84E512bB9C30f76E30c160eD06FB",
-            "symbol": "LINK",
-            "decimals": 18,
-            "precision": 8,
-            "logoURI": "https://assets-cdn.trustwallet.com/blockchains/optimism/assets/0x350a791Bfc2C21F9Ed5d10980Dad2e2638ffa7f6/logo.png"
-        },
+  "tokens": [
+    {
+      "name": "Polygon Matic",
+      "address": "0x0000000000000000000000000000000000000000",
+      "symbol": "MATIC",
+      "decimals": 18,
+      "precision": 8,
+      "logoURI": "https://polygonscan.com/token/images/polygonmatic_new_32.png"
+    },
+    {
+      "name": "USDC",
+      "address": "0x9999f7Fea5938fD3b1E26A12c3f2fb024e194f97",
+      "symbol": "USDC",
+      "alias": "USD",
+      "decimals": 6,
+      "precision": 2,
+      "logoURI": "https://assets-cdn.trustwallet.com/blockchains/smartchain/assets/0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d/logo.png"
+    },
+    {
+      "name": "Wrapped Ether",
+      "address": "0xA6FA4fB5f76172d178d61B04b0ecd319C5d1C0aa",
+      "symbol": "WETH",
+      "decimals": 18,
+      "precision": 4,
+      "logoURI": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/logo.png"
+    },
+    {
+      "name": "Tether USD",
+      "address": "0xA02f6adc7926efeBBd59Fd43A84f4E0c0c91e832",
+      "symbol": "USDT",
+      "decimals": 6,
+      "precision": 2,
+      "logoURI": "https://assets-cdn.trustwallet.com/blockchains/smartchain/assets/0x55d398326f99059fF775485246999027B3197955/logo.png"
+    },
+    {
+      "name": "ChainLink Token",
+      "address": "0x326C977E6efc84E512bB9C30f76E30c160eD06FB",
+      "symbol": "LINK",
+      "decimals": 18,
+      "precision": 8,
+      "logoURI": "https://assets-cdn.trustwallet.com/blockchains/optimism/assets/0x350a791Bfc2C21F9Ed5d10980Dad2e2638ffa7f6/logo.png"
+    },
 
-        {
-            "name": "Uniswap Token",
-            "address": "0xDED33Fff66356AaffBD03a972ef9fd91fe620D3d",
-            "symbol": "UNI",
-            "decimals": 18,
-            "precision": 8,
-            "logoURI": "https://raw.githubusercontent.com/trustwallet/assets/a769a9b4fc3671f78ce2cf956be3d808ab23308b/blockchains/binance/assets/UNI-DD8/logo.png"
-        }
-    ]
+    {
+      "name": "Uniswap Token",
+      "address": "0xDED33Fff66356AaffBD03a972ef9fd91fe620D3d",
+      "symbol": "UNI",
+      "decimals": 18,
+      "precision": 8,
+      "logoURI": "https://raw.githubusercontent.com/trustwallet/assets/a769a9b4fc3671f78ce2cf956be3d808ab23308b/blockchains/binance/assets/UNI-DD8/logo.png"
+    }
+  ]
 }
