@@ -60,6 +60,10 @@ func (m Market) String() string {
 	return fmt.Sprintf("%s/%s", m.baseUnit, m.quoteUnit)
 }
 
+func (m Market) StringWithoutLegacy() string {
+	return fmt.Sprintf("%s/%s", m.baseUnit, m.quoteUnit)
+}
+
 func (m Market) ApplyLegacyQuote() Market {
 	if m.legacyQuote == "" {
 		return m

@@ -313,14 +313,14 @@ func (s *syncswap) getPool(market Market) (*syncswapPoolWrapper, error) {
 	var poolAddress common.Address
 	zeroAddress := common.HexToAddress("0x0")
 	if _, ok := s.stablePoolMarkets[market]; ok {
-		loggerSyncswap.Infof("market %s is a stable pool", market)
+		loggerSyncswap.Infof("market %s is a stable pool", market.StringWithoutLegacy())
 		poolAddress, err = s.stableFactory.GetPool(
 			nil,
 			common.HexToAddress(baseToken.Address),
 			common.HexToAddress(quoteToken.Address),
 		)
 	} else {
-		loggerSyncswap.Infof("market %s is a classic pool", market)
+		loggerSyncswap.Infof("market %s is a classic pool", market.StringWithoutLegacy())
 		poolAddress, err = s.classicFactory.GetPool(
 			nil,
 			common.HexToAddress(baseToken.Address),
@@ -331,9 +331,9 @@ func (s *syncswap) getPool(market Market) (*syncswapPoolWrapper, error) {
 		return nil, fmt.Errorf("failed to get classic pool address: %w", err)
 	}
 	if poolAddress == zeroAddress {
-		return nil, fmt.Errorf("classic pool for market %s does not exist", market)
+		return nil, fmt.Errorf("classic pool for market %s does not exist", market.StringWithoutLegacy())
 	}
-	loggerSyncswap.Infof("got pool %s for market %s", poolAddress, market)
+	loggerSyncswap.Infof("got pool %s for market %s", poolAddress, market.StringWithoutLegacy())
 
 	poolContract, err := isyncswap_pool.NewISyncSwapPool(poolAddress, s.client)
 	if err != nil {
@@ -373,14 +373,14 @@ func (s *syncswap) getTokens(market Market) (baseToken poolToken, quoteToken poo
 		err = fmt.Errorf("tokens '%s' does not exist", market.Base())
 		return baseToken, quoteToken, err
 	}
-	loggerSyncswap.Infof("market %s: base token address is %s", market, baseToken.Address)
+	loggerSyncswap.Infof("market %s: base token address is %s", market.StringWithoutLegacy(), baseToken.Address)
 
 	quoteToken, ok = s.assets.Load(strings.ToUpper(market.Quote()))
 	if !ok {
 		err = fmt.Errorf("tokens '%s' does not exist", market.Quote())
 		return baseToken, quoteToken, err
 	}
-	loggerSyncswap.Infof("market %s: quote token address is %s", market, quoteToken.Address)
+	loggerSyncswap.Infof("market %s: quote token address is %s", market.StringWithoutLegacy(), quoteToken.Address)
 
 	return baseToken, quoteToken, nil
 }
