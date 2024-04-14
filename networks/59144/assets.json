@@ -73,6 +73,168 @@
         "precision": 6,
         "logoURI": "https://assets.coingecko.com/coins/images/33070/standard/200x200.png?1700536826",
         "extensions": {}
+      },
+      {
+        "address": "0x356A55841a16c05A3628045E9F68A0a5CE810113",
+        "name": "Wrapped Solana",
+        "symbol": "WSOL",
+        "decimals": 9,
+        "precision": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/4128/standard/solana.png?1696504756",
+        "extensions": {}
+      },
+      {
+        "address": "0xf5C6825015280CdfD0b56903F9F8B5A2233476F5",
+        "name": "BNB",
+        "symbol": "BNB",
+        "decimals": 18,
+        "precision": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/825/standard/bnb-icon2_2x.png?1696501970",
+        "extensions": {}
+      },
+      {
+        "address": "0x4AF15ec2A0BD43Db75dd04E62FAA3B8EF36b00d5",
+        "name": "Dai Stablecoin",
+        "symbol": "DAI",
+        "decimals": 18,
+        "precision": 6,
+        "logoURI": "https://lineascan.build/token/images/daistablecoin_32.png",
+        "extensions": {}
+      },
+      {
+        "address": "0x7da14988E4f390C2E34ed41DF1814467D3aDe0c3",
+        "name": "Pepe",
+        "symbol": "PEPE",
+        "decimals": 18,
+        "precision": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/29850/standard/pepe-token.jpeg?1696528776",
+        "extensions": {}
+      },
+      {
+        "address": "0x92CcE828c4eF31C3762baAc29724dEa03e503e3F",
+        "name": "Badger",
+        "symbol": "BADGER",
+        "decimals": 18,
+        "precision": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/13287/standard/badger_dao_logo.jpg?1696513059",
+        "extensions": {}
+      },
+      {
+        "address": "0xbf6761aD8C9cB253d026C96327160240Fc2Ce3A6",
+        "name": "FLOKI",
+        "symbol": "FLOKI",
+        "decimals": 9,
+        "precision": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/16746/standard/PNG_image.png?1696516318",
+        "extensions": {}
+      },
+      {
+        "address": "0x1eee18b41F5888266E89934Ed722cE3D8De346DA",
+        "name": "Memecoin",
+        "symbol": "MEME",
+        "decimals": 18,
+        "precision": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/32528/standard/memecoin_%282%29.png?1698912168",
+        "extensions": {}
+      },
+      {
+        "address": "0x636B22bC471c955A8DB60f28D4795066a8201fa3",
+        "name": "Uniswap",
+        "symbol": "UNI",
+        "decimals": 18,
+        "precision": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/12504/standard/uni.jpg?1696512319",
+        "extensions": {}
+      },
+      {
+        "address": "0xE01027726466Fa9191455D4d57fb705b3885E9e9",
+        "name": "SushiToken",
+        "symbol": "SUSHI",
+        "decimals": 18,
+        "precision": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/12271/standard/512x512_Logo_no_chop.png?1696512101",
+        "extensions": {}
+      },
+      {
+        "address": "0x9F37359869AF765b030B1A7e4475cE8C3Ed77e1b",
+        "name": "DODO bird",
+        "symbol": "DODO",
+        "decimals": 18,
+        "precision": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/12651/standard/dodo_logo.png?1696512458",
+        "extensions": {}
+      },
+      {
+        "address": "0xa525416d78d77CD483862798242Ae4fC666727BB",
+        "name": "Beam",
+        "symbol": "BEAM",
+        "decimals": 18,
+        "precision": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/32417/standard/chain-logo.png?1698114384",
+        "extensions": {}
+      },
+      {
+        "address": "0x7d30f39f41988f64C6e8B7C264dfBA9cd54C45AC",
+        "name": "Chiliz",
+        "symbol": "CHZ",
+        "decimals": 18,
+        "precision": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/8834/standard/CHZ_Token_updated.png?1696508986",
+        "extensions": {}
+      },
+      {
+        "address": "0x7Fd77A7D5916C8437e89Ff89B764c21342C0949c",
+        "name": "FOX",
+        "symbol": "FOX",
+        "decimals": 18,
+        "precision": 6,
+        "logoURI": "https://s2.coinmarketcap.com/static/img/coins/64x64/8200.png",
+        "extensions": {}
+      },
+      {
+        "address": "0x8Ae9603e1C29C2d73E5e7C2825FaD7C89E21fB77",
+        "name": "Wrapped TON",
+        "symbol": "TONCOIN",
+        "decimals": 9,
+        "precision": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/17980/standard/ton_symbol.png?1696517498",
+        "extensions": {}
+      },
+      {
+        "address": "0x1b314022EA496444d3552Aa700C135594f080D72",
+        "name": "Baby Doge",
+        "symbol": "BabyDoge",
+        "decimals": 9,
+        "precision": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/16125/standard/babydoge.jpg?1696515731",
+        "extensions": {}
+      },
+      {
+        "address": "0x25Fd328d3784cFE2B029a5a7679D27041dC4101B",
+        "name": "Banana",
+        "symbol": "BANANA",
+        "decimals": 18,
+        "precision": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/17521/standard/banana-token-cg.png?1696517059",
+        "extensions": {}
+      },
+      {
+        "address": "0x0ba0D56696113Fb41B1f9Ef62ad1AA6559854D18",
+        "name": "Dogelon",
+        "symbol": "ELON",
+        "decimals": 18,
+        "precision": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/14962/standard/6GxcPRo3_400x400.jpg?1696514622",
+        "extensions": {}
+      },
+      {
+        "address": "0x30e88e981FC36cEB772141462EB8f08d014a4012",
+        "name": "GROK",
+        "symbol": "GROK",
+        "decimals": 9,
+        "precision": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/32788/standard/GROK.png?1707579427",
+        "extensions": {}
       }
     ]
   }
