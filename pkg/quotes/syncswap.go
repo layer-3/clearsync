@@ -163,7 +163,7 @@ func (s *syncswap) Subscribe(market Market) error {
 	s.mapping.Range(func(token string, mappings []string) bool {
 		if token == strings.ToUpper(market.Quote()) {
 			for _, mappedToken := range mappings {
-				err := s.Subscribe(NewMarketWithLegacyQuote(market.Base(), mappedToken, market.Quote()))
+				err := s.Subscribe(NewMarketWithMainQuote(market.Base(), mappedToken, market.Quote()))
 				if err != nil {
 					loggerSyncswap.Errorf("failed to subscribe to market %s: %s", market, err)
 				}
@@ -270,7 +270,7 @@ func (*syncswap) parseSwap(swap *isyncswap_pool.ISyncSwapPoolSwap, market Market
 	amount = amount.Abs()
 	tr := TradeEvent{
 		Source:    DriverSyncswap,
-		Market:    market.ApplyLegacyQuote(),
+		Market:    market.ApplyMainQuote(),
 		Price:     price,
 		Amount:    amount,
 		Total:     total,
@@ -313,14 +313,14 @@ func (s *syncswap) getPool(market Market) (*syncswapPoolWrapper, error) {
 	var poolAddress common.Address
 	zeroAddress := common.HexToAddress("0x0")
 	if _, ok := s.stablePoolMarkets[market]; ok {
-		loggerSyncswap.Infof("market %s is a stable pool", market.StringWithoutLegacy())
+		loggerSyncswap.Infof("market %s is a stable pool", market.StringWithoutMain())
 		poolAddress, err = s.stableFactory.GetPool(
 			nil,
 			common.HexToAddress(baseToken.Address),
 			common.HexToAddress(quoteToken.Address),
 		)
 	} else {
-		loggerSyncswap.Infof("market %s is a classic pool", market.StringWithoutLegacy())
+		loggerSyncswap.Infof("market %s is a classic pool", market.StringWithoutMain())
 		poolAddress, err = s.classicFactory.GetPool(
 			nil,
 			common.HexToAddress(baseToken.Address),
@@ -331,9 +331,9 @@ func (s *syncswap) getPool(market Market) (*syncswapPoolWrapper, error) {
 		return nil, fmt.Errorf("failed to get classic pool address: %w", err)
 	}
 	if poolAddress == zeroAddress {
-		return nil, fmt.Errorf("classic pool for market %s does not exist", market.StringWithoutLegacy())
+		return nil, fmt.Errorf("classic pool for market %s does not exist", market.StringWithoutMain())
 	}
-	loggerSyncswap.Infof("got pool %s for market %s", poolAddress, market.StringWithoutLegacy())
+	loggerSyncswap.Infof("got pool %s for market %s", poolAddress, market.StringWithoutMain())
 
 	poolContract, err := isyncswap_pool.NewISyncSwapPool(poolAddress, s.client)
 	if err != nil {
@@ -373,14 +373,14 @@ func (s *syncswap) getTokens(market Market) (baseToken poolToken, quoteToken poo
 		err = fmt.Errorf("tokens '%s' does not exist", market.Base())
 		return baseToken, quoteToken, err
 	}
-	loggerSyncswap.Infof("market %s: base token address is %s", market.StringWithoutLegacy(), baseToken.Address)
+	loggerSyncswap.Infof("market %s: base token address is %s", market.StringWithoutMain(), baseToken.Address)
 
 	quoteToken, ok = s.assets.Load(strings.ToUpper(market.Quote()))
 	if !ok {
 		err = fmt.Errorf("tokens '%s' does not exist", market.Quote())
 		return baseToken, quoteToken, err
 	}
-	loggerSyncswap.Infof("market %s: quote token address is %s", market.StringWithoutLegacy(), quoteToken.Address)
+	loggerSyncswap.Infof("market %s: quote token address is %s", market.StringWithoutMain(), quoteToken.Address)
 
 	return baseToken, quoteToken, nil
 }
