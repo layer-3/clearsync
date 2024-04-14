@@ -13,15 +13,19 @@ import (
 )
 
 type baseDEX[Event any, Contract any] struct {
-	once      *once
-	url       string
-	assetsURL string
-	client    *ethclient.Client
+	// Params
+	once       *once
+	driverType DriverType
+	url        string
+	assetsURL  string
 
+	// Hooks
 	start   func() error
 	getPool func(Market) (*dexPool[Event], error)
 	parse   func(*Event, Market, *dexPool[Event]) (TradeEvent, error)
 
+	// State
+	client  *ethclient.Client
 	outbox  chan<- TradeEvent
 	filter  Filter
 	streams safe.Map[Market, event.Subscription]
@@ -29,32 +33,42 @@ type baseDEX[Event any, Contract any] struct {
 }
 
 func newBaseDEX[Event any, Contract any](
+	driverType DriverType,
 	url string,
 	assetsURL string,
 	outbox chan<- TradeEvent,
 	config FilterConfig,
+
 	startHook func() error,
 	poolGetter func(Market) (*dexPool[Event], error),
 	eventParser func(*Event, Market, *dexPool[Event]) (TradeEvent, error),
 ) *baseDEX[Event, Contract] {
 	return &baseDEX[Event, Contract]{
-		once:      newOnce(),
-		url:       url,
-		assetsURL: assetsURL,
+		// Params
+		once:       newOnce(),
+		driverType: driverType,
+		url:        url,
+		assetsURL:  assetsURL,
 
+		// Hooks
 		start:   startHook,
 		getPool: poolGetter,
 		parse:   eventParser,
 
+		// State
+		client:  nil,
 		outbox:  outbox,
 		filter:  NewFilter(config),
 		streams: safe.NewMap[Market, event.Subscription](),
-		assets:  safe.NewMap[string, poolToken](),
 	}
 }
 
+func (b *baseDEX[Event, Contract]) Client() *ethclient.Client {
+	return b.client
+}
+
 func (b *baseDEX[Event, Contract]) ActiveDrivers() []DriverType {
-	return nil
+	return []DriverType{b.driverType}
 }
 
 func (b *baseDEX[Event, Contract]) ExchangeType() ExchangeType {
@@ -75,6 +89,15 @@ func (b *baseDEX[Event, Contract]) Start() error {
 			return
 		}
 		b.client = client
+
+		assets, err := getAssets(b.assetsURL)
+		if err != nil {
+			startErr = fmt.Errorf("failed to fetch assets: %w", err)
+			return
+		}
+		for _, asset := range assets {
+			b.assets.Store(strings.ToUpper(asset.Symbol), asset)
+		}
 
 		if err := b.start(); err != nil {
 			startErr = err
