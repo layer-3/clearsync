@@ -12,21 +12,17 @@ import (
 
 	"github.com/layer-3/clearsync/pkg/abi/isyncswap_factory"
 	"github.com/layer-3/clearsync/pkg/abi/isyncswap_pool"
-	"github.com/layer-3/clearsync/pkg/safe"
 )
 
 var loggerSyncswap = log.Logger("syncswap")
 
 type syncswap struct {
-	base *baseDEX[isyncswap_pool.ISyncSwapPoolSwap, isyncswap_pool.ISyncSwapPool]
-
-	classicPoolFactoryAddress string
-	classicFactory            *isyncswap_factory.ISyncSwapFactory
+	base                      *baseDEX[isyncswap_pool.ISyncSwapPoolSwap, isyncswap_pool.ISyncSwapPool]
 	stablePoolMarkets         map[Market]struct{}
-	stablePoolFactoryAddress  string
+	classicPoolFactoryAddress common.Address
+	stablePoolFactoryAddress  common.Address
+	classicFactory            *isyncswap_factory.ISyncSwapFactory
 	stableFactory             *isyncswap_factory.ISyncSwapFactory
-
-	assets safe.Map[string, poolToken]
 }
 
 func newSyncswap(config SyncswapConfig, outbox chan<- TradeEvent) Driver {
@@ -42,42 +38,39 @@ func newSyncswap(config SyncswapConfig, outbox chan<- TradeEvent) Driver {
 	loggerSyncswap.Debugw("configured stable pool markets", "markets", stablePoolMarkets)
 
 	hooks := &syncswap{
-		classicPoolFactoryAddress: config.ClassicPoolFactoryAddress,
-		classicFactory:            nil,
 		stablePoolMarkets:         stablePoolMarkets,
-		stablePoolFactoryAddress:  config.StablePoolFactoryAddress,
-		stableFactory:             nil,
-
-		assets: safe.NewMap[string, poolToken](),
+		classicPoolFactoryAddress: common.HexToAddress(config.ClassicPoolFactoryAddress),
+		stablePoolFactoryAddress:  common.HexToAddress(config.StablePoolFactoryAddress),
 	}
 
-	return newBaseDEX[isyncswap_pool.ISyncSwapPoolSwap, isyncswap_pool.ISyncSwapPool](
+	driver := newBaseDEX[isyncswap_pool.ISyncSwapPoolSwap, isyncswap_pool.ISyncSwapPool](
 		DriverSyncswap,
 		config.URL,
 		config.AssetsURL,
 		outbox,
 		config.Filter,
+		loggerSyncswap,
+
 		hooks.start,
 		hooks.getPool,
 		hooks.parseSwap,
 	)
+	hooks.base = driver
+
+	return driver
 }
 
-func (s *syncswap) start() error {
+func (s *syncswap) start() (err error) {
 	// Check addresses here: https://syncswap.gitbook.io/syncswap/smart-contracts/smart-contracts
-	classicPoolFactoryAddress := common.HexToAddress(s.classicPoolFactoryAddress)
-	classicFactory, err := isyncswap_factory.NewISyncSwapFactory(classicPoolFactoryAddress, s.base.Client())
+	s.classicFactory, err = isyncswap_factory.NewISyncSwapFactory(s.classicPoolFactoryAddress, s.base.Client())
 	if err != nil {
 		return fmt.Errorf("failed to instantiate a Quickswap classic pool factory contract: %w", err)
 	}
-	s.classicFactory = classicFactory
 
-	stablePoolFactoryAddress := common.HexToAddress(s.stablePoolFactoryAddress)
-	stableFactory, err := isyncswap_factory.NewISyncSwapFactory(stablePoolFactoryAddress, s.base.Client())
+	s.stableFactory, err = isyncswap_factory.NewISyncSwapFactory(s.stablePoolFactoryAddress, s.base.Client())
 	if err != nil {
 		return fmt.Errorf("failed to instantiate a Quickswap stable pool factory contract: %w", err)
 	}
-	s.stableFactory = stableFactory
 	return nil
 }
 
@@ -147,14 +140,14 @@ func (s *syncswap) getPool(market Market) (*dexPool[isyncswap_pool.ISyncSwapPool
 }
 
 func (s *syncswap) getTokens(market Market) (baseToken poolToken, quoteToken poolToken, err error) {
-	baseToken, ok := s.assets.Load(strings.ToUpper(market.Base()))
+	baseToken, ok := s.base.Assets().Load(strings.ToUpper(market.Base()))
 	if !ok {
 		err = fmt.Errorf("tokens '%s' does not exist", market.Base())
 		return
 	}
 	loggerSyncswap.Infof("market %s: base token address is %s", market, baseToken.Address)
 
-	quoteToken, ok = s.assets.Load(strings.ToUpper(market.Quote()))
+	quoteToken, ok = s.base.Assets().Load(strings.ToUpper(market.Quote()))
 	if !ok {
 		err = fmt.Errorf("tokens '%s' does not exist", market.Quote())
 		return

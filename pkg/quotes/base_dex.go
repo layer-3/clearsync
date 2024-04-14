@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/event"
+	"github.com/ipfs/go-log/v2"
 
 	"github.com/layer-3/clearsync/pkg/safe"
 )
@@ -18,6 +19,7 @@ type baseDEX[Event any, Contract any] struct {
 	driverType DriverType
 	url        string
 	assetsURL  string
+	logger     *log.ZapEventLogger
 
 	// Hooks
 	start   func() error
@@ -38,6 +40,7 @@ func newBaseDEX[Event any, Contract any](
 	assetsURL string,
 	outbox chan<- TradeEvent,
 	config FilterConfig,
+	logger *log.ZapEventLogger,
 
 	startHook func() error,
 	poolGetter func(Market) (*dexPool[Event], error),
@@ -65,6 +68,10 @@ func newBaseDEX[Event any, Contract any](
 
 func (b *baseDEX[Event, Contract]) Client() *ethclient.Client {
 	return b.client
+}
+
+func (b *baseDEX[Event, Contract]) Assets() *safe.Map[string, poolToken] {
+	return &b.assets
 }
 
 func (b *baseDEX[Event, Contract]) ActiveDrivers() []DriverType {
@@ -150,21 +157,21 @@ func (b *baseDEX[Event, Contract]) Subscribe(market Market) error {
 		for {
 			select {
 			case err := <-sub.Err():
-				loggerSyncswap.Warnw("connection failed, resubscribing", "market", market, "err", err)
+				b.logger.Warnw("connection failed, resubscribing", "market", market, "err", err)
 				if _, ok := b.streams.Load(market); !ok {
 					break // market was unsubscribed earlier
 				}
 				if err := b.Unsubscribe(market); err != nil {
-					loggerSyncswap.Errorw("failed to resubscribe", "market", market, "err", err)
+					b.logger.Errorw("failed to resubscribe", "market", market, "err", err)
 				}
 				if err := b.Subscribe(market); err != nil {
-					loggerSyncswap.Errorw("failed to resubscribe", "market", market, "err", err)
+					b.logger.Errorw("failed to resubscribe", "market", market, "err", err)
 				}
 				return
 			case swap := <-sink:
 				tr, err := b.parse(swap, market, pool)
 				if err != nil {
-					loggerSyncswap.Errorw("failed to parse swap event", "market", market, "err", err)
+					b.logger.Errorw("failed to parse swap event", "market", market, "err", err)
 					continue
 				}
 
