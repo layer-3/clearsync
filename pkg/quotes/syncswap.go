@@ -159,7 +159,6 @@ func (s *syncswap) getTokens(market Market) (baseToken poolToken, quoteToken poo
 
 func (*syncswap) parseSwap(
 	swap *isyncswap_pool.ISyncSwapPoolSwap,
-	market Market,
 	pool *dexPool[isyncswap_pool.ISyncSwapPoolSwap],
 ) (TradeEvent, error) {
 	var takerType TakerType
@@ -192,22 +191,19 @@ func (*syncswap) parseSwap(
 		total = amount1In
 		amount = amount0Out
 	default:
-		loggerSyncswap.Errorf("market %s: unknown swap type", market.String())
-		return TradeEvent{}, fmt.Errorf("market %s: unknown swap type", market.String())
+		loggerSyncswap.Errorw("unknown swap type", "market", pool.Market())
+		return TradeEvent{}, fmt.Errorf("market %s: unknown swap type", pool.Market())
 	}
 
-	amount = amount.Abs()
-	tr := TradeEvent{
+	return TradeEvent{
 		Source:    DriverSyncswap,
-		Market:    market,
+		Market:    pool.Market(),
 		Price:     price,
-		Amount:    amount,
+		Amount:    amount.Abs(),
 		Total:     total,
 		TakerType: takerType,
 		CreatedAt: time.Now(),
-	}
-
-	return tr, nil
+	}, nil
 }
 
 func isValidNonZero(x *big.Int) bool {

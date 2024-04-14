@@ -24,7 +24,7 @@ type baseDEX[Event any, Contract any] struct {
 	// Hooks
 	start   func() error
 	getPool func(Market) (*dexPool[Event], error)
-	parse   func(*Event, Market, *dexPool[Event]) (TradeEvent, error)
+	parse   func(*Event, *dexPool[Event]) (TradeEvent, error)
 
 	// State
 	client  *ethclient.Client
@@ -44,7 +44,7 @@ func newBaseDEX[Event any, Contract any](
 
 	startHook func() error,
 	poolGetter func(Market) (*dexPool[Event], error),
-	eventParser func(*Event, Market, *dexPool[Event]) (TradeEvent, error),
+	eventParser func(*Event, *dexPool[Event]) (TradeEvent, error),
 ) *baseDEX[Event, Contract] {
 	return &baseDEX[Event, Contract]{
 		// Params
@@ -169,7 +169,7 @@ func (b *baseDEX[Event, Contract]) Subscribe(market Market) error {
 				}
 				return
 			case swap := <-sink:
-				tr, err := b.parse(swap, market, pool)
+				tr, err := b.parse(swap, pool)
 				if err != nil {
 					b.logger.Errorw("failed to parse swap event", "market", market, "err", err)
 					continue
@@ -217,4 +217,8 @@ type dexPool[Event any] struct {
 	baseToken  poolToken
 	quoteToken poolToken
 	reverted   bool
+}
+
+func (pool dexPool[Event]) Market() Market {
+	return NewMarket(pool.baseToken.Symbol, pool.quoteToken.Symbol)
 }
