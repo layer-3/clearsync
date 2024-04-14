@@ -33,7 +33,7 @@ func (config Config) GetByDriverType(driver DriverType) (Config, error) {
 		return Config{}, fmt.Errorf("driver is not configured: %s", driver)
 	}
 
-	switch config.Drivers[0] {
+	switch driver {
 	case DriverBinance:
 		return Config{Drivers: []DriverType{DriverBinance}, Binance: config.Binance}, nil
 	case DriverKraken:
