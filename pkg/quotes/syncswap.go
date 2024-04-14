@@ -83,14 +83,14 @@ func (s *syncswap) getPool(market Market) (*dexPool[isyncswap_pool.ISyncSwapPool
 	var poolAddress common.Address
 	zeroAddress := common.HexToAddress("0x0")
 	if _, ok := s.stablePoolMarkets[market]; ok {
-		loggerSyncswap.Infof("market %s is a stable pool", market)
+		loggerSyncswap.Infow("found stable pool", "market", market)
 		poolAddress, err = s.stableFactory.GetPool(
 			nil,
 			common.HexToAddress(baseToken.Address),
 			common.HexToAddress(quoteToken.Address),
 		)
 	} else {
-		loggerSyncswap.Infof("market %s is a classic pool", market)
+		loggerSyncswap.Infow("found classic pool", "market", market)
 		poolAddress, err = s.classicFactory.GetPool(
 			nil,
 			common.HexToAddress(baseToken.Address),
@@ -103,7 +103,7 @@ func (s *syncswap) getPool(market Market) (*dexPool[isyncswap_pool.ISyncSwapPool
 	if poolAddress == zeroAddress {
 		return nil, fmt.Errorf("classic pool for market %s does not exist", market)
 	}
-	loggerSyncswap.Infof("got pool %s for market %s", poolAddress, market)
+	loggerSyncswap.Infow("pool found", "address", poolAddress, "market", market)
 
 	poolContract, err := isyncswap_pool.NewISyncSwapPool(poolAddress, s.base.Client())
 	if err != nil {
@@ -145,14 +145,14 @@ func (s *syncswap) getTokens(market Market) (baseToken poolToken, quoteToken poo
 		err = fmt.Errorf("tokens '%s' does not exist", market.Base())
 		return
 	}
-	loggerSyncswap.Infof("market %s: base token address is %s", market, baseToken.Address)
+	loggerSyncswap.Infof("found base token", "address", baseToken.Address, "market", market)
 
 	quoteToken, ok = s.base.Assets().Load(strings.ToUpper(market.Quote()))
 	if !ok {
 		err = fmt.Errorf("tokens '%s' does not exist", market.Quote())
 		return
 	}
-	loggerSyncswap.Infof("market %s: quote token address is %s", market, quoteToken.Address)
+	loggerSyncswap.Infof("found quote token", "address", quoteToken.Address, "market", market)
 
 	return baseToken, quoteToken, nil
 }
@@ -168,7 +168,7 @@ func (*syncswap) parseSwap(
 
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Printf("Recovered after parse swap panic. Swap = %+v\n", swap)
+			loggerSyncswap.Errorw("recovered after parse swap panic", "swap", swap)
 		}
 	}()
 
