@@ -47,6 +47,7 @@ func newSyncswap(config SyncswapConfig, outbox chan<- TradeEvent) Driver {
 		}
 		stablePoolMarkets[market] = struct{}{}
 	}
+	loggerSyncswap.Debugw("configured stable pool markets", "markets", stablePoolMarkets)
 
 	return &syncswap{
 		once:      newOnce(),
