@@ -73,6 +73,7 @@ func newBaseDEX[Event any, Contract any](config baseDexConfig[Event, Contract]) 
 		outbox:  config.Outbox,
 		filter:  NewFilter(config.Filter),
 		streams: safe.NewMap[Market, event.Subscription](),
+		assets:  safe.NewMap[string, poolToken](),
 		mapping: safe.NewMap[string, []string](),
 	}
 }
