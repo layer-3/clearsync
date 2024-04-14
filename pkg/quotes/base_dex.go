@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ipfs/go-log/v2"
+	"github.com/shopspring/decimal"
 
 	"github.com/layer-3/clearsync/pkg/safe"
 )
@@ -211,15 +212,24 @@ func (b *baseDEX[Event, Contract]) SetInbox(inbox <-chan TradeEvent) {
 	panic("not implemented")
 }
 
-type dexEventWatcher[Event any] interface {
-	WatchSwap(opts *bind.WatchOpts, sink chan<- *Event, from []common.Address, to []common.Address) (event.Subscription, error)
-}
-
 type dexPool[Event any] struct {
 	contract   dexEventWatcher[Event]
 	baseToken  poolToken
 	quoteToken poolToken
 	reverted   bool
+}
+
+type dexEventWatcher[Event any] interface {
+	WatchSwap(opts *bind.WatchOpts, sink chan<- *Event, from []common.Address, to []common.Address) (event.Subscription, error)
+}
+
+type poolToken struct {
+	Name     string
+	Address  string
+	Symbol   string
+	Decimals decimal.Decimal
+	ChainId  uint
+	LogoURI  string
 }
 
 func (pool dexPool[Event]) Market() Market {

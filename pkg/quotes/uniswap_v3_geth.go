@@ -3,18 +3,14 @@ package quotes
 import (
 	"fmt"
 	"math/big"
-	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/event"
 	"github.com/ipfs/go-log/v2"
 	"github.com/shopspring/decimal"
 
 	"github.com/layer-3/clearsync/pkg/abi/iuniswap_v3_factory"
 	"github.com/layer-3/clearsync/pkg/abi/iuniswap_v3_pool"
-	"github.com/layer-3/clearsync/pkg/safe"
 )
 
 var (
@@ -24,202 +20,43 @@ var (
 )
 
 type uniswapV3Geth struct {
-	once           *once
-	url            string
-	assetsURL      string
-	factoryAddress string
-	client         *ethclient.Client
-	factory        *iuniswap_v3_factory.IUniswapV3Factory
+	base *baseDEX[iuniswap_v3_pool.IUniswapV3PoolSwap, iuniswap_v3_pool.IUniswapV3Pool]
 
-	outbox  chan<- TradeEvent
-	filter  Filter
-	streams safe.Map[Market, event.Subscription]
-	assets  safe.Map[string, poolToken]
+	factoryAddress common.Address
+	factory        *iuniswap_v3_factory.IUniswapV3Factory
 }
 
 func newUniswapV3Geth(config UniswapV3GethConfig, outbox chan<- TradeEvent) Driver {
-	return &uniswapV3Geth{
-		once:           newOnce(),
-		url:            config.URL,
-		assetsURL:      config.AssetsURL,
-		factoryAddress: config.FactoryAddress,
-
-		outbox:  outbox,
-		filter:  NewFilter(config.Filter),
-		streams: safe.NewMap[Market, event.Subscription](),
-		assets:  safe.NewMap[string, poolToken](),
-	}
-}
-
-func (u *uniswapV3Geth) ActiveDrivers() []DriverType {
-	return []DriverType{DriverUniswapV3Geth}
-}
-
-func (b *uniswapV3Geth) ExchangeType() ExchangeType {
-	return ExchangeTypeDEX
-}
-
-func (u *uniswapV3Geth) Start() error {
-	var startErr error
-	started := u.once.Start(func() {
-		if !strings.HasPrefix(u.url, "ws") {
-			startErr = fmt.Errorf("websocket URL must start with ws:// or wss:// (got %s)", u.url)
-			return
-		}
-
-		client, err := ethclient.Dial(u.url)
-		if err != nil {
-			startErr = fmt.Errorf("failed to connect to the Ethereum client: %w", err)
-			return
-		}
-		u.client = client
-
-		// Check addresses here: https://docs.uniswap.org/contracts/v3/reference/deployments
-		factoryAddress := common.HexToAddress(u.factoryAddress)
-		uniswapFactory, err := iuniswap_v3_factory.NewIUniswapV3Factory(factoryAddress, client)
-		if err != nil {
-			startErr = fmt.Errorf("failed to build Uniswap v3 factory: %w", err)
-			return
-		}
-		u.factory = uniswapFactory
-
-		assets, err := getAssets(u.assetsURL)
-		if err != nil {
-			startErr = fmt.Errorf("failed to fetch assets: %w", err)
-			return
-		}
-		for _, asset := range assets {
-			u.assets.Store(strings.ToUpper(asset.Symbol), asset)
-		}
-	})
-
-	if !started {
-		return errAlreadyStarted
-	}
-	return startErr
-}
-
-func (u *uniswapV3Geth) Stop() error {
-	stopped := u.once.Stop(func() {
-		u.streams.Range(func(market Market, _ event.Subscription) bool {
-			err := u.Unsubscribe(market)
-			return err == nil
-		})
-
-		u.streams = safe.NewMap[Market, event.Subscription]() // delete all stopped streams
-	})
-
-	if !stopped {
-		return errAlreadyStopped
-	}
-	return nil
-}
-
-func (u *uniswapV3Geth) Subscribe(market Market) error {
-	if !u.once.Subscribe() {
-		return errNotStarted
+	hooks := &uniswapV3Geth{
+		factoryAddress: common.HexToAddress(config.FactoryAddress),
 	}
 
-	if _, ok := u.streams.Load(market); ok {
-		return fmt.Errorf("%s: %w", market, errAlreadySubbed)
-	}
+	driver := newBaseDEX[iuniswap_v3_pool.IUniswapV3PoolSwap, iuniswap_v3_pool.IUniswapV3Pool](
+		DriverUniswapV3Geth,
+		config.URL,
+		config.AssetsURL,
+		outbox,
+		config.Filter,
+		loggerUniswapV3Geth,
+		hooks.start,
+		hooks.getPool,
+		hooks.parseSwap,
+	)
+	hooks.base = driver
 
-	pool, err := u.getPool(market)
+	return driver
+}
+
+func (u *uniswapV3Geth) start() (err error) {
+	// Check addresses here: https://docs.uniswap.org/contracts/v3/reference/deployments
+	u.factory, err = iuniswap_v3_factory.NewIUniswapV3Factory(u.factoryAddress, u.base.Client())
 	if err != nil {
-		return fmt.Errorf("failed get pool for market %v: %s", market.String(), err)
+		return fmt.Errorf("failed to build Uniswap v3 factory: %w", err)
 	}
-
-	sink := make(chan *iuniswap_v3_pool.IUniswapV3PoolSwap, 128)
-	sub, err := pool.contract.WatchSwap(nil, sink, []common.Address{}, []common.Address{})
-	if err != nil {
-		return fmt.Errorf("failed to subscribe to swaps for market %s: %w", market, err)
-	}
-
-	go func() {
-		defer close(sink)
-		for {
-			select {
-			case err := <-sub.Err():
-				loggerUniswapV3Geth.Errorf("market %s: %s", market.String(), err)
-				if _, ok := u.streams.Load(market); !ok {
-					break // market was unsubscribed earlier
-				}
-				if err := u.Unsubscribe(market); err != nil {
-					loggerUniswapV3Geth.Errorf("market %s: failed to resubscribe: %s", market.String(), err)
-				}
-				if err := u.Subscribe(market); err != nil {
-					loggerUniswapV3Geth.Errorf("market %s: failed to resubscribe: %s", market.String(), err)
-				}
-				return
-			case swap := <-sink:
-				amount := decimal.NewFromBigInt(swap.Amount0, 0)
-				price := calculatePrice(
-					decimal.NewFromBigInt(swap.SqrtPriceX96, 0),
-					pool.baseToken.Decimals,
-					pool.quoteToken.Decimals)
-				takerType := TakerTypeBuy
-				if amount.Sign() < 0 {
-					// When amount0 is negative (and amount1 is positive),
-					// it means token0 is leaving the pool in exchange for token1.
-					// This is equivalent to a "sell" of token0 (or a "buy" of token1).
-					takerType = TakerTypeSell
-				}
-
-				amount = amount.Abs()
-				tr := TradeEvent{
-					Source:    DriverUniswapV3Geth,
-					Market:    market,
-					Price:     price,
-					Amount:    amount,
-					Total:     price.Mul(amount),
-					TakerType: takerType,
-					CreatedAt: time.Now(),
-				}
-
-				if !u.filter.Allow(tr) {
-					continue
-				}
-				u.outbox <- tr
-			}
-		}
-	}()
-
-	u.streams.Store(market, sub)
 	return nil
 }
 
-func (u *uniswapV3Geth) Unsubscribe(market Market) error {
-	if !u.once.Unsubscribe() {
-		return errNotStarted
-	}
-
-	stream, ok := u.streams.Load(market)
-	if !ok {
-		return fmt.Errorf("%s: %w", market, errNotSubbed)
-	}
-
-	stream.Unsubscribe()
-	u.streams.Delete(market)
-
-	return nil
-}
-
-type poolToken struct {
-	Name     string
-	Address  string
-	Symbol   string
-	Decimals decimal.Decimal
-	ChainId  uint
-	LogoURI  string
-}
-
-type uniswapV3GethPoolWrapper struct {
-	contract   *iuniswap_v3_pool.IUniswapV3Pool
-	baseToken  poolToken
-	quoteToken poolToken
-}
-
-func (u *uniswapV3Geth) getPool(market Market) (*uniswapV3GethPoolWrapper, error) {
+func (u *uniswapV3Geth) getPool(market Market) (*dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap], error) {
 	baseToken, quoteToken, err := getTokens(u.base.Assets(), market, loggerUniswapV3Geth)
 	if err != nil {
 		return nil, err
@@ -244,17 +81,39 @@ func (u *uniswapV3Geth) getPool(market Market) (*uniswapV3GethPoolWrapper, error
 	}
 	loggerUniswapV3Geth.Infof("got pool %s for market %s", poolAddress, market)
 
-	poolContract, err := iuniswap_v3_pool.NewIUniswapV3Pool(poolAddress, u.client)
+	poolContract, err := iuniswap_v3_pool.NewIUniswapV3Pool(poolAddress, u.base.Client())
 	if err != nil {
 		return nil, fmt.Errorf("failed to build Uniswap v3 pool: %w", err)
 	}
-	return &uniswapV3GethPoolWrapper{
+
+	return &dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap]{
 		contract:   poolContract,
 		baseToken:  baseToken,
 		quoteToken: quoteToken,
 	}, nil
 }
 
-// Not implemented
-func (u *uniswapV3Geth) SetInbox(inbox <-chan TradeEvent) {
+func (u *uniswapV3Geth) parseSwap(swap *iuniswap_v3_pool.IUniswapV3PoolSwap, pool *dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap]) (TradeEvent, error) {
+	amount := decimal.NewFromBigInt(swap.Amount0, 0)
+	price := calculatePrice(
+		decimal.NewFromBigInt(swap.SqrtPriceX96, 0),
+		pool.baseToken.Decimals,
+		pool.quoteToken.Decimals)
+	takerType := TakerTypeBuy
+	if amount.Sign() < 0 {
+
+		takerType = TakerTypeSell
+	}
+
+	amount = amount.Abs()
+	tr := TradeEvent{
+		Source:    DriverUniswapV3Geth,
+		Market:    pool.Market(),
+		Price:     price,
+		Amount:    amount,
+		Total:     price.Mul(amount),
+		TakerType: takerType,
+		CreatedAt: time.Now(),
+	}
+	return tr, nil
 }
