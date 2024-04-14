@@ -66,9 +66,10 @@ func NewConfigFromEnv() (Config, error) {
 }
 
 type IndexConfig struct {
-	TradesCached   int                 `yaml:"trades_cached" env:"TRADES_CACHED" env-default:"20"`
-	BufferMinutes  int                 `yaml:"buffer_minutes" env:"BUFFER_MINUTES" env-default:"15"`
-	MarketsMapping map[string][]string `yaml:"markets_mapping" env:"MARKETS_MAPPING"`
+	BatchedCached        int                 `yaml:"batches_cached" env:"BATCHES_CACHED" env-default:"20"`
+	BatchesBufferMinutes int                 `yaml:"batches_minutes" env:"BATCHES_MINUTES" env-default:"15"`
+	TradesBufferSeconds  int                 `yaml:"trades_buffer_seconds" env:"TRADES_BUFFER_SECONDS" env-default:"5"`
+	MarketsMapping       map[string][]string `yaml:"markets_mapping" env:"MARKETS_MAPPING"`
 }
 
 type BinanceConfig struct {

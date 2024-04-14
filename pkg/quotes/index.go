@@ -46,15 +46,28 @@ func newIndexAggregator(config Config, marketsMapping map[string][]string, strat
 	}
 
 	go func() {
-		for event := range aggregated {
-			indexPrice, ok := strategy.calculateIndexPrice(event)
-			if ok && event.Source != DriverInternal {
-				if event.Market.convertTo != "" {
-					event.Market.quoteUnit = event.Market.convertTo
+		marketTrades := make(map[Market][]TradeEvent)
+		timer := time.NewTimer(time.Duration(config.Index.TradesBufferSeconds) * time.Second)
+		for {
+			select {
+			case trade := <-aggregated:
+				marketTrades[trade.Market] = append(marketTrades[trade.Market], trade)
+			case <-timer.C:
+				for market, trades := range marketTrades {
+					event := combineTrades(trades)
+					if event != nil {
+						indexPrice, ok := strategy.calculateIndexPrice(*event)
+						if ok && event.Source != DriverInternal {
+							if event.Market.convertTo != "" {
+								event.Market.quoteUnit = event.Market.convertTo
+							}
+							event.Price = indexPrice
+							outbox <- *event
+						}
+						marketTrades[market] = nil
+					}
 				}
-				event.Price = indexPrice
-				event.Source = DriverType{"index/" + event.Source.String()}
-				outbox <- event
+				timer.Reset(time.Duration(config.Index.TradesBufferSeconds) * time.Second)
 			}
 		}
 	}()
@@ -63,6 +76,63 @@ func newIndexAggregator(config Config, marketsMapping map[string][]string, strat
 		drivers:        drivers,
 		marketsMapping: marketsMapping,
 		aggregated:     aggregated,
+	}
+}
+
+// TODO: add driver weights adjustment
+func combineTrades(trades []TradeEvent) *TradeEvent {
+	if len(trades) == 0 {
+		return nil
+	}
+
+	totalBuyAmount := decimal.Zero
+	totalSellAmount := decimal.Zero
+	totalBuyValue := decimal.Zero
+	totalSellValue := decimal.Zero
+
+	for _, trade := range trades {
+		if trade.TakerType == TakerTypeBuy {
+			totalBuyAmount = totalBuyAmount.Add(trade.Amount)
+			totalBuyValue = totalBuyValue.Add(trade.Amount.Mul(trade.Price))
+		} else if trade.TakerType == TakerTypeSell {
+			totalSellAmount = totalSellAmount.Add(trade.Amount)
+			totalSellValue = totalSellValue.Add(trade.Amount.Mul(trade.Price))
+		}
+	}
+
+	if totalBuyAmount.Equal(decimal.Zero) && totalSellAmount.Equal(decimal.Zero) {
+		return nil
+	}
+
+	var avgBuyPrice, avgSellPrice decimal.Decimal
+	if !totalBuyAmount.IsZero() {
+		avgBuyPrice = totalBuyValue.Div(totalBuyAmount)
+	}
+	if !totalSellAmount.IsZero() {
+		avgSellPrice = totalSellValue.Div(totalSellAmount)
+	}
+
+	var netSide TakerType
+	var netPrice decimal.Decimal
+
+	netAmount := totalBuyAmount.Sub(totalSellAmount)
+	if netAmount.GreaterThan(decimal.Zero) {
+		netSide = TakerTypeBuy
+		netPrice = avgBuyPrice
+	} else {
+		netSide = TakerTypeSell
+		netPrice = avgSellPrice
+		netAmount = netAmount.Abs()
+	}
+
+	return &TradeEvent{
+		Source:    DriverType{"index"},
+		Market:    trades[0].Market,
+		Price:     netPrice,
+		Amount:    netAmount,
+		Total:     netPrice.Mul(netAmount),
+		TakerType: netSide,
+		CreatedAt: time.Now(),
 	}
 }
 
@@ -76,7 +146,7 @@ func newIndex(config Config, outbox chan<- TradeEvent) Driver {
 	return newIndexAggregator(
 		config,
 		marketsMapping,
-		newStrategyVWA(withCustomPriceCacheVWA(newPriceCacheVWA(defaultWeightsMap, config.Index.TradesCached, time.Duration(config.Index.BufferMinutes)*time.Minute))),
+		newStrategyVWA(withCustomPriceCacheVWA(newPriceCacheVWA(defaultWeightsMap, config.Index.BatchedCached, time.Duration(config.Index.BatchesBufferMinutes)*time.Minute))),
 		outbox,
 	)
 }
