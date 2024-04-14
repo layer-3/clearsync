@@ -4,21 +4,6 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-
-	"github.com/shopspring/decimal"
-)
-
-var (
-	DefaultWeightsMap = map[DriverType]decimal.Decimal{
-		DriverKraken:        decimal.NewFromInt(15),
-		DriverBinance:       decimal.NewFromInt(20),
-		DriverUniswapV3Api:  decimal.NewFromInt(50),
-		DriverUniswapV3Geth: decimal.NewFromInt(50),
-		DriverSyncswap:      decimal.NewFromInt(50),
-		DriverQuickswap:     decimal.NewFromInt(50),
-	}
-
-	DefaultMarketsMapping = map[string][]string{"usd": {"eth", "weth", "matic"}}
 )
 
 func getMapping(url string) (map[string][]string, error) {
