@@ -2,185 +2,59 @@ package quotes
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/event"
 	"github.com/ipfs/go-log/v2"
+	"github.com/shopspring/decimal"
+
 	"github.com/layer-3/clearsync/pkg/abi/iquickswap_v3_factory"
 	"github.com/layer-3/clearsync/pkg/abi/iquickswap_v3_pool"
-	"github.com/layer-3/clearsync/pkg/safe"
-	"github.com/shopspring/decimal"
 )
 
 var loggerQuickswap = log.Logger("quickswap")
 
 type quickswap struct {
-	once               *once
-	url                string
-	assetsURL          string
-	poolFactoryAddress string
-	client             *ethclient.Client
+	base               *baseDEX[iquickswap_v3_pool.IQuickswapV3PoolSwap, iquickswap_v3_pool.IQuickswapV3Pool]
+	poolFactoryAddress common.Address
 	factory            *iquickswap_v3_factory.IQuickswapV3Factory
-
-	outbox  chan<- TradeEvent
-	filter  Filter
-	streams safe.Map[Market, event.Subscription]
-	assets  safe.Map[string, poolToken]
 }
 
 func newQuickswap(config QuickswapConfig, outbox chan<- TradeEvent) Driver {
-	return &quickswap{
-		once:               newOnce(),
-		url:                config.URL,
-		assetsURL:          config.AssetsURL,
-		poolFactoryAddress: config.PoolFactoryAddress,
-
-		outbox:  outbox,
-		filter:  NewFilter(config.Filter),
-		streams: safe.NewMap[Market, event.Subscription](),
-		assets:  safe.NewMap[string, poolToken](),
-	}
-}
-
-func (s *quickswap) ActiveDrivers() []DriverType {
-	return []DriverType{DriverQuickswap}
-}
-
-func (b *quickswap) ExchangeType() ExchangeType {
-	return ExchangeTypeDEX
-}
-
-func (s *quickswap) Start() error {
-	var startErr error
-	started := s.once.Start(func() {
-		if !(strings.HasPrefix(s.url, "ws://") || strings.HasPrefix(s.url, "wss://")) {
-			startErr = fmt.Errorf("%s (got '%s')", errInvalidWsURL, s.url)
-			return
-		}
-
-		client, err := ethclient.Dial(s.url)
-		if err != nil {
-			startErr = fmt.Errorf("failed to connect to the Ethereum client: %w", err)
-			return
-		}
-		s.client = client
-
-		// Check addresses here: https://quickswap.gitbook.io/quickswap/smart-contracts/smart-contracts
-		poolFactoryAddress := common.HexToAddress(s.poolFactoryAddress)
-		factory, err := iquickswap_v3_factory.NewIQuickswapV3Factory(poolFactoryAddress, client)
-		if err != nil {
-			startErr = fmt.Errorf("failed to instantiate a Quickwap Factory contract: %w", err)
-			return
-		}
-		s.factory = factory
-
-		assets, err := getAssets(s.assetsURL)
-		if err != nil {
-			startErr = fmt.Errorf("failed to fetch assets: %w", err)
-			return
-		}
-		for _, asset := range assets {
-			s.assets.Store(strings.ToUpper(asset.Symbol), asset)
-		}
-	})
-
-	if !started {
-		return errAlreadyStarted
-	}
-	return startErr
-}
-
-func (s *quickswap) Stop() error {
-	stopped := s.once.Stop(func() {
-		s.streams.Range(func(market Market, _ event.Subscription) bool {
-			err := s.Unsubscribe(market)
-			return err == nil
-		})
-
-		s.streams = safe.NewMap[Market, event.Subscription]() // delete all stopped streams
-	})
-
-	if !stopped {
-		return errAlreadyStopped
-	}
-	return nil
-}
-
-func (s *quickswap) Subscribe(market Market) error {
-	if !s.once.Subscribe() {
-		return errNotStarted
+	hooks := &quickswap{
+		poolFactoryAddress: common.HexToAddress(config.PoolFactoryAddress),
 	}
 
-	if _, ok := s.streams.Load(market); ok {
-		return fmt.Errorf("%s: %w", market, errAlreadySubbed)
-	}
+	driver := newBaseDEX[iquickswap_v3_pool.IQuickswapV3PoolSwap, iquickswap_v3_pool.IQuickswapV3Pool](
+		DriverQuickswap,
+		config.URL,
+		config.AssetsURL,
+		outbox,
 
-	pool, err := s.getPool(market)
+		config.Filter,
+		loggerQuickswap,
+		hooks.start,
+		hooks.getPool,
+		hooks.parseSwap,
+	)
+	hooks.base = driver
+
+	return driver
+}
+
+func (s *quickswap) start() (err error) {
+	// Check addresses here: https://quickswap.gitbook.io/quickswap/smart-contracts/smart-contracts
+	s.factory, err = iquickswap_v3_factory.NewIQuickswapV3Factory(s.poolFactoryAddress, s.base.Client())
 	if err != nil {
-		return fmt.Errorf("failed to get pool for market %v: %s", market.String(), err)
+		return fmt.Errorf("failed to instantiate a Quickwap Factory contract: %w", err)
 	}
-
-	sink := make(chan *iquickswap_v3_pool.IQuickswapV3PoolSwap, 128)
-	sub, err := pool.contract.WatchSwap(nil, sink, []common.Address{}, []common.Address{})
-	if err != nil {
-		return fmt.Errorf("failed to subscribe to swaps for market %s: %w", market, err)
-	}
-
-	go func() {
-		defer close(sink)
-		for {
-			select {
-			case err := <-sub.Err():
-				loggerQuickswap.Errorf("market %s: %s", market.String(), err)
-				if _, ok := s.streams.Load(market); !ok {
-					break // market was unsubscribed earlier
-				}
-				if err := s.Unsubscribe(market); err != nil {
-					loggerQuickswap.Errorf("market %s: failed to resubscribe: %s", market.String(), err)
-				}
-				if err := s.Subscribe(market); err != nil {
-					loggerQuickswap.Errorf("market %s: failed to resubscribe: %s", market.String(), err)
-				}
-				return
-			case swap := <-sink:
-				tr, err := s.parseSwap(swap, pool)
-				if err != nil {
-					loggerQuickswap.Errorf("market %s: failed to parse swap: %s", market.String(), err)
-					continue
-				}
-
-				if !s.filter.Allow(tr) {
-					continue
-				}
-				s.outbox <- tr
-			}
-		}
-	}()
-
-	s.streams.Store(market, sub)
 	return nil
 }
 
-func (s *quickswap) Unsubscribe(market Market) error {
-	if !s.once.Unsubscribe() {
-		return errNotStarted
-	}
-
-	stream, ok := s.streams.Load(market)
-	if !ok {
-		return fmt.Errorf("%s: %w", market, errNotSubbed)
-	}
-
-	stream.Unsubscribe()
-
-	s.streams.Delete(market)
-	return nil
-}
-
-func (s *quickswap) parseSwap(swap *iquickswap_v3_pool.IQuickswapV3PoolSwap, pool *quickswapPoolWrapper) (TradeEvent, error) {
+func (s *quickswap) parseSwap(
+	swap *iquickswap_v3_pool.IQuickswapV3PoolSwap,
+	pool *dexPool[iquickswap_v3_pool.IQuickswapV3PoolSwap],
+) (TradeEvent, error) {
 	if !isValidNonZero(swap.Amount0) || !isValidNonZero(swap.Amount1) {
 		return TradeEvent{}, fmt.Errorf("either Amount0 (%s) or Amount1 (%s) is invalid", swap.Amount0, swap.Amount1)
 	}
@@ -217,11 +91,8 @@ func (s *quickswap) parseSwap(swap *iquickswap_v3_pool.IQuickswapV3PoolSwap, poo
 	}
 
 	tr := TradeEvent{
-		Source: DriverQuickswap,
-		Market: Market{
-			baseUnit:  pool.baseToken.Symbol,
-			quoteUnit: pool.quoteToken.Symbol,
-		},
+		Source:    DriverQuickswap,
+		Market:    pool.Market(),
 		Price:     price,
 		Amount:    amount.Abs(),
 		Total:     total.Abs(),
@@ -232,15 +103,8 @@ func (s *quickswap) parseSwap(swap *iquickswap_v3_pool.IQuickswapV3PoolSwap, poo
 	return tr, nil
 }
 
-type quickswapPoolWrapper struct {
-	contract   *iquickswap_v3_pool.IQuickswapV3Pool
-	baseToken  poolToken
-	quoteToken poolToken
-	reverted   bool
-}
-
-func (s *quickswap) getPool(market Market) (*quickswapPoolWrapper, error) {
-	baseToken, quoteToken, err := s.getTokens(market)
+func (s *quickswap) getPool(market Market) (*dexPool[iquickswap_v3_pool.IQuickswapV3PoolSwap], error) {
+	baseToken, quoteToken, err := getTokens(s.base.Assets(), market, loggerQuickswap)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tokens: %w", err)
 	}
@@ -260,7 +124,7 @@ func (s *quickswap) getPool(market Market) (*quickswapPoolWrapper, error) {
 	}
 	loggerQuickswap.Infof("got pool %s for market %s", poolAddress, market)
 
-	poolContract, err := iquickswap_v3_pool.NewIQuickswapV3Pool(poolAddress, s.client)
+	poolContract, err := iquickswap_v3_pool.NewIQuickswapV3Pool(poolAddress, s.base.Client())
 	if err != nil {
 		return nil, fmt.Errorf("failed to build quickswap pool: %w", err)
 	}
@@ -275,7 +139,7 @@ func (s *quickswap) getPool(market Market) (*quickswapPoolWrapper, error) {
 		return nil, fmt.Errorf("failed to build quickswap pool: %w", err)
 	}
 
-	pool := &quickswapPoolWrapper{
+	pool := &dexPool[iquickswap_v3_pool.IQuickswapV3PoolSwap]{
 		contract:   poolContract,
 		baseToken:  baseToken,
 		quoteToken: quoteToken,
@@ -290,26 +154,4 @@ func (s *quickswap) getPool(market Market) (*quickswapPoolWrapper, error) {
 	} else {
 		return nil, fmt.Errorf("failed to build quickswap pool: %w", err)
 	}
-}
-
-func (s *quickswap) getTokens(market Market) (baseToken poolToken, quoteToken poolToken, err error) {
-	baseToken, ok := s.assets.Load(strings.ToUpper(market.Base()))
-	if !ok {
-		err = fmt.Errorf("tokens '%s' does not exist", market.Base())
-		return
-	}
-	loggerQuickswap.Infof("market %s: base token address is %s", market, baseToken.Address)
-
-	quoteToken, ok = s.assets.Load(strings.ToUpper(market.Quote()))
-	if !ok {
-		err = fmt.Errorf("tokens '%s' does not exist", market.Quote())
-		return
-	}
-	loggerQuickswap.Infof("market %s: quote token address is %s", market, quoteToken.Address)
-
-	return baseToken, quoteToken, nil
-}
-
-// Not implemented
-func (s *quickswap) SetInbox(inbox <-chan TradeEvent) {
 }

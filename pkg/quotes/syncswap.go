@@ -3,7 +3,6 @@ package quotes
 import (
 	"fmt"
 	"math/big"
-	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -75,7 +74,7 @@ func (s *syncswap) start() (err error) {
 }
 
 func (s *syncswap) getPool(market Market) (*dexPool[isyncswap_pool.ISyncSwapPoolSwap], error) {
-	baseToken, quoteToken, err := s.getTokens(market)
+	baseToken, quoteToken, err := getTokens(s.base.Assets(), market, loggerSyncswap)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tokens: %w", err)
 	}
@@ -137,24 +136,6 @@ func (s *syncswap) getPool(market Market) (*dexPool[isyncswap_pool.ISyncSwapPool
 	} else {
 		return nil, fmt.Errorf("failed to build Syncswap pool: %w", err)
 	}
-}
-
-func (s *syncswap) getTokens(market Market) (baseToken poolToken, quoteToken poolToken, err error) {
-	baseToken, ok := s.base.Assets().Load(strings.ToUpper(market.Base()))
-	if !ok {
-		err = fmt.Errorf("tokens '%s' does not exist", market.Base())
-		return
-	}
-	loggerSyncswap.Infof("found base token", "address", baseToken.Address, "market", market)
-
-	quoteToken, ok = s.base.Assets().Load(strings.ToUpper(market.Quote()))
-	if !ok {
-		err = fmt.Errorf("tokens '%s' does not exist", market.Quote())
-		return
-	}
-	loggerSyncswap.Infof("found quote token", "address", quoteToken.Address, "market", market)
-
-	return baseToken, quoteToken, nil
 }
 
 func (*syncswap) parseSwap(

@@ -1,11 +1,8 @@
 package quotes
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
 	"math/big"
-	"net/http"
 	"strings"
 	"time"
 
@@ -223,7 +220,7 @@ type uniswapV3GethPoolWrapper struct {
 }
 
 func (u *uniswapV3Geth) getPool(market Market) (*uniswapV3GethPoolWrapper, error) {
-	baseToken, quoteToken, err := u.getTokens(market)
+	baseToken, quoteToken, err := getTokens(u.base.Assets(), market, loggerUniswapV3Geth)
 	if err != nil {
 		return nil, err
 	}
@@ -256,43 +253,6 @@ func (u *uniswapV3Geth) getPool(market Market) (*uniswapV3GethPoolWrapper, error
 		baseToken:  baseToken,
 		quoteToken: quoteToken,
 	}, nil
-}
-
-func (u *uniswapV3Geth) getTokens(market Market) (baseToken poolToken, quoteToken poolToken, err error) {
-	baseToken, ok := u.assets.Load(strings.ToUpper(market.Base()))
-	if !ok {
-		err = fmt.Errorf("tokens '%s' does not exist", market.Base())
-		return
-	}
-	loggerUniswapV3Geth.Infof("market %s: base token address is %s", market, baseToken.Address)
-
-	quoteToken, ok = u.assets.Load(strings.ToUpper(market.Quote()))
-	if !ok {
-		err = fmt.Errorf("tokens '%s' does not exist", market.Quote())
-		return
-	}
-	loggerUniswapV3Geth.Infof("market %s: quote token address is %s", market, quoteToken.Address)
-
-	return baseToken, quoteToken, nil
-}
-
-func getAssets(assetsURL string) ([]poolToken, error) {
-	resp, err := http.Get(assetsURL)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	var assets map[string][]poolToken
-	if err := json.Unmarshal(body, &assets); err != nil {
-		return nil, err
-	}
-	return assets["tokens"], nil
 }
 
 // Not implemented

@@ -1,7 +1,10 @@
 package quotes
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -221,4 +224,45 @@ type dexPool[Event any] struct {
 
 func (pool dexPool[Event]) Market() Market {
 	return NewMarket(pool.baseToken.Symbol, pool.quoteToken.Symbol)
+}
+
+func getTokens(
+	assets *safe.Map[string, poolToken],
+	market Market,
+	logger *log.ZapEventLogger,
+) (baseToken poolToken, quoteToken poolToken, err error) {
+	baseToken, ok := assets.Load(strings.ToUpper(market.Base()))
+	if !ok {
+		err = fmt.Errorf("tokens '%s' does not exist", market.Base())
+		return
+	}
+	logger.Infow("found base token", "address", baseToken.Address, "market", market)
+
+	quoteToken, ok = assets.Load(strings.ToUpper(market.Quote()))
+	if !ok {
+		err = fmt.Errorf("tokens '%s' does not exist", market.Quote())
+		return
+	}
+	logger.Infow("found quote token", "address", quoteToken.Address, "market", market)
+
+	return baseToken, quoteToken, nil
+}
+
+func getAssets(assetsURL string) ([]poolToken, error) {
+	resp, err := http.Get(assetsURL)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var assets map[string][]poolToken
+	if err := json.Unmarshal(body, &assets); err != nil {
+		return nil, err
+	}
+	return assets["tokens"], nil
 }
