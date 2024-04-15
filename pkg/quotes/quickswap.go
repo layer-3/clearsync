@@ -34,20 +34,17 @@ func newQuickswap(config QuickswapConfig, outbox chan<- TradeEvent) Driver {
 		Filter:     config.Filter,
 		Logger:     loggerQuickswap,
 		// Hooks
-		StartHook:   hooks.start,
-		PoolGetter:  hooks.getPool,
-		EventParser: hooks.parseSwap,
+		PostStartHook: hooks.postStart,
+		PoolGetter:    hooks.getPool,
+		EventParser:   hooks.parseSwap,
 	}
 
-	driver := newBaseDEX[iquickswap_v3_pool.IQuickswapV3PoolSwap, iquickswap_v3_pool.IQuickswapV3Pool](params)
-	hooks.base = driver
-
-	return driver
+	return newBaseDEX[iquickswap_v3_pool.IQuickswapV3PoolSwap, iquickswap_v3_pool.IQuickswapV3Pool](params)
 }
 
-func (s *quickswap) start() (err error) {
+func (s *quickswap) postStart(driver *baseDEX[iquickswap_v3_pool.IQuickswapV3PoolSwap, iquickswap_v3_pool.IQuickswapV3Pool]) (err error) {
 	// Check addresses here: https://quickswap.gitbook.io/quickswap/smart-contracts/smart-contracts
-	s.factory, err = iquickswap_v3_factory.NewIQuickswapV3Factory(s.poolFactoryAddress, s.base.Client())
+	s.factory, err = iquickswap_v3_factory.NewIQuickswapV3Factory(s.poolFactoryAddress, driver.Client())
 	if err != nil {
 		return fmt.Errorf("failed to instantiate a Quickwap Factory contract: %w", err)
 	}

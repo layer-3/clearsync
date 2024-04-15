@@ -2,6 +2,8 @@ package quotes
 
 import (
 	"fmt"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/layer-3/clearsync/pkg/safe"
 	"math/big"
 	"time"
 
@@ -20,10 +22,10 @@ var (
 )
 
 type uniswapV3Geth struct {
-	base *baseDEX[iuniswap_v3_pool.IUniswapV3PoolSwap, iuniswap_v3_pool.IUniswapV3Pool]
-
 	factoryAddress common.Address
 	factory        *iuniswap_v3_factory.IUniswapV3Factory
+	assets         *safe.Map[string, poolToken]
+	client         *ethclient.Client
 }
 
 func newUniswapV3Geth(config UniswapV3GethConfig, outbox chan<- TradeEvent) Driver {
@@ -40,20 +42,20 @@ func newUniswapV3Geth(config UniswapV3GethConfig, outbox chan<- TradeEvent) Driv
 		Filter:     config.Filter,
 		Logger:     loggerUniswapV3Geth,
 		// Hooks
-		StartHook:   hooks.start,
-		PoolGetter:  hooks.getPool,
-		EventParser: hooks.parseSwap,
+		PostStartHook: hooks.postStart,
+		PoolGetter:    hooks.getPool,
+		EventParser:   hooks.parseSwap,
 	}
 
-	driver := newBaseDEX[iuniswap_v3_pool.IUniswapV3PoolSwap, iuniswap_v3_pool.IUniswapV3Pool](params)
-	hooks.base = driver
-
-	return driver
+	return newBaseDEX[iuniswap_v3_pool.IUniswapV3PoolSwap, iuniswap_v3_pool.IUniswapV3Pool](params)
 }
 
-func (u *uniswapV3Geth) start() (err error) {
+func (u *uniswapV3Geth) postStart(driver *baseDEX[iuniswap_v3_pool.IUniswapV3PoolSwap, iuniswap_v3_pool.IUniswapV3Pool]) (err error) {
+	u.client = driver.Client()
+	u.assets = driver.Assets()
+
 	// Check addresses here: https://docs.uniswap.org/contracts/v3/reference/deployments
-	u.factory, err = iuniswap_v3_factory.NewIUniswapV3Factory(u.factoryAddress, u.base.Client())
+	u.factory, err = iuniswap_v3_factory.NewIUniswapV3Factory(u.factoryAddress, u.client)
 	if err != nil {
 		return fmt.Errorf("failed to build Uniswap v3 factory: %w", err)
 	}
@@ -61,7 +63,7 @@ func (u *uniswapV3Geth) start() (err error) {
 }
 
 func (u *uniswapV3Geth) getPool(market Market) (*dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap], error) {
-	baseToken, quoteToken, err := getTokens(u.base.Assets(), market, loggerUniswapV3Geth)
+	baseToken, quoteToken, err := getTokens(u.assets, market, loggerUniswapV3Geth)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +87,7 @@ func (u *uniswapV3Geth) getPool(market Market) (*dexPool[iuniswap_v3_pool.IUnisw
 	}
 	loggerUniswapV3Geth.Infof("got pool %s for market %s", poolAddress, market)
 
-	poolContract, err := iuniswap_v3_pool.NewIUniswapV3Pool(poolAddress, u.base.Client())
+	poolContract, err := iuniswap_v3_pool.NewIUniswapV3Pool(poolAddress, u.client)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build Uniswap v3 pool: %w", err)
 	}

@@ -27,9 +27,9 @@ type baseDEX[Event any, Contract any] struct {
 	logger     *log.ZapEventLogger
 
 	// Hooks
-	start   func() error
-	getPool func(Market) (*dexPool[Event], error)
-	parse   func(*Event, *dexPool[Event]) (TradeEvent, error)
+	postStart func(*baseDEX[Event, Contract]) error
+	getPool   func(Market) (*dexPool[Event], error)
+	parse     func(*Event, *dexPool[Event]) (TradeEvent, error)
 
 	// State
 	client  *ethclient.Client
@@ -49,9 +49,9 @@ type baseDexConfig[Event any, Contract any] struct {
 	Logger     *log.ZapEventLogger
 
 	// Hooks
-	StartHook   func() error
-	PoolGetter  func(Market) (*dexPool[Event], error)
-	EventParser func(*Event, *dexPool[Event]) (TradeEvent, error)
+	PostStartHook func(*baseDEX[Event, Contract]) error
+	PoolGetter    func(Market) (*dexPool[Event], error)
+	EventParser   func(*Event, *dexPool[Event]) (TradeEvent, error)
 
 	// State
 	Outbox chan<- TradeEvent
@@ -69,9 +69,9 @@ func newBaseDEX[Event any, Contract any](config baseDexConfig[Event, Contract]) 
 		logger:     config.Logger,
 
 		// Hooks
-		start:   config.StartHook,
-		getPool: config.PoolGetter,
-		parse:   config.EventParser,
+		postStart: config.PostStartHook,
+		getPool:   config.PoolGetter,
+		parse:     config.EventParser,
 
 		// State
 		client:  nil,
@@ -105,7 +105,7 @@ func (b *baseDEX[Event, Contract]) Start() error {
 		// Connect to the RPC provider
 
 		if !(strings.HasPrefix(b.url, "ws://") || strings.HasPrefix(b.url, "wss://")) {
-			startErr = fmt.Errorf("%s (got '%s')", errInvalidWsURL, b.url)
+			startErr = fmt.Errorf("%s (got '%s')", errInvalidWsUrl, b.url)
 			return
 		}
 
@@ -138,9 +138,9 @@ func (b *baseDEX[Event, Contract]) Start() error {
 			b.mapping.Store(key, mapItem)
 		}
 
-		// Run start hook
+		// Run post-start hook
 
-		if err := b.start(); err != nil {
+		if err := b.postStart(b); err != nil {
 			startErr = err
 			return
 		}

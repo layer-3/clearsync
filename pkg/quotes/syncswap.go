@@ -2,6 +2,8 @@ package quotes
 
 import (
 	"fmt"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/layer-3/clearsync/pkg/safe"
 	"math/big"
 	"time"
 
@@ -16,12 +18,13 @@ import (
 var loggerSyncswap = log.Logger("syncswap")
 
 type syncswap struct {
-	base                      *baseDEX[isyncswap_pool.ISyncSwapPoolSwap, isyncswap_pool.ISyncSwapPool]
 	stablePoolMarkets         map[Market]struct{}
 	classicPoolFactoryAddress common.Address
 	stablePoolFactoryAddress  common.Address
 	classicFactory            *isyncswap_factory.ISyncSwapFactory
 	stableFactory             *isyncswap_factory.ISyncSwapFactory
+	assets                    *safe.Map[string, poolToken]
+	client                    *ethclient.Client
 }
 
 func newSyncswap(config SyncswapConfig, outbox chan<- TradeEvent) Driver {
@@ -51,25 +54,25 @@ func newSyncswap(config SyncswapConfig, outbox chan<- TradeEvent) Driver {
 		Filter:     config.Filter,
 		Logger:     loggerSyncswap,
 		// Hooks
-		StartHook:   hooks.start,
-		PoolGetter:  hooks.getPool,
-		EventParser: hooks.parseSwap,
+		PostStartHook: hooks.postStart,
+		PoolGetter:    hooks.getPool,
+		EventParser:   hooks.parseSwap,
 	}
 
-	driver := newBaseDEX[isyncswap_pool.ISyncSwapPoolSwap, isyncswap_pool.ISyncSwapPool](params)
-	hooks.base = driver
-
-	return driver
+	return newBaseDEX[isyncswap_pool.ISyncSwapPoolSwap, isyncswap_pool.ISyncSwapPool](params)
 }
 
-func (s *syncswap) start() (err error) {
+func (s *syncswap) postStart(driver *baseDEX[isyncswap_pool.ISyncSwapPoolSwap, isyncswap_pool.ISyncSwapPool]) (err error) {
+	s.client = driver.Client()
+	s.assets = driver.Assets()
+
 	// Check addresses here: https://syncswap.gitbook.io/syncswap/smart-contracts/smart-contracts
-	s.classicFactory, err = isyncswap_factory.NewISyncSwapFactory(s.classicPoolFactoryAddress, s.base.Client())
+	s.classicFactory, err = isyncswap_factory.NewISyncSwapFactory(s.classicPoolFactoryAddress, s.client)
 	if err != nil {
 		return fmt.Errorf("failed to instantiate a Quickswap classic pool factory contract: %w", err)
 	}
 
-	s.stableFactory, err = isyncswap_factory.NewISyncSwapFactory(s.stablePoolFactoryAddress, s.base.Client())
+	s.stableFactory, err = isyncswap_factory.NewISyncSwapFactory(s.stablePoolFactoryAddress, s.client)
 	if err != nil {
 		return fmt.Errorf("failed to instantiate a Quickswap stable pool factory contract: %w", err)
 	}
@@ -77,7 +80,7 @@ func (s *syncswap) start() (err error) {
 }
 
 func (s *syncswap) getPool(market Market) (*dexPool[isyncswap_pool.ISyncSwapPoolSwap], error) {
-	baseToken, quoteToken, err := getTokens(s.base.Assets(), market, loggerSyncswap)
+	baseToken, quoteToken, err := getTokens(s.assets, market, loggerSyncswap)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tokens: %w", err)
 	}
@@ -107,7 +110,7 @@ func (s *syncswap) getPool(market Market) (*dexPool[isyncswap_pool.ISyncSwapPool
 	}
 	loggerSyncswap.Infow("pool found", "address", poolAddress, "market", market.StringWithoutMain())
 
-	poolContract, err := isyncswap_pool.NewISyncSwapPool(poolAddress, s.base.Client())
+	poolContract, err := isyncswap_pool.NewISyncSwapPool(poolAddress, s.client)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build Syncswap pool: %w", err)
 	}

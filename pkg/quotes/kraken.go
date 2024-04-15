@@ -66,7 +66,7 @@ func (k *kraken) Start() error {
 	var startErr error
 	started := k.once.Start(func() {
 		if !(strings.HasPrefix(k.url, "ws://") || strings.HasPrefix(k.url, "wss://")) {
-			startErr = fmt.Errorf("%s (got '%s')", errInvalidWsURL, k.url)
+			startErr = fmt.Errorf("%s (got '%s')", errInvalidWsUrl, k.url)
 			return
 		}
 
