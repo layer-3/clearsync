@@ -160,10 +160,10 @@ func (*syncswap) parseSwap(
 
 	baseDecimals := pool.baseToken.Decimals
 	quoteDecimals := pool.quoteToken.Decimals
-	if pool.reverted {
-		baseDecimals = pool.quoteToken.Decimals
-		quoteDecimals = pool.baseToken.Decimals
-	}
+	//if pool.reverted {
+	//	baseDecimals = pool.quoteToken.Decimals
+	//	quoteDecimals = pool.baseToken.Decimals
+	//}
 
 	switch {
 	case isValidNonZero(swap.Amount0In) && isValidNonZero(swap.Amount1Out):

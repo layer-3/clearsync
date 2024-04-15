@@ -73,10 +73,10 @@ func (s *quickswap) parseSwap(
 
 	baseDecimals := pool.baseToken.Decimals
 	quoteDecimals := pool.quoteToken.Decimals
-	if pool.reverted {
-		baseDecimals = pool.quoteToken.Decimals
-		quoteDecimals = pool.baseToken.Decimals
-	}
+	//if pool.reverted {
+	//	baseDecimals = pool.quoteToken.Decimals
+	//	quoteDecimals = pool.baseToken.Decimals
+	//}
 
 	// Normalize swap amounts
 	amount0 := decimal.NewFromBigInt(swap.Amount0, 0).Div(decimal.NewFromInt(10).Pow(baseDecimals))

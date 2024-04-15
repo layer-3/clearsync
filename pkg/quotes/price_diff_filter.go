@@ -44,6 +44,6 @@ func (f *PriceDiffFilter) Allow(trade TradeEvent) bool {
 		return true
 	}
 
-	// loggerPriceDiffFilter.Infow("skipping trade", "trade", trade, "diff", diff, "threshold", f.threshold)
+	loggerPriceDiffFilter.Infow("skipping trade", "trade", trade, "diff", diff, "threshold", f.threshold)
 	return false
 }
