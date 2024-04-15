@@ -23,30 +23,21 @@
 
 ## Margin Definitions
 
-- **IMR** - Initial Margin Rate (%) required for opening positions.
 
-- **MMR** - Maintenance Margin Rate (%) to keep positions.
-
-- **Channel Margin** - On-chain collateral locked on the state-channel.
-
-- **Leverage** - Leverage the user uses to create a position.
-
-- **Position size** - Position amount.
-
-- **Entry Price** - Market price of an asset at the moment of opening the position.
-
-- **Current Price** - Current market price of an asset.
-
-- **Position costs** - Position Size × Position Average Entry Price.
-
-- **Unrealized PNL** - Position Size x Current Price - Position costs
-
-- **Initial Margin** - Down payment to open a position.
-
-- **Margin Balance** - Channel Margin + Unrealized PNL.
-
-- **Available Balance** - Channel Margin - Initial Margin + Unrealized PNL.
-
-- **Maintenance Margin** - Minimum amount of margin that must before liquidation (Positions Costs × MMR + Close Positions Fee).
+| Term               |  Example | Description                                                                                                  |
+|--------------------|--|--------------------------------------------------------------------------------------------------------------|
+| **IMR**            | 20% | Initial Margin Rate (%) required for opening positions.                                                      |
+| **MMR**            | 10% | Maintenance Margin Rate (%) to keep positions.                                                               |
+| **Channel Margin** | $100 | On-chain collateral locked on the state-channel.                                                             |
+| **Leverage**       | 5x | Leverage the user uses to create a position.                                                                 |
+| **Position size**  | 0.018 | Position amount.                                                                                             |
+| **Entry Price**    | $3,000 | Market price of an asset at the moment of opening the position.                                              |
+| **Current Price**  | $2,000 | Current market price of an asset.                                                                            |
+| **Position costs** | $270 | Position Size × Position Average Entry Price.                                                                |
+| **Unrealized PNL** | -$18 | Position Size x Current Price - Position costs                                                               |
+| **Initial Margin** | $54 | Down payment to open a position.                                                                             |
+| **Margin Balance** | $82 | Channel Margin + Unrealized PNL.                                                                             |
+| **Available Balance** | $28 | Channel Margin - Initial Margin + Unrealized PNL.                                                            |
+| **Maintenance Margin** | $27.54 | Minimum amount of margin that must before liquidation (Positions Costs × MMR + Close Positions Fee). |
 
 Your positions will be liquidated once ```Margin Balance <= Maintenance Margin```.
