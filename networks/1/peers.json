@@ -1,0 +1,736 @@
+[
+  {
+      "url": "https://kayen.io/",
+      "name": "Kayen",
+      "finex_url": "wss://kayen.io/ws",
+      "clearport_b_url": "http://clearport-peer-grpc.kayen-prod:50081",
+      "clearport_a_url": "wss://port-a.kayen.io/",
+      "description": "Kayen is a clearing house for digital assets. It is a regulated entity that provides clearing and settlement services for digital assets and derivatives. Kayen is a subsidiary of OpenDAX, a leading global digital asset exchange operator.",
+      "available": true,
+      "metadata": {
+          "coordinates": {
+              "lat": 50.1109,
+              "long": 8.6821
+          },
+          "region": "europe",
+          "code": "de",
+          "country": "Germany",
+          "logo": "https://kayen.io/images/logo.png",
+          "sm_logo": "https://kayen.io/images/logo-white-mode.svg"
+      },
+      "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
+      "packages": [
+          {
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
+          }
+      ]
+  },
+  {
+      "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+      "name": "BitMint Pro",
+      "finex_url": "wss://kayen.io/ws",
+      "clearport_b_url": "http://clearport-peer-grpc.kayen-prod:50081",
+      "clearport_a_url": "wss://port-a.kayen.io/",
+      "description": "BitMint Pro is a leading crypto trading platform based in US East (Virginia). Specializing in a variety of digital currencies, our platform offers advanced trading tools, secure wallet services, and a user-friendly interface for optimal trading. Our expert team provides insights and support to navigate the crypto market effectively.",
+      "available": true,
+      "metadata": {
+          "logo": "",
+          "sm_logo": "",
+          "region": "north_america",
+          "code": "us",
+          "country": "USA",
+          "coordinates": {
+              "lat": 38.0,
+              "long": -78.0
+          }
+      },
+      "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
+      "packages": [
+          {
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
+          }
+      ]
+  },
+  {
+      "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+      "name": "EtherTradeX",
+      "finex_url": "wss://kayen.io/ws",
+      "clearport_b_url": "http://clearport-peer-grpc.kayen-prod:50081",
+      "clearport_a_url": "wss://port-a.kayen.io/",
+      "description": "EtherTradeX is a cutting-edge cryptocurrency trading platform located in the US East (Ohio) region. Our platform specializes in providing a wide range of digital currency trading options, advanced trading tools, top-notch security features, and an intuitive user interface designed to enhance your trading experience. Our team of experts is dedicated to helping you navigate the dynamic world of cryptocurrency trading effectively and efficiently.",
+      "available": true,
+      "metadata": {
+          "logo": "",
+          "sm_logo": "",
+          "region": "north_america",
+          "code": "us",
+          "country": "USA",
+          "coordinates": {
+              "lat": 39.96,
+              "long": -83.0
+          }
+      },
+      "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
+      "packages": [
+          {
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
+          }
+      ]
+  },
+  {
+      "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+      "name": "CoinPulse",
+      "finex_url": "wss://kayen.io/ws",
+      "clearport_b_url": "http://clearport-peer-grpc.kayen-prod:50081",
+      "clearport_a_url": "wss://port-a.kayen.io/",
+      "description": "CoinPulse is a state-of-the-art cryptocurrency exchange situated in the US West (Northern California) region. Our platform specializes in offering a diverse range of digital currency trading options, cutting-edge trading tools, robust security measures, and an intuitive user interface designed to elevate your cryptocurrency trading experience. Our team of experts is committed to guiding you through the dynamic cryptocurrency market with precision and expertise.",
+      "available": true,
+      "metadata": {
+          "coordinates": {
+              "lat": 36.7783,
+              "long": -119.4179
+          },
+          "region": "north_america",
+          "code": "us",
+          "country": "USA"
+      },
+      "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
+      "packages": [
+          {
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
+          }
+      ]
+  },
+  {
+      "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+      "name": "CryptoWiz",
+      "finex_url": "wss://kayen.io/ws",
+      "clearport_b_url": "http://clearport-peer-grpc.kayen-prod:50081",
+      "clearport_a_url": "wss://port-a.kayen.io/",
+      "description": "CryptoWiz is a cutting-edge cryptocurrency exchange located in the US West (Oregon) region. Our platform specializes in providing a wide range of digital currency trading options, advanced trading tools, top-notch security features, and an intuitive user interface designed to enhance your cryptocurrency trading experience. Our team of experts is dedicated to helping you navigate the dynamic world of cryptocurrency trading effectively and efficiently.",
+      "available": true,
+      "metadata": {
+          "coordinates": {
+              "lat": 45.5051,
+              "long": -122.675
+          },
+          "region": "north_america",
+          "code": "us",
+          "country": "USA"
+      },
+      "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
+      "packages": [
+          {
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
+          }
+      ]
+  },
+  {
+      "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+      "name": "DigitalCashGuard",
+      "finex_url": "wss://kayen.io/ws",
+      "clearport_b_url": "http://clearport-peer-grpc.kayen-prod:50081",
+      "clearport_a_url": "wss://port-a.kayen.io/",
+      "description": "DigitalCashGuard is a state-of-the-art cryptocurrency exchange situated in the heart of Africa, in Cape Town. Our platform specializes in providing a wide range of digital currency trading options, advanced trading tools, top-notch security features, and an intuitive user interface designed to enhance your cryptocurrency trading experience. Our team of experts is dedicated to helping you navigate the dynamic world of cryptocurrency trading effectively and efficiently.",
+      "available": true,
+      "metadata": {
+          "coordinates": {
+              "lat": -33.918861,
+              "long": 18.4233
+          },
+          "region": "africa",
+          "code": "za",
+          "country": "South Africa"
+      },
+      "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
+      "packages": [
+          {
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
+          }
+      ]
+  },
+  {
+      "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+      "name": "NFT Nexus",
+      "finex_url": "wss://kayen.io/ws",
+      "clearport_b_url": "http://clearport-peer-grpc.kayen-prod:50081",
+      "clearport_a_url": "wss://port-a.kayen.io/",
+      "description": "NFT Nexus is a state-of-the-art cryptocurrency exchange located in the vibrant city of Hong Kong in the asia_pacific region. Our platform specializes in providing a wide range of digital currency trading options, advanced trading tools, top-notch security features, and an intuitive user interface designed to enhance your cryptocurrency trading experience. Our team of experts is dedicated to helping you navigate the dynamic world of cryptocurrency trading effectively and efficiently.",
+      "available": true,
+      "metadata": {
+          "coordinates": {
+              "lat": 22.3193,
+              "long": 114.1694
+          },
+          "region": "asia_pacific",
+          "code": "cn",
+          "country": "China"
+      },
+      "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
+      "packages": [
+          {
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
+          }
+      ]
+  },
+  {
+      "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+      "name": "BlockLinker",
+      "finex_url": "wss://kayen.io/ws",
+      "clearport_b_url": "http://clearport-peer-grpc.kayen-prod:50081",
+      "clearport_a_url": "wss://port-a.kayen.io/",
+      "description": "Description for BlockLinker.",
+      "available": true,
+      "metadata": {
+          "coordinates": {
+              "lat": 17.385044,
+              "long": 78.486671
+          },
+          "region": "asia_pacific",
+          "code": "in",
+          "country": "India"
+      },
+      "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
+      "packages": [
+          {
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
+          }
+      ]
+  },
+  {
+      "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+      "name": "TokenTrak",
+      "finex_url": "wss://kayen.io/ws",
+      "clearport_b_url": "http://clearport-peer-grpc.kayen-prod:50081",
+      "clearport_a_url": "wss://port-a.kayen.io/",
+      "description": "Description for TokenTrak.",
+      "available": true,
+      "metadata": {
+          "coordinates": {
+              "lat": -6.2088,
+              "long": 106.8456
+          },
+          "region": "asia_pacific",
+          "code": "id",
+          "country": "Indonesia"
+      },
+      "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
+      "packages": [
+          {
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
+          }
+      ]
+  },
+  {
+      "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+      "name": "CryptoGlobe",
+      "finex_url": "wss://kayen.io/ws",
+      "clearport_b_url": "http://clearport-peer-grpc.kayen-prod:50081",
+      "clearport_a_url": "wss://port-a.kayen.io/",
+      "description": "Description for CryptoGlobe.",
+      "available": true,
+      "metadata": {
+          "coordinates": {
+              "lat": -37.8136,
+              "long": 144.9631
+          },
+          "region": "asia_pacific",
+          "code": "au",
+          "country": "Australia"
+      },
+      "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
+      "packages": [
+          {
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
+          }
+      ]
+  },
+  {
+      "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+      "name": "ChainVault",
+      "finex_url": "wss://kayen.io/ws",
+      "clearport_b_url": "http://clearport-peer-grpc.kayen-prod:50081",
+      "clearport_a_url": "wss://port-a.kayen.io/",
+      "description": "Description for ChainVault.",
+      "available": true,
+      "metadata": {
+          "coordinates": {
+              "lat": 19.076,
+              "long": 72.8777
+          },
+          "region": "asia_pacific",
+          "code": "in",
+          "country": "India"
+      },
+      "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
+      "packages": [
+          {
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
+          }
+      ]
+  },
+  {
+      "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+      "name": "CoinGenius",
+      "finex_url": "wss://kayen.io/ws",
+      "clearport_b_url": "http://clearport-peer-grpc.kayen-prod:50081",
+      "clearport_a_url": "wss://port-a.kayen.io/",
+      "description": "Description for CoinGenius.",
+      "available": true,
+      "metadata": {
+          "coordinates": {
+              "lat": 34.6937,
+              "long": 135.5023
+          },
+          "region": "asia_pacific",
+          "code": "jp",
+          "country": "Japan"
+      },
+      "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
+      "packages": [
+          {
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
+          }
+      ]
+  },
+  {
+      "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+      "name": "StellarSecure",
+      "finex_url": "wss://kayen.io/ws",
+      "clearport_b_url": "http://clearport-peer-grpc.kayen-prod:50081",
+      "clearport_a_url": "wss://port-a.kayen.io/",
+      "description": "Description for StellarSecure.",
+      "available": true,
+      "metadata": {
+          "coordinates": {
+              "lat": 37.5665,
+              "long": 126.978
+          },
+          "region": "asia_pacific",
+          "code": "kr",
+          "country": "Korea"
+      },
+      "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
+      "packages": [
+          {
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
+          }
+      ]
+  },
+  {
+      "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+      "name": "CryptoFusion",
+      "finex_url": "wss://kayen.io/ws",
+      "clearport_b_url": "http://clearport-peer-grpc.kayen-prod:50081",
+      "clearport_a_url": "wss://port-a.kayen.io/",
+      "description": "Description for CryptoFusion.",
+      "available": true,
+      "metadata": {
+          "coordinates": {
+              "lat": 1.3521,
+              "long": 103.8198
+          },
+          "region": "asia_pacific",
+          "code": "id",
+          "country": "Indonesia"
+      },
+      "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
+      "packages": [
+          {
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
+          }
+      ]
+  },
+  {
+      "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+      "name": "RippleWave",
+      "finex_url": "wss://kayen.io/ws",
+      "clearport_b_url": "http://clearport-peer-grpc.kayen-prod:50081",
+      "clearport_a_url": "wss://port-a.kayen.io/",
+      "description": "Description for RippleWave.",
+      "available": true,
+      "metadata": {
+          "coordinates": {
+              "lat": -33.8688,
+              "long": 151.2093
+          },
+          "region": "asia_pacific",
+          "code": "au",
+          "country": "Australia"
+      },
+      "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
+      "packages": [
+          {
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
+          }
+      ]
+  },
+  {
+      "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+      "name": "TokenTreasure",
+      "finex_url": "wss://kayen.io/ws",
+      "clearport_b_url": "http://clearport-peer-grpc.kayen-prod:50081",
+      "clearport_a_url": "wss://port-a.kayen.io/",
+      "description": "Description for TokenTreasure.",
+      "available": true,
+      "metadata": {
+          "coordinates": {
+              "lat": 35.6895,
+              "long": 139.6917
+          },
+          "region": "asia_pacific",
+          "code": "jp",
+          "country": "Japan"
+      },
+      "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
+      "packages": [
+          {
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
+          }
+      ]
+  },
+  {
+      "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+      "name": "CoinCrafter",
+      "finex_url": "wss://kayen.io/ws",
+      "clearport_b_url": "http://clearport-peer-grpc.kayen-prod:50081",
+      "clearport_a_url": "wss://port-a.kayen.io/",
+      "description": "Description for CoinCrafter.",
+      "available": true,
+      "metadata": {
+          "coordinates": {
+              "lat": 45.4215,
+              "long": -75.6995
+          },
+          "region": "north_america",
+          "code": "ca",
+          "country": "Canada"
+      },
+      "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
+      "packages": [
+          {
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
+          }
+      ]
+  },
+  {
+      "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+      "name": "BitWave",
+      "finex_url": "wss://kayen.io/ws",
+      "clearport_b_url": "http://clearport-peer-grpc.kayen-prod:50081",
+      "clearport_a_url": "wss://port-a.kayen.io/",
+      "description": "Description for BitWave.",
+      "available": true,
+      "metadata": {
+          "coordinates": {
+              "lat": 53.3498,
+              "long": -6.2603
+          },
+          "region": "europe",
+          "code": "ie",
+          "country": "Ireland"
+      },
+      "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
+      "packages": [
+          {
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
+          }
+      ]
+  },
+  {
+      "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+      "name": "NFT Navigator",
+      "finex_url": "wss://kayen.io/ws",
+      "clearport_b_url": "http://clearport-peer-grpc.kayen-prod:50081",
+      "clearport_a_url": "wss://port-a.kayen.io/",
+      "description": "Description for NFT Navigator.",
+      "available": true,
+      "metadata": {
+          "coordinates": {
+              "lat": 51.5099,
+              "long": -0.118
+          },
+          "region": "europe",
+          "code": "gb",
+          "country": "United Kingdom"
+      },
+      "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
+      "packages": [
+          {
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
+          }
+      ]
+  },
+  {
+      "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+      "name": "EtherGuardian",
+      "finex_url": "wss://kayen.io/ws",
+      "clearport_b_url": "http://clearport-peer-grpc.kayen-prod:50081",
+      "clearport_a_url": "wss://port-a.kayen.io/",
+      "description": "Description for EtherGuardian.",
+      "available": true,
+      "metadata": {
+          "coordinates": {
+              "lat": 45.4642,
+              "long": 9.19
+          },
+          "region": "europe",
+          "code": "it",
+          "country": "Italy"
+      },
+      "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
+      "packages": [
+          {
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
+          }
+      ]
+  },
+  {
+      "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+      "name": "BlockSafeguard",
+      "finex_url": "wss://kayen.io/ws",
+      "clearport_b_url": "http://clearport-peer-grpc.kayen-prod:50081",
+      "clearport_a_url": "wss://port-a.kayen.io/",
+      "description": "Description for BlockSafeguard.",
+      "available": true,
+      "metadata": {
+          "coordinates": {
+              "lat": 48.8566,
+              "long": 2.3522
+          },
+          "region": "europe",
+          "code": "fr",
+          "country": "France"
+      },
+      "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
+      "packages": [
+          {
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
+          }
+      ]
+  },
+  {
+      "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+      "name": "DigitalCoinForge",
+      "finex_url": "wss://kayen.io/ws",
+      "clearport_b_url": "http://clearport-peer-grpc.kayen-prod:50081",
+      "clearport_a_url": "wss://port-a.kayen.io/",
+      "description": "Description for DigitalCoinForge.",
+      "available": true,
+      "metadata": {
+          "coordinates": {
+              "lat": 40.4168,
+              "long": -3.7038
+          },
+          "region": "europe",
+          "code": "es",
+          "country": "Spain"
+      },
+      "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
+      "packages": [
+          {
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
+          }
+      ]
+  },
+  {
+      "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+      "name": "ChainCraft",
+      "finex_url": "wss://kayen.io/ws",
+      "clearport_b_url": "http://clearport-peer-grpc.kayen-prod:50081",
+      "clearport_a_url": "wss://port-a.kayen.io/",
+      "description": "Description for ChainCraft.",
+      "available": true,
+      "metadata": {
+          "coordinates": {
+              "lat": 59.3293,
+              "long": 18.0686
+          },
+          "region": "europe",
+          "code": "se",
+          "country": "Sweden"
+      },
+      "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
+      "packages": [
+          {
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
+          }
+      ]
+  },
+  {
+      "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+      "name": "CoinCompass",
+      "finex_url": "wss://kayen.io/ws",
+      "clearport_b_url": "http://clearport-peer-grpc.kayen-prod:50081",
+      "clearport_a_url": "wss://port-a.kayen.io/",
+      "description": "Description for CoinCompass.",
+      "available": true,
+      "metadata": {
+          "coordinates": {
+              "lat": 47.3769,
+              "long": 8.5417
+          },
+          "region": "europe",
+          "code": "ch",
+          "country": "Switzerland"
+      },
+      "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
+      "packages": [
+          {
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
+          }
+      ]
+  },
+  {
+      "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+      "name": "TokenTrackerX",
+      "finex_url": "wss://kayen.io/ws",
+      "clearport_b_url": "http://clearport-peer-grpc.kayen-prod:50081",
+      "clearport_a_url": "wss://port-a.kayen.io/",
+      "description": "Description for TokenTrackerX.",
+      "available": true,
+      "metadata": {
+          "coordinates": {
+              "lat": 32.0853,
+              "long": 34.7818
+          },
+          "region": "middle_east",
+          "code": "il",
+          "country": "Israel"
+      },
+      "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
+      "packages": [
+          {
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
+          }
+      ]
+  },
+  {
+      "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+      "name": "CryptoStar",
+      "finex_url": "wss://kayen.io/ws",
+      "clearport_b_url": "http://clearport-peer-grpc.kayen-prod:50081",
+      "clearport_a_url": "wss://port-a.kayen.io/",
+      "description": "Description for CryptoStar.",
+      "available": true,
+      "metadata": {
+          "coordinates": {
+              "lat": 26.0667,
+              "long": 50.5577
+          },
+          "region": "middle_east",
+          "code": "bh",
+          "country": "Bahrain"
+      },
+      "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
+      "packages": [
+          {
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
+          }
+      ]
+  },
+  {
+      "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+      "name": "BitSafe Pro",
+      "finex_url": "wss://kayen.io/ws",
+      "clearport_b_url": "http://clearport-peer-grpc.kayen-prod:50081",
+      "clearport_a_url": "wss://port-a.kayen.io/",
+      "description": "Description for BitSafe Pro.",
+      "available": true,
+      "metadata": {
+          "coordinates": {
+              "lat": 23.4241,
+              "long": 53.8478
+          },
+          "region": "middle_east",
+          "code": "ae",
+          "country": "UAE"
+      },
+      "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
+      "packages": [
+          {
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
+          }
+      ]
+  },
+  {
+      "url": "http://kayen-clearport.v4.uat.opendax.app:31551",
+      "name": "EtherVault",
+      "finex_url": "wss://kayen.io/ws",
+      "clearport_b_url": "http://clearport-peer-grpc.kayen-prod:50081",
+      "clearport_a_url": "wss://port-a.kayen.io/",
+      "description": "Description for EtherVault.",
+      "available": true,
+      "metadata": {
+          "coordinates": {
+              "lat": -23.5505,
+              "long": -46.6333
+          },
+          "region": "South America",
+          "code": "br",
+          "country": "Brazil"
+      },
+      "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
+      "packages": [
+          {
+              "name": "Retail Package",
+              "margin": [5, 10],
+              "safety": "5.5"
+          }
+      ]
+  }
+]
