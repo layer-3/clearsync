@@ -68,9 +68,16 @@ func (s *quickswap) parseSwap(
 		}
 	}()
 
+	baseDecimals := pool.baseToken.Decimals
+	quoteDecimals := pool.quoteToken.Decimals
+	if pool.reverted {
+		baseDecimals = pool.quoteToken.Decimals
+		quoteDecimals = pool.baseToken.Decimals
+	}
+
 	// Normalize swap amounts
-	amount0 := decimal.NewFromBigInt(swap.Amount0, 0).Div(decimal.NewFromInt(10).Pow(pool.baseToken.Decimals))
-	amount1 := decimal.NewFromBigInt(swap.Amount1, 0).Div(decimal.NewFromInt(10).Pow(pool.quoteToken.Decimals))
+	amount0 := decimal.NewFromBigInt(swap.Amount0, 0).Div(decimal.NewFromInt(10).Pow(baseDecimals))
+	amount1 := decimal.NewFromBigInt(swap.Amount1, 0).Div(decimal.NewFromInt(10).Pow(quoteDecimals))
 
 	// Assume it's a buy trade.
 	// If it's not, price will equal to zero
@@ -78,8 +85,8 @@ func (s *quickswap) parseSwap(
 	takerType := TakerTypeSell
 	price := calculatePrice(
 		decimal.NewFromBigInt(swap.Price, 0),
-		pool.baseToken.Decimals,
-		pool.quoteToken.Decimals)
+		baseDecimals,
+		quoteDecimals)
 	amount := amount0
 	total := amount1
 
@@ -87,8 +94,8 @@ func (s *quickswap) parseSwap(
 		takerType = TakerTypeBuy
 		price = calculatePrice(
 			decimal.NewFromBigInt(swap.Price, 0),
-			pool.quoteToken.Decimals,
-			pool.baseToken.Decimals)
+			quoteDecimals,
+			baseDecimals)
 		amount = amount1
 		total = amount0
 	}
@@ -102,7 +109,6 @@ func (s *quickswap) parseSwap(
 		TakerType: takerType,
 		CreatedAt: time.Now(),
 	}
-
 	return tr, nil
 }
 
