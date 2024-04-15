@@ -218,7 +218,25 @@
         "precision": 6,
         "logoURI": "https://assets.coingecko.com/coins/images/32788/standard/GROK.png?1707579427",
         "extensions": {}
+      },
+      {
+        "address": "0x9aACaCC094df2885DF2d1690c3B2B106D0b8F32D",
+        "name": "DISCO",
+        "symbol": "DISCO",
+        "decimals": 4,
+        "precision": 0,
+        "logoURI": "",
+        "extensions": {}
+      },
+      {
+        "address": "0x96168402310c70fD7b45adf2Fb3892691E0627D9",
+        "name": "KAYEN",
+        "symbol": "KAYEN",
+        "decimals": 4,
+        "precision": 0,
+        "logoURI": "",
+        "extensions": {}
       }
     ]
-  }
+}
   
