@@ -36,10 +36,11 @@ type marketKey struct {
 }
 
 type PriceCacheVWA struct {
-	weights    safe.Map[DriverType, decimal.Decimal]
-	market     safe.Map[marketKey, marketHistory]
-	nTrades    int
-	bufferTime time.Duration
+	weights     safe.Map[DriverType, decimal.Decimal]
+	market      safe.Map[marketKey, marketHistory]
+	latestPrice safe.Map[marketKey, decimal.Decimal]
+	nTrades     int
+	bufferTime  time.Duration
 }
 
 // newPriceCacheVWA initializes a new cache to store last n trades for each market.
@@ -47,6 +48,7 @@ func newPriceCacheVWA(driversWeights map[DriverType]decimal.Decimal, nTrades int
 	cache := new(PriceCacheVWA)
 	cache.market = safe.NewMap[marketKey, marketHistory]()
 	cache.weights = safe.NewMapWithData(driversWeights)
+	cache.latestPrice = safe.NewMap[marketKey, decimal.Decimal]()
 	cache.nTrades = nTrades
 	cache.bufferTime = bufferTime
 
@@ -73,6 +75,21 @@ func (p *PriceCacheVWA) AddTrade(market Market, price, volume, weight decimal.De
 
 		m[key] = history
 	})
+}
+
+func (p *PriceCacheVWA) SetLastPrice(market Market, newPrice decimal.Decimal) {
+	key := marketKey{baseUnit: market.baseUnit, quoteUnit: market.quoteUnit}
+	p.latestPrice.UpdateInTx(func(m map[marketKey]decimal.Decimal) {
+		m[key] = newPrice
+	})
+}
+
+func (p *PriceCacheVWA) getLastPrice(market Market) decimal.Decimal {
+	record, ok := p.latestPrice.Load(marketKey{baseUnit: market.baseUnit, quoteUnit: market.quoteUnit})
+	if !ok {
+		return decimal.Zero
+	}
+	return record
 }
 
 // GetVWA calculates the VWA based on a list of trades.

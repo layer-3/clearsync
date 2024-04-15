@@ -23,6 +23,7 @@ type indexAggregator struct {
 
 type priceCalculator interface {
 	calculateIndexPrice(trade TradeEvent) (decimal.Decimal, bool)
+	getLastPrice(market Market) decimal.Decimal
 }
 
 // newIndexAggregator creates a new instance of IndexAggregator.
@@ -48,6 +49,14 @@ func newIndexAggregator(config Config, marketsMapping map[string][]string, strat
 	toCombine := make(chan TradeEvent, 128)
 	go func() {
 		for event := range aggregated {
+			lastPrice := strategy.getLastPrice(event.Market)
+			if lastPrice != decimal.Zero {
+				if event.Price.GreaterThanOrEqual(lastPrice.Mul(decimal.NewFromFloat(1.2))) {
+					loggerIndex.Warn("skipping incoming outlier trade", "driver", event)
+					continue
+				}
+			}
+
 			indexPrice, ok := strategy.calculateIndexPrice(event)
 			if ok && event.Source != DriverInternal {
 				if event.Market.convertTo != "" {
