@@ -2,6 +2,8 @@ package quotes
 
 import (
 	"fmt"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/layer-3/clearsync/pkg/safe"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -15,9 +17,10 @@ import (
 var loggerQuickswap = log.Logger("quickswap")
 
 type quickswap struct {
-	base               *baseDEX[iquickswap_v3_pool.IQuickswapV3PoolSwap, iquickswap_v3_pool.IQuickswapV3Pool]
 	poolFactoryAddress common.Address
 	factory            *iquickswap_v3_factory.IQuickswapV3Factory
+	assets             *safe.Map[string, poolToken]
+	client             *ethclient.Client
 }
 
 func newQuickswap(config QuickswapConfig, outbox chan<- TradeEvent) Driver {
@@ -43,8 +46,11 @@ func newQuickswap(config QuickswapConfig, outbox chan<- TradeEvent) Driver {
 }
 
 func (s *quickswap) postStart(driver *baseDEX[iquickswap_v3_pool.IQuickswapV3PoolSwap, iquickswap_v3_pool.IQuickswapV3Pool]) (err error) {
+	s.client = driver.Client()
+	s.assets = driver.Assets()
+
 	// Check addresses here: https://quickswap.gitbook.io/quickswap/smart-contracts/smart-contracts
-	s.factory, err = iquickswap_v3_factory.NewIQuickswapV3Factory(s.poolFactoryAddress, driver.Client())
+	s.factory, err = iquickswap_v3_factory.NewIQuickswapV3Factory(s.poolFactoryAddress, s.client)
 	if err != nil {
 		return fmt.Errorf("failed to instantiate a Quickwap Factory contract: %w", err)
 	}
@@ -110,7 +116,7 @@ func (s *quickswap) parseSwap(
 }
 
 func (s *quickswap) getPool(market Market) (*dexPool[iquickswap_v3_pool.IQuickswapV3PoolSwap], error) {
-	baseToken, quoteToken, err := getTokens(s.base.Assets(), market, loggerQuickswap)
+	baseToken, quoteToken, err := getTokens(s.assets, market, loggerQuickswap)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tokens: %w", err)
 	}
@@ -130,7 +136,7 @@ func (s *quickswap) getPool(market Market) (*dexPool[iquickswap_v3_pool.IQuicksw
 	}
 	loggerQuickswap.Infof("got pool %s for market %s", poolAddress, market)
 
-	poolContract, err := iquickswap_v3_pool.NewIQuickswapV3Pool(poolAddress, s.base.Client())
+	poolContract, err := iquickswap_v3_pool.NewIQuickswapV3Pool(poolAddress, s.client)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build quickswap pool: %w", err)
 	}
