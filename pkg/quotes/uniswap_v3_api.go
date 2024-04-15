@@ -47,7 +47,7 @@ func (b *uniswapV3Api) ExchangeType() ExchangeType {
 
 func (u *uniswapV3Api) Start() error {
 	if started := u.once.Start(func() {}); !started {
-		return errAlreadyStarted
+		return ErrAlreadyStarted
 	}
 	return nil
 }
@@ -64,18 +64,18 @@ func (u *uniswapV3Api) Stop() error {
 	})
 
 	if !stopped {
-		return errAlreadyStopped
+		return ErrAlreadyStopped
 	}
 	return nil
 }
 
 func (u *uniswapV3Api) Subscribe(market Market) error {
 	if !u.once.Subscribe() {
-		return errNotStarted
+		return ErrNotStarted
 	}
 
 	if _, ok := u.streams.Load(market); ok {
-		return fmt.Errorf("%s: %w", market, errAlreadySubbed)
+		return fmt.Errorf("%s: %w", market, ErrAlreadySubbed)
 	}
 
 	exists, err := u.isMarketAvailable(market)
@@ -153,12 +153,12 @@ func (u *uniswapV3Api) Subscribe(market Market) error {
 
 func (u *uniswapV3Api) Unsubscribe(market Market) error {
 	if !u.once.Unsubscribe() {
-		return errNotStarted
+		return ErrNotStarted
 	}
 
 	stopCh, ok := u.streams.Load(market)
 	if !ok {
-		return fmt.Errorf("%s: %w", market, errNotSubbed)
+		return fmt.Errorf("%s: %w", market, ErrNotSubbed)
 	}
 
 	stopCh <- struct{}{}

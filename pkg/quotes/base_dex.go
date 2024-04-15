@@ -105,7 +105,7 @@ func (b *baseDEX[Event, Contract]) Start() error {
 		// Connect to the RPC provider
 
 		if !(strings.HasPrefix(b.url, "ws://") || strings.HasPrefix(b.url, "wss://")) {
-			startErr = fmt.Errorf("%s (got '%s')", errInvalidWsUrl, b.url)
+			startErr = fmt.Errorf("%s (got '%s')", ErrInvalidWsUrl, b.url)
 			return
 		}
 
@@ -147,7 +147,7 @@ func (b *baseDEX[Event, Contract]) Start() error {
 	})
 
 	if !started {
-		return errAlreadyStarted
+		return ErrAlreadyStarted
 	}
 	return startErr
 }
@@ -161,14 +161,14 @@ func (b *baseDEX[Event, Contract]) Stop() error {
 	})
 
 	if !stopped {
-		return errAlreadyStopped
+		return ErrAlreadyStopped
 	}
 	return nil
 }
 
 func (b *baseDEX[Event, Contract]) Subscribe(market Market) error {
 	if !b.once.Subscribe() {
-		return errNotStarted
+		return ErrNotStarted
 	}
 
 	// mapping map[BTC:[WBTC] ETH:[WETH] USD:[USDT USDC TUSD]]
@@ -185,7 +185,7 @@ func (b *baseDEX[Event, Contract]) Subscribe(market Market) error {
 	})
 
 	if _, ok := b.streams.Load(market); ok {
-		return fmt.Errorf("%s: %w", market, errAlreadySubbed)
+		return fmt.Errorf("%s: %w", market, ErrAlreadySubbed)
 	}
 
 	pool, err := b.getPool(market)
@@ -239,12 +239,12 @@ func (b *baseDEX[Event, Contract]) Subscribe(market Market) error {
 
 func (b *baseDEX[Event, Contract]) Unsubscribe(market Market) error {
 	if !b.once.Unsubscribe() {
-		return errNotStarted
+		return ErrNotStarted
 	}
 
 	stream, ok := b.streams.Load(market)
 	if !ok {
-		return fmt.Errorf("%s: %w", market, errNotSubbed)
+		return fmt.Errorf("%s: %w", market, ErrNotSubbed)
 	}
 
 	stream.Unsubscribe()

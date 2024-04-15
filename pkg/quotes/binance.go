@@ -44,7 +44,7 @@ func (b *binance) ExchangeType() ExchangeType {
 
 func (b *binance) Start() error {
 	if started := b.once.Start(func() {}); !started {
-		return errAlreadyStarted
+		return ErrAlreadyStarted
 	}
 	return nil
 }
@@ -60,14 +60,14 @@ func (b *binance) Stop() error {
 	})
 
 	if !stopped {
-		return errAlreadyStopped
+		return ErrAlreadyStopped
 	}
 	return nil
 }
 
 func (b *binance) Subscribe(market Market) error {
 	if !b.once.Subscribe() {
-		return errNotStarted
+		return ErrNotStarted
 	}
 
 	if b.usdcToUSDT && market.Quote() == "usd" {
@@ -85,7 +85,7 @@ func (b *binance) Subscribe(market Market) error {
 	b.symbolToMarket.Store(strings.ToLower(pair), market)
 
 	if _, ok := b.streams.Load(market); ok {
-		return fmt.Errorf("%s: %w", market, errAlreadySubbed)
+		return fmt.Errorf("%s: %w", market, ErrAlreadySubbed)
 	}
 
 	handleErr := func(err error) {
@@ -94,7 +94,7 @@ func (b *binance) Subscribe(market Market) error {
 
 	doneCh, stopCh, err := gobinance.WsTradeServe(pair, b.handleTrade, handleErr)
 	if err != nil {
-		return fmt.Errorf("%s: %w: %w", market, errFailedSub, err)
+		return fmt.Errorf("%s: %w: %w", market, ErrFailedSub, err)
 	}
 	b.streams.Store(market, stopCh)
 
@@ -129,12 +129,12 @@ func (b *binance) Subscribe(market Market) error {
 
 func (b *binance) Unsubscribe(market Market) error {
 	if !b.once.Unsubscribe() {
-		return errNotStarted
+		return ErrNotStarted
 	}
 
 	stopCh, ok := b.streams.Load(market)
 	if !ok {
-		return fmt.Errorf("%s: %w", market, errNotSubbed)
+		return fmt.Errorf("%s: %w", market, ErrNotSubbed)
 	}
 
 	stopCh <- struct{}{}

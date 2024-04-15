@@ -57,7 +57,7 @@ func (o *opendax) Start() error {
 	var startErr error
 	started := o.once.Start(func() {
 		if !(strings.HasPrefix(o.url, "ws://") || strings.HasPrefix(o.url, "wss://")) {
-			startErr = fmt.Errorf("%s (got '%s')", errInvalidWsUrl, o.url)
+			startErr = fmt.Errorf("%s (got '%s')", ErrInvalidWsUrl, o.url)
 			return
 		}
 
@@ -66,7 +66,7 @@ func (o *opendax) Start() error {
 	})
 
 	if !started {
-		return errAlreadyStarted
+		return ErrAlreadyStarted
 	}
 	return startErr
 }
@@ -85,18 +85,18 @@ func (o *opendax) Stop() error {
 	})
 
 	if !stopped {
-		return errAlreadyStopped
+		return ErrAlreadyStopped
 	}
 	return stopErr
 }
 
 func (o *opendax) Subscribe(market Market) error {
 	if !o.once.Subscribe() {
-		return errNotStarted
+		return ErrNotStarted
 	}
 
 	if _, ok := o.streams.Load(market); ok {
-		return fmt.Errorf("%s: %w", market, errAlreadySubbed)
+		return fmt.Errorf("%s: %w", market, ErrAlreadySubbed)
 	}
 
 	if err := o.subscribeUnchecked(market); err != nil {
@@ -116,7 +116,7 @@ func (o *opendax) subscribeUnchecked(market Market) error {
 
 	err := o.writeConn(message)
 	if err != nil {
-		return fmt.Errorf("%s: %w: %w", market, errFailedSub, err)
+		return fmt.Errorf("%s: %w: %w", market, ErrFailedSub, err)
 	}
 
 	return nil
@@ -124,11 +124,11 @@ func (o *opendax) subscribeUnchecked(market Market) error {
 
 func (o *opendax) Unsubscribe(market Market) error {
 	if !o.once.Unsubscribe() {
-		return errNotStarted
+		return ErrNotStarted
 	}
 
 	if _, ok := o.streams.Load(market); !ok {
-		return fmt.Errorf("%s: %w", market, errNotSubbed)
+		return fmt.Errorf("%s: %w", market, ErrNotSubbed)
 	}
 
 	if err := o.unsubscribeUnchecked(market); err != nil {
@@ -148,7 +148,7 @@ func (o *opendax) unsubscribeUnchecked(market Market) error {
 
 	err := o.writeConn(message)
 	if err != nil {
-		return fmt.Errorf("%s: %w: %w", market, errFailedUnsub, err)
+		return fmt.Errorf("%s: %w: %w", market, ErrFailedUnsub, err)
 	}
 
 	return nil

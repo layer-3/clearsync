@@ -66,7 +66,7 @@ func (k *kraken) Start() error {
 	var startErr error
 	started := k.once.Start(func() {
 		if !(strings.HasPrefix(k.url, "ws://") || strings.HasPrefix(k.url, "wss://")) {
-			startErr = fmt.Errorf("%s (got '%s')", errInvalidWsUrl, k.url)
+			startErr = fmt.Errorf("%s (got '%s')", ErrInvalidWsUrl, k.url)
 			return
 		}
 
@@ -84,7 +84,7 @@ func (k *kraken) Start() error {
 	})
 
 	if !started {
-		return errAlreadyStarted
+		return ErrAlreadyStarted
 	}
 	return startErr
 }
@@ -105,7 +105,7 @@ func (k *kraken) Stop() error {
 	})
 
 	if !stopped {
-		return errAlreadyStopped
+		return ErrAlreadyStopped
 	}
 	return stopErr
 }
@@ -128,11 +128,11 @@ type krakenSubscriptionParams struct {
 
 func (k *kraken) Subscribe(market Market) error {
 	if !k.once.Subscribe() {
-		return errNotStarted
+		return ErrNotStarted
 	}
 
 	if _, ok := k.streams.Load(market); ok {
-		return fmt.Errorf("%s: %w", market, errAlreadySubbed)
+		return fmt.Errorf("%s: %w", market, ErrAlreadySubbed)
 	}
 
 	if err := k.subscribeUnchecked(market); err != nil {
@@ -156,7 +156,7 @@ func (k *kraken) subscribeUnchecked(market Market) error {
 	}
 
 	if err := k.writeConn(subMsg); err != nil {
-		return fmt.Errorf("%s: %w: %w", market, errFailedSub, err)
+		return fmt.Errorf("%s: %w: %w", market, ErrFailedSub, err)
 	}
 
 	return nil
@@ -164,11 +164,11 @@ func (k *kraken) subscribeUnchecked(market Market) error {
 
 func (k *kraken) Unsubscribe(market Market) error {
 	if !k.once.Unsubscribe() {
-		return errNotStarted
+		return ErrNotStarted
 	}
 
 	if _, ok := k.streams.Load(market); !ok {
-		return fmt.Errorf("%s: %w", market, errNotSubbed)
+		return fmt.Errorf("%s: %w", market, ErrNotSubbed)
 	}
 
 	if err := k.unsubscribeUnchecked(market); err != nil {
@@ -192,7 +192,7 @@ func (k *kraken) unsubscribeUnchecked(market Market) error {
 	}
 
 	if err := k.writeConn(unsubMsg); err != nil {
-		return fmt.Errorf("%s: %w: %w", market, errFailedUnsub, err)
+		return fmt.Errorf("%s: %w: %w", market, ErrFailedUnsub, err)
 	}
 
 	return nil
