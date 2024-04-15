@@ -146,6 +146,8 @@ func (s *quickswap) Subscribe(market Market) error {
 				}
 				return
 			case swap := <-sink:
+				loggerQuickswap.Infow("raw event", "event", swap)
+
 				tr, err := s.parseSwap(swap, pool)
 				if err != nil {
 					loggerQuickswap.Errorf("market %s: failed to parse swap: %s", market.String(), err)

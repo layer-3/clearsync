@@ -122,7 +122,6 @@ func (s *syncswap) Start() error {
 		}
 
 		mapping, err := getMapping(s.mappingURL)
-
 		if err != nil {
 			startErr = fmt.Errorf("failed to fetch mapping: %w", err)
 			return
@@ -138,6 +137,7 @@ func (s *syncswap) Start() error {
 	}
 	return startErr
 }
+
 func (s *syncswap) Stop() error {
 	stopped := s.once.Stop(func() {
 		s.streams.Range(func(market Market, _ event.Subscription) bool {
@@ -204,6 +204,8 @@ func (s *syncswap) Subscribe(market Market) error {
 				}
 				return
 			case swap := <-sink:
+				loggerSyncswap.Infow("raw event", "event", swap)
+
 				if pool.reverted {
 					s.flipSwap(swap)
 				}
