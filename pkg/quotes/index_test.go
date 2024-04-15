@@ -170,3 +170,30 @@ func testStrategies(inputTrades []TradeEvent, priceCalculators ...priceCalculato
 
 	return results
 }
+
+func TestIsPriceOutOfRange(t *testing.T) {
+	testCases := []struct {
+		name         string
+		eventPrice   decimal.Decimal
+		lastPrice    decimal.Decimal
+		maxPriceDiff decimal.Decimal
+		expected     bool
+	}{
+		// incoming event price | last price | max price diff | expected
+		{"Price exactly at upper bound", decimal.NewFromFloat(120), decimal.NewFromFloat(100), decimal.NewFromFloat(0.20), false},
+		{"Price exactly at lower bound", decimal.NewFromFloat(80), decimal.NewFromFloat(100), decimal.NewFromFloat(0.20), false},
+		{"Price above upper bound", decimal.NewFromFloat(121), decimal.NewFromFloat(100), decimal.NewFromFloat(0.20), true},
+		{"Price below lower bound", decimal.NewFromFloat(79), decimal.NewFromFloat(100), decimal.NewFromFloat(0.20), true},
+		{"Price within range", decimal.NewFromFloat(110), decimal.NewFromFloat(100), decimal.NewFromFloat(0.20), false},
+		{"Price within negative range", decimal.NewFromFloat(90), decimal.NewFromFloat(100), decimal.NewFromFloat(0.20), false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := isPriceOutOfRange(tc.eventPrice, tc.lastPrice, tc.maxPriceDiff)
+			if result != tc.expected {
+				t.Errorf("Test %s failed. Expected %v, got %v", tc.name, tc.expected, result)
+			}
+		})
+	}
+}

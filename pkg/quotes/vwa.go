@@ -87,7 +87,7 @@ func (a strategyVWA) calculateIndexPrice(event TradeEvent) (decimal.Decimal, boo
 
 	lastPrice := a.priceCache.getLastPrice(event.Market)
 	if lastPrice != decimal.Zero {
-		if price.GreaterThanOrEqual(lastPrice.Mul(decimal.NewFromFloat(1.2))) {
+		if isPriceOutOfRange(price, lastPrice, a.maxPriceDiff) {
 			loggerIndex.Warn("skipping outcoming outlier trade", "driver", event)
 			return decimal.Zero, false
 		}

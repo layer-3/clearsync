@@ -51,7 +51,7 @@ func newIndexAggregator(config Config, maxPriceDiff decimal.Decimal, marketsMapp
 		for event := range aggregated {
 			lastPrice := strategy.getLastPrice(event.Market)
 			if lastPrice != decimal.Zero {
-				if event.Price.GreaterThanOrEqual(lastPrice.Mul(maxPriceDiff)) {
+				if isPriceOutOfRange(event.Price, lastPrice, maxPriceDiff) {
 					loggerIndex.Warn("skipping incoming outlier trade", "driver", event)
 					continue
 				}
@@ -149,12 +149,10 @@ func newIndex(config Config, outbox chan<- TradeEvent) Driver {
 		marketsMapping = defaultMarketsMapping
 	}
 
-	maxPriceDiffCoef, err := decimal.NewFromString(config.Index.MaxPriceDiff)
+	maxPriceDiff, err := decimal.NewFromString(config.Index.MaxPriceDiff)
 	if err != nil {
 		loggerIndex.Fatalf("invalid max price diff config value", "driver", "error", err)
 	}
-
-	maxPriceDiff := decimal.NewFromInt(1).Add(maxPriceDiffCoef)
 
 	return newIndexAggregator(
 		config,
@@ -246,4 +244,9 @@ func (a *indexAggregator) Stop() error {
 		}
 	}
 	return nil
+}
+
+func isPriceOutOfRange(eventPrice, lastPrice, maxPriceDiff decimal.Decimal) bool {
+	diff := eventPrice.Sub(lastPrice).Abs().Div(lastPrice)
+	return diff.GreaterThan(maxPriceDiff)
 }
