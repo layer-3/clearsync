@@ -98,18 +98,24 @@ func (u *uniswapV3Geth) getPool(market Market) (*dexPool[iuniswap_v3_pool.IUnisw
 }
 
 func (u *uniswapV3Geth) parseSwap(swap *iuniswap_v3_pool.IUniswapV3PoolSwap, pool *dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap]) (TradeEvent, error) {
+	baseDecimals := pool.baseToken.Decimals
+	quoteDecimals := pool.quoteToken.Decimals
+	if pool.reverted {
+		baseDecimals = pool.quoteToken.Decimals
+		quoteDecimals = pool.baseToken.Decimals
+	}
+
 	amount := decimal.NewFromBigInt(swap.Amount0, 0)
 	price := calculatePrice(
 		decimal.NewFromBigInt(swap.SqrtPriceX96, 0),
-		pool.baseToken.Decimals,
-		pool.quoteToken.Decimals)
+		baseDecimals,
+		quoteDecimals)
 	takerType := TakerTypeBuy
 	if amount.Sign() < 0 {
-
 		takerType = TakerTypeSell
 	}
-
 	amount = amount.Abs()
+
 	tr := TradeEvent{
 		Source:    DriverUniswapV3Geth,
 		Market:    pool.Market(),
