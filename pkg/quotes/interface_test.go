@@ -6,6 +6,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/layer-3/clearsync/pkg/abi/iquickswap_v3_pool"
+	"github.com/layer-3/clearsync/pkg/abi/isyncswap_pool"
+	"github.com/layer-3/clearsync/pkg/abi/iuniswap_v3_pool"
 )
 
 func TestNewDriver(t *testing.T) {
@@ -21,9 +25,9 @@ func TestNewDriver(t *testing.T) {
 		{DriverOpendax.String(), DriverOpendax, (*opendax)(nil)},
 		{DriverBitfaker.String(), DriverBitfaker, (*bitfaker)(nil)},
 		{DriverUniswapV3Api.String(), DriverUniswapV3Api, (*uniswapV3Api)(nil)},
-		{DriverUniswapV3Geth.String(), DriverUniswapV3Geth, (*uniswapV3Geth)(nil)},
-		{DriverSyncswap.String(), DriverSyncswap, (*syncswap)(nil)},
-		{DriverQuickswap.String(), DriverQuickswap, (*quickswap)(nil)},
+		{DriverUniswapV3Geth.String(), DriverUniswapV3Geth, (*baseDEX[iuniswap_v3_pool.IUniswapV3PoolSwap, iuniswap_v3_pool.IUniswapV3Pool])(nil)},
+		{DriverSyncswap.String(), DriverSyncswap, (*baseDEX[isyncswap_pool.ISyncSwapPoolSwap, isyncswap_pool.ISyncSwapPool])(nil)},
+		{DriverQuickswap.String(), DriverQuickswap, (*baseDEX[iquickswap_v3_pool.IQuickswapV3PoolSwap, iquickswap_v3_pool.IQuickswapV3Pool])(nil)},
 	}
 
 	for _, tc := range testCases {

@@ -57,7 +57,7 @@ func (o *opendax) Start() error {
 	var startErr error
 	started := o.once.Start(func() {
 		if !(strings.HasPrefix(o.url, "ws://") || strings.HasPrefix(o.url, "wss://")) {
-			startErr = fmt.Errorf("%s (got '%s')", errInvalidWsURL, o.url)
+			startErr = fmt.Errorf("%s (got '%s')", errInvalidWsUrl, o.url)
 			return
 		}
 

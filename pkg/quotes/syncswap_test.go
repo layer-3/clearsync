@@ -13,7 +13,7 @@ import (
 var (
 	baseTokenDecimals  = big.NewInt(18) // Example: 18 decimals for ETH
 	quoteTokenDecimals = big.NewInt(6)  // Example: 6 decimals for USDC
-	pool               = syncswapPoolWrapper{
+	pool               = dexPool[isyncswap_pool.ISyncSwapPoolSwap]{
 		baseToken:  poolToken{Decimals: decimal.NewFromBigInt(baseTokenDecimals, 0)},
 		quoteToken: poolToken{Decimals: decimal.NewFromBigInt(quoteTokenDecimals, 0)},
 	}
@@ -32,7 +32,7 @@ func TestParseSwapSellETHUSDC(t *testing.T) {
 	expectedTotal := decimal.NewFromFloat(103.073083)
 
 	s := syncswap{} // Assuming s is correctly initialized for the test
-	tradeEvent, err := s.parseSwap(swap, market, &pool)
+	tradeEvent, err := s.parseSwap(swap, &pool)
 
 	assert.Nil(t, err)
 	assert.Equal(t, TakerTypeSell, tradeEvent.TakerType)
@@ -53,7 +53,7 @@ func TestParseSwapBuyETHUSDC(t *testing.T) {
 	expectedTotal := decimal.NewFromInt(85)
 
 	s := syncswap{} // Assuming s is correctly initialized for the test
-	tradeEvent, err := s.parseSwap(swap, market, &pool)
+	tradeEvent, err := s.parseSwap(swap, &pool)
 
 	assert.Nil(t, err)
 	assert.Equal(t, TakerTypeBuy, tradeEvent.TakerType)
@@ -65,7 +65,7 @@ func TestParseSwapBuyETHUSDC(t *testing.T) {
 func TestParseSwapBuyLINDAWETH(t *testing.T) {
 	baseTokenDecimals = big.NewInt(18)  // Example: 18 decimals for LINDA
 	quoteTokenDecimals = big.NewInt(18) // Example: 18 decimals for WETH
-	pool = syncswapPoolWrapper{
+	pool = dexPool[isyncswap_pool.ISyncSwapPoolSwap]{
 		baseToken:  poolToken{Decimals: decimal.NewFromBigInt(baseTokenDecimals, 0)},
 		quoteToken: poolToken{Decimals: decimal.NewFromBigInt(quoteTokenDecimals, 0)},
 	}
@@ -83,7 +83,7 @@ func TestParseSwapBuyLINDAWETH(t *testing.T) {
 	expectedTotal := decimal.NewFromFloat(0.041092)
 
 	s := syncswap{} // Assuming s is correctly initialized for the test
-	tradeEvent, err := s.parseSwap(swap, market, &pool)
+	tradeEvent, err := s.parseSwap(swap, &pool)
 
 	assert.Nil(t, err)
 	assert.Equal(t, TakerTypeBuy, tradeEvent.TakerType)
@@ -95,7 +95,7 @@ func TestParseSwapBuyLINDAWETH(t *testing.T) {
 func TestParseSwapSellLINDAWETH(t *testing.T) {
 	baseTokenDecimals = big.NewInt(18)  // Example: 18 decimals for LINDA
 	quoteTokenDecimals = big.NewInt(18) // Example: 18 decimals for WETH
-	pool = syncswapPoolWrapper{
+	pool = dexPool[isyncswap_pool.ISyncSwapPoolSwap]{
 		baseToken:  poolToken{Decimals: decimal.NewFromBigInt(baseTokenDecimals, 0)},
 		quoteToken: poolToken{Decimals: decimal.NewFromBigInt(quoteTokenDecimals, 0)},
 	}
@@ -113,7 +113,7 @@ func TestParseSwapSellLINDAWETH(t *testing.T) {
 	expectedTotal := decimal.NewFromFloat(0.193601651777829)
 
 	s := syncswap{} // Assuming s is correctly initialized for the test
-	tradeEvent, err := s.parseSwap(swap, market, &pool)
+	tradeEvent, err := s.parseSwap(swap, &pool)
 
 	assert.Nil(t, err)
 	assert.Equal(t, TakerTypeSell, tradeEvent.TakerType)
