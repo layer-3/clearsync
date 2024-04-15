@@ -131,7 +131,7 @@
       },
       {
         "address": "0x6B3595068778DD592e39A122f4f5a5cF09C90fE2",
-        "name": "SushiToken",
+        "name": "SushiSwap",
         "symbol": "SUSHI",
         "decimals": 18,
         "precision": 6,
@@ -194,7 +194,7 @@
       },
       {
         "address": "0x38E68A37E401F7271568CecaAc63c6B1e19130B4",
-        "name": "Banana",
+        "name": "Banana Gun",
         "symbol": "BANANA",
         "decimals": 18,
         "precision": 6,
