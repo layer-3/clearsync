@@ -232,8 +232,8 @@
         "address": "0x96168402310c70fD7b45adf2Fb3892691E0627D9",
         "name": "KAYEN",
         "symbol": "KAYEN",
-        "decimals": 4,
-        "precision": 0,
+        "decimals": 6,
+        "precision": 3,
         "logoURI": "",
         "extensions": {}
       }
