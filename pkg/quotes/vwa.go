@@ -19,15 +19,17 @@ var defaultWeightsMap = map[DriverType]decimal.Decimal{
 type ConfFuncVWA func(*strategyVWA)
 
 type strategyVWA struct {
-	weights    map[DriverType]decimal.Decimal
-	priceCache *PriceCacheVWA
+	weights      map[DriverType]decimal.Decimal
+	priceCache   *PriceCacheVWA
+	maxPriceDiff decimal.Decimal
 }
 
 // newStrategyVWA creates a new instance of Volume-Weighted Average Price index price calculator.
 func newStrategyVWA(configs ...ConfFuncVWA) priceCalculator {
 	s := strategyVWA{
-		priceCache: newPriceCacheVWA(defaultWeightsMap, 20, 15*time.Minute),
-		weights:    defaultWeightsMap,
+		priceCache:   newPriceCacheVWA(defaultWeightsMap, 20, 15*time.Minute),
+		weights:      defaultWeightsMap,
+		maxPriceDiff: decimal.NewFromFloat(1.2),
 	}
 	for _, conf := range configs {
 		conf(&s)
@@ -47,6 +49,12 @@ func WithCustomWeightsVWA(driversWeights map[DriverType]decimal.Decimal) ConfFun
 func withCustomPriceCacheVWA(priceCache *PriceCacheVWA) ConfFuncVWA {
 	return func(strategy *strategyVWA) {
 		strategy.priceCache = priceCache
+	}
+}
+
+func withCustomMaxPriceDiff(priceDiff decimal.Decimal) ConfFuncVWA {
+	return func(strategy *strategyVWA) {
+		strategy.maxPriceDiff = priceDiff
 	}
 }
 

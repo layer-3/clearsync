@@ -27,7 +27,7 @@ type priceCalculator interface {
 }
 
 // newIndexAggregator creates a new instance of IndexAggregator.
-func newIndexAggregator(config Config, marketsMapping map[string][]string, strategy priceCalculator, outbox chan<- TradeEvent) Driver {
+func newIndexAggregator(config Config, maxPriceDiff decimal.Decimal, marketsMapping map[string][]string, strategy priceCalculator, outbox chan<- TradeEvent) Driver {
 	aggregated := make(chan TradeEvent, 128)
 
 	drivers := make([]Driver, 0, len(config.Drivers))
@@ -51,7 +51,7 @@ func newIndexAggregator(config Config, marketsMapping map[string][]string, strat
 		for event := range aggregated {
 			lastPrice := strategy.getLastPrice(event.Market)
 			if lastPrice != decimal.Zero {
-				if event.Price.GreaterThanOrEqual(lastPrice.Mul(decimal.NewFromFloat(1.2))) {
+				if event.Price.GreaterThanOrEqual(lastPrice.Mul(maxPriceDiff)) {
 					loggerIndex.Warn("skipping incoming outlier trade", "driver", event)
 					continue
 				}
@@ -149,10 +149,18 @@ func newIndex(config Config, outbox chan<- TradeEvent) Driver {
 		marketsMapping = defaultMarketsMapping
 	}
 
+	maxPriceDiffCoef, err := decimal.NewFromString(config.Index.MaxPriceDiff)
+	if err != nil {
+		loggerIndex.Fatalf("invalid max price diff config value", "driver", "error", err)
+	}
+
+	maxPriceDiff := decimal.NewFromInt(1).Add(maxPriceDiffCoef)
+
 	return newIndexAggregator(
 		config,
+		maxPriceDiff,
 		marketsMapping,
-		newStrategyVWA(withCustomPriceCacheVWA(newPriceCacheVWA(defaultWeightsMap, config.Index.TradesCached, time.Duration(config.Index.BufferMinutes)*time.Minute))),
+		newStrategyVWA(withCustomPriceCacheVWA(newPriceCacheVWA(defaultWeightsMap, config.Index.TradesCached, time.Duration(config.Index.BufferMinutes)*time.Minute)), withCustomMaxPriceDiff(maxPriceDiff)),
 		outbox,
 	)
 }
