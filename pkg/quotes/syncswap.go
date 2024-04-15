@@ -20,10 +20,11 @@ import (
 var loggerSyncswap = log.Logger("syncswap")
 
 type syncswap struct {
-	once      *once
-	url       string
-	assetsURL string
-	client    *ethclient.Client
+	once       *once
+	url        string
+	assetsURL  string
+	mappingURL string
+	client     *ethclient.Client
 
 	classicPoolFactoryAddress string
 	classicFactory            *isyncswap_factory.ISyncSwapFactory
@@ -35,6 +36,7 @@ type syncswap struct {
 	filter  Filter
 	streams safe.Map[Market, event.Subscription]
 	assets  safe.Map[string, poolToken]
+	mapping safe.Map[string, []string]
 }
 
 func newSyncswap(config SyncswapConfig, outbox chan<- TradeEvent) Driver {
@@ -47,11 +49,13 @@ func newSyncswap(config SyncswapConfig, outbox chan<- TradeEvent) Driver {
 		}
 		stablePoolMarkets[market] = struct{}{}
 	}
+	loggerSyncswap.Debugw("configured stable pool markets", "markets", stablePoolMarkets)
 
 	return &syncswap{
-		once:      newOnce(),
-		url:       config.URL,
-		assetsURL: config.AssetsURL,
+		once:       newOnce(),
+		url:        config.URL,
+		assetsURL:  config.AssetsURL,
+		mappingURL: config.MappingURL,
 
 		classicPoolFactoryAddress: config.ClassicPoolFactoryAddress,
 		classicFactory:            nil,
@@ -63,6 +67,7 @@ func newSyncswap(config SyncswapConfig, outbox chan<- TradeEvent) Driver {
 		filter:  NewFilter(config.Filter),
 		streams: safe.NewMap[Market, event.Subscription](),
 		assets:  safe.NewMap[string, poolToken](),
+		mapping: safe.NewMap[string, []string](),
 	}
 }
 
@@ -111,8 +116,20 @@ func (s *syncswap) Start() error {
 			startErr = fmt.Errorf("failed to fetch assets: %w", err)
 			return
 		}
+
 		for _, asset := range assets {
 			s.assets.Store(strings.ToUpper(asset.Symbol), asset)
+		}
+
+		mapping, err := getMapping(s.mappingURL)
+
+		if err != nil {
+			startErr = fmt.Errorf("failed to fetch mapping: %w", err)
+			return
+		}
+
+		for key, mapItem := range mapping {
+			s.mapping.Store(key, mapItem)
 		}
 	})
 
@@ -121,7 +138,6 @@ func (s *syncswap) Start() error {
 	}
 	return startErr
 }
-
 func (s *syncswap) Stop() error {
 	stopped := s.once.Stop(func() {
 		s.streams.Range(func(market Market, _ event.Subscription) bool {
@@ -142,6 +158,19 @@ func (s *syncswap) Subscribe(market Market) error {
 	if !s.once.Subscribe() {
 		return errNotStarted
 	}
+
+	// mapping map[BTC:[WBTC] ETH:[WETH] USD:[USDT USDC TUSD]]
+	s.mapping.Range(func(token string, mappings []string) bool {
+		if token == strings.ToUpper(market.Quote()) {
+			for _, mappedToken := range mappings {
+				err := s.Subscribe(NewMarketWithMainQuote(market.Base(), mappedToken, market.Quote()))
+				if err != nil {
+					loggerSyncswap.Errorf("failed to subscribe to market %s: %s", market, err)
+				}
+			}
+		}
+		return true
+	})
 
 	if _, ok := s.streams.Load(market); ok {
 		return fmt.Errorf("%s: %w", market, errAlreadySubbed)
@@ -241,7 +270,7 @@ func (*syncswap) parseSwap(swap *isyncswap_pool.ISyncSwapPoolSwap, market Market
 	amount = amount.Abs()
 	tr := TradeEvent{
 		Source:    DriverSyncswap,
-		Market:    market,
+		Market:    market.ApplyMainQuote(),
 		Price:     price,
 		Amount:    amount,
 		Total:     total,
@@ -284,14 +313,14 @@ func (s *syncswap) getPool(market Market) (*syncswapPoolWrapper, error) {
 	var poolAddress common.Address
 	zeroAddress := common.HexToAddress("0x0")
 	if _, ok := s.stablePoolMarkets[market]; ok {
-		loggerSyncswap.Infof("market %s is a stable pool", market)
+		loggerSyncswap.Infof("market %s is a stable pool", market.StringWithoutMain())
 		poolAddress, err = s.stableFactory.GetPool(
 			nil,
 			common.HexToAddress(baseToken.Address),
 			common.HexToAddress(quoteToken.Address),
 		)
 	} else {
-		loggerSyncswap.Infof("market %s is a classic pool", market)
+		loggerSyncswap.Infof("market %s is a classic pool", market.StringWithoutMain())
 		poolAddress, err = s.classicFactory.GetPool(
 			nil,
 			common.HexToAddress(baseToken.Address),
@@ -302,9 +331,9 @@ func (s *syncswap) getPool(market Market) (*syncswapPoolWrapper, error) {
 		return nil, fmt.Errorf("failed to get classic pool address: %w", err)
 	}
 	if poolAddress == zeroAddress {
-		return nil, fmt.Errorf("classic pool for market %s does not exist", market)
+		return nil, fmt.Errorf("classic pool for market %s does not exist", market.StringWithoutMain())
 	}
-	loggerSyncswap.Infof("got pool %s for market %s", poolAddress, market)
+	loggerSyncswap.Infof("got pool %s for market %s", poolAddress, market.StringWithoutMain())
 
 	poolContract, err := isyncswap_pool.NewISyncSwapPool(poolAddress, s.client)
 	if err != nil {
@@ -342,16 +371,16 @@ func (s *syncswap) getTokens(market Market) (baseToken poolToken, quoteToken poo
 	baseToken, ok := s.assets.Load(strings.ToUpper(market.Base()))
 	if !ok {
 		err = fmt.Errorf("tokens '%s' does not exist", market.Base())
-		return
+		return baseToken, quoteToken, err
 	}
-	loggerSyncswap.Infof("market %s: base token address is %s", market, baseToken.Address)
+	loggerSyncswap.Infof("market %s: base token address is %s", market.StringWithoutMain(), baseToken.Address)
 
 	quoteToken, ok = s.assets.Load(strings.ToUpper(market.Quote()))
 	if !ok {
 		err = fmt.Errorf("tokens '%s' does not exist", market.Quote())
-		return
+		return baseToken, quoteToken, err
 	}
-	loggerSyncswap.Infof("market %s: quote token address is %s", market, quoteToken.Address)
+	loggerSyncswap.Infof("market %s: quote token address is %s", market.StringWithoutMain(), quoteToken.Address)
 
 	return baseToken, quoteToken, nil
 }

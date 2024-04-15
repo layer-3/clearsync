@@ -11,6 +11,7 @@
           "address": "0x0B7d2d621Fc80900fD345eb9542018b67fEF474F",
           "name": "USD Coin",
           "symbol": "USDC",
+          "alias": "USD",
           "decimals": 6,
           "precision": 4
         },

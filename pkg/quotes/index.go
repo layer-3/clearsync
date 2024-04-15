@@ -30,6 +30,7 @@ func newIndexAggregator(config Config, marketsMapping map[string][]string, strat
 
 	drivers := make([]Driver, 0, len(config.Drivers))
 	for _, d := range config.Drivers {
+		loggerIndex.Infof("creating driver %s as an index driver", d)
 		driverConfig, err := config.GetByDriverType(d)
 		if err != nil {
 			panic(err) // impossible case if config structure is not amended
@@ -110,6 +111,7 @@ func (a *indexAggregator) Start() error {
 
 		go func(d Driver) {
 			defer wg.Done()
+			loggerIndex.Infof("starting driver %s as an index driver", d.ActiveDrivers()[0])
 			if err := d.Start(); err != nil {
 				loggerIndex.Warn(err.Error())
 			}
@@ -126,6 +128,7 @@ func (a *indexAggregator) Subscribe(m Market) error {
 		if err := d.Subscribe(m); err != nil {
 			if d.ExchangeType() == ExchangeTypeDEX {
 				for _, convertFrom := range a.marketsMapping[m.quoteUnit] {
+					// TODO: check if base and quote are same
 					if err := d.Subscribe(NewDerivedMerket(m.baseUnit, convertFrom, m.quoteUnit)); err != nil {
 						loggerIndex.Infof("%s: skipping %s :", d.ActiveDrivers()[0], convertFrom, err.Error())
 						continue
@@ -133,7 +136,6 @@ func (a *indexAggregator) Subscribe(m Market) error {
 					loggerIndex.Infof("%s helper market found: %s/%s", d.ActiveDrivers()[0], m.baseUnit, convertFrom)
 				}
 			}
-			loggerIndex.Warnf("failed to subscribe for %s %s market: %s: ", d.ActiveDrivers()[0], m, err.Error())
 		}
 	}
 	return nil

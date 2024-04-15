@@ -33,7 +33,7 @@ func (config Config) GetByDriverType(driver DriverType) (Config, error) {
 		return Config{}, fmt.Errorf("driver is not configured: %s", driver)
 	}
 
-	switch config.Drivers[0] {
+	switch driver {
 	case DriverBinance:
 		return Config{Drivers: []DriverType{DriverBinance}, Binance: config.Binance}, nil
 	case DriverKraken:
@@ -109,6 +109,7 @@ type UniswapV3GethConfig struct {
 type SyncswapConfig struct {
 	URL                       string       `yaml:"url" env:"URL"`
 	AssetsURL                 string       `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/assets.json"`
+	MappingURL                string       `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/mapping.json"`
 	ClassicPoolFactoryAddress string       `yaml:"classic_pool_factory_address" env:"CLASSIC_POOL_FACTORY_ADDRESS" env-default:"0x37BAc764494c8db4e54BDE72f6965beA9fa0AC2d"`
 	StablePoolFactoryAddress  string       `yaml:"stable_pool_factory_address" env:"STABLE_POOL_FACTORY_ADDRESS" env-default:"0xE4CF807E351b56720B17A59094179e7Ed9dD3727"`
 	StablePoolMarkets         []string     `yaml:"stable_pool_markets" env:"STABLE_POOL_MARKETS" env-default:"usdt/usdc"` // `env-default` tag value is a comma separated list of markets as in `usdt/usdc,usdc/dai`
