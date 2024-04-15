@@ -41,17 +41,21 @@ type baseDEX[Event any, Contract any] struct {
 }
 
 type baseDexConfig[Event any, Contract any] struct {
+	// Params
 	DriverType DriverType
 	URL        string
 	AssetsURL  string
 	MappingURL string
-	Outbox     chan<- TradeEvent
-	Filter     FilterConfig
 	Logger     *log.ZapEventLogger
 
+	// Hooks
 	StartHook   func() error
 	PoolGetter  func(Market) (*dexPool[Event], error)
 	EventParser func(*Event, *dexPool[Event]) (TradeEvent, error)
+
+	// State
+	Outbox chan<- TradeEvent
+	Filter FilterConfig
 }
 
 func newBaseDEX[Event any, Contract any](config baseDexConfig[Event, Contract]) *baseDEX[Event, Contract] {
@@ -62,6 +66,7 @@ func newBaseDEX[Event any, Contract any](config baseDexConfig[Event, Contract]) 
 		url:        config.URL,
 		assetsURL:  config.AssetsURL,
 		mappingURL: config.MappingURL,
+		logger:     config.Logger,
 
 		// Hooks
 		start:   config.StartHook,
@@ -172,7 +177,7 @@ func (b *baseDEX[Event, Contract]) Subscribe(market Market) error {
 			for _, mappedToken := range mappings {
 				err := b.Subscribe(NewMarketWithMainQuote(market.Base(), mappedToken, market.Quote()))
 				if err != nil {
-					loggerSyncswap.Errorf("failed to subscribe to market %s: %s", market, err)
+					b.logger.Errorf("failed to subscribe to market %s: %s", market, err)
 				}
 			}
 		}
