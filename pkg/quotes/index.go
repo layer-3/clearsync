@@ -1,6 +1,7 @@
 package quotes
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -30,7 +31,7 @@ func newIndexAggregator(config Config, marketsMapping map[string][]string, strat
 
 	drivers := make([]Driver, 0, len(config.Drivers))
 	for _, d := range config.Drivers {
-		loggerIndex.Infof("creating driver %s as an index driver", d)
+		loggerIndex.Infow("creating driver as an index driver", "driver", d)
 		driverConfig, err := config.GetByDriverType(d)
 		if err != nil {
 			panic(err) // impossible case if config structure is not amended
@@ -38,7 +39,7 @@ func newIndexAggregator(config Config, marketsMapping map[string][]string, strat
 
 		driver, err := NewDriver(driverConfig, aggregated)
 		if err != nil {
-			loggerIndex.Warnf("failed to create driver %s: %s", d, err.Error())
+			loggerIndex.Warnw("failed to create driver", "driver", d, "error", err)
 			continue
 		}
 		drivers = append(drivers, driver)
@@ -111,9 +112,9 @@ func (a *indexAggregator) Start() error {
 
 		go func(d Driver) {
 			defer wg.Done()
-			loggerIndex.Infof("starting driver %s as an index driver", d.ActiveDrivers()[0])
+			loggerIndex.Infow("starting driver as an index driver", "driver", d.ActiveDrivers()[0])
 			if err := d.Start(); err != nil {
-				loggerIndex.Warn(err.Error())
+				loggerIndex.Warnw("failed to start driver", "driver", d.ActiveDrivers()[0], "error", err)
 			}
 		}(d)
 	}
@@ -130,10 +131,12 @@ func (a *indexAggregator) Subscribe(m Market) error {
 				for _, convertFrom := range a.marketsMapping[m.quoteUnit] {
 					// TODO: check if base and quote are same
 					if err := d.Subscribe(NewDerivedMerket(m.baseUnit, convertFrom, m.quoteUnit)); err != nil {
-						loggerIndex.Infof("%s: skipping %s :", d.ActiveDrivers()[0], convertFrom, err.Error())
+						loggerIndex.Infow("skipping market", "driver", d.ActiveDrivers()[0], "market", convertFrom, "error", err)
 						continue
 					}
-					loggerIndex.Infof("%s helper market found: %s/%s", d.ActiveDrivers()[0], m.baseUnit, convertFrom)
+					loggerIndex.Infow("helper market found",
+						"driver", d.ActiveDrivers()[0],
+						"market", fmt.Sprintf("%s/%s", m.baseUnit, convertFrom))
 				}
 			}
 		}
@@ -144,7 +147,7 @@ func (a *indexAggregator) Subscribe(m Market) error {
 func (a *indexAggregator) Unsubscribe(m Market) error {
 	for _, d := range a.drivers {
 		if err := d.Unsubscribe(m); err != nil {
-			loggerIndex.Warnf("failed to unsubscribe from market %s of %s: %s", m, d.ActiveDrivers()[0], err.Error())
+			loggerIndex.Warnw("failed to unsubscribe", "driver", d.ActiveDrivers()[0], "market", m, "error", err.Error())
 		}
 	}
 	return nil
