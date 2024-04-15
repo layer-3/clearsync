@@ -136,9 +136,8 @@ func (s *syncswap) getPool(market Market) (*dexPool[isyncswap_pool.ISyncSwapPool
 	} else if quoteAddress == basePoolToken && baseAddress == quotePoolToken {
 		pool.reverted = true
 		return pool, nil
-	} else {
-		return nil, fmt.Errorf("failed to build Syncswap pool: %w", err)
 	}
+	return nil, fmt.Errorf("failed to build Syncswap pool: %w", err)
 }
 
 func (*syncswap) parseSwap(
@@ -156,10 +155,17 @@ func (*syncswap) parseSwap(
 		}
 	}()
 
+	baseDecimals := pool.baseToken.Decimals
+	quoteDecimals := pool.quoteToken.Decimals
+	if pool.reverted {
+		baseDecimals = pool.quoteToken.Decimals
+		quoteDecimals = pool.baseToken.Decimals
+	}
+
 	switch {
 	case isValidNonZero(swap.Amount0In) && isValidNonZero(swap.Amount1Out):
-		amount1Out := decimal.NewFromBigInt(swap.Amount1Out, 0).Div(decimal.NewFromInt(10).Pow(pool.quoteToken.Decimals))
-		amount0In := decimal.NewFromBigInt(swap.Amount0In, 0).Div(decimal.NewFromInt(10).Pow(pool.baseToken.Decimals))
+		amount1Out := decimal.NewFromBigInt(swap.Amount1Out, 0).Div(decimal.NewFromInt(10).Pow(quoteDecimals))
+		amount0In := decimal.NewFromBigInt(swap.Amount0In, 0).Div(decimal.NewFromInt(10).Pow(baseDecimals))
 
 		takerType = TakerTypeSell
 		price = amount1Out.Div(amount0In)
@@ -167,8 +173,8 @@ func (*syncswap) parseSwap(
 		amount = amount0In
 
 	case isValidNonZero(swap.Amount0Out) && isValidNonZero(swap.Amount1In):
-		amount0Out := decimal.NewFromBigInt(swap.Amount0Out, 0).Div(decimal.NewFromInt(10).Pow(pool.baseToken.Decimals))
-		amount1In := decimal.NewFromBigInt(swap.Amount1In, 0).Div(decimal.NewFromInt(10).Pow(pool.quoteToken.Decimals))
+		amount0Out := decimal.NewFromBigInt(swap.Amount0Out, 0).Div(decimal.NewFromInt(10).Pow(baseDecimals))
+		amount1In := decimal.NewFromBigInt(swap.Amount1In, 0).Div(decimal.NewFromInt(10).Pow(quoteDecimals))
 
 		takerType = TakerTypeBuy
 		price = amount1In.Div(amount0Out)
@@ -179,7 +185,7 @@ func (*syncswap) parseSwap(
 		return TradeEvent{}, fmt.Errorf("market %s: unknown swap type", pool.Market())
 	}
 
-	return TradeEvent{
+	trade := TradeEvent{
 		Source:    DriverSyncswap,
 		Market:    pool.Market(),
 		Price:     price,
@@ -187,7 +193,8 @@ func (*syncswap) parseSwap(
 		Total:     total,
 		TakerType: takerType,
 		CreatedAt: time.Now(),
-	}, nil
+	}
+	return trade, nil
 }
 
 func isValidNonZero(x *big.Int) bool {

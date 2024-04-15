@@ -185,7 +185,7 @@ func (b *baseDEX[Event, Contract]) Subscribe(market Market) error {
 
 	pool, err := b.getPool(market)
 	if err != nil {
-		return fmt.Errorf("failed to get pool for market %v: %s", market.String(), err)
+		return fmt.Errorf("failed to get pool for market %s: %s", market.StringWithoutMain(), err)
 	}
 
 	sink := make(chan *Event, 128)
