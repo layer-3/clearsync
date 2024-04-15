@@ -45,6 +45,7 @@ func newIndexAggregator(config Config, marketsMapping map[string][]string, strat
 		drivers = append(drivers, driver)
 	}
 
+	// TODO: fix tests
 	go func() {
 		marketTrades := make(map[Market][]TradeEvent)
 		timer := time.NewTimer(time.Duration(config.Index.TradesBufferSeconds) * time.Second)
@@ -55,6 +56,7 @@ func newIndexAggregator(config Config, marketsMapping map[string][]string, strat
 			case <-timer.C:
 				for market, trades := range marketTrades {
 					event := combineTrades(trades)
+					fmt.Println("resulting event ", event)
 					if event != nil {
 						indexPrice, ok := strategy.calculateIndexPrice(*event)
 						if ok && event.Source != DriverInternal {
@@ -85,52 +87,48 @@ func combineTrades(trades []TradeEvent) *TradeEvent {
 		return nil
 	}
 
-	totalBuyAmount := decimal.Zero
-	totalSellAmount := decimal.Zero
-	totalBuyValue := decimal.Zero
-	totalSellValue := decimal.Zero
+	totalAmount := decimal.Zero
+	totalValue := decimal.Zero
+	netAmount := decimal.Zero
 
 	for _, trade := range trades {
+		// Update total amount and value for average price calculation
+		totalAmount = totalAmount.Add(trade.Amount)
+		totalValue = totalValue.Add(trade.Amount.Mul(trade.Price))
+
+		// Update net amount to determine net side (buy or sell)
 		if trade.TakerType == TakerTypeBuy {
-			totalBuyAmount = totalBuyAmount.Add(trade.Amount)
-			totalBuyValue = totalBuyValue.Add(trade.Amount.Mul(trade.Price))
+			netAmount = netAmount.Add(trade.Amount)
 		} else if trade.TakerType == TakerTypeSell {
-			totalSellAmount = totalSellAmount.Add(trade.Amount)
-			totalSellValue = totalSellValue.Add(trade.Amount.Mul(trade.Price))
+			netAmount = netAmount.Sub(trade.Amount)
 		}
 	}
 
-	if totalBuyAmount.Equal(decimal.Zero) && totalSellAmount.Equal(decimal.Zero) {
+	if totalAmount.Equal(decimal.Zero) {
 		return nil
 	}
 
-	var avgBuyPrice, avgSellPrice decimal.Decimal
-	if !totalBuyAmount.IsZero() {
-		avgBuyPrice = totalBuyValue.Div(totalBuyAmount)
-	}
-	if !totalSellAmount.IsZero() {
-		avgSellPrice = totalSellValue.Div(totalSellAmount)
-	}
+	avgPrice := totalValue.Div(totalAmount)
 
+	// fmt.Println("Total Amount over all trades: ", totalAmount)
+	// fmt.Println("Average Price over all trades: ", avgPrice)
+	// fmt.Println("| Buy - Sell | Amount: ", netAmount)
+
+	// Determine net side (buy or sell)
 	var netSide TakerType
-	var netPrice decimal.Decimal
-
-	netAmount := totalBuyAmount.Sub(totalSellAmount)
-	if netAmount.GreaterThan(decimal.Zero) {
-		netSide = TakerTypeBuy
-		netPrice = avgBuyPrice
+	if netAmount.GreaterThanOrEqual(decimal.Zero) {
+		netSide = TakerTypeSell // "buy" (yes, it looks inverted)
 	} else {
-		netSide = TakerTypeSell
-		netPrice = avgSellPrice
+		netSide = TakerTypeBuy // "sell"
 		netAmount = netAmount.Abs()
 	}
 
 	return &TradeEvent{
 		Source:    DriverType{"index"},
 		Market:    trades[0].Market,
-		Price:     netPrice,
+		Price:     avgPrice,
 		Amount:    netAmount,
-		Total:     netPrice.Mul(netAmount),
+		Total:     avgPrice.Mul(netAmount),
 		TakerType: netSide,
 		CreatedAt: time.Now(),
 	}

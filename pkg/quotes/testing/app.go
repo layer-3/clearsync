@@ -83,9 +83,7 @@ func main() {
 
 	markets := []quotes.Market{
 		// Add your markets here
-		quotes.NewMarket("weth", "usdc"),
-		quotes.NewMarket("lube", "usdc"),
-		quotes.NewMarket("linda", "usdc"),
+		quotes.NewMarket("btc", "usdt"),
 	}
 
 	for _, market := range markets {
