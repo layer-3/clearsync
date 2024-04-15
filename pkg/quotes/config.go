@@ -119,8 +119,8 @@ type SyncswapConfig struct {
 
 type QuickswapConfig struct {
 	URL        string `yaml:"url" env:"URL"`
-	AssetsURL  string `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/mainnet/assets.json"`
-	MappingURL string `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/mapping.json"`
+	AssetsURL  string `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/137/assets.json"`
+	MappingURL string `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/137/mapping.json"`
 	// PoolFactoryAddress is the address of the factory contract.
 	// See docs at https://docs.quickswap.exchange/technical-reference/smart-contracts/v3/factory.
 	// Note that the contract used in this lib is compiled from https://github.com/code-423n4/2022-09-quickswap.
