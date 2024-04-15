@@ -6,7 +6,7 @@
       "symbol": "DUCKIES",
       "decimals": 8,
       "precision": 6,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/b86642661e733bc7b23cfb9fd7d3a59995709026/networks/icons/duckies-200x200.png",
+      "logoURI": "https://github.com/layer-3/clearsync/blob/master/networks/icons/duckies-200x200.png",
       "extensions": {}
     },
     {
@@ -15,7 +15,7 @@
       "symbol": "ETH",
       "decimals": 18,
       "precision": 6,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/b86642661e733bc7b23cfb9fd7d3a59995709026/networks/icons/ethereum-64x64.png"
+      "logoURI": "https://github.com/layer-3/clearsync/blob/master/networks/icons/ethereum-64x64.png"
     },
     {
       "address": "0x891967b45eb9910768a9FC48DBb11120Ee180125",
@@ -23,7 +23,7 @@
       "symbol": "USDT",
       "decimals": 6,
       "precision": 6,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/b86642661e733bc7b23cfb9fd7d3a59995709026/networks/icons/tether-64x64.png",
+      "logoURI": "https://github.com/layer-3/clearsync/blob/master/networks/icons/tether-64x64.png",
       "extensions": {}
     },
     {
@@ -33,7 +33,7 @@
       "alias": "USD",
       "decimals": 6,
       "precision": 6,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/b86642661e733bc7b23cfb9fd7d3a59995709026/networks/icons/usdc-64x64.png",
+      "logoURI": "https://github.com/layer-3/clearsync/blob/master/networks/icons/usdc-64x64.png",
       "extensions": {}
     },
     {
@@ -42,7 +42,7 @@
       "symbol": "SHIB",
       "decimals": 18,
       "precision": 0,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/b86642661e733bc7b23cfb9fd7d3a59995709026/networks/icons/sibainu-64x64.png"
+      "logoURI": "https://github.com/layer-3/clearsync/blob/master/networks/icons/sibainu-64x64.png"
     },
     {
       "address": "0xb3Ea26Da98fFB06A5c5a7A972d6d4dE58967E38a",
@@ -50,7 +50,7 @@
       "symbol": "LUBE",
       "decimals": 18,
       "precision": 6,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/b86642661e733bc7b23cfb9fd7d3a59995709026/networks/icons/lube-64x64.png",
+      "logoURI": "https://github.com/layer-3/clearsync/blob/master/networks/icons/lube-64x64.png",
       "extensions": {}
     },
     {
@@ -59,7 +59,7 @@
       "symbol": "WBTC",
       "decimals": 18,
       "precision": 6,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/b86642661e733bc7b23cfb9fd7d3a59995709026/networks/icons/wbtc-64x64.png",
+      "logoURI": "https://github.com/layer-3/clearsync/blob/master/networks/icons/wbtc-64x64.png",
       "extensions": {}
     },
     {
@@ -68,7 +68,7 @@
       "symbol": "WETH",
       "decimals": 18,
       "precision": 6,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/b86642661e733bc7b23cfb9fd7d3a59995709026/networks/icons/wrapped-eth-64x64.png",
+      "logoURI": "https://github.com/layer-3/clearsync/blob/master/networks/icons/wrapped-eth-64x64.png",
       "extensions": {}
     },
     {
@@ -77,7 +77,7 @@
       "symbol": "LINDA",
       "decimals": 18,
       "precision": 6,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/b86642661e733bc7b23cfb9fd7d3a59995709026/networks/icons/linda-64x64.png",
+      "logoURI": "https://github.com/layer-3/clearsync/blob/master/networks/icons/linda-64x64.png",
       "extensions": {}
     },      {
       "address": "0x356A55841a16c05A3628045E9F68A0a5CE810113",
@@ -85,7 +85,7 @@
       "symbol": "WSOL",
       "decimals": 9,
       "precision": 6,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/b86642661e733bc7b23cfb9fd7d3a59995709026/networks/icons/wrapped-solana-64x64.png",
+      "logoURI": "https://github.com/layer-3/clearsync/blob/master/networks/icons/wrapped-solana-64x64.png",
       "extensions": {}
     },
     {
@@ -94,7 +94,7 @@
       "symbol": "BNB",
       "decimals": 18,
       "precision": 6,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/b86642661e733bc7b23cfb9fd7d3a59995709026/networks/icons/bnb-64x64.png",
+      "logoURI": "https://github.com/layer-3/clearsync/blob/master/networks/icons/bnb-64x64.png",
       "extensions": {}
     },
     {
@@ -103,7 +103,7 @@
       "symbol": "DAI",
       "decimals": 18,
       "precision": 6,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/b86642661e733bc7b23cfb9fd7d3a59995709026/networks/icons/dai-64x64.png",
+      "logoURI": "https://github.com/layer-3/clearsync/blob/master/networks/icons/dai-64x64.png",
       "extensions": {}
     },
     {
@@ -112,7 +112,7 @@
       "symbol": "PEPE",
       "decimals": 18,
       "precision": 6,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/b86642661e733bc7b23cfb9fd7d3a59995709026/networks/icons/pepe-64x64.png",
+      "logoURI": "https://github.com/layer-3/clearsync/blob/master/networks/icons/pepe-64x64.png",
       "extensions": {}
     },
     {
@@ -121,7 +121,7 @@
       "symbol": "BADGER",
       "decimals": 18,
       "precision": 6,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/b86642661e733bc7b23cfb9fd7d3a59995709026/networks/icons/badger-64x64.png",
+      "logoURI": "https://github.com/layer-3/clearsync/blob/master/networks/icons/badger-64x64.png",
       "extensions": {}
     },
     {
@@ -130,7 +130,7 @@
       "symbol": "FLOKI",
       "decimals": 9,
       "precision": 6,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/b86642661e733bc7b23cfb9fd7d3a59995709026/networks/icons/floki-64x64.png",
+      "logoURI": "https://github.com/layer-3/clearsync/blob/master/networks/icons/floki-64x64.png",
       "extensions": {}
     },
     {
@@ -139,7 +139,7 @@
       "symbol": "MEME",
       "decimals": 18,
       "precision": 6,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/b86642661e733bc7b23cfb9fd7d3a59995709026/networks/icons/memecoin-64x64.png",
+      "logoURI": "https://github.com/layer-3/clearsync/blob/master/networks/icons/memecoin-64x64.png",
       "extensions": {}
     },
     {
@@ -148,7 +148,7 @@
       "symbol": "UNI",
       "decimals": 18,
       "precision": 6,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/b86642661e733bc7b23cfb9fd7d3a59995709026/networks/icons/uniswap-64x64.png",
+      "logoURI": "https://github.com/layer-3/clearsync/blob/master/networks/icons/uniswap-64x64.png",
       "extensions": {}
     },
     {
@@ -157,7 +157,7 @@
       "symbol": "SUSHI",
       "decimals": 18,
       "precision": 6,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/b86642661e733bc7b23cfb9fd7d3a59995709026/networks/icons/sushi-64x64.png",
+      "logoURI": "https://github.com/layer-3/clearsync/blob/master/networks/icons/sushi-64x64.png",
       "extensions": {}
     },
     {
@@ -166,7 +166,7 @@
       "symbol": "DODO",
       "decimals": 18,
       "precision": 6,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/b86642661e733bc7b23cfb9fd7d3a59995709026/networks/icons/dodo-64x64.png",
+      "logoURI": "https://github.com/layer-3/clearsync/blob/master/networks/icons/dodo-64x64.png",
       "extensions": {}
     },
     {
@@ -175,7 +175,7 @@
       "symbol": "BEAM",
       "decimals": 18,
       "precision": 6,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/b86642661e733bc7b23cfb9fd7d3a59995709026/networks/icons/beam-64x64.png",
+      "logoURI": "https://github.com/layer-3/clearsync/blob/master/networks/icons/beam-64x64.png",
       "extensions": {}
     },
     {
@@ -184,7 +184,7 @@
       "symbol": "CHZ",
       "decimals": 18,
       "precision": 6,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/b86642661e733bc7b23cfb9fd7d3a59995709026/networks/icons/chiliz-64x64.png",
+      "logoURI": "https://github.com/layer-3/clearsync/blob/master/networks/icons/chiliz-64x64.png",
       "extensions": {}
     },
     {
@@ -193,7 +193,7 @@
       "symbol": "FOX",
       "decimals": 18,
       "precision": 6,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/b86642661e733bc7b23cfb9fd7d3a59995709026/networks/icons/fox-64x64.png",
+      "logoURI": "https://github.com/layer-3/clearsync/blob/master/networks/icons/fox-64x64.png",
       "extensions": {}
     },
     {
@@ -202,7 +202,7 @@
       "symbol": "TONCOIN",
       "decimals": 9,
       "precision": 6,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/b86642661e733bc7b23cfb9fd7d3a59995709026/networks/icons/wrapped-toncoin-64x64.png",
+      "logoURI": "https://github.com/layer-3/clearsync/blob/master/networks/icons/wrapped-toncoin-64x64.png",
       "extensions": {}
     },
     {
@@ -211,7 +211,7 @@
       "symbol": "BabyDoge",
       "decimals": 9,
       "precision": 6,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/b86642661e733bc7b23cfb9fd7d3a59995709026/networks/icons/babydoge-64x64.png",
+      "logoURI": "https://github.com/layer-3/clearsync/blob/master/networks/icons/babydoge-64x64.png",
       "extensions": {}
     },
     {
@@ -220,7 +220,7 @@
       "symbol": "BANANA",
       "decimals": 18,
       "precision": 6,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/b86642661e733bc7b23cfb9fd7d3a59995709026/networks/icons/bananagun-256%E2%80%8A%C3%97%E2%80%8A256.png",
+      "logoURI": "https://github.com/layer-3/clearsync/blob/master/networks/icons/bananagun-256%E2%80%8A%C3%97%E2%80%8A256.png",
       "extensions": {}
     },
     {
@@ -229,7 +229,7 @@
       "symbol": "ELON",
       "decimals": 18,
       "precision": 6,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/b86642661e733bc7b23cfb9fd7d3a59995709026/networks/icons/dogelon-64x64.png",
+      "logoURI": "https://github.com/layer-3/clearsync/blob/master/networks/icons/dogelon-64x64.png",
       "extensions": {}
     },
     {
@@ -238,7 +238,7 @@
       "symbol": "GROK",
       "decimals": 9,
       "precision": 6,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/b86642661e733bc7b23cfb9fd7d3a59995709026/networks/icons/grok-64x62.png",
+      "logoURI": "https://github.com/layer-3/clearsync/blob/master/networks/icons/grok-64x62.png",
       "extensions": {}
     },
     {
@@ -247,7 +247,7 @@
       "symbol": "DISCO",
       "decimals": 4,
       "precision": 0,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/b86642661e733bc7b23cfb9fd7d3a59995709026/networks/icons/disco-192x192.png",
+      "logoURI": "https://github.com/layer-3/clearsync/blob/master/networks/icons/disco-192x192.png",
       "extensions": {}
     },
     {
@@ -256,7 +256,7 @@
       "symbol": "KAYEN",
       "decimals": 6,
       "precision": 3,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/b86642661e733bc7b23cfb9fd7d3a59995709026/networks/icons/kayen-64x64.png",
+      "logoURI": "https://github.com/layer-3/clearsync/blob/master/networks/icons/kayen-64x64.png",
       "extensions": {}
     }
   ]
