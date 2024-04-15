@@ -16,18 +16,37 @@
 
 **Settlement** (Swap) — stage in a Trading Channel where both parties involved mutually agree to close all their positions, thereby concluding their trading activities within the channel.
 
+## Margin Systems
+
+- Channel Margin system - All cross positions share the channel margin balance.
+- Position Margin system - The isolated margin is assigned to a position.
+
 ## Margin Definitions
-**Initial Margin** On-Chain collateral locked on the state-channel
 
-**Margin Balance** = Wallet Balance + Unrealized PNL. 
+- **IMR** - Initial Margin Rate (%) required for opening positions.
 
-**Available Margin** = Margin - IMR x position_sizes
+- **MMR** - Maintenance Margin Rate (%) to keep positions.
 
-**Maintenance Margin** = position_sizes x MMR
+- **Channel Margin** - On-chain collateral locked on the state-channel.
 
-**Initial Margin Rate** = Minimum margin amount for openning a Position (20%)
+- **Leverage** - Leverage the user uses to create a position.
 
-**Maintenance Margin Rate** = The margin maintenance rate is the minimum amount of margin that must be maintained by a trader to keep a position open. If a trader's margin falls below this level, their position may be liquidated.
+- **Position size** - Position amount.
 
-Your positions will be liquidated once 
-Margin Balance <= Maintenance Margin.
+- **Entry Price** - Market price of an asset at the moment of opening the position.
+
+- **Current Price** - Current market price of an asset.
+
+- **Position costs** - Position Size × Position Average Entry Price.
+
+- **Unrealized PNL** - Position Size x Current Price - Position costs
+
+- **Initial Margin** - Down payment to open a position.
+
+- **Margin Balance** - Channel Margin + Unrealized PNL.
+
+- **Available Balance** - Channel Margin - Initial Margin + Unrealized PNL.
+
+- **Maintenance Margin** - Minimum amount of margin that must before liquidation (Positions Costs × MMR + Close Positions Fee).
+
+Your positions will be liquidated once ```Margin Balance <= Maintenance Margin```.
