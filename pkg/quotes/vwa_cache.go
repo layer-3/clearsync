@@ -10,7 +10,6 @@ import (
 type trade struct {
 	Price     decimal.Decimal
 	Volume    decimal.Decimal
-	Weight    decimal.Decimal
 	Timestamp time.Time
 }
 
@@ -54,7 +53,7 @@ func newPriceCacheVWA(driversWeights map[DriverType]decimal.Decimal, nTrades int
 }
 
 // AddTrade adds a new trade to the cache for a market.
-func (p *PriceCacheVWA) AddTrade(market Market, price, volume, weight decimal.Decimal, timestamp time.Time) {
+func (p *PriceCacheVWA) AddTrade(market Market, price, volume decimal.Decimal, timestamp time.Time) {
 	key := marketKey{baseUnit: market.baseUnit, quoteUnit: market.quoteUnit}
 	p.market.UpdateInTx(func(m map[marketKey]marketHistory) {
 		history, ok := m[key]
@@ -64,7 +63,7 @@ func (p *PriceCacheVWA) AddTrade(market Market, price, volume, weight decimal.De
 		}
 
 		// Append the new trade and maintain only the last N trades
-		trades := append(history.trades, trade{Price: price, Volume: volume, Weight: weight, Timestamp: timestamp})
+		trades := append(history.trades, trade{Price: price, Volume: volume, Timestamp: timestamp})
 		if len(trades) > p.nTrades {
 			trades = trades[len(trades)-p.nTrades:]
 		}
@@ -86,8 +85,8 @@ func (p *PriceCacheVWA) GetVWA(market Market) (decimal.Decimal, bool) {
 
 	for _, trade := range record.trades {
 		if time.Now().Sub(trade.Timestamp) <= p.bufferTime {
-			totalPriceVolume = totalPriceVolume.Add(trade.Price.Mul(trade.Volume).Mul(trade.Weight))
-			totalVolume = totalVolume.Add(trade.Volume.Mul(trade.Weight))
+			totalPriceVolume = totalPriceVolume.Add(trade.Price.Mul(trade.Volume))
+			totalVolume = totalVolume.Add(trade.Volume)
 		}
 	}
 

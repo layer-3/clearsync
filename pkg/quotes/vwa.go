@@ -57,23 +57,13 @@ func (a strategyVWA) calculateIndexPrice(event TradeEvent) (decimal.Decimal, boo
 		return decimal.Decimal{}, false
 	}
 
-	a.priceCache.ActivateDriver(event.Source, event.Market)
-	activeWeights := a.priceCache.ActiveWeights(event.Market)
-
-	// sourceMultiplier defines how much the trade from a specific market will affect a new price
-	sourceMultiplier := sourceWeight
-	if activeWeights != decimal.Zero {
-		sourceMultiplier = sourceWeight.Div(activeWeights)
-	}
-
 	// Add the current trade to the cache
-
 	timeEmpty := time.Time{}
 	if event.CreatedAt == timeEmpty {
 		event.CreatedAt = time.Now()
 	}
 
-	a.priceCache.AddTrade(event.Market, event.Price, event.Amount, sourceMultiplier, event.CreatedAt)
+	a.priceCache.AddTrade(event.Market, event.Price, event.Amount, event.CreatedAt)
 
 	return a.priceCache.GetVWA(event.Market)
 }
