@@ -112,7 +112,7 @@ func (a *indexAggregator) Start() error {
 
 		go func(d Driver) {
 			defer wg.Done()
-			loggerIndex.Infow("starting driver as an index driver", "driver", d.ActiveDrivers()[0])
+			loggerIndex.Infow("starting driver for index", "driver", d.ActiveDrivers()[0])
 			if err := d.Start(); err != nil {
 				loggerIndex.Warnw("failed to start driver", "driver", d.ActiveDrivers()[0], "error", err)
 			}
@@ -125,7 +125,7 @@ func (a *indexAggregator) Start() error {
 
 func (a *indexAggregator) Subscribe(m Market) error {
 	for _, d := range a.drivers {
-		loggerIndex.Infof("subscribing to %s", d.ActiveDrivers()[0])
+		loggerIndex.Infow("subscribing", "driver", d.ActiveDrivers()[0], "market", m)
 		if err := d.Subscribe(m); err != nil {
 			if d.ExchangeType() == ExchangeTypeDEX {
 				for _, convertFrom := range a.marketsMapping[m.quoteUnit] {
@@ -134,12 +134,13 @@ func (a *indexAggregator) Subscribe(m Market) error {
 						loggerIndex.Infow("skipping market", "driver", d.ActiveDrivers()[0], "market", convertFrom, "error", err)
 						continue
 					}
-					loggerIndex.Infow("helper market found",
+					loggerIndex.Infow("subscribed to helper market",
 						"driver", d.ActiveDrivers()[0],
 						"market", fmt.Sprintf("%s/%s", m.baseUnit, convertFrom))
 				}
 			}
 		}
+		loggerIndex.Infow("subscribed", "driver", d.ActiveDrivers()[0], "market", m)
 	}
 	return nil
 }
