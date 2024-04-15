@@ -182,6 +182,78 @@
       "precision": 6,
       "logoURI": "https://assets.coingecko.com/coins/images/8834/standard/CHZ_Token_updated.png?1696508986",
       "extensions": {}
-    }
+    },
+      {
+        "address": "0x7Fd77A7D5916C8437e89Ff89B764c21342C0949c",
+        "name": "FOX",
+        "symbol": "FOX",
+        "decimals": 18,
+        "precision": 6,
+        "logoURI": "https://s2.coinmarketcap.com/static/img/coins/64x64/8200.png",
+        "extensions": {}
+      },
+      {
+        "address": "0x8Ae9603e1C29C2d73E5e7C2825FaD7C89E21fB77",
+        "name": "Wrapped Toncoin",
+        "symbol": "WTON",
+        "decimals": 9,
+        "precision": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/17980/standard/ton_symbol.png?1696517498",
+        "extensions": {}
+      },
+      {
+        "address": "0x1b314022EA496444d3552Aa700C135594f080D72",
+        "name": "Baby Doge",
+        "symbol": "BabyDoge",
+        "decimals": 9,
+        "precision": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/16125/standard/babydoge.jpg?1696515731",
+        "extensions": {}
+      },
+      {
+        "address": "0x25Fd328d3784cFE2B029a5a7679D27041dC4101B",
+        "name": "Banana",
+        "symbol": "BANANA",
+        "decimals": 18,
+        "precision": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/17521/standard/banana-token-cg.png?1696517059",
+        "extensions": {}
+      },
+      {
+        "address": "0x0ba0D56696113Fb41B1f9Ef62ad1AA6559854D18",
+        "name": "Dogelon",
+        "symbol": "ELON",
+        "decimals": 18,
+        "precision": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/14962/standard/6GxcPRo3_400x400.jpg?1696514622",
+        "extensions": {}
+      },
+      {
+        "address": "0x30e88e981FC36cEB772141462EB8f08d014a4012",
+        "name": "GROK",
+        "symbol": "GROK",
+        "decimals": 9,
+        "precision": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/32788/standard/GROK.png?1707579427",
+        "extensions": {}
+      },
+      {
+        "address": "0x9aACaCC094df2885DF2d1690c3B2B106D0b8F32D",
+        "name": "DISCO",
+        "symbol": "DISCO",
+        "decimals": 4,
+        "precision": 0,
+        "logoURI": "",
+        "extensions": {}
+      },
+      {
+        "address": "0x96168402310c70fD7b45adf2Fb3892691E0627D9",
+        "name": "KAYEN",
+        "symbol": "KAYEN",
+        "decimals": 4,
+        "precision": 0,
+        "logoURI": "",
+        "extensions": {}
+      }
   ]
 }
