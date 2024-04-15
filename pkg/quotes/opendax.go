@@ -211,6 +211,8 @@ func (o *opendax) listen() {
 			continue
 		}
 
+		loggerOpendax.Infow("raw event", "event", string(message))
+
 		tr, err := o.parse(message)
 		if err != nil {
 			loggerOpendax.Warn(err)

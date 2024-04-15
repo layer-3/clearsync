@@ -280,6 +280,8 @@ func (k *kraken) listen() {
 			continue
 		}
 
+		loggerKraken.Infow("raw event", "event", string(rawMsg))
+
 		tradeEvents, err := k.parseMessage(rawMsg)
 		if err != nil {
 			loggerKraken.Errorf("error parsing message: %v", err)

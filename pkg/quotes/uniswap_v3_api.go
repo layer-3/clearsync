@@ -251,6 +251,8 @@ func runUniswapV3GraphqlRequest[T uniswapV3Pools | uniswapV3Swaps](url, query st
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 
+	loggerUniswapV3Api.Infow("raw event", "event", string(body))
+
 	var parsed uniswapV3GraphqlResponse[T]
 	if err := json.Unmarshal(body, &parsed); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)

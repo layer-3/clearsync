@@ -155,6 +155,8 @@ func (u *uniswapV3Geth) Subscribe(market Market) error {
 				}
 				return
 			case swap := <-sink:
+				loggerUniswapV3Geth.Infow("raw event", "event", swap)
+
 				amount := decimal.NewFromBigInt(swap.Amount0, 0)
 				price := calculatePrice(
 					decimal.NewFromBigInt(swap.SqrtPriceX96, 0),
