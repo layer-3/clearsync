@@ -253,7 +253,7 @@ func (b *baseDEX[Event, Contract]) Unsubscribe(market Market) error {
 	return nil
 }
 
-func (b *baseDEX[Event, Contract]) SetInbox(inbox <-chan TradeEvent) {
+func (b *baseDEX[Event, Contract]) SetInbox(_ <-chan TradeEvent) {
 	// TODO: implement me
 	panic("not implemented")
 }
