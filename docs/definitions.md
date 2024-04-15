@@ -16,18 +16,28 @@
 
 **Settlement** (Swap) — stage in a Trading Channel where both parties involved mutually agree to close all their positions, thereby concluding their trading activities within the channel.
 
+## Margin Systems
+
+- Channel Margin system - All cross positions share the channel margin balance.
+- Position Margin system - The isolated margin is assigned to a position.
+
 ## Margin Definitions
-**Initial Margin** On-Chain collateral locked on the state-channel
 
-**Margin Balance** = Wallet Balance + Unrealized PNL. 
 
-**Available Margin** = Margin - IMR x position_sizes
+| Term               |  Example | Description                                                                                                  |
+|--------------------|--|--------------------------------------------------------------------------------------------------------------|
+| **IMR**            | 20% | Initial Margin Rate (%) required for opening positions.                                                      |
+| **MMR**            | 10% | Maintenance Margin Rate (%) to keep positions.                                                               |
+| **Channel Margin** | $100 | On-chain collateral locked on the state-channel.                                                             |
+| **Leverage**       | 5x | Leverage the user uses to create a position.                                                                 |
+| **Position size**  | 0.018 | Position amount.                                                                                             |
+| **Entry Price**    | $3,000 | Market price of an asset at the moment of opening the position.                                              |
+| **Current Price**  | $2,000 | Current market price of an asset.                                                                            |
+| **Position costs** | $270 | Position Size × Position Average Entry Price.                                                                |
+| **Unrealized PNL** | -$18 | Position Size x Current Price - Position costs                                                               |
+| **Initial Margin** | $54 | Down payment to open a position.                                                                             |
+| **Margin Balance** | $82 | Channel Margin + Unrealized PNL.                                                                             |
+| **Available Balance** | $28 | Channel Margin - Initial Margin + Unrealized PNL.                                                            |
+| **Maintenance Margin** | $27.54 | Minimum amount of margin that must before liquidation (Positions Costs × MMR + Close Positions Fee). |
 
-**Maintenance Margin** = position_sizes x MMR
-
-**Initial Margin Rate** = Minimum margin amount for openning a Position (20%)
-
-**Maintenance Margin Rate** = The margin maintenance rate is the minimum amount of margin that must be maintained by a trader to keep a position open. If a trader's margin falls below this level, their position may be liquidated.
-
-Your positions will be liquidated once 
-Margin Balance <= Maintenance Margin.
+Your positions will be liquidated once ```Margin Balance <= Maintenance Margin```.
