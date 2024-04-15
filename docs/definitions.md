@@ -18,10 +18,15 @@
 
 ## Margin Definitions
 **Initial Margin** On-Chain collateral locked on the state-channel
+
 **Margin Balance** = Wallet Balance + Unrealized PNL. 
+
 **Available Margin** = Margin - IMR x position_sizes
+
 **Maintenance Margin** = position_sizes x MMR
+
 **Initial Margin Rate** = Minimum margin amount for openning a Position (20%)
+
 **Maintenance Margin Rate** = The margin maintenance rate is the minimum amount of margin that must be maintained by a trader to keep a position open. If a trader's margin falls below this level, their position may be liquidated.
 
 Your positions will be liquidated once 
