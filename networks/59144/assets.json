@@ -76,30 +76,12 @@
       "extensions": {}
     },
     {
-      "address": "0x356A55841a16c05A3628045E9F68A0a5CE810113",
-      "name": "Wrapped Solana",
-      "symbol": "WSOL",
-      "decimals": 9,
-      "precision": 6,
-      "logoURI": "https://assets.coingecko.com/coins/images/4128/standard/solana.png?1696504756",
-      "extensions": {}
-    },
-    {
       "address": "0xf5C6825015280CdfD0b56903F9F8B5A2233476F5",
       "name": "BNB",
       "symbol": "BNB",
       "decimals": 18,
       "precision": 6,
       "logoURI": "https://assets.coingecko.com/coins/images/825/standard/bnb-icon2_2x.png?1696501970",
-      "extensions": {}
-    },
-    {
-      "address": "0x4AF15ec2A0BD43Db75dd04E62FAA3B8EF36b00d5",
-      "name": "Dai Stablecoin",
-      "symbol": "DAI",
-      "decimals": 18,
-      "precision": 6,
-      "logoURI": "https://lineascan.build/token/images/daistablecoin_32.png",
       "extensions": {}
     },
     {
