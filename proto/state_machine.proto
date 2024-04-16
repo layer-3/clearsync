@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+package state_machine;
+
 option go_package = "github.com/layer-3/clearport/proto";
 
 enum ClearingSMState {
