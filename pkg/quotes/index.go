@@ -2,11 +2,11 @@ package quotes
 
 import (
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/ipfs/go-log/v2"
 	"github.com/shopspring/decimal"
+	"golang.org/x/sync/errgroup"
 )
 
 var (
@@ -182,7 +182,8 @@ func (b *indexAggregator) ExchangeType() ExchangeType {
 
 // Start starts all drivers from the provided config.
 func (a *indexAggregator) Start() error {
-	var wg sync.WaitGroup
+	var g errgroup.Group
+	g.SetLimit(10)
 
 	go func() {
 		for t := range a.inbox {
@@ -191,19 +192,17 @@ func (a *indexAggregator) Start() error {
 	}()
 
 	for _, d := range a.drivers {
-		wg.Add(1)
-
-		go func(d Driver) {
-			defer wg.Done()
+		g.Go(func() error {
 			loggerIndex.Infow("starting driver for index", "driver", d.ActiveDrivers()[0])
 			if err := d.Start(); err != nil {
 				loggerIndex.Warnw("failed to start driver", "driver", d.ActiveDrivers()[0], "error", err)
+				return err
 			}
-		}(d)
+			return nil
+		})
 	}
 
-	wg.Wait()
-	return nil
+	return g.Wait()
 }
 
 func (a *indexAggregator) Subscribe(m Market) error {
