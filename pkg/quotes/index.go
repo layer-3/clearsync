@@ -196,7 +196,7 @@ func (a *indexAggregator) Start() error {
 		g.Go(func() error {
 			loggerIndex.Infow("starting driver for index", "driver", d.ActiveDrivers()[0])
 			if err := d.Start(); err != nil {
-				loggerIndex.Warnw("failed to start driver", "driver", d.ActiveDrivers()[0], "error", err)
+				loggerIndex.Errorw("failed to start driver", "driver", d.ActiveDrivers()[0], "error", err)
 				return err
 			}
 			return nil
