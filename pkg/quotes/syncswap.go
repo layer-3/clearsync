@@ -60,7 +60,7 @@ func newSyncswap(config SyncswapConfig, outbox chan<- TradeEvent) Driver {
 		EventParser:   hooks.parseSwap,
 	}
 
-	return newBaseDEX[isyncswap_pool.ISyncSwapPoolSwap, isyncswap_pool.ISyncSwapPool](params)
+	return newBaseDEX(params)
 }
 
 func (s *syncswap) postStart(driver *baseDEX[isyncswap_pool.ISyncSwapPoolSwap, isyncswap_pool.ISyncSwapPool]) (err error) {

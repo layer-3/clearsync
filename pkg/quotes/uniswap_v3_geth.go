@@ -50,7 +50,7 @@ func newUniswapV3Geth(config UniswapV3GethConfig, outbox chan<- TradeEvent) Driv
 		EventParser:   hooks.parseSwap,
 	}
 
-	return newBaseDEX[iuniswap_v3_pool.IUniswapV3PoolSwap, iuniswap_v3_pool.IUniswapV3Pool](params)
+	return newBaseDEX(params)
 }
 
 func (u *uniswapV3Geth) postStart(driver *baseDEX[iuniswap_v3_pool.IUniswapV3PoolSwap, iuniswap_v3_pool.IUniswapV3Pool]) (err error) {
@@ -177,4 +177,28 @@ func (*uniswapV3Geth) flipSwap(swap *iuniswap_v3_pool.IUniswapV3PoolSwap) {
 	// ETH IN
 	// Amount1 +16867051239984403529
 	swap.Amount0, swap.Amount1 = swap.Amount1, swap.Amount0
+}
+
+var (
+	priceX96 = decimal.NewFromInt(2).Pow(decimal.NewFromInt(96))
+	ten      = decimal.NewFromInt(10)
+)
+
+// calculatePrice method calculates the price per token at which the swap was performed
+// using the sqrtPriceX96 value supplied with every on-chain swap event.
+//
+// General formula is as follows:
+// price = ((sqrtPriceX96 / 2**96)**2) / (10**decimal1 / 10**decimal0)
+//
+// See the math explained at https://blog.uniswap.org/uniswap-v3-math-primer
+func calculatePrice(
+	sqrtPriceX96 decimal.Decimal,
+	baseTokenDecimals decimal.Decimal,
+	quoteTokenDecimals decimal.Decimal,
+) decimal.Decimal {
+	decimals := quoteTokenDecimals.Sub(baseTokenDecimals)
+
+	numerator := sqrtPriceX96.Div(priceX96).Pow(decimal.NewFromInt(2))
+	denominator := ten.Pow(decimals)
+	return numerator.Div(denominator)
 }

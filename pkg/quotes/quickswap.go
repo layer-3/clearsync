@@ -2,9 +2,10 @@ package quotes
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/layer-3/clearsync/pkg/safe"
-	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ipfs/go-log/v2"
@@ -42,7 +43,7 @@ func newQuickswap(config QuickswapConfig, outbox chan<- TradeEvent) Driver {
 		EventParser:   hooks.parseSwap,
 	}
 
-	return newBaseDEX[iquickswap_v3_pool.IQuickswapV3PoolSwap, iquickswap_v3_pool.IQuickswapV3Pool](params)
+	return newBaseDEX(params)
 }
 
 func (s *quickswap) postStart(driver *baseDEX[iquickswap_v3_pool.IQuickswapV3PoolSwap, iquickswap_v3_pool.IQuickswapV3Pool]) (err error) {

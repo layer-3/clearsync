@@ -22,7 +22,6 @@ var (
 	DriverKraken        = DriverType{"kraken"}
 	DriverOpendax       = DriverType{"opendax"}
 	DriverBitfaker      = DriverType{"bitfaker"}
-	DriverUniswapV3Api  = DriverType{"uniswap_v3_api"}
 	DriverUniswapV3Geth = DriverType{"uniswap_v3_geth"}
 	DriverSyncswap      = DriverType{"syncswap"}
 	DriverQuickswap     = DriverType{"quickswap"}
@@ -35,7 +34,6 @@ func ToDriverType(raw string) (DriverType, error) {
 		DriverKraken.String():        DriverKraken,
 		DriverOpendax.String():       DriverOpendax,
 		DriverBitfaker.String():      DriverBitfaker,
-		DriverUniswapV3Api.String():  DriverUniswapV3Api,
 		DriverUniswapV3Geth.String(): DriverUniswapV3Geth,
 		DriverSyncswap.String():      DriverSyncswap,
 		DriverQuickswap.String():     DriverQuickswap,

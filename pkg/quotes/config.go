@@ -15,7 +15,6 @@ type Config struct {
 	Kraken        KrakenConfig        `yaml:"kraken" env-prefix:"QUOTES_KRAKEN_"`
 	Opendax       OpendaxConfig       `yaml:"opendax" env-prefix:"QUOTES_OPENDAX_"`
 	Bitfaker      BitfakerConfig      `yaml:"bitfaker" env-prefix:"QUOTES_BITFAKER_"`
-	UniswapV3Api  UniswapV3ApiConfig  `yaml:"uniswap_v3_api" env-prefix:"QUOTES_UNISWAP_V3_API_"`
 	UniswapV3Geth UniswapV3GethConfig `yaml:"uniswap_v3_geth" env-prefix:"QUOTES_UNISWAP_V3_GETH_"`
 	Syncswap      SyncswapConfig      `yaml:"syncswap" env-prefix:"QUOTES_SYNCSWAP_"`
 	Quickswap     QuickswapConfig     `yaml:"quickswap" env-prefix:"QUOTES_QUICKSWAP_"`
@@ -42,8 +41,6 @@ func (config Config) GetByDriverType(driver DriverType) (Config, error) {
 		return Config{Drivers: []DriverType{DriverOpendax}, Opendax: config.Opendax}, nil
 	case DriverBitfaker:
 		return Config{Drivers: []DriverType{DriverBitfaker}, Bitfaker: config.Bitfaker}, nil
-	case DriverUniswapV3Api:
-		return Config{Drivers: []DriverType{DriverUniswapV3Api}, UniswapV3Api: config.UniswapV3Api}, nil
 	case DriverUniswapV3Geth:
 		return Config{Drivers: []DriverType{DriverUniswapV3Geth}, UniswapV3Geth: config.UniswapV3Geth}, nil
 	case DriverSyncswap:
@@ -91,12 +88,6 @@ type OpendaxConfig struct {
 type BitfakerConfig struct {
 	Period time.Duration `yaml:"period" env:"PERIOD" env-default:"5s"`
 	Filter FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
-}
-
-type UniswapV3ApiConfig struct {
-	URL        string        `yaml:"url" env:"URL" env-default:"https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3"`
-	WindowSize time.Duration `yaml:"window_size" env:"WINDOW_SIZE" env-default:"2s"`
-	Filter     FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
 }
 
 type UniswapV3GethConfig struct {
