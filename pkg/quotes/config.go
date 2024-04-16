@@ -124,7 +124,7 @@ type SamplerFilterConfig struct {
 }
 
 type PriceDiffFilterConfig struct {
-	Threshold string `yaml:"threshold" env:"THRESHOLD" env-default:"0.05"`
+	Threshold string `yaml:"threshold" env:"THRESHOLD" env-default:"5"`
 }
 
 type FilterConfig struct {
