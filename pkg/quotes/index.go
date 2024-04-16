@@ -192,6 +192,7 @@ func (a *indexAggregator) Start() error {
 	}()
 
 	for _, d := range a.drivers {
+		d := d
 		g.Go(func() error {
 			loggerIndex.Infow("starting driver for index", "driver", d.ActiveDrivers()[0])
 			if err := d.Start(); err != nil {
