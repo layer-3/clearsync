@@ -177,7 +177,7 @@ func TestIsPriceOutOfRange(t *testing.T) {
 		eventPrice   decimal.Decimal
 		lastPrice    decimal.Decimal
 		maxPriceDiff decimal.Decimal
-		expected     bool
+		isOutOfRange bool
 	}{
 		// incoming event price | last price | max price diff | expected
 		{"Price exactly at upper bound", decimal.NewFromFloat(120), decimal.NewFromFloat(100), decimal.NewFromFloat(0.20), false},
@@ -191,8 +191,8 @@ func TestIsPriceOutOfRange(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			result := isPriceOutOfRange(tc.eventPrice, tc.lastPrice, tc.maxPriceDiff)
-			if result != tc.expected {
-				t.Errorf("Test %s failed. Expected %v, got %v", tc.name, tc.expected, result)
+			if result != tc.isOutOfRange {
+				t.Errorf("Test %s failed. Expected %v, got %v", tc.name, tc.isOutOfRange, result)
 			}
 		})
 	}

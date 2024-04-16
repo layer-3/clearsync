@@ -19,17 +19,15 @@ var defaultWeightsMap = map[DriverType]decimal.Decimal{
 type ConfFuncVWA func(*strategyVWA)
 
 type strategyVWA struct {
-	weights      map[DriverType]decimal.Decimal
-	priceCache   *PriceCacheVWA
-	maxPriceDiff decimal.Decimal
+	weights    map[DriverType]decimal.Decimal
+	priceCache *PriceCacheVWA
 }
 
 // newStrategyVWA creates a new instance of Volume-Weighted Average Price index price calculator.
 func newStrategyVWA(configs ...ConfFuncVWA) priceCalculator {
 	s := strategyVWA{
-		priceCache:   newPriceCacheVWA(defaultWeightsMap, 20, 15*time.Minute),
-		weights:      defaultWeightsMap,
-		maxPriceDiff: decimal.NewFromFloat(1.2),
+		priceCache: newPriceCacheVWA(defaultWeightsMap, 20, 15*time.Minute),
+		weights:    defaultWeightsMap,
 	}
 	for _, conf := range configs {
 		conf(&s)
@@ -49,12 +47,6 @@ func WithCustomWeightsVWA(driversWeights map[DriverType]decimal.Decimal) ConfFun
 func withCustomPriceCacheVWA(priceCache *PriceCacheVWA) ConfFuncVWA {
 	return func(strategy *strategyVWA) {
 		strategy.priceCache = priceCache
-	}
-}
-
-func withCustomMaxPriceDiff(priceDiff decimal.Decimal) ConfFuncVWA {
-	return func(strategy *strategyVWA) {
-		strategy.maxPriceDiff = priceDiff
 	}
 }
 
@@ -83,19 +75,13 @@ func (a strategyVWA) calculateIndexPrice(event TradeEvent) (decimal.Decimal, boo
 
 	a.priceCache.AddTrade(event.Market, event.Price, event.Amount, sourceMultiplier, event.CreatedAt)
 
-	price, ok := a.priceCache.GetVWA(event.Market)
-
-	lastPrice := a.priceCache.getLastPrice(event.Market)
-	if lastPrice != decimal.Zero {
-		if isPriceOutOfRange(price, lastPrice, a.maxPriceDiff) {
-			loggerIndex.Warn("skipping outcoming outlier trade", "driver", event)
-			return decimal.Zero, false
-		}
-	}
-	a.priceCache.SetLastPrice(event.Market, price)
-	return price, ok
+	return a.priceCache.GetVWA(event.Market)
 }
 
 func (a strategyVWA) getLastPrice(market Market) decimal.Decimal {
 	return a.priceCache.getLastPrice(market)
+}
+
+func (a strategyVWA) setLastPrice(market Market, price decimal.Decimal) {
+	a.priceCache.setLastPrice(market, price)
 }
