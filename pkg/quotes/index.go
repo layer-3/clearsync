@@ -72,8 +72,8 @@ func newIndexAggregator(config Config, marketsMapping map[string][]string, strat
 					event := combineTrades(trades)
 					if event != nil {
 						marketTrades[market] = nil
+						outbox <- *event
 					}
-					outbox <- *event
 				}
 				timer.Reset(time.Duration(config.Index.BatchBufferSeconds) * time.Second)
 			}
