@@ -138,6 +138,12 @@ func (u *uniswapV3) parseSwap(swap *iuniswap_v3_pool.IUniswapV3PoolSwap, pool *d
 		u.flipSwap(swap)
 	}
 
+	defer func() {
+		if r := recover(); r != nil {
+			loggerUniswapV3.Errorw("recovered in from panic during swap parsing", "swap", swap)
+		}
+	}()
+
 	baseDecimals := pool.baseToken.Decimals
 	quoteDecimals := pool.quoteToken.Decimals
 

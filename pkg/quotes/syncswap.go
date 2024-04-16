@@ -154,7 +154,7 @@ func (s *syncswap) parseSwap(
 
 	defer func() {
 		if r := recover(); r != nil {
-			loggerSyncswap.Errorw("recovered after parse swap panic", "swap", swap)
+			loggerSyncswap.Errorw("recovered in from panic during swap parsing", "swap", swap)
 		}
 	}()
 
