@@ -3,6 +3,7 @@ syntax = "proto3";
 import "auth.proto";
 import "core.proto";
 import "settlement.proto";
+import "state_machine.proto";
 
 option go_package = "github.com/layer-3/clearport/proto";
 
@@ -124,13 +125,14 @@ message StreamNotification {
   string channel_id = 1;
   NotificationType notification_type = 2;
   ChannelStatus channel_status = 3;
-  core.ProtocolIndex my_role = 4;
-  auth.Peer peer = 5;
-  core.MarginLimitType margin_limit_type = 6;
-  string margin_deposit = 7;
-  string initiator_margin_balance = 8; // margin updates will be reflected here
-  string follower_margin_balance = 9; // margin updates will be reflected here
-  uint64 turn_num = 10;
+  state_machine.ClearingSMState clearing_sm_state = 4;
+  core.ProtocolIndex my_role = 5;
+  auth.Peer peer = 6;
+  core.MarginLimitType margin_limit_type = 7;
+  string margin_deposit = 8;
+  string initiator_margin_balance = 9; // margin updates will be reflected here
+  string follower_margin_balance = 10; // margin updates will be reflected here
+  uint64 turn_num = 11;
 }
 
 message SettlementNotification {
