@@ -12,6 +12,7 @@ This file describes the content of channel.proto.
 | Open | [ChannelState](#channelstate) | [core.Signature](core.proto.md#signature) |  |
 | Update | [ChannelState](#channelstate) | [core.Signature](core.proto.md#signature) |  |
 | Close | [ChannelState](#channelstate) | [core.Signature](core.proto.md#signature) |  |
+| SubscribeTrades | [SubscribeTradesRequest](#subscribetradesrequest) | [core.Trade](core.proto.md#trade) stream |  |
 
  <!-- end services -->
 
@@ -26,6 +27,21 @@ This file describes the content of channel.proto.
 | state | [core.State](core.proto.md#state) |  |
 | state_hash | [string](#string) |  |
 | state_sig | [core.Signature](core.proto.md#signature) |  |
+
+
+
+
+
+
+
+### SubscribeTradesRequest
+
+
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| channel_id | [string](#string) |  |
+| last_external_id | [string](#string) |  |
 
 
 

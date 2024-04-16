@@ -21,6 +21,7 @@ type ChannelClient interface {
 	Open(ctx context.Context, in *ChannelState, opts ...grpc.CallOption) (*Signature, error)
 	Update(ctx context.Context, in *ChannelState, opts ...grpc.CallOption) (*Signature, error)
 	Close(ctx context.Context, in *ChannelState, opts ...grpc.CallOption) (*Signature, error)
+	SubscribeTrades(ctx context.Context, in *SubscribeTradesRequest, opts ...grpc.CallOption) (Channel_SubscribeTradesClient, error)
 }
 
 type channelClient struct {
@@ -58,6 +59,38 @@ func (c *channelClient) Close(ctx context.Context, in *ChannelState, opts ...grp
 	return out, nil
 }
 
+func (c *channelClient) SubscribeTrades(ctx context.Context, in *SubscribeTradesRequest, opts ...grpc.CallOption) (Channel_SubscribeTradesClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Channel_ServiceDesc.Streams[0], "/Channel/SubscribeTrades", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &channelSubscribeTradesClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type Channel_SubscribeTradesClient interface {
+	Recv() (*Trade, error)
+	grpc.ClientStream
+}
+
+type channelSubscribeTradesClient struct {
+	grpc.ClientStream
+}
+
+func (x *channelSubscribeTradesClient) Recv() (*Trade, error) {
+	m := new(Trade)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // ChannelServer is the server API for Channel service.
 // All implementations must embed UnimplementedChannelServer
 // for forward compatibility
@@ -65,6 +98,7 @@ type ChannelServer interface {
 	Open(context.Context, *ChannelState) (*Signature, error)
 	Update(context.Context, *ChannelState) (*Signature, error)
 	Close(context.Context, *ChannelState) (*Signature, error)
+	SubscribeTrades(*SubscribeTradesRequest, Channel_SubscribeTradesServer) error
 	mustEmbedUnimplementedChannelServer()
 }
 
@@ -80,6 +114,9 @@ func (UnimplementedChannelServer) Update(context.Context, *ChannelState) (*Signa
 }
 func (UnimplementedChannelServer) Close(context.Context, *ChannelState) (*Signature, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Close not implemented")
+}
+func (UnimplementedChannelServer) SubscribeTrades(*SubscribeTradesRequest, Channel_SubscribeTradesServer) error {
+	return status.Errorf(codes.Unimplemented, "method SubscribeTrades not implemented")
 }
 func (UnimplementedChannelServer) mustEmbedUnimplementedChannelServer() {}
 
@@ -148,6 +185,27 @@ func _Channel_Close_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Channel_SubscribeTrades_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(SubscribeTradesRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(ChannelServer).SubscribeTrades(m, &channelSubscribeTradesServer{stream})
+}
+
+type Channel_SubscribeTradesServer interface {
+	Send(*Trade) error
+	grpc.ServerStream
+}
+
+type channelSubscribeTradesServer struct {
+	grpc.ServerStream
+}
+
+func (x *channelSubscribeTradesServer) Send(m *Trade) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 // Channel_ServiceDesc is the grpc.ServiceDesc for Channel service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -168,6 +226,12 @@ var Channel_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Channel_Close_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "SubscribeTrades",
+			Handler:       _Channel_SubscribeTrades_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "channel.proto",
 }

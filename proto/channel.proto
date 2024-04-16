@@ -9,6 +9,13 @@ service Channel {
   rpc Open(ChannelState) returns (core.Signature);
   rpc Update(ChannelState) returns (core.Signature);
   rpc Close(ChannelState) returns (core.Signature);
+
+  rpc SubscribeTrades(SubscribeTradesRequest) returns (stream core.Trade);
+}
+
+message SubscribeTradesRequest {
+  string channel_id = 1;
+  string last_external_id = 2;
 }
 
 message ChannelState {
