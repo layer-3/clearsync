@@ -14,6 +14,7 @@ var defaultWeightsMap = map[DriverType]decimal.Decimal{
 	DriverUniswapV3Geth: decimal.NewFromInt(50),
 	DriverSyncswap:      decimal.NewFromInt(50),
 	DriverQuickswap:     decimal.NewFromInt(50),
+	DriverInternal:      decimal.NewFromInt(75),
 }
 
 type ConfFuncVWA func(*strategyVWA)
