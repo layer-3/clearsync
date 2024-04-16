@@ -112,7 +112,7 @@ func (s *quickswap) parseSwap(
 	return tr, nil
 }
 
-func (s *quickswap) getPool(market Market) (*dexPool[iquickswap_v3_pool.IQuickswapV3PoolSwap], error) {
+func (s *quickswap) getPool(market Market) ([]*dexPool[iquickswap_v3_pool.IQuickswapV3PoolSwap], error) {
 	baseToken, quoteToken, err := getTokens(s.assets, market, loggerQuickswap)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tokens: %w", err)
@@ -148,19 +148,43 @@ func (s *quickswap) getPool(market Market) (*dexPool[iquickswap_v3_pool.IQuicksw
 		return nil, fmt.Errorf("failed to build quickswap pool: %w", err)
 	}
 
-	pool := &dexPool[iquickswap_v3_pool.IQuickswapV3PoolSwap]{
+	baseAddress := common.HexToAddress(baseToken.Address)
+	quoteAddress := common.HexToAddress(quoteToken.Address)
+	isReverted := quoteAddress == basePoolToken && baseAddress == quotePoolToken
+	pools := []*dexPool[iquickswap_v3_pool.IQuickswapV3PoolSwap]{{
 		contract:   poolContract,
 		baseToken:  baseToken,
 		quoteToken: quoteToken,
-		reverted:   false,
-	}
+		reverted:   isReverted,
+	}}
 
-	if common.HexToAddress(baseToken.Address) == basePoolToken && common.HexToAddress(quoteToken.Address) == quotePoolToken {
-		return pool, nil
-	} else if common.HexToAddress(quoteToken.Address) == basePoolToken && common.HexToAddress(baseToken.Address) == quotePoolToken {
-		pool.reverted = true
-		return pool, nil
-	} else {
-		return nil, fmt.Errorf("failed to build quickswap pool: %w", err)
+	// Return pools if the token addresses match direct or reversed configurations
+	if (baseAddress == basePoolToken && quoteAddress == quotePoolToken) || isReverted {
+		return pools, nil
 	}
+	return nil, fmt.Errorf("failed to build Quickswap pool for market %s: %w", market, err)
+}
+
+var (
+	priceX96 = decimal.NewFromInt(2).Pow(decimal.NewFromInt(96))
+	ten      = decimal.NewFromInt(10)
+)
+
+// calculatePrice method calculates the price per token at which the swap was performed
+// using the sqrtPriceX96 value supplied with every on-chain swap event.
+//
+// General formula is as follows:
+// price = ((sqrtPriceX96 / 2**96)**2) / (10**decimal1 / 10**decimal0)
+//
+// See the math explained at https://blog.uniswap.org/uniswap-v3-math-primer
+func calculatePrice(
+	sqrtPriceX96 decimal.Decimal,
+	baseTokenDecimals decimal.Decimal,
+	quoteTokenDecimals decimal.Decimal,
+) decimal.Decimal {
+	decimals := quoteTokenDecimals.Sub(baseTokenDecimals)
+
+	numerator := sqrtPriceX96.Div(priceX96).Pow(decimal.NewFromInt(2))
+	denominator := ten.Pow(decimals)
+	return numerator.Div(denominator)
 }

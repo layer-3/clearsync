@@ -65,7 +65,7 @@ func (u *uniswapV3) postStart(driver *baseDEX[iuniswap_v3_pool.IUniswapV3PoolSwa
 	return nil
 }
 
-func (u *uniswapV3) getPool(market Market) (*dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap], error) {
+func (u *uniswapV3) getPool(market Market) ([]*dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap], error) {
 	baseToken, quoteToken, err := getTokens(u.assets, market, loggerUniswapV3)
 	if err != nil {
 		return nil, err
@@ -75,10 +75,10 @@ func (u *uniswapV3) getPool(market Market) (*dexPool[iuniswap_v3_pool.IUniswapV3
 		baseToken.Address = wethContract.String()
 	}
 
-	var poolAddress common.Address
+	poolAddresses := make([]common.Address, 0, len(uniswapV3FeeTiers))
 	zeroAddress := common.HexToAddress("0x0")
 	for _, feeTier := range uniswapV3FeeTiers {
-		poolAddress, err = u.factory.GetPool(
+		poolAddress, err := u.factory.GetPool(
 			nil,
 			common.HexToAddress(baseToken.Address),
 			common.HexToAddress(quoteToken.Address),
@@ -88,59 +88,55 @@ func (u *uniswapV3) getPool(market Market) (*dexPool[iuniswap_v3_pool.IUniswapV3
 			return nil, err
 		}
 		if poolAddress != zeroAddress {
-			if poolAddress == common.HexToAddress("0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640") {
-				loggerUniswapV3.Infof("market %s: selected fee tier: %.2f%%", market, float64(feeTier)/10000)
-				break
-			}
+			loggerUniswapV3.Infow("found pool",
+				"market", market, "selected fee tier",
+				fmt.Sprintf("%f.2%%", float64(feeTier)/10000))
+			poolAddresses = append(poolAddresses, poolAddress)
 		}
 	}
 
-	loggerUniswapV3.Infof("got pool %s for market %s", poolAddress, market)
+	pools := make([]*dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap], 0, len(poolAddresses))
 
-	poolContract, err := iuniswap_v3_pool.NewIUniswapV3Pool(poolAddress, u.client)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build Uniswap v3 pool: %w", err)
+	for _, poolAddress := range poolAddresses {
+		poolContract, err := iuniswap_v3_pool.NewIUniswapV3Pool(poolAddress, u.client)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build Uniswap v3 pool: %w", err)
+		}
+
+		basePoolToken, err := poolContract.Token0(nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build Syncswap pool: %w", err)
+		}
+
+		quotePoolToken, err := poolContract.Token1(nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build Syncswap pool: %w", err)
+		}
+
+		baseAddress := common.HexToAddress(baseToken.Address)
+		quoteAddress := common.HexToAddress(quoteToken.Address)
+		isReverted := quoteAddress == basePoolToken && baseAddress == quotePoolToken
+		pool := &dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap]{
+			contract:   poolContract,
+			baseToken:  baseToken,
+			quoteToken: quoteToken,
+			reverted:   isReverted,
+		}
+
+		// Append pool if the token addresses match direct or reversed configurations
+		if (baseAddress == basePoolToken && quoteAddress == quotePoolToken) || isReverted {
+			pools = append(pools, pool)
+		}
+		return nil, fmt.Errorf("failed to build Uniswap pool for market %s: %w", market, err)
 	}
 
-	basePoolToken, err := poolContract.Token0(nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build Syncswap pool: %w", err)
-	}
-
-	quotePoolToken, err := poolContract.Token1(nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build Syncswap pool: %w", err)
-	}
-
-	pool := &dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap]{
-		contract:   poolContract,
-		baseToken:  baseToken,
-		quoteToken: quoteToken,
-	}
-
-	baseAddress := common.HexToAddress(baseToken.Address)
-	quoteAddress := common.HexToAddress(quoteToken.Address)
-
-	if baseAddress == basePoolToken && quoteAddress == quotePoolToken {
-		return pool, nil
-	} else if quoteAddress == basePoolToken && baseAddress == quotePoolToken {
-		pool.reverted = true
-		return pool, nil
-	}
-
-	return pool, nil
+	return pools, nil
 }
 
 func (u *uniswapV3) parseSwap(swap *iuniswap_v3_pool.IUniswapV3PoolSwap, pool *dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap]) (TradeEvent, error) {
 	if pool.reverted {
 		u.flipSwap(swap)
 	}
-
-	// amount := decimal.NewFromBigInt(swap.Amount0, 0)
-	// price := calculatePrice(
-	// 	decimal.NewFromBigInt(swap.SqrtPriceX96, 0),
-	// 	baseDecimals,
-	// 	quoteDecimals)
 
 	baseDecimals := pool.baseToken.Decimals
 	quoteDecimals := pool.quoteToken.Decimals
@@ -149,8 +145,8 @@ func (u *uniswapV3) parseSwap(swap *iuniswap_v3_pool.IUniswapV3PoolSwap, pool *d
 	amount0 := decimal.NewFromBigInt(swap.Amount0, 0).Div(decimal.NewFromInt(10).Pow(baseDecimals))
 	amount1 := decimal.NewFromBigInt(swap.Amount1, 0).Div(decimal.NewFromInt(10).Pow(quoteDecimals))
 
+	// Calculate price and order side
 	price := amount1.Div(amount0)
-
 	amount := amount0
 	takerType := TakerTypeBuy
 	if amount0.Sign() < 0 {
@@ -172,33 +168,8 @@ func (u *uniswapV3) parseSwap(swap *iuniswap_v3_pool.IUniswapV3PoolSwap, pool *d
 }
 
 func (*uniswapV3) flipSwap(swap *iuniswap_v3_pool.IUniswapV3PoolSwap) {
-	// USDC OUT
-	// Amount0 -52052662345
-	// ETH IN
-	// Amount1 +16867051239984403529
+	// For USDC/ETH:
+	// Amount0 = -52052662345          = USDC removed from pool
+	// Amount1 = +16867051239984403529 = ETH added into pool
 	swap.Amount0, swap.Amount1 = swap.Amount1, swap.Amount0
-}
-
-var (
-	priceX96 = decimal.NewFromInt(2).Pow(decimal.NewFromInt(96))
-	ten      = decimal.NewFromInt(10)
-)
-
-// calculatePrice method calculates the price per token at which the swap was performed
-// using the sqrtPriceX96 value supplied with every on-chain swap event.
-//
-// General formula is as follows:
-// price = ((sqrtPriceX96 / 2**96)**2) / (10**decimal1 / 10**decimal0)
-//
-// See the math explained at https://blog.uniswap.org/uniswap-v3-math-primer
-func calculatePrice(
-	sqrtPriceX96 decimal.Decimal,
-	baseTokenDecimals decimal.Decimal,
-	quoteTokenDecimals decimal.Decimal,
-) decimal.Decimal {
-	decimals := quoteTokenDecimals.Sub(baseTokenDecimals)
-
-	numerator := sqrtPriceX96.Div(priceX96).Pow(decimal.NewFromInt(2))
-	denominator := ten.Pow(decimals)
-	return numerator.Div(denominator)
 }

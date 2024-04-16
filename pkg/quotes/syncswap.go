@@ -80,7 +80,7 @@ func (s *syncswap) postStart(driver *baseDEX[isyncswap_pool.ISyncSwapPoolSwap, i
 	return nil
 }
 
-func (s *syncswap) getPool(market Market) (*dexPool[isyncswap_pool.ISyncSwapPoolSwap], error) {
+func (s *syncswap) getPool(market Market) ([]*dexPool[isyncswap_pool.ISyncSwapPoolSwap], error) {
 	baseToken, quoteToken, err := getTokens(s.assets, market, loggerSyncswap)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tokens: %w", err)
@@ -126,22 +126,21 @@ func (s *syncswap) getPool(market Market) (*dexPool[isyncswap_pool.ISyncSwapPool
 		return nil, fmt.Errorf("failed to build Syncswap pool: %w", err)
 	}
 
-	pool := &dexPool[isyncswap_pool.ISyncSwapPoolSwap]{
+	baseAddress := common.HexToAddress(baseToken.Address)
+	quoteAddress := common.HexToAddress(quoteToken.Address)
+	isReverted := quoteAddress == basePoolToken && baseAddress == quotePoolToken
+	pools := []*dexPool[isyncswap_pool.ISyncSwapPoolSwap]{{
 		contract:   poolContract,
 		baseToken:  baseToken,
 		quoteToken: quoteToken,
-		reverted:   false,
-	}
+		reverted:   isReverted,
+	}}
 
-	baseAddress := common.HexToAddress(baseToken.Address)
-	quoteAddress := common.HexToAddress(quoteToken.Address)
-	if baseAddress == basePoolToken && quoteAddress == quotePoolToken {
-		return pool, nil
-	} else if quoteAddress == basePoolToken && baseAddress == quotePoolToken {
-		pool.reverted = true
-		return pool, nil
+	// Return pools if the token addresses match direct or reversed configurations
+	if (baseAddress == basePoolToken && quoteAddress == quotePoolToken) || isReverted {
+		return pools, nil
 	}
-	return nil, fmt.Errorf("failed to build Syncswap pool: %w", err)
+	return nil, fmt.Errorf("failed to build Syncswap pool for market %s: %w", market, err)
 }
 
 func (s *syncswap) parseSwap(
