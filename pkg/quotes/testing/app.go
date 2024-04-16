@@ -27,6 +27,8 @@ func main() {
 	}
 
 	var drivers []quotes.DriverType
+	drivers = append(drivers, quotes.DriverUniswapV3Geth)
+	drivers = append(drivers, quotes.DriverOpendax)
 	if len(os.Args) >= 2 {
 		drivers = make([]quotes.DriverType, 0, len(os.Args[1:]))
 		for _, arg := range os.Args[1:] {
@@ -83,24 +85,24 @@ func main() {
 
 	markets := []quotes.Market{
 		// Add your markets here
-		quotes.NewMarket("weth", "usdc"),
-		quotes.NewMarket("lube", "usdc"),
-		quotes.NewMarket("linda", "usdc"),
+		quotes.NewMarket("eth", "usd"),
+		// quotes.NewMarket("lube", "usdc"),
+		// quotes.NewMarket("linda", "usdc"),
 	}
 
-	atLeastOne := false
+	// atLeastOne := false
 	for _, market := range markets {
 		if err = driver.Subscribe(market); err != nil {
 			slog.Warn("failed to subscribe", "market", market, "err", err)
 			continue
 		}
-		atLeastOne = true
+		// atLeastOne = true
 		slog.Info("subscribed", "market", market.String())
 	}
 
-	if !atLeastOne {
-		panic("failed to subscribe to at least one market")
-	}
+	// if !atLeastOne {
+	// 	panic("failed to subscribe to at least one market")
+	// }
 
 	slog.Info("waiting for trades")
 	<-outboxStop

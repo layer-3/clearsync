@@ -2,10 +2,11 @@ package quotes
 
 import (
 	"fmt"
-	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/layer-3/clearsync/pkg/safe"
 	"math/big"
 	"time"
+
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/layer-3/clearsync/pkg/safe"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ipfs/go-log/v2"
@@ -143,7 +144,7 @@ func (s *syncswap) getPool(market Market) (*dexPool[isyncswap_pool.ISyncSwapPool
 	return nil, fmt.Errorf("failed to build Syncswap pool: %w", err)
 }
 
-func (*syncswap) parseSwap(
+func (s *syncswap) parseSwap(
 	swap *isyncswap_pool.ISyncSwapPoolSwap,
 	pool *dexPool[isyncswap_pool.ISyncSwapPoolSwap],
 ) (TradeEvent, error) {
@@ -157,6 +158,10 @@ func (*syncswap) parseSwap(
 			loggerSyncswap.Errorw("recovered after parse swap panic", "swap", swap)
 		}
 	}()
+
+	if pool.reverted {
+		s.flipSwap(swap)
+	}
 
 	baseDecimals := pool.baseToken.Decimals
 	quoteDecimals := pool.quoteToken.Decimals
@@ -194,6 +199,12 @@ func (*syncswap) parseSwap(
 		CreatedAt: time.Now(),
 	}
 	return trade, nil
+}
+
+func (*syncswap) flipSwap(swap *isyncswap_pool.ISyncSwapPoolSwap) {
+	amount0In, amount0Out := swap.Amount0In, swap.Amount0Out
+	swap.Amount0In, swap.Amount0Out = swap.Amount1In, swap.Amount1Out
+	swap.Amount1In, swap.Amount1Out = amount0In, amount0Out
 }
 
 func isValidNonZero(x *big.Int) bool {
