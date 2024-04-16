@@ -2,14 +2,12 @@ package quotes
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/layer-3/clearsync/pkg/safe"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ipfs/go-log/v2"
-	"github.com/shopspring/decimal"
 
 	"github.com/layer-3/clearsync/pkg/abi/iquickswap_v3_factory"
 	"github.com/layer-3/clearsync/pkg/abi/iquickswap_v3_pool"
@@ -115,8 +113,8 @@ func (s *quickswap) parseSwap(
 	swap *iquickswap_v3_pool.IQuickswapV3PoolSwap,
 	pool *dexPool[iquickswap_v3_pool.IQuickswapV3PoolSwap],
 ) (TradeEvent, error) {
-	if !isValidNonZero(swap.Amount0) || !isValidNonZero(swap.Amount1) {
-		return TradeEvent{}, fmt.Errorf("either Amount0 (%s) or Amount1 (%s) is invalid", swap.Amount0, swap.Amount1)
+	if pool.reverted {
+		s.flipSwap(swap)
 	}
 
 	defer func() {
@@ -125,31 +123,17 @@ func (s *quickswap) parseSwap(
 		}
 	}()
 
-	baseDecimals := pool.baseToken.Decimals
-	quoteDecimals := pool.quoteToken.Decimals
+	return builDexTrade(
+		swap.Amount0,
+		swap.Amount1,
+		pool.baseToken.Decimals,
+		pool.quoteToken.Decimals,
+		pool.Market())
+}
 
-	// Normalize swap amounts
-	amount0 := decimal.NewFromBigInt(swap.Amount0, 0).Div(decimal.NewFromInt(10).Pow(baseDecimals))
-	amount1 := decimal.NewFromBigInt(swap.Amount1, 0).Div(decimal.NewFromInt(10).Pow(quoteDecimals))
-
-	// Calculate price and order side
-	price := amount1.Div(amount0)
-	amount := amount0
-	takerType := TakerTypeBuy
-	if amount0.Sign() < 0 {
-		takerType = TakerTypeSell
-	}
-	amount = amount.Abs()
-	price = price.Abs()
-
-	tr := TradeEvent{
-		Source:    DriverQuickswap,
-		Market:    pool.Market(),
-		Price:     price,
-		Amount:    amount,
-		Total:     price.Mul(amount),
-		TakerType: takerType,
-		CreatedAt: time.Now(),
-	}
-	return tr, nil
+func (*quickswap) flipSwap(swap *iquickswap_v3_pool.IQuickswapV3PoolSwap) {
+	// For USDC/ETH:
+	// Amount0 = -52052662345          = USDC removed from pool
+	// Amount1 = +16867051239984403529 = ETH added into pool
+	swap.Amount0, swap.Amount1 = swap.Amount1, swap.Amount0
 }

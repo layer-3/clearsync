@@ -144,12 +144,29 @@ func (u *uniswapV3) parseSwap(swap *iuniswap_v3_pool.IUniswapV3PoolSwap, pool *d
 		}
 	}()
 
-	baseDecimals := pool.baseToken.Decimals
-	quoteDecimals := pool.quoteToken.Decimals
+	return builDexTrade(
+		swap.Amount0,
+		swap.Amount1,
+		pool.baseToken.Decimals,
+		pool.quoteToken.Decimals,
+		pool.Market())
+}
+
+func (*uniswapV3) flipSwap(swap *iuniswap_v3_pool.IUniswapV3PoolSwap) {
+	// For USDC/ETH:
+	// Amount0 = -52052662345          = USDC removed from pool
+	// Amount1 = +16867051239984403529 = ETH added into pool
+	swap.Amount0, swap.Amount1 = swap.Amount1, swap.Amount0
+}
+
+func builDexTrade(rawAmount0, rawAmount1 *big.Int, baseDecimals, quoteDecimals decimal.Decimal, market Market) (TradeEvent, error) {
+	if !isValidNonZero(rawAmount0) || !isValidNonZero(rawAmount1) {
+		return TradeEvent{}, fmt.Errorf("either Amount0 (%s) or Amount1 (%s) is invalid", rawAmount0, rawAmount1)
+	}
 
 	// Normalize swap amounts
-	amount0 := decimal.NewFromBigInt(swap.Amount0, 0).Div(decimal.NewFromInt(10).Pow(baseDecimals))
-	amount1 := decimal.NewFromBigInt(swap.Amount1, 0).Div(decimal.NewFromInt(10).Pow(quoteDecimals))
+	amount0 := decimal.NewFromBigInt(rawAmount0, 0).Div(decimal.NewFromInt(10).Pow(baseDecimals))
+	amount1 := decimal.NewFromBigInt(rawAmount1, 0).Div(decimal.NewFromInt(10).Pow(quoteDecimals))
 
 	// Calculate price and order side
 	price := amount1.Div(amount0)
@@ -162,8 +179,8 @@ func (u *uniswapV3) parseSwap(swap *iuniswap_v3_pool.IUniswapV3PoolSwap, pool *d
 	price = price.Abs()
 
 	tr := TradeEvent{
-		Source:    DriverUniswapV3,
-		Market:    pool.Market(),
+		Source:    DriverQuickswap,
+		Market:    market,
 		Price:     price,
 		Amount:    amount,
 		Total:     price.Mul(amount),
@@ -171,11 +188,4 @@ func (u *uniswapV3) parseSwap(swap *iuniswap_v3_pool.IUniswapV3PoolSwap, pool *d
 		CreatedAt: time.Now(),
 	}
 	return tr, nil
-}
-
-func (*uniswapV3) flipSwap(swap *iuniswap_v3_pool.IUniswapV3PoolSwap) {
-	// For USDC/ETH:
-	// Amount0 = -52052662345          = USDC removed from pool
-	// Amount1 = +16867051239984403529 = ETH added into pool
-	swap.Amount0, swap.Amount1 = swap.Amount1, swap.Amount0
 }
