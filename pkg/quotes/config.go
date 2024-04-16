@@ -11,14 +11,13 @@ type Config struct {
 	Drivers []DriverType `yaml:"drivers" env:"QUOTES_DRIVERS" env-default:"binance,syncswap"`
 	Index   IndexConfig  `yaml:"index" env-prefix:"QUOTES_INDEX_"`
 
-	Binance       BinanceConfig       `yaml:"binance" env-prefix:"QUOTES_BINANCE_"`
-	Kraken        KrakenConfig        `yaml:"kraken" env-prefix:"QUOTES_KRAKEN_"`
-	Opendax       OpendaxConfig       `yaml:"opendax" env-prefix:"QUOTES_OPENDAX_"`
-	Bitfaker      BitfakerConfig      `yaml:"bitfaker" env-prefix:"QUOTES_BITFAKER_"`
-	UniswapV3Api  UniswapV3ApiConfig  `yaml:"uniswap_v3_api" env-prefix:"QUOTES_UNISWAP_V3_API_"`
-	UniswapV3Geth UniswapV3GethConfig `yaml:"uniswap_v3_geth" env-prefix:"QUOTES_UNISWAP_V3_GETH_"`
-	Syncswap      SyncswapConfig      `yaml:"syncswap" env-prefix:"QUOTES_SYNCSWAP_"`
-	Quickswap     QuickswapConfig     `yaml:"quickswap" env-prefix:"QUOTES_QUICKSWAP_"`
+	Binance   BinanceConfig   `yaml:"binance" env-prefix:"QUOTES_BINANCE_"`
+	Kraken    KrakenConfig    `yaml:"kraken" env-prefix:"QUOTES_KRAKEN_"`
+	Opendax   OpendaxConfig   `yaml:"opendax" env-prefix:"QUOTES_OPENDAX_"`
+	Bitfaker  BitfakerConfig  `yaml:"bitfaker" env-prefix:"QUOTES_BITFAKER_"`
+	UniswapV3 UniswapV3Config `yaml:"uniswap_v3" env-prefix:"QUOTES_UNISWAP_V3_"`
+	Syncswap  SyncswapConfig  `yaml:"syncswap" env-prefix:"QUOTES_SYNCSWAP_"`
+	Quickswap QuickswapConfig `yaml:"quickswap" env-prefix:"QUOTES_QUICKSWAP_"`
 }
 
 func (config Config) GetByDriverType(driver DriverType) (Config, error) {
@@ -42,10 +41,8 @@ func (config Config) GetByDriverType(driver DriverType) (Config, error) {
 		return Config{Drivers: []DriverType{DriverOpendax}, Opendax: config.Opendax}, nil
 	case DriverBitfaker:
 		return Config{Drivers: []DriverType{DriverBitfaker}, Bitfaker: config.Bitfaker}, nil
-	case DriverUniswapV3Api:
-		return Config{Drivers: []DriverType{DriverUniswapV3Api}, UniswapV3Api: config.UniswapV3Api}, nil
-	case DriverUniswapV3Geth:
-		return Config{Drivers: []DriverType{DriverUniswapV3Geth}, UniswapV3Geth: config.UniswapV3Geth}, nil
+	case DriverUniswapV3:
+		return Config{Drivers: []DriverType{DriverUniswapV3}, UniswapV3: config.UniswapV3}, nil
 	case DriverSyncswap:
 		return Config{Drivers: []DriverType{DriverSyncswap}, Syncswap: config.Syncswap}, nil
 	case DriverQuickswap:
@@ -95,15 +92,10 @@ type BitfakerConfig struct {
 	Filter FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
 }
 
-type UniswapV3ApiConfig struct {
-	URL        string        `yaml:"url" env:"URL" env-default:"https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3"`
-	WindowSize time.Duration `yaml:"window_size" env:"WINDOW_SIZE" env-default:"2s"`
-	Filter     FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
-}
-
-type UniswapV3GethConfig struct {
+type UniswapV3Config struct {
 	URL            string       `yaml:"url" env:"URL"`
-	AssetsURL      string       `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/assets.json"`
+	AssetsURL      string       `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/1/assets.json"`
+	MappingURL     string       `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/1/mapping.json"`
 	FactoryAddress string       `yaml:"factory_address" env:"FACTORY_ADDRESS" env-default:"0x1F98431c8aD98523631AE4a59f267346ea31F984"`
 	Filter         FilterConfig `yaml:"filter" env-prefix:"FILTER_"`
 }
@@ -119,8 +111,9 @@ type SyncswapConfig struct {
 }
 
 type QuickswapConfig struct {
-	URL       string `yaml:"url" env:"URL"`
-	AssetsURL string `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/mainnet/assets.json"`
+	URL        string `yaml:"url" env:"URL"`
+	AssetsURL  string `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/137/assets.json"`
+	MappingURL string `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/137/mapping.json"`
 	// PoolFactoryAddress is the address of the factory contract.
 	// See docs at https://docs.quickswap.exchange/technical-reference/smart-contracts/v3/factory.
 	// Note that the contract used in this lib is compiled from https://github.com/code-423n4/2022-09-quickswap.
@@ -133,7 +126,7 @@ type SamplerFilterConfig struct {
 }
 
 type PriceDiffFilterConfig struct {
-	Threshold string `yaml:"threshold" env:"THRESHOLD" env-default:"0.05"`
+	Threshold string `yaml:"threshold" env:"THRESHOLD" env-default:"5"`
 }
 
 type FilterConfig struct {

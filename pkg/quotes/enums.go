@@ -18,28 +18,26 @@ func (d DriverType) String() string {
 }
 
 var (
-	DriverBinance       = DriverType{"binance"}
-	DriverKraken        = DriverType{"kraken"}
-	DriverOpendax       = DriverType{"opendax"}
-	DriverBitfaker      = DriverType{"bitfaker"}
-	DriverUniswapV3Api  = DriverType{"uniswap_v3_api"}
-	DriverUniswapV3Geth = DriverType{"uniswap_v3_geth"}
-	DriverSyncswap      = DriverType{"syncswap"}
-	DriverQuickswap     = DriverType{"quickswap"}
-	DriverInternal      = DriverType{"internal"} // Internal trades
+	DriverBinance   = DriverType{"binance"}
+	DriverKraken    = DriverType{"kraken"}
+	DriverOpendax   = DriverType{"opendax"}
+	DriverBitfaker  = DriverType{"bitfaker"}
+	DriverUniswapV3 = DriverType{"uniswap_v3"}
+	DriverSyncswap  = DriverType{"syncswap"}
+	DriverQuickswap = DriverType{"quickswap"}
+	DriverInternal  = DriverType{"internal"} // Internal trades
 )
 
 func ToDriverType(raw string) (DriverType, error) {
 	allDrivers := map[string]DriverType{
-		DriverBinance.String():       DriverBinance,
-		DriverKraken.String():        DriverKraken,
-		DriverOpendax.String():       DriverOpendax,
-		DriverBitfaker.String():      DriverBitfaker,
-		DriverUniswapV3Api.String():  DriverUniswapV3Api,
-		DriverUniswapV3Geth.String(): DriverUniswapV3Geth,
-		DriverSyncswap.String():      DriverSyncswap,
-		DriverQuickswap.String():     DriverQuickswap,
-		DriverInternal.String():      DriverInternal,
+		DriverBinance.String():   DriverBinance,
+		DriverKraken.String():    DriverKraken,
+		DriverOpendax.String():   DriverOpendax,
+		DriverBitfaker.String():  DriverBitfaker,
+		DriverUniswapV3.String(): DriverUniswapV3,
+		DriverSyncswap.String():  DriverSyncswap,
+		DriverQuickswap.String(): DriverQuickswap,
+		DriverInternal.String():  DriverInternal,
 	}
 
 	driver, ok := allDrivers[raw]
@@ -112,12 +110,12 @@ var (
 	// for which you can't determine its type,
 	// and therefore the taker side cannot be deduced.
 	TakerTypeUnknown = TakerType{""}
-	// TakerTypeBuy represents the "buy" trade.
+	// TakerTypeBuy represents a "buy" trade.
 	// It's value is set to "sell" because the sell order it
 	// was matched with was present in the order book before,
 	// therefore the taker is the "sell" side.
 	TakerTypeBuy = TakerType{"sell"}
-	// TakerTypeSell represents the "sell" trade.
+	// TakerTypeSell represents a "sell" trade.
 	// It's value is set to "buy" because the buy order it
 	// was matched with was present in the order book before,
 	// therefore the taker is the "buy" side.

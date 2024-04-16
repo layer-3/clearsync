@@ -61,7 +61,7 @@ func (b *bitfaker) Start() error {
 	})
 
 	if !started {
-		return errAlreadyStarted
+		return ErrAlreadyStarted
 	}
 	return nil
 }
@@ -76,14 +76,14 @@ func (b *bitfaker) Stop() error {
 	})
 
 	if !stopped {
-		return errAlreadyStopped
+		return ErrAlreadyStopped
 	}
 	return nil
 }
 
 func (b *bitfaker) Subscribe(market Market) error {
 	if !b.once.Subscribe() {
-		return errNotStarted
+		return ErrNotStarted
 	}
 
 	b.mu.Lock()
@@ -91,7 +91,7 @@ func (b *bitfaker) Subscribe(market Market) error {
 
 	for _, m := range b.streams {
 		if m == market {
-			return fmt.Errorf("%s: %w", market, errAlreadySubbed)
+			return fmt.Errorf("%s: %w", market, ErrAlreadySubbed)
 		}
 	}
 
@@ -101,7 +101,7 @@ func (b *bitfaker) Subscribe(market Market) error {
 
 func (b *bitfaker) Unsubscribe(market Market) error {
 	if !b.once.Unsubscribe() {
-		return errNotStarted
+		return ErrNotStarted
 	}
 
 	b.mu.Lock()
@@ -116,7 +116,7 @@ func (b *bitfaker) Unsubscribe(market Market) error {
 	}
 
 	if index == -1 {
-		return fmt.Errorf("%s: %w", market, errNotSubbed)
+		return fmt.Errorf("%s: %w", market, ErrNotSubbed)
 	}
 
 	b.streams = append(b.streams[:index], b.streams[index+1:]...)

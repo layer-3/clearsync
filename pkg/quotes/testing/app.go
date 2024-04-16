@@ -83,18 +83,25 @@ func main() {
 
 	markets := []quotes.Market{
 		// Add your markets here
-		quotes.NewMarket("weth", "usdc"),
+		quotes.NewMarket("eth", "usd"),
+		quotes.NewMarket("btc", "usd"),
 		quotes.NewMarket("lube", "usdc"),
 		quotes.NewMarket("linda", "usdc"),
 	}
 
+	// atLeastOne := false
 	for _, market := range markets {
 		if err = driver.Subscribe(market); err != nil {
 			slog.Warn("failed to subscribe", "market", market, "err", err)
 			continue
 		}
+		// atLeastOne = true
 		slog.Info("subscribed", "market", market.String())
 	}
+
+	// if !atLeastOne {
+	// 	panic("failed to subscribe to at least one market")
+	// }
 
 	slog.Info("waiting for trades")
 	<-outboxStop

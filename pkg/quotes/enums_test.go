@@ -39,14 +39,9 @@ func TestDriverType(t *testing.T) {
 			expectYAML: "bitfaker\n",
 			expectErr:  false,
 		}, {
-			input:      DriverUniswapV3Api,
-			expectJSON: `"uniswap_v3_api"`,
-			expectYAML: "uniswap_v3_api\n",
-			expectErr:  false,
-		}, {
-			input:      DriverUniswapV3Geth,
-			expectJSON: `"uniswap_v3_geth"`,
-			expectYAML: "uniswap_v3_geth\n",
+			input:      DriverUniswapV3,
+			expectJSON: `"uniswap_v3"`,
+			expectYAML: "uniswap_v3\n",
 			expectErr:  false,
 		}, {
 			input:      DriverSyncswap,

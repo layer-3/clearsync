@@ -1,6 +1,7 @@
 package quotes
 
 import (
+	"fmt"
 	"math/big"
 	"testing"
 
@@ -24,7 +25,7 @@ func Test_quickswap_parseSwap(t *testing.T) {
 
 	type args struct {
 		swap *iquickswap_v3_pool.IQuickswapV3PoolSwap
-		pool *quickswapPoolWrapper
+		pool *dexPool[iquickswap_v3_pool.IQuickswapV3PoolSwap]
 	}
 
 	tests := []struct {
@@ -61,7 +62,7 @@ func Test_quickswap_parseSwap(t *testing.T) {
 						Removed:     false,
 					},
 				},
-				pool: &quickswapPoolWrapper{
+				pool: &dexPool[iquickswap_v3_pool.IQuickswapV3PoolSwap]{
 					baseToken: poolToken{
 						Address:  "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
 						Symbol:   "matic",
@@ -78,10 +79,10 @@ func Test_quickswap_parseSwap(t *testing.T) {
 			want: TradeEvent{
 				Source:    DriverQuickswap,
 				Market:    Market{baseUnit: "matic", quoteUnit: "weth"},
-				Price:     decimal.RequireFromString("0.0002922630136527"),
+				Price:     decimal.RequireFromString("0.0002917105144227"),
 				Amount:    decimal.RequireFromString("6035.9860273201849237"),
-				Total:     decimal.RequireFromString("1.7607605890778538"),
-				TakerType: TakerTypeSell,
+				Total:     decimal.RequireFromString("1.76076058907780048041581994904799"),
+				TakerType: TakerTypeBuy,
 			},
 			wantErr: false,
 		},
@@ -97,12 +98,12 @@ func Test_quickswap_parseSwap(t *testing.T) {
 
 			require.True(t, test.wantErr == (err != nil))
 
-			require.Equal(t, test.want.Source, got.Source)
-			require.Equal(t, test.want.Market, got.Market)
-			require.True(t, test.want.Price.Equal(got.Price))
-			require.True(t, test.want.Amount.Equal(got.Amount))
-			require.True(t, test.want.Total.Equal(got.Total))
-			require.Equal(t, test.want.TakerType, got.TakerType)
+			require.Equal(t, test.want.Source, got.Source, fmt.Sprintf("want: `%s`, got `%s`", test.want.Source, got.Source))
+			require.Equal(t, test.want.Market, got.Market, fmt.Sprintf("want: `%s`, got `%s`", test.want.Market, got.Market))
+			require.True(t, test.want.Price.Equal(got.Price), fmt.Sprintf("want: `%s`, got `%s`", test.want.Price, got.Price))
+			require.True(t, test.want.Amount.Equal(got.Amount), fmt.Sprintf("want: `%s`, got `%s`", test.want.Amount, got.Amount))
+			require.True(t, test.want.Total.Equal(got.Total), fmt.Sprintf("want: `%s`, got `%s`", test.want.Total, got.Total))
+			require.Equal(t, test.want.TakerType, got.TakerType, fmt.Sprintf("want: `%s`, got `%s`", test.want.TakerType, got.TakerType))
 		})
 	}
 }
