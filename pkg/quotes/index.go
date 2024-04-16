@@ -18,7 +18,7 @@ type indexAggregator struct {
 	drivers        []Driver
 	marketsMapping map[string][]string
 	inbox          <-chan TradeEvent
-	combined       chan TradeEvent
+	aggregated     chan TradeEvent
 }
 
 type priceCalculator interface {
@@ -46,7 +46,6 @@ func newIndexAggregator(config Config, marketsMapping map[string][]string, strat
 	}
 
 	toCombine := make(chan TradeEvent, 128)
-
 	go func() {
 		for event := range aggregated {
 			indexPrice, ok := strategy.calculateIndexPrice(event)
@@ -61,10 +60,9 @@ func newIndexAggregator(config Config, marketsMapping map[string][]string, strat
 		}
 	}()
 
-	combined := make(chan TradeEvent, 128)
 	go func() {
 		marketTrades := make(map[Market][]TradeEvent)
-		timer := time.NewTimer(time.Duration(config.Index.TradesBufferSeconds) * time.Second)
+		timer := time.NewTimer(time.Duration(config.Index.BatchBufferSeconds) * time.Second)
 		for {
 			select {
 			case trade := <-toCombine:
@@ -72,14 +70,12 @@ func newIndexAggregator(config Config, marketsMapping map[string][]string, strat
 			case <-timer.C:
 				for market, trades := range marketTrades {
 					event := combineTrades(trades)
-					fmt.Println("resulting event ", event)
-
 					if event != nil {
 						marketTrades[market] = nil
 					}
-					combined <- *event
+					outbox <- *event
 				}
-				timer.Reset(time.Duration(config.Index.TradesBufferSeconds) * time.Second)
+				timer.Reset(time.Duration(config.Index.BatchBufferSeconds) * time.Second)
 			}
 		}
 	}()
@@ -87,7 +83,7 @@ func newIndexAggregator(config Config, marketsMapping map[string][]string, strat
 	return &indexAggregator{
 		drivers:        drivers,
 		marketsMapping: marketsMapping,
-		combined:       combined,
+		aggregated:     aggregated,
 	}
 }
 
@@ -101,7 +97,6 @@ func combineTrades(trades []TradeEvent) *TradeEvent {
 	netAmount := decimal.Zero
 
 	for _, trade := range trades {
-		// Update total amount and value for average price calculation
 		totalAmount = totalAmount.Add(trade.Amount)
 		totalValue = totalValue.Add(trade.Amount.Mul(trade.Price))
 
@@ -118,17 +113,12 @@ func combineTrades(trades []TradeEvent) *TradeEvent {
 	}
 
 	avgPrice := totalValue.Div(totalAmount)
-
-	// fmt.Println("Total Amount over all trades: ", totalAmount)
-	// fmt.Println("Average Price over all trades: ", avgPrice)
-	// fmt.Println("| Buy - Sell | Amount: ", netAmount)
-
 	// Determine net side (buy or sell)
-	var netSide TakerType
+	var side TakerType
 	if netAmount.GreaterThanOrEqual(decimal.Zero) {
-		netSide = TakerTypeSell // "buy" (yes, it looks inverted)
+		side = TakerTypeSell // "buy" (yes, it looks inverted)
 	} else {
-		netSide = TakerTypeBuy // "sell"
+		side = TakerTypeBuy // "sell"
 		netAmount = netAmount.Abs()
 	}
 
@@ -138,7 +128,7 @@ func combineTrades(trades []TradeEvent) *TradeEvent {
 		Price:     avgPrice,
 		Amount:    totalAmount,
 		Total:     avgPrice.Mul(totalAmount),
-		TakerType: netSide,
+		TakerType: side,
 		CreatedAt: time.Now(),
 	}
 }
@@ -153,7 +143,7 @@ func newIndex(config Config, outbox chan<- TradeEvent) Driver {
 	return newIndexAggregator(
 		config,
 		marketsMapping,
-		newStrategyVWA(withCustomPriceCacheVWA(newPriceCacheVWA(defaultWeightsMap, config.Index.BatchedCached, time.Duration(config.Index.BatchesBufferMinutes)*time.Minute))),
+		newStrategyVWA(withCustomPriceCacheVWA(newPriceCacheVWA(defaultWeightsMap, config.Index.TradesCached, time.Duration(config.Index.BufferMinutes)*time.Minute))),
 		outbox,
 	)
 }
@@ -180,7 +170,7 @@ func (a *indexAggregator) Start() error {
 
 	go func() {
 		for t := range a.inbox {
-			a.combined <- t
+			a.aggregated <- t
 		}
 	}()
 
