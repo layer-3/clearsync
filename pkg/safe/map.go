@@ -60,6 +60,13 @@ func (m *Map[K, V]) Range(f func(k K, v V) bool) {
 	}
 }
 
+func (m *Map[K, V]) Len() int {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	return len(m.m)
+}
+
 // UpdateInTx allows to update the map in a transactional way.
 func (m *Map[K, V]) UpdateInTx(updateFunc func(map[K]V)) {
 	m.mu.Lock()
