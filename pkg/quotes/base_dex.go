@@ -200,41 +200,8 @@ func (b *baseDEX[Event, Contract]) Subscribe(market Market) error {
 			return fmt.Errorf("failed to subscribe to swaps for market %s: %w", market, err)
 		}
 
-		go func() {
-			defer close(sink)
-			for {
-				select {
-				case err := <-sub.Err():
-					b.logger.Warnw("connection failed, resubscribing", "market", market.StringWithoutMain(), "err", err)
-					if _, ok := b.streams.Load(market); !ok {
-						break // market was unsubscribed earlier
-					}
-					if err := b.Unsubscribe(market); err != nil {
-						b.logger.Errorw("failed to resubscribe", "market", market.StringWithoutMain(), "err", err)
-					}
-					if err := b.Subscribe(market); err != nil {
-						b.logger.Errorw("failed to resubscribe", "market", market.StringWithoutMain(), "err", err)
-					}
-					return
-				case swap := <-sink:
-					b.logger.Debugw("raw swap", "swap", swap)
-
-					tr, err := b.parse(swap, pool)
-					if err != nil {
-						b.logger.Errorw("failed to parse swap event", "market", market.StringWithoutMain(), "err", err)
-						continue
-					}
-					tr.Market = market.ApplyMainQuote()
-
-					if !b.filter.Allow(tr) {
-						continue
-					}
-					b.outbox <- tr
-				}
-			}
-		}()
-
-		b.streams.Store(market, sub)
+		go b.watchSwap(market, pool, sink, sub)
+		go b.streams.Store(market, sub) // to not block the loop
 	}
 
 	return nil
@@ -258,7 +225,45 @@ func (b *baseDEX[Event, Contract]) Unsubscribe(market Market) error {
 
 func (b *baseDEX[Event, Contract]) SetInbox(_ <-chan TradeEvent) {
 	// TODO: implement me
-	panic("not implemented")
+}
+
+func (b *baseDEX[Event, Contract]) watchSwap(
+	market Market,
+	pool *dexPool[Event],
+	sink chan *Event,
+	sub event.Subscription,
+) {
+	defer close(sink)
+	for {
+		select {
+		case err := <-sub.Err():
+			b.logger.Warnw("connection failed, resubscribing", "market", market.StringWithoutMain(), "err", err)
+			if _, ok := b.streams.Load(market); !ok {
+				break // market was unsubscribed earlier
+			}
+			if err := b.Unsubscribe(market); err != nil {
+				b.logger.Errorw("failed to resubscribe", "market", market.StringWithoutMain(), "err", err)
+			}
+			if err := b.Subscribe(market); err != nil {
+				b.logger.Errorw("failed to resubscribe", "market", market.StringWithoutMain(), "err", err)
+			}
+			return
+		case swap := <-sink:
+			b.logger.Debugw("raw swap", "swap", swap)
+
+			tr, err := b.parse(swap, pool)
+			if err != nil {
+				b.logger.Errorw("failed to parse swap event", "market", market.StringWithoutMain(), "err", err)
+				continue
+			}
+			tr.Market = market.ApplyMainQuote()
+
+			if !b.filter.Allow(tr) {
+				continue
+			}
+			b.outbox <- tr
+		}
+	}
 }
 
 type dexPool[Event any] struct {
