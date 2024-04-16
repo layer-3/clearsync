@@ -74,6 +74,60 @@
       "precision": 6,
       "logoURI": "https://assets.coingecko.com/coins/images/33070/standard/200x200.png?1700536826",
       "extensions": {}
+    },
+    {
+      "address": "0x356A55841a16c05A3628045E9F68A0a5CE810113",
+      "name": "Wrapped Solana",
+      "symbol": "WSOL",
+      "decimals": 9,
+      "precision": 6,
+      "logoURI": "https://assets.coingecko.com/coins/images/4128/standard/solana.png?1696504756",
+      "extensions": {}
+    },
+    {
+      "address": "0xf5C6825015280CdfD0b56903F9F8B5A2233476F5",
+      "name": "BNB",
+      "symbol": "BNB",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://assets.coingecko.com/coins/images/825/standard/bnb-icon2_2x.png?1696501970",
+      "extensions": {}
+    },
+    {
+      "address": "0x4AF15ec2A0BD43Db75dd04E62FAA3B8EF36b00d5",
+      "name": "Dai Stablecoin",
+      "symbol": "DAI",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://lineascan.build/token/images/daistablecoin_32.png",
+      "extensions": {}
+    },
+    {
+      "address": "0x7da14988E4f390C2E34ed41DF1814467D3aDe0c3",
+      "name": "Pepe",
+      "symbol": "PEPE",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://assets.coingecko.com/coins/images/29850/standard/pepe-token.jpeg?1696528776",
+      "extensions": {}
+    },
+    {
+      "address": "0x92CcE828c4eF31C3762baAc29724dEa03e503e3F",
+      "name": "Badger",
+      "symbol": "BADGER",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://assets.coingecko.com/coins/images/13287/standard/badger_dao_logo.jpg?1696513059",
+      "extensions": {}
+    },
+    {
+      "address": "0xbf6761aD8C9cB253d026C96327160240Fc2Ce3A6",
+      "name": "FLOKI",
+      "symbol": "FLOKI",
+      "decimals": 9,
+      "precision": 6,
+      "logoURI": "https://assets.coingecko.com/coins/images/16746/standard/PNG_image.png?1696516318",
+      "extensions": {}
     }
   ]
 }
