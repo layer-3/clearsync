@@ -29,8 +29,8 @@ func NewDriver(config Config, outbox chan<- TradeEvent) (Driver, error) {
 		return newOpendax(config.Opendax, outbox), nil
 	case DriverBitfaker:
 		return newBitfaker(config.Bitfaker, outbox), nil
-	case DriverUniswapV3Geth:
-		return newUniswapV3Geth(config.UniswapV3Geth, outbox), nil
+	case DriverUniswapV3:
+		return newUniswapV3(config.UniswapV3, outbox), nil
 	case DriverSyncswap:
 		return newSyncswap(config.Syncswap, outbox), nil
 	case DriverQuickswap:

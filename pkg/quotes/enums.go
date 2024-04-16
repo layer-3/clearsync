@@ -18,26 +18,26 @@ func (d DriverType) String() string {
 }
 
 var (
-	DriverBinance       = DriverType{"binance"}
-	DriverKraken        = DriverType{"kraken"}
-	DriverOpendax       = DriverType{"opendax"}
-	DriverBitfaker      = DriverType{"bitfaker"}
-	DriverUniswapV3Geth = DriverType{"uniswap_v3_geth"}
-	DriverSyncswap      = DriverType{"syncswap"}
-	DriverQuickswap     = DriverType{"quickswap"}
-	DriverInternal      = DriverType{"internal"} // Internal trades
+	DriverBinance   = DriverType{"binance"}
+	DriverKraken    = DriverType{"kraken"}
+	DriverOpendax   = DriverType{"opendax"}
+	DriverBitfaker  = DriverType{"bitfaker"}
+	DriverUniswapV3 = DriverType{"uniswap_v3"}
+	DriverSyncswap  = DriverType{"syncswap"}
+	DriverQuickswap = DriverType{"quickswap"}
+	DriverInternal  = DriverType{"internal"} // Internal trades
 )
 
 func ToDriverType(raw string) (DriverType, error) {
 	allDrivers := map[string]DriverType{
-		DriverBinance.String():       DriverBinance,
-		DriverKraken.String():        DriverKraken,
-		DriverOpendax.String():       DriverOpendax,
-		DriverBitfaker.String():      DriverBitfaker,
-		DriverUniswapV3Geth.String(): DriverUniswapV3Geth,
-		DriverSyncswap.String():      DriverSyncswap,
-		DriverQuickswap.String():     DriverQuickswap,
-		DriverInternal.String():      DriverInternal,
+		DriverBinance.String():   DriverBinance,
+		DriverKraken.String():    DriverKraken,
+		DriverOpendax.String():   DriverOpendax,
+		DriverBitfaker.String():  DriverBitfaker,
+		DriverUniswapV3.String(): DriverUniswapV3,
+		DriverSyncswap.String():  DriverSyncswap,
+		DriverQuickswap.String(): DriverQuickswap,
+		DriverInternal.String():  DriverInternal,
 	}
 
 	driver, ok := allDrivers[raw]

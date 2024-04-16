@@ -28,7 +28,7 @@ var (
 
 	defaultWeights = map[DriverType]decimal.Decimal{
 		DriverBinance:       decimal.NewFromInt(2),
-		DriverUniswapV3Geth: decimal.NewFromInt(2),
+		DriverUniswapV3: decimal.NewFromInt(2),
 	}
 )
 
@@ -38,7 +38,7 @@ func Test_IndexAggregatorStrategies(t *testing.T) {
 	t.Run("Successful test", func(t *testing.T) {
 		weights := map[DriverType]decimal.Decimal{
 			DriverBinance:       decimal.NewFromInt(3),
-			DriverUniswapV3Geth: decimal.NewFromInt(0),
+			DriverUniswapV3: decimal.NewFromInt(0),
 		}
 
 		trade := TradeEvent{Source: DriverBinance, Market: btcusdt}
@@ -50,7 +50,7 @@ func Test_IndexAggregatorStrategies(t *testing.T) {
 			trade.Price = decimalPrice
 			trade.Amount = decimalAmount
 			if i == 20 {
-				trade.Source = DriverUniswapV3Geth
+				trade.Source = DriverUniswapV3
 			}
 			inputTrades = append(inputTrades, trade)
 		}
@@ -81,8 +81,8 @@ func Test_IndexAggregatorStrategies(t *testing.T) {
 	inputTrades := []TradeEvent{
 		{Source: DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(41000), Amount: decimal.NewFromFloat(0.3)},
 		{Source: DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(42500), Amount: decimal.NewFromFloat(0.5)},
-		{Source: DriverUniswapV3Geth, Market: btcusdt, Price: decimal.NewFromInt(55000), Amount: decimal.NewFromFloat(0.6)},
-		{Source: DriverUniswapV3Geth, Market: btcusdt, Price: decimal.NewFromInt(50000), Amount: decimal.NewFromFloat(0.4)},
+		{Source: DriverUniswapV3, Market: btcusdt, Price: decimal.NewFromInt(55000), Amount: decimal.NewFromFloat(0.6)},
+		{Source: DriverUniswapV3, Market: btcusdt, Price: decimal.NewFromInt(50000), Amount: decimal.NewFromFloat(0.4)},
 		{Source: DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(40000), Amount: decimal.NewFromFloat(1)},
 	}
 
@@ -97,7 +97,7 @@ func Test_IndexAggregatorStrategies(t *testing.T) {
 	t.Run("README example 2: zero weight for one of the drivers", func(t *testing.T) {
 		weights := map[DriverType]decimal.Decimal{
 			DriverBinance:       decimal.NewFromInt(3),
-			DriverUniswapV3Geth: decimal.NewFromInt(0),
+			DriverUniswapV3: decimal.NewFromInt(0),
 		}
 
 		results := testStrategies(inputTrades, newStrategyVWA(WithCustomWeightsVWA(weights)))
@@ -128,18 +128,18 @@ func Test_IndexAggregatorStrategies(t *testing.T) {
 		inputTrades := []TradeEvent{{Source: DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(41000), Amount: decimal.NewFromInt(1.0)}}
 		// Two equal drivers are sending: 42000 and 40000 prices sequentially.
 		inputTrades = append(inputTrades, generateTrades([]TradeEvent{
-			{Source: DriverUniswapV3Geth, Market: btcusdt, Price: decimal.NewFromInt(42000), Amount: decimal.NewFromFloat(1.0)},
+			{Source: DriverUniswapV3, Market: btcusdt, Price: decimal.NewFromInt(42000), Amount: decimal.NewFromFloat(1.0)},
 			{Source: DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(40000), Amount: decimal.NewFromFloat(1.0)},
 		}, 25)...)
 		// The drivers start sending the same price: 41000.
 		inputTrades = append(inputTrades, generateTrades([]TradeEvent{
-			{Source: DriverUniswapV3Geth, Market: btcusdt, Price: decimal.NewFromInt(41000), Amount: decimal.NewFromFloat(1.0)},
+			{Source: DriverUniswapV3, Market: btcusdt, Price: decimal.NewFromInt(41000), Amount: decimal.NewFromFloat(1.0)},
 			{Source: DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(41000), Amount: decimal.NewFromFloat(1.0)},
 		}, 25)...)
 
 		testPriceCacheVWA := newPriceCacheVWA(defaultWeights, 20, time.Minute)
 		testPriceCacheVWA.ActivateDriver(DriverBinance, btcusdt)
-		testPriceCacheVWA.ActivateDriver(DriverUniswapV3Geth, btcusdt)
+		testPriceCacheVWA.ActivateDriver(DriverUniswapV3, btcusdt)
 
 		results := testStrategies(inputTrades, newStrategyVWA(WithCustomWeightsVWA(defaultWeights), withCustomPriceCacheVWA(testPriceCacheVWA)))
 

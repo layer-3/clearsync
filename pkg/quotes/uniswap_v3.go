@@ -18,32 +18,32 @@ import (
 )
 
 var (
-	loggerUniswapV3Geth = log.Logger("uniswap_v3_geth")
+	loggerUniswapV3 = log.Logger("uniswap_v3")
 	// Uniswap v3 protocol has the 0.01%, 0.05%, 0.3%, and 1% fee tiers.
 	uniswapV3FeeTiers = []uint{100, 500, 3000, 10000}
 	wethContract      = common.HexToAddress("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2")
 )
 
-type uniswapV3Geth struct {
+type uniswapV3 struct {
 	factoryAddress common.Address
 	factory        *iuniswap_v3_factory.IUniswapV3Factory
 	assets         *safe.Map[string, poolToken]
 	client         *ethclient.Client
 }
 
-func newUniswapV3Geth(config UniswapV3GethConfig, outbox chan<- TradeEvent) Driver {
-	hooks := &uniswapV3Geth{
+func newUniswapV3(config UniswapV3Config, outbox chan<- TradeEvent) Driver {
+	hooks := &uniswapV3{
 		factoryAddress: common.HexToAddress(config.FactoryAddress),
 	}
 
 	params := baseDexConfig[iuniswap_v3_pool.IUniswapV3PoolSwap, iuniswap_v3_pool.IUniswapV3Pool]{
-		DriverType: DriverUniswapV3Geth,
+		DriverType: DriverUniswapV3,
 		URL:        config.URL,
 		AssetsURL:  config.AssetsURL,
 		MappingURL: config.MappingURL,
 		Outbox:     outbox,
 		Filter:     config.Filter,
-		Logger:     loggerUniswapV3Geth,
+		Logger:     loggerUniswapV3,
 		// Hooks
 		PostStartHook: hooks.postStart,
 		PoolGetter:    hooks.getPool,
@@ -53,7 +53,7 @@ func newUniswapV3Geth(config UniswapV3GethConfig, outbox chan<- TradeEvent) Driv
 	return newBaseDEX(params)
 }
 
-func (u *uniswapV3Geth) postStart(driver *baseDEX[iuniswap_v3_pool.IUniswapV3PoolSwap, iuniswap_v3_pool.IUniswapV3Pool]) (err error) {
+func (u *uniswapV3) postStart(driver *baseDEX[iuniswap_v3_pool.IUniswapV3PoolSwap, iuniswap_v3_pool.IUniswapV3Pool]) (err error) {
 	u.client = driver.Client()
 	u.assets = driver.Assets()
 
@@ -65,8 +65,8 @@ func (u *uniswapV3Geth) postStart(driver *baseDEX[iuniswap_v3_pool.IUniswapV3Poo
 	return nil
 }
 
-func (u *uniswapV3Geth) getPool(market Market) (*dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap], error) {
-	baseToken, quoteToken, err := getTokens(u.assets, market, loggerUniswapV3Geth)
+func (u *uniswapV3) getPool(market Market) (*dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap], error) {
+	baseToken, quoteToken, err := getTokens(u.assets, market, loggerUniswapV3)
 	if err != nil {
 		return nil, err
 	}
@@ -89,13 +89,13 @@ func (u *uniswapV3Geth) getPool(market Market) (*dexPool[iuniswap_v3_pool.IUnisw
 		}
 		if poolAddress != zeroAddress {
 			if poolAddress == common.HexToAddress("0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640") {
-				loggerUniswapV3Geth.Infof("market %s: selected fee tier: %.2f%%", market, float64(feeTier)/10000)
+				loggerUniswapV3.Infof("market %s: selected fee tier: %.2f%%", market, float64(feeTier)/10000)
 				break
 			}
 		}
 	}
 
-	loggerUniswapV3Geth.Infof("got pool %s for market %s", poolAddress, market)
+	loggerUniswapV3.Infof("got pool %s for market %s", poolAddress, market)
 
 	poolContract, err := iuniswap_v3_pool.NewIUniswapV3Pool(poolAddress, u.client)
 	if err != nil {
@@ -131,7 +131,7 @@ func (u *uniswapV3Geth) getPool(market Market) (*dexPool[iuniswap_v3_pool.IUnisw
 	return pool, nil
 }
 
-func (u *uniswapV3Geth) parseSwap(swap *iuniswap_v3_pool.IUniswapV3PoolSwap, pool *dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap]) (TradeEvent, error) {
+func (u *uniswapV3) parseSwap(swap *iuniswap_v3_pool.IUniswapV3PoolSwap, pool *dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap]) (TradeEvent, error) {
 	if pool.reverted {
 		u.flipSwap(swap)
 	}
@@ -160,7 +160,7 @@ func (u *uniswapV3Geth) parseSwap(swap *iuniswap_v3_pool.IUniswapV3PoolSwap, poo
 	price = price.Abs()
 
 	tr := TradeEvent{
-		Source:    DriverUniswapV3Geth,
+		Source:    DriverUniswapV3,
 		Market:    pool.Market(),
 		Price:     price,
 		Amount:    amount,
@@ -171,7 +171,7 @@ func (u *uniswapV3Geth) parseSwap(swap *iuniswap_v3_pool.IUniswapV3PoolSwap, poo
 	return tr, nil
 }
 
-func (*uniswapV3Geth) flipSwap(swap *iuniswap_v3_pool.IUniswapV3PoolSwap) {
+func (*uniswapV3) flipSwap(swap *iuniswap_v3_pool.IUniswapV3PoolSwap) {
 	// USDC OUT
 	// Amount0 -52052662345
 	// ETH IN

@@ -27,7 +27,7 @@ func main() {
 	}
 
 	var drivers []quotes.DriverType
-	drivers = append(drivers, quotes.DriverUniswapV3Geth)
+	drivers = append(drivers, quotes.DriverUniswapV3)
 	drivers = append(drivers, quotes.DriverOpendax)
 	if len(os.Args) >= 2 {
 		drivers = make([]quotes.DriverType, 0, len(os.Args[1:]))

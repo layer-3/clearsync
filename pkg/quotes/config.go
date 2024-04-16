@@ -11,13 +11,13 @@ type Config struct {
 	Drivers []DriverType `yaml:"drivers" env:"QUOTES_DRIVERS" env-default:"binance,syncswap"`
 	Index   IndexConfig  `yaml:"index" env-prefix:"QUOTES_INDEX_"`
 
-	Binance       BinanceConfig       `yaml:"binance" env-prefix:"QUOTES_BINANCE_"`
-	Kraken        KrakenConfig        `yaml:"kraken" env-prefix:"QUOTES_KRAKEN_"`
-	Opendax       OpendaxConfig       `yaml:"opendax" env-prefix:"QUOTES_OPENDAX_"`
-	Bitfaker      BitfakerConfig      `yaml:"bitfaker" env-prefix:"QUOTES_BITFAKER_"`
-	UniswapV3Geth UniswapV3GethConfig `yaml:"uniswap_v3_geth" env-prefix:"QUOTES_UNISWAP_V3_GETH_"`
-	Syncswap      SyncswapConfig      `yaml:"syncswap" env-prefix:"QUOTES_SYNCSWAP_"`
-	Quickswap     QuickswapConfig     `yaml:"quickswap" env-prefix:"QUOTES_QUICKSWAP_"`
+	Binance   BinanceConfig   `yaml:"binance" env-prefix:"QUOTES_BINANCE_"`
+	Kraken    KrakenConfig    `yaml:"kraken" env-prefix:"QUOTES_KRAKEN_"`
+	Opendax   OpendaxConfig   `yaml:"opendax" env-prefix:"QUOTES_OPENDAX_"`
+	Bitfaker  BitfakerConfig  `yaml:"bitfaker" env-prefix:"QUOTES_BITFAKER_"`
+	UniswapV3 UniswapV3Config `yaml:"uniswap_v3" env-prefix:"QUOTES_UNISWAP_V3_"`
+	Syncswap  SyncswapConfig  `yaml:"syncswap" env-prefix:"QUOTES_SYNCSWAP_"`
+	Quickswap QuickswapConfig `yaml:"quickswap" env-prefix:"QUOTES_QUICKSWAP_"`
 }
 
 func (config Config) GetByDriverType(driver DriverType) (Config, error) {
@@ -41,8 +41,8 @@ func (config Config) GetByDriverType(driver DriverType) (Config, error) {
 		return Config{Drivers: []DriverType{DriverOpendax}, Opendax: config.Opendax}, nil
 	case DriverBitfaker:
 		return Config{Drivers: []DriverType{DriverBitfaker}, Bitfaker: config.Bitfaker}, nil
-	case DriverUniswapV3Geth:
-		return Config{Drivers: []DriverType{DriverUniswapV3Geth}, UniswapV3Geth: config.UniswapV3Geth}, nil
+	case DriverUniswapV3:
+		return Config{Drivers: []DriverType{DriverUniswapV3}, UniswapV3: config.UniswapV3}, nil
 	case DriverSyncswap:
 		return Config{Drivers: []DriverType{DriverSyncswap}, Syncswap: config.Syncswap}, nil
 	case DriverQuickswap:
@@ -90,7 +90,7 @@ type BitfakerConfig struct {
 	Filter FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
 }
 
-type UniswapV3GethConfig struct {
+type UniswapV3Config struct {
 	URL            string       `yaml:"url" env:"URL"`
 	AssetsURL      string       `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/assets.json"`
 	MappingURL     string       `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/mapping.json"`
