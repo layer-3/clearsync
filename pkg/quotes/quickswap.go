@@ -75,7 +75,7 @@ func (s *quickswap) getPool(market Market) ([]*dexPool[iquickswap_v3_pool.IQuick
 	if poolAddress == zeroAddress {
 		return nil, fmt.Errorf("pool for market %s does not exist", market)
 	}
-	loggerQuickswap.Infof("got pool %s for market %s", poolAddress, market)
+	loggerQuickswap.Infow("found pool", "market", market, "address", poolAddress)
 
 	poolContract, err := iquickswap_v3_pool.NewIQuickswapV3Pool(poolAddress, s.client)
 	if err != nil {
@@ -124,6 +124,7 @@ func (s *quickswap) parseSwap(
 	}()
 
 	return builDexTrade(
+		DriverQuickswap,
 		swap.Amount0,
 		swap.Amount1,
 		pool.baseToken.Decimals,

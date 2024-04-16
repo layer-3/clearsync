@@ -109,7 +109,7 @@ func (s *syncswap) getPool(market Market) ([]*dexPool[isyncswap_pool.ISyncSwapPo
 	if poolAddress == zeroAddress {
 		return nil, fmt.Errorf("classic pool for market %s does not exist", market.StringWithoutMain())
 	}
-	loggerSyncswap.Infow("pool found", "address", poolAddress, "market", market.StringWithoutMain())
+	loggerSyncswap.Infow("pool found", "market", market.StringWithoutMain(), "address", poolAddress)
 
 	poolContract, err := isyncswap_pool.NewISyncSwapPool(poolAddress, s.client)
 	if err != nil {

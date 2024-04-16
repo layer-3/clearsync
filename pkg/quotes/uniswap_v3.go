@@ -89,8 +89,9 @@ func (u *uniswapV3) getPool(market Market) ([]*dexPool[iuniswap_v3_pool.IUniswap
 		}
 		if poolAddress != zeroAddress {
 			loggerUniswapV3.Infow("found pool",
-				"market", market, "selected fee tier",
-				fmt.Sprintf("%f.2%%", float64(feeTier)/10000))
+				"market", market,
+				"selected fee tier", fmt.Sprintf("%f.2%%", float64(feeTier)/10000),
+				"address", poolAddress)
 			poolAddresses = append(poolAddresses, poolAddress)
 		}
 	}
@@ -127,7 +128,6 @@ func (u *uniswapV3) getPool(market Market) ([]*dexPool[iuniswap_v3_pool.IUniswap
 		if (baseAddress == basePoolToken && quoteAddress == quotePoolToken) || isReverted {
 			pools = append(pools, pool)
 		}
-		return nil, fmt.Errorf("failed to build Uniswap pool for market %s: %w", market, err)
 	}
 
 	return pools, nil
@@ -145,6 +145,7 @@ func (u *uniswapV3) parseSwap(swap *iuniswap_v3_pool.IUniswapV3PoolSwap, pool *d
 	}()
 
 	return builDexTrade(
+		DriverUniswapV3,
 		swap.Amount0,
 		swap.Amount1,
 		pool.baseToken.Decimals,
@@ -159,7 +160,7 @@ func (*uniswapV3) flipSwap(swap *iuniswap_v3_pool.IUniswapV3PoolSwap) {
 	swap.Amount0, swap.Amount1 = swap.Amount1, swap.Amount0
 }
 
-func builDexTrade(rawAmount0, rawAmount1 *big.Int, baseDecimals, quoteDecimals decimal.Decimal, market Market) (TradeEvent, error) {
+func builDexTrade(driver DriverType, rawAmount0, rawAmount1 *big.Int, baseDecimals, quoteDecimals decimal.Decimal, market Market) (TradeEvent, error) {
 	if !isValidNonZero(rawAmount0) || !isValidNonZero(rawAmount1) {
 		return TradeEvent{}, fmt.Errorf("either Amount0 (%s) or Amount1 (%s) is invalid", rawAmount0, rawAmount1)
 	}
@@ -179,7 +180,7 @@ func builDexTrade(rawAmount0, rawAmount1 *big.Int, baseDecimals, quoteDecimals d
 	price = price.Abs()
 
 	tr := TradeEvent{
-		Source:    DriverQuickswap,
+		Source:    driver,
 		Market:    market,
 		Price:     price,
 		Amount:    amount,

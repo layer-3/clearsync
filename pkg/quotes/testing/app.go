@@ -27,8 +27,6 @@ func main() {
 	}
 
 	var drivers []quotes.DriverType
-	drivers = append(drivers, quotes.DriverUniswapV3)
-	drivers = append(drivers, quotes.DriverOpendax)
 	if len(os.Args) >= 2 {
 		drivers = make([]quotes.DriverType, 0, len(os.Args[1:]))
 		for _, arg := range os.Args[1:] {
@@ -86,8 +84,9 @@ func main() {
 	markets := []quotes.Market{
 		// Add your markets here
 		quotes.NewMarket("eth", "usd"),
-		// quotes.NewMarket("lube", "usdc"),
-		// quotes.NewMarket("linda", "usdc"),
+		quotes.NewMarket("btc", "usd"),
+		quotes.NewMarket("lube", "usdc"),
+		quotes.NewMarket("linda", "usdc"),
 	}
 
 	// atLeastOne := false
