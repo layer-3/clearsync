@@ -23,6 +23,8 @@ type indexAggregator struct {
 
 type priceCalculator interface {
 	calculateIndexPrice(trade TradeEvent) (decimal.Decimal, bool)
+	getLastPrice(market Market) decimal.Decimal
+	setLastPrice(market Market, price decimal.Decimal)
 }
 
 // newIndexAggregator creates a new instance of IndexAggregator.
@@ -45,9 +47,22 @@ func newIndexAggregator(config Config, marketsMapping map[string][]string, strat
 		drivers = append(drivers, driver)
 	}
 
+	maxPriceDiff, err := decimal.NewFromString(config.Index.MaxPriceDiff)
+	if err != nil {
+		loggerIndex.Fatalf("invalid max price diff config value", "driver", "error", err)
+	}
+
 	toCombine := make(chan TradeEvent, 128)
 	go func() {
 		for event := range aggregated {
+			lastPrice := strategy.getLastPrice(event.Market)
+			if lastPrice != decimal.Zero {
+				if isPriceOutOfRange(event.Price, lastPrice, maxPriceDiff) {
+					loggerIndex.Warnf("skipping incoming outlier trade. Source: %s, Market: %s, Price: %s, Amount:%s", event.Source, event.Market, event.Price, event.Amount)
+					continue
+				}
+			}
+
 			indexPrice, ok := strategy.calculateIndexPrice(event)
 			if ok && event.Source != DriverInternal {
 				if event.Market.convertTo != "" {
@@ -72,6 +87,7 @@ func newIndexAggregator(config Config, marketsMapping map[string][]string, strat
 					event := combineTrades(trades)
 					if event != nil {
 						marketTrades[market] = nil
+						strategy.setLastPrice(event.Market, event.Price)
 						outbox <- *event
 					}
 				}
@@ -229,4 +245,9 @@ func (a *indexAggregator) Stop() error {
 		}
 	}
 	return nil
+}
+
+func isPriceOutOfRange(eventPrice, lastPrice, maxPriceDiff decimal.Decimal) bool {
+	diff := eventPrice.Sub(lastPrice).Abs().Div(lastPrice)
+	return diff.GreaterThan(maxPriceDiff)
 }

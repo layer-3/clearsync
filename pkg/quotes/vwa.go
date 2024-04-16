@@ -77,3 +77,11 @@ func (a strategyVWA) calculateIndexPrice(event TradeEvent) (decimal.Decimal, boo
 
 	return a.priceCache.GetVWA(event.Market)
 }
+
+func (a strategyVWA) getLastPrice(market Market) decimal.Decimal {
+	return a.priceCache.getLastPrice(market)
+}
+
+func (a strategyVWA) setLastPrice(market Market, price decimal.Decimal) {
+	a.priceCache.setLastPrice(market, price)
+}
