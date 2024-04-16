@@ -125,3 +125,13 @@ func TestMap_ConcurrentAccess(t *testing.T) {
 		assert.Equal(t, i, v, "Concurrent Store/Load should return the correct value for key")
 	}
 }
+
+func TestMap_Len(t *testing.T) {
+	t.Parallel()
+
+	m := NewMap[string, int]()
+	m.Store("key1", 1)
+	m.Store("key2", 2)
+
+	assert.Equal(t, 2, m.Len(), "Should return the correct length")
+}
