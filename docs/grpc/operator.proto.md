@@ -313,6 +313,7 @@ protolint:disable MAX_LINE_LENGTH
 | initiator_margin_balance | [string](#string) | margin updates will be reflected here |
 | follower_margin_balance | [string](#string) | margin updates will be reflected here |
 | turn_num | [uint64](#uint64) |  |
+| clearing_sm_state | [state_machine.ClearingSMState](state_machine.proto.md#clearingsmstate) |  |
 
 
 
