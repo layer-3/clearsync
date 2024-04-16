@@ -132,59 +132,24 @@ func (s *quickswap) parseSwap(
 	amount0 := decimal.NewFromBigInt(swap.Amount0, 0).Div(decimal.NewFromInt(10).Pow(baseDecimals))
 	amount1 := decimal.NewFromBigInt(swap.Amount1, 0).Div(decimal.NewFromInt(10).Pow(quoteDecimals))
 
-	// Assume it's a buy trade.
-	// If it's not, price will equal to zero
-	// and should be recalculated later.
-	takerType := TakerTypeSell
-	price := calculatePrice(
-		decimal.NewFromBigInt(swap.Price, 0),
-		baseDecimals,
-		quoteDecimals)
+	// Calculate price and order side
+	price := amount1.Div(amount0)
 	amount := amount0
-	total := amount1
-
-	if price.IsZero() { // then it's a buy trade
-		takerType = TakerTypeBuy
-		price = calculatePrice(
-			decimal.NewFromBigInt(swap.Price, 0),
-			quoteDecimals,
-			baseDecimals)
-		amount = amount1
-		total = amount0
+	takerType := TakerTypeBuy
+	if amount0.Sign() < 0 {
+		takerType = TakerTypeSell
 	}
+	amount = amount.Abs()
+	price = price.Abs()
 
 	tr := TradeEvent{
 		Source:    DriverQuickswap,
 		Market:    pool.Market(),
 		Price:     price,
-		Amount:    amount.Abs(),
-		Total:     total.Abs(),
+		Amount:    amount,
+		Total:     price.Mul(amount),
 		TakerType: takerType,
 		CreatedAt: time.Now(),
 	}
 	return tr, nil
-}
-
-var (
-	priceX96 = decimal.NewFromInt(2).Pow(decimal.NewFromInt(96))
-	ten      = decimal.NewFromInt(10)
-)
-
-// calculatePrice method calculates the price per token at which the swap was performed
-// using the sqrtPriceX96 value supplied with every on-chain swap event.
-//
-// General formula is as follows:
-// price = ((sqrtPriceX96 / 2**96)**2) / (10**decimal1 / 10**decimal0)
-//
-// See the math explained at https://blog.uniswap.org/uniswap-v3-math-primer
-func calculatePrice(
-	sqrtPriceX96 decimal.Decimal,
-	baseTokenDecimals decimal.Decimal,
-	quoteTokenDecimals decimal.Decimal,
-) decimal.Decimal {
-	decimals := quoteTokenDecimals.Sub(baseTokenDecimals)
-
-	numerator := sqrtPriceX96.Div(priceX96).Pow(decimal.NewFromInt(2))
-	denominator := ten.Pow(decimals)
-	return numerator.Div(denominator)
 }
