@@ -110,12 +110,12 @@ var (
 	// for which you can't determine its type,
 	// and therefore the taker side cannot be deduced.
 	TakerTypeUnknown = TakerType{""}
-	// TakerTypeBuy represents the "buy" trade.
+	// TakerTypeBuy represents a "buy" trade.
 	// It's value is set to "sell" because the sell order it
 	// was matched with was present in the order book before,
 	// therefore the taker is the "sell" side.
 	TakerTypeBuy = TakerType{"sell"}
-	// TakerTypeSell represents the "sell" trade.
+	// TakerTypeSell represents a "sell" trade.
 	// It's value is set to "buy" because the buy order it
 	// was matched with was present in the order book before,
 	// therefore the taker is the "buy" side.
