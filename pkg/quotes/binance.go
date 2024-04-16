@@ -145,7 +145,7 @@ func (b *binance) Unsubscribe(market Market) error {
 }
 
 func (b *binance) handleTrade(event *gobinance.WsTradeEvent) {
-	loggerBinance.Infow("raw event", "event", event)
+	//loggerBinance.Infow("raw event", "event", event)
 
 	tradeEvent, err := b.buildEvent(event)
 	if err != nil {
