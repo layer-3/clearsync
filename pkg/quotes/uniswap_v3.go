@@ -169,7 +169,7 @@ func builDexTrade(rawAmount0, rawAmount1 *big.Int, baseDecimals, quoteDecimals d
 	amount1 := decimal.NewFromBigInt(rawAmount1, 0).Div(decimal.NewFromInt(10).Pow(quoteDecimals))
 
 	// Calculate price and order side
-	price := amount1.Div(amount0)
+	price := amount1.Div(amount0) // NOTE: this may panic if amount0 is zero
 	amount := amount0
 	takerType := TakerTypeBuy
 	if amount0.Sign() < 0 {
