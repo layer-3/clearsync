@@ -261,6 +261,8 @@ func (b *baseDEX[Event, Contract]) watchSwap(
 			if !b.filter.Allow(tr) {
 				continue
 			}
+
+			b.logger.Debugw("parsed trade", "trade", tr)
 			b.outbox <- tr
 		}
 	}
