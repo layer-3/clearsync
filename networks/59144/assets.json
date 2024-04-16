@@ -9,6 +9,24 @@
       "logoURI": "https://www.yellow.org/images/duckies_200x200.png"
     },
     {
+      "address": "0x9aACaCC094df2885DF2d1690c3B2B106D0b8F32D",
+      "name": "DISCO",
+      "symbol": "DISCO",
+      "decimals": 4,
+      "precision": 0,
+      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/disco-192x192.png",
+      "extensions": {}
+    },
+    {
+      "address": "0x96168402310c70fD7b45adf2Fb3892691E0627D9",
+      "name": "KAYEN",
+      "symbol": "KAYEN",
+      "decimals": 4,
+      "precision": 0,
+      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/kayen-64x64.png",
+      "extensions": {}
+    },
+    {
       "address": "0xA219439258ca9da29E9Cc4cE5596924745e12B93",
       "name": "USD Tether",
       "symbol": "USDT",
