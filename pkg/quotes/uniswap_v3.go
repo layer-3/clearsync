@@ -7,8 +7,9 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/layer-3/clearsync/pkg/safe"
 	"github.com/shopspring/decimal"
+
+	"github.com/layer-3/clearsync/pkg/safe"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ipfs/go-log/v2"
@@ -49,7 +50,6 @@ func newUniswapV3(config UniswapV3Config, outbox chan<- TradeEvent) Driver {
 		PoolGetter:    hooks.getPool,
 		EventParser:   hooks.parseSwap,
 	}
-
 	return newBaseDEX(params)
 }
 

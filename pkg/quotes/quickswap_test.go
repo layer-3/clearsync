@@ -7,9 +7,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/layer-3/clearsync/pkg/abi/iquickswap_v3_pool"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/require"
+
+	"github.com/layer-3/clearsync/pkg/abi/iquickswap_v3_pool"
 )
 
 func newBigInt(s string) *big.Int {

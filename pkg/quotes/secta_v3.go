@@ -2,14 +2,16 @@ package quotes
 
 import (
 	"fmt"
+	"math/big"
+	"strings"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ipfs/go-log/v2"
+
 	"github.com/layer-3/clearsync/pkg/abi/isecta_v3_factory"
 	"github.com/layer-3/clearsync/pkg/abi/isecta_v3_pool"
 	"github.com/layer-3/clearsync/pkg/safe"
-	"math/big"
-	"strings"
 )
 
 var (
@@ -42,7 +44,6 @@ func newSectaV3(config SectaV3Config, outbox chan<- TradeEvent) Driver {
 		Outbox:        outbox,
 		Filter:        config.Filter,
 	}
-
 	return newBaseDEX(params)
 }
 

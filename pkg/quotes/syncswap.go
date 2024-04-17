@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/ethclient"
+
 	"github.com/layer-3/clearsync/pkg/safe"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -59,7 +60,6 @@ func newSyncswap(config SyncswapConfig, outbox chan<- TradeEvent) Driver {
 		PoolGetter:    hooks.getPool,
 		EventParser:   hooks.parseSwap,
 	}
-
 	return newBaseDEX(params)
 }
 

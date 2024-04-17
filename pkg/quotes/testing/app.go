@@ -10,6 +10,7 @@ import (
 	"os"
 
 	"github.com/ipfs/go-log/v2"
+
 	"github.com/layer-3/clearsync/pkg/quotes"
 )
 

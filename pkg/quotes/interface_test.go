@@ -1,9 +1,10 @@
 package quotes
 
 import (
-	"github.com/layer-3/clearsync/pkg/abi/isecta_v3_pool"
 	"reflect"
 	"testing"
+
+	"github.com/layer-3/clearsync/pkg/abi/isecta_v3_pool"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

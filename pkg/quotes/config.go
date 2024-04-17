@@ -11,14 +11,14 @@ type Config struct {
 	Drivers []DriverType `yaml:"drivers" env:"QUOTES_DRIVERS" env-default:"binance,syncswap"`
 	Index   IndexConfig  `yaml:"index" env-prefix:"QUOTES_INDEX_"`
 
-	Binance       BinanceConfig   `yaml:"binance" env-prefix:"QUOTES_BINANCE_"`
-	Kraken        KrakenConfig    `yaml:"kraken" env-prefix:"QUOTES_KRAKEN_"`
-	Opendax       OpendaxConfig   `yaml:"opendax" env-prefix:"QUOTES_OPENDAX_"`
-	Bitfaker      BitfakerConfig  `yaml:"bitfaker" env-prefix:"QUOTES_BITFAKER_"`
-	UniswapV3     UniswapV3Config `yaml:"uniswap_v3" env-prefix:"QUOTES_UNISWAP_V3_"`
-	Syncswap      SyncswapConfig  `yaml:"syncswap" env-prefix:"QUOTES_SYNCSWAP_"`
-	Quickswap     QuickswapConfig `yaml:"quickswap" env-prefix:"QUOTES_QUICKSWAP_"`
-	DriverSectaV3 SectaV3Config   `yaml:"secta_v3" env-prefix:"QUOTES_SECTA_V3_"`
+	Binance   BinanceConfig   `yaml:"binance" env-prefix:"QUOTES_BINANCE_"`
+	Kraken    KrakenConfig    `yaml:"kraken" env-prefix:"QUOTES_KRAKEN_"`
+	Opendax   OpendaxConfig   `yaml:"opendax" env-prefix:"QUOTES_OPENDAX_"`
+	Bitfaker  BitfakerConfig  `yaml:"bitfaker" env-prefix:"QUOTES_BITFAKER_"`
+	UniswapV3 UniswapV3Config `yaml:"uniswap_v3" env-prefix:"QUOTES_UNISWAP_V3_"`
+	Syncswap  SyncswapConfig  `yaml:"syncswap" env-prefix:"QUOTES_SYNCSWAP_"`
+	Quickswap QuickswapConfig `yaml:"quickswap" env-prefix:"QUOTES_QUICKSWAP_"`
+	SectaV3   SectaV3Config   `yaml:"secta_v3" env-prefix:"QUOTES_SECTA_V3_"`
 }
 
 func (config Config) GetByDriverType(driver DriverType) (Config, error) {
