@@ -54,6 +54,11 @@ func TestDriverType(t *testing.T) {
 			expectYAML: "quickswap\n",
 			expectErr:  false,
 		}, {
+			input:      DriverSectaV3,
+			expectJSON: `"secta_v3"`,
+			expectYAML: "secta_v3\n",
+			expectErr:  false,
+		}, {
 			input:      DriverInternal,
 			expectJSON: `"internal"`,
 			expectYAML: "internal\n",

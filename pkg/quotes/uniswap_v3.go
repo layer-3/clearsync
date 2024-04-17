@@ -97,7 +97,6 @@ func (u *uniswapV3) getPool(market Market) ([]*dexPool[iuniswap_v3_pool.IUniswap
 	}
 
 	pools := make([]*dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap], 0, len(poolAddresses))
-
 	for _, poolAddress := range poolAddresses {
 		poolContract, err := iuniswap_v3_pool.NewIUniswapV3Pool(poolAddress, u.client)
 		if err != nil {
@@ -106,12 +105,12 @@ func (u *uniswapV3) getPool(market Market) ([]*dexPool[iuniswap_v3_pool.IUniswap
 
 		basePoolToken, err := poolContract.Token0(nil)
 		if err != nil {
-			return nil, fmt.Errorf("failed to build Syncswap pool: %w", err)
+			return nil, fmt.Errorf("failed to build Uniswap v3 pool: %w", err)
 		}
 
 		quotePoolToken, err := poolContract.Token1(nil)
 		if err != nil {
-			return nil, fmt.Errorf("failed to build Syncswap pool: %w", err)
+			return nil, fmt.Errorf("failed to build Uniswap v3 pool: %w", err)
 		}
 
 		baseAddress := common.HexToAddress(baseToken.Address)

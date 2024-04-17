@@ -11,13 +11,14 @@ type Config struct {
 	Drivers []DriverType `yaml:"drivers" env:"QUOTES_DRIVERS" env-default:"binance,syncswap"`
 	Index   IndexConfig  `yaml:"index" env-prefix:"QUOTES_INDEX_"`
 
-	Binance   BinanceConfig   `yaml:"binance" env-prefix:"QUOTES_BINANCE_"`
-	Kraken    KrakenConfig    `yaml:"kraken" env-prefix:"QUOTES_KRAKEN_"`
-	Opendax   OpendaxConfig   `yaml:"opendax" env-prefix:"QUOTES_OPENDAX_"`
-	Bitfaker  BitfakerConfig  `yaml:"bitfaker" env-prefix:"QUOTES_BITFAKER_"`
-	UniswapV3 UniswapV3Config `yaml:"uniswap_v3" env-prefix:"QUOTES_UNISWAP_V3_"`
-	Syncswap  SyncswapConfig  `yaml:"syncswap" env-prefix:"QUOTES_SYNCSWAP_"`
-	Quickswap QuickswapConfig `yaml:"quickswap" env-prefix:"QUOTES_QUICKSWAP_"`
+	Binance       BinanceConfig   `yaml:"binance" env-prefix:"QUOTES_BINANCE_"`
+	Kraken        KrakenConfig    `yaml:"kraken" env-prefix:"QUOTES_KRAKEN_"`
+	Opendax       OpendaxConfig   `yaml:"opendax" env-prefix:"QUOTES_OPENDAX_"`
+	Bitfaker      BitfakerConfig  `yaml:"bitfaker" env-prefix:"QUOTES_BITFAKER_"`
+	UniswapV3     UniswapV3Config `yaml:"uniswap_v3" env-prefix:"QUOTES_UNISWAP_V3_"`
+	Syncswap      SyncswapConfig  `yaml:"syncswap" env-prefix:"QUOTES_SYNCSWAP_"`
+	Quickswap     QuickswapConfig `yaml:"quickswap" env-prefix:"QUOTES_QUICKSWAP_"`
+	DriverSectaV3 SectaV3Config   `yaml:"secta_v3" env-prefix:"QUOTES_SECTA_V3_"`
 }
 
 func (config Config) GetByDriverType(driver DriverType) (Config, error) {
@@ -119,6 +120,14 @@ type QuickswapConfig struct {
 	// Note that the contract used in this lib is compiled from https://github.com/code-423n4/2022-09-quickswap.
 	PoolFactoryAddress string       `yaml:"pool_factory_address" env:"POOL_FACTORY_ADDRESS" env-default:"0x411b0fAcC3489691f28ad58c47006AF5E3Ab3A28"`
 	Filter             FilterConfig `yaml:"filter" env-prefix:"FILTER_"`
+}
+
+type SectaV3Config struct {
+	URL            string       `yaml:"url" env:"URL"`
+	AssetsURL      string       `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/assets.json"`
+	MappingURL     string       `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/mapping.json"`
+	FactoryAddress string       `yaml:"factory_address" env:"FACTORY_ADDRESS" env-default:"0x9BD425a416A276C72a13c13bBd8145272680Cf07"`
+	Filter         FilterConfig `yaml:"filter" env-prefix:"FILTER_"`
 }
 
 type SamplerFilterConfig struct {

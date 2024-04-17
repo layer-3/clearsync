@@ -35,6 +35,8 @@ func NewDriver(config Config, outbox chan<- TradeEvent) (Driver, error) {
 		return newSyncswap(config.Syncswap, outbox), nil
 	case DriverQuickswap:
 		return newQuickswap(config.Quickswap, outbox), nil
+	case DriverSectaV3:
+		return newSectaV3(config.SectaV3, outbox), nil
 	default:
 		return nil, fmt.Errorf("unknown driver: %s", config.Drivers)
 	}
