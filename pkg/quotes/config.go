@@ -63,16 +63,16 @@ func NewConfigFromEnv() (Config, error) {
 }
 
 type IndexConfig struct {
-	TradesCached       int                 `yaml:"trades_cached" env:"TRADES_CACHED" env-default:"20"`
-	BufferMinutes      int                 `yaml:"buffer_minutes" env:"BUFFER_MINUTES" env-default:"15"`
-	BatchBufferSeconds int                 `yaml:"batch_seconds" env:"BATCH_SECONDS" env-default:"5"`
-	MarketsMapping     map[string][]string `yaml:"markets_mapping" env:"MARKETS_MAPPING"`
-	MaxPriceDiff       string              `yaml:"max_price_diff" env:"MAX_PRICE_DIFF" env-default:"0.2"`
+	TradesCached   int                 `yaml:"trades_cached" env:"TRADES_CACHED" env-default:"20"`
+	BufferMinutes  int                 `yaml:"buffer_minutes" env:"BUFFER_MINUTES" env-default:"15"`
+	MarketsMapping map[string][]string `yaml:"markets_mapping" env:"MARKETS_MAPPING"`
+	MaxPriceDiff   string              `yaml:"max_price_diff" env:"MAX_PRICE_DIFF" env-default:"0.2"`
 }
 
 type BinanceConfig struct {
-	USDCtoUSDT bool         `yaml:"usdc_to_usdt" env:"USDC_TO_USDT" env-default:"true"`
-	Filter     FilterConfig `yaml:"filter" env-prefix:"FILTER_"`
+	USDCtoUSDT         bool         `yaml:"usdc_to_usdt" env:"USDC_TO_USDT" env-default:"true"`
+	BatchBufferSeconds int          `yaml:"batch_seconds" env:"BATCH_SECONDS" env-default:"5"`
+	Filter             FilterConfig `yaml:"filter" env-prefix:"FILTER_"`
 }
 
 type KrakenConfig struct {
