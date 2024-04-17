@@ -11,24 +11,26 @@ type trade struct {
 	Price     decimal.Decimal
 	Volume    decimal.Decimal
 	Weight    decimal.Decimal
+	Source    DriverType
 	Timestamp time.Time
 }
 
-type marketHistory struct {
-	trades        []trade
-	activeDrivers map[DriverType]bool
-}
+// type marketHistory struct {
+// 	// trades        []trade
+// 	// activeDrivers map[DriverType]bool
+// 	lastTradeByDriverInTheLastNSeconds map[DriverType]trade
+// }
 
-func (*marketHistory) Comparable() bool {
-	return true
-}
+// func (*marketHistory) Comparable() bool {
+// 	return true
+// }
 
-func newMarketHistory() marketHistory {
-	return marketHistory{
-		trades:        []trade{},
-		activeDrivers: map[DriverType]bool{},
-	}
-}
+// func newMarketHistory() marketHistory {
+// 	return marketHistory{
+// 		//trades:                             []trade{},
+// 		lastTradeByDriverInTheLastNSeconds: map[DriverType]trade{},
+// 	}
+// }
 
 type marketKey struct {
 	baseUnit  string
@@ -37,7 +39,7 @@ type marketKey struct {
 
 type PriceCacheVWA struct {
 	weights    safe.Map[DriverType, decimal.Decimal]
-	market     safe.Map[marketKey, marketHistory]
+	market     safe.Map[marketKey, []trade]
 	lastPrice  safe.Map[marketKey, decimal.Decimal]
 	nTrades    int
 	bufferTime time.Duration
@@ -46,7 +48,7 @@ type PriceCacheVWA struct {
 // newPriceCacheVWA initializes a new cache to store last n trades for each market.
 func newPriceCacheVWA(driversWeights map[DriverType]decimal.Decimal, nTrades int, bufferTime time.Duration) *PriceCacheVWA {
 	cache := new(PriceCacheVWA)
-	cache.market = safe.NewMap[marketKey, marketHistory]()
+	cache.market = safe.NewMap[marketKey, []trade]()
 	cache.weights = safe.NewMapWithData(driversWeights)
 	cache.lastPrice = safe.NewMap[marketKey, decimal.Decimal]()
 	cache.nTrades = nTrades
@@ -56,24 +58,45 @@ func newPriceCacheVWA(driversWeights map[DriverType]decimal.Decimal, nTrades int
 }
 
 // AddTrade adds a new trade to the cache for a market.
-func (p *PriceCacheVWA) AddTrade(market Market, price, volume, weight decimal.Decimal, timestamp time.Time) {
+func (p *PriceCacheVWA) AddTrade(market Market, price, volume decimal.Decimal, timestamp time.Time, source DriverType) {
 	key := marketKey{baseUnit: market.baseUnit, quoteUnit: market.quoteUnit}
-	p.market.UpdateInTx(func(m map[marketKey]marketHistory) {
-		history, ok := m[key]
-		// Ensure the market exists in the cache
+	p.market.UpdateInTx(func(m map[marketKey][]trade) {
+		driversTrades, ok := m[key]
 		if !ok {
-			history = newMarketHistory()
+			driversTrades = []trade{}
 		}
 
-		// Append the new trade and maintain only the last N trades
-		trades := append(history.trades, trade{Price: price, Volume: volume, Weight: weight, Timestamp: timestamp})
-		if len(trades) > p.nTrades {
-			trades = trades[len(trades)-p.nTrades:]
+		newTradesList := []trade{{Price: price, Volume: volume, Weight: decimal.Zero, Timestamp: timestamp, Source: source}}
+		// transfer all existing trades to a new array
+		for _, t := range driversTrades {
+			if t.Source != source && time.Now().Sub(t.Timestamp) <= p.bufferTime {
+				newTradesList = append(newTradesList, t)
+			}
 		}
 
-		history.trades = trades
+		totalWeights := decimal.Zero
+		for _, t := range newTradesList {
+			w, ok := p.weights.Load(t.Source)
+			if !ok {
+				continue
+			}
+			totalWeights = totalWeights.Add(w)
+		}
 
-		m[key] = history
+		completeTradesList := []trade{}
+		for _, t := range newTradesList {
+			w, ok := p.weights.Load(t.Source)
+			if !ok {
+				continue
+			}
+
+			if totalWeights != decimal.Zero {
+				t.Weight = w.Div(totalWeights)
+				completeTradesList = append(completeTradesList, t)
+			}
+		}
+
+		m[key] = completeTradesList
 	})
 }
 
@@ -92,70 +115,23 @@ func (p *PriceCacheVWA) getLastPrice(market Market) decimal.Decimal {
 	return record
 }
 
-// GetVWA calculates the VWA based on a list of trades.
-func (p *PriceCacheVWA) GetVWA(market Market) (decimal.Decimal, bool) {
-	record, ok := p.market.Load(marketKey{baseUnit: market.baseUnit, quoteUnit: market.quoteUnit})
-	if !ok || len(record.trades) == 0 {
+func (p *PriceCacheVWA) GetIndexPrice(event *TradeEvent) (decimal.Decimal, bool) {
+	record, ok := p.market.Load(marketKey{baseUnit: event.Market.baseUnit, quoteUnit: event.Market.quoteUnit})
+	if !ok || len(record) == 0 {
+		return event.Price, false
+	}
+
+	top := decimal.Zero
+	bottom := decimal.Zero
+
+	for _, t := range record {
+		top = top.Add(t.Price.Mul(t.Weight))
+		bottom = bottom.Add(t.Weight)
+	}
+
+	if bottom.Equal(decimal.Zero) {
 		return decimal.Zero, false
 	}
 
-	var totalPriceVolume, totalVolume decimal.Decimal
-
-	for _, trade := range record.trades {
-		if time.Now().Sub(trade.Timestamp) <= p.bufferTime {
-			totalPriceVolume = totalPriceVolume.Add(trade.Price.Mul(trade.Volume).Mul(trade.Weight))
-			totalVolume = totalVolume.Add(trade.Volume.Mul(trade.Weight))
-		}
-	}
-
-	if totalVolume.IsZero() {
-		return decimal.Zero, false
-	}
-
-	quotePrice := decimal.NewFromInt(1)
-	if market.convertTo != "" {
-		quotePrice, ok = p.GetVWA(Market{baseUnit: market.quoteUnit, quoteUnit: market.convertTo})
-		if !ok {
-			return decimal.Zero, false
-		}
-	}
-
-	return totalPriceVolume.Div(totalVolume).Mul(quotePrice), true
-}
-
-// ActivateDriver makes the driver active for the market.
-func (p *PriceCacheVWA) ActivateDriver(driver DriverType, market Market) {
-	key := marketKey{baseUnit: market.baseUnit, quoteUnit: market.quoteUnit}
-	p.market.UpdateInTx(func(m map[marketKey]marketHistory) {
-		history, ok := m[key]
-		if !ok {
-			history = newMarketHistory()
-		}
-
-		history.activeDrivers[driver] = true
-
-		m[key] = history
-	})
-}
-
-// ActiveWeights returns the sum of active driver weights for the market.
-// TODO: cache the weights inside the marketHistory
-func (p *PriceCacheVWA) ActiveWeights(market Market) decimal.Decimal {
-	count := decimal.Zero
-	key := marketKey{baseUnit: market.baseUnit, quoteUnit: market.quoteUnit}
-	// there are not changes in the `market`` map, but we need to read value and `activeDrivers` map transactionally
-	p.market.UpdateInTx(func(m map[marketKey]marketHistory) {
-		history, ok := m[key]
-		if !ok {
-			return
-		}
-
-		for driver, active := range history.activeDrivers {
-			if weight, ok := p.weights.Load(driver); active && ok {
-				count = count.Add(weight)
-			}
-		}
-	})
-
-	return count
+	return top.Div(bottom), true
 }

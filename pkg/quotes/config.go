@@ -64,7 +64,7 @@ func NewConfigFromEnv() (Config, error) {
 
 type IndexConfig struct {
 	TradesCached   int                 `yaml:"trades_cached" env:"TRADES_CACHED" env-default:"20"`
-	BufferMinutes  int                 `yaml:"buffer_minutes" env:"BUFFER_MINUTES" env-default:"15"`
+	BufferSeconds  int                 `yaml:"buffer_minutes" env:"BUFFER_MINUTES" env-default:"5"`
 	MarketsMapping map[string][]string `yaml:"markets_mapping" env:"MARKETS_MAPPING"`
 	MaxPriceDiff   string              `yaml:"max_price_diff" env:"MAX_PRICE_DIFF" env-default:"0.2"`
 }

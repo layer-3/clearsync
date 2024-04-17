@@ -68,9 +68,11 @@ func newIndexAggregator(config Config, marketsMapping map[string][]string, strat
 					event.Market.quoteUnit = event.Market.convertTo
 				}
 				event.Price = indexPrice
-				if event.Source != DriverBinance {
-					loggerIndex.Infow("agregated event", "event", event)
-				}
+
+				// if event.Source != DriverBinance {
+				//	loggerIndex.Infow("agregated dex event", "event", event)
+				// }
+
 				event.Source = DriverType{"index/" + event.Source.String()}
 
 				strategy.setLastPrice(event.Market, event.Price)
@@ -96,7 +98,7 @@ func newIndex(config Config, outbox chan<- TradeEvent) Driver {
 	return newIndexAggregator(
 		config,
 		marketsMapping,
-		newStrategyVWA(withCustomPriceCacheVWA(newPriceCacheVWA(defaultWeightsMap, config.Index.TradesCached, time.Duration(config.Index.BufferMinutes)*time.Minute))),
+		newStrategyVWA(withCustomPriceCacheVWA(newPriceCacheVWA(defaultWeightsMap, config.Index.TradesCached, time.Duration(config.Index.BufferSeconds)*time.Second))),
 		outbox,
 	)
 }

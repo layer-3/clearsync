@@ -8,12 +8,12 @@ import (
 )
 
 var defaultWeightsMap = map[DriverType]decimal.Decimal{
-	DriverKraken:        decimal.NewFromInt(15),
-	DriverBinance:       decimal.NewFromInt(20),
+	DriverKraken:    decimal.NewFromInt(15),
+	DriverBinance:   decimal.NewFromInt(20),
 	DriverUniswapV3: decimal.NewFromInt(50),
-	DriverSyncswap:      decimal.NewFromInt(50),
-	DriverQuickswap:     decimal.NewFromInt(50),
-	DriverInternal:      decimal.NewFromInt(75),
+	DriverSyncswap:  decimal.NewFromInt(50),
+	DriverQuickswap: decimal.NewFromInt(50),
+	DriverInternal:  decimal.NewFromInt(75),
 }
 
 type ConfFuncVWA func(*strategyVWA)
@@ -52,30 +52,18 @@ func withCustomPriceCacheVWA(priceCache *PriceCacheVWA) ConfFuncVWA {
 
 // calculateIndexPrice returns indexPrice based on Volume Weighted Average Price of last 20 trades.
 func (a strategyVWA) calculateIndexPrice(event TradeEvent) (decimal.Decimal, bool) {
-	sourceWeight := a.weights[event.Source]
-	if event.Market.IsEmpty() || event.Price.IsZero() || event.Amount.IsZero() || sourceWeight.IsZero() {
+	if event.Market.IsEmpty() || event.Price.IsZero() || event.Amount.IsZero() {
 		return decimal.Decimal{}, false
 	}
-
-	a.priceCache.ActivateDriver(event.Source, event.Market)
-	activeWeights := a.priceCache.ActiveWeights(event.Market)
-
-	// sourceMultiplier defines how much the trade from a specific market will affect a new price
-	sourceMultiplier := sourceWeight
-	if activeWeights != decimal.Zero {
-		sourceMultiplier = sourceWeight.Div(activeWeights)
-	}
-
-	// Add the current trade to the cache
 
 	timeEmpty := time.Time{}
 	if event.CreatedAt == timeEmpty {
 		event.CreatedAt = time.Now()
 	}
 
-	a.priceCache.AddTrade(event.Market, event.Price, event.Amount, sourceMultiplier, event.CreatedAt)
+	a.priceCache.AddTrade(event.Market, event.Price, event.Amount, event.CreatedAt, event.Source)
 
-	return a.priceCache.GetVWA(event.Market)
+	return a.priceCache.GetIndexPrice(&event)
 }
 
 func (a strategyVWA) getLastPrice(market Market) decimal.Decimal {
