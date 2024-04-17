@@ -19,25 +19,29 @@ For the Clearport to be able to avoid undercollateralized trades, the margin sho
 
 ### Margin zones
 
-- **Green** zone (default) - the margin distribution is enough for both parties to cover possible price changes that they have performed.
-- **Yellow** zone - the margin distribution shifts the bigger part of a margin for one party, meaning the other one can become undercollaterallized if the market moves against them.
-  When the margin transitions to the _yellow zone_, users can no longer create trades (except for counter-trades to close the position and lock its PnL) and are advised to perform settlement to move margin to a _green zone_.
+- **Green** (Operational) zone (default) - the margin distribution is enough for both parties to cover possible price changes that they have performed.
+- **Orange** (Warning) zone - the margin distribution shifts the bigger part of a margin for one party, meaning the other one can become undercollaterallized if the market moves against them.
+  When the margin transitions to the _orange_ zone*, users can no longer create trades (except for counter-trades to close the position and lock its PnL) and are advised to perform settlement to move margin to a \_green zone*.
   Note, that parties can select what markets to settle themselves, however, the resulting margin distribution should be in the green zone.
-- **Red** zone - the margin is almost depleted for one of the parties, meaning if the market continues to move against them, they will become undercollaterallized soon.
+- **Red** (Critical) zone - the margin is almost depleted for one of the parties, meaning if the market continues to move against them, they will become undercollaterallized soon.
   When the margin transitions to the _red zone_, the Clearport initiates liquidation of the positions (order and strategy is up to Clearport) to move the margin to the green zone.
 
-#### Margin zones limits / Margin rate
+#### Margin zones limits
 
-When described in a context of one party, margin zone limits are represented as a percentage of their margin, e.g. green zone is 100% - 20%, yellow zone is 20% - 10%, and red zone is 10% - 0%.
+When described in a context of one party, margin zone limits are represented as a percentage of their margin, e.g. green zone is 100% - 20%, orange zone is 20% - 10%, and red zone is 10% - 0%.
 
-Therefore, _margin zone limit_ can also be reffered to as _margin rate_. Red-yellow limit is called **Maintenance Margin Rate (MMR)** and yellow-green limit is called **Initial Margin Rate (IMR)**.
+Red-orange limit can also be called **Maintenance Margin Rate (MMR)** .
 
-"Channel margin is not in a green zone" means that margin for one of participants is not in a green zone, and this participant should be specified, e.g. `Alice [88, 12] Bob` means that margin is in yellow zone for Bob (given zone limits above).
+"Channel margin is not in a green zone" means that margin for one of participants is not in a green zone, and this participant should be specified, e.g. `Alice [88, 12] Bob` means that margin is in orange zone for Bob (given zone limits above).
 
-This proposal suggests to specify margin rates to be the following:
+This proposal suggests to specify margin zone limits to be the following:
 
-- Initial Margin Rate (IMR) - 20%
-- Maintenance Margin Rate (MMR) - 10%
+- Red-orange (MMR) - 10%
+- Orange-Green - 20% (2 x MMR)
+
+A visual example for a better understanding:
+
+![Margin zones gauge](../media/yip-0006/gauge-margin-zones.png)
 
 #### Liquidation
 
@@ -56,6 +60,6 @@ This proposal does not define an algorithm for Clearport to select positions to 
 
 1. Margin zone limits shall be defined in the application configuration.
 2. Clearport shall notify other components that the margin zone has changed.
-3. Clearport shall disallow adding new trades (except for counter-trades) if the margin is in the yellow or red zone.
+3. Clearport shall disallow adding new trades (except for counter-trades) if the margin is in the orange or red zone.
 4. Clearport shall initiate liquidation if the margin is in the red zone.
 5. Clearport shall implement at least one, and should implement several position selection algorithm for liquidation, which may be one of the described in this document or a custom one(s).
