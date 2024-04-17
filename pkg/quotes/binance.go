@@ -17,6 +17,7 @@ type binance struct {
 	once       *once
 	streams    safe.Map[Market, chan struct{}]
 	filter     Filter
+	toCombine  chan<- TradeEvent
 	outbox     chan<- TradeEvent
 	usdcToUSDT bool
 
@@ -24,13 +25,81 @@ type binance struct {
 }
 
 func newBinance(config BinanceConfig, outbox chan<- TradeEvent) Driver {
+	toCombine := make(chan TradeEvent, 1024)
+	go func() {
+		marketTrades := make(map[Market][]TradeEvent)
+		timer := time.NewTimer(time.Duration(config.BatchBufferSeconds) * time.Second)
+		for {
+			select {
+			case trade := <-toCombine:
+				marketTrades[trade.Market] = append(marketTrades[trade.Market], trade)
+			case <-timer.C:
+				for market, trades := range marketTrades {
+					event := combineTrades(trades)
+					if event != nil {
+						marketTrades[market] = nil
+						outbox <- *event
+					}
+				}
+				timer.Reset(time.Duration(config.BatchBufferSeconds) * time.Second)
+			}
+		}
+	}()
+
 	return &binance{
 		once:           newOnce(),
 		streams:        safe.NewMap[Market, chan struct{}](),
 		filter:         NewFilter(config.Filter),
 		usdcToUSDT:     config.USDCtoUSDT,
+		toCombine:      toCombine,
 		outbox:         outbox,
 		symbolToMarket: safe.NewMap[string, Market](),
+	}
+}
+
+func combineTrades(trades []TradeEvent) *TradeEvent {
+	if len(trades) == 0 {
+		return nil
+	}
+
+	totalAmount := decimal.Zero
+	totalValue := decimal.Zero
+	netAmount := decimal.Zero
+
+	for _, trade := range trades {
+		totalAmount = totalAmount.Add(trade.Amount)
+		totalValue = totalValue.Add(trade.Amount.Mul(trade.Price))
+
+		// Update net amount to determine net side (buy or sell)
+		if trade.TakerType == TakerTypeBuy {
+			netAmount = netAmount.Add(trade.Amount)
+		} else if trade.TakerType == TakerTypeSell {
+			netAmount = netAmount.Sub(trade.Amount)
+		}
+	}
+
+	if totalAmount.Equal(decimal.Zero) {
+		return nil
+	}
+
+	avgPrice := totalValue.Div(totalAmount)
+	// Determine net side (buy or sell)
+	var side TakerType
+	if netAmount.GreaterThanOrEqual(decimal.Zero) {
+		side = TakerTypeSell // "buy" (yes, it looks inverted)
+	} else {
+		side = TakerTypeBuy // "sell"
+		netAmount = netAmount.Abs()
+	}
+
+	return &TradeEvent{
+		Source:    trades[0].Source,
+		Market:    trades[0].Market,
+		Price:     avgPrice,
+		Amount:    totalAmount,
+		Total:     avgPrice.Mul(totalAmount),
+		TakerType: side,
+		CreatedAt: time.Now(),
 	}
 }
 
@@ -156,7 +225,7 @@ func (b *binance) handleTrade(event *gobinance.WsTradeEvent) {
 	if !b.filter.Allow(tradeEvent) {
 		return
 	}
-	b.outbox <- tradeEvent
+	b.toCombine <- tradeEvent
 }
 
 func (b *binance) buildEvent(tr *gobinance.WsTradeEvent) (TradeEvent, error) {
