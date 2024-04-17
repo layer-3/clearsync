@@ -26,18 +26,22 @@ For the Clearport to be able to avoid undercollateralized trades, the margin sho
 - **Red** zone - the margin is almost depleted for one of the parties, meaning if the market continues to move against them, they will become undercollaterallized soon.
   When the margin transitions to the _red zone_, the Clearport initiates liquidation of the positions (order and strategy is up to Clearport) to move the margin to the green zone.
 
-#### Margin zones limits / Margin rate
+#### Margin zones limits
 
 When described in a context of one party, margin zone limits are represented as a percentage of their margin, e.g. green zone is 100% - 20%, yellow zone is 20% - 10%, and red zone is 10% - 0%.
 
-Therefore, _margin zone limit_ can also be reffered to as _margin rate_. Red-yellow limit is called **Maintenance Margin Rate (MMR)** and yellow-green limit is called **Initial Margin Rate (IMR)**.
+Red-yellow limit can also be called **Maintenance Margin Rate (MMR)** .
 
 "Channel margin is not in a green zone" means that margin for one of participants is not in a green zone, and this participant should be specified, e.g. `Alice [88, 12] Bob` means that margin is in yellow zone for Bob (given zone limits above).
 
-This proposal suggests to specify margin rates to be the following:
+This proposal suggests to specify margin zone limits to be the following:
 
-- Initial Margin Rate (IMR) - 20%
-- Maintenance Margin Rate (MMR) - 10%
+- Red-yellow (MMR) - 10%
+- Yellow-Green - 20% (2 x MMR)
+
+A visual example for a better understanding:
+
+![Margin zones gauge](../media/yip-0006/gauge-margin-zones.png)
 
 #### Liquidation
 
