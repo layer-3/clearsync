@@ -70,7 +70,7 @@ func newIndexAggregator(config Config, marketsMapping map[string][]string, strat
 				}
 				event.Price = indexPrice
 				if event.Source != DriverBinance {
-					loggerBinance.Infow("agregated dex event", "event", event)
+					loggerIndex.Infow("agregated event", "event", event)
 				}
 				event.Source = DriverType{"index/" + event.Source.String()}
 

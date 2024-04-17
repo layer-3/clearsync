@@ -72,11 +72,11 @@ func (b *binance) Subscribe(market Market) error {
 
 	if b.usdcToUSDT && market.Quote() == "usd" {
 		if err := b.Subscribe(NewMarket(market.Base(), "usdt")); err != nil {
-			loggerBinance.Warnf("failed to subscribe to USDT for market %s: %s", market, err)
+			loggerBinance.Warnw("failed to subscribe to USDT", "market", market, "error", err)
 		}
 
 		if err := b.Subscribe(NewMarket(market.Base(), "usdc")); err != nil {
-			loggerBinance.Warnf("failed to subscribe to USDC for market %s: %s", market, err)
+			loggerBinance.Warnw("failed to subscribe to USDC", "market", market, "error", err)
 		}
 		return nil
 	}
@@ -89,7 +89,7 @@ func (b *binance) Subscribe(market Market) error {
 	}
 
 	handleErr := func(err error) {
-		loggerBinance.Errorf("error for Binance market %s: %s", pair, err)
+		loggerBinance.Errorw("received error", "market", pair, "error", err)
 	}
 
 	doneCh, stopCh, err := gobinance.WsTradeServe(pair, b.handleTrade, handleErr)
@@ -100,7 +100,6 @@ func (b *binance) Subscribe(market Market) error {
 
 	go func() {
 		defer close(doneCh)
-		loggerBinance.Info("waiting for Binance connection to close")
 		<-doneCh
 
 		loggerBinance.Infow("resubscribing", "market", market)
@@ -108,9 +107,9 @@ func (b *binance) Subscribe(market Market) error {
 			return // market was unsubscribed earlier
 		}
 
-		loggerBinance.Warnf("connection failed for market %s, resubscribing", market)
+		loggerBinance.Warnw("connection failed, resubscribing", "market", market)
 		if err := b.Unsubscribe(market); err != nil {
-			loggerBinance.Errorf("failed to unsubscribe from Binance %s market: %v", pair, err)
+			loggerBinance.Errorw("failed to unsubscribe", "market", pair, "error", err)
 		}
 
 		for {
@@ -118,12 +117,12 @@ func (b *binance) Subscribe(market Market) error {
 			if err == nil {
 				break
 			}
-			loggerBinance.Errorf("failed to resubscribe to Binance %s market: %v", pair, err)
+			loggerBinance.Errorw("failed to resubscribe", "market", pair, "error", err)
 			<-time.After(5 * time.Second)
 		}
 	}()
 
-	loggerBinance.Infof("subscribed to Binance %s market", strings.ToUpper(pair))
+	loggerBinance.Infow("subscribed", "market", strings.ToUpper(pair))
 	return nil
 }
 
@@ -145,11 +144,9 @@ func (b *binance) Unsubscribe(market Market) error {
 }
 
 func (b *binance) handleTrade(event *gobinance.WsTradeEvent) {
-	//loggerBinance.Infow("raw event", "event", event)
-
 	tradeEvent, err := b.buildEvent(event)
 	if err != nil {
-		loggerBinance.Error(err)
+		loggerBinance.Errorw("failed to build trade event", "event", event, "error", err)
 		return
 	}
 
@@ -162,14 +159,12 @@ func (b *binance) handleTrade(event *gobinance.WsTradeEvent) {
 func (b *binance) buildEvent(tr *gobinance.WsTradeEvent) (TradeEvent, error) {
 	price, err := decimal.NewFromString(tr.Price)
 	if err != nil {
-		loggerBinance.Warn(err)
-		return TradeEvent{}, err
+		return TradeEvent{}, fmt.Errorf("failed to parse price: %+v", tr.Price)
 	}
 
 	amount, err := decimal.NewFromString(tr.Quantity)
 	if err != nil {
-		loggerBinance.Warn(err)
-		return TradeEvent{}, err
+		return TradeEvent{}, fmt.Errorf("failed to parse quantity: %+v", tr.Quantity)
 	}
 
 	market, ok := b.symbolToMarket.Load(strings.ToLower(tr.Symbol))
