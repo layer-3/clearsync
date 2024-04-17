@@ -21,10 +21,11 @@ var (
 )
 
 type sectaV3 struct {
-	assets         *safe.Map[string, poolToken]
-	client         *ethclient.Client
 	factoryAddress common.Address
 	factory        *isecta_v3_factory.ISectaV3Factory
+
+	assets *safe.Map[string, poolToken]
+	client *ethclient.Client
 }
 
 func newSectaV3(config SectaV3Config, outbox chan<- TradeEvent) Driver {
@@ -65,18 +66,13 @@ func (s *sectaV3) getPool(market Market) ([]*dexPool[isecta_v3_pool.ISectaV3Pool
 	}
 
 	if strings.ToLower(baseToken.Symbol) == "eth" {
-		baseToken.Address = wethContract.String()
+		baseToken.Address = wethContract
 	}
 
 	poolAddresses := make([]common.Address, 0, len(sectaV3FeeTiers))
 	zeroAddress := common.HexToAddress("0x0")
 	for _, feeTier := range sectaV3FeeTiers {
-		poolAddress, err := s.factory.GetPool(
-			nil,
-			common.HexToAddress(baseToken.Address),
-			common.HexToAddress(quoteToken.Address),
-			big.NewInt(int64(feeTier)),
-		)
+		poolAddress, err := s.factory.GetPool(nil, baseToken.Address, quoteToken.Address, big.NewInt(int64(feeTier)))
 		if err != nil {
 			return nil, err
 		}
@@ -106,9 +102,7 @@ func (s *sectaV3) getPool(market Market) ([]*dexPool[isecta_v3_pool.ISectaV3Pool
 			return nil, fmt.Errorf("failed to build Secta v3 pool: %w", err)
 		}
 
-		baseAddress := common.HexToAddress(baseToken.Address)
-		quoteAddress := common.HexToAddress(quoteToken.Address)
-		isReverted := quoteAddress == basePoolToken && baseAddress == quotePoolToken
+		isReverted := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
 		pool := &dexPool[isecta_v3_pool.ISectaV3PoolSwap]{
 			contract:   poolContract,
 			baseToken:  baseToken,
@@ -117,7 +111,7 @@ func (s *sectaV3) getPool(market Market) ([]*dexPool[isecta_v3_pool.ISectaV3Pool
 		}
 
 		// Append pool if the token addresses match direct or reversed configurations
-		if (baseAddress == basePoolToken && quoteAddress == quotePoolToken) || isReverted {
+		if (baseToken.Address == basePoolToken && quoteToken.Address == quotePoolToken) || isReverted {
 			pools = append(pools, pool)
 		}
 	}
@@ -129,25 +123,16 @@ func (s *sectaV3) parseSwap(
 	swap *isecta_v3_pool.ISectaV3PoolSwap,
 	pool *dexPool[isecta_v3_pool.ISectaV3PoolSwap],
 ) (TradeEvent, error) {
-	if pool.reverted {
-		s.flipSwap(swap)
-	}
-
 	defer func() {
 		if r := recover(); r != nil {
 			loggerSectaV3.Errorw("recovered in from panic during swap parsing", "swap", swap)
 		}
 	}()
 
-	return builDexTrade(
+	return buildV3Trade(
 		DriverSectaV3,
 		swap.Amount0,
 		swap.Amount1,
-		pool.baseToken.Decimals,
-		pool.quoteToken.Decimals,
-		pool.Market())
-}
-
-func (s *sectaV3) flipSwap(swap *isecta_v3_pool.ISectaV3PoolSwap) {
-	swap.Amount0, swap.Amount1 = swap.Amount1, swap.Amount0
+		pool,
+	)
 }

@@ -25,8 +25,9 @@ type syncswap struct {
 	stablePoolFactoryAddress  common.Address
 	classicFactory            *isyncswap_factory.ISyncSwapFactory
 	stableFactory             *isyncswap_factory.ISyncSwapFactory
-	assets                    *safe.Map[string, poolToken]
-	client                    *ethclient.Client
+
+	assets *safe.Map[string, poolToken]
+	client *ethclient.Client
 }
 
 func newSyncswap(config SyncswapConfig, outbox chan<- TradeEvent) Driver {
@@ -87,25 +88,18 @@ func (s *syncswap) getPool(market Market) ([]*dexPool[isyncswap_pool.ISyncSwapPo
 	}
 
 	var poolAddress common.Address
-	zeroAddress := common.HexToAddress("0x0")
 	if _, ok := s.stablePoolMarkets[market]; ok {
 		loggerSyncswap.Infow("found stable pool", "market", market.StringWithoutMain())
-		poolAddress, err = s.stableFactory.GetPool(
-			nil,
-			common.HexToAddress(baseToken.Address),
-			common.HexToAddress(quoteToken.Address),
-		)
+		poolAddress, err = s.stableFactory.GetPool(nil, baseToken.Address, quoteToken.Address)
 	} else {
 		loggerSyncswap.Infow("found classic pool", "market", market.StringWithoutMain())
-		poolAddress, err = s.classicFactory.GetPool(
-			nil,
-			common.HexToAddress(baseToken.Address),
-			common.HexToAddress(quoteToken.Address),
-		)
+		poolAddress, err = s.classicFactory.GetPool(nil, baseToken.Address, quoteToken.Address)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to get classic pool address: %w", err)
 	}
+
+	zeroAddress := common.HexToAddress("0x0")
 	if poolAddress == zeroAddress {
 		return nil, fmt.Errorf("classic pool for market %s does not exist", market.StringWithoutMain())
 	}
@@ -126,9 +120,7 @@ func (s *syncswap) getPool(market Market) ([]*dexPool[isyncswap_pool.ISyncSwapPo
 		return nil, fmt.Errorf("failed to build Syncswap pool: %w", err)
 	}
 
-	baseAddress := common.HexToAddress(baseToken.Address)
-	quoteAddress := common.HexToAddress(quoteToken.Address)
-	isReverted := quoteAddress == basePoolToken && baseAddress == quotePoolToken
+	isReverted := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
 	pools := []*dexPool[isyncswap_pool.ISyncSwapPoolSwap]{{
 		contract:   poolContract,
 		baseToken:  baseToken,
@@ -137,7 +129,7 @@ func (s *syncswap) getPool(market Market) ([]*dexPool[isyncswap_pool.ISyncSwapPo
 	}}
 
 	// Return pools if the token addresses match direct or reversed configurations
-	if (baseAddress == basePoolToken && quoteAddress == quotePoolToken) || isReverted {
+	if (baseToken.Address == basePoolToken && quoteToken.Address == quotePoolToken) || isReverted {
 		return pools, nil
 	}
 	return nil, fmt.Errorf("failed to build Syncswap pool for market %s: %w", market, err)
@@ -147,49 +139,65 @@ func (s *syncswap) parseSwap(
 	swap *isyncswap_pool.ISyncSwapPoolSwap,
 	pool *dexPool[isyncswap_pool.ISyncSwapPoolSwap],
 ) (TradeEvent, error) {
-	var takerType TakerType
-	var price decimal.Decimal
-	var amount decimal.Decimal
-	var total decimal.Decimal
-
 	defer func() {
 		if r := recover(); r != nil {
 			loggerSyncswap.Errorw("recovered in from panic during swap parsing", "swap", swap)
 		}
 	}()
 
+	return buildV2Trade(
+		DriverSyncswap,
+		swap.Amount0In,
+		swap.Amount0Out,
+		swap.Amount1In,
+		swap.Amount1Out,
+		pool,
+	)
+}
+
+func buildV2Trade[Event any](
+	driver DriverType,
+	rawAmount0In, rawAmount0Out, rawAmount1In, rawAmount1Out *big.Int,
+	pool *dexPool[Event],
+) (TradeEvent, error) {
 	if pool.reverted {
-		s.flipSwap(swap)
+		copyAmount0In, copyAmount0Out := rawAmount0In, rawAmount0Out
+		rawAmount0In, rawAmount0Out = rawAmount1In, rawAmount1Out
+		rawAmount1In, rawAmount1Out = copyAmount0In, copyAmount0Out
 	}
+
+	var takerType TakerType
+	var price decimal.Decimal
+	var amount decimal.Decimal
+	var total decimal.Decimal
 
 	baseDecimals := pool.baseToken.Decimals
 	quoteDecimals := pool.quoteToken.Decimals
 
 	switch {
-	case isValidNonZero(swap.Amount0In) && isValidNonZero(swap.Amount1Out):
-		amount1Out := decimal.NewFromBigInt(swap.Amount1Out, 0).Div(decimal.NewFromInt(10).Pow(quoteDecimals))
-		amount0In := decimal.NewFromBigInt(swap.Amount0In, 0).Div(decimal.NewFromInt(10).Pow(baseDecimals))
+	case isValidNonZero(rawAmount0In) && isValidNonZero(rawAmount1Out):
+		amount1Out := decimal.NewFromBigInt(rawAmount1Out, 0).Div(decimal.NewFromInt(10).Pow(quoteDecimals))
+		amount0In := decimal.NewFromBigInt(rawAmount0In, 0).Div(decimal.NewFromInt(10).Pow(baseDecimals))
 
 		takerType = TakerTypeSell
-		price = amount1Out.Div(amount0In)
+		price = amount1Out.Div(amount0In) // NOTE: may panic here if `amount0In` is zero
 		total = amount1Out
 		amount = amount0In
 
-	case isValidNonZero(swap.Amount0Out) && isValidNonZero(swap.Amount1In):
-		amount0Out := decimal.NewFromBigInt(swap.Amount0Out, 0).Div(decimal.NewFromInt(10).Pow(baseDecimals))
-		amount1In := decimal.NewFromBigInt(swap.Amount1In, 0).Div(decimal.NewFromInt(10).Pow(quoteDecimals))
+	case isValidNonZero(rawAmount0Out) && isValidNonZero(rawAmount1In):
+		amount0Out := decimal.NewFromBigInt(rawAmount0Out, 0).Div(decimal.NewFromInt(10).Pow(baseDecimals))
+		amount1In := decimal.NewFromBigInt(rawAmount1In, 0).Div(decimal.NewFromInt(10).Pow(quoteDecimals))
 
 		takerType = TakerTypeBuy
-		price = amount1In.Div(amount0Out)
+		price = amount1In.Div(amount0Out) // NOTE: may panic here if `amount0Out` is zero
 		total = amount1In
 		amount = amount0Out
 	default:
-		loggerSyncswap.Errorw("unknown swap type", "market", pool.Market())
 		return TradeEvent{}, fmt.Errorf("market %s: unknown swap type", pool.Market())
 	}
 
 	trade := TradeEvent{
-		Source:    DriverSyncswap,
+		Source:    driver,
 		Market:    pool.Market(),
 		Price:     price,
 		Amount:    amount.Abs(),
@@ -198,12 +206,6 @@ func (s *syncswap) parseSwap(
 		CreatedAt: time.Now(),
 	}
 	return trade, nil
-}
-
-func (*syncswap) flipSwap(swap *isyncswap_pool.ISyncSwapPoolSwap) {
-	amount0In, amount0Out := swap.Amount0In, swap.Amount0Out
-	swap.Amount0In, swap.Amount0Out = swap.Amount1In, swap.Amount1Out
-	swap.Amount1In, swap.Amount1Out = amount0In, amount0Out
 }
 
 func isValidNonZero(x *big.Int) bool {

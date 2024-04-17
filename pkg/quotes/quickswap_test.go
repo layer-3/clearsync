@@ -65,12 +65,12 @@ func Test_quickswap_parseSwap(t *testing.T) {
 				},
 				pool: &dexPool[iquickswap_v3_pool.IQuickswapV3PoolSwap]{
 					baseToken: poolToken{
-						Address:  "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
+						Address:  common.HexToAddress("0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270"),
 						Symbol:   "matic",
 						Decimals: decimal.NewFromInt(18),
 					},
 					quoteToken: poolToken{
-						Address:  "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
+						Address:  common.HexToAddress("0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619"),
 						Symbol:   "weth",
 						Decimals: decimal.NewFromInt(18),
 					},

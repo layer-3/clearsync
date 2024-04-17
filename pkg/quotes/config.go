@@ -18,6 +18,7 @@ type Config struct {
 	UniswapV3 UniswapV3Config `yaml:"uniswap_v3" env-prefix:"QUOTES_UNISWAP_V3_"`
 	Syncswap  SyncswapConfig  `yaml:"syncswap" env-prefix:"QUOTES_SYNCSWAP_"`
 	Quickswap QuickswapConfig `yaml:"quickswap" env-prefix:"QUOTES_QUICKSWAP_"`
+	SectaV2   SectaV2Config   `yaml:"secta_v2" env-prefix:"QUOTES_SECTA_V2_"`
 	SectaV3   SectaV3Config   `yaml:"secta_v3" env-prefix:"QUOTES_SECTA_V3_"`
 }
 
@@ -48,6 +49,10 @@ func (config Config) GetByDriverType(driver DriverType) (Config, error) {
 		return Config{Drivers: []DriverType{DriverSyncswap}, Syncswap: config.Syncswap}, nil
 	case DriverQuickswap:
 		return Config{Drivers: []DriverType{DriverQuickswap}, Quickswap: config.Quickswap}, nil
+	case DriverSectaV2:
+		return Config{Drivers: []DriverType{DriverSectaV2}, SectaV2: config.SectaV2}, nil
+	case DriverSectaV3:
+		return Config{Drivers: []DriverType{DriverSectaV3}, SectaV3: config.SectaV3}, nil
 	default:
 		return config, nil
 	}
@@ -120,6 +125,14 @@ type QuickswapConfig struct {
 	// Note that the contract used in this lib is compiled from https://github.com/code-423n4/2022-09-quickswap.
 	PoolFactoryAddress string       `yaml:"pool_factory_address" env:"POOL_FACTORY_ADDRESS" env-default:"0x411b0fAcC3489691f28ad58c47006AF5E3Ab3A28"`
 	Filter             FilterConfig `yaml:"filter" env-prefix:"FILTER_"`
+}
+
+type SectaV2Config struct {
+	URL            string       `yaml:"url" env:"URL"`
+	AssetsURL      string       `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/assets.json"`
+	MappingURL     string       `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/mapping.json"`
+	FactoryAddress string       `yaml:"factory_address" env:"FACTORY_ADDRESS" env-default:"0x8Ad39bf99765E24012A28bEb0d444DE612903C43"`
+	Filter         FilterConfig `yaml:"filter" env-prefix:"FILTER_"`
 }
 
 type SectaV3Config struct {

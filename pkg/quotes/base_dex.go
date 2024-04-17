@@ -281,7 +281,7 @@ type dexEventWatcher[Event any] interface {
 
 type poolToken struct {
 	Name     string
-	Address  string
+	Address  common.Address
 	Symbol   string
 	Decimals decimal.Decimal
 	ChainId  uint
