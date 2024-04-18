@@ -67,27 +67,29 @@ func newIndexAggregator(config Config, marketsMapping map[string][]string, strat
 			}
 
 			indexPrice, ok := strategy.calculateIndexPrice(event)
-			if ok && event.Source != DriverInternal {
-				if event.Market.convertTo != "" {
-					event.Market.quoteUnit = event.Market.convertTo
-				}
-				event.Price = indexPrice
-				event.Source = DriverType{"index/" + event.Source.String()}
+			if !ok {
+				continue
+			}
 
-				strategy.setLastPrice(event.Market, event.Price)
+			if event.Market.convertTo != "" {
+				event.Market.quoteUnit = event.Market.convertTo
+			}
+			event.Price = indexPrice
+			event.Source = DriverType{"index/" + event.Source.String()}
 
-				baseMarkets, ok := defaultMarketsMapping[event.Market.quoteUnit]
-				if !ok {
+			strategy.setLastPrice(event.Market, event.Price)
+
+			baseMarkets, ok := defaultMarketsMapping[event.Market.quoteUnit]
+			if !ok {
+				continue
+			}
+			for _, baseMarket := range baseMarkets {
+				if event.Market.baseUnit == baseMarket {
 					continue
 				}
-				for _, baseMarket := range baseMarkets {
-					if event.Market.baseUnit == baseMarket {
-						continue
-					}
-				}
-
-				outbox <- event
 			}
+
+			outbox <- event
 		}
 	}()
 
