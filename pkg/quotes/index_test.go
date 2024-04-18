@@ -2,8 +2,10 @@ package quotes
 
 import (
 	"testing"
+	"time"
 
 	"github.com/shopspring/decimal"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -31,121 +33,102 @@ var (
 )
 
 func Test_IndexAggregatorStrategies(t *testing.T) {
-	// btcusdt := NewMarket("btc", "usdt")
+	btcusdt := NewMarket("btc", "usdt")
 
-	// t.Run("Successful test", func(t *testing.T) {
-	// 	weights := map[DriverType]decimal.Decimal{
-	// 		DriverBinance:   decimal.NewFromInt(3),
-	// 		DriverUniswapV3: decimal.NewFromInt(0),
-	// 	}
+	t.Run("Successful test", func(t *testing.T) {
+		weights := map[DriverType]decimal.Decimal{
+			DriverBinance:   decimal.NewFromInt(3),
+			DriverUniswapV3: decimal.NewFromInt(0),
+		}
 
-	// 	trade := TradeEvent{Source: DriverBinance, Market: btcusdt}
-	// 	var inputTrades []TradeEvent
-	// 	for i, p := range prices {
-	// 		decimalPrice := decimal.NewFromInt32(p)
-	// 		decimalAmount := decimal.NewFromFloat32(amounts[i])
+		trade := TradeEvent{Source: DriverBinance, Market: btcusdt}
+		var inputTrades []TradeEvent
+		for i, p := range prices {
+			decimalPrice := decimal.NewFromInt32(p)
+			decimalAmount := decimal.NewFromFloat32(amounts[i])
 
-	// 		trade.Price = decimalPrice
-	// 		trade.Amount = decimalAmount
-	// 		if i == 20 {
-	// 			trade.Source = DriverUniswapV3
-	// 		}
-	// 		inputTrades = append(inputTrades, trade)
-	// 	}
+			trade.Price = decimalPrice
+			trade.Amount = decimalAmount
+			if i == 20 {
+				trade.Source = DriverUniswapV3
+			}
+			inputTrades = append(inputTrades, trade)
+		}
 
-	// 	results := testStrategies(inputTrades, newStrategyVWA(WithCustomWeightsVWA(weights)))
+		results := testStrategies(inputTrades, newIndexStrategy(WithCustomWeights(weights)))
 
-	// 	// Check VWA strategy
-	// 	expVWA := []float64{40000, 41047.61905, 41288.88889, 41404.25532, 41880.59701, 41260, 41185.71429, 41325.44379, 41418.99441, 41422.22222, 41424.4864, 41423.54571, 41448.98336, 41457.01275, 41808.32025, 42377.0692, 43024.3874, 43031.31548, 43074.41602, 43051.03373}
-	// 	require.Equal(t, expVWA, results[0])
-	// })
+		// Check strategy
+		exp := []float64{40000, 42000, 41500, 44000, 43000, 40000, 41000, 42000, 43000, 42000, 45500, 41000, 41500, 42000, 44000, 46000, 47000, 46000, 44000, 42000}
+		require.Equal(t, exp, results[0])
+	})
 
-	// t.Run("Skip trades with zero price or amount", func(t *testing.T) {
-	// 	inputTrades := []TradeEvent{
-	// 		{Source: DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(40000), Amount: decimal.NewFromFloat(1.0)},
-	// 		{Source: DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(42000), Amount: decimal.NewFromFloat(1.0)},
-	// 		{Source: DriverBinance, Market: btcusdt, Price: decimal.Zero, Amount: decimal.NewFromFloat(1.0)},
-	// 		{Source: DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(44000), Amount: decimal.Zero},
-	// 		{Source: DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(44000), Amount: decimal.NewFromFloat(1)},
-	// 	}
+	t.Run("Skip trades with zero price or amount", func(t *testing.T) {
+		inputTrades := []TradeEvent{
+			{Source: DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(40000), Amount: decimal.NewFromFloat(1.0)},
+			{Source: DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(42000), Amount: decimal.NewFromFloat(1.0)},
+			{Source: DriverBinance, Market: btcusdt, Price: decimal.Zero, Amount: decimal.NewFromFloat(1.0)},
+			{Source: DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(44000), Amount: decimal.Zero},
+			{Source: DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(44000), Amount: decimal.NewFromFloat(1)},
+		}
 
-	// 	results := testStrategies(inputTrades, newStrategyVWA(WithCustomWeightsVWA(defaultWeights)))
+		results := testStrategies(inputTrades, newIndexStrategy(WithCustomWeights(defaultWeights)))
 
-	// 	// Check VWA strategy
-	// 	expVWA := []float64{40000, 41000, 42000}
-	// 	require.Equal(t, expVWA, results[0])
-	// })
+		// Check strategy
+		exp := []float64{40000, 42000, 44000}
+		require.Equal(t, exp, results[0])
+	})
 
-	// inputTrades := []TradeEvent{
-	// 	{Source: DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(41000), Amount: decimal.NewFromFloat(0.3)},
-	// 	{Source: DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(42500), Amount: decimal.NewFromFloat(0.5)},
-	// 	{Source: DriverUniswapV3, Market: btcusdt, Price: decimal.NewFromInt(55000), Amount: decimal.NewFromFloat(0.6)},
-	// 	{Source: DriverUniswapV3, Market: btcusdt, Price: decimal.NewFromInt(50000), Amount: decimal.NewFromFloat(0.4)},
-	// 	{Source: DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(40000), Amount: decimal.NewFromFloat(1)},
-	// }
+	inputTrades := []TradeEvent{
+		{Source: DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(41000), Amount: decimal.NewFromFloat(0.3)},
+		{Source: DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(42500), Amount: decimal.NewFromFloat(0.5)},
+		{Source: DriverUniswapV3, Market: btcusdt, Price: decimal.NewFromInt(55000), Amount: decimal.NewFromFloat(0.6)},
+		{Source: DriverUniswapV3, Market: btcusdt, Price: decimal.NewFromInt(50000), Amount: decimal.NewFromFloat(0.4)},
+		{Source: DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(40000), Amount: decimal.NewFromFloat(1)},
+	}
 
-	// t.Run("README example 1: equal driver weight", func(t *testing.T) {
-	// 	results := testStrategies(inputTrades, newStrategyVWA(WithCustomWeightsVWA(defaultWeights)))
+	t.Run("README example 1: equal driver weight", func(t *testing.T) {
+		results := testStrategies(inputTrades, newIndexStrategy(WithCustomWeights(defaultWeights)))
 
-	// 	// Check VWA strategy
-	// 	expVWA := []float64{41000, 41937.5, 45500, 46192.30769, 44472.22222}
-	// 	require.Equal(t, expVWA, results[0])
-	// })
+		// Check strategy
+		exp := []float64{41000, 42500, 48750, 46250, 45000}
+		require.Equal(t, exp, results[0])
+	})
 
-	// t.Run("README example 2: zero weight for one of the drivers", func(t *testing.T) {
-	// 	weights := map[DriverType]decimal.Decimal{
-	// 		DriverBinance:   decimal.NewFromInt(3),
-	// 		DriverUniswapV3: decimal.NewFromInt(0),
-	// 	}
+	t.Run("README example 2: zero weight for one of the drivers", func(t *testing.T) {
+		weights := map[DriverType]decimal.Decimal{
+			DriverBinance:   decimal.NewFromInt(3),
+			DriverUniswapV3: decimal.NewFromInt(0),
+		}
 
-	// 	results := testStrategies(inputTrades, newStrategyVWA(WithCustomWeightsVWA(weights)))
+		results := testStrategies(inputTrades, newIndexStrategy(WithCustomWeights(weights)))
 
-	// 	// Check VWA strategy
-	// 	expVWA := []float64{41000, 41937.5, 40861.11111}
-	// 	require.Equal(t, expVWA, results[0])
-	// })
+		// Check strategy
+		exp := []float64{41000, 42500, 40000}
+		require.Equal(t, exp, results[0])
+	})
 
-	// t.Run("README example 3: trade volume", func(t *testing.T) {
-	// 	inputTrades := []TradeEvent{
-	// 		{Source: DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(40000), Amount: decimal.NewFromFloat(1.0)},
-	// 		{Source: DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(42000), Amount: decimal.NewFromFloat(1.0)},
-	// 		{Source: DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(44000), Amount: decimal.NewFromFloat(1.0)},
-	// 		{Source: DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(46000), Amount: decimal.NewFromFloat(1.0)},
-	// 		{Source: DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(48000), Amount: decimal.NewFromFloat(10)},
-	// 	}
+	t.Run("README example 4: drivers volatility", func(t *testing.T) {
+		// Initial price: 41000
+		inputTrades := []TradeEvent{{Source: DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(41000), Amount: decimal.NewFromInt(1.0)}}
+		// Two equal drivers are sending: 42000 and 40000 prices sequentially.
+		inputTrades = append(inputTrades, generateTrades([]TradeEvent{
+			{Source: DriverUniswapV3, Market: btcusdt, Price: decimal.NewFromInt(42000), Amount: decimal.NewFromFloat(1.0)},
+			{Source: DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(40000), Amount: decimal.NewFromFloat(1.0)},
+		}, 25)...)
+		// The drivers start sending the same price: 41000.
+		inputTrades = append(inputTrades, generateTrades([]TradeEvent{
+			{Source: DriverUniswapV3, Market: btcusdt, Price: decimal.NewFromInt(41000), Amount: decimal.NewFromFloat(1.0)},
+			{Source: DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(41000), Amount: decimal.NewFromFloat(1.0)},
+		}, 25)...)
 
-	// 	results := testStrategies(inputTrades, newStrategyVWA(WithCustomWeightsVWA(defaultWeights)))
+		testPriceCache := newPriceCache(defaultWeights, 20, time.Minute)
+		results := testStrategies(inputTrades, newIndexStrategy(WithCustomWeights(defaultWeights), withCustomPriceCache(testPriceCache)))
 
-	// 	// Check VWA strategy
-	// 	expVWA := []float64{40000, 41000, 42000, 43000, 46571.42857}
-	// 	require.Equal(t, expVWA, results[0])
-	// })
-
-	// t.Run("README example 4: drivers volatility", func(t *testing.T) {
-	// 	// Initial price: 41000
-	// 	inputTrades := []TradeEvent{{Source: DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(41000), Amount: decimal.NewFromInt(1.0)}}
-	// 	// Two equal drivers are sending: 42000 and 40000 prices sequentially.
-	// 	inputTrades = append(inputTrades, generateTrades([]TradeEvent{
-	// 		{Source: DriverUniswapV3, Market: btcusdt, Price: decimal.NewFromInt(42000), Amount: decimal.NewFromFloat(1.0)},
-	// 		{Source: DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(40000), Amount: decimal.NewFromFloat(1.0)},
-	// 	}, 25)...)
-	// 	// The drivers start sending the same price: 41000.
-	// 	inputTrades = append(inputTrades, generateTrades([]TradeEvent{
-	// 		{Source: DriverUniswapV3, Market: btcusdt, Price: decimal.NewFromInt(41000), Amount: decimal.NewFromFloat(1.0)},
-	// 		{Source: DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(41000), Amount: decimal.NewFromFloat(1.0)},
-	// 	}, 25)...)
-
-	// 	testPriceCacheVWA := newPriceCacheVWA(defaultWeights, 20, time.Minute)
-	// 	testPriceCacheVWA.ActivateDriver(DriverBinance, btcusdt)
-	// 	testPriceCacheVWA.ActivateDriver(DriverUniswapV3, btcusdt)
-
-	// 	results := testStrategies(inputTrades, newStrategyVWA(WithCustomWeightsVWA(defaultWeights), withCustomPriceCacheVWA(testPriceCacheVWA)))
-
-	// 	// Check VWA strategy
-	// 	require.Equal(t, float64(41000), results[0][0])
-	// 	require.Equal(t, float64(41000), results[0][25])
-	// 	require.Equal(t, float64(41000), results[0][50])
-	// })
+		// Check strategy
+		require.Equal(t, float64(41000), results[0][0])
+		require.Equal(t, float64(41000), results[0][4])
+		require.Equal(t, float64(41000), results[0][50])
+	})
 }
 
 func generateTrades(tr []TradeEvent, n int) []TradeEvent {

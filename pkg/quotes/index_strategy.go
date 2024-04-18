@@ -16,17 +16,17 @@ var defaultWeightsMap = map[DriverType]decimal.Decimal{
 	DriverInternal:  decimal.NewFromInt(75),
 }
 
-type ConfFuncVWA func(*strategyVWA)
+type ConfFunc func(*indexStrategy)
 
-type strategyVWA struct {
+type indexStrategy struct {
 	weights    map[DriverType]decimal.Decimal
-	priceCache *PriceCacheVWA
+	priceCache *PriceCache
 }
 
-// newStrategyVWA creates a new instance of Volume-Weighted Average Price index price calculator.
-func newStrategyVWA(configs ...ConfFuncVWA) priceCalculator {
-	s := strategyVWA{
-		priceCache: newPriceCacheVWA(defaultWeightsMap, 20, 15*time.Minute),
+// newIndexStrategy creates a new instance of Weighted Price index price calculator.
+func newIndexStrategy(configs ...ConfFunc) priceCalculator {
+	s := indexStrategy{
+		priceCache: newPriceCache(defaultWeightsMap, 20, 15*time.Minute),
 		weights:    defaultWeightsMap,
 	}
 	for _, conf := range configs {
@@ -35,24 +35,25 @@ func newStrategyVWA(configs ...ConfFuncVWA) priceCalculator {
 	return s
 }
 
-// WithCustomWeightsVWA configures custom drivers weights. Should be passed as an argument to the NewStrategyVWA() constructor.
-func WithCustomWeightsVWA(driversWeights map[DriverType]decimal.Decimal) ConfFuncVWA {
-	return func(strategy *strategyVWA) {
+// WithCustomWeights configures custom drivers weights. Should be passed as an argument to the NewStrategy() constructor.
+func WithCustomWeights(driversWeights map[DriverType]decimal.Decimal) ConfFunc {
+	return func(strategy *indexStrategy) {
 		strategy.weights = driversWeights
 		strategy.priceCache.weights = safe.NewMapWithData(driversWeights)
 	}
 }
 
-// withCustomPriceCacheVWA configures price cache. Should be passed as an argument to the NewStrategyVWA() constructor.
-func withCustomPriceCacheVWA(priceCache *PriceCacheVWA) ConfFuncVWA {
-	return func(strategy *strategyVWA) {
+// withCustomPriceCache configures price cache. Should be passed as an argument to the NewStrategy() constructor.
+func withCustomPriceCache(priceCache *PriceCache) ConfFunc {
+	return func(strategy *indexStrategy) {
 		strategy.priceCache = priceCache
 	}
 }
 
 // calculateIndexPrice returns indexPrice based on Volume Weighted Average Price of last 20 trades.
-func (a strategyVWA) calculateIndexPrice(event TradeEvent) (decimal.Decimal, bool) {
-	if event.Market.IsEmpty() || event.Price.IsZero() || event.Amount.IsZero() {
+func (a indexStrategy) calculateIndexPrice(event TradeEvent) (decimal.Decimal, bool) {
+	sourceWeight := a.weights[event.Source]
+	if event.Market.IsEmpty() || event.Price.IsZero() || event.Amount.IsZero() || sourceWeight.IsZero() {
 		return decimal.Decimal{}, false
 	}
 
@@ -66,10 +67,10 @@ func (a strategyVWA) calculateIndexPrice(event TradeEvent) (decimal.Decimal, boo
 	return a.priceCache.GetIndexPrice(&event)
 }
 
-func (a strategyVWA) getLastPrice(market Market) decimal.Decimal {
+func (a indexStrategy) getLastPrice(market Market) decimal.Decimal {
 	return a.priceCache.getLastPrice(market)
 }
 
-func (a strategyVWA) setLastPrice(market Market, price decimal.Decimal) {
+func (a indexStrategy) setLastPrice(market Market, price decimal.Decimal) {
 	a.priceCache.setLastPrice(market, price)
 }
