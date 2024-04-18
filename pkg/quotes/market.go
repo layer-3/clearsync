@@ -32,7 +32,7 @@ func NewMarketWithMainQuote(base, quote, mainQuote string) Market {
 	}
 }
 
-func NewDerivedMerket(base, quote, convertQuoteTo string) Market {
+func NewMarketDerived(base, quote, convertQuoteTo string) Market {
 	return Market{
 		baseUnit:  strings.ToLower(base),
 		quoteUnit: strings.ToLower(quote),

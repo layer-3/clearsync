@@ -147,7 +147,7 @@ func (a *indexAggregator) Subscribe(m Market) error {
 			if d.ExchangeType() == ExchangeTypeDEX {
 				for _, convertFrom := range a.marketsMapping[m.quoteUnit] {
 					// TODO: check if base and quote are same
-					if err := d.Subscribe(NewDerivedMerket(m.baseUnit, convertFrom, m.quoteUnit)); err != nil {
+					if err := d.Subscribe(NewMarketDerived(m.baseUnit, convertFrom, m.quoteUnit)); err != nil {
 						loggerIndex.Infow("skipping market", "driver", d.ActiveDrivers()[0], "market", convertFrom, "error", err)
 						continue
 					}

@@ -84,7 +84,7 @@ func (u *uniswapV3) getPool(market Market) ([]*dexPool[iuniswap_v3_pool.IUniswap
 		if poolAddress != zeroAddress {
 			loggerUniswapV3.Infow("found pool",
 				"market", market,
-				"selected fee tier", fmt.Sprintf("%f.2%%", float64(feeTier)/10000),
+				"selected fee tier", fmt.Sprintf("%.2f%%", float64(feeTier)/10000),
 				"address", poolAddress)
 			poolAddresses = append(poolAddresses, poolAddress)
 		}
