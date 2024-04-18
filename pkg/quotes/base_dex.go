@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -172,17 +173,25 @@ func (b *baseDEX[Event, Contract]) Subscribe(market Market) error {
 	}
 
 	// mapping map[BTC:[WBTC] ETH:[WETH] USD:[USDT USDC TUSD]]
+	var wg sync.WaitGroup
 	b.mapping.Range(func(token string, mappings []string) bool {
-		if token == strings.ToUpper(market.Quote()) {
+		wg.Add(1)
+		go func(token string, mappings []string) {
+			defer wg.Done()
+			if token != strings.ToUpper(market.Quote()) {
+				return
+			}
+
 			for _, mappedToken := range mappings {
-				err := b.Subscribe(NewMarketWithMainQuote(market.Base(), mappedToken, market.Quote()))
-				if err != nil {
+				market := NewMarketWithMainQuote(market.Base(), mappedToken, market.Quote())
+				if err := b.Subscribe(market); err != nil {
 					b.logger.Errorf("failed to subscribe to market %s: %s", market, err)
 				}
 			}
-		}
+		}(token, mappings)
 		return true
 	})
+	wg.Wait()
 
 	if _, ok := b.streams.Load(market); ok {
 		return fmt.Errorf("%s: %w", market, ErrAlreadySubbed)
