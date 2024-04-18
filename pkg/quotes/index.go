@@ -176,11 +176,6 @@ func (a *indexAggregator) Subscribe(m Market) error {
 				for _, convertFrom := range a.marketsMapping[m.quoteUnit] {
 					// TODO: check if base and quote are same
 					m := NewMarketDerived(m.baseUnit, convertFrom, m.quoteUnit)
-					loggerIndex.Infow("subscribing to helper market",
-						"driver", d.ActiveDrivers()[0],
-						"market", m,
-						"convertFrom", convertFrom,
-					)
 					if err := d.Subscribe(m); err != nil {
 						loggerIndex.Infow("skipping market", "driver", d.ActiveDrivers()[0], "market", convertFrom, "error", err)
 						continue
