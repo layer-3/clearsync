@@ -173,7 +173,7 @@ func buildV3Trade[Event any](
 
 	tr := TradeEvent{
 		Source:    driver,
-		Market:    pool.Market(),
+		Market:    pool.market,
 		Price:     price,
 		Amount:    amount,
 		Total:     price.Mul(amount),

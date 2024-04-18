@@ -3,8 +3,9 @@ package quotes
 import (
 	"time"
 
-	"github.com/layer-3/clearsync/pkg/safe"
 	"github.com/shopspring/decimal"
+
+	"github.com/layer-3/clearsync/pkg/safe"
 )
 
 var defaultWeightsMap = map[DriverType]decimal.Decimal{
@@ -13,6 +14,8 @@ var defaultWeightsMap = map[DriverType]decimal.Decimal{
 	DriverUniswapV3: decimal.NewFromInt(50),
 	DriverSyncswap:  decimal.NewFromInt(50),
 	DriverQuickswap: decimal.NewFromInt(50),
+	DriverSectaV2:   decimal.NewFromInt(50),
+	DriverSectaV3:   decimal.NewFromInt(50),
 	DriverInternal:  decimal.NewFromInt(75),
 }
 

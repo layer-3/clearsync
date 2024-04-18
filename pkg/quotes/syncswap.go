@@ -193,12 +193,12 @@ func buildV2Trade[Event any](
 		total = amount1In
 		amount = amount0Out
 	default:
-		return TradeEvent{}, fmt.Errorf("market %s: unknown swap type", pool.Market())
+		return TradeEvent{}, fmt.Errorf("market %s: unknown swap type", pool.market)
 	}
 
 	trade := TradeEvent{
 		Source:    driver,
-		Market:    pool.Market(),
+		Market:    pool.market,
 		Price:     price,
 		Amount:    amount.Abs(),
 		Total:     total,

@@ -11,7 +11,7 @@ import (
 
 var (
 	loggerIndex           = log.Logger("index-aggregator")
-	defaultMarketsMapping = map[string][]string{"usdc": {"eth", "weth", "matic"}}
+	defaultMarketsMapping = map[string][]string{"usd": {"eth", "weth", "btc", "wbtc", "matic"}}
 )
 
 type indexAggregator struct {
@@ -33,7 +33,7 @@ func newIndexAggregator(config Config, marketsMapping map[string][]string, strat
 
 	drivers := make([]Driver, 0, len(config.Drivers))
 	for _, d := range config.Drivers {
-		loggerIndex.Infow("creating driver as an index driver", "driver", d)
+		loggerIndex.Infow("creating new driver", "driver", d)
 		driverConfig, err := config.GetByDriverType(d)
 		if err != nil {
 			panic(err) // impossible case if config structure is not amended
@@ -62,6 +62,10 @@ func newIndexAggregator(config Config, marketsMapping map[string][]string, strat
 				}
 			}
 
+			if event.Market.mainQuote != "" {
+				event.Market.quoteUnit = event.Market.mainQuote
+			}
+
 			indexPrice, ok := strategy.calculateIndexPrice(event)
 			if ok && event.Source != DriverInternal {
 				if event.Market.convertTo != "" {
@@ -71,6 +75,17 @@ func newIndexAggregator(config Config, marketsMapping map[string][]string, strat
 				event.Source = DriverType{"index/" + event.Source.String()}
 
 				strategy.setLastPrice(event.Market, event.Price)
+
+				baseMarkets, ok := defaultMarketsMapping[event.Market.quoteUnit]
+				if !ok {
+					continue
+				}
+				for _, baseMarket := range baseMarkets {
+					if event.Market.baseUnit == baseMarket {
+						continue
+					}
+				}
+
 				outbox <- event
 			}
 		}
@@ -133,6 +148,19 @@ func (a *indexAggregator) Start() error {
 				loggerIndex.Errorw("failed to start driver", "driver", d.ActiveDrivers()[0], "error", err)
 				return err
 			}
+
+			for quoteMarket, baseMarkets := range defaultMarketsMapping {
+				for _, baseMarket := range baseMarkets {
+					m := NewMarket(baseMarket, quoteMarket)
+					if err := d.Subscribe(m); err != nil {
+						loggerIndex.Errorw("failed to subscribe to default market",
+							"driver", d.ActiveDrivers()[0],
+							"market", m,
+							"error", err)
+						continue
+					}
+				}
+			}
 			return nil
 		})
 	}
@@ -147,7 +175,8 @@ func (a *indexAggregator) Subscribe(m Market) error {
 			if d.ExchangeType() == ExchangeTypeDEX {
 				for _, convertFrom := range a.marketsMapping[m.quoteUnit] {
 					// TODO: check if base and quote are same
-					if err := d.Subscribe(NewMarketDerived(m.baseUnit, convertFrom, m.quoteUnit)); err != nil {
+					m := NewMarketDerived(m.baseUnit, convertFrom, m.quoteUnit)
+					if err := d.Subscribe(m); err != nil {
 						loggerIndex.Infow("skipping market", "driver", d.ActiveDrivers()[0], "market", convertFrom, "error", err)
 						continue
 					}

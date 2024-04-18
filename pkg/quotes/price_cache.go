@@ -3,8 +3,9 @@ package quotes
 import (
 	"time"
 
-	"github.com/layer-3/clearsync/pkg/safe"
 	"github.com/shopspring/decimal"
+
+	"github.com/layer-3/clearsync/pkg/safe"
 )
 
 type trade struct {
@@ -116,5 +117,14 @@ func (p *PriceCache) GetIndexPrice(event *TradeEvent) (decimal.Decimal, bool) {
 		return decimal.Zero, false
 	}
 
-	return top.Div(bottom), true
+	quotePrice := decimal.NewFromInt(1)
+	if event.Market.convertTo != "" {
+		event.Market = Market{baseUnit: event.Market.quoteUnit, quoteUnit: event.Market.convertTo}
+		quotePrice, ok = p.GetIndexPrice(event)
+		if !ok {
+			return decimal.Zero, false
+		}
+	}
+
+	return top.Div(bottom).Mul(quotePrice), true
 }
