@@ -19,6 +19,7 @@ type indexAggregator struct {
 	marketsMapping map[string][]string
 	inbox          <-chan TradeEvent
 	aggregated     chan TradeEvent
+	subscribed     map[DriverType][]string
 }
 
 type priceCalculator interface {
@@ -80,6 +81,7 @@ func newIndexAggregator(config Config, marketsMapping map[string][]string, strat
 		drivers:        drivers,
 		marketsMapping: marketsMapping,
 		aggregated:     aggregated,
+		subscribed:     make(map[DriverType][]string),
 	}
 }
 
@@ -143,6 +145,13 @@ func (a *indexAggregator) Start() error {
 func (a *indexAggregator) Subscribe(m Market) error {
 	for _, d := range a.drivers {
 		loggerIndex.Infow("subscribing", "driver", d.ActiveDrivers()[0], "market", m)
+
+		driver := d.ActiveDrivers()[0]
+		if _, ok := a.subscribed[driver]; !ok {
+			a.subscribed[driver] = []string{}
+		}
+		a.subscribed[driver] = append(a.subscribed[driver], m.baseUnit+m.quoteUnit)
+
 		if err := d.Subscribe(m); err != nil {
 			if d.ExchangeType() == ExchangeTypeDEX {
 				for _, convertFrom := range a.marketsMapping[m.quoteUnit] {
@@ -158,6 +167,11 @@ func (a *indexAggregator) Subscribe(m Market) error {
 			}
 		}
 		loggerIndex.Infow("subscribed", "driver", d.ActiveDrivers()[0], "market", m)
+	}
+
+	fmt.Printf("Subscribed markets updated\n")
+	for driver, markets := range a.subscribed {
+		fmt.Printf("Driver: %s, Markets: %v\n", driver, markets)
 	}
 	return nil
 }
