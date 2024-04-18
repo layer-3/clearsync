@@ -7,8 +7,9 @@ import (
 
 	gobinance "github.com/adshao/go-binance/v2"
 	"github.com/ipfs/go-log/v2"
-	"github.com/layer-3/clearsync/pkg/safe"
 	"github.com/shopspring/decimal"
+
+	"github.com/layer-3/clearsync/pkg/safe"
 )
 
 var loggerBinance = log.Logger("binance")

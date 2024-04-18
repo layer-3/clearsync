@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/ethclient"
+
 	"github.com/layer-3/clearsync/pkg/safe"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -18,8 +19,9 @@ var loggerQuickswap = log.Logger("quickswap")
 type quickswap struct {
 	poolFactoryAddress common.Address
 	factory            *iquickswap_v3_factory.IQuickswapV3Factory
-	assets             *safe.Map[string, poolToken]
-	client             *ethclient.Client
+
+	assets *safe.Map[string, poolToken]
+	client *ethclient.Client
 }
 
 func newQuickswap(config QuickswapConfig, outbox chan<- TradeEvent) Driver {
@@ -40,7 +42,6 @@ func newQuickswap(config QuickswapConfig, outbox chan<- TradeEvent) Driver {
 		PoolGetter:    hooks.getPool,
 		EventParser:   hooks.parseSwap,
 	}
-
 	return newBaseDEX(params)
 }
 
@@ -64,11 +65,7 @@ func (s *quickswap) getPool(market Market) ([]*dexPool[iquickswap_v3_pool.IQuick
 
 	var poolAddress common.Address
 	zeroAddress := common.HexToAddress("0x0")
-	poolAddress, err = s.factory.PoolByPair(
-		nil,
-		common.HexToAddress(baseToken.Address),
-		common.HexToAddress(quoteToken.Address),
-	)
+	poolAddress, err = s.factory.PoolByPair(nil, baseToken.Address, quoteToken.Address)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pool address: %w", err)
 	}
@@ -79,22 +76,20 @@ func (s *quickswap) getPool(market Market) ([]*dexPool[iquickswap_v3_pool.IQuick
 
 	poolContract, err := iquickswap_v3_pool.NewIQuickswapV3Pool(poolAddress, s.client)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build quickswap pool: %w", err)
+		return nil, fmt.Errorf("failed to build Quickswap pool: %w", err)
 	}
 
 	basePoolToken, err := poolContract.Token0(nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build quickswap pool: %w", err)
+		return nil, fmt.Errorf("failed to build Quickswap pool: %w", err)
 	}
 
 	quotePoolToken, err := poolContract.Token1(nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build quickswap pool: %w", err)
+		return nil, fmt.Errorf("failed to build Quickswap pool: %w", err)
 	}
 
-	baseAddress := common.HexToAddress(baseToken.Address)
-	quoteAddress := common.HexToAddress(quoteToken.Address)
-	isReverted := quoteAddress == basePoolToken && baseAddress == quotePoolToken
+	isReverted := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
 	pools := []*dexPool[iquickswap_v3_pool.IQuickswapV3PoolSwap]{{
 		contract:   poolContract,
 		baseToken:  baseToken,
@@ -103,7 +98,7 @@ func (s *quickswap) getPool(market Market) ([]*dexPool[iquickswap_v3_pool.IQuick
 	}}
 
 	// Return pools if the token addresses match direct or reversed configurations
-	if (baseAddress == basePoolToken && quoteAddress == quotePoolToken) || isReverted {
+	if (baseToken.Address == basePoolToken && quoteToken.Address == quotePoolToken) || isReverted {
 		return pools, nil
 	}
 	return nil, fmt.Errorf("failed to build Quickswap pool for market %s: %w", market, err)
@@ -113,28 +108,16 @@ func (s *quickswap) parseSwap(
 	swap *iquickswap_v3_pool.IQuickswapV3PoolSwap,
 	pool *dexPool[iquickswap_v3_pool.IQuickswapV3PoolSwap],
 ) (TradeEvent, error) {
-	if pool.reverted {
-		s.flipSwap(swap)
-	}
-
 	defer func() {
 		if r := recover(); r != nil {
 			loggerQuickswap.Errorw("recovered in from panic during swap parsing", "swap", swap)
 		}
 	}()
 
-	return builDexTrade(
+	return buildV3Trade(
 		DriverQuickswap,
 		swap.Amount0,
 		swap.Amount1,
-		pool.baseToken.Decimals,
-		pool.quoteToken.Decimals,
-		pool.Market())
-}
-
-func (*quickswap) flipSwap(swap *iquickswap_v3_pool.IQuickswapV3PoolSwap) {
-	// For USDC/ETH:
-	// Amount0 = -52052662345          = USDC removed from pool
-	// Amount1 = +16867051239984403529 = ETH added into pool
-	swap.Amount0, swap.Amount1 = swap.Amount1, swap.Amount0
+		pool,
+	)
 }

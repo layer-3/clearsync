@@ -4,9 +4,10 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/layer-3/clearsync/pkg/abi/isyncswap_pool"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/layer-3/clearsync/pkg/abi/isyncswap_pool"
 )
 
 // Mock data for testing
