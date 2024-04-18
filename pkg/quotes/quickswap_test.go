@@ -75,6 +75,7 @@ func Test_quickswap_parseSwap(t *testing.T) {
 						Decimals: decimal.NewFromInt(18),
 					},
 					reverted: false,
+					market:   NewMarket("matic", "weth"),
 				},
 			},
 			want: TradeEvent{
