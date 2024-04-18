@@ -11,7 +11,7 @@ import (
 
 var (
 	loggerIndex           = log.Logger("index-aggregator")
-	defaultMarketsMapping = map[string][]string{"usd": {"eth", "weth", "matic"}}
+	defaultMarketsMapping = map[string][]string{"usd": {"eth", "weth", "btc", "wbtc", "matic"}}
 )
 
 type indexAggregator struct {
