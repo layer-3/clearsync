@@ -17,7 +17,6 @@ var (
 type indexAggregator struct {
 	drivers        []Driver
 	marketsMapping map[string][]string
-	inbox          <-chan TradeEvent
 	aggregated     chan TradeEvent
 }
 
@@ -86,6 +85,7 @@ func newIndexAggregator(config Config, marketsMapping map[string][]string, strat
 					}
 				}
 
+				loggerIndex.Infow("publishing index trade", "trade", event)
 				outbox <- event
 			}
 		}
@@ -114,7 +114,11 @@ func newIndex(config Config, outbox chan<- TradeEvent) Driver {
 }
 
 func (a *indexAggregator) SetInbox(inbox <-chan TradeEvent) {
-	a.inbox = inbox
+	go func() {
+		for t := range inbox {
+			a.aggregated <- t
+		}
+	}()
 }
 
 func (a *indexAggregator) ActiveDrivers() []DriverType {
@@ -133,12 +137,6 @@ func (b *indexAggregator) ExchangeType() ExchangeType {
 func (a *indexAggregator) Start() error {
 	var g errgroup.Group
 	g.SetLimit(10)
-
-	go func() {
-		for t := range a.inbox {
-			a.aggregated <- t
-		}
-	}()
 
 	for _, d := range a.drivers {
 		d := d
