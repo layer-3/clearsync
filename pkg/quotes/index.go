@@ -11,7 +11,7 @@ import (
 
 var (
 	loggerIndex           = log.Logger("index-aggregator")
-	defaultMarketsMapping = map[string][]string{"usd": {"eth", "weth", "btc", "wbtc", "matic"}}
+	defaultMarketsMapping = map[string][]string{"usd": {"weth", "matic"}}
 )
 
 type indexAggregator struct {
@@ -77,13 +77,9 @@ func newIndexAggregator(config Config, marketsMapping map[string][]string, strat
 				strategy.setLastPrice(event.Market, event.Price)
 
 				baseMarkets, ok := defaultMarketsMapping[event.Market.quoteUnit]
-				if !ok {
+
+				if !ok || contains(baseMarkets, event.Market.baseUnit) {
 					continue
-				}
-				for _, baseMarket := range baseMarkets {
-					if event.Market.baseUnit == baseMarket {
-						continue
-					}
 				}
 
 				outbox <- event
@@ -213,4 +209,13 @@ func (a *indexAggregator) Stop() error {
 func isPriceOutOfRange(eventPrice, lastPrice, maxPriceDiff decimal.Decimal) bool {
 	diff := eventPrice.Sub(lastPrice).Abs().Div(lastPrice)
 	return diff.GreaterThan(maxPriceDiff)
+}
+
+func contains(list []string, str string) bool {
+	for _, v := range list {
+		if v == str {
+			return true
+		}
+	}
+	return false
 }
