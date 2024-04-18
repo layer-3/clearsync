@@ -3,8 +3,9 @@ package quotes
 import (
 	"time"
 
-	"github.com/layer-3/clearsync/pkg/safe"
 	"github.com/shopspring/decimal"
+
+	"github.com/layer-3/clearsync/pkg/safe"
 )
 
 var defaultWeightsMap = map[DriverType]decimal.Decimal{
@@ -13,6 +14,8 @@ var defaultWeightsMap = map[DriverType]decimal.Decimal{
 	DriverUniswapV3: decimal.NewFromInt(50),
 	DriverSyncswap:  decimal.NewFromInt(50),
 	DriverQuickswap: decimal.NewFromInt(50),
+	DriverSectaV2:   decimal.NewFromInt(50),
+	DriverSectaV3:   decimal.NewFromInt(50),
 	DriverInternal:  decimal.NewFromInt(75),
 }
 
@@ -54,6 +57,7 @@ func withCustomPriceCache(priceCache *PriceCache) ConfFunc {
 func (a indexStrategy) calculateIndexPrice(event TradeEvent) (decimal.Decimal, bool) {
 	sourceWeight := a.weights[event.Source]
 	if event.Market.IsEmpty() || event.Price.IsZero() || event.Amount.IsZero() || sourceWeight.IsZero() {
+		loggerIndex.Infow("1 skipping trade with zero price, amount or weight", "event", event)
 		return decimal.Decimal{}, false
 	}
 
@@ -62,8 +66,10 @@ func (a indexStrategy) calculateIndexPrice(event TradeEvent) (decimal.Decimal, b
 		event.CreatedAt = time.Now()
 	}
 
+	loggerIndex.Infow("2 calculating index price", "event", event)
 	a.priceCache.AddTrade(event.Market, event.Price, event.Amount, event.CreatedAt, event.Source)
 
+	loggerIndex.Infow("3 calculating index price", "event", event)
 	return a.priceCache.GetIndexPrice(&event)
 }
 

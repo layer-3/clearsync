@@ -237,32 +237,32 @@ func (b *baseDEX[Event, Contract]) watchSwap(
 	for {
 		select {
 		case err := <-sub.Err():
-			b.logger.Warnw("connection failed, resubscribing", "market", market.StringWithoutMain(), "err", err)
+			b.logger.Warnw("connection failed, resubscribing", "market", market, "err", err)
 			if _, ok := b.streams.Load(market); !ok {
 				break // market was unsubscribed earlier
 			}
 			if err := b.Unsubscribe(market); err != nil {
-				b.logger.Errorw("failed to resubscribe", "market", market.StringWithoutMain(), "err", err)
+				b.logger.Errorw("failed to resubscribe", "market", market, "err", err)
 			}
 			if err := b.Subscribe(market); err != nil {
-				b.logger.Errorw("failed to resubscribe", "market", market.StringWithoutMain(), "err", err)
+				b.logger.Errorw("failed to resubscribe", "market", market, "err", err)
 			}
 			return
 		case swap := <-sink:
-			b.logger.Debugw("raw swap", "swap", swap)
+			b.logger.Infow("raw swap", "swap", swap)
 
 			tr, err := b.parse(swap, pool)
 			if err != nil {
-				b.logger.Errorw("failed to parse swap event", "market", market.StringWithoutMain(), "err", err)
+				b.logger.Errorw("failed to parse swap event", "market", market, "err", err)
 				continue
 			}
-			tr.Market = market.ApplyMainQuote()
+			tr.Market = market
 
 			if !b.filter.Allow(tr) {
 				continue
 			}
 
-			b.logger.Debugw("parsed trade", "trade", tr)
+			b.logger.Infow("parsed trade", "trade", tr)
 			b.outbox <- tr
 		}
 	}
@@ -273,6 +273,7 @@ type dexPool[Event any] struct {
 	baseToken  poolToken
 	quoteToken poolToken
 	reverted   bool
+	market     Market
 }
 
 type dexEventWatcher[Event any] interface {
@@ -286,10 +287,6 @@ type poolToken struct {
 	Decimals decimal.Decimal
 	ChainId  uint
 	LogoURI  string
-}
-
-func (pool dexPool[Event]) Market() Market {
-	return NewMarket(pool.baseToken.Symbol, pool.quoteToken.Symbol)
 }
 
 func getTokens(
