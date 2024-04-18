@@ -29,12 +29,11 @@ type priceCalculator interface {
 
 // newIndexAggregator creates a new instance of IndexAggregator.
 func newIndexAggregator(config Config, marketsMapping map[string][]string, strategy priceCalculator, outbox chan<- TradeEvent) Driver {
-	loggerIndex.Infow("creating index aggregator", "marketsMapping", marketsMapping)
 	aggregated := make(chan TradeEvent, 128)
 
 	drivers := make([]Driver, 0, len(config.Drivers))
 	for _, d := range config.Drivers {
-		loggerIndex.Infow("creating driver as an index driver", "driver", d)
+		loggerIndex.Infow("creating new driver", "driver", d)
 		driverConfig, err := config.GetByDriverType(d)
 		if err != nil {
 			panic(err) // impossible case if config structure is not amended
@@ -86,7 +85,7 @@ func newIndexAggregator(config Config, marketsMapping map[string][]string, strat
 						continue
 					}
 				}
-				
+
 				outbox <- event
 			}
 		}

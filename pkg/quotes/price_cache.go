@@ -100,11 +100,6 @@ func (p *PriceCache) getLastPrice(market Market) decimal.Decimal {
 }
 
 func (p *PriceCache) GetIndexPrice(event *TradeEvent) (decimal.Decimal, bool) {
-	p.market.Range(func(k marketKey, v []trade) bool {
-		loggerIndex.Infof("6 marketKey key=%#v value=%#v", k, v)
-		return true
-	})
-
 	trades, ok := p.market.Load(marketKey{baseUnit: event.Market.baseUnit, quoteUnit: event.Market.quoteUnit})
 	if !ok || len(trades) == 0 {
 		return event.Price, false

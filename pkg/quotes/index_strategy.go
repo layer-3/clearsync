@@ -57,7 +57,6 @@ func withCustomPriceCache(priceCache *PriceCache) ConfFunc {
 func (a indexStrategy) calculateIndexPrice(event TradeEvent) (decimal.Decimal, bool) {
 	sourceWeight := a.weights[event.Source]
 	if event.Market.IsEmpty() || event.Price.IsZero() || event.Amount.IsZero() || sourceWeight.IsZero() {
-		loggerIndex.Infow("1 skipping trade with zero price, amount or weight", "event", event)
 		return decimal.Decimal{}, false
 	}
 
@@ -66,10 +65,8 @@ func (a indexStrategy) calculateIndexPrice(event TradeEvent) (decimal.Decimal, b
 		event.CreatedAt = time.Now()
 	}
 
-	loggerIndex.Infow("2 calculating index price", "event", event)
 	a.priceCache.AddTrade(event.Market, event.Price, event.Amount, event.CreatedAt, event.Source)
 
-	loggerIndex.Infow("3 calculating index price", "event", event)
 	return a.priceCache.GetIndexPrice(&event)
 }
 
