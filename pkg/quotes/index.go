@@ -2,11 +2,14 @@ package quotes
 
 import (
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/ipfs/go-log/v2"
 	"github.com/shopspring/decimal"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/layer-3/clearsync/pkg/safe"
 )
 
 var (
@@ -17,8 +20,10 @@ var (
 type indexAggregator struct {
 	drivers        []Driver
 	marketsMapping map[string][]string
-	inbox          <-chan TradeEvent
 	aggregated     chan TradeEvent
+	// defaultMarketsWhitelist is a list of tokens that default markets (see `defaultMarketsMapping`) are comprised of
+	// that should be indexed since they were explicitly subscribed.
+	defaultMarketsWhitelist safe.Map[marketKey, struct{}]
 }
 
 type priceCalculator interface {
@@ -47,12 +52,19 @@ func newIndexAggregator(config Config, marketsMapping map[string][]string, strat
 		drivers = append(drivers, driver)
 	}
 
-	maxPriceDiff, err := decimal.NewFromString(config.Index.MaxPriceDiff)
-	if err != nil {
-		loggerIndex.Fatalf("invalid max price diff config value", "driver", "error", err)
+	index := &indexAggregator{
+		drivers:                 drivers,
+		marketsMapping:          marketsMapping,
+		aggregated:              aggregated,
+		defaultMarketsWhitelist: safe.NewMap[marketKey, struct{}](),
 	}
 
 	go func() {
+		maxPriceDiff, err := decimal.NewFromString(config.Index.MaxPriceDiff)
+		if err != nil {
+			loggerIndex.Fatalf("invalid max price diff config value", "driver", "error", err)
+		}
+
 		for event := range aggregated {
 			lastPrice := strategy.getLastPrice(event.Market)
 			if lastPrice != decimal.Zero {
@@ -76,26 +88,21 @@ func newIndexAggregator(config Config, marketsMapping map[string][]string, strat
 
 				strategy.setLastPrice(event.Market, event.Price)
 
-				baseMarkets, ok := defaultMarketsMapping[event.Market.quoteUnit]
-				if !ok {
+				// The default markets are subscribed for utility purposes
+				// and should not be indexed unless there's an explicit subscription.
+				key := marketKey{baseUnit: event.Market.baseUnit, quoteUnit: event.Market.quoteUnit}
+				if !index.isBlacklistedMarketWhitelisted(key) {
+					loggerIndex.Infow("skipping index trade", "market", event.Market, "price", event.Price)
 					continue
 				}
-				for _, baseMarket := range baseMarkets {
-					if event.Market.baseUnit == baseMarket {
-						continue
-					}
-				}
 
+				// Publish indexed trade
 				outbox <- event
 			}
 		}
 	}()
 
-	return &indexAggregator{
-		drivers:        drivers,
-		marketsMapping: marketsMapping,
-		aggregated:     aggregated,
-	}
+	return index
 }
 
 // newIndex creates a new instance of IndexAggregator with VWA strategy and default drivers weights.
@@ -114,7 +121,11 @@ func newIndex(config Config, outbox chan<- TradeEvent) Driver {
 }
 
 func (a *indexAggregator) SetInbox(inbox <-chan TradeEvent) {
-	a.inbox = inbox
+	go func() {
+		for t := range inbox {
+			a.aggregated <- t
+		}
+	}()
 }
 
 func (a *indexAggregator) ActiveDrivers() []DriverType {
@@ -133,12 +144,6 @@ func (b *indexAggregator) ExchangeType() ExchangeType {
 func (a *indexAggregator) Start() error {
 	var g errgroup.Group
 	g.SetLimit(10)
-
-	go func() {
-		for t := range a.inbox {
-			a.aggregated <- t
-		}
-	}()
 
 	for _, d := range a.drivers {
 		d := d
@@ -171,32 +176,69 @@ func (a *indexAggregator) Start() error {
 func (a *indexAggregator) Subscribe(m Market) error {
 	for _, d := range a.drivers {
 		loggerIndex.Infow("subscribing", "driver", d.ActiveDrivers()[0], "market", m)
-		if err := d.Subscribe(m); err != nil {
-			if d.ExchangeType() == ExchangeTypeDEX {
-				for _, convertFrom := range a.marketsMapping[m.quoteUnit] {
-					// TODO: check if base and quote are same
-					m := NewMarketDerived(m.baseUnit, convertFrom, m.quoteUnit)
-					if err := d.Subscribe(m); err != nil {
-						loggerIndex.Infow("skipping market", "driver", d.ActiveDrivers()[0], "market", convertFrom, "error", err)
-						continue
-					}
-					loggerIndex.Infow("subscribed to helper market",
-						"driver", d.ActiveDrivers()[0],
-						"market", fmt.Sprintf("%s/%s", m.baseUnit, convertFrom))
-				}
+		if err := d.Subscribe(m); err == nil {
+			key := marketKey{baseUnit: m.baseUnit, quoteUnit: m.quoteUnit}
+			if !a.isBlacklistedMarketWhitelisted(key) {
+				a.defaultMarketsWhitelist.Store(key, struct{}{})
 			}
+
+			loggerIndex.Infow("subscribed", "driver", d.ActiveDrivers()[0], "market", m)
+			continue
 		}
-		loggerIndex.Infow("subscribed", "driver", d.ActiveDrivers()[0], "market", m)
+
+		if d.ExchangeType() != ExchangeTypeDEX {
+			continue
+		}
+
+		for _, convertFrom := range a.marketsMapping[m.quoteUnit] {
+			// TODO: check if base and quote are same
+			derivedMarket := NewMarketDerived(m.baseUnit, convertFrom, m.quoteUnit)
+			if err := d.Subscribe(derivedMarket); err != nil {
+				loggerIndex.Infow("skipping market",
+					"driver", d.ActiveDrivers()[0],
+					"market", convertFrom,
+					"error", err)
+				continue
+			}
+
+			key := marketKey{baseUnit: derivedMarket.baseUnit, quoteUnit: derivedMarket.quoteUnit}
+			if !a.isBlacklistedMarketWhitelisted(key) {
+				a.defaultMarketsWhitelist.Store(key, struct{}{})
+			}
+
+			loggerIndex.Infow("subscribed to helper market",
+				"driver", d.ActiveDrivers()[0],
+				"market", fmt.Sprintf("%s/%s", derivedMarket.baseUnit, convertFrom))
+		}
 	}
 	return nil
 }
 
+func (a *indexAggregator) isBlacklistedMarketWhitelisted(key marketKey) bool {
+	blacklist, blacklisted := defaultMarketsMapping[key.quoteUnit]
+	blacklisted = blacklisted && slices.Contains(blacklist, key.baseUnit)
+
+	_, whitelisted := a.defaultMarketsWhitelist.Load(key)
+
+	// The market may be blacklisted
+	// but if it was explicitly subscribed, then it should be indexed
+	return blacklisted && whitelisted
+}
+
 func (a *indexAggregator) Unsubscribe(m Market) error {
+	allUnsubscribed := true
 	for _, d := range a.drivers {
 		if err := d.Unsubscribe(m); err != nil {
 			loggerIndex.Warnw("failed to unsubscribe", "driver", d.ActiveDrivers()[0], "market", m, "error", err.Error())
+			allUnsubscribed = false
 		}
 	}
+
+	key := marketKey{baseUnit: m.baseUnit, quoteUnit: m.quoteUnit}
+	if allUnsubscribed && a.isBlacklistedMarketWhitelisted(key) {
+		a.defaultMarketsWhitelist.Delete(key)
+	}
+
 	return nil
 }
 
