@@ -2,6 +2,7 @@ package quotes
 
 import (
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/ipfs/go-log/v2"
@@ -17,7 +18,6 @@ var (
 type indexAggregator struct {
 	drivers        []Driver
 	marketsMapping map[string][]string
-	inbox          <-chan TradeEvent
 	aggregated     chan TradeEvent
 }
 
@@ -102,8 +102,7 @@ func (a *indexAggregator) computeAggregatePrice(
 		strategy.setLastPrice(event.Market, event.Price)
 
 		baseMarkets, ok := defaultMarketsMapping[event.Market.quoteUnit]
-
-		if !ok || contains(baseMarkets, event.Market.baseUnit) {
+		if !ok || slices.Contains(baseMarkets, event.Market.baseUnit) {
 			continue
 		}
 
@@ -127,7 +126,11 @@ func newIndex(config Config, outbox chan<- TradeEvent) Driver {
 }
 
 func (a *indexAggregator) SetInbox(inbox <-chan TradeEvent) {
-	a.inbox = inbox
+	go func() {
+		for tradeEvent := range inbox {
+			a.aggregated <- tradeEvent
+		}
+	}()
 }
 
 func (a *indexAggregator) ActiveDrivers() []DriverType {
@@ -146,12 +149,6 @@ func (a *indexAggregator) ExchangeType() ExchangeType {
 func (a *indexAggregator) Start() error {
 	var g errgroup.Group
 	g.SetLimit(10)
-
-	go func() {
-		for t := range a.inbox {
-			a.aggregated <- t
-		}
-	}()
 
 	for _, d := range a.drivers {
 		d := d
@@ -205,34 +202,33 @@ func (a *indexAggregator) Subscribe(m Market) error {
 }
 
 func (a *indexAggregator) Unsubscribe(m Market) error {
+	var g errgroup.Group
+
 	for _, d := range a.drivers {
-		if err := d.Unsubscribe(m); err != nil {
-			loggerIndex.Warnw("failed to unsubscribe", "driver", d.ActiveDrivers()[0], "market", m, "error", err.Error())
-		}
+		g.Go(func() error {
+			if err := d.Unsubscribe(m); err != nil {
+				loggerIndex.Warnw("failed to unsubscribe", "driver", d.ActiveDrivers()[0], "market", m, "error", err.Error())
+				return err
+			}
+			return nil
+		})
 	}
-	return nil
+
+	return g.Wait()
 }
 
 func (a *indexAggregator) Stop() error {
+	var g errgroup.Group
+	g.SetLimit(10)
+
 	for _, d := range a.drivers {
-		err := d.Stop()
-		if err != nil {
-			return err
-		}
+		g.Go(func() error { return d.Stop() })
 	}
-	return nil
+
+	return g.Wait()
 }
 
 func isPriceOutOfRange(eventPrice, lastPrice, maxPriceDiff decimal.Decimal) bool {
 	diff := eventPrice.Sub(lastPrice).Abs().Div(lastPrice)
 	return diff.GreaterThan(maxPriceDiff)
-}
-
-func contains(list []string, str string) bool {
-	for _, v := range list {
-		if v == str {
-			return true
-		}
-	}
-	return false
 }
