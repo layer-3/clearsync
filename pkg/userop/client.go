@@ -12,7 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/shopspring/decimal"
 
-	"github.com/layer-3/clearsync/pkg/abi/entry_point_v0_6_0"
+	"github.com/layer-3/clearsync/pkg/artifacts/entry_point_v0_6_0"
 	"github.com/layer-3/clearsync/pkg/smart_wallet"
 )
 

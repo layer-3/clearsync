@@ -6,8 +6,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 
-	"github.com/layer-3/clearsync/pkg/abi/entry_point_v0_6_0"
-	"github.com/layer-3/clearsync/pkg/abi/simple_account"
+	"github.com/layer-3/clearsync/pkg/artifacts/entry_point_v0_6_0"
+	"github.com/layer-3/clearsync/pkg/artifacts/simple_account"
 )
 
 func must[T any](x T, err error) T {

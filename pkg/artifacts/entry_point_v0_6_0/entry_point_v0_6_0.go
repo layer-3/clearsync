@@ -8,7 +8,7 @@ import (
 	"math/big"
 	"strings"
 
-	ethereum "github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -42,8 +42,8 @@ type EntryPointMemoryUserOp struct {
 
 // EntryPointUserOpInfo is an auto generated low-level Go binding around an user-defined struct.
 type EntryPointUserOpInfo struct {
-	MUserOp       EntryPointMemoryUserOp
-	UserOpHash    [32]byte
+	MUserOp    EntryPointMemoryUserOp
+	UserOpHash [32]byte
 	Prefund       *big.Int
 	ContextOffset *big.Int
 	PreOpGas      *big.Int
