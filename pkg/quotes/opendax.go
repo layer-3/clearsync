@@ -300,6 +300,4 @@ func (o *opendax) recognizeSide(side string) (TakerType, error) {
 	}
 }
 
-// Not implemented
-func (o *opendax) SetInbox(inbox <-chan TradeEvent) {
-}
+func (o *opendax) SetInbox(_ <-chan TradeEvent) {}

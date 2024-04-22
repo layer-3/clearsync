@@ -232,9 +232,7 @@ func (b *baseDEX[Event, Contract]) Unsubscribe(market Market) error {
 	return nil
 }
 
-func (b *baseDEX[Event, Contract]) SetInbox(_ <-chan TradeEvent) {
-	// TODO: implement me
-}
+func (b *baseDEX[Event, Contract]) SetInbox(_ <-chan TradeEvent) {}
 
 func (b *baseDEX[Event, Contract]) watchSwap(
 	market Market,

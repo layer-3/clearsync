@@ -1,6 +1,7 @@
 package quotes
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -15,93 +16,46 @@ import (
 var loggerBinance = log.Logger("binance")
 
 type binance struct {
-	once       *once
-	streams    safe.Map[Market, chan struct{}]
-	filter     Filter
-	toCombine  chan<- TradeEvent
-	outbox     chan<- TradeEvent
-	usdcToUSDT bool
-
-	symbolToMarket safe.Map[string, Market]
+	once               *once
+	usdcToUSDT         bool
+	assetsUpdatePeriod time.Duration
+	exchangeInfo       *gobinance.ExchangeInfoService
+	filter             Filter
+	combineInbox       chan<- TradeEvent
+	outbox             chan<- TradeEvent
+	streams            safe.Map[Market, chan struct{}]
+	symbolToMarket     safe.Map[string, Market]
+	assets             safe.Map[Market, gobinance.Symbol]
 }
 
 func newBinance(config BinanceConfig, outbox chan<- TradeEvent) Driver {
-	toCombine := make(chan TradeEvent, 1024)
+	combineInbox := make(chan TradeEvent, 1024)
+	go batcher(config.BatchPeriod, combineInbox, outbox)
+
+	driver := &binance{
+		once:               newOnce(),
+		usdcToUSDT:         config.USDCtoUSDT,
+		assetsUpdatePeriod: config.AssetsUpdatePeriod,
+		exchangeInfo:       gobinance.NewClient("", "").NewExchangeInfoService(),
+		filter:             NewFilter(config.Filter),
+		combineInbox:       combineInbox,
+		outbox:             outbox,
+		streams:            safe.NewMap[Market, chan struct{}](),
+		symbolToMarket:     safe.NewMap[string, Market](),
+		assets:             safe.NewMap[Market, gobinance.Symbol](),
+	}
+
+	driver.updateAssets()
 	go func() {
-		marketTrades := make(map[Market][]TradeEvent)
-		timer := time.NewTimer(time.Duration(config.BatchBufferSeconds) * time.Second)
+		ticker := time.NewTicker(driver.assetsUpdatePeriod)
+		defer ticker.Stop()
 		for {
-			select {
-			case trade := <-toCombine:
-				marketTrades[trade.Market] = append(marketTrades[trade.Market], trade)
-			case <-timer.C:
-				for market, trades := range marketTrades {
-					event := combineTrades(trades)
-					if event != nil {
-						marketTrades[market] = nil
-						outbox <- *event
-					}
-				}
-				timer.Reset(time.Duration(config.BatchBufferSeconds) * time.Second)
-			}
+			<-ticker.C
+			driver.updateAssets()
 		}
 	}()
 
-	return &binance{
-		once:           newOnce(),
-		streams:        safe.NewMap[Market, chan struct{}](),
-		filter:         NewFilter(config.Filter),
-		usdcToUSDT:     config.USDCtoUSDT,
-		toCombine:      toCombine,
-		outbox:         outbox,
-		symbolToMarket: safe.NewMap[string, Market](),
-	}
-}
-
-func combineTrades(trades []TradeEvent) *TradeEvent {
-	if len(trades) == 0 {
-		return nil
-	}
-
-	totalAmount := decimal.Zero
-	totalValue := decimal.Zero
-	netAmount := decimal.Zero
-
-	for _, trade := range trades {
-		totalAmount = totalAmount.Add(trade.Amount)
-		totalValue = totalValue.Add(trade.Amount.Mul(trade.Price))
-
-		// Update net amount to determine net side (buy or sell)
-		if trade.TakerType == TakerTypeBuy {
-			netAmount = netAmount.Add(trade.Amount)
-		} else if trade.TakerType == TakerTypeSell {
-			netAmount = netAmount.Sub(trade.Amount)
-		}
-	}
-
-	if totalAmount.Equal(decimal.Zero) {
-		return nil
-	}
-
-	avgPrice := totalValue.Div(totalAmount)
-	// Determine net side (buy or sell)
-	var side TakerType
-	if netAmount.GreaterThanOrEqual(decimal.Zero) {
-		side = TakerTypeSell // "buy" (yes, it looks inverted)
-	} else {
-		side = TakerTypeBuy // "sell"
-		netAmount = netAmount.Abs()
-	}
-
-	return &TradeEvent{
-		Source:    trades[0].Source,
-		Market:    trades[0].Market,
-		Price:     avgPrice,
-		Amount:    totalAmount,
-		Total:     avgPrice.Mul(totalAmount),
-		TakerType: side,
-		CreatedAt: time.Now(),
-	}
+	return driver
 }
 
 func (b *binance) ActiveDrivers() []DriverType {
@@ -158,11 +112,11 @@ func (b *binance) Subscribe(market Market) error {
 		return fmt.Errorf("%s: %w", market, ErrAlreadySubbed)
 	}
 
-	handleErr := func(err error) {
-		loggerBinance.Errorw("received error", "market", pair, "error", err)
+	if _, ok := b.assets.Load(market); !ok {
+		return fmt.Errorf("market does not exist: %s", market)
 	}
 
-	doneCh, stopCh, err := gobinance.WsTradeServe(pair, b.handleTrade, handleErr)
+	doneCh, stopCh, err := gobinance.WsTradeServe(pair, b.handleTrade, b.handleErr(market))
 	if err != nil {
 		return fmt.Errorf("%s: %w: %w", market, ErrFailedSub, err)
 	}
@@ -213,6 +167,31 @@ func (b *binance) Unsubscribe(market Market) error {
 	return nil
 }
 
+func (b *binance) SetInbox(_ <-chan TradeEvent) {}
+
+func (b *binance) updateAssets() {
+	var exchangeInfo *gobinance.ExchangeInfo
+	var err error
+	for {
+		exchangeInfo, err = b.exchangeInfo.Do(context.Background())
+		if err == nil {
+			break
+		}
+		loggerBinance.Errorw("failed to fetch exchange info", "error", err)
+		<-time.After(5 * time.Second)
+		continue
+	}
+
+	for _, symbol := range exchangeInfo.Symbols {
+		if symbol.Status != "TRADING" { // only interested in active pairs
+			continue
+		}
+
+		market := NewMarket(symbol.BaseAsset, symbol.QuoteAsset)
+		b.assets.Store(market, symbol)
+	}
+}
+
 func (b *binance) handleTrade(event *gobinance.WsTradeEvent) {
 	tradeEvent, err := b.buildEvent(event)
 	if err != nil {
@@ -223,7 +202,13 @@ func (b *binance) handleTrade(event *gobinance.WsTradeEvent) {
 	if !b.filter.Allow(tradeEvent) {
 		return
 	}
-	b.toCombine <- tradeEvent
+	b.combineInbox <- tradeEvent
+}
+
+func (b *binance) handleErr(market Market) func(error) {
+	return func(err error) {
+		loggerBinance.Errorw("received error", "market", market, "error", err)
+	}
 }
 
 func (b *binance) buildEvent(tr *gobinance.WsTradeEvent) (TradeEvent, error) {
@@ -264,6 +249,69 @@ func (b *binance) buildEvent(tr *gobinance.WsTradeEvent) (TradeEvent, error) {
 	}, nil
 }
 
-// Not implemented
-func (b *binance) SetInbox(_ <-chan TradeEvent) {
+func batcher(batchPeriod time.Duration, inbox <-chan TradeEvent, outbox chan<- TradeEvent) {
+	marketTrades := make(map[Market][]TradeEvent)
+	timer := time.NewTimer(batchPeriod)
+	defer timer.Stop()
+
+	for {
+		select {
+		case trade := <-inbox:
+			marketTrades[trade.Market] = append(marketTrades[trade.Market], trade)
+		case <-timer.C:
+			for market, trades := range marketTrades {
+				if event := combineTrades(trades); event != nil {
+					marketTrades[market] = nil
+					outbox <- *event
+				}
+			}
+			timer.Reset(batchPeriod)
+		}
+	}
+}
+
+func combineTrades(trades []TradeEvent) *TradeEvent {
+	if len(trades) == 0 {
+		return nil
+	}
+
+	totalAmount := decimal.Zero
+	totalValue := decimal.Zero
+	netAmount := decimal.Zero
+
+	for _, trade := range trades {
+		totalAmount = totalAmount.Add(trade.Amount)
+		totalValue = totalValue.Add(trade.Amount.Mul(trade.Price))
+
+		// Update net amount to determine net side (buy or sell)
+		if trade.TakerType == TakerTypeBuy {
+			netAmount = netAmount.Add(trade.Amount)
+		} else if trade.TakerType == TakerTypeSell {
+			netAmount = netAmount.Sub(trade.Amount)
+		}
+	}
+
+	if totalAmount.Equal(decimal.Zero) {
+		return nil
+	}
+
+	avgPrice := totalValue.Div(totalAmount)
+	// Determine net side (buy or sell)
+	var side TakerType
+	if netAmount.GreaterThanOrEqual(decimal.Zero) {
+		side = TakerTypeSell // "buy" (yes, it looks inverted)
+	} else {
+		side = TakerTypeBuy // "sell"
+		netAmount = netAmount.Abs()
+	}
+
+	return &TradeEvent{
+		Source:    trades[0].Source,
+		Market:    trades[0].Market,
+		Price:     avgPrice,
+		Amount:    totalAmount,
+		Total:     avgPrice.Mul(totalAmount),
+		TakerType: side,
+		CreatedAt: time.Now(),
+	}
 }

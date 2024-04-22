@@ -38,7 +38,10 @@ func TestNewDriver(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			config := Config{Drivers: []DriverType{tc.driverType}}
+			config, err := NewConfigFromEnv()
+			require.NoError(t, err)
+			config.Drivers = []DriverType{tc.driverType}
+
 			outbox := make(chan<- TradeEvent, 1)
 
 			priceFeeds, err := NewDriver(config, outbox)
