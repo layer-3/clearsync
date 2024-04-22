@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"sync"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -14,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ipfs/go-log/v2"
 	"github.com/shopspring/decimal"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/layer-3/clearsync/pkg/safe"
 )
@@ -154,17 +154,23 @@ func (b *baseDEX[Event, Contract]) Start() error {
 }
 
 func (b *baseDEX[Event, Contract]) Stop() error {
+	var stopErr error
 	stopped := b.once.Stop(func() {
+		var g errgroup.Group
+		g.SetLimit(10)
+
 		b.streams.Range(func(market Market, _ event.Subscription) bool {
-			err := b.Unsubscribe(market)
-			return err == nil
+			g.Go(func() error { return b.Unsubscribe(market) })
+			return true
 		})
+
+		stopErr = g.Wait()
 	})
 
 	if !stopped {
 		return ErrAlreadyStopped
 	}
-	return nil
+	return stopErr
 }
 
 func (b *baseDEX[Event, Contract]) Subscribe(market Market) error {
@@ -173,25 +179,38 @@ func (b *baseDEX[Event, Contract]) Subscribe(market Market) error {
 	}
 
 	// mapping map[BTC:[WBTC] ETH:[WETH] USD:[USDT USDC TUSD]]
-	var wg sync.WaitGroup
+	var g errgroup.Group
+	g.SetLimit(10)
+
 	b.mapping.Range(func(token string, mappings []string) bool {
-		wg.Add(1)
-		go func(token string, mappings []string) {
-			defer wg.Done()
-			if token != strings.ToUpper(market.Quote()) {
-				return
-			}
+		if token != strings.ToUpper(market.Quote()) {
+			return true
+		}
+
+		g.Go(func() error {
+			var g errgroup.Group
+			g.SetLimit(10)
 
 			for _, mappedToken := range mappings {
-				market := NewMarketWithMainQuote(market.Base(), mappedToken, market.Quote())
-				if err := b.Subscribe(market); err != nil {
-					b.logger.Errorf("failed to subscribe to market %s: %s", market, err)
-				}
+				mappedToken := mappedToken
+				g.Go(func() error {
+					market := NewMarketWithMainQuote(market.Base(), mappedToken, market.Quote())
+					if err := b.Subscribe(market); err != nil {
+						b.logger.Errorf("failed to subscribe to market %s: %s", market, err)
+						return err
+					}
+					return nil
+				})
 			}
-		}(token, mappings)
+
+			return g.Wait()
+		})
+
 		return true
 	})
-	wg.Wait()
+	if err := g.Wait(); err != nil {
+		return fmt.Errorf("failed to subscribe to helper markets: %w", err)
+	}
 
 	if _, ok := b.streams.Load(market); ok {
 		return fmt.Errorf("%s: %w", market, ErrAlreadySubbed)
@@ -210,7 +229,7 @@ func (b *baseDEX[Event, Contract]) Subscribe(market Market) error {
 		}
 
 		go b.watchSwap(market, pool, sink, sub)
-		go b.streams.Store(market, sub) // to not block the loop
+		go b.streams.Store(market, sub) // to not block the loop since it's a blocking call with mutex under the hood
 	}
 
 	return nil

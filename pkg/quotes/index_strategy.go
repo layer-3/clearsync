@@ -48,16 +48,14 @@ func WithCustomWeights(driversWeights map[DriverType]decimal.Decimal) ConfFunc {
 
 // withCustomPriceCache configures price cache. Should be passed as an argument to the NewStrategy() constructor.
 func withCustomPriceCache(priceCache *PriceCache) ConfFunc {
-	return func(strategy *indexStrategy) {
-		strategy.priceCache = priceCache
-	}
+	return func(strategy *indexStrategy) { strategy.priceCache = priceCache }
 }
 
 // calculateIndexPrice returns indexPrice based on Volume Weighted Average Price of last 20 trades.
 func (a indexStrategy) calculateIndexPrice(event TradeEvent) (decimal.Decimal, bool) {
 	sourceWeight := a.weights[event.Source]
 	if event.Market.IsEmpty() || event.Price.IsZero() || event.Amount.IsZero() || sourceWeight.IsZero() {
-		return decimal.Decimal{}, false
+		return decimal.Zero, false
 	}
 
 	timeEmpty := time.Time{}

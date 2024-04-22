@@ -97,7 +97,7 @@ func (k *kraken) Stop() error {
 		k.conn = nil
 
 		if conn == nil {
-			return
+			return // connection is already closed
 		}
 
 		k.availablePairs = safe.Map[string, krakenPair]{}

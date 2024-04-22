@@ -2,6 +2,7 @@ package quotes
 
 import (
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/ipfs/go-log/v2"
@@ -17,7 +18,6 @@ var (
 type indexAggregator struct {
 	drivers        []Driver
 	marketsMapping map[string][]string
-	inbox          <-chan TradeEvent
 	aggregated     chan TradeEvent
 }
 
@@ -28,8 +28,13 @@ type priceCalculator interface {
 }
 
 // newIndexAggregator creates a new instance of IndexAggregator.
-func newIndexAggregator(config Config, marketsMapping map[string][]string, strategy priceCalculator, outbox chan<- TradeEvent) Driver {
-	aggregated := make(chan TradeEvent, 128)
+func newIndexAggregator(
+	config Config,
+	marketsMapping map[string][]string,
+	strategy priceCalculator,
+	outbox chan<- TradeEvent,
+) Driver {
+	inbox := make(chan TradeEvent, 128)
 
 	drivers := make([]Driver, 0, len(config.Drivers))
 	for _, d := range config.Drivers {
@@ -39,7 +44,7 @@ func newIndexAggregator(config Config, marketsMapping map[string][]string, strat
 			panic(err) // impossible case if config structure is not amended
 		}
 
-		driver, err := NewDriver(driverConfig, aggregated)
+		driver, err := NewDriver(driverConfig, inbox)
 		if err != nil {
 			loggerIndex.Warnw("failed to create driver", "driver", d, "error", err)
 			continue
@@ -52,45 +57,56 @@ func newIndexAggregator(config Config, marketsMapping map[string][]string, strat
 		loggerIndex.Fatalf("invalid max price diff config value", "driver", "error", err)
 	}
 
-	go func() {
-		for event := range aggregated {
-			lastPrice := strategy.getLastPrice(event.Market)
-			if lastPrice != decimal.Zero {
-				if isPriceOutOfRange(event.Price, lastPrice, maxPriceDiff) {
-					loggerIndex.Warnf("skipping incoming outlier trade. Source: %s, Market: %s, Price: %s, Amount:%s", event.Source, event.Market, event.Price, event.Amount)
-					continue
-				}
-			}
-
-			if event.Market.mainQuote != "" {
-				event.Market.quoteUnit = event.Market.mainQuote
-			}
-
-			indexPrice, ok := strategy.calculateIndexPrice(event)
-			if ok && event.Source != DriverInternal {
-				if event.Market.convertTo != "" {
-					event.Market.quoteUnit = event.Market.convertTo
-				}
-				event.Price = indexPrice
-				event.Source = DriverType{"index/" + event.Source.String()}
-
-				strategy.setLastPrice(event.Market, event.Price)
-
-				baseMarkets, ok := defaultMarketsMapping[event.Market.quoteUnit]
-
-				if !ok || contains(baseMarkets, event.Market.baseUnit) {
-					continue
-				}
-
-				outbox <- event
-			}
-		}
-	}()
-
-	return &indexAggregator{
+	index := &indexAggregator{
 		drivers:        drivers,
 		marketsMapping: marketsMapping,
-		aggregated:     aggregated,
+		aggregated:     inbox,
+	}
+	go index.computeAggregatePrice(inbox, maxPriceDiff, strategy, outbox)
+
+	return index
+}
+
+func (a *indexAggregator) computeAggregatePrice(
+	aggregated <-chan TradeEvent,
+	maxPriceDiff decimal.Decimal,
+	strategy priceCalculator,
+	outbox chan<- TradeEvent,
+) {
+	for event := range aggregated {
+		lastPrice := strategy.getLastPrice(event.Market)
+		if lastPrice != decimal.Zero && isPriceOutOfRange(event.Price, lastPrice, maxPriceDiff) {
+			loggerIndex.Warnw("skipping incoming outlier trade",
+				"source", event.Source,
+				"market", event.Market,
+				"price", event.Price,
+				"amount", event.Amount)
+			continue
+		}
+
+		if event.Market.mainQuote != "" {
+			event.Market.quoteUnit = event.Market.mainQuote
+		}
+
+		indexPrice, ok := strategy.calculateIndexPrice(event)
+		if !ok || event.Source == DriverInternal {
+			continue
+		}
+
+		if event.Market.convertTo != "" {
+			event.Market.quoteUnit = event.Market.convertTo
+		}
+		event.Price = indexPrice
+		event.Source = DriverType{"index/" + event.Source.String()}
+
+		strategy.setLastPrice(event.Market, event.Price)
+
+		baseMarkets, ok := defaultMarketsMapping[event.Market.quoteUnit]
+		if !ok || slices.Contains(baseMarkets, event.Market.baseUnit) {
+			continue
+		}
+
+		outbox <- event
 	}
 }
 
@@ -110,7 +126,11 @@ func newIndex(config Config, outbox chan<- TradeEvent) Driver {
 }
 
 func (a *indexAggregator) SetInbox(inbox <-chan TradeEvent) {
-	a.inbox = inbox
+	go func() {
+		for tradeEvent := range inbox {
+			a.aggregated <- tradeEvent
+		}
+	}()
 }
 
 func (a *indexAggregator) ActiveDrivers() []DriverType {
@@ -121,7 +141,7 @@ func (a *indexAggregator) ActiveDrivers() []DriverType {
 	return drivers
 }
 
-func (b *indexAggregator) ExchangeType() ExchangeType {
+func (a *indexAggregator) ExchangeType() ExchangeType {
 	return ExchangeTypeHybrid
 }
 
@@ -129,12 +149,6 @@ func (b *indexAggregator) ExchangeType() ExchangeType {
 func (a *indexAggregator) Start() error {
 	var g errgroup.Group
 	g.SetLimit(10)
-
-	go func() {
-		for t := range a.inbox {
-			a.aggregated <- t
-		}
-	}()
 
 	for _, d := range a.drivers {
 		d := d
@@ -188,34 +202,36 @@ func (a *indexAggregator) Subscribe(m Market) error {
 }
 
 func (a *indexAggregator) Unsubscribe(m Market) error {
+	var g errgroup.Group
+
 	for _, d := range a.drivers {
-		if err := d.Unsubscribe(m); err != nil {
-			loggerIndex.Warnw("failed to unsubscribe", "driver", d.ActiveDrivers()[0], "market", m, "error", err.Error())
-		}
+		d := d
+		m := m
+		g.Go(func() error {
+			if err := d.Unsubscribe(m); err != nil {
+				loggerIndex.Warnw("failed to unsubscribe", "driver", d.ActiveDrivers()[0], "market", m, "error", err.Error())
+				return err
+			}
+			return nil
+		})
 	}
-	return nil
+
+	return g.Wait()
 }
 
 func (a *indexAggregator) Stop() error {
+	var g errgroup.Group
+	g.SetLimit(10)
+
 	for _, d := range a.drivers {
-		err := d.Stop()
-		if err != nil {
-			return err
-		}
+		d := d
+		g.Go(func() error { return d.Stop() })
 	}
-	return nil
+
+	return g.Wait()
 }
 
 func isPriceOutOfRange(eventPrice, lastPrice, maxPriceDiff decimal.Decimal) bool {
 	diff := eventPrice.Sub(lastPrice).Abs().Div(lastPrice)
 	return diff.GreaterThan(maxPriceDiff)
-}
-
-func contains(list []string, str string) bool {
-	for _, v := range list {
-		if v == str {
-			return true
-		}
-	}
-	return false
 }
