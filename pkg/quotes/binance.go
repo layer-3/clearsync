@@ -15,46 +15,49 @@ import (
 var loggerBinance = log.Logger("binance")
 
 type binance struct {
-	once       *once
-	streams    safe.Map[Market, chan struct{}]
-	filter     Filter
-	toCombine  chan<- TradeEvent
-	outbox     chan<- TradeEvent
-	usdcToUSDT bool
+	once         *once
+	streams      safe.Map[Market, chan struct{}]
+	filter       Filter
+	combineInbox chan<- TradeEvent
+	outbox       chan<- TradeEvent
+	usdcToUSDT   bool
 
 	symbolToMarket safe.Map[string, Market]
 }
 
 func newBinance(config BinanceConfig, outbox chan<- TradeEvent) Driver {
-	toCombine := make(chan TradeEvent, 1024)
-	go func() {
-		marketTrades := make(map[Market][]TradeEvent)
-		timer := time.NewTimer(time.Duration(config.BatchBufferSeconds) * time.Second)
-		for {
-			select {
-			case trade := <-toCombine:
-				marketTrades[trade.Market] = append(marketTrades[trade.Market], trade)
-			case <-timer.C:
-				for market, trades := range marketTrades {
-					event := combineTrades(trades)
-					if event != nil {
-						marketTrades[market] = nil
-						outbox <- *event
-					}
-				}
-				timer.Reset(time.Duration(config.BatchBufferSeconds) * time.Second)
-			}
-		}
-	}()
+	combineInbox := make(chan TradeEvent, 1024)
+	go batcher(config.BatchPeriod, combineInbox, outbox)
 
 	return &binance{
 		once:           newOnce(),
 		streams:        safe.NewMap[Market, chan struct{}](),
 		filter:         NewFilter(config.Filter),
 		usdcToUSDT:     config.USDCtoUSDT,
-		toCombine:      toCombine,
+		combineInbox:   combineInbox,
 		outbox:         outbox,
 		symbolToMarket: safe.NewMap[string, Market](),
+	}
+}
+
+func batcher(batchPeriod time.Duration, inbox <-chan TradeEvent, outbox chan<- TradeEvent) {
+	marketTrades := make(map[Market][]TradeEvent)
+	timer := time.NewTimer(batchPeriod)
+	defer timer.Stop()
+
+	for {
+		select {
+		case trade := <-inbox:
+			marketTrades[trade.Market] = append(marketTrades[trade.Market], trade)
+		case <-timer.C:
+			for market, trades := range marketTrades {
+				if event := combineTrades(trades); event != nil {
+					marketTrades[market] = nil
+					outbox <- *event
+				}
+			}
+			timer.Reset(batchPeriod)
+		}
 	}
 }
 
@@ -158,11 +161,7 @@ func (b *binance) Subscribe(market Market) error {
 		return fmt.Errorf("%s: %w", market, ErrAlreadySubbed)
 	}
 
-	handleErr := func(err error) {
-		loggerBinance.Errorw("received error", "market", pair, "error", err)
-	}
-
-	doneCh, stopCh, err := gobinance.WsTradeServe(pair, b.handleTrade, handleErr)
+	doneCh, stopCh, err := gobinance.WsTradeServe(pair, b.handleTrade, b.handleErr(market))
 	if err != nil {
 		return fmt.Errorf("%s: %w: %w", market, ErrFailedSub, err)
 	}
@@ -223,7 +222,13 @@ func (b *binance) handleTrade(event *gobinance.WsTradeEvent) {
 	if !b.filter.Allow(tradeEvent) {
 		return
 	}
-	b.toCombine <- tradeEvent
+	b.combineInbox <- tradeEvent
+}
+
+func (b *binance) handleErr(market Market) func(error) {
+	return func(err error) {
+		loggerBinance.Errorw("received error", "market", market, "error", err)
+	}
 }
 
 func (b *binance) buildEvent(tr *gobinance.WsTradeEvent) (TradeEvent, error) {
@@ -264,6 +269,4 @@ func (b *binance) buildEvent(tr *gobinance.WsTradeEvent) (TradeEvent, error) {
 	}, nil
 }
 
-// Not implemented
-func (b *binance) SetInbox(_ <-chan TradeEvent) {
-}
+func (b *binance) SetInbox(_ <-chan TradeEvent) {}

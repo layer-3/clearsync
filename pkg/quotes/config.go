@@ -76,9 +76,9 @@ type IndexConfig struct {
 }
 
 type BinanceConfig struct {
-	USDCtoUSDT         bool         `yaml:"usdc_to_usdt" env:"USDC_TO_USDT" env-default:"true"`
-	BatchBufferSeconds int          `yaml:"batch_seconds" env:"BATCH_SECONDS" env-default:"5"`
-	Filter             FilterConfig `yaml:"filter" env-prefix:"FILTER_"`
+	USDCtoUSDT  bool          `yaml:"usdc_to_usdt" env:"USDC_TO_USDT" env-default:"true"`
+	BatchPeriod time.Duration `yaml:"batch_period" env:"BATCH_PERIOD" env-default:"5s"`
+	Filter      FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
 }
 
 type KrakenConfig struct {
