@@ -10,7 +10,7 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/require"
 
-	"github.com/layer-3/clearsync/pkg/abi/iquickswap_v3_pool"
+	"github.com/layer-3/clearsync/pkg/artifacts/quickswap_v3_pool"
 )
 
 func newBigInt(s string) *big.Int {
@@ -25,8 +25,8 @@ func Test_quickswap_parseSwap(t *testing.T) {
 	t.Parallel()
 
 	type args struct {
-		swap *iquickswap_v3_pool.IQuickswapV3PoolSwap
-		pool *dexPool[iquickswap_v3_pool.IQuickswapV3PoolSwap]
+		swap *quickswap_v3_pool.IQuickswapV3PoolSwap
+		pool *dexPool[quickswap_v3_pool.IQuickswapV3PoolSwap]
 	}
 
 	tests := []struct {
@@ -38,7 +38,7 @@ func Test_quickswap_parseSwap(t *testing.T) {
 		{
 			name: "Sell trade",
 			args: args{
-				swap: &iquickswap_v3_pool.IQuickswapV3PoolSwap{
+				swap: &quickswap_v3_pool.IQuickswapV3PoolSwap{
 					// This is a REAL swap event from Polygon chain.
 					// See at https://polygonscan.com/tx/0xa77f02fe9abda2ab43d77bc3ef4cf19bc75f60085b0437b2321e9a89248c6dc6
 					Sender:    common.HexToAddress("0xf5b509bB0909a69B1c207E495f687a596C168E12"),
@@ -63,7 +63,7 @@ func Test_quickswap_parseSwap(t *testing.T) {
 						Removed:     false,
 					},
 				},
-				pool: &dexPool[iquickswap_v3_pool.IQuickswapV3PoolSwap]{
+				pool: &dexPool[quickswap_v3_pool.IQuickswapV3PoolSwap]{
 					baseToken: poolToken{
 						Address:  common.HexToAddress("0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270"),
 						Symbol:   "matic",

@@ -3,22 +3,20 @@ package quotes
 import (
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/ethclient"
-
-	"github.com/layer-3/clearsync/pkg/safe"
-
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ipfs/go-log/v2"
 
-	"github.com/layer-3/clearsync/pkg/abi/iquickswap_v3_factory"
-	"github.com/layer-3/clearsync/pkg/abi/iquickswap_v3_pool"
+	"github.com/layer-3/clearsync/pkg/artifacts/quickswap_v3_factory"
+	"github.com/layer-3/clearsync/pkg/artifacts/quickswap_v3_pool"
+	"github.com/layer-3/clearsync/pkg/safe"
 )
 
 var loggerQuickswap = log.Logger("quickswap")
 
 type quickswap struct {
 	poolFactoryAddress common.Address
-	factory            *iquickswap_v3_factory.IQuickswapV3Factory
+	factory            *quickswap_v3_factory.IQuickswapV3Factory
 
 	assets *safe.Map[string, poolToken]
 	client *ethclient.Client
@@ -29,7 +27,7 @@ func newQuickswap(config QuickswapConfig, outbox chan<- TradeEvent) Driver {
 		poolFactoryAddress: common.HexToAddress(config.PoolFactoryAddress),
 	}
 
-	params := baseDexConfig[iquickswap_v3_pool.IQuickswapV3PoolSwap, iquickswap_v3_pool.IQuickswapV3Pool]{
+	params := baseDexConfig[quickswap_v3_pool.IQuickswapV3PoolSwap, quickswap_v3_pool.IQuickswapV3Pool]{
 		DriverType: DriverQuickswap,
 		URL:        config.URL,
 		AssetsURL:  config.AssetsURL,
@@ -45,19 +43,19 @@ func newQuickswap(config QuickswapConfig, outbox chan<- TradeEvent) Driver {
 	return newBaseDEX(params)
 }
 
-func (s *quickswap) postStart(driver *baseDEX[iquickswap_v3_pool.IQuickswapV3PoolSwap, iquickswap_v3_pool.IQuickswapV3Pool]) (err error) {
+func (s *quickswap) postStart(driver *baseDEX[quickswap_v3_pool.IQuickswapV3PoolSwap, quickswap_v3_pool.IQuickswapV3Pool]) (err error) {
 	s.client = driver.Client()
 	s.assets = driver.Assets()
 
 	// Check addresses here: https://quickswap.gitbook.io/quickswap/smart-contracts/smart-contracts
-	s.factory, err = iquickswap_v3_factory.NewIQuickswapV3Factory(s.poolFactoryAddress, s.client)
+	s.factory, err = quickswap_v3_factory.NewIQuickswapV3Factory(s.poolFactoryAddress, s.client)
 	if err != nil {
 		return fmt.Errorf("failed to instantiate a Quickwap Factory contract: %w", err)
 	}
 	return nil
 }
 
-func (s *quickswap) getPool(market Market) ([]*dexPool[iquickswap_v3_pool.IQuickswapV3PoolSwap], error) {
+func (s *quickswap) getPool(market Market) ([]*dexPool[quickswap_v3_pool.IQuickswapV3PoolSwap], error) {
 	baseToken, quoteToken, err := getTokens(s.assets, market, loggerQuickswap)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tokens: %w", err)
@@ -74,7 +72,7 @@ func (s *quickswap) getPool(market Market) ([]*dexPool[iquickswap_v3_pool.IQuick
 	}
 	loggerQuickswap.Infow("found pool", "market", market, "address", poolAddress)
 
-	poolContract, err := iquickswap_v3_pool.NewIQuickswapV3Pool(poolAddress, s.client)
+	poolContract, err := quickswap_v3_pool.NewIQuickswapV3Pool(poolAddress, s.client)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build Quickswap pool: %w", err)
 	}
@@ -90,7 +88,7 @@ func (s *quickswap) getPool(market Market) ([]*dexPool[iquickswap_v3_pool.IQuick
 	}
 
 	isReverted := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
-	pools := []*dexPool[iquickswap_v3_pool.IQuickswapV3PoolSwap]{{
+	pools := []*dexPool[quickswap_v3_pool.IQuickswapV3PoolSwap]{{
 		contract:   poolContract,
 		baseToken:  baseToken,
 		quoteToken: quoteToken,
@@ -105,8 +103,8 @@ func (s *quickswap) getPool(market Market) ([]*dexPool[iquickswap_v3_pool.IQuick
 }
 
 func (s *quickswap) parseSwap(
-	swap *iquickswap_v3_pool.IQuickswapV3PoolSwap,
-	pool *dexPool[iquickswap_v3_pool.IQuickswapV3PoolSwap],
+	swap *quickswap_v3_pool.IQuickswapV3PoolSwap,
+	pool *dexPool[quickswap_v3_pool.IQuickswapV3PoolSwap],
 ) (TradeEvent, error) {
 	defer func() {
 		if r := recover(); r != nil {

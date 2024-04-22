@@ -3,6 +3,7 @@ package local_blockchain
 import (
 	"bufio"
 	"context"
+	_ "embed"
 	"fmt"
 	"log/slog"
 	"math/big"
@@ -23,15 +24,13 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 
-	"github.com/layer-3/clearsync/pkg/abi/entry_point_v0_6_0"
-	"github.com/layer-3/clearsync/pkg/abi/kernel_ecdsa_validator_v2_2"
-	"github.com/layer-3/clearsync/pkg/abi/kernel_factory_v2_2"
-	"github.com/layer-3/clearsync/pkg/abi/kernel_v2_2"
+	"github.com/layer-3/clearsync/pkg/artifacts/entry_point_v0_6_0"
+	"github.com/layer-3/clearsync/pkg/artifacts/kernel_ecdsa_validator_v2_2"
+	"github.com/layer-3/clearsync/pkg/artifacts/kernel_factory_v2_2"
+	"github.com/layer-3/clearsync/pkg/artifacts/kernel_v2_2"
 	"github.com/layer-3/clearsync/pkg/artifacts/session_key_validator_v2_4"
 	"github.com/layer-3/clearsync/pkg/smart_wallet"
 	"github.com/layer-3/clearsync/pkg/userop"
-
-	_ "embed"
 )
 
 type EthNode struct {
