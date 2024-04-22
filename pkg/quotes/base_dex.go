@@ -192,6 +192,7 @@ func (b *baseDEX[Event, Contract]) Subscribe(market Market) error {
 			g.SetLimit(10)
 
 			for _, mappedToken := range mappings {
+				mappedToken := mappedToken
 				g.Go(func() error {
 					market := NewMarketWithMainQuote(market.Base(), mappedToken, market.Quote())
 					if err := b.Subscribe(market); err != nil {

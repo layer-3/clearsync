@@ -205,6 +205,8 @@ func (a *indexAggregator) Unsubscribe(m Market) error {
 	var g errgroup.Group
 
 	for _, d := range a.drivers {
+		d := d
+		m := m
 		g.Go(func() error {
 			if err := d.Unsubscribe(m); err != nil {
 				loggerIndex.Warnw("failed to unsubscribe", "driver", d.ActiveDrivers()[0], "market", m, "error", err.Error())
@@ -222,6 +224,7 @@ func (a *indexAggregator) Stop() error {
 	g.SetLimit(10)
 
 	for _, d := range a.drivers {
+		d := d
 		g.Go(func() error { return d.Stop() })
 	}
 
