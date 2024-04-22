@@ -76,9 +76,10 @@ type IndexConfig struct {
 }
 
 type BinanceConfig struct {
-	USDCtoUSDT  bool          `yaml:"usdc_to_usdt" env:"USDC_TO_USDT" env-default:"true"`
-	BatchPeriod time.Duration `yaml:"batch_period" env:"BATCH_PERIOD" env-default:"5s"`
-	Filter      FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
+	USDCtoUSDT         bool          `yaml:"usdc_to_usdt" env:"USDC_TO_USDT" env-default:"true"`
+	BatchPeriod        time.Duration `yaml:"batch_period" env:"BATCH_PERIOD" env-default:"5s"`
+	AssetsUpdatePeriod time.Duration `yaml:"assets_update_period" env:"ASSETS_UPDATE_PERIOD" env-default:"5m"`
+	Filter             FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
 }
 
 type KrakenConfig struct {
@@ -112,7 +113,7 @@ type SyncswapConfig struct {
 	MappingURL                string       `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/mapping.json"`
 	ClassicPoolFactoryAddress string       `yaml:"classic_pool_factory_address" env:"CLASSIC_POOL_FACTORY_ADDRESS" env-default:"0x37BAc764494c8db4e54BDE72f6965beA9fa0AC2d"`
 	StablePoolFactoryAddress  string       `yaml:"stable_pool_factory_address" env:"STABLE_POOL_FACTORY_ADDRESS" env-default:"0xE4CF807E351b56720B17A59094179e7Ed9dD3727"`
-	StablePoolMarkets         []string     `yaml:"stable_pool_markets" env:"STABLE_POOL_MARKETS" env-default:"usdt/usdc"` // `env-default` tag value is a comma separated list of markets as in `usdt/usdc,usdc/dai`
+	StablePoolMarkets         []string     `yaml:"stable_pool_markets" env:"STABLE_POOL_MARKETS" env-default:"usdt/usdc"` // `env-default` tag value is a comma separated list of markets as in `usdt/usdc, usdc/dai`
 	Filter                    FilterConfig `yaml:"filter" env-prefix:"FILTER_"`
 }
 
