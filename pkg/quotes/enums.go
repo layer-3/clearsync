@@ -115,7 +115,7 @@ var (
 	// and therefore the taker side cannot be deduced.
 	TakerTypeUnknown = TakerType{""}
 	// TakerTypeBuy represents a "buy" trade.
-	// It's value is set to "sell" because the sell order it
+	// Its value is set to "sell" because the sell order it
 	// was matched with was present in the order book before,
 	// therefore the taker is the "sell" side.
 	TakerTypeBuy = TakerType{"sell"}
@@ -178,6 +178,9 @@ func (t *TakerType) UnmarshalYAML(value *yaml.Node) error {
 	return nil
 }
 
+// ExchangeType is enum that represents the type of exchange.
+// It is not implemented with struct based enums pattern because
+// it's not used as an input parameter for any function or method.
 type ExchangeType string
 
 var (
