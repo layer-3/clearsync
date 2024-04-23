@@ -18,7 +18,7 @@ func Test_uniswapV3_parseSwap(t *testing.T) {
 
 	type args struct {
 		swap *iuniswap_v3_pool.IUniswapV3PoolSwap
-		pool *dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap]
+		pool *dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator]
 	}
 
 	tests := []struct {
@@ -56,7 +56,7 @@ func Test_uniswapV3_parseSwap(t *testing.T) {
 						Removed:     false,
 					},
 				},
-				pool: &dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap]{
+				pool: &dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator]{
 					BaseToken: poolToken{
 						Address:  common.HexToAddress("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
 						Symbol:   "weth",
@@ -110,7 +110,7 @@ func Test_uniswapV3_parseSwap(t *testing.T) {
 						Removed:     false,
 					},
 				},
-				pool: &dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap]{
+				pool: &dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator]{
 					BaseToken: poolToken{
 						Address:  common.HexToAddress("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
 						Symbol:   "weth",
@@ -164,7 +164,7 @@ func Test_uniswapV3_parseSwap(t *testing.T) {
 						Removed:     false,
 					},
 				},
-				pool: &dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap]{
+				pool: &dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator]{
 					BaseToken: poolToken{
 						Address:  common.HexToAddress("0x0"), // native token
 						Symbol:   "eth",
@@ -218,7 +218,7 @@ func Test_uniswapV3_parseSwap(t *testing.T) {
 						Removed:     false,
 					},
 				},
-				pool: &dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap]{
+				pool: &dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator]{
 					Address: common.HexToAddress("0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640"),
 					BaseToken: poolToken{
 						Address:  common.HexToAddress("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"),

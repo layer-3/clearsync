@@ -1,10 +1,13 @@
 package quotes
 
 import (
+	"errors"
 	"fmt"
 	"math/rand"
 	"sync"
 	"time"
+
+	"golang.org/x/net/context"
 
 	"github.com/shopspring/decimal"
 )
@@ -28,7 +31,7 @@ type bitfaker struct {
 // 	"duckies/usdc": {StartPrice: 0.000004, PriceVolatility: 0.000003, Period: 500 * time.Millisecond},
 // }
 
-func newBitfaker(config BitfakerConfig, outbox chan<- TradeEvent) Driver {
+func newBitfaker(config BitfakerConfig, outbox chan<- TradeEvent) (Driver, error) {
 	return &bitfaker{
 		once:          newOnce(),
 		streamPeriods: make(map[Market]time.Duration),
@@ -37,7 +40,7 @@ func newBitfaker(config BitfakerConfig, outbox chan<- TradeEvent) Driver {
 		outbox:        outbox,
 		filter:        NewFilter(config.Filter),
 		marketConfigs: config.Markets,
-	}
+	}, nil
 }
 
 func (b *bitfaker) ActiveDrivers() []DriverType {
@@ -173,6 +176,10 @@ func (b *bitfaker) Unsubscribe(market Market) error {
 	return nil
 }
 
+func (*bitfaker) HistoricalData(_ context.Context, _ Market, _ time.Duration) ([]TradeEvent, error) {
+	return nil, errors.New("by design Bitfaker does not support querying historical data, use a different provider")
+}
+
 func (b *bitfaker) createTradeEvent(market Market, nextPriceFunc, nextAmountFunc func() float64) {
 	price := decimal.NewFromFloat(nextPriceFunc())
 	amount := decimal.NewFromFloat(nextAmountFunc())
@@ -193,5 +200,3 @@ func (b *bitfaker) createTradeEvent(market Market, nextPriceFunc, nextAmountFunc
 	}
 	b.outbox <- tr
 }
-
-func (b *bitfaker) SetInbox(_ <-chan TradeEvent) {}

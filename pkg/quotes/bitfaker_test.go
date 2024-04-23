@@ -8,10 +8,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var disabledFilter = NewFilter(FilterConfig{FilterType: DisabledFilterType})
-
 func TestBitfaker_Subscribe(t *testing.T) {
 	t.Parallel()
+
+	disabledFilter := NewFilter(FilterConfig{FilterType: DisabledFilterType})
 
 	t.Run("Single market", func(t *testing.T) {
 		t.Parallel()
@@ -92,6 +92,8 @@ func TestBitfaker_Subscribe(t *testing.T) {
 func TestBitfaker_Unsubscribe(t *testing.T) {
 	t.Parallel()
 
+	disabledFilter := NewFilter(FilterConfig{FilterType: DisabledFilterType})
+
 	t.Run("Unsubscribe from multiple markets", func(t *testing.T) {
 		t.Parallel()
 
@@ -163,6 +165,8 @@ func TestBitfaker_Unsubscribe(t *testing.T) {
 
 func TestCreateTradeEvent(t *testing.T) {
 	t.Parallel()
+
+	disabledFilter := NewFilter(FilterConfig{FilterType: DisabledFilterType})
 
 	outbox := make(chan TradeEvent)
 	client := bitfaker{

@@ -1,7 +1,9 @@
 package quotes
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -31,10 +33,11 @@ type kraken struct {
 	availablePairs safe.Map[string, krakenPair]
 	streams        safe.Map[Market, struct{}]
 	filter         Filter
+	history        HistoricalData
 	outbox         chan<- TradeEvent
 }
 
-func newKraken(config KrakenConfig, outbox chan<- TradeEvent) Driver {
+func newKraken(config KrakenConfig, outbox chan<- TradeEvent, history HistoricalData) (Driver, error) {
 	limiter := &wsDialWrapper{}
 
 	// Set rate limit to 1 req/sec
@@ -50,9 +53,10 @@ func newKraken(config KrakenConfig, outbox chan<- TradeEvent) Driver {
 		availablePairs: safe.NewMap[string, krakenPair](),
 		streams:        safe.NewMap[Market, struct{}](),
 
-		filter: NewFilter(config.Filter),
-		outbox: outbox,
-	}
+		filter:  NewFilter(config.Filter),
+		history: history,
+		outbox:  outbox,
+	}, nil
 }
 
 func (k *kraken) ActiveDrivers() []DriverType {
@@ -178,6 +182,10 @@ func (k *kraken) Unsubscribe(market Market) error {
 
 	k.streams.Delete(market)
 	return nil
+}
+
+func (*kraken) HistoricalData(_ context.Context, _ Market, _ time.Duration) ([]TradeEvent, error) {
+	return nil, errors.New("not implemented")
 }
 
 func (k *kraken) unsubscribeUnchecked(market Market) error {
@@ -511,5 +519,3 @@ func (k *kraken) getPairs() error {
 
 	return nil
 }
-
-func (k *kraken) SetInbox(_ <-chan TradeEvent) {}

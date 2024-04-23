@@ -113,7 +113,7 @@ func (p *PriceCache) GetIndexPrice(event *TradeEvent) (decimal.Decimal, bool) {
 		bottom = bottom.Add(t.Weight)
 	}
 
-	if bottom.Equal(decimal.Zero) {
+	if bottom.IsZero() {
 		return decimal.Zero, false
 	}
 

@@ -3,6 +3,7 @@ package quotes
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -300,7 +301,10 @@ func (b *mexc) Unsubscribe(market Market) error {
 	return nil
 }
 
-func (b *mexc) SetInbox(_ <-chan TradeEvent) {}
+func (b *mexc) HistoricalData(ctx context.Context, market Market, window time.Duration) ([]TradeEvent, error) {
+	//TODO implement me
+	return nil, errors.New("not implemented")
+}
 
 func (b *mexc) updateAssets() {
 	var exchangeInfo *mexcExchangeInfo

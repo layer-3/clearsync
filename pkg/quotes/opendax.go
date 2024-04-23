@@ -1,6 +1,7 @@
 package quotes
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -9,7 +10,6 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/ipfs/go-log/v2"
-	"github.com/shopspring/decimal"
 
 	protocol "github.com/layer-3/clearsync/pkg/quotes/opendax_protocol"
 	"github.com/layer-3/clearsync/pkg/safe"
@@ -25,24 +25,26 @@ type opendax struct {
 
 	outbox         chan<- TradeEvent
 	filter         Filter
+	history        HistoricalData
 	period         time.Duration
 	reqID          atomic.Uint64
 	streams        safe.Map[Market, struct{}]
 	symbolToMarket safe.Map[string, Market]
 }
 
-func newOpendax(config OpendaxConfig, outbox chan<- TradeEvent) Driver {
+func newOpendax(config OpendaxConfig, outbox chan<- TradeEvent, history HistoricalData) (Driver, error) {
 	return &opendax{
 		once:           newOnce(),
 		url:            config.URL,
 		outbox:         outbox,
 		filter:         NewFilter(config.Filter),
+		history:        history,
 		period:         config.ReconnectPeriod * time.Second,
 		reqID:          atomic.Uint64{},
 		dialer:         &wsDialWrapper{},
 		streams:        safe.NewMap[Market, struct{}](),
 		symbolToMarket: safe.NewMap[string, Market](),
-	}
+	}, nil
 }
 
 func (o *opendax) ActiveDrivers() []DriverType {
@@ -140,6 +142,10 @@ func (o *opendax) Unsubscribe(market Market) error {
 	return nil
 }
 
+func (*opendax) HistoricalData(_ context.Context, _ Market, _ time.Duration) ([]TradeEvent, error) {
+	return nil, errors.New("not implemented")
+}
+
 func (o *opendax) unsubscribeUnchecked(market Market) error {
 	// Opendax resource [market].[trades]
 	resource := fmt.Sprintf("%s%s.trades", market.Base(), market.Quote())
@@ -220,7 +226,7 @@ func (o *opendax) listen() {
 		}
 
 		// Skip system messages
-		if tr.Market.IsEmpty() || tr.Price == decimal.Zero {
+		if tr.Market.IsEmpty() || tr.Price.IsZero() {
 			continue
 		}
 
@@ -299,5 +305,3 @@ func (o *opendax) recognizeSide(side string) (TakerType, error) {
 		return TakerTypeUnknown, errors.New("order side invalid: " + side)
 	}
 }
-
-func (o *opendax) SetInbox(_ <-chan TradeEvent) {}

@@ -20,8 +20,9 @@ type binance struct {
 	usdcToUSDT         bool
 	assetsUpdatePeriod time.Duration
 	idlePeriod         time.Duration
-	exchangeInfo       *gobinance.ExchangeInfoService
+	binanceClient      *gobinance.Client
 	filter             Filter
+	history            HistoricalData
 	batcherInbox       chan<- TradeEvent
 	outbox             chan<- TradeEvent
 	streams            safe.Map[Market, chan struct{}]
@@ -29,7 +30,7 @@ type binance struct {
 	assets             safe.Map[Market, gobinance.Symbol]
 }
 
-func newBinance(config BinanceConfig, outbox chan<- TradeEvent) Driver {
+func newBinance(config BinanceConfig, outbox chan<- TradeEvent, history HistoricalData) (Driver, error) {
 	batcherInbox := make(chan TradeEvent, 1024)
 	go batch(config.BatchPeriod, batcherInbox, outbox)
 
@@ -38,8 +39,9 @@ func newBinance(config BinanceConfig, outbox chan<- TradeEvent) Driver {
 		usdcToUSDT:         config.USDCtoUSDT,
 		assetsUpdatePeriod: config.AssetsUpdatePeriod,
 		idlePeriod:         config.IdlePeriod,
-		exchangeInfo:       gobinance.NewClient("", "").NewExchangeInfoService(),
+		binanceClient:      gobinance.NewClient("", ""),
 		filter:             NewFilter(config.Filter),
+		history:            history,
 		batcherInbox:       batcherInbox,
 		outbox:             outbox,
 		streams:            safe.NewMap[Market, chan struct{}](),
@@ -57,7 +59,7 @@ func newBinance(config BinanceConfig, outbox chan<- TradeEvent) Driver {
 		}
 	}()
 
-	return driver
+	return driver, nil
 }
 
 func (b *binance) ActiveDrivers() []DriverType {
@@ -119,7 +121,7 @@ func (b *binance) Subscribe(market Market) error {
 	}
 
 	idle := time.NewTimer(b.idlePeriod)
-	doneCh, stopCh, err := gobinance.WsTradeServe(symbol, b.handleTrade(idle), b.handleErr(market))
+	doneCh, stopCh, err := gobinance.WsTradeServe(symbol, b.handleTrade(market, idle), b.handleErr(market))
 	if err != nil {
 		return fmt.Errorf("%s: %w: %w", market, ErrFailedSub, err)
 	}
@@ -135,12 +137,11 @@ func (b *binance) Subscribe(market Market) error {
 			loggerBinance.Warnw("market inactivity detected", "market", market)
 		}
 
-		loggerBinance.Infow("resubscribing", "market", market)
 		if _, ok := b.streams.Load(market); !ok {
 			return // market was unsubscribed earlier
 		}
 
-		loggerBinance.Warnw("connection failed, resubscribing", "market", market)
+		loggerBinance.Infow("resubscribing", "market", market)
 		if err := b.Unsubscribe(market); err != nil {
 			loggerBinance.Errorw("failed to unsubscribe", "market", market, "error", err)
 		}
@@ -179,13 +180,13 @@ func (b *binance) Unsubscribe(market Market) error {
 	return nil
 }
 
-func (b *binance) SetInbox(_ <-chan TradeEvent) {}
-
 func (b *binance) updateAssets() {
+	exchangeInfoService := b.binanceClient.NewExchangeInfoService()
+
 	var exchangeInfo *gobinance.ExchangeInfo
 	var err error
 	for {
-		exchangeInfo, err = b.exchangeInfo.Do(context.Background())
+		exchangeInfo, err = exchangeInfoService.Do(context.Background())
 		if err == nil {
 			break
 		}
@@ -204,11 +205,14 @@ func (b *binance) updateAssets() {
 	}
 }
 
-func (b *binance) handleTrade(idle *time.Timer) func(*gobinance.WsTradeEvent) {
+func (b *binance) handleTrade(
+	market Market,
+	idle *time.Timer,
+) func(*gobinance.WsTradeEvent) {
 	return func(event *gobinance.WsTradeEvent) {
 		idle.Reset(b.idlePeriod)
 
-		tradeEvent, err := b.buildEvent(event)
+		tradeEvent, err := b.buildEvent(event, market)
 		if err != nil {
 			loggerBinance.Errorw("failed to build trade event", "event", event, "error", err)
 			return
@@ -244,7 +248,7 @@ func (b *binance) handleErr(market Market) func(error) {
 	}
 }
 
-func (b *binance) buildEvent(tr *gobinance.WsTradeEvent) (TradeEvent, error) {
+func (b *binance) buildEvent(tr *gobinance.WsTradeEvent, market Market) (TradeEvent, error) {
 	price, err := decimal.NewFromString(tr.Price)
 	if err != nil {
 		return TradeEvent{}, fmt.Errorf("failed to parse price: %+v", tr.Price)
@@ -253,11 +257,6 @@ func (b *binance) buildEvent(tr *gobinance.WsTradeEvent) (TradeEvent, error) {
 	amount, err := decimal.NewFromString(tr.Quantity)
 	if err != nil {
 		return TradeEvent{}, fmt.Errorf("failed to parse quantity: %+v", tr.Quantity)
-	}
-
-	market, ok := b.symbolToMarket.Load(strings.ToLower(tr.Symbol))
-	if !ok {
-		return TradeEvent{}, fmt.Errorf("failed to load market: %+v", tr.Symbol)
 	}
 
 	if b.usdcToUSDT && (market.quoteUnit == "usdt" || market.quoteUnit == "usdc") {
@@ -280,6 +279,73 @@ func (b *binance) buildEvent(tr *gobinance.WsTradeEvent) (TradeEvent, error) {
 		TakerType: takerType,
 		CreatedAt: time.UnixMilli(tr.TradeTime),
 	}, nil
+}
+
+func (b *binance) HistoricalData(ctx context.Context, market Market, window time.Duration) ([]TradeEvent, error) {
+	trades, err := fetchHistoryDataFromExternalSource(ctx, b.history, market, window, loggerBinance)
+	if err == nil && len(trades) > 0 {
+		return trades, nil
+	}
+
+	// Fetch data
+	aggTradesService := b.binanceClient.NewAggTradesService()
+
+	aggTradesService.StartTime(time.Now().Add(-window).Unix() * 1000)
+	aggTradesService.EndTime(time.Now().Unix() * 1000)
+	const limit = 500
+	aggTradesService.Limit(limit)
+
+	base := strings.ToLower(market.Base())
+	quote := strings.ToLower(market.Quote())
+
+	tokenFixtures := map[string]string{
+		"usd":  "usdt", // as of spring 2024 Binance does not provide USD spot markets
+		"weth": "eth",  // as of spring 2024 Binance does not provide WETH spot markets
+	}
+	if newBase, ok := tokenFixtures[base]; ok {
+		base = newBase
+	}
+	if newQuote, ok := tokenFixtures[quote]; ok {
+		quote = newQuote
+	}
+
+	symbol := strings.ToUpper(base + quote)
+	aggTradesService.Symbol(symbol)
+
+	aggTrades, err := aggTradesService.Do(ctx)
+	if err != nil {
+		loggerBinance.Errorw("failed to fetch historical data", "market", market, "error", err)
+		return nil, fmt.Errorf("failed to fetch historical data: %w", err)
+	}
+
+	// Convert aggregated trades to a trade events
+	trades = make([]TradeEvent, 0, limit)
+	for _, aggTrade := range aggTrades {
+		trade, err := b.buildEvent(&gobinance.WsTradeEvent{
+			Price:        aggTrade.Price,
+			Quantity:     aggTrade.Quantity,
+			TradeTime:    aggTrade.Timestamp,
+			IsBuyerMaker: aggTrade.IsBuyerMaker,
+		}, market)
+		if err != nil {
+			loggerBinance.Errorw("failed to build trade event", "market", market, "error", err)
+			continue
+		}
+		if trade.Price.IsZero() {
+			loggerBinance.Warnw("skipping trade with zero price",
+				"market", market,
+				"trade", trade,
+				"aggregated_trade", aggTrade)
+			continue
+		}
+		trades = append(trades, trade)
+	}
+
+	// No need to take additional step
+	// of sorting trades by timestamp
+	// since Binance does that for us.
+
+	return trades, nil
 }
 
 func batch(batchPeriod time.Duration, inbox <-chan TradeEvent, outbox chan<- TradeEvent) {
@@ -335,7 +401,6 @@ func combineTrades(trades []TradeEvent) *TradeEvent {
 		side = TakerTypeSell // "buy" (yes, it looks inverted)
 	} else {
 		side = TakerTypeBuy // "sell"
-		netAmount = netAmount.Abs()
 	}
 
 	return &TradeEvent{

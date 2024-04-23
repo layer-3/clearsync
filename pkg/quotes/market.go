@@ -3,6 +3,7 @@ package quotes
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -118,4 +119,19 @@ type TradeEvent struct {
 	Total     decimal.Decimal
 	TakerType TakerType
 	CreatedAt time.Time
+}
+
+// sortTradeEvents sorts the given trade events by time.
+// The input slice is modified in place.
+// It is safe to call this function with an empty slice.
+func sortTradeEvents(trades []TradeEvent) {
+	slices.SortFunc(trades, func(a, b TradeEvent) int {
+		if a.CreatedAt.Before(b.CreatedAt) {
+			return -1
+		}
+		if a.CreatedAt.After(b.CreatedAt) {
+			return 1
+		}
+		return 0
+	})
 }
