@@ -2,6 +2,7 @@ package userop
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"math/big"
@@ -411,7 +412,14 @@ func subscribeUserOpEvent(
 		slog.Error("subscription error", "error", err)
 		cancel()
 	case <-ctx.Done():
-		slog.Error("timeout waiting for user operation event", "hash", userOpHash.Hex())
+		err := ctx.Err()
+		if err == nil || errors.Is(err, context.Canceled) {
+			slog.Debug("context done for userOp event", "reason", "context canceled", "hash", userOpHash.Hex())
+		} else if errors.Is(err, context.DeadlineExceeded) {
+			slog.Error("context done for userOp event", "reason", "deadline exceeded", "hash", userOpHash.Hex())
+		} else {
+			slog.Error("context done for userOp event", "reason", "context error", "error", err, "hash", userOpHash.Hex())
+		}
 	}
 
 	sub.Unsubscribe()
