@@ -414,11 +414,11 @@ func subscribeUserOpEvent(
 	case <-ctx.Done():
 		err := ctx.Err()
 		if err == nil || errors.Is(err, context.Canceled) {
-			slog.Debug("waiting for user operation: context canceled", "hash", userOpHash.Hex())
+			slog.Debug("context done for userOp event", "reason", "context canceled", "hash", userOpHash.Hex())
 		} else if errors.Is(err, context.DeadlineExceeded) {
-			slog.Error("timeout waiting for user operation event", "hash", userOpHash.Hex())
+			slog.Error("context done for userOp event", "reason", "deadline exceeded", "hash", userOpHash.Hex())
 		} else {
-			slog.Error("waiting for user operation: context error", "error", err, "hash", userOpHash.Hex())
+			slog.Error("context done for userOp event", "reason", "context error", "error", err, "hash", userOpHash.Hex())
 		}
 	}
 
