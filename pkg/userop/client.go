@@ -411,7 +411,11 @@ func subscribeUserOpEvent(
 		slog.Error("subscription error", "error", err)
 		cancel()
 	case <-ctx.Done():
-		slog.Error("timeout waiting for user operation event", "hash", userOpHash.Hex())
+		if err := ctx.Err(); err == context.DeadlineExceeded {
+			slog.Error("timeout waiting for user operation event", "hash", userOpHash.Hex())
+		} else {
+			slog.Debug("waiting for user operation: context canceled", "hash", userOpHash.Hex())
+		}
 	}
 
 	sub.Unsubscribe()
