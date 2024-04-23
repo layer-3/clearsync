@@ -1,13 +1,10 @@
 [
   "spot://ETH/USD",
   "spot://WBTC/USD",
-  "spot://DUCKIES/USD",
   "spot://SHIB/USD",
   "spot://USDT/USD",
   "spot://BNB/USD",
   "spot://PEPE/USD",
   "spot://BADGER/USD",
-  "spot://FLOKI/USD",
-  "spot://KAYEN/USD",
-  "spot://DISCO/USD"
+  "spot://FLOKI/USD"
 ]
