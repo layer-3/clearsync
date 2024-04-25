@@ -171,6 +171,10 @@ func buildV3Trade[Event any](
 	amount = amount.Abs()
 	price = price.Abs()
 
+	if amount.Equals(decimal.Zero) {
+		return TradeEvent{}, fmt.Errorf("amount is zero")
+	}
+
 	tr := TradeEvent{
 		Source:    driver,
 		Market:    pool.market,
