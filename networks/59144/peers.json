@@ -22,7 +22,7 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [5, 10],
+              "margin": [1, 100],
               "safety": "5.5"
           }
       ]
@@ -50,7 +50,7 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [5, 10],
+              "margin": [1, 100],
               "safety": "5.5"
           }
       ]
@@ -78,7 +78,7 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [5, 10],
+              "margin": [1, 100],
               "safety": "5.5"
           }
       ]
@@ -104,7 +104,7 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [5, 10],
+              "margin": [1, 100],
               "safety": "5.5"
           }
       ]
@@ -130,7 +130,7 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [5, 10],
+              "margin": [1, 100],
               "safety": "5.5"
           }
       ]
@@ -156,7 +156,7 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [5, 10],
+              "margin": [1, 100],
               "safety": "5.5"
           }
       ]
@@ -182,7 +182,7 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [5, 10],
+              "margin": [1, 100],
               "safety": "5.5"
           }
       ]
@@ -208,7 +208,7 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [5, 10],
+              "margin": [1, 100],
               "safety": "5.5"
           }
       ]
@@ -234,7 +234,7 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [5, 10],
+              "margin": [1, 100],
               "safety": "5.5"
           }
       ]
@@ -260,7 +260,7 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [5, 10],
+              "margin": [1, 100],
               "safety": "5.5"
           }
       ]
@@ -286,7 +286,7 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [5, 10],
+              "margin": [1, 100],
               "safety": "5.5"
           }
       ]
@@ -312,7 +312,7 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [5, 10],
+              "margin": [1, 100],
               "safety": "5.5"
           }
       ]
@@ -338,7 +338,7 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [5, 10],
+              "margin": [1, 100],
               "safety": "5.5"
           }
       ]
@@ -364,7 +364,7 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [5, 10],
+              "margin": [1, 100],
               "safety": "5.5"
           }
       ]
@@ -390,7 +390,7 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [5, 10],
+              "margin": [1, 100],
               "safety": "5.5"
           }
       ]
@@ -416,7 +416,7 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [5, 10],
+              "margin": [1, 100],
               "safety": "5.5"
           }
       ]
@@ -442,7 +442,7 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [5, 10],
+              "margin": [1, 100],
               "safety": "5.5"
           }
       ]
@@ -468,7 +468,7 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [5, 10],
+              "margin": [1, 100],
               "safety": "5.5"
           }
       ]
@@ -494,7 +494,7 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [5, 10],
+              "margin": [1, 100],
               "safety": "5.5"
           }
       ]
@@ -520,7 +520,7 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [5, 10],
+              "margin": [1, 100],
               "safety": "5.5"
           }
       ]
@@ -546,7 +546,7 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [5, 10],
+              "margin": [1, 100],
               "safety": "5.5"
           }
       ]
@@ -572,7 +572,7 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [5, 10],
+              "margin": [1, 100],
               "safety": "5.5"
           }
       ]
@@ -598,7 +598,7 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [5, 10],
+              "margin": [1, 100],
               "safety": "5.5"
           }
       ]
@@ -624,7 +624,7 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [5, 10],
+              "margin": [1, 100],
               "safety": "5.5"
           }
       ]
@@ -650,7 +650,7 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [5, 10],
+              "margin": [1, 100],
               "safety": "5.5"
           }
       ]
@@ -676,7 +676,7 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [5, 10],
+              "margin": [1, 100],
               "safety": "5.5"
           }
       ]
@@ -702,7 +702,7 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [5, 10],
+              "margin": [1, 100],
               "safety": "5.5"
           }
       ]
@@ -728,7 +728,7 @@
       "packages": [
           {
               "name": "Retail Package",
-              "margin": [5, 10],
+              "margin": [1, 100],
               "safety": "5.5"
           }
       ]
