@@ -132,6 +132,34 @@ func getGasPricesMiddleware(provider EthBackend, gasConfig GasConfig) middleware
 	}
 }
 
+func convertAndSetGasLimits(
+	est gasEstimate,
+	op *UserOperation,
+) error {
+	preVerificationGas, verificationGasLimit, callGasLimit, err := est.convert()
+	if err != nil {
+		return fmt.Errorf("failed to convert gas estimates: %w", err)
+	}
+
+	if !op.CallGasLimit.IsZero() {
+		callGasLimit = op.CallGasLimit.BigInt()
+	}
+	if !op.VerificationGasLimit.IsZero() {
+		verificationGasLimit = op.VerificationGasLimit.BigInt()
+	}
+	if !op.PreVerificationGas.IsZero() {
+		preVerificationGas = op.PreVerificationGas.BigInt()
+	}
+
+	slog.Debug("estimated userOp gas", "callGasLimit", callGasLimit, "verificationGasLimit", verificationGasLimit, "preVerificationGas", preVerificationGas)
+
+	op.CallGasLimit = decimal.NewFromBigInt(callGasLimit, 0)
+	op.VerificationGasLimit = decimal.NewFromBigInt(verificationGasLimit, 0)
+	op.PreVerificationGas = decimal.NewFromBigInt(preVerificationGas, 0)
+
+	return nil
+}
+
 func getBiconomyPaymasterAndData(
 	bundler RPCBackend,
 	paymasterCtx map[string]any,
@@ -171,14 +199,9 @@ func getBiconomyPaymasterAndData(
 			return fmt.Errorf("failed to call pm_sponsorUserOperation: %w", err)
 		}
 
-		callGasLimit, verificationGasLimit, preVerificationGas, err := est.convert()
-		if err != nil {
-			return fmt.Errorf("failed to convert gas estimates: %w", err)
+		if err := convertAndSetGasLimits(est, op); err != nil {
+			return err
 		}
-
-		op.CallGasLimit = decimal.NewFromBigInt(callGasLimit, 0)
-		op.VerificationGasLimit = decimal.NewFromBigInt(verificationGasLimit, 0)
-		op.PreVerificationGas = decimal.NewFromBigInt(preVerificationGas, 0)
 
 		paymasterAndData, err := hexutil.Decode(est.PaymasterAndData)
 		if err != nil {
@@ -203,8 +226,11 @@ func getGasLimitsMiddleware(bundler RPCBackend, config ClientConfig) (middleware
 				config.Paymaster.PimlicoERC20.VerificationGasOverhead,
 			)
 		case PaymasterPimlicoVerifying:
-			// NOTE: PimlicoVerifying is the easiest to implement
-			return nil, ErrPaymasterNotSupported
+			estimateGas = getPimlicoVerifyingPaymsterAndData(
+				bundler,
+				config.EntryPoint,
+				config.Paymaster.PimlicoVerifying,
+			)
 		case PaymasterBiconomyERC20:
 			return nil, ErrPaymasterNotSupported
 		case PaymasterBiconomySponsoring:
@@ -239,26 +265,9 @@ func estimateUserOperationGas(bundler RPCBackend, entryPoint common.Address) mid
 			return fmt.Errorf("error estimating gas: %w", err)
 		}
 
-		preVerificationGas, verificationGasLimit, callGasLimit, err := est.convert()
-		if err != nil {
-			return fmt.Errorf("failed to convert gas estimates: %w", err)
+		if err := convertAndSetGasLimits(est, op); err != nil {
+			return err
 		}
-
-		if !op.CallGasLimit.IsZero() {
-			callGasLimit = op.CallGasLimit.BigInt()
-		}
-		if !op.VerificationGasLimit.IsZero() {
-			verificationGasLimit = op.VerificationGasLimit.BigInt()
-		}
-		if !op.PreVerificationGas.IsZero() {
-			preVerificationGas = op.PreVerificationGas.BigInt()
-		}
-
-		slog.Debug("estimated userOp gas", "callGasLimit", callGasLimit, "verificationGasLimit", verificationGasLimit, "preVerificationGas", preVerificationGas)
-
-		op.PreVerificationGas = decimal.NewFromBigInt(preVerificationGas, 0)
-		op.VerificationGasLimit = decimal.NewFromBigInt(verificationGasLimit, 0)
-		op.CallGasLimit = decimal.NewFromBigInt(callGasLimit, 0)
 
 		return nil
 	}
@@ -280,6 +289,68 @@ func getPimlicoERC20PaymasterData(
 		op.PaymasterAndData = paymaster.Bytes()
 
 		return nil
+	}
+}
+
+func getPimlicoVerifyingPaymsterAndData(
+	bundler RPCBackend,
+	entryPoint common.Address,
+	pimlicoVerifyingConfig PimlicoVerifyingConfig,
+) middleware {
+	return func(ctx context.Context, op *UserOperation) error {
+		opModified := struct {
+			Sender               common.Address `json:"sender"`
+			Nonce                string         `json:"nonce"`
+			InitCode             string         `json:"initCode"`
+			CallData             string         `json:"callData"`
+			CallGasLimit         string         `json:"callGasLimit"`
+			VerificationGasLimit string         `json:"verificationGasLimit"`
+			PreVerificationGas   string         `json:"preVerificationGas"`
+			MaxFeePerGas         string         `json:"maxFeePerGas"`
+			MaxPriorityFeePerGas string         `json:"maxPriorityFeePerGas"`
+			PaymasterAndData     string         `json:"paymasterAndData"`
+			Signature            string         `json:"signature,omitempty"`
+		}{
+			Sender:               op.Sender,
+			Nonce:                fmt.Sprintf("0x%x", op.Nonce.BigInt()),
+			InitCode:             hexutil.Encode(op.InitCode),
+			CallData:             hexutil.Encode(op.CallData),
+			CallGasLimit:         fmt.Sprintf("0x%x", op.CallGasLimit.BigInt()),
+			VerificationGasLimit: fmt.Sprintf("0x%x", op.VerificationGasLimit.BigInt()),
+			PreVerificationGas:   fmt.Sprintf("0x%x", op.PreVerificationGas.BigInt()),
+			MaxFeePerGas:         fmt.Sprintf("0x%x", op.MaxFeePerGas.BigInt()),
+			MaxPriorityFeePerGas: fmt.Sprintf("0x%x", op.MaxPriorityFeePerGas.BigInt()),
+			PaymasterAndData:     hexutil.Encode(op.PaymasterAndData),
+			Signature:            hexutil.Encode(op.Signature),
+		}
+
+		slog.Debug("getting gas limits", "userOp", opModified)
+
+		// Pimlico-standardized gas estimation with paymaster
+		// see https://docs.pimlico.io/paymaster/verifying-paymaster/reference/endpoints#pm_sponsoruseroperation-v2
+		var gasEst gasEstimate
+		if pimlicoVerifyingConfig.SponsorshipPolicyID == "" {
+			if err := bundler.CallContext(ctx, &gasEst, "pm_sponsorUserOperation", opModified, entryPoint); err != nil {
+				return fmt.Errorf("failed to call pm_sponsorUserOperation: %w", err)
+			}
+		} else {
+			if err := bundler.CallContext(ctx, &gasEst, "pm_sponsorUserOperation", opModified, entryPoint, pimlicoVerifyingConfig); err != nil {
+				return fmt.Errorf("failed to call pm_sponsorUserOperation: %w", err)
+			}
+		}
+
+		paymasterAndData, err := hexutil.Decode(gasEst.PaymasterAndData)
+		if err != nil {
+			return fmt.Errorf("failed to decode paymasterAndData: %w", err)
+		}
+		op.PaymasterAndData = paymasterAndData
+
+		if gasEst.CallGasLimit == nil && gasEst.VerificationGasLimit == nil && gasEst.PreVerificationGas == nil {
+			estimate := estimateUserOperationGas(bundler, entryPoint)
+			return estimate(ctx, op)
+		}
+
+		return convertAndSetGasLimits(gasEst, op)
 	}
 }
 

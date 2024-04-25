@@ -43,7 +43,10 @@ func (conf ClientConfig) validate() error {
 		return ErrInvalidECDSAValidatorAddress
 	}
 
-	if conf.Paymaster.Type != nil && *conf.Paymaster.Type != PaymasterDisabled {
+	if conf.Paymaster.Type != nil && *conf.Paymaster.Type != PaymasterDisabled &&
+		// If sponsoring paymaster, then paymaster address can be omitted as
+		// a server will return it alongside other paymaster data (and the address can be dynamic)
+		*conf.Paymaster.Type != PaymasterPimlicoVerifying && *conf.Paymaster.Type != PaymasterBiconomySponsoring {
 		if conf.Paymaster.Address == (common.Address{}) {
 			return ErrInvalidPaymasterAddress
 		}
@@ -108,7 +111,7 @@ func (config *PimlicoERC20Config) Init() {
 // PimlicoVerifyingConfig represents the configuration for the Pimlico Verifying paymaster.
 // See the RPC endpoint docs at https://docs.pimlico.io/paymaster/verifying-paymaster/reference/endpoints#pm_sponsoruseroperation-v2
 type PimlicoVerifyingConfig struct {
-	SponsorshipPolicyID string `yaml:"sponsorship_policy_id" env:"SPONSORSHIP_POLICY_ID"`
+	SponsorshipPolicyID string `json:"sponsorshipPolicyId" yaml:"sponsorship_policy_id" env:"SPONSORSHIP_POLICY_ID"`
 }
 
 func (config *PimlicoVerifyingConfig) Init() {
