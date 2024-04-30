@@ -110,7 +110,7 @@ func (s *sectaV2) parseSwap(
 	defer func() {
 		if r := recover(); r != nil {
 			msg := "recovered in from panic during swap parsing"
-			loggerSectaV2.Errorw(msg, "swap", swap)
+			loggerSectaV2.Errorw(msg, "swap", swap, "pool", pool)
 			err = fmt.Errorf("%s: %s", msg, r)
 		}
 	}()

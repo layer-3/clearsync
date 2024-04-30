@@ -131,7 +131,7 @@ func (u *uniswapV3) parseSwap(
 	defer func() {
 		if r := recover(); r != nil {
 			msg := "recovered in from panic during swap parsing"
-			loggerUniswapV3.Errorw(msg, "swap", swap)
+			loggerUniswapV3.Errorw(msg, "swap", swap, "pool", pool)
 			err = fmt.Errorf("%s: %s", msg, r)
 		}
 	}()
