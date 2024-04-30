@@ -74,6 +74,15 @@ func (a *indexAggregator) computeAggregatePrice(
 	outbox chan<- TradeEvent,
 ) {
 	for event := range aggregated {
+		if event.Amount.IsZero() || event.Price.IsZero() || event.Total.IsZero() {
+			loggerIndex.Warnw("skipping zeroes trades",
+				"source", event.Source,
+				"market", event.Market,
+				"price", event.Price,
+				"amount", event.Amount)
+			continue
+		}
+
 		lastPrice := strategy.getLastPrice(event.Market)
 		if lastPrice != decimal.Zero && isPriceOutOfRange(event.Price, lastPrice, maxPriceDiff) {
 			loggerIndex.Warnw("skipping incoming outlier trade",
@@ -106,7 +115,8 @@ func (a *indexAggregator) computeAggregatePrice(
 			continue
 		}
 
-		if event.Amount.IsZero() || event.Price.IsZero() || event.Total.IsZero() { // if price calculation failed
+		// Double check to avoid broken trades
+		if event.Amount.IsZero() || event.Price.IsZero() || event.Total.IsZero() {
 			loggerIndex.Warnw("skipping zeroes trades",
 				"source", event.Source,
 				"market", event.Market,
