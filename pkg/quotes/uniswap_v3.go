@@ -124,10 +124,15 @@ func (u *uniswapV3) getPool(market Market) ([]*dexPool[iuniswap_v3_pool.IUniswap
 	return pools, nil
 }
 
-func (u *uniswapV3) parseSwap(swap *iuniswap_v3_pool.IUniswapV3PoolSwap, pool *dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap]) (TradeEvent, error) {
+func (u *uniswapV3) parseSwap(
+	swap *iuniswap_v3_pool.IUniswapV3PoolSwap,
+	pool *dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap],
+) (trade TradeEvent, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			loggerUniswapV3.Errorw("recovered in from panic during swap parsing", "swap", swap)
+			msg := "recovered in from panic during swap parsing"
+			loggerUniswapV3.Errorw(msg, "swap", swap)
+			err = fmt.Errorf("%s: %s", msg, r)
 		}
 	}()
 
@@ -156,10 +161,11 @@ func buildV3Trade[Event any](
 	}
 
 	// Normalize swap amounts
+	ten := decimal.NewFromInt(10)
 	baseDecimals := pool.baseToken.Decimals
 	quoteDecimals := pool.quoteToken.Decimals
-	amount0 := decimal.NewFromBigInt(rawAmount0, 0).Div(decimal.NewFromInt(10).Pow(baseDecimals))
-	amount1 := decimal.NewFromBigInt(rawAmount1, 0).Div(decimal.NewFromInt(10).Pow(quoteDecimals))
+	amount0 := decimal.NewFromBigInt(rawAmount0, 0).Div(ten.Pow(baseDecimals))
+	amount1 := decimal.NewFromBigInt(rawAmount1, 0).Div(ten.Pow(quoteDecimals))
 
 	// Calculate price and order side
 	price := amount1.Div(amount0) // NOTE: may panic here if `amount0` is zero
