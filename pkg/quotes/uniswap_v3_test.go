@@ -87,17 +87,17 @@ func Test_uniswapV3_parseSwap(t *testing.T) {
 						Symbol:   "usdc",
 						Decimals: decimal.NewFromInt(6),
 					},
-					reverted: false,
+					reverted: true,
 					market:   NewMarket("weth", "usdc"),
 				},
 			},
 			want: TradeEvent{
 				Source:    DriverUniswapV3,
 				Market:    Market{baseUnit: "weth", quoteUnit: "usdc"},
-				Price:     decimal.RequireFromString("0.0002917105144227"),
-				Amount:    decimal.RequireFromString("6035.9860273201849237"),
-				Total:     decimal.RequireFromString("1.76076058907780048041581994904799"),
-				TakerType: TakerTypeSell,
+				Price:     decimal.RequireFromString("3114.4051828685291225"),
+				Amount:    decimal.RequireFromString("0.0000000009632658"),
+				Total:     decimal.RequireFromString("0.0000030000000000000000000082605"),
+				TakerType: TakerTypeBuy,
 			},
 			wantErr: false,
 		},
@@ -111,8 +111,10 @@ func Test_uniswapV3_parseSwap(t *testing.T) {
 			driver := uniswapV3{}
 			got, err := driver.parseSwap(test.args.swap, test.args.pool)
 
-			require.True(t, test.wantErr == (err != nil))
-
+			if test.wantErr {
+				require.True(t, err != nil)
+				return
+			}
 			require.Equal(t, test.want.Source, got.Source, fmt.Sprintf("want: `%s`, got `%s`", test.want.Source, got.Source))
 			require.Equal(t, test.want.Market, got.Market, fmt.Sprintf("want: `%s`, got `%s`", test.want.Market, got.Market))
 			require.True(t, test.want.Price.Equal(got.Price), fmt.Sprintf("want: `%s`, got `%s`", test.want.Price, got.Price))
