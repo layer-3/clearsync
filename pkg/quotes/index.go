@@ -14,8 +14,8 @@ var (
 	loggerIndex           = log.Logger("index-aggregator")
 	defaultMarketsMapping = map[string][]string{"usd": {"weth", "matic"}}
 
-	maxAllowedPrice  = decimal.NewFromInt(1e6)
-	minAllowedAmount = decimal.NewFromInt(1e-18)
+	maxAllowedPrice  = decimal.NewFromFloatWithExponent(1, 6)
+	minAllowedAmount = decimal.NewFromFloatWithExponent(1, -18)
 )
 
 type indexAggregator struct {
