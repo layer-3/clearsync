@@ -123,10 +123,12 @@ func (s *sectaV3) getPool(market Market) ([]*dexPool[isecta_v3_pool.ISectaV3Pool
 func (s *sectaV3) parseSwap(
 	swap *isecta_v3_pool.ISectaV3PoolSwap,
 	pool *dexPool[isecta_v3_pool.ISectaV3PoolSwap],
-) (TradeEvent, error) {
+) (trade TradeEvent, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			loggerSectaV3.Errorw("recovered in from panic during swap parsing", "swap", swap)
+			msg := "recovered in from panic during swap parsing"
+			loggerSectaV3.Errorw(msg, "swap", swap, "pool", pool)
+			err = fmt.Errorf("%s: %s", msg, r)
 		}
 	}()
 

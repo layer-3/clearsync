@@ -138,10 +138,12 @@ func (s *syncswap) getPool(market Market) ([]*dexPool[isyncswap_pool.ISyncSwapPo
 func (s *syncswap) parseSwap(
 	swap *isyncswap_pool.ISyncSwapPoolSwap,
 	pool *dexPool[isyncswap_pool.ISyncSwapPoolSwap],
-) (TradeEvent, error) {
+) (trade TradeEvent, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			loggerSyncswap.Errorw("recovered in from panic during swap parsing", "swap", swap)
+			msg := "recovered in from panic during swap parsing"
+			loggerSyncswap.Errorw(msg, "swap", swap, "pool", pool)
+			err = fmt.Errorf("%s: %s", msg, r)
 		}
 	}()
 

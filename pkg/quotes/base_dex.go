@@ -275,11 +275,15 @@ func (b *baseDEX[Event, Contract]) watchSwap(
 			}
 			return
 		case swap := <-sink:
-			b.logger.Infow("raw swap", "swap", swap)
+			b.logger.Debugw("raw swap", "swap", swap, "pool", pool)
 
 			tr, err := b.parse(swap, pool)
 			if err != nil {
-				b.logger.Errorw("failed to parse swap event", "market", market, "err", err)
+				b.logger.Errorw("failed to parse swap event",
+					"market", market,
+					"pool", pool,
+					"err", err,
+				)
 				continue
 			}
 			tr.Market = market

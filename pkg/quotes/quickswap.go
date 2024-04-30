@@ -105,10 +105,12 @@ func (s *quickswap) getPool(market Market) ([]*dexPool[quickswap_v3_pool.IQuicks
 func (s *quickswap) parseSwap(
 	swap *quickswap_v3_pool.IQuickswapV3PoolSwap,
 	pool *dexPool[quickswap_v3_pool.IQuickswapV3PoolSwap],
-) (TradeEvent, error) {
+) (trade TradeEvent, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			loggerQuickswap.Errorw("recovered in from panic during swap parsing", "swap", swap)
+			msg := "recovered in from panic during swap parsing"
+			loggerQuickswap.Errorw(msg, "swap", swap, "pool", pool)
+			err = fmt.Errorf("%s: %s", msg, r)
 		}
 	}()
 

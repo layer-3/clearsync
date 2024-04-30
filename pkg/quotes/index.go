@@ -13,6 +13,9 @@ import (
 var (
 	loggerIndex           = log.Logger("index-aggregator")
 	defaultMarketsMapping = map[string][]string{"usd": {"weth", "matic"}}
+
+	maxAllowedPrice  = decimal.NewFromFloat(1e6)
+	minAllowedAmount = decimal.NewFromFloat(1e-18)
 )
 
 type indexAggregator struct {
@@ -74,13 +77,24 @@ func (a *indexAggregator) computeAggregatePrice(
 	outbox chan<- TradeEvent,
 ) {
 	for event := range aggregated {
+		if event.Price.GreaterThanOrEqual(maxAllowedPrice) {
+			loggerIndex.Warnw("skipping trades too big price", "event", event)
+			continue
+		}
+		if event.Amount.LessThan(minAllowedAmount) {
+			loggerIndex.Warnw("skipping trades too small amount", "event", event)
+			continue
+		}
+		if event.Amount.IsZero() || event.Price.IsZero() || event.Total.IsZero() {
+			loggerIndex.Warnw("skipping zeroes trades", "event", event)
+			continue
+		}
+
 		lastPrice := strategy.getLastPrice(event.Market)
-		if lastPrice != decimal.Zero && isPriceOutOfRange(event.Price, lastPrice, maxPriceDiff) {
+		if !lastPrice.IsZero() && isPriceOutOfRange(event.Price, lastPrice, maxPriceDiff) {
 			loggerIndex.Warnw("skipping incoming outlier trade",
-				"source", event.Source,
-				"market", event.Market,
-				"price", event.Price,
-				"amount", event.Amount)
+				"event", event,
+				"last_price", lastPrice)
 			continue
 		}
 
@@ -106,12 +120,9 @@ func (a *indexAggregator) computeAggregatePrice(
 			continue
 		}
 
-		if event.Amount.IsZero() || event.Price.IsZero() || event.Total.IsZero() { // if price calculation failed
-			loggerIndex.Warnw("skipping zeroes trades",
-				"source", event.Source,
-				"market", event.Market,
-				"price", event.Price,
-				"amount", event.Amount)
+		// Double check to avoid broken trades
+		if event.Amount.IsZero() || event.Price.IsZero() || event.Total.IsZero() {
+			loggerIndex.Warnw("skipping zeroed trades", "event", event)
 			continue
 		}
 		outbox <- event
