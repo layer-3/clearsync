@@ -106,6 +106,14 @@ func (a *indexAggregator) computeAggregatePrice(
 			continue
 		}
 
+		if event.Amount.IsZero() || event.Price.IsZero() || event.Total.IsZero() { // if price calculation failed
+			loggerIndex.Warnw("skipping zeroes trades",
+				"source", event.Source,
+				"market", event.Market,
+				"price", event.Price,
+				"amount", event.Amount)
+			continue
+		}
 		outbox <- event
 	}
 }
