@@ -146,7 +146,9 @@ func (b *binance) Subscribe(market Market) error {
 		}
 	}()
 
+	recordSubscribed(DriverBinance, market)
 	loggerBinance.Infow("subscribed", "market", strings.ToUpper(pair))
+
 	return nil
 }
 
@@ -164,6 +166,7 @@ func (b *binance) Unsubscribe(market Market) error {
 	close(stopCh)
 
 	b.streams.Delete(market)
+	recordUnsubscribed(DriverBinance, market)
 	return nil
 }
 

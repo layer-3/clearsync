@@ -235,6 +235,7 @@ func (b *baseDEX[Event, Contract]) Subscribe(market Market) error {
 
 		go b.watchSwap(pool, sink, sub)
 		go b.streams.Store(market, sub) // to not block the loop since it's a blocking call with mutex under the hood
+		recordSubscribed(b.driverType, market)
 	}
 
 	return nil
@@ -253,6 +254,7 @@ func (b *baseDEX[Event, Contract]) Unsubscribe(market Market) error {
 	stream.Unsubscribe()
 
 	b.streams.Delete(market)
+	recordUnsubscribed(b.driverType, market)
 	return nil
 }
 
