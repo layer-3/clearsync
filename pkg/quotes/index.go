@@ -14,8 +14,8 @@ var (
 	loggerIndex           = log.Logger("index-aggregator")
 	defaultMarketsMapping = map[string][]string{"usd": {"weth", "matic"}}
 
-	maxAllowedPrice  = decimal.NewFromFloatWithExponent(1, 6)
-	minAllowedAmount = decimal.NewFromFloatWithExponent(1, -18)
+	maxAllowedPrice  = decimal.NewFromFloat(1e6)
+	minAllowedAmount = decimal.NewFromFloat(1e-18)
 )
 
 type indexAggregator struct {
@@ -77,8 +77,12 @@ func (a *indexAggregator) computeAggregatePrice(
 	outbox chan<- TradeEvent,
 ) {
 	for event := range aggregated {
-		if event.Price.GreaterThanOrEqual(maxAllowedPrice) || event.Amount.LessThan(minAllowedAmount) {
-			loggerIndex.Warnw("skipping trades with too big or too small amount", "event", event)
+		if event.Price.GreaterThanOrEqual(maxAllowedPrice) {
+			loggerIndex.Warnw("skipping trades too big price", "event", event)
+			continue
+		}
+		if event.Amount.LessThan(minAllowedAmount) {
+			loggerIndex.Warnw("skipping trades too small amount", "event", event)
 			continue
 		}
 		if event.Amount.IsZero() || event.Price.IsZero() || event.Total.IsZero() {
