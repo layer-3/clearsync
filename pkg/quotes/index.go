@@ -91,7 +91,7 @@ func (a *indexAggregator) computeAggregatePrice(
 		}
 
 		lastPrice := strategy.getLastPrice(event.Market)
-		if lastPrice.IsZero() && isPriceOutOfRange(event.Price, lastPrice, maxPriceDiff) {
+		if !lastPrice.IsZero() && isPriceOutOfRange(event.Price, lastPrice, maxPriceDiff) {
 			loggerIndex.Warnw("skipping incoming outlier trade",
 				"event", event,
 				"last_price", lastPrice)
