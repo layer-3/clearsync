@@ -141,9 +141,8 @@ func (s *syncswap) parseSwap(
 ) (trade TradeEvent, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			msg := "recovered in from panic during swap parsing"
-			loggerSyncswap.Errorw(msg, "swap", swap, "pool", pool)
-			err = fmt.Errorf("%s: %s", msg, r)
+			loggerSyncswap.Errorw(ErrSwapParsing.Error(), "swap", swap, "pool", pool)
+			err = fmt.Errorf("%s: %s", ErrSwapParsing, r)
 		}
 	}()
 
@@ -211,5 +210,7 @@ func buildV2Trade[Event any](
 }
 
 func isValidNonZero(x *big.Int) bool {
+	// Note that negative values are allowed
+	// as they represent a reduction in the balance of the pool.
 	return x != nil && x.Sign() != 0
 }

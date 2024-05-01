@@ -124,18 +124,14 @@ func (s *sectaV3) parseSwap(
 	swap *isecta_v3_pool.ISectaV3PoolSwap,
 	pool *dexPool[isecta_v3_pool.ISectaV3PoolSwap],
 ) (trade TradeEvent, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			msg := "recovered in from panic during swap parsing"
-			loggerSectaV3.Errorw(msg, "swap", swap, "pool", pool)
-			err = fmt.Errorf("%s: %s", msg, r)
-		}
-	}()
-
-	return buildV3Trade(
-		DriverSectaV3,
-		swap.Amount0,
-		swap.Amount1,
-		pool,
-	)
+	opts := v3TradeOpts[isecta_v3_pool.ISectaV3PoolSwap]{
+		driver:          DriverSectaV3,
+		rawAmount0:      swap.Amount0,
+		rawAmount1:      swap.Amount1,
+		rawSqrtPriceX96: swap.SqrtPriceX96,
+		pool:            pool,
+		swap:            swap,
+		logger:          loggerSectaV3,
+	}
+	return buildV3Trade(opts)
 }

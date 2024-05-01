@@ -109,9 +109,8 @@ func (s *sectaV2) parseSwap(
 ) (trade TradeEvent, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			msg := "recovered in from panic during swap parsing"
-			loggerSectaV2.Errorw(msg, "swap", swap, "pool", pool)
-			err = fmt.Errorf("%s: %s", msg, r)
+			loggerSectaV2.Errorw(ErrSwapParsing.Error(), "swap", swap, "pool", pool)
+			err = fmt.Errorf("%s: %s", ErrSwapParsing, r)
 		}
 	}()
 

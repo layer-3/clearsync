@@ -106,18 +106,14 @@ func (s *quickswap) parseSwap(
 	swap *quickswap_v3_pool.IQuickswapV3PoolSwap,
 	pool *dexPool[quickswap_v3_pool.IQuickswapV3PoolSwap],
 ) (trade TradeEvent, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			msg := "recovered in from panic during swap parsing"
-			loggerQuickswap.Errorw(msg, "swap", swap, "pool", pool)
-			err = fmt.Errorf("%s: %s", msg, r)
-		}
-	}()
-
-	return buildV3Trade(
-		DriverQuickswap,
-		swap.Amount0,
-		swap.Amount1,
-		pool,
-	)
+	opts := v3TradeOpts[quickswap_v3_pool.IQuickswapV3PoolSwap]{
+		driver:          DriverQuickswap,
+		rawAmount0:      swap.Amount0,
+		rawAmount1:      swap.Amount1,
+		rawSqrtPriceX96: swap.Price,
+		pool:            pool,
+		swap:            swap,
+		logger:          loggerQuickswap,
+	}
+	return buildV3Trade(opts)
 }

@@ -11,4 +11,5 @@ var (
 	ErrAlreadySubbed  = errors.New("market already subscribed")
 	ErrFailedSub      = errors.New("failed to subscribe to market")
 	ErrFailedUnsub    = errors.New("failed to unsubscribe from market")
+	ErrSwapParsing    = errors.New("recovered in from panic during swap parsing")
 )

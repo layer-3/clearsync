@@ -223,7 +223,7 @@ func (b *baseDEX[Event, Contract]) Subscribe(market Market) error {
 
 	for _, pool := range pools {
 		sink := make(chan *Event, 128)
-		sub, err := pool.contract.WatchSwap(nil, sink, []common.Address{}, []common.Address{})
+		sub, err := pool.Contract.WatchSwap(nil, sink, []common.Address{}, []common.Address{})
 		if err != nil {
 			return fmt.Errorf("failed to subscribe to swaps for market %s: %w", market, err)
 		}
@@ -282,7 +282,8 @@ func (b *baseDEX[Event, Contract]) watchSwap(
 				b.logger.Errorw("failed to parse swap event",
 					"market", market,
 					"pool", pool,
-					"err", err,
+					"swap", swap,
+					"error", err,
 				)
 				continue
 			}
@@ -292,18 +293,18 @@ func (b *baseDEX[Event, Contract]) watchSwap(
 				continue
 			}
 
-			b.logger.Infow("parsed trade", "trade", tr)
+			b.logger.Infow("parsed trade", "trade", tr, "swap", swap, "pool", pool)
 			b.outbox <- tr
 		}
 	}
 }
 
 type dexPool[Event any] struct {
-	contract   dexEventWatcher[Event]
-	baseToken  poolToken
-	quoteToken poolToken
-	reverted   bool
-	market     Market
+	Contract   dexEventWatcher[Event]
+	BaseToken  poolToken
+	QuoteToken poolToken
+	Reverted   bool
+	Market     Market
 }
 
 type dexEventWatcher[Event any] interface {

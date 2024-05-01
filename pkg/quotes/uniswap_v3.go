@@ -128,67 +128,107 @@ func (u *uniswapV3) parseSwap(
 	swap *iuniswap_v3_pool.IUniswapV3PoolSwap,
 	pool *dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap],
 ) (trade TradeEvent, err error) {
+	opts := v3TradeOpts[iuniswap_v3_pool.IUniswapV3PoolSwap]{
+		driver:          DriverUniswapV3,
+		rawAmount0:      swap.Amount0,
+		rawAmount1:      swap.Amount1,
+		rawSqrtPriceX96: swap.SqrtPriceX96,
+		pool:            pool,
+		swap:            swap,
+		logger:          loggerUniswapV3,
+	}
+	return buildV3Trade(opts)
+}
+
+type v3TradeOpts[Event any] struct {
+	driver          DriverType
+	rawAmount0      *big.Int
+	rawAmount1      *big.Int
+	rawSqrtPriceX96 *big.Int
+	pool            *dexPool[Event]
+	swap            *Event
+	logger          *log.ZapEventLogger
+}
+
+func buildV3Trade[Event any](o v3TradeOpts[Event]) (trade TradeEvent, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			msg := "recovered in from panic during swap parsing"
-			loggerUniswapV3.Errorw(msg, "swap", swap, "pool", pool)
-			err = fmt.Errorf("%s: %s", msg, r)
+			o.logger.Errorw(ErrSwapParsing.Error(), "swap", o.swap, "pool", o.pool)
+			err = fmt.Errorf("%s: %s", ErrSwapParsing, r)
 		}
 	}()
 
-	return buildV3Trade(
-		DriverUniswapV3,
-		swap.Amount0,
-		swap.Amount1,
-		pool,
-	)
-}
-
-func buildV3Trade[Event any](
-	driver DriverType,
-	rawAmount0, rawAmount1 *big.Int,
-	pool *dexPool[Event],
-) (TradeEvent, error) {
-	if !isValidNonZero(rawAmount0) || !isValidNonZero(rawAmount1) {
-		return TradeEvent{}, fmt.Errorf("either Amount0 (%s) or Amount1 (%s) is invalid", rawAmount0, rawAmount1)
+	if !isValidNonZero(o.rawAmount0) {
+		return TradeEvent{}, fmt.Errorf("raw amount0 (%s) is not a valid non-zero number", o.rawAmount0)
 	}
+	amount0 := decimal.NewFromBigInt(o.rawAmount0, 0)
 
-	if pool.reverted {
-		// For USDC/ETH:
-		// Amount0 = -52052662345          = USDC removed from pool
-		// Amount1 = +16867051239984403529 = ETH added into pool
-		rawAmount0, rawAmount1 = rawAmount1, rawAmount0
+	if !isValidNonZero(o.rawAmount1) {
+		return TradeEvent{}, fmt.Errorf("raw amount1 (%s) is not a valid non-zero number", o.rawAmount0)
+	}
+	amount1 := decimal.NewFromBigInt(o.rawAmount1, 0)
+
+	if !isValidNonZero(o.rawSqrtPriceX96) {
+		return TradeEvent{}, fmt.Errorf("raw sqrtPriceX96 (%s) is not a valid non-zero number", o.rawSqrtPriceX96)
+	}
+	sqrtPriceX96 := decimal.NewFromBigInt(o.rawSqrtPriceX96, 0)
+
+	baseDecimals := o.pool.baseToken.Decimals
+	quoteDecimals := o.pool.quoteToken.Decimals
+	if o.pool.reverted {
+		baseDecimals, quoteDecimals = quoteDecimals, baseDecimals
 	}
 
 	// Normalize swap amounts
-	ten := decimal.NewFromInt(10)
-	baseDecimals := pool.baseToken.Decimals
-	quoteDecimals := pool.quoteToken.Decimals
-	amount0 := decimal.NewFromBigInt(rawAmount0, 0).Div(ten.Pow(baseDecimals))
-	amount1 := decimal.NewFromBigInt(rawAmount1, 0).Div(ten.Pow(quoteDecimals))
+	amount0Normalized := amount0.Div(ten.Pow(baseDecimals)).Abs()
+	amount1Normalized := amount1.Div(ten.Pow(quoteDecimals)).Abs()
 
-	// Calculate price and order side
-	price := amount1.Div(amount0) // NOTE: may panic here if `amount0` is zero
-	amount := amount0
+	// Calculate swap price
+	price := calculatePrice(sqrtPriceX96, baseDecimals, quoteDecimals, amount0.Sign() < 0)
+
+	// Calculate trade side, amount and total
 	takerType := TakerTypeBuy
+	amount, total := amount0Normalized, amount1Normalized
 	if amount0.Sign() < 0 {
 		takerType = TakerTypeSell
-	}
-	amount = amount.Abs()
-	price = price.Abs()
-
-	if amount.Equals(decimal.Zero) {
-		return TradeEvent{}, fmt.Errorf("amount is zero")
+		amount, total = amount1Normalized, amount0Normalized
 	}
 
 	tr := TradeEvent{
-		Source:    driver,
-		Market:    pool.market,
+		Source:    o.driver,
+		Market:    o.pool.market,
 		Price:     price,
-		Amount:    amount,
-		Total:     price.Mul(amount),
+		Amount:    amount, // amount of BASE token received
+		Total:     total,  // total cost in QUOTE token
 		TakerType: takerType,
 		CreatedAt: time.Now(),
 	}
 	return tr, nil
+}
+
+var (
+	two      = decimal.NewFromInt(2)
+	ten      = decimal.NewFromInt(10)
+	priceX96 = two.Pow(decimal.NewFromInt(96))
+)
+
+// calculatePrice method calculates the price per token at which the swap was performed
+// using the sqrtPriceX96 value supplied with every on-chain swap event.
+//
+// General formula is as follows:
+// price = ((sqrtPriceX96 / 2**96)**2) / (10**decimal1 / 10**decimal0)
+//
+// See the math explained at https://blog.uniswap.org/uniswap-v3-math-primer
+func calculatePrice(sqrtPriceX96, baseDecimals, quoteDecimals decimal.Decimal, isSellTrade bool) (price decimal.Decimal) {
+	// Simplification for denominator calculations:
+	// 10**decimal1 / 10**decimal0 -> 10**(decimal1 - decimal0)
+	decimals := quoteDecimals.Sub(baseDecimals).Abs()
+
+	numerator := sqrtPriceX96.Div(priceX96).Pow(two)
+	denominator := ten.Pow(decimals)
+
+	if isSellTrade {
+		return denominator.Div(numerator)
+	}
+	return numerator.Div(denominator)
 }
