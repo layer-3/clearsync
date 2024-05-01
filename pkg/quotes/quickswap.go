@@ -92,6 +92,7 @@ func (s *quickswap) getPool(market Market) ([]*dexPool[quickswap_v3_pool.IQuicks
 		Contract:   poolContract,
 		BaseToken:  baseToken,
 		QuoteToken: quoteToken,
+		Market:     market,
 		Reversed:   isReversed,
 	}}
 

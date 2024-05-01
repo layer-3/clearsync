@@ -112,6 +112,7 @@ func (u *uniswapV3) getPool(market Market) ([]*dexPool[iuniswap_v3_pool.IUniswap
 			Contract:   poolContract,
 			BaseToken:  baseToken,
 			QuoteToken: quoteToken,
+			Market:     market,
 			Reversed:   isReversed,
 		}
 

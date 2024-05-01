@@ -125,6 +125,7 @@ func (s *syncswap) getPool(market Market) ([]*dexPool[isyncswap_pool.ISyncSwapPo
 		Contract:   poolContract,
 		BaseToken:  baseToken,
 		QuoteToken: quoteToken,
+		Market:     market,
 		Reversed:   isReversed,
 	}}
 

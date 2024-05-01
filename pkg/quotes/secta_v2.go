@@ -92,8 +92,8 @@ func (s *sectaV2) getPool(market Market) ([]*dexPool[isecta_v2_pair.ISectaV2Pair
 		Contract:   poolContract,
 		BaseToken:  baseToken,
 		QuoteToken: quoteToken,
-		Reversed:   isReversed,
 		Market:     market,
+		Reversed:   isReversed,
 	}}
 
 	// Return pools if the token addresses match direct or reversed configurations
