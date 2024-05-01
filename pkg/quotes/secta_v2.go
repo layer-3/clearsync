@@ -87,17 +87,17 @@ func (s *sectaV2) getPool(market Market) ([]*dexPool[isecta_v2_pair.ISectaV2Pair
 		return nil, fmt.Errorf("failed to build Secta v2 pool: %w", err)
 	}
 
-	isReverted := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
+	isReversed := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
 	pools := []*dexPool[isecta_v2_pair.ISectaV2PairSwap]{{
-		contract:   poolContract,
-		baseToken:  baseToken,
-		quoteToken: quoteToken,
-		reverted:   isReverted,
-		market:     market,
+		Contract:   poolContract,
+		BaseToken:  baseToken,
+		QuoteToken: quoteToken,
+		Reversed:   isReversed,
+		Market:     market,
 	}}
 
 	// Return pools if the token addresses match direct or reversed configurations
-	if (baseToken.Address == basePoolToken && quoteToken.Address == quotePoolToken) || isReverted {
+	if (baseToken.Address == basePoolToken && quoteToken.Address == quotePoolToken) || isReversed {
 		return pools, nil
 	}
 	return nil, fmt.Errorf("failed to build Secta v2 pool for market %s: %w", market, err)

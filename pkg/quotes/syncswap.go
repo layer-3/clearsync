@@ -120,16 +120,16 @@ func (s *syncswap) getPool(market Market) ([]*dexPool[isyncswap_pool.ISyncSwapPo
 		return nil, fmt.Errorf("failed to build Syncswap pool: %w", err)
 	}
 
-	isReverted := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
+	isReversed := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
 	pools := []*dexPool[isyncswap_pool.ISyncSwapPoolSwap]{{
-		contract:   poolContract,
-		baseToken:  baseToken,
-		quoteToken: quoteToken,
-		reverted:   isReverted,
+		Contract:   poolContract,
+		BaseToken:  baseToken,
+		QuoteToken: quoteToken,
+		Reversed:   isReversed,
 	}}
 
 	// Return pools if the token addresses match direct or reversed configurations
-	if (baseToken.Address == basePoolToken && quoteToken.Address == quotePoolToken) || isReverted {
+	if (baseToken.Address == basePoolToken && quoteToken.Address == quotePoolToken) || isReversed {
 		return pools, nil
 	}
 	return nil, fmt.Errorf("failed to build Syncswap pool for market %s: %w", market, err)
@@ -161,7 +161,7 @@ func buildV2Trade[Event any](
 	rawAmount0In, rawAmount0Out, rawAmount1In, rawAmount1Out *big.Int,
 	pool *dexPool[Event],
 ) (TradeEvent, error) {
-	if pool.reverted {
+	if pool.Reversed {
 		copyAmount0In, copyAmount0Out := rawAmount0In, rawAmount0Out
 		rawAmount0In, rawAmount0Out = rawAmount1In, rawAmount1Out
 		rawAmount1In, rawAmount1Out = copyAmount0In, copyAmount0Out
@@ -172,8 +172,8 @@ func buildV2Trade[Event any](
 	var amount decimal.Decimal
 	var total decimal.Decimal
 
-	baseDecimals := pool.baseToken.Decimals
-	quoteDecimals := pool.quoteToken.Decimals
+	baseDecimals := pool.BaseToken.Decimals
+	quoteDecimals := pool.QuoteToken.Decimals
 
 	switch {
 	case isValidNonZero(rawAmount0In) && isValidNonZero(rawAmount1Out):
@@ -194,12 +194,12 @@ func buildV2Trade[Event any](
 		total = amount1In
 		amount = amount0Out
 	default:
-		return TradeEvent{}, fmt.Errorf("market %s: unknown swap type", pool.market)
+		return TradeEvent{}, fmt.Errorf("market %s: unknown swap type", pool.Market)
 	}
 
 	trade := TradeEvent{
 		Source:    driver,
-		Market:    pool.market,
+		Market:    pool.Market,
 		Price:     price,
 		Amount:    amount.Abs(),
 		Total:     total,

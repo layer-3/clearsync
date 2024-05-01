@@ -303,7 +303,7 @@ type dexPool[Event any] struct {
 	Contract   dexEventWatcher[Event]
 	BaseToken  poolToken
 	QuoteToken poolToken
-	Reverted   bool
+	Reversed   bool
 	Market     Market
 }
 

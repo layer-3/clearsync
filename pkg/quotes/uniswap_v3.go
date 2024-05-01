@@ -107,16 +107,16 @@ func (u *uniswapV3) getPool(market Market) ([]*dexPool[iuniswap_v3_pool.IUniswap
 			return nil, fmt.Errorf("failed to build Uniswap v3 pool: %w", err)
 		}
 
-		isReverted := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
+		isReversed := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
 		pool := &dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap]{
-			contract:   poolContract,
-			baseToken:  baseToken,
-			quoteToken: quoteToken,
-			reverted:   isReverted,
+			Contract:   poolContract,
+			BaseToken:  baseToken,
+			QuoteToken: quoteToken,
+			Reversed:   isReversed,
 		}
 
 		// Append pool if the token addresses match direct or reversed configurations
-		if (baseToken.Address == basePoolToken && quoteToken.Address == quotePoolToken) || isReverted {
+		if (baseToken.Address == basePoolToken && quoteToken.Address == quotePoolToken) || isReversed {
 			pools = append(pools, pool)
 		}
 	}
@@ -129,53 +129,53 @@ func (u *uniswapV3) parseSwap(
 	pool *dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap],
 ) (trade TradeEvent, err error) {
 	opts := v3TradeOpts[iuniswap_v3_pool.IUniswapV3PoolSwap]{
-		driver:          DriverUniswapV3,
-		rawAmount0:      swap.Amount0,
-		rawAmount1:      swap.Amount1,
-		rawSqrtPriceX96: swap.SqrtPriceX96,
-		pool:            pool,
-		swap:            swap,
-		logger:          loggerUniswapV3,
+		Driver:          DriverUniswapV3,
+		RawAmount0:      swap.Amount0,
+		RawAmount1:      swap.Amount1,
+		RawSqrtPriceX96: swap.SqrtPriceX96,
+		Pool:            pool,
+		Swap:            swap,
+		Logger:          loggerUniswapV3,
 	}
 	return buildV3Trade(opts)
 }
 
 type v3TradeOpts[Event any] struct {
-	driver          DriverType
-	rawAmount0      *big.Int
-	rawAmount1      *big.Int
-	rawSqrtPriceX96 *big.Int
-	pool            *dexPool[Event]
-	swap            *Event
-	logger          *log.ZapEventLogger
+	Driver          DriverType
+	RawAmount0      *big.Int
+	RawAmount1      *big.Int
+	RawSqrtPriceX96 *big.Int
+	Pool            *dexPool[Event]
+	Swap            *Event
+	Logger          *log.ZapEventLogger
 }
 
 func buildV3Trade[Event any](o v3TradeOpts[Event]) (trade TradeEvent, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			o.logger.Errorw(ErrSwapParsing.Error(), "swap", o.swap, "pool", o.pool)
+			o.Logger.Errorw(ErrSwapParsing.Error(), "swap", o.Swap, "pool", o.Pool)
 			err = fmt.Errorf("%s: %s", ErrSwapParsing, r)
 		}
 	}()
 
-	if !isValidNonZero(o.rawAmount0) {
-		return TradeEvent{}, fmt.Errorf("raw amount0 (%s) is not a valid non-zero number", o.rawAmount0)
+	if !isValidNonZero(o.RawAmount0) {
+		return TradeEvent{}, fmt.Errorf("raw amount0 (%s) is not a valid non-zero number", o.RawAmount0)
 	}
-	amount0 := decimal.NewFromBigInt(o.rawAmount0, 0)
+	amount0 := decimal.NewFromBigInt(o.RawAmount0, 0)
 
-	if !isValidNonZero(o.rawAmount1) {
-		return TradeEvent{}, fmt.Errorf("raw amount1 (%s) is not a valid non-zero number", o.rawAmount0)
+	if !isValidNonZero(o.RawAmount1) {
+		return TradeEvent{}, fmt.Errorf("raw amount1 (%s) is not a valid non-zero number", o.RawAmount0)
 	}
-	amount1 := decimal.NewFromBigInt(o.rawAmount1, 0)
+	amount1 := decimal.NewFromBigInt(o.RawAmount1, 0)
 
-	if !isValidNonZero(o.rawSqrtPriceX96) {
-		return TradeEvent{}, fmt.Errorf("raw sqrtPriceX96 (%s) is not a valid non-zero number", o.rawSqrtPriceX96)
+	if !isValidNonZero(o.RawSqrtPriceX96) {
+		return TradeEvent{}, fmt.Errorf("raw sqrtPriceX96 (%s) is not a valid non-zero number", o.RawSqrtPriceX96)
 	}
-	sqrtPriceX96 := decimal.NewFromBigInt(o.rawSqrtPriceX96, 0)
+	sqrtPriceX96 := decimal.NewFromBigInt(o.RawSqrtPriceX96, 0)
 
-	baseDecimals := o.pool.baseToken.Decimals
-	quoteDecimals := o.pool.quoteToken.Decimals
-	if o.pool.reverted {
+	baseDecimals := o.Pool.BaseToken.Decimals
+	quoteDecimals := o.Pool.QuoteToken.Decimals
+	if o.Pool.Reversed {
 		baseDecimals, quoteDecimals = quoteDecimals, baseDecimals
 	}
 
@@ -195,8 +195,8 @@ func buildV3Trade[Event any](o v3TradeOpts[Event]) (trade TradeEvent, err error)
 	}
 
 	tr := TradeEvent{
-		Source:    o.driver,
-		Market:    o.pool.market,
+		Source:    o.Driver,
+		Market:    o.Pool.Market,
 		Price:     price,
 		Amount:    amount, // amount of BASE token received
 		Total:     total,  // total cost in QUOTE token

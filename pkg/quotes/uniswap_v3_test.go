@@ -56,18 +56,18 @@ func Test_uniswapV3_parseSwap(t *testing.T) {
 					},
 				},
 				pool: &dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap]{
-					baseToken: poolToken{
+					BaseToken: poolToken{
 						Address:  common.HexToAddress("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
 						Symbol:   "weth",
 						Decimals: decimal.NewFromInt(18),
 					},
-					quoteToken: poolToken{
+					QuoteToken: poolToken{
 						Address:  common.HexToAddress("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"),
 						Symbol:   "usdc",
 						Decimals: decimal.NewFromInt(6),
 					},
-					reverted: true,
-					market:   NewMarket("weth", "usdc"),
+					Reversed: true,
+					Market:   NewMarket("weth", "usdc"),
 				},
 			},
 			want: TradeEvent{
@@ -110,18 +110,18 @@ func Test_uniswapV3_parseSwap(t *testing.T) {
 					},
 				},
 				pool: &dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap]{
-					baseToken: poolToken{
+					BaseToken: poolToken{
 						Address:  common.HexToAddress("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
 						Symbol:   "weth",
 						Decimals: decimal.NewFromInt(18),
 					},
-					quoteToken: poolToken{
+					QuoteToken: poolToken{
 						Address:  common.HexToAddress("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"),
 						Symbol:   "usdc",
 						Decimals: decimal.NewFromInt(6),
 					},
-					reverted: true,
-					market:   NewMarket("weth", "usdc"),
+					Reversed: true,
+					Market:   NewMarket("weth", "usdc"),
 				},
 			},
 			want: TradeEvent{
