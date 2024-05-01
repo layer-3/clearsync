@@ -187,7 +187,9 @@ func buildV3Trade[Event any](o v3TradeOpts[Event]) (trade TradeEvent, err error)
 
 	// Calculate swap price
 	price := calculatePrice(sqrtPriceX96, baseDecimals, quoteDecimals, amount0.Sign() < 0)
-	if price.IsZero() { // a backup strategy in case the primary one fails
+	// Apply a fallback strategy in case the primary one fails.
+	// This should never happen, but just in case.
+	if price.IsZero() {
 		price = amount1Normalized.Div(amount0Normalized)
 	}
 
