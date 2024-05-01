@@ -187,6 +187,9 @@ func buildV3Trade[Event any](o v3TradeOpts[Event]) (trade TradeEvent, err error)
 
 	// Calculate swap price
 	price := calculatePrice(sqrtPriceX96, baseDecimals, quoteDecimals, amount0.Sign() < 0)
+	if price.IsZero() { // a backup strategy in case the primary one fails
+		price = amount1Normalized.Div(amount0Normalized)
+	}
 
 	// Calculate trade side, amount and total
 	takerType := TakerTypeBuy
@@ -221,10 +224,10 @@ var (
 // price = ((sqrtPriceX96 / 2**96)**2) / (10**decimal1 / 10**decimal0)
 //
 // See the math explained at https://blog.uniswap.org/uniswap-v3-math-primer
-func calculatePrice(sqrtPriceX96, baseDecimals, quoteDecimals decimal.Decimal, isSellTrade bool) (price decimal.Decimal) {
+func calculatePrice(sqrtPriceX96, baseDecimals, quoteDecimals decimal.Decimal, isSellTrade bool) decimal.Decimal {
 	// Simplification for denominator calculations:
 	// 10**decimal1 / 10**decimal0 -> 10**(decimal1 - decimal0)
-	decimals := quoteDecimals.Sub(baseDecimals).Abs()
+	decimals := quoteDecimals.Sub(baseDecimals)
 
 	numerator := sqrtPriceX96.Div(priceX96).Pow(two)
 	denominator := ten.Pow(decimals)
