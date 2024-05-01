@@ -90,6 +90,7 @@ func (s *quickswap) getPool(market Market) ([]*dexPool[quickswap_v3_pool.IQuicks
 	isReversed := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
 	pools := []*dexPool[quickswap_v3_pool.IQuickswapV3PoolSwap]{{
 		Contract:   poolContract,
+		Address:    poolAddress,
 		BaseToken:  baseToken,
 		QuoteToken: quoteToken,
 		Market:     market,

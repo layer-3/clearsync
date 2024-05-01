@@ -302,6 +302,7 @@ func (b *baseDEX[Event, Contract]) watchSwap(
 
 type dexPool[Event any] struct {
 	Contract   dexEventWatcher[Event]
+	Address    common.Address
 	BaseToken  poolToken
 	QuoteToken poolToken
 	Market     Market

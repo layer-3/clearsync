@@ -123,6 +123,7 @@ func (s *syncswap) getPool(market Market) ([]*dexPool[isyncswap_pool.ISyncSwapPo
 	isReversed := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
 	pools := []*dexPool[isyncswap_pool.ISyncSwapPoolSwap]{{
 		Contract:   poolContract,
+		Address:    poolAddress,
 		BaseToken:  baseToken,
 		QuoteToken: quoteToken,
 		Market:     market,

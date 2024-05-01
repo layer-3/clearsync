@@ -105,6 +105,7 @@ func (s *sectaV3) getPool(market Market) ([]*dexPool[isecta_v3_pool.ISectaV3Pool
 		isReversed := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
 		pool := &dexPool[isecta_v3_pool.ISectaV3PoolSwap]{
 			Contract:   poolContract,
+			Address:    poolAddress,
 			BaseToken:  baseToken,
 			QuoteToken: quoteToken,
 			Market:     market,

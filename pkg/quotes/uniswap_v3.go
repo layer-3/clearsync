@@ -110,6 +110,7 @@ func (u *uniswapV3) getPool(market Market) ([]*dexPool[iuniswap_v3_pool.IUniswap
 		isReversed := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
 		pool := &dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap]{
 			Contract:   poolContract,
+			Address:    poolAddress,
 			BaseToken:  baseToken,
 			QuoteToken: quoteToken,
 			Market:     market,
