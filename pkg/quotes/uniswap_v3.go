@@ -36,18 +36,23 @@ func newUniswapV3(config UniswapV3Config, outbox chan<- TradeEvent) Driver {
 		factoryAddress: common.HexToAddress(config.FactoryAddress),
 	}
 
-	params := baseDexConfig[iuniswap_v3_pool.IUniswapV3PoolSwap, iuniswap_v3_pool.IUniswapV3Pool]{
+	params := baseDexConfig[
+		iuniswap_v3_pool.IUniswapV3PoolSwap,
+		iuniswap_v3_pool.IUniswapV3Pool,
+	]{
+		// Params
 		DriverType: DriverUniswapV3,
 		URL:        config.URL,
 		AssetsURL:  config.AssetsURL,
 		MappingURL: config.MappingURL,
-		Outbox:     outbox,
-		Filter:     config.Filter,
-		Logger:     loggerUniswapV3,
 		// Hooks
 		PostStartHook: hooks.postStart,
 		PoolGetter:    hooks.getPool,
 		EventParser:   hooks.parseSwap,
+		// State
+		Outbox: outbox,
+		Logger: loggerUniswapV3,
+		Filter: config.Filter,
 	}
 	return newBaseDEX(params)
 }
@@ -77,10 +82,15 @@ func (u *uniswapV3) getPool(market Market) ([]*dexPool[iuniswap_v3_pool.IUniswap
 	poolAddresses := make([]common.Address, 0, len(uniswapV3FeeTiers))
 	zeroAddress := common.HexToAddress("0x0")
 	for _, feeTier := range uniswapV3FeeTiers {
-		poolAddress, err := u.factory.GetPool(nil, baseToken.Address, quoteToken.Address, big.NewInt(int64(feeTier)))
+		var poolAddress common.Address
+		err = debounce(loggerUniswapV3, func() error {
+			poolAddress, err = u.factory.GetPool(nil, baseToken.Address, quoteToken.Address, big.NewInt(int64(feeTier)))
+			return err
+		})
 		if err != nil {
 			return nil, err
 		}
+
 		if poolAddress != zeroAddress {
 			loggerUniswapV3.Infow("found pool",
 				"market", market,
@@ -94,17 +104,25 @@ func (u *uniswapV3) getPool(market Market) ([]*dexPool[iuniswap_v3_pool.IUniswap
 	for _, poolAddress := range poolAddresses {
 		poolContract, err := iuniswap_v3_pool.NewIUniswapV3Pool(poolAddress, u.client)
 		if err != nil {
-			return nil, fmt.Errorf("failed to build Uniswap v3 pool: %w", err)
+			return nil, fmt.Errorf("failed to build Uniswap v3 pool contract: %w", err)
 		}
 
-		basePoolToken, err := poolContract.Token0(nil)
+		var basePoolToken common.Address
+		err = debounce(loggerUniswapV3, func() error {
+			basePoolToken, err = poolContract.Token0(nil)
+			return err
+		})
 		if err != nil {
-			return nil, fmt.Errorf("failed to build Uniswap v3 pool: %w", err)
+			return nil, fmt.Errorf("failed to get base token address for Uniswap v3 pool: %w", err)
 		}
 
-		quotePoolToken, err := poolContract.Token1(nil)
+		var quotePoolToken common.Address
+		err = debounce(loggerUniswapV3, func() error {
+			quotePoolToken, err = poolContract.Token1(nil)
+			return err
+		})
 		if err != nil {
-			return nil, fmt.Errorf("failed to build Uniswap v3 pool: %w", err)
+			return nil, fmt.Errorf("failed to get quote token address for Uniswap v3 pool: %w", err)
 		}
 
 		isReversed := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
@@ -224,8 +242,8 @@ var (
 // price = ((sqrtPriceX96 / 2**96)**2) / (10**decimal1 / 10**decimal0)
 //
 // See the math explained at https://blog.uniswap.org/uniswap-v3-math-primer
-func calculatePrice(sqrtPriceX96, baseDecimals, quoteDecimals decimal.Decimal, isReversed bool) decimal.Decimal {
-	if isReversed {
+func calculatePrice(sqrtPriceX96, baseDecimals, quoteDecimals decimal.Decimal, reversedPool bool) decimal.Decimal {
+	if reversedPool {
 		baseDecimals, quoteDecimals = quoteDecimals, baseDecimals
 	}
 
@@ -236,7 +254,7 @@ func calculatePrice(sqrtPriceX96, baseDecimals, quoteDecimals decimal.Decimal, i
 	numerator := sqrtPriceX96.Div(priceX96).Pow(two)
 	denominator := ten.Pow(decimals)
 
-	if isReversed {
+	if reversedPool {
 		return denominator.Div(numerator)
 	}
 	return numerator.Div(denominator)

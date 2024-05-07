@@ -12,9 +12,7 @@ import (
 	"github.com/layer-3/clearsync/pkg/safe"
 )
 
-var (
-	loggerSectaV2 = log.Logger("secta_v2")
-)
+var loggerSectaV2 = log.Logger("secta_v2")
 
 type sectaV2 struct {
 	factoryAddress common.Address
@@ -29,17 +27,23 @@ func newSectaV2(config SectaV2Config, outbox chan<- TradeEvent) Driver {
 		factoryAddress: common.HexToAddress(config.FactoryAddress),
 	}
 
-	params := baseDexConfig[isecta_v2_pair.ISectaV2PairSwap, isecta_v2_pair.ISectaV2Pair]{
-		DriverType:    DriverSectaV2,
-		URL:           config.URL,
-		AssetsURL:     config.AssetsURL,
-		MappingURL:    config.MappingURL,
-		Logger:        loggerSectaV2,
+	params := baseDexConfig[
+		isecta_v2_pair.ISectaV2PairSwap,
+		isecta_v2_pair.ISectaV2Pair,
+	]{
+		// Params
+		DriverType: DriverSectaV2,
+		URL:        config.URL,
+		AssetsURL:  config.AssetsURL,
+		MappingURL: config.MappingURL,
+		// Hooks
 		PostStartHook: hooks.postStart,
 		PoolGetter:    hooks.getPool,
 		EventParser:   hooks.parseSwap,
-		Outbox:        outbox,
-		Filter:        config.Filter,
+		// State
+		Outbox: outbox,
+		Logger: loggerSectaV2,
+		Filter: config.Filter,
 	}
 	return newBaseDEX(params)
 }
@@ -61,7 +65,11 @@ func (s *sectaV2) getPool(market Market) ([]*dexPool[isecta_v2_pair.ISectaV2Pair
 		return nil, fmt.Errorf("failed to get tokens: %w", err)
 	}
 
-	poolAddress, err := s.factory.GetPair(nil, baseToken.Address, quoteToken.Address)
+	var poolAddress common.Address
+	err = debounce(loggerSectaV2, func() error {
+		poolAddress, err = s.factory.GetPair(nil, baseToken.Address, quoteToken.Address)
+		return err
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pool address: %w", err)
 	}
@@ -77,16 +85,25 @@ func (s *sectaV2) getPool(market Market) ([]*dexPool[isecta_v2_pair.ISectaV2Pair
 		return nil, fmt.Errorf("failed to instantiate a Secta v2 pool contract: %w", err)
 	}
 
-	basePoolToken, err := poolContract.Token0(nil)
+	var basePoolToken common.Address
+	err = debounce(loggerSectaV2, func() error {
+		basePoolToken, err = poolContract.Token0(nil)
+		return err
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to build Secta v2 pool: %w", err)
+		return nil, fmt.Errorf("failed to get base token address for Secta v2 pool: %w", err)
 	}
 
-	quotePoolToken, err := poolContract.Token1(nil)
+	var quotePoolToken common.Address
+	err = debounce(loggerSectaV2, func() error {
+		quotePoolToken, err = poolContract.Token1(nil)
+		return err
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to build Secta v2 pool: %w", err)
+		return nil, fmt.Errorf("failed to get quote token address for Secta v2 pool: %w", err)
 	}
 
+	isDirect := baseToken.Address == basePoolToken && quoteToken.Address == quotePoolToken
 	isReversed := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
 	pools := []*dexPool[isecta_v2_pair.ISectaV2PairSwap]{{
 		Contract:   poolContract,
@@ -98,7 +115,7 @@ func (s *sectaV2) getPool(market Market) ([]*dexPool[isecta_v2_pair.ISectaV2Pair
 	}}
 
 	// Return pools if the token addresses match direct or reversed configurations
-	if (baseToken.Address == basePoolToken && quoteToken.Address == quotePoolToken) || isReversed {
+	if isDirect || isReversed {
 		return pools, nil
 	}
 	return nil, fmt.Errorf("failed to build Secta v2 pool for market %s: %w", market, err)
