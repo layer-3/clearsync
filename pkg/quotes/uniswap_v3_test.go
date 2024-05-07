@@ -189,56 +189,6 @@ func Test_uniswapV3_parseSwap(t *testing.T) {
 			},
 			wantErr: false,
 		},
-		/*
-			{
-			  "swap": {
-			    "Sender": "0x3b3ae790df4f312e745d270119c6052904fb6790",
-			    "Recipient": "0x3b3ae790df4f312e745d270119c6052904fb6790",
-			    "Amount0": 9886811256,
-			    "Amount1": -3189117537947014095,
-			    "SqrtPriceX96": 1423284675873585018512167229078758,
-			    "Liquidity": 10851620357380928399,
-			    "Tick": 195932,
-			    "Raw": {
-			      "address": "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640",
-			      "topics": [
-			        "0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67",
-			        "0x0000000000000000000000003b3ae790df4f312e745d270119c6052904fb6790",
-			        "0x0000000000000000000000003b3ae790df4f312e745d270119c6052904fb6790"
-			      ],
-			      "data": "0x000000000000000000000000000000000000000000000000000000024d4cc478ffffffffffffffffffffffffffffffffffffffffffffffffd3bdfa7ef3b32c31000000000000000000000000000000000000462c60d206c5650ff04025da3ce60000000000000000000000000000000000000000000000009698b3387f16738f000000000000000000000000000000000000000000000000000000000002fd5c",
-			      "blockNumber": "0x12e6535",
-			      "transactionHash": "0x02a18c555fd367fcdeee6047a236129d472a2f70b5ffba280a0ae0fec9f43a13",
-			      "transactionIndex": "0x28",
-			      "blockHash": "0x82dff64bc5a0936a44f9287fb1e8bd48d0527a44585838f9e22a575078ed617d",
-			      "logIndex": "0x55",
-			      "removed": false
-			    }
-			  },
-			  "pool": {
-			    "Contract": {},
-			    "Address": "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640",
-			    "BaseToken": {
-			      "Name": "Ether",
-			      "Address": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
-			      "Symbol": "ETH",
-			      "Decimals": "18",
-			      "ChainId": 0,
-			      "LogoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png?1696501628"
-			    },
-			    "QuoteToken": {
-			      "Name": "USD Coin",
-			      "Address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
-			      "Symbol": "USDC",
-			      "Decimals": "6",
-			      "ChainId": 0,
-			      "LogoURI": "https://assets.coingecko.com/coins/images/6319/large/usdc.png?1696506694"
-			    },
-			    "Market": "eth/usd",
-			    "Reversed": true
-			  }
-			}
-		*/
 		{
 			name: "0x02a18c555fd367fcdeee6047a236129d472a2f70b5ffba280a0ae0fec9f43a13",
 			args: args{
