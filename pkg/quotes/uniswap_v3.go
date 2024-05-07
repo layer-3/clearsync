@@ -179,11 +179,12 @@ func buildV3Trade[Event any](o v3TradeOpts[Event]) (trade TradeEvent, err error)
 	quoteDecimals := o.Pool.QuoteToken.Decimals
 	if o.Pool.Reversed {
 		baseDecimals, quoteDecimals = quoteDecimals, baseDecimals
+		amount0, amount1 = amount1, amount0
 	}
 
-	// Normalize swap amounts
-	amount0Normalized := amount0.Div(ten.Pow(baseDecimals)).Abs()
-	amount1Normalized := amount1.Div(ten.Pow(quoteDecimals)).Abs()
+	// Normalize swap amounts.
+	amount0Normalized := amount0.Div(ten.Pow(o.Pool.BaseToken.Decimals)).Abs()
+	amount1Normalized := amount1.Div(ten.Pow(o.Pool.QuoteToken.Decimals)).Abs()
 
 	// Calculate swap price
 	price := calculatePrice(sqrtPriceX96, baseDecimals, quoteDecimals, amount0.Sign() < 0)
@@ -193,20 +194,19 @@ func buildV3Trade[Event any](o v3TradeOpts[Event]) (trade TradeEvent, err error)
 		price = amount1Normalized.Div(amount0Normalized)
 	}
 
-	// Calculate trade side, amount and total
+	// Calculate trade side, amount and total.
 	takerType := TakerTypeBuy
 	amount, total := amount0Normalized, amount1Normalized
 	if amount0.Sign() < 0 {
 		takerType = TakerTypeSell
-		amount, total = amount1Normalized, amount0Normalized
 	}
 
 	tr := TradeEvent{
 		Source:    o.Driver,
 		Market:    o.Pool.Market,
 		Price:     price,
-		Amount:    amount, // amount of BASE token received
-		Total:     total,  // total cost in QUOTE token
+		Amount:    amount, // amount of QUOTE token received
+		Total:     total,  // total cost in BASE token
 		TakerType: takerType,
 		CreatedAt: time.Now(),
 	}
