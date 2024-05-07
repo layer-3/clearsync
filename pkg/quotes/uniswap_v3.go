@@ -205,8 +205,8 @@ func buildV3Trade[Event any](o v3TradeOpts[Event]) (trade TradeEvent, err error)
 		Source:    o.Driver,
 		Market:    o.Pool.Market,
 		Price:     price,
-		Amount:    amount, // amount of QUOTE token received
-		Total:     total,  // total cost in BASE token
+		Amount:    amount, // amount of BASE token received
+		Total:     total,  // total cost in QUOTE token
 		TakerType: takerType,
 		CreatedAt: time.Now(),
 	}
