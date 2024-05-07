@@ -87,17 +87,18 @@ func (s *sectaV2) getPool(market Market) ([]*dexPool[isecta_v2_pair.ISectaV2Pair
 		return nil, fmt.Errorf("failed to build Secta v2 pool: %w", err)
 	}
 
-	isReverted := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
+	isReversed := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
 	pools := []*dexPool[isecta_v2_pair.ISectaV2PairSwap]{{
-		contract:   poolContract,
-		baseToken:  baseToken,
-		quoteToken: quoteToken,
-		reverted:   isReverted,
-		market:     market,
+		Contract:   poolContract,
+		Address:    poolAddress,
+		BaseToken:  baseToken,
+		QuoteToken: quoteToken,
+		Market:     market,
+		Reversed:   isReversed,
 	}}
 
 	// Return pools if the token addresses match direct or reversed configurations
-	if (baseToken.Address == basePoolToken && quoteToken.Address == quotePoolToken) || isReverted {
+	if (baseToken.Address == basePoolToken && quoteToken.Address == quotePoolToken) || isReversed {
 		return pools, nil
 	}
 	return nil, fmt.Errorf("failed to build Secta v2 pool for market %s: %w", market, err)
@@ -109,9 +110,8 @@ func (s *sectaV2) parseSwap(
 ) (trade TradeEvent, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			msg := "recovered in from panic during swap parsing"
-			loggerSectaV2.Errorw(msg, "swap", swap, "pool", pool)
-			err = fmt.Errorf("%s: %s", msg, r)
+			loggerSectaV2.Errorw(ErrSwapParsing.Error(), "swap", swap, "pool", pool)
+			err = fmt.Errorf("%s: %s", ErrSwapParsing, r)
 		}
 	}()
 

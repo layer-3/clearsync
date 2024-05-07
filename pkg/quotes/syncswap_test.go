@@ -15,8 +15,8 @@ var (
 	baseTokenDecimals  = big.NewInt(18) // Example: 18 decimals for ETH
 	quoteTokenDecimals = big.NewInt(6)  // Example: 6 decimals for USDC
 	pool               = dexPool[isyncswap_pool.ISyncSwapPoolSwap]{
-		baseToken:  poolToken{Decimals: decimal.NewFromBigInt(baseTokenDecimals, 0)},
-		quoteToken: poolToken{Decimals: decimal.NewFromBigInt(quoteTokenDecimals, 0)},
+		BaseToken:  poolToken{Decimals: decimal.NewFromBigInt(baseTokenDecimals, 0)},
+		QuoteToken: poolToken{Decimals: decimal.NewFromBigInt(quoteTokenDecimals, 0)},
 	}
 	market = Market{} // Assuming market is correctly initialized for the test
 )
@@ -67,8 +67,8 @@ func TestParseSwapBuyLINDAWETH(t *testing.T) {
 	baseTokenDecimals = big.NewInt(18)  // Example: 18 decimals for LINDA
 	quoteTokenDecimals = big.NewInt(18) // Example: 18 decimals for WETH
 	pool = dexPool[isyncswap_pool.ISyncSwapPoolSwap]{
-		baseToken:  poolToken{Decimals: decimal.NewFromBigInt(baseTokenDecimals, 0)},
-		quoteToken: poolToken{Decimals: decimal.NewFromBigInt(quoteTokenDecimals, 0)},
+		BaseToken:  poolToken{Decimals: decimal.NewFromBigInt(baseTokenDecimals, 0)},
+		QuoteToken: poolToken{Decimals: decimal.NewFromBigInt(quoteTokenDecimals, 0)},
 	}
 
 	value := new(big.Int)
@@ -97,8 +97,8 @@ func TestParseSwapSellLINDAWETH(t *testing.T) {
 	baseTokenDecimals = big.NewInt(18)  // Example: 18 decimals for LINDA
 	quoteTokenDecimals = big.NewInt(18) // Example: 18 decimals for WETH
 	pool = dexPool[isyncswap_pool.ISyncSwapPoolSwap]{
-		baseToken:  poolToken{Decimals: decimal.NewFromBigInt(baseTokenDecimals, 0)},
-		quoteToken: poolToken{Decimals: decimal.NewFromBigInt(quoteTokenDecimals, 0)},
+		BaseToken:  poolToken{Decimals: decimal.NewFromBigInt(baseTokenDecimals, 0)},
+		QuoteToken: poolToken{Decimals: decimal.NewFromBigInt(quoteTokenDecimals, 0)},
 	}
 
 	value := new(big.Int)

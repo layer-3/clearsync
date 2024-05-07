@@ -120,16 +120,18 @@ func (s *syncswap) getPool(market Market) ([]*dexPool[isyncswap_pool.ISyncSwapPo
 		return nil, fmt.Errorf("failed to build Syncswap pool: %w", err)
 	}
 
-	isReverted := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
+	isReversed := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
 	pools := []*dexPool[isyncswap_pool.ISyncSwapPoolSwap]{{
-		contract:   poolContract,
-		baseToken:  baseToken,
-		quoteToken: quoteToken,
-		reverted:   isReverted,
+		Contract:   poolContract,
+		Address:    poolAddress,
+		BaseToken:  baseToken,
+		QuoteToken: quoteToken,
+		Market:     market,
+		Reversed:   isReversed,
 	}}
 
 	// Return pools if the token addresses match direct or reversed configurations
-	if (baseToken.Address == basePoolToken && quoteToken.Address == quotePoolToken) || isReverted {
+	if (baseToken.Address == basePoolToken && quoteToken.Address == quotePoolToken) || isReversed {
 		return pools, nil
 	}
 	return nil, fmt.Errorf("failed to build Syncswap pool for market %s: %w", market, err)
@@ -141,9 +143,8 @@ func (s *syncswap) parseSwap(
 ) (trade TradeEvent, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			msg := "recovered in from panic during swap parsing"
-			loggerSyncswap.Errorw(msg, "swap", swap, "pool", pool)
-			err = fmt.Errorf("%s: %s", msg, r)
+			loggerSyncswap.Errorw(ErrSwapParsing.Error(), "swap", swap, "pool", pool)
+			err = fmt.Errorf("%s: %s", ErrSwapParsing, r)
 		}
 	}()
 
@@ -162,7 +163,7 @@ func buildV2Trade[Event any](
 	rawAmount0In, rawAmount0Out, rawAmount1In, rawAmount1Out *big.Int,
 	pool *dexPool[Event],
 ) (TradeEvent, error) {
-	if pool.reverted {
+	if pool.Reversed {
 		copyAmount0In, copyAmount0Out := rawAmount0In, rawAmount0Out
 		rawAmount0In, rawAmount0Out = rawAmount1In, rawAmount1Out
 		rawAmount1In, rawAmount1Out = copyAmount0In, copyAmount0Out
@@ -173,8 +174,8 @@ func buildV2Trade[Event any](
 	var amount decimal.Decimal
 	var total decimal.Decimal
 
-	baseDecimals := pool.baseToken.Decimals
-	quoteDecimals := pool.quoteToken.Decimals
+	baseDecimals := pool.BaseToken.Decimals
+	quoteDecimals := pool.QuoteToken.Decimals
 
 	switch {
 	case isValidNonZero(rawAmount0In) && isValidNonZero(rawAmount1Out):
@@ -195,12 +196,12 @@ func buildV2Trade[Event any](
 		total = amount1In
 		amount = amount0Out
 	default:
-		return TradeEvent{}, fmt.Errorf("market %s: unknown swap type", pool.market)
+		return TradeEvent{}, fmt.Errorf("market %s: unknown swap type", pool.Market)
 	}
 
 	trade := TradeEvent{
 		Source:    driver,
-		Market:    pool.market,
+		Market:    pool.Market,
 		Price:     price,
 		Amount:    amount.Abs(),
 		Total:     total,
@@ -211,5 +212,7 @@ func buildV2Trade[Event any](
 }
 
 func isValidNonZero(x *big.Int) bool {
+	// Note that negative values are allowed
+	// as they represent a reduction in the balance of the pool.
 	return x != nil && x.Sign() != 0
 }

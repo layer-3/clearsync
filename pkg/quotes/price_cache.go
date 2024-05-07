@@ -8,7 +8,7 @@ import (
 	"github.com/layer-3/clearsync/pkg/safe"
 )
 
-type trade struct {
+type priceCacheTrade struct {
 	Price     decimal.Decimal
 	Volume    decimal.Decimal
 	Weight    decimal.Decimal
@@ -23,7 +23,7 @@ type marketKey struct {
 
 type PriceCache struct {
 	weights    safe.Map[DriverType, decimal.Decimal]
-	market     safe.Map[marketKey, []trade]
+	market     safe.Map[marketKey, []priceCacheTrade]
 	lastPrice  safe.Map[marketKey, decimal.Decimal]
 	nTrades    int
 	bufferTime time.Duration
@@ -32,7 +32,7 @@ type PriceCache struct {
 // newPriceCache initializes a new cache to store last n trades for each market.
 func newPriceCache(driversWeights map[DriverType]decimal.Decimal, nTrades int, bufferTime time.Duration) *PriceCache {
 	cache := new(PriceCache)
-	cache.market = safe.NewMap[marketKey, []trade]()
+	cache.market = safe.NewMap[marketKey, []priceCacheTrade]()
 	cache.weights = safe.NewMapWithData(driversWeights)
 	cache.lastPrice = safe.NewMap[marketKey, decimal.Decimal]()
 	cache.nTrades = nTrades
@@ -44,13 +44,13 @@ func newPriceCache(driversWeights map[DriverType]decimal.Decimal, nTrades int, b
 // AddTrade adds a new trade to the cache for a market.
 func (p *PriceCache) AddTrade(market Market, price, volume decimal.Decimal, timestamp time.Time, source DriverType) {
 	key := marketKey{baseUnit: market.baseUnit, quoteUnit: market.quoteUnit}
-	p.market.UpdateInTx(func(m map[marketKey][]trade) {
+	p.market.UpdateInTx(func(m map[marketKey][]priceCacheTrade) {
 		driversTrades, ok := m[key]
 		if !ok {
-			driversTrades = []trade{}
+			driversTrades = []priceCacheTrade{}
 		}
 
-		newTradesList := []trade{{Price: price, Volume: volume, Weight: decimal.Zero, Timestamp: timestamp, Source: source}}
+		newTradesList := []priceCacheTrade{{Price: price, Volume: volume, Weight: decimal.Zero, Timestamp: timestamp, Source: source}}
 		// transfer all existing trades to a new array
 		for _, t := range driversTrades {
 			if t.Source != source && time.Now().Sub(t.Timestamp) <= p.bufferTime {
@@ -67,7 +67,7 @@ func (p *PriceCache) AddTrade(market Market, price, volume decimal.Decimal, time
 			totalWeights = totalWeights.Add(w)
 		}
 
-		tradesList := []trade{}
+		var tradesList []priceCacheTrade
 		for _, t := range newTradesList {
 			w, ok := p.weights.Load(t.Source)
 			if !ok {

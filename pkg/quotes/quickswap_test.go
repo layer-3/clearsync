@@ -64,26 +64,81 @@ func Test_quickswap_parseSwap(t *testing.T) {
 					},
 				},
 				pool: &dexPool[quickswap_v3_pool.IQuickswapV3PoolSwap]{
-					baseToken: poolToken{
+					BaseToken: poolToken{
 						Address:  common.HexToAddress("0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270"),
 						Symbol:   "matic",
 						Decimals: decimal.NewFromInt(18),
 					},
-					quoteToken: poolToken{
+					QuoteToken: poolToken{
 						Address:  common.HexToAddress("0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619"),
 						Symbol:   "weth",
 						Decimals: decimal.NewFromInt(18),
 					},
-					reverted: false,
-					market:   NewMarket("matic", "weth"),
+					Reversed: false,
+					Market:   NewMarket("matic", "weth"),
 				},
 			},
 			want: TradeEvent{
 				Source:    DriverQuickswap,
 				Market:    Market{baseUnit: "matic", quoteUnit: "weth"},
-				Price:     decimal.RequireFromString("0.0002917105144227"),
+				Price:     decimal.RequireFromString("0.0002922630136527"),
 				Amount:    decimal.RequireFromString("6035.9860273201849237"),
-				Total:     decimal.RequireFromString("1.76076058907780048041581994904799"),
+				Total:     decimal.RequireFromString("1.7607605890778538"),
+				TakerType: TakerTypeBuy,
+			},
+			wantErr: false,
+		},
+		{
+			name: "0x43671f14131020bad4265ce9d9110589d2554875b2d554bed7cdb8766ac3be12",
+			args: args{
+				swap: &quickswap_v3_pool.IQuickswapV3PoolSwap{
+					// This is a REAL swap event from Polygon chain.
+					// See at https://polygonscan.com/tx/0x43671f14131020bad4265ce9d9110589d2554875b2d554bed7cdb8766ac3be12
+					Sender:    common.HexToAddress("0x802b65b5d9016621e66003aed0b16615093f328b"),
+					Recipient: common.HexToAddress("0x802b65b5d9016621e66003aed0b16615093f328b"),
+					Amount0:   newBigInt("+366413350971486913"),
+					Amount1:   newBigInt("-1059059758"),
+					Price:     newBigInt("4262211506663986413431754"),
+					Liquidity: newBigInt("189778357758686423"),
+					Tick:      newBigInt("-196616"),
+					Raw: types.Log{
+						Address: common.HexToAddress("0x9ceff2f5138fc59eb925d270b8a7a9c02a1810f2"),
+						Topics: []common.Hash{
+							common.HexToHash("0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67"),
+							common.HexToHash("0x000000000000000000000000802b65b5d9016621e66003aed0b16615093f328b"),
+							common.HexToHash("0x000000000000000000000000802b65b5d9016621e66003aed0b16615093f328b"),
+						},
+						Data:        []byte("0x0000000000000000000000000000000000000000000000000515c300599db2c1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffc0e007d200000000000000000000000000000000000000000003868ef2e1aa8165d3ebca00000000000000000000000000000000000000000000000002a23a69304374d7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffcfff8"),
+						BlockNumber: 0x35d81b2,
+						TxHash:      common.BytesToHash([]byte("0x43671f14131020bad4265ce9d9110589d2554875b2d554bed7cdb8766ac3be12")),
+						TxIndex:     0x27,
+						BlockHash:   common.BytesToHash([]byte("0xd3c0b0229699bd9a5eeaf92e7e3162b7c36610324174d634d1d64c7221daa86d")),
+						Index:       0x81,
+						Removed:     false,
+					},
+				},
+				pool: &dexPool[quickswap_v3_pool.IQuickswapV3PoolSwap]{
+					Address: common.HexToAddress("0x9ceff2f5138fc59eb925d270b8a7a9c02a1810f2"),
+					BaseToken: poolToken{
+						Address:  common.HexToAddress("0x7ceb23fd6bc0add59e62ac25578270cff1b9f619"),
+						Symbol:   "weth",
+						Decimals: decimal.NewFromInt(18),
+					},
+					QuoteToken: poolToken{
+						Address:  common.HexToAddress("0xc2132d05d31c914a87c6611c10748aeb04b58e8f"),
+						Symbol:   "usdt",
+						Decimals: decimal.NewFromInt(6),
+					},
+					Reversed: false,
+					Market:   NewMarket("weth", "usdt"),
+				},
+			},
+			want: TradeEvent{
+				Source:    DriverQuickswap,
+				Market:    NewMarket("weth", "usdt"),
+				Price:     decimal.RequireFromString("2894.0819654229875328"),
+				Amount:    decimal.RequireFromString("0.3664133509714869"),
+				Total:     decimal.RequireFromString("1059.059758"),
 				TakerType: TakerTypeBuy,
 			},
 			wantErr: false,
@@ -98,14 +153,16 @@ func Test_quickswap_parseSwap(t *testing.T) {
 			driver := quickswap{}
 			got, err := driver.parseSwap(test.args.swap, test.args.pool)
 
-			require.True(t, test.wantErr == (err != nil))
-
-			require.Equal(t, test.want.Source, got.Source, fmt.Sprintf("want: `%s`, got `%s`", test.want.Source, got.Source))
-			require.Equal(t, test.want.Market, got.Market, fmt.Sprintf("want: `%s`, got `%s`", test.want.Market, got.Market))
-			require.True(t, test.want.Price.Equal(got.Price), fmt.Sprintf("want: `%s`, got `%s`", test.want.Price, got.Price))
-			require.True(t, test.want.Amount.Equal(got.Amount), fmt.Sprintf("want: `%s`, got `%s`", test.want.Amount, got.Amount))
-			require.True(t, test.want.Total.Equal(got.Total), fmt.Sprintf("want: `%s`, got `%s`", test.want.Total, got.Total))
-			require.Equal(t, test.want.TakerType, got.TakerType, fmt.Sprintf("want: `%s`, got `%s`", test.want.TakerType, got.TakerType))
+			if test.wantErr {
+				require.True(t, err != nil)
+				return
+			}
+			require.Equal(t, test.want.Source, got.Source, fmt.Sprintf("want Source: `%s`, got `%s`", test.want.Source, got.Source))
+			require.Equal(t, test.want.Market, got.Market, fmt.Sprintf("want Market: `%s`, got `%s`", test.want.Market, got.Market))
+			require.True(t, test.want.Price.Equal(got.Price), fmt.Sprintf("want Price: `%s`, got `%s`", test.want.Price, got.Price))
+			require.True(t, test.want.Amount.Equal(got.Amount), fmt.Sprintf("want Amount: `%s`, got `%s`", test.want.Amount, got.Amount))
+			require.True(t, test.want.Total.Equal(got.Total), fmt.Sprintf("want Total: `%s`, got `%s`", test.want.Total, got.Total))
+			require.Equal(t, test.want.TakerType, got.TakerType, fmt.Sprintf("want TakerType: `%s`, got `%s`", test.want.TakerType, got.TakerType))
 		})
 	}
 }

@@ -87,16 +87,20 @@ func (s *quickswap) getPool(market Market) ([]*dexPool[quickswap_v3_pool.IQuicks
 		return nil, fmt.Errorf("failed to build Quickswap pool: %w", err)
 	}
 
-	isReverted := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
+	isDirect := baseToken.Address == basePoolToken && quoteToken.Address == quotePoolToken
+	isReversed := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
+
 	pools := []*dexPool[quickswap_v3_pool.IQuickswapV3PoolSwap]{{
-		contract:   poolContract,
-		baseToken:  baseToken,
-		quoteToken: quoteToken,
-		reverted:   isReverted,
+		Contract:   poolContract,
+		Address:    poolAddress,
+		BaseToken:  baseToken,
+		QuoteToken: quoteToken,
+		Market:     market,
+		Reversed:   isReversed,
 	}}
 
 	// Return pools if the token addresses match direct or reversed configurations
-	if (baseToken.Address == basePoolToken && quoteToken.Address == quotePoolToken) || isReverted {
+	if isDirect || isReversed {
 		return pools, nil
 	}
 	return nil, fmt.Errorf("failed to build Quickswap pool for market %s: %w", market, err)
@@ -106,18 +110,14 @@ func (s *quickswap) parseSwap(
 	swap *quickswap_v3_pool.IQuickswapV3PoolSwap,
 	pool *dexPool[quickswap_v3_pool.IQuickswapV3PoolSwap],
 ) (trade TradeEvent, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			msg := "recovered in from panic during swap parsing"
-			loggerQuickswap.Errorw(msg, "swap", swap, "pool", pool)
-			err = fmt.Errorf("%s: %s", msg, r)
-		}
-	}()
-
-	return buildV3Trade(
-		DriverQuickswap,
-		swap.Amount0,
-		swap.Amount1,
-		pool,
-	)
+	opts := v3TradeOpts[quickswap_v3_pool.IQuickswapV3PoolSwap]{
+		Driver:          DriverQuickswap,
+		RawAmount0:      swap.Amount0,
+		RawAmount1:      swap.Amount1,
+		RawSqrtPriceX96: swap.Price,
+		Pool:            pool,
+		Swap:            swap,
+		Logger:          loggerQuickswap,
+	}
+	return buildV3Trade(opts)
 }
