@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/shopspring/decimal"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/layer-3/clearsync/pkg/artifacts/quickswap_v3_pool"
@@ -36,7 +37,7 @@ func Test_quickswap_parseSwap(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Sell trade",
+			name: "0xa77f02fe9abda2ab43d77bc3ef4cf19bc75f60085b0437b2321e9a89248c6dc6",
 			args: args{
 				swap: &quickswap_v3_pool.IQuickswapV3PoolSwap{
 					// This is a REAL swap event from Polygon chain.
@@ -66,7 +67,7 @@ func Test_quickswap_parseSwap(t *testing.T) {
 				pool: &dexPool[quickswap_v3_pool.IQuickswapV3PoolSwap]{
 					BaseToken: poolToken{
 						Address:  common.HexToAddress("0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270"),
-						Symbol:   "matic",
+						Symbol:   "wmatic",
 						Decimals: decimal.NewFromInt(18),
 					},
 					QuoteToken: poolToken{
@@ -74,16 +75,16 @@ func Test_quickswap_parseSwap(t *testing.T) {
 						Symbol:   "weth",
 						Decimals: decimal.NewFromInt(18),
 					},
-					Reversed: false,
-					Market:   NewMarket("matic", "weth"),
+					Reversed: true,
+					Market:   NewMarket("wmatic", "weth"),
 				},
 			},
 			want: TradeEvent{
 				Source:    DriverQuickswap,
-				Market:    Market{baseUnit: "matic", quoteUnit: "weth"},
-				Price:     decimal.RequireFromString("0.0002922630136527"),
-				Amount:    decimal.RequireFromString("6035.9860273201849237"),
-				Total:     decimal.RequireFromString("1.7607605890778538"),
+				Market:    Market{baseUnit: "wmatic", quoteUnit: "weth"},
+				Price:     decimal.RequireFromString("3421.5756126711160865"),
+				Amount:    decimal.RequireFromString("1.7607605890778538"),
+				Total:     decimal.RequireFromString("6035.9860273201849237"),
 				TakerType: TakerTypeBuy,
 			},
 			wantErr: false,
@@ -157,12 +158,12 @@ func Test_quickswap_parseSwap(t *testing.T) {
 				require.True(t, err != nil)
 				return
 			}
-			require.Equal(t, test.want.Source, got.Source, fmt.Sprintf("want Source: `%s`, got `%s`", test.want.Source, got.Source))
-			require.Equal(t, test.want.Market, got.Market, fmt.Sprintf("want Market: `%s`, got `%s`", test.want.Market, got.Market))
-			require.True(t, test.want.Price.Equal(got.Price), fmt.Sprintf("want Price: `%s`, got `%s`", test.want.Price, got.Price))
-			require.True(t, test.want.Amount.Equal(got.Amount), fmt.Sprintf("want Amount: `%s`, got `%s`", test.want.Amount, got.Amount))
-			require.True(t, test.want.Total.Equal(got.Total), fmt.Sprintf("want Total: `%s`, got `%s`", test.want.Total, got.Total))
-			require.Equal(t, test.want.TakerType, got.TakerType, fmt.Sprintf("want TakerType: `%s`, got `%s`", test.want.TakerType, got.TakerType))
+			assert.Equal(t, test.want.Source, got.Source, fmt.Sprintf("want Source: `%s`, got `%s`", test.want.Source, got.Source))
+			assert.Equal(t, test.want.Market, got.Market, fmt.Sprintf("want Market: `%s`, got `%s`", test.want.Market, got.Market))
+			assert.True(t, test.want.Price.Equal(got.Price), fmt.Sprintf("want Price: `%s`, got `%s`", test.want.Price, got.Price))
+			assert.True(t, test.want.Amount.Equal(got.Amount), fmt.Sprintf("want Amount: `%s`, got `%s`", test.want.Amount, got.Amount))
+			assert.True(t, test.want.Total.Equal(got.Total), fmt.Sprintf("want Total: `%s`, got `%s`", test.want.Total, got.Total))
+			assert.Equal(t, test.want.TakerType, got.TakerType, fmt.Sprintf("want TakerType: `%s`, got `%s`", test.want.TakerType, got.TakerType))
 		})
 	}
 }
