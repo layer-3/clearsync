@@ -164,37 +164,43 @@ func buildV3Trade[Event any](o v3TradeOpts[Event]) (trade TradeEvent, err error)
 		return TradeEvent{}, fmt.Errorf("raw amount0 (%s) is not a valid non-zero number", o.RawAmount0)
 	}
 	amount0 := decimal.NewFromBigInt(o.RawAmount0, 0)
-	baseDecimals := o.Pool.BaseToken.Decimals
 
 	if !isValidNonZero(o.RawAmount1) {
 		return TradeEvent{}, fmt.Errorf("raw amount1 (%s) is not a valid non-zero number", o.RawAmount0)
 	}
 	amount1 := decimal.NewFromBigInt(o.RawAmount1, 0)
-	quoteDecimals := o.Pool.QuoteToken.Decimals
 
 	if !isValidNonZero(o.RawSqrtPriceX96) {
 		return TradeEvent{}, fmt.Errorf("raw sqrtPriceX96 (%s) is not a valid non-zero number", o.RawSqrtPriceX96)
 	}
 	sqrtPriceX96 := decimal.NewFromBigInt(o.RawSqrtPriceX96, 0)
 
+	baseDecimals := o.Pool.BaseToken.Decimals
+	quoteDecimals := o.Pool.QuoteToken.Decimals
 	if o.Pool.Reversed {
 		amount0, amount1 = amount1, amount0
 		baseDecimals, quoteDecimals = quoteDecimals, baseDecimals
 	}
 
-	// Normalize swap amounts.
+	// Normalize swap amounts
 	amount0Normalized := amount0.Div(ten.Pow(baseDecimals)).Abs()
 	amount1Normalized := amount1.Div(ten.Pow(quoteDecimals)).Abs()
 
-	// Calculate swap price.
-	price := calculatePrice(sqrtPriceX96, baseDecimals, quoteDecimals, amount0.Sign() < 0)
-	// Apply a fallback strategy in case the primary one fails.
-	// This should never happen, but just in case.
+	// Calculate swap price
+	var price decimal.Decimal
+
+	if o.Pool.Reversed {
+		price = calculatePrice(sqrtPriceX96, baseDecimals, quoteDecimals)
+		price = decimal.NewFromInt(1).Div(price)
+	} else {
+		price = calculatePrice(sqrtPriceX96, quoteDecimals, baseDecimals)
+	}
+
 	if price.IsZero() {
 		price = amount1Normalized.Div(amount0Normalized)
 	}
 
-	// Calculate trade side, amount and total.
+	// Calculate trade side, amount and total
 	takerType := TakerTypeBuy
 	amount, total := amount0Normalized, amount1Normalized
 	if amount0.Sign() < 0 {
@@ -226,7 +232,7 @@ var (
 // price = ((sqrtPriceX96 / 2**96)**2) / (10**decimal1 / 10**decimal0)
 //
 // See the math explained at https://blog.uniswap.org/uniswap-v3-math-primer
-func calculatePrice(sqrtPriceX96, baseDecimals, quoteDecimals decimal.Decimal, isSellTrade bool) decimal.Decimal {
+func calculatePrice(sqrtPriceX96, baseDecimals, quoteDecimals decimal.Decimal) decimal.Decimal {
 	// Simplification for denominator calculations:
 	// 10**decimal1 / 10**decimal0 -> 10**(decimal1 - decimal0)
 	decimals := quoteDecimals.Sub(baseDecimals)
@@ -234,8 +240,5 @@ func calculatePrice(sqrtPriceX96, baseDecimals, quoteDecimals decimal.Decimal, i
 	numerator := sqrtPriceX96.Div(priceX96).Pow(two)
 	denominator := ten.Pow(decimals)
 
-	if isSellTrade {
-		return denominator.Div(numerator)
-	}
 	return numerator.Div(denominator)
 }
