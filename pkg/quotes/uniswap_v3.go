@@ -164,29 +164,29 @@ func buildV3Trade[Event any](o v3TradeOpts[Event]) (trade TradeEvent, err error)
 		return TradeEvent{}, fmt.Errorf("raw amount0 (%s) is not a valid non-zero number", o.RawAmount0)
 	}
 	amount0 := decimal.NewFromBigInt(o.RawAmount0, 0)
+	baseDecimals := o.Pool.BaseToken.Decimals
 
 	if !isValidNonZero(o.RawAmount1) {
 		return TradeEvent{}, fmt.Errorf("raw amount1 (%s) is not a valid non-zero number", o.RawAmount0)
 	}
 	amount1 := decimal.NewFromBigInt(o.RawAmount1, 0)
+	quoteDecimals := o.Pool.QuoteToken.Decimals
 
 	if !isValidNonZero(o.RawSqrtPriceX96) {
 		return TradeEvent{}, fmt.Errorf("raw sqrtPriceX96 (%s) is not a valid non-zero number", o.RawSqrtPriceX96)
 	}
 	sqrtPriceX96 := decimal.NewFromBigInt(o.RawSqrtPriceX96, 0)
 
-	baseDecimals := o.Pool.BaseToken.Decimals
-	quoteDecimals := o.Pool.QuoteToken.Decimals
 	if o.Pool.Reversed {
-		baseDecimals, quoteDecimals = quoteDecimals, baseDecimals
 		amount0, amount1 = amount1, amount0
+		baseDecimals, quoteDecimals = quoteDecimals, baseDecimals
 	}
 
 	// Normalize swap amounts.
-	amount0Normalized := amount0.Div(ten.Pow(o.Pool.BaseToken.Decimals)).Abs()
-	amount1Normalized := amount1.Div(ten.Pow(o.Pool.QuoteToken.Decimals)).Abs()
+	amount0Normalized := amount0.Div(ten.Pow(baseDecimals)).Abs()
+	amount1Normalized := amount1.Div(ten.Pow(quoteDecimals)).Abs()
 
-	// Calculate swap price
+	// Calculate swap price.
 	price := calculatePrice(sqrtPriceX96, baseDecimals, quoteDecimals, amount0.Sign() < 0)
 	// Apply a fallback strategy in case the primary one fails.
 	// This should never happen, but just in case.
