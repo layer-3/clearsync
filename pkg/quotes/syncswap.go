@@ -57,6 +57,7 @@ func newSyncswap(config SyncswapConfig, outbox chan<- TradeEvent) Driver {
 		URL:        config.URL,
 		AssetsURL:  config.AssetsURL,
 		MappingURL: config.MappingURL,
+		IdlePeriod: config.IdlePeriod,
 		// Hooks
 		PostStartHook: hooks.postStart,
 		PoolGetter:    hooks.getPool,

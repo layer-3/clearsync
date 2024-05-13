@@ -82,6 +82,7 @@ type BinanceConfig struct {
 	USDCtoUSDT         bool          `yaml:"usdc_to_usdt" env:"USDC_TO_USDT" env-default:"true"`
 	BatchPeriod        time.Duration `yaml:"batch_period" env:"BATCH_PERIOD" env-default:"5s"`
 	AssetsUpdatePeriod time.Duration `yaml:"assets_update_period" env:"ASSETS_UPDATE_PERIOD" env-default:"5m"`
+	IdlePeriod         time.Duration `yaml:"idle_period" env:"IDLE_PERIOD" env-default:"10m"`
 	Filter             FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
 }
 
@@ -103,21 +104,23 @@ type BitfakerConfig struct {
 }
 
 type UniswapV3Config struct {
-	URL            string       `yaml:"url" env:"URL"`
-	AssetsURL      string       `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/1/assets.json"`
-	MappingURL     string       `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/1/mapping.json"`
-	FactoryAddress string       `yaml:"factory_address" env:"FACTORY_ADDRESS" env-default:"0x1F98431c8aD98523631AE4a59f267346ea31F984"`
-	Filter         FilterConfig `yaml:"filter" env-prefix:"FILTER_"`
+	URL            string        `yaml:"url" env:"URL"`
+	AssetsURL      string        `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/1/assets.json"`
+	MappingURL     string        `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/1/mapping.json"`
+	FactoryAddress string        `yaml:"factory_address" env:"FACTORY_ADDRESS" env-default:"0x1F98431c8aD98523631AE4a59f267346ea31F984"`
+	IdlePeriod     time.Duration `yaml:"idle_period" env:"IDLE_PERIOD" env-default:"30m"`
+	Filter         FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
 }
 
 type SyncswapConfig struct {
-	URL                       string       `yaml:"url" env:"URL"`
-	AssetsURL                 string       `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/assets.json"`
-	MappingURL                string       `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/mapping.json"`
-	ClassicPoolFactoryAddress string       `yaml:"classic_pool_factory_address" env:"CLASSIC_POOL_FACTORY_ADDRESS" env-default:"0x37BAc764494c8db4e54BDE72f6965beA9fa0AC2d"`
-	StablePoolFactoryAddress  string       `yaml:"stable_pool_factory_address" env:"STABLE_POOL_FACTORY_ADDRESS" env-default:"0xE4CF807E351b56720B17A59094179e7Ed9dD3727"`
-	StablePoolMarkets         []string     `yaml:"stable_pool_markets" env:"STABLE_POOL_MARKETS" env-default:"usdt/usdc"` // `env-default` tag value is a comma separated list of markets as in `usdt/usdc, usdc/dai`
-	Filter                    FilterConfig `yaml:"filter" env-prefix:"FILTER_"`
+	URL                       string        `yaml:"url" env:"URL"`
+	AssetsURL                 string        `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/assets.json"`
+	MappingURL                string        `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/mapping.json"`
+	ClassicPoolFactoryAddress string        `yaml:"classic_pool_factory_address" env:"CLASSIC_POOL_FACTORY_ADDRESS" env-default:"0x37BAc764494c8db4e54BDE72f6965beA9fa0AC2d"`
+	StablePoolFactoryAddress  string        `yaml:"stable_pool_factory_address" env:"STABLE_POOL_FACTORY_ADDRESS" env-default:"0xE4CF807E351b56720B17A59094179e7Ed9dD3727"`
+	StablePoolMarkets         []string      `yaml:"stable_pool_markets" env:"STABLE_POOL_MARKETS" env-default:"usdt/usdc"` // `env-default` tag value is a comma separated list of markets as in `usdt/usdc, usdc/dai`
+	IdlePeriod                time.Duration `yaml:"idle_period" env:"IDLE_PERIOD" env-default:"30m"`
+	Filter                    FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
 }
 
 type QuickswapConfig struct {
@@ -127,24 +130,27 @@ type QuickswapConfig struct {
 	// PoolFactoryAddress is the address of the factory contract.
 	// See docs at https://docs.quickswap.exchange/technical-reference/smart-contracts/v3/factory.
 	// Note that the contract used in this lib is compiled from https://github.com/code-423n4/2022-09-quickswap.
-	PoolFactoryAddress string       `yaml:"pool_factory_address" env:"POOL_FACTORY_ADDRESS" env-default:"0x411b0fAcC3489691f28ad58c47006AF5E3Ab3A28"`
-	Filter             FilterConfig `yaml:"filter" env-prefix:"FILTER_"`
+	PoolFactoryAddress string        `yaml:"pool_factory_address" env:"POOL_FACTORY_ADDRESS" env-default:"0x411b0fAcC3489691f28ad58c47006AF5E3Ab3A28"`
+	IdlePeriod         time.Duration `yaml:"idle_period" env:"IDLE_PERIOD" env-default:"30m"`
+	Filter             FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
 }
 
 type SectaV2Config struct {
-	URL            string       `yaml:"url" env:"URL"`
-	AssetsURL      string       `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/assets.json"`
-	MappingURL     string       `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/mapping.json"`
-	FactoryAddress string       `yaml:"factory_address" env:"FACTORY_ADDRESS" env-default:"0x8Ad39bf99765E24012A28bEb0d444DE612903C43"`
-	Filter         FilterConfig `yaml:"filter" env-prefix:"FILTER_"`
+	URL            string        `yaml:"url" env:"URL"`
+	AssetsURL      string        `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/assets.json"`
+	MappingURL     string        `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/mapping.json"`
+	FactoryAddress string        `yaml:"factory_address" env:"FACTORY_ADDRESS" env-default:"0x8Ad39bf99765E24012A28bEb0d444DE612903C43"`
+	IdlePeriod     time.Duration `yaml:"idle_period" env:"IDLE_PERIOD" env-default:"30m"`
+	Filter         FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
 }
 
 type SectaV3Config struct {
-	URL            string       `yaml:"url" env:"URL"`
-	AssetsURL      string       `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/assets.json"`
-	MappingURL     string       `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/mapping.json"`
-	FactoryAddress string       `yaml:"factory_address" env:"FACTORY_ADDRESS" env-default:"0x9BD425a416A276C72a13c13bBd8145272680Cf07"`
-	Filter         FilterConfig `yaml:"filter" env-prefix:"FILTER_"`
+	URL            string        `yaml:"url" env:"URL"`
+	AssetsURL      string        `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/assets.json"`
+	MappingURL     string        `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/mapping.json"`
+	FactoryAddress string        `yaml:"factory_address" env:"FACTORY_ADDRESS" env-default:"0x9BD425a416A276C72a13c13bBd8145272680Cf07"`
+	IdlePeriod     time.Duration `yaml:"idle_period" env:"IDLE_PERIOD" env-default:"30m"`
+	Filter         FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
 }
 
 type SamplerFilterConfig struct {

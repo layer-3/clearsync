@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -33,6 +34,7 @@ type baseDEX[Event any, Contract any] struct {
 	url        string
 	assetsURL  string
 	mappingURL string
+	idlePeriod time.Duration
 
 	// Hooks
 	postStart func(*baseDEX[Event, Contract]) error
@@ -56,6 +58,7 @@ type baseDexConfig[Event any, Contract any] struct {
 	URL        string
 	AssetsURL  string
 	MappingURL string
+	IdlePeriod time.Duration
 
 	// Hooks
 	PostStartHook func(*baseDEX[Event, Contract]) error
@@ -75,6 +78,7 @@ func newBaseDEX[Event any, Contract any](config baseDexConfig[Event, Contract]) 
 		url:        config.URL,
 		assetsURL:  config.AssetsURL,
 		mappingURL: config.MappingURL,
+		idlePeriod: config.IdlePeriod,
 
 		// Hooks
 		postStart: config.PostStartHook,
@@ -220,20 +224,22 @@ func (b *baseDEX[Event, Contract]) Subscribe(market Market) error {
 	}
 
 	for _, pool := range pools {
+		ctx, cancel := context.WithCancel(context.TODO())
 		sink := make(chan *Event, 128)
 
 		var sub event.Subscription
 		err := debounce(b.logger, func() error {
-			opts := &bind.WatchOpts{Context: context.TODO()}
+			opts := &bind.WatchOpts{Context: ctx}
 			sub, err = pool.Contract.WatchSwap(opts, sink, []common.Address{}, []common.Address{})
 			return err
 		})
 		if err != nil {
 			close(sink)
+			cancel()
 			return fmt.Errorf("failed to subscribe to swaps for market %s: %w", market, err)
 		}
 
-		go b.watchSwap(pool, sink, sub)
+		go b.watchSwap(cancel, pool, sink, sub)
 		go b.streams.Store(market, sub) // to not block the loop since it's a blocking call with mutex under the hood
 	}
 
@@ -279,11 +285,40 @@ func debounce(logger *log.ZapEventLogger, f func() error) error {
 func (b *baseDEX[Event, Contract]) SetInbox(_ <-chan TradeEvent) {}
 
 func (b *baseDEX[Event, Contract]) watchSwap(
+	cancel context.CancelFunc,
 	pool *dexPool[Event],
 	sink chan *Event,
 	sub event.Subscription,
 ) {
-	defer close(sink)
+	// TODO: close the sink channel when the subscription is closed
+	//   The commented out implementation panics,
+	//   since the subscription still pushes events to the channel
+	//   after the subscription was closed.
+	//defer func() {
+	//	// Closing channel on receiving side is considered to be a bad practice,
+	//	// but since we don't know when the subscription will be ACTUALLY closed,
+	//	// waiting for some time before closing the channel
+	//	// is the only way to avoid panic on sending to a closed channel.
+	//	timer := time.NewTimer(10 * time.Minute)
+	//	defer timer.Stop()
+	//	b.logger.Warnw("waiting for sink to be closed", "market", market)
+	//	for {
+	//		select {
+	//		case <-timer.C:
+	//			close(sink)
+	//			b.logger.Warnw("sink closed", "market", market)
+	//			return
+	//		case <-sink:
+	//			// Empty the channel in case it's full
+	//			// and the subscription tries to push more events.
+	//			continue
+	//		}
+	//	}
+	//}()
+
+	timer := time.NewTimer(b.idlePeriod)
+	defer timer.Stop()
+
 	for {
 		select {
 		case err := <-sub.Err():
@@ -299,6 +334,8 @@ func (b *baseDEX[Event, Contract]) watchSwap(
 			}
 			return
 		case swap := <-sink:
+			timer.Reset(b.idlePeriod)
+
 			trade, err := b.parse(swap, pool)
 			if err != nil {
 				b.logger.Errorw("failed to parse swap event",
@@ -321,8 +358,44 @@ func (b *baseDEX[Event, Contract]) watchSwap(
 				continue
 			}
 			b.outbox <- trade
+		case <-timer.C:
+			b.logger.Warnw("market inactivity detected", "market", pool.Market)
+			cancel()
+			for {
+				if err := b.resubscribe(pool.Market); err == nil {
+					return
+				}
+				<-time.After(5 * time.Second)
+			}
+		case err := <-sub.Err():
+			b.logger.Warnw("market stream error", "market", pool.Market, "error", err)
+			cancel()
+			for {
+				if err := b.resubscribe(pool.Market); err == nil {
+					return
+				}
+				<-time.After(5 * time.Second)
+			}
 		}
 	}
+}
+
+func (b *baseDEX[Event, Contract]) resubscribe(market Market) error {
+	if _, ok := b.streams.Load(market); !ok {
+		return nil // market was unsubscribed earlier
+	}
+
+	if err := b.Unsubscribe(market); err != nil {
+		b.logger.Errorw("failed to resubscribe", "market", market, "error", err)
+		return err
+	}
+	if err := b.Subscribe(market); err != nil {
+		b.logger.Errorw("failed to resubscribe", "market", market, "error", err)
+		return err
+	}
+
+	b.logger.Infow("resubscribed", "market", market)
+	return nil
 }
 
 type dexPool[Event any] struct {

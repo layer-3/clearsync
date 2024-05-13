@@ -19,9 +19,10 @@ type binance struct {
 	once               *once
 	usdcToUSDT         bool
 	assetsUpdatePeriod time.Duration
+	idlePeriod         time.Duration
 	exchangeInfo       *gobinance.ExchangeInfoService
 	filter             Filter
-	combineInbox       chan<- TradeEvent
+	batcherInbox       chan<- TradeEvent
 	outbox             chan<- TradeEvent
 	streams            safe.Map[Market, chan struct{}]
 	symbolToMarket     safe.Map[string, Market]
@@ -29,8 +30,8 @@ type binance struct {
 }
 
 func newBinance(config BinanceConfig, outbox chan<- TradeEvent) Driver {
-	combineInbox := make(chan TradeEvent, 1024)
-	go batcher(config.BatchPeriod, combineInbox, outbox)
+	batcherInbox := make(chan TradeEvent, 1024)
+	go batch(config.BatchPeriod, batcherInbox, outbox)
 
 	driver := &binance{
 		once:               newOnce(),
@@ -38,7 +39,7 @@ func newBinance(config BinanceConfig, outbox chan<- TradeEvent) Driver {
 		assetsUpdatePeriod: config.AssetsUpdatePeriod,
 		exchangeInfo:       gobinance.NewClient("", "").NewExchangeInfoService(),
 		filter:             NewFilter(config.Filter),
-		combineInbox:       combineInbox,
+		batcherInbox:       batcherInbox,
 		outbox:             outbox,
 		streams:            safe.NewMap[Market, chan struct{}](),
 		symbolToMarket:     safe.NewMap[string, Market](),
@@ -105,8 +106,8 @@ func (b *binance) Subscribe(market Market) error {
 		return nil
 	}
 
-	pair := strings.ToUpper(market.Base()) + strings.ToUpper(market.Quote())
-	b.symbolToMarket.Store(strings.ToLower(pair), market)
+	symbol := strings.ToLower(market.Base() + market.Quote())
+	b.symbolToMarket.Store(symbol, market)
 
 	if _, ok := b.streams.Load(market); ok {
 		return fmt.Errorf("%s: %w", market, ErrAlreadySubbed)
@@ -116,15 +117,22 @@ func (b *binance) Subscribe(market Market) error {
 		return fmt.Errorf("market does not exist: %s", market)
 	}
 
-	doneCh, stopCh, err := gobinance.WsTradeServe(pair, b.handleTrade, b.handleErr(market))
+	idle := time.NewTimer(b.idlePeriod)
+	doneCh, stopCh, err := gobinance.WsTradeServe(symbol, b.handleTrade(idle), b.handleErr(market))
 	if err != nil {
 		return fmt.Errorf("%s: %w: %w", market, ErrFailedSub, err)
 	}
 	b.streams.Store(market, stopCh)
 
 	go func() {
-		defer close(doneCh)
-		<-doneCh
+		defer idle.Stop()
+
+		select {
+		case <-doneCh:
+			loggerBinance.Warnw("market stopped", "market", market)
+		case <-idle.C:
+			loggerBinance.Warnw("market inactivity detected", "market", market)
+		}
 
 		loggerBinance.Infow("resubscribing", "market", market)
 		if _, ok := b.streams.Load(market); !ok {
@@ -133,20 +141,21 @@ func (b *binance) Subscribe(market Market) error {
 
 		loggerBinance.Warnw("connection failed, resubscribing", "market", market)
 		if err := b.Unsubscribe(market); err != nil {
-			loggerBinance.Errorw("failed to unsubscribe", "market", pair, "error", err)
+			loggerBinance.Errorw("failed to unsubscribe", "market", market, "error", err)
 		}
 
 		for {
 			err := b.Subscribe(market)
 			if err == nil {
+				loggerBinance.Infow("resubscribed", "market", market)
 				break
 			}
-			loggerBinance.Errorw("failed to resubscribe", "market", pair, "error", err)
+			loggerBinance.Errorw("failed to resubscribe", "market", market, "error", err)
 			<-time.After(5 * time.Second)
 		}
 	}()
 
-	loggerBinance.Infow("subscribed", "market", strings.ToUpper(pair))
+	loggerBinance.Infow("subscribed", "market", market)
 	return nil
 }
 
@@ -192,17 +201,21 @@ func (b *binance) updateAssets() {
 	}
 }
 
-func (b *binance) handleTrade(event *gobinance.WsTradeEvent) {
-	tradeEvent, err := b.buildEvent(event)
-	if err != nil {
-		loggerBinance.Errorw("failed to build trade event", "event", event, "error", err)
-		return
-	}
+func (b *binance) handleTrade(idle *time.Timer) func(*gobinance.WsTradeEvent) {
+	return func(event *gobinance.WsTradeEvent) {
+		idle.Reset(b.idlePeriod)
 
-	if !b.filter.Allow(tradeEvent) {
-		return
+		tradeEvent, err := b.buildEvent(event)
+		if err != nil {
+			loggerBinance.Errorw("failed to build trade event", "event", event, "error", err)
+			return
+		}
+
+		if !b.filter.Allow(tradeEvent) {
+			return
+		}
+		b.batcherInbox <- tradeEvent
 	}
-	b.combineInbox <- tradeEvent
 }
 
 func (b *binance) handleErr(market Market) func(error) {
@@ -249,7 +262,7 @@ func (b *binance) buildEvent(tr *gobinance.WsTradeEvent) (TradeEvent, error) {
 	}, nil
 }
 
-func batcher(batchPeriod time.Duration, inbox <-chan TradeEvent, outbox chan<- TradeEvent) {
+func batch(batchPeriod time.Duration, inbox <-chan TradeEvent, outbox chan<- TradeEvent) {
 	marketTrades := make(map[Market][]TradeEvent)
 	timer := time.NewTimer(batchPeriod)
 	defer timer.Stop()
@@ -291,7 +304,7 @@ func combineTrades(trades []TradeEvent) *TradeEvent {
 		}
 	}
 
-	if totalAmount.Equal(decimal.Zero) {
+	if totalAmount.IsZero() {
 		return nil
 	}
 
