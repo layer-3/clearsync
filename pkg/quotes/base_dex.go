@@ -1,6 +1,7 @@
 package quotes
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,18 +15,24 @@ import (
 	"github.com/ipfs/go-log/v2"
 	"github.com/shopspring/decimal"
 	"golang.org/x/sync/errgroup"
+	"golang.org/x/time/rate"
 
 	"github.com/layer-3/clearsync/pkg/safe"
 )
 
+// rpcRateLimiter limits the number of requests to the RPC provider for DEX drivers.
+// As of spring 2024, Infura enables 10 req/s rate limit for free plan.
+// A lower limit of 5 req/s is used here just to be safe.
+var rpcRateLimiter = rate.NewLimiter(5, 1)
+
+const errInfuraRateLimit = "project ID request rate exceeded"
+
 type baseDEX[Event any, Contract any] struct {
 	// Params
-	once       *once
 	driverType DriverType
 	url        string
 	assetsURL  string
 	mappingURL string
-	logger     *log.ZapEventLogger
 
 	// Hooks
 	postStart func(*baseDEX[Event, Contract]) error
@@ -33,8 +40,10 @@ type baseDEX[Event any, Contract any] struct {
 	parse     func(*Event, *dexPool[Event]) (TradeEvent, error)
 
 	// State
+	once    *once
 	client  *ethclient.Client
 	outbox  chan<- TradeEvent
+	logger  *log.ZapEventLogger
 	filter  Filter
 	streams safe.Map[Market, event.Subscription]
 	assets  safe.Map[string, poolToken]
@@ -47,7 +56,6 @@ type baseDexConfig[Event any, Contract any] struct {
 	URL        string
 	AssetsURL  string
 	MappingURL string
-	Logger     *log.ZapEventLogger
 
 	// Hooks
 	PostStartHook func(*baseDEX[Event, Contract]) error
@@ -56,18 +64,17 @@ type baseDexConfig[Event any, Contract any] struct {
 
 	// State
 	Outbox chan<- TradeEvent
+	Logger *log.ZapEventLogger
 	Filter FilterConfig
 }
 
 func newBaseDEX[Event any, Contract any](config baseDexConfig[Event, Contract]) *baseDEX[Event, Contract] {
 	return &baseDEX[Event, Contract]{
 		// Params
-		once:       newOnce(),
 		driverType: config.DriverType,
 		url:        config.URL,
 		assetsURL:  config.AssetsURL,
 		mappingURL: config.MappingURL,
-		logger:     config.Logger,
 
 		// Hooks
 		postStart: config.PostStartHook,
@@ -75,8 +82,10 @@ func newBaseDEX[Event any, Contract any](config baseDexConfig[Event, Contract]) 
 		parse:     config.EventParser,
 
 		// State
+		once:    newOnce(),
 		client:  nil,
 		outbox:  config.Outbox,
+		logger:  config.Logger,
 		filter:  NewFilter(config.Filter),
 		streams: safe.NewMap[Market, event.Subscription](),
 		assets:  safe.NewMap[string, poolToken](),
@@ -160,7 +169,9 @@ func (b *baseDEX[Event, Contract]) Stop() error {
 		g.SetLimit(10)
 
 		b.streams.Range(func(market Market, _ event.Subscription) bool {
-			g.Go(func() error { return b.Unsubscribe(market) })
+			if err := b.Unsubscribe(market); err != nil {
+				stopErr = err
+			}
 			return true
 		})
 
@@ -179,37 +190,24 @@ func (b *baseDEX[Event, Contract]) Subscribe(market Market) error {
 	}
 
 	// mapping map[BTC:[WBTC] ETH:[WETH] USD:[USDT USDC TUSD]]
-	var g errgroup.Group
-	g.SetLimit(10)
-
+	var mappingErr error
 	b.mapping.Range(func(token string, mappings []string) bool {
 		if token != strings.ToUpper(market.Quote()) {
 			return true
 		}
 
-		g.Go(func() error {
-			var g errgroup.Group
-			g.SetLimit(10)
-
-			for _, mappedToken := range mappings {
-				mappedToken := mappedToken
-				g.Go(func() error {
-					market := NewMarketWithMainQuote(market.Base(), mappedToken, market.Quote())
-					if err := b.Subscribe(market); err != nil {
-						b.logger.Errorf("failed to subscribe to market %s: %s", market, err)
-						return err
-					}
-					return nil
-				})
+		for _, mappedToken := range mappings {
+			market := NewMarketWithMainQuote(market.Base(), mappedToken, market.Quote())
+			if err := debounce(b.logger, func() error { return b.Subscribe(market) }); err != nil {
+				b.logger.Errorf("failed to subscribe to market %s: %s", market, err)
+				mappingErr = err
 			}
-
-			return g.Wait()
-		})
+		}
 
 		return true
 	})
-	if err := g.Wait(); err != nil {
-		return fmt.Errorf("failed to subscribe to helper markets: %w", err)
+	if mappingErr != nil {
+		return fmt.Errorf("failed to subscribe to helper markets: %w", mappingErr)
 	}
 
 	if _, ok := b.streams.Load(market); ok {
@@ -223,8 +221,15 @@ func (b *baseDEX[Event, Contract]) Subscribe(market Market) error {
 
 	for _, pool := range pools {
 		sink := make(chan *Event, 128)
-		sub, err := pool.Contract.WatchSwap(nil, sink, []common.Address{}, []common.Address{})
+
+		var sub event.Subscription
+		err := debounce(b.logger, func() error {
+			opts := &bind.WatchOpts{Context: context.TODO()}
+			sub, err = pool.Contract.WatchSwap(opts, sink, []common.Address{}, []common.Address{})
+			return err
+		})
 		if err != nil {
+			close(sink)
 			return fmt.Errorf("failed to subscribe to swaps for market %s: %w", market, err)
 		}
 
@@ -249,6 +254,26 @@ func (b *baseDEX[Event, Contract]) Unsubscribe(market Market) error {
 
 	b.streams.Delete(market)
 	return nil
+}
+
+// debounce is a wrapper around the rate limiter
+// that retries the request if it fails with rate limit error.
+func debounce(logger *log.ZapEventLogger, f func() error) error {
+	for {
+		if err := rpcRateLimiter.Wait(context.TODO()); err != nil {
+			logger.Warnf("failed to aquire rate limiter: %s", err)
+		}
+
+		err := f()
+		if err == nil {
+			return nil
+		}
+		if strings.Contains(err.Error(), errInfuraRateLimit) {
+			logger.Infow("rate limit exceeded, retrying", "error", err)
+			continue // retry the request after a while
+		}
+		return err
+	}
 }
 
 func (b *baseDEX[Event, Contract]) SetInbox(_ <-chan TradeEvent) {}

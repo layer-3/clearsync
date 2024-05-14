@@ -55,17 +55,12 @@ func newIndexAggregator(
 		drivers = append(drivers, driver)
 	}
 
-	maxPriceDiff, err := decimal.NewFromString(config.Index.MaxPriceDiff)
-	if err != nil {
-		loggerIndex.Fatalf("invalid max price diff config value", "driver", "error", err)
-	}
-
 	index := &indexAggregator{
 		drivers:        drivers,
 		marketsMapping: marketsMapping,
 		aggregated:     inbox,
 	}
-	go index.computeAggregatePrice(inbox, maxPriceDiff, strategy, outbox)
+	go index.computeAggregatePrice(inbox, config.Index.MaxPriceDiff, strategy, outbox)
 
 	return index
 }

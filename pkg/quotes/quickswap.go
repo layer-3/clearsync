@@ -27,18 +27,23 @@ func newQuickswap(config QuickswapConfig, outbox chan<- TradeEvent) Driver {
 		poolFactoryAddress: common.HexToAddress(config.PoolFactoryAddress),
 	}
 
-	params := baseDexConfig[quickswap_v3_pool.IQuickswapV3PoolSwap, quickswap_v3_pool.IQuickswapV3Pool]{
+	params := baseDexConfig[
+		quickswap_v3_pool.IQuickswapV3PoolSwap,
+		quickswap_v3_pool.IQuickswapV3Pool,
+	]{
+		// Params
 		DriverType: DriverQuickswap,
 		URL:        config.URL,
 		AssetsURL:  config.AssetsURL,
 		MappingURL: config.MappingURL,
-		Outbox:     outbox,
-		Filter:     config.Filter,
-		Logger:     loggerQuickswap,
 		// Hooks
 		PostStartHook: hooks.postStart,
 		PoolGetter:    hooks.getPool,
 		EventParser:   hooks.parseSwap,
+		// State
+		Outbox: outbox,
+		Logger: loggerQuickswap,
+		Filter: config.Filter,
 	}
 	return newBaseDEX(params)
 }
@@ -62,11 +67,15 @@ func (s *quickswap) getPool(market Market) ([]*dexPool[quickswap_v3_pool.IQuicks
 	}
 
 	var poolAddress common.Address
-	zeroAddress := common.HexToAddress("0x0")
-	poolAddress, err = s.factory.PoolByPair(nil, baseToken.Address, quoteToken.Address)
+	err = debounce(loggerQuickswap, func() error {
+		poolAddress, err = s.factory.PoolByPair(nil, baseToken.Address, quoteToken.Address)
+		return err
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pool address: %w", err)
 	}
+
+	zeroAddress := common.HexToAddress("0x0")
 	if poolAddress == zeroAddress {
 		return nil, fmt.Errorf("pool for market %s does not exist", market)
 	}
@@ -74,17 +83,25 @@ func (s *quickswap) getPool(market Market) ([]*dexPool[quickswap_v3_pool.IQuicks
 
 	poolContract, err := quickswap_v3_pool.NewIQuickswapV3Pool(poolAddress, s.client)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build Quickswap pool: %w", err)
+		return nil, fmt.Errorf("failed to build Quickswap pool contract: %w", err)
 	}
 
-	basePoolToken, err := poolContract.Token0(nil)
+	var basePoolToken common.Address
+	err = debounce(loggerQuickswap, func() error {
+		basePoolToken, err = poolContract.Token0(nil)
+		return err
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to build Quickswap pool: %w", err)
+		return nil, fmt.Errorf("failed to get base token address for Quickswap pool: %w", err)
 	}
 
-	quotePoolToken, err := poolContract.Token1(nil)
+	var quotePoolToken common.Address
+	err = debounce(loggerQuickswap, func() error {
+		quotePoolToken, err = poolContract.Token1(nil)
+		return err
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to build Quickswap pool: %w", err)
+		return nil, fmt.Errorf("failed to get quote token address for Quickswap pool: %w", err)
 	}
 
 	isDirect := baseToken.Address == basePoolToken && quoteToken.Address == quotePoolToken
