@@ -1,7 +1,11 @@
 // Package quotes implements multiple price feed adapters.
 package quotes
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/prometheus/client_golang/prometheus"
+)
 
 type Driver interface {
 	ActiveDrivers() []DriverType
@@ -42,4 +46,20 @@ func NewDriver(config Config, outbox chan<- TradeEvent) (Driver, error) {
 	default:
 		return nil, fmt.Errorf("unknown driver: %s", config.Drivers)
 	}
+}
+
+var MarketSubscriptions = prometheus.NewGaugeVec(
+	prometheus.GaugeOpts{
+		Name: "price_feed_value",
+		Help: "Current trades subscriptions by provider and market.",
+	},
+	[]string{"provider", "market"}, // labels
+)
+
+func recordSubscribed(provider DriverType, market Market) {
+	MarketSubscriptions.WithLabelValues(provider.String(), market.String()).Inc()
+}
+
+func recordUnsubscribed(provider DriverType, market Market) {
+	MarketSubscriptions.WithLabelValues(provider.String(), market.String()).Dec()
 }
