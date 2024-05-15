@@ -2,9 +2,7 @@
 package quotes
 
 import (
-	"context"
 	"fmt"
-	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
