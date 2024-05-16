@@ -37,9 +37,9 @@ interface IVoucher {
 		address target; // contract address which the voucher is meant for
 		uint8 action; // voucher type defined by the implementation
 		address beneficiary; // beneficiary account which voucher will redeem to
-		uint64 expire; // expiration time in seconds UTC
+		uint64 expireAt; // expiration time in seconds UTC
 		uint32 chainId; // chain id of the voucher
-		bytes32 voucherCodeHash; // hash of voucherCode
+		bytes32 voucherCodeHash; // hash of voucherCode, prevents replay attacks
 		bytes encodedParams; // voucher type specific encoded params
 	}
 
