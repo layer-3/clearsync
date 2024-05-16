@@ -26,7 +26,7 @@ func TestEncodeDecode(t *testing.T) {
 				Target:          common.HexToAddress("0xabc123abc123abc123abc123abc123abc123abc1"),
 				Action:          3,
 				Beneficiary:     common.HexToAddress("0xdef456def456def456def456def456def456def4"),
-				Expire:          1715100785,
+				ExpireAt:        1715100785,
 				ChainId:         59144,
 				VoucherCodeHash: codeHash,
 				EncodedParams:   []byte("paramData"),
