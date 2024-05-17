@@ -1,9 +1,4 @@
 [
-    "spot://DUCKIES/USD",
-    "spot://USDT/USD",
-    "spot://MATIC/USD",
-    "spot://WBTC/USD",
     "spot://WETH/USD",
-    "spot://SHIBA/USD",
-    "spot://LINDA/USD"
+    "spot://DUCKIES/USD"
   ]
