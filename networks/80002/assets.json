@@ -1,0 +1,76 @@
+{
+  "tokens": [
+    {
+        "name": "Polygon Matic",
+        "address": "0x0000000000000000000000000000000000000000",
+        "symbol": "MATIC",
+        "decimals": 18,
+        "precision": 8,
+        "logoURI": "https://polygonscan.com/token/images/polygonmatic_new_32.png"
+    },
+    {
+        "address": "0x38871D722689f6d799B2A1FE93bE096E98e00986",
+        "name": "Yellow Duckies",
+        "symbol": "DUCKIES",
+        "decimals": 8,
+        "precision": 6,
+        "logoURI": "https://www.yellow.org/images/duckies_200x200.png",
+        "extensions": {}
+    },
+    {
+        "address": "0xE22e3af98FdF9d6a429150D92d446fcEeEA967fF",
+        "name": "USD Tether",
+        "symbol": "USDT",
+        "decimals": 6,
+        "precision": 6,
+        "logoURI": "https://lineascan.build/token/images/usdtlogo_32.png",
+        "extensions": {}
+    },
+    {
+        "address": "0x8d48ba6D6ABD283E672B917cdfBd6222DD1b80dB",
+        "name": "USD Coin",
+        "symbol": "USDC",
+        "alias": "USD",
+        "decimals": 6,
+        "precision": 6,
+        "logoURI": "https://lineascan.build/token/images/centre-usdc_28.png",
+        "extensions": {}
+    },
+    {
+        "address": "0x57634f3202E291e37801C426408b86a1eD0dB23d",
+        "name": "LUBE",
+        "symbol": "LUBE",
+        "decimals": 18,
+        "precision": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/33070/standard/200x200.png?1700536826",
+        "extensions": {}
+    },
+    {
+        "address": "0xE11E73Ce5f7c45580e6B4A63069C18b0A5d70CA2",
+        "name": "Wrapped Bitcoin",
+        "symbol": "WBTC",
+        "decimals": 18,
+        "precision": 6,
+        "logoURI": "https://lineascan.build/token/images/wbtc_28.png",
+        "extensions": {}
+    },
+    {
+        "address": "0xEB31ce20F5c72C568e82D0183aa8Da3B9e5e177f",
+        "name": "Wrapped Ether",
+        "symbol": "WETH",
+        "decimals": 18,
+        "precision": 6,
+        "logoURI": "https://token-repository.dappradar.com/tokens?protocol=ethereum&contract=0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2&file=logo.png",
+        "extensions": {}
+    },
+    {
+        "address": "0xd15833D5184Ca08a8a26b923754EaA654F5Bb85F",
+        "name": "Linda",
+        "symbol": "LINDA",
+        "decimals": 18,
+        "precision": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/33699/standard/linda-logo-200.png?1705166731",
+        "extensions": {}
+    }
+  ]
+}
