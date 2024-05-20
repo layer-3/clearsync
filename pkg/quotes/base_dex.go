@@ -265,32 +265,23 @@ func (b *baseDEX[Event, Contract]) watchSwap(
 	sink chan *Event,
 	sub event.Subscription,
 ) {
-	// TODO: close the sink channel when the subscription is closed
-	//   The commented out implementation panics,
-	//   since the subscription still pushes events to the channel
-	//   after the subscription was closed.
-	//defer func() {
-	//	// Closing channel on receiving side is considered to be a bad practice,
-	//	// but since we don't know when the subscription will be ACTUALLY closed,
-	//	// waiting for some time before closing the channel
-	//	// is the only way to avoid panic on sending to a closed channel.
-	//	timer := time.NewTimer(10 * time.Minute)
-	//	defer timer.Stop()
-	//	b.logger.Warnw("waiting for sink to be closed", "market", market)
-	//	for {
-	//		select {
-	//		case <-timer.C:
-	//			close(sink)
-	//			b.logger.Warnw("sink closed", "market", market)
-	//			return
-	//		case <-sink:
-	//			// Empty the channel in case it's full
-	//			// and the subscription tries to push more events.
-	//			continue
-	//		}
-	//	}
-	//}()
+	// Create a done channel to signal the end of event processing
+	done := make(chan struct{})
+	// Ensure sink channel is closed when the function exits
+	defer func() {
+		// Signal sender to stop
+		close(done)
 
+		// Wait for sender to stop and channel to drain
+		go func() {
+			for range sink {
+				// Draining the sink channel
+				b.logger.Warnw("draining sink", "market", pool.Market)
+			}
+			close(sink)
+			b.logger.Warnw("sink closed", "market", pool.Market)
+		}()
+	}()
 	timer := time.NewTimer(b.idlePeriod)
 	defer timer.Stop()
 
@@ -299,18 +290,13 @@ func (b *baseDEX[Event, Contract]) watchSwap(
 		case err := <-sub.Err():
 			b.logger.Warnw("connection failed, resubscribing", "market", pool.Market, "err", err)
 			if _, ok := b.streams.Load(pool.Market); !ok {
-				break // market was unsubscribed earlier
+				return // market was unsubscribed earlier
 			}
-			if err := b.Unsubscribe(pool.Market); err != nil {
-				b.logger.Errorw("failed to resubscribe", "market", pool.Market, "err", err)
-			}
-			if err := b.Subscribe(pool.Market); err != nil {
-				b.logger.Errorw("failed to resubscribe", "market", pool.Market, "err", err)
-			}
+			b.resubscribe(pool.Market)
 			return
+
 		case swap := <-sink:
 			timer.Reset(b.idlePeriod)
-
 			trade, err := b.parse(swap, pool)
 			if err != nil {
 				b.logger.Errorw("failed to parse swap event",
@@ -333,6 +319,7 @@ func (b *baseDEX[Event, Contract]) watchSwap(
 				continue
 			}
 			b.outbox <- trade
+
 		case <-timer.C:
 			b.logger.Warnw("market inactivity detected", "market", pool.Market)
 			cancel()
@@ -342,15 +329,9 @@ func (b *baseDEX[Event, Contract]) watchSwap(
 				}
 				<-time.After(5 * time.Second)
 			}
-		case err := <-sub.Err():
-			b.logger.Warnw("market stream error", "market", pool.Market, "error", err)
-			cancel()
-			for {
-				if err := b.resubscribe(pool.Market); err == nil {
-					return
-				}
-				<-time.After(5 * time.Second)
-			}
+		case <-done:
+			// Exit the loop when done is closed
+			return
 		}
 	}
 }
