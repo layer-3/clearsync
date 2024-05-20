@@ -16,13 +16,13 @@ var (
 	httpRpcErrors  = map[int]rpcError{
 		400: {
 			Recoverable: false,
-			Patterns:    []string{" 400 "},
+			Patterns:    []string{"400"},
 			Message:     "Bad request: Incorrect HTTP Request type or invalid characters, ensure that your request body and format is correct.",
 		},
 		401: {
 			Recoverable: false,
 			Patterns: []string{
-				" 401 ",
+				"401",
 				"project id required in the url",
 				"invalid project id",
 				"invalid project id or project secret",
@@ -32,23 +32,23 @@ var (
 		},
 		403: {
 			Recoverable: false,
-			Patterns:    []string{" 403 "},
+			Patterns:    []string{"403"},
 			Message:     "Forbidden: The request was intentionally refused due to specific settings mismatch, check your key settings.",
 		},
 		404: {
 			Recoverable: false,
-			Patterns:    []string{" 404 "},
+			Patterns:    []string{"404"},
 			Message:     "RPC endpoint doesn't exist",
 		},
 		405: {
 			Recoverable: false,
-			Patterns:    []string{" 405 "},
+			Patterns:    []string{"405"},
 			Message:     "HTTP Method Not Allowed",
 		},
 		429: {
 			Recoverable: true,
 			Patterns: []string{
-				" 429 ",
+				"429",
 				"project ID request rate exceeded",
 				"daily request count exceeded",
 				"request rate limited",
@@ -57,25 +57,27 @@ var (
 		},
 		500: {
 			Recoverable: true,
-			Patterns:    []string{" 500 "},
+			Patterns:    []string{"500"},
 			Message:     "Internal Server Error: Error while processing the request on the server side.",
 		},
 		502: {
 			Recoverable: true,
-			Patterns:    []string{" 502 "},
+			Patterns:    []string{"502"},
 			Message:     "Bad Gateway: Indicates a communication error which can have various causes, from networking issues to invalid response received from the server.",
 		},
 		503: {
 			Recoverable: true,
 			Patterns: []string{
-				" 503 ",
+				"503",
 				"HTTP status 503 Service Unavailable",
+				"Service Unavailable",
+				"service unavailable",
 			},
 			Message: "Service Unavailable: Indicates that the server is not ready to handle the request.",
 		},
 		504: {
 			Recoverable: true,
-			Patterns:    []string{" 504 "},
+			Patterns:    []string{"504"},
 			Message:     "Gateway Timeout: The request ended with a timeout, it can indicate a networking issue or a delayed or missing response from the server.",
 		},
 	}
