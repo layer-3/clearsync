@@ -7,6 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/ethclient"
 
+	"github.com/layer-3/clearsync/pkg/debounce"
 	"github.com/layer-3/clearsync/pkg/safe"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -95,14 +96,14 @@ func (s *syncswap) getPool(market Market) ([]*dexPool[isyncswap_pool.ISyncSwapPo
 	var poolAddress common.Address
 	if _, ok := s.stablePoolMarkets[market]; ok {
 		loggerSyncswap.Infow("searching for stable pool", "market", market, "address", poolAddress)
-		err = debounce(loggerSyncswap, func() error {
+		err = debounce.Debounce(loggerSyncswap, func() error {
 			poolAddress, err = s.stableFactory.GetPool(nil, baseToken.Address, quoteToken.Address)
 			return err
 		})
 		loggerSyncswap.Infow("found stable pool", "market", market)
 	} else {
 		loggerSyncswap.Infow("searching for classic pool", "market", market)
-		err = debounce(loggerSyncswap, func() error {
+		err = debounce.Debounce(loggerSyncswap, func() error {
 			poolAddress, err = s.classicFactory.GetPool(nil, baseToken.Address, quoteToken.Address)
 			return err
 		})
@@ -124,7 +125,7 @@ func (s *syncswap) getPool(market Market) ([]*dexPool[isyncswap_pool.ISyncSwapPo
 	}
 
 	var basePoolToken common.Address
-	err = debounce(loggerSyncswap, func() error {
+	err = debounce.Debounce(loggerSyncswap, func() error {
 		basePoolToken, err = poolContract.Token0(nil)
 		return err
 	})
@@ -133,7 +134,7 @@ func (s *syncswap) getPool(market Market) ([]*dexPool[isyncswap_pool.ISyncSwapPo
 	}
 
 	var quotePoolToken common.Address
-	err = debounce(loggerSyncswap, func() error {
+	err = debounce.Debounce(loggerSyncswap, func() error {
 		quotePoolToken, err = poolContract.Token1(nil)
 		return err
 	})

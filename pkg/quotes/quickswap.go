@@ -9,6 +9,7 @@ import (
 
 	"github.com/layer-3/clearsync/pkg/artifacts/quickswap_v3_factory"
 	"github.com/layer-3/clearsync/pkg/artifacts/quickswap_v3_pool"
+	"github.com/layer-3/clearsync/pkg/debounce"
 	"github.com/layer-3/clearsync/pkg/safe"
 )
 
@@ -67,7 +68,7 @@ func (s *quickswap) getPool(market Market) ([]*dexPool[quickswap_v3_pool.IQuicks
 	}
 
 	var poolAddress common.Address
-	err = debounce(loggerQuickswap, func() error {
+	err = debounce.Debounce(loggerQuickswap, func() error {
 		poolAddress, err = s.factory.PoolByPair(nil, baseToken.Address, quoteToken.Address)
 		return err
 	})
@@ -87,7 +88,7 @@ func (s *quickswap) getPool(market Market) ([]*dexPool[quickswap_v3_pool.IQuicks
 	}
 
 	var basePoolToken common.Address
-	err = debounce(loggerQuickswap, func() error {
+	err = debounce.Debounce(loggerQuickswap, func() error {
 		basePoolToken, err = poolContract.Token0(nil)
 		return err
 	})
@@ -96,7 +97,7 @@ func (s *quickswap) getPool(market Market) ([]*dexPool[quickswap_v3_pool.IQuicks
 	}
 
 	var quotePoolToken common.Address
-	err = debounce(loggerQuickswap, func() error {
+	err = debounce.Debounce(loggerQuickswap, func() error {
 		quotePoolToken, err = poolContract.Token1(nil)
 		return err
 	})
