@@ -144,7 +144,10 @@ type rpcError struct {
 func Debounce(logger *log.ZapEventLogger, f func() error) error {
 	for {
 		if err := rpcRateLimiter.Wait(context.TODO()); err != nil {
-			logger.Warnf("failed to acquire rate limiter: %s", err)
+			if logger != nil {
+				logger.Warnf("failed to acquire rate limiter: %s", err)
+			}
+			return err
 		}
 
 		err := f()
@@ -155,9 +158,11 @@ func Debounce(logger *log.ZapEventLogger, f func() error) error {
 		for _, httpRpcError := range httpRpcErrors {
 			for _, pattern := range httpRpcError.Patterns {
 				if strings.Contains(err.Error(), pattern) {
-					logger.Warn("recoverable error",
-						"message", httpRpcError.Message,
-						"error", err)
+					if logger != nil {
+						logger.Warn("recoverable error",
+							"message", httpRpcError.Message,
+							"error", err)
+					}
 					continue // retry the request after a while
 				}
 			}
