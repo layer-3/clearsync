@@ -16,6 +16,7 @@ import (
 	"github.com/shopspring/decimal"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/layer-3/clearsync/pkg/debounce"
 	"github.com/layer-3/clearsync/pkg/safe"
 )
 
@@ -190,7 +191,7 @@ func (b *baseDEX[Event, Contract]) Subscribe(market Market) error {
 
 		for _, mappedToken := range mappings {
 			market := NewMarketWithMainQuote(market.Base(), mappedToken, market.Quote())
-			if err := debounce(b.logger, func() error { return b.Subscribe(market) }); err != nil {
+			if err := debounce.Debounce(b.logger, func() error { return b.Subscribe(market) }); err != nil {
 				b.logger.Errorf("failed to subscribe to market %s: %s", market, err)
 				mappingErr = err
 			}
@@ -215,7 +216,7 @@ func (b *baseDEX[Event, Contract]) Subscribe(market Market) error {
 		sink := make(chan *Event, 128)
 
 		var sub event.Subscription
-		err := debounce(b.logger, func() error {
+		err := debounce.Debounce(b.logger, func() error {
 			opts := &bind.WatchOpts{Context: context.TODO()}
 			sub, err = pool.Contract.WatchSwap(opts, sink, []common.Address{}, []common.Address{})
 			return err

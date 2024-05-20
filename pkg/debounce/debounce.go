@@ -1,4 +1,4 @@
-package quotes
+package debounce
 
 import (
 	"context"
@@ -139,9 +139,9 @@ type rpcError struct {
 	Recoverable bool
 }
 
-// debounce is a wrapper around the rate limiter
+// Debounce is a wrapper around the rate limiter
 // that retries the request if it fails with rate limit error.
-func debounce(logger *log.ZapEventLogger, f func() error) error {
+func Debounce(logger *log.ZapEventLogger, f func() error) error {
 	for {
 		if err := rpcRateLimiter.Wait(context.TODO()); err != nil {
 			logger.Warnf("failed to acquire rate limiter: %s", err)

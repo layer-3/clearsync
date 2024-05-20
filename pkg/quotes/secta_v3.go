@@ -11,6 +11,7 @@ import (
 
 	"github.com/layer-3/clearsync/pkg/abi/isecta_v3_factory"
 	"github.com/layer-3/clearsync/pkg/abi/isecta_v3_pool"
+	"github.com/layer-3/clearsync/pkg/debounce"
 	"github.com/layer-3/clearsync/pkg/safe"
 )
 
@@ -79,7 +80,7 @@ func (s *sectaV3) getPool(market Market) ([]*dexPool[isecta_v3_pool.ISectaV3Pool
 	zeroAddress := common.HexToAddress("0x0")
 	for _, feeTier := range sectaV3FeeTiers {
 		var poolAddress common.Address
-		err = debounce(loggerSectaV3, func() error {
+		err = debounce.Debounce(loggerSectaV3, func() error {
 			poolAddress, err = s.factory.GetPool(nil, baseToken.Address, quoteToken.Address, big.NewInt(int64(feeTier)))
 			return err
 		})
@@ -104,7 +105,7 @@ func (s *sectaV3) getPool(market Market) ([]*dexPool[isecta_v3_pool.ISectaV3Pool
 		}
 
 		var basePoolToken common.Address
-		err = debounce(loggerSectaV3, func() error {
+		err = debounce.Debounce(loggerSectaV3, func() error {
 			basePoolToken, err = poolContract.Token0(nil)
 			return err
 		})
@@ -113,7 +114,7 @@ func (s *sectaV3) getPool(market Market) ([]*dexPool[isecta_v3_pool.ISectaV3Pool
 		}
 
 		var quotePoolToken common.Address
-		err = debounce(loggerSectaV3, func() error {
+		err = debounce.Debounce(loggerSectaV3, func() error {
 			quotePoolToken, err = poolContract.Token1(nil)
 			return err
 		})

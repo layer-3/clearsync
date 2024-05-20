@@ -9,6 +9,7 @@ import (
 
 	"github.com/layer-3/clearsync/pkg/abi/isecta_v2_factory"
 	"github.com/layer-3/clearsync/pkg/abi/isecta_v2_pair"
+	"github.com/layer-3/clearsync/pkg/debounce"
 	"github.com/layer-3/clearsync/pkg/safe"
 )
 
@@ -66,7 +67,7 @@ func (s *sectaV2) getPool(market Market) ([]*dexPool[isecta_v2_pair.ISectaV2Pair
 	}
 
 	var poolAddress common.Address
-	err = debounce(loggerSectaV2, func() error {
+	err = debounce.Debounce(loggerSectaV2, func() error {
 		poolAddress, err = s.factory.GetPair(nil, baseToken.Address, quoteToken.Address)
 		return err
 	})
@@ -86,7 +87,7 @@ func (s *sectaV2) getPool(market Market) ([]*dexPool[isecta_v2_pair.ISectaV2Pair
 	}
 
 	var basePoolToken common.Address
-	err = debounce(loggerSectaV2, func() error {
+	err = debounce.Debounce(loggerSectaV2, func() error {
 		basePoolToken, err = poolContract.Token0(nil)
 		return err
 	})
@@ -95,7 +96,7 @@ func (s *sectaV2) getPool(market Market) ([]*dexPool[isecta_v2_pair.ISectaV2Pair
 	}
 
 	var quotePoolToken common.Address
-	err = debounce(loggerSectaV2, func() error {
+	err = debounce.Debounce(loggerSectaV2, func() error {
 		quotePoolToken, err = poolContract.Token1(nil)
 		return err
 	})

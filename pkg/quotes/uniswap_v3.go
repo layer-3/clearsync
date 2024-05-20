@@ -13,6 +13,7 @@ import (
 
 	"github.com/layer-3/clearsync/pkg/abi/iuniswap_v3_factory"
 	"github.com/layer-3/clearsync/pkg/abi/iuniswap_v3_pool"
+	"github.com/layer-3/clearsync/pkg/debounce"
 	"github.com/layer-3/clearsync/pkg/safe"
 )
 
@@ -83,7 +84,7 @@ func (u *uniswapV3) getPool(market Market) ([]*dexPool[iuniswap_v3_pool.IUniswap
 	zeroAddress := common.HexToAddress("0x0")
 	for _, feeTier := range uniswapV3FeeTiers {
 		var poolAddress common.Address
-		err = debounce(loggerUniswapV3, func() error {
+		err = debounce.Debounce(loggerUniswapV3, func() error {
 			poolAddress, err = u.factory.GetPool(nil, baseToken.Address, quoteToken.Address, big.NewInt(int64(feeTier)))
 			return err
 		})
@@ -108,7 +109,7 @@ func (u *uniswapV3) getPool(market Market) ([]*dexPool[iuniswap_v3_pool.IUniswap
 		}
 
 		var basePoolToken common.Address
-		err = debounce(loggerUniswapV3, func() error {
+		err = debounce.Debounce(loggerUniswapV3, func() error {
 			basePoolToken, err = poolContract.Token0(nil)
 			return err
 		})
@@ -117,7 +118,7 @@ func (u *uniswapV3) getPool(market Market) ([]*dexPool[iuniswap_v3_pool.IUniswap
 		}
 
 		var quotePoolToken common.Address
-		err = debounce(loggerUniswapV3, func() error {
+		err = debounce.Debounce(loggerUniswapV3, func() error {
 			quotePoolToken, err = poolContract.Token1(nil)
 			return err
 		})
