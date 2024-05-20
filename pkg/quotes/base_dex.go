@@ -15,17 +15,9 @@ import (
 	"github.com/ipfs/go-log/v2"
 	"github.com/shopspring/decimal"
 	"golang.org/x/sync/errgroup"
-	"golang.org/x/time/rate"
 
 	"github.com/layer-3/clearsync/pkg/safe"
 )
-
-// rpcRateLimiter limits the number of requests to the RPC provider for DEX drivers.
-// As of spring 2024, Infura enables 10 req/s rate limit for free plan.
-// A lower limit of 5 req/s is used here just to be safe.
-var rpcRateLimiter = rate.NewLimiter(5, 1)
-
-const errInfuraRateLimit = "project ID request rate exceeded"
 
 type baseDEX[Event any, Contract any] struct {
 	// Params
@@ -256,26 +248,6 @@ func (b *baseDEX[Event, Contract]) Unsubscribe(market Market) error {
 	b.streams.Delete(market)
 	recordUnsubscribed(b.driverType, market)
 	return nil
-}
-
-// debounce is a wrapper around the rate limiter
-// that retries the request if it fails with rate limit error.
-func debounce(logger *log.ZapEventLogger, f func() error) error {
-	for {
-		if err := rpcRateLimiter.Wait(context.TODO()); err != nil {
-			logger.Warnf("failed to aquire rate limiter: %s", err)
-		}
-
-		err := f()
-		if err == nil {
-			return nil
-		}
-		if strings.Contains(err.Error(), errInfuraRateLimit) {
-			logger.Infow("rate limit exceeded, retrying", "error", err)
-			continue // retry the request after a while
-		}
-		return err
-	}
 }
 
 func (b *baseDEX[Event, Contract]) SetInbox(_ <-chan TradeEvent) {}
