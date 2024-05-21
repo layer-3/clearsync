@@ -1,6 +1,8 @@
 package safe
 
-import "sync"
+import (
+	"sync"
+)
 
 // Map is a thread safe generic map.
 type Map[K comparable, V any] struct {

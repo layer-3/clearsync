@@ -84,7 +84,7 @@ type BinanceConfig struct {
 	USDCtoUSDT         bool          `yaml:"usdc_to_usdt" env:"USDC_TO_USDT" env-default:"true"`
 	BatchPeriod        time.Duration `yaml:"batch_period" env:"BATCH_PERIOD" env-default:"5s"`
 	AssetsUpdatePeriod time.Duration `yaml:"assets_update_period" env:"ASSETS_UPDATE_PERIOD" env-default:"5m"`
-	IdlePeriod         time.Duration `yaml:"idle_period" env:"IDLE_PERIOD" env-default:"10m"`
+	IdlePeriod         time.Duration `yaml:"idle_period" env:"IDLE_PERIOD" env-default:"30s"`
 	Filter             FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
 }
 

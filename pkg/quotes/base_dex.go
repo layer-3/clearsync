@@ -207,10 +207,23 @@ func (b *baseDEX[Event, Contract]) Subscribe(market Market) error {
 		return fmt.Errorf("failed to subscribe to helper markets: %w", mappingErr)
 	}
 
-	if _, ok := b.streams.Load(market); ok {
+	// fmt.Println("B", b)
+	fmt.Println("LEN of b.streams", b.streams.Len())
+	b.streams.Range(func(market Market, _ event.Subscription) bool {
+		fmt.Println("market", market)
+		return true
+	})
+	fmt.Println("Market to subscribe", market)
+	_, ok := b.streams.Load(market)
+	if ok {
+		fmt.Println("Market already subscribed", market)
 		return fmt.Errorf("%s: %w", market, ErrAlreadySubbed)
 	}
-
+	// if _, ok := b.streams.Load(market); ok {
+	// 	fmt.Println("Market already subscribed", market)
+	// 	return fmt.Errorf("%s: %w", market, ErrAlreadySubbed)
+	// }
+	fmt.Println("Market ready to subscribe (not in map)", market)
 	pools, err := b.getPool(market)
 	if err != nil {
 		return fmt.Errorf("failed to get pool for market %s: %s", market.StringWithoutMain(), err)
@@ -288,6 +301,11 @@ func (b *baseDEX[Event, Contract]) watchSwap(
 	for {
 		select {
 		case err := <-sub.Err():
+			if err == nil {
+				// Received a nil error, indicating intentional unsubscribe
+				b.logger.Infow("intentional unsubscribe received, stopping watch", "market", pool.Market)
+				return
+			}
 			b.logger.Warnw("connection failed, resubscribing", "market", pool.Market, "err", err)
 			if _, ok := b.streams.Load(pool.Market); !ok {
 				return // market was unsubscribed earlier
