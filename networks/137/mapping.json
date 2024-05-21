@@ -5,6 +5,6 @@
     "USD": ["USDT", "USDC"]
   },
   "markets": {
-    "USDC": ["ETH", "MATIC"]
+    "USDC": ["MATIC"]
   }
 }
