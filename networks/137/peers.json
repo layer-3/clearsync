@@ -1,36 +1,30 @@
 [
-    {
-        "url": "http://localhost:8080/",
-        "name": "localhost.eth",
-        "address": "0xd5e099c71b797516c10ed0f0d895f429c2781142",
-        "packages": [
-            {
-              "name": "retail",
-              "margin": [5, 1000],
-              "safety": "5.5"
-            },
-            {
-              "name": "prime",
-              "margin": [1000, 1000000],
-              "safety": "3.5"
-            }
-          ]
+  {
+    "url": "https://osis.neodax.app/",
+    "name": "OSIS",
+    "finex_url": "wss://osis.neodax.app/ws",
+    "clearport_b_url": "cp-responder-peer-grpc:50081",
+    "clearport_a_url": "wss://port-a.osis.neodax.app",
+    "description": "OSIS is creating the first Decentralized Sovereign Organization (DSO), building Web3 infrastructure for a free global economy.",
+    "available": true,
+    "metadata": {
+        "coordinates": {
+            "lat": 50.1109,
+            "long": 8.6821
+        },
+        "region": "europe",
+        "code": "de",
+        "country": "Germany",
+        "logo": "https://osis.neodax.app/images/logo.png",
+        "sm_logo": "https://osis.neodax.app/images/logo-white-mode.svg"
     },
-    {
-        "url": "https://api.kayen.io/",
-        "name": "kayen.eth",
-        "address": "0xd5e099c71b797516c10ed0f0d895f429c2781142",
-        "packages": [
-            {
-              "name": "retail",
-              "margin": [10, 1000],
-              "safety": "5.5"
-            },
-            {
-              "name": "prime",
-              "margin": [1000, 1000000],
-              "safety": "3.5"
-            }
-          ]
-    }
+    "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
+    "packages": [
+        {
+            "name": "Retail Package",
+            "margin": [1, 30],
+            "safety": "5.5"
+        }
+    ]
+  }
 ]
