@@ -1,11 +1,9 @@
 package quotes
 
 import (
-	"sync"
 	"testing"
 	"time"
 
-	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -20,10 +18,11 @@ func TestBitfaker_Subscribe(t *testing.T) {
 
 		outbox := make(chan TradeEvent, 16)
 		client := bitfaker{
-			once:   newOnce(),
-			outbox: outbox,
-			period: 50 * time.Millisecond,
-			filter: disabledFilter,
+			once:          newOnce(),
+			outbox:        outbox,
+			streamPeriods: make(map[Market]time.Duration),
+			streams:       make(map[Market]chan struct{}),
+			filter:        disabledFilter,
 		}
 		require.NoError(t, client.Start())
 
@@ -32,8 +31,10 @@ func TestBitfaker_Subscribe(t *testing.T) {
 		err := client.Subscribe(m)
 		require.Nil(t, err)
 
-		expectedMarkets := []Market{m}
-		assert.Equal(t, client.streams, expectedMarkets)
+		_, ok := client.streams[m]
+		require.True(t, ok)
+
+		assert.Equal(t, len(client.streams), 1)
 	})
 
 	t.Run("Multiple markets", func(t *testing.T) {
@@ -41,10 +42,11 @@ func TestBitfaker_Subscribe(t *testing.T) {
 
 		outbox := make(chan TradeEvent, 16)
 		client := bitfaker{
-			once:   newOnce(),
-			outbox: outbox,
-			period: 50 * time.Millisecond,
-			filter: disabledFilter,
+			once:          newOnce(),
+			outbox:        outbox,
+			streamPeriods: make(map[Market]time.Duration),
+			streams:       make(map[Market]chan struct{}),
+			filter:        disabledFilter,
 		}
 		require.NoError(t, client.Start())
 
@@ -56,8 +58,13 @@ func TestBitfaker_Subscribe(t *testing.T) {
 		err = client.Subscribe(market2)
 		require.Nil(t, err)
 
-		expectedMarkets := []Market{market1, market2}
-		assert.Equal(t, client.streams, expectedMarkets)
+		_, ok := client.streams[market1]
+		require.True(t, ok)
+
+		_, ok = client.streams[market2]
+		require.True(t, ok)
+
+		assert.Equal(t, len(client.streams), 2)
 	})
 
 	t.Run("Subscribe to a market already subscribed to", func(t *testing.T) {
@@ -65,10 +72,11 @@ func TestBitfaker_Subscribe(t *testing.T) {
 
 		outbox := make(chan TradeEvent, 16)
 		client := bitfaker{
-			once:   newOnce(),
-			outbox: outbox,
-			period: 50 * time.Millisecond,
-			filter: disabledFilter,
+			once:          newOnce(),
+			outbox:        outbox,
+			streamPeriods: make(map[Market]time.Duration),
+			streams:       make(map[Market]chan struct{}),
+			filter:        disabledFilter,
 		}
 		require.NoError(t, client.Start())
 
@@ -89,10 +97,11 @@ func TestBitfaker_Unsubscribe(t *testing.T) {
 
 		outbox := make(chan TradeEvent, 16)
 		client := bitfaker{
-			once:   newOnce(),
-			outbox: outbox,
-			period: 50 * time.Millisecond,
-			filter: disabledFilter,
+			once:          newOnce(),
+			outbox:        outbox,
+			streamPeriods: make(map[Market]time.Duration),
+			streams:       make(map[Market]chan struct{}),
+			filter:        disabledFilter,
 		}
 		require.NoError(t, client.Start())
 
@@ -113,10 +122,11 @@ func TestBitfaker_Unsubscribe(t *testing.T) {
 
 		outbox := make(chan TradeEvent, 16)
 		client := bitfaker{
-			once:   newOnce(),
-			outbox: outbox,
-			period: 50 * time.Millisecond,
-			filter: disabledFilter,
+			once:          newOnce(),
+			outbox:        outbox,
+			streamPeriods: make(map[Market]time.Duration),
+			streams:       make(map[Market]chan struct{}),
+			filter:        disabledFilter,
 		}
 		require.NoError(t, client.Start())
 
@@ -131,10 +141,11 @@ func TestBitfaker_Unsubscribe(t *testing.T) {
 
 		outbox := make(chan TradeEvent, 16)
 		client := bitfaker{
-			once:   newOnce(),
-			outbox: outbox,
-			period: 50 * time.Millisecond,
-			filter: disabledFilter,
+			once:          newOnce(),
+			outbox:        outbox,
+			streamPeriods: make(map[Market]time.Duration),
+			streams:       make(map[Market]chan struct{}),
+			filter:        disabledFilter,
 		}
 		require.NoError(t, client.Start())
 
@@ -150,51 +161,31 @@ func TestBitfaker_Unsubscribe(t *testing.T) {
 	})
 }
 
-func TestBitfaker_Start(t *testing.T) {
-	t.Parallel()
-
-	outbox := make(chan TradeEvent, 1)
-	client := bitfaker{
-		once:   newOnce(),
-		outbox: outbox,
-		period: 50 * time.Millisecond,
-		filter: disabledFilter,
-	}
-	market := NewMarket("btc", "usd")
-
-	var wg sync.WaitGroup
-	wg.Add(2)
-	go func() {
-		require.NoError(t, client.Start())
-		wg.Done()
-	}()
-	go func() {
-		client.createTradeEvent(market)
-		wg.Done()
-	}()
-
-	event := <-outbox
-	assert.NotEmpty(t, event)
-	assert.Equal(t, "btc/usd", event.Market.String())
-}
-
 func TestCreateTradeEvent(t *testing.T) {
 	t.Parallel()
 
 	outbox := make(chan TradeEvent)
 	client := bitfaker{
-		outbox: outbox,
-		once:   newOnce(),
-		filter: disabledFilter,
-		period: 50 * time.Millisecond,
+		outbox:        outbox,
+		once:          newOnce(),
+		filter:        disabledFilter,
+		streamPeriods: make(map[Market]time.Duration),
+		streams:       make(map[Market]chan struct{}),
 	}
 	require.NoError(t, client.Start())
 
-	go func() { client.createTradeEvent(NewMarket("btc", "usd")) }()
+	startPrice := 100.0
+	startAmount := 10.0
+	priceVolatility := 2.0
+	amountVolatility := 1.0
+
+	newPrice := initializeMarket(startPrice, priceVolatility)
+	newAmount := initializeMarket(startAmount, amountVolatility)
+
+	go func() { client.createTradeEvent(NewMarket("btc", "usd"), newPrice, newAmount) }()
 
 	event := <-outbox
 	assert.NotEmpty(t, event)
 	assert.Equal(t, "btc/usd", event.Market.String())
 	assert.Equal(t, DriverBitfaker, event.Source)
-	assert.Equal(t, decimal.NewFromFloat(2.213), event.Price)
 }

@@ -98,8 +98,16 @@ type OpendaxConfig struct {
 }
 
 type BitfakerConfig struct {
-	Period time.Duration `yaml:"period" env:"PERIOD" env-default:"5s"`
-	Filter FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
+	Filter  FilterConfig                `yaml:"filter" env-prefix:"FILTER_"`
+	Markets map[string]FakeMarketConfig `yaml:"markets" env:"MARKETS"`
+}
+
+type FakeMarketConfig struct {
+	StartPrice       float64       `yaml:"start_price" env:"START_PRICE"`
+	PriceVolatility  float64       `yaml:"price_volatility" env:"PRICE_VOLATILITY"`
+	StartAmount      float64       `yaml:"start_pamount" env:"START_AMOUNT"`
+	AmountVolatility float64       `yaml:"amount_volatility" env:"AMOUNT_VOLATILITY"`
+	Period           time.Duration `yaml:"period" env:"PERIOD"`
 }
 
 type UniswapV3Config struct {
