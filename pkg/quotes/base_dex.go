@@ -25,7 +25,7 @@ import (
 type baseDEX[Event any, Contract any, EventIterator dexEventIterator] struct {
 	// Params
 	driverType DriverType
-	url        string
+	rpc        string
 	assetsURL  string
 	mappingURL string
 	idlePeriod time.Duration
@@ -58,7 +58,7 @@ type dexStream[Event any] struct {
 type baseDexConfig[Event any, Contract any, EventIterator dexEventIterator] struct {
 	// Params
 	DriverType DriverType
-	URL        string
+	RPC        string
 	AssetsURL  string
 	MappingURL string
 	IdlePeriod time.Duration
@@ -82,7 +82,7 @@ func newBaseDEX[Event any, Contract any, EventIterator dexEventIterator](
 	return &baseDEX[Event, Contract, EventIterator]{
 		// Params
 		driverType: config.DriverType,
-		url:        config.URL,
+		rpc:        config.RPC,
 		assetsURL:  config.AssetsURL,
 		mappingURL: config.MappingURL,
 		idlePeriod: config.IdlePeriod,
@@ -127,12 +127,12 @@ func (b *baseDEX[Event, Contract, EventIterator]) Start() error {
 	started := b.once.Start(func() {
 		// Connect to the RPC provider
 
-		if !(strings.HasPrefix(b.url, "ws://") || strings.HasPrefix(b.url, "wss://")) {
-			startErr = fmt.Errorf("%s (got '%s')", ErrInvalidWsUrl, b.url)
+		if !(strings.HasPrefix(b.rpc, "ws://") || strings.HasPrefix(b.rpc, "wss://")) {
+			startErr = fmt.Errorf("%s (got '%s')", ErrInvalidWsUrl, b.rpc)
 			return
 		}
 
-		client, err := ethclient.Dial(b.url)
+		client, err := ethclient.Dial(b.rpc)
 		if err != nil {
 			startErr = fmt.Errorf("failed to connect to the Ethereum client: %w", err)
 			return

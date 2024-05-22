@@ -48,7 +48,7 @@ func newLynexV2(config LynexV2Config, outbox chan<- TradeEvent, history Historic
 	]{
 		// Params
 		DriverType: DriverLynexV2,
-		URL:        config.URL,
+		URL:        config.LineaURL,
 		AssetsURL:  config.AssetsURL,
 		MappingURL: config.MappingURL,
 		IdlePeriod: config.IdlePeriod,

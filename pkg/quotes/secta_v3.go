@@ -41,7 +41,7 @@ func newSectaV3(config SectaV3Config, outbox chan<- TradeEvent, history Historic
 	]{
 		// Params
 		DriverType: DriverSectaV3,
-		URL:        config.URL,
+		RPC:        config.LineaRPC,
 		AssetsURL:  config.AssetsURL,
 		MappingURL: config.MappingURL,
 		IdlePeriod: config.IdlePeriod,

@@ -35,7 +35,7 @@ func newQuickswap(config QuickswapConfig, outbox chan<- TradeEvent, history Hist
 	]{
 		// Params
 		DriverType: DriverQuickswap,
-		URL:        config.URL,
+		RPC:        config.PolygonRPC,
 		AssetsURL:  config.AssetsURL,
 		MappingURL: config.MappingURL,
 		IdlePeriod: config.IdlePeriod,

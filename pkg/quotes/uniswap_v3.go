@@ -42,7 +42,7 @@ func newUniswapV3(config UniswapV3Config, outbox chan<- TradeEvent, history Hist
 	]{
 		// Params
 		DriverType: DriverUniswapV3,
-		URL:        config.URL,
+		RPC:        config.EthereumRPC,
 		AssetsURL:  config.AssetsURL,
 		MappingURL: config.MappingURL,
 		IdlePeriod: config.IdlePeriod,

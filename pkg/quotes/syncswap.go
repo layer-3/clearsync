@@ -53,7 +53,7 @@ func newSyncswap(config SyncswapConfig, outbox chan<- TradeEvent, history Histor
 	]{
 		// Params
 		DriverType: DriverSyncswap,
-		URL:        config.URL,
+		RPC:        config.LineaRPC,
 		AssetsURL:  config.AssetsURL,
 		MappingURL: config.MappingURL,
 		IdlePeriod: config.IdlePeriod,
