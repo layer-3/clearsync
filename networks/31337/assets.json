@@ -1,0 +1,52 @@
+{
+    "tokens": [
+      {
+        "address": "0xe006c485e6559ff7616f2c6891e3a09be00c24e4",
+        "name": "Yellow Token",
+        "symbol": "YELLOW",
+        "decimals": 8,
+        "precision": 0,
+        "logoURI": "https://www.yellow.org/images/duckies_200x200.png"
+      },
+      {
+        "address": "0x4ee6d916cce9ccfa79c5884c6e157e533f2842a1",
+        "name": "Yellow Duckies",
+        "symbol": "DUCKIES",
+        "decimals": 8,
+        "precision": 0,
+        "logoURI": "https://www.yellow.org/images/duckies_200x200.png"
+      },
+      {
+        "address": "0x022ef7eef745c2737847afe41645bee92ffe0bf7",
+        "name": "USD Coin",
+        "symbol": "USDC",
+        "decimals": 6,
+        "precision": 4,
+        "logoURI": "https://assets.coingecko.com/coins/images/6319/large/usdc.png?1696506694"
+      },
+      {
+        "address": "0x7964e43d2d2aea8d528a2a6d7b004d22ca5657a7",
+        "name": "Bitcoin",
+        "symbol": "BTC",
+        "decimals": 18,
+        "precision": 6,
+        "logoURI": "https://s2.coinmarketcap.com/static/img/coins/64x64/3717.png"
+      },
+      {
+        "address": "0x0000000000000000000000000000000000000000",
+        "name": "Ether",
+        "symbol": "ETH",
+        "decimals": 18,
+        "precision": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png?1696501628"
+      },
+      {
+        "address": "0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f",
+        "name": "Wrapped Ether",
+        "symbol": "WETH",
+        "decimals": 18,
+        "precision": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png?1696501628"
+      }
+    ]
+  }
