@@ -1,0 +1,45 @@
+{
+  "tokens": [
+    {
+      "address": "0x4ee6d916cce9ccfa79c5884c6e157e533f2842a1",
+      "name": "Yellow Duckies",
+      "symbol": "DUCKIES",
+      "decimals": 8,
+      "precision": 0,
+      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/duckies-200x200.png"
+    },
+    {
+      "address": "0x022ef7eef745c2737847afe41645bee92ffe0bf7",
+      "name": "USD Coin",
+      "symbol": "USDC",
+      "decimals": 6,
+      "precision": 4,
+      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/usdc-64x64.png"
+    },
+    {
+      "address": "0x7964e43d2d2aea8d528a2a6d7b004d22ca5657a7",
+      "name": "Bitcoin",
+      "symbol": "BTC",
+      "decimals": 8,
+      "precision": 6,
+      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/btc-64x64.png"
+    },
+    {
+      "address": "0xe6a73a292293d57ae7eab07e47b1acad091300a2",
+      "name": "Wrapped Ether",
+      "symbol": "WETH",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/ethereum-64x64.png"
+    },
+    {
+      "address": "0xe006c485e6559ff7616f2c6891e3a09be00c24e4",
+      "name": "YELLOW",
+      "symbol": "YELLOW",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/bnb-64x64.png",
+      "extensions": {}
+    }
+  ]
+}
