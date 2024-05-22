@@ -29,6 +29,8 @@ func NewDriver(config Config, outbox chan<- TradeEvent) (Driver, error) {
 		return newBinance(config.Binance, outbox), nil
 	case DriverKraken:
 		return newKraken(config.Kraken, outbox), nil
+	case DriverMexc:
+		return newMexc(config.Mexc, outbox), nil
 	case DriverOpendax:
 		return newOpendax(config.Opendax, outbox), nil
 	case DriverBitfaker:

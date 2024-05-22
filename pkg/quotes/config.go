@@ -14,6 +14,7 @@ type Config struct {
 
 	Binance   BinanceConfig   `yaml:"binance" env-prefix:"QUOTES_BINANCE_"`
 	Kraken    KrakenConfig    `yaml:"kraken" env-prefix:"QUOTES_KRAKEN_"`
+	Mexc      MexcConfig      `yaml:"mexc" env-prefix:"QUOTES_MEXC_"`
 	Opendax   OpendaxConfig   `yaml:"opendax" env-prefix:"QUOTES_OPENDAX_"`
 	Bitfaker  BitfakerConfig  `yaml:"bitfaker" env-prefix:"QUOTES_BITFAKER_"`
 	UniswapV3 UniswapV3Config `yaml:"uniswap_v3" env-prefix:"QUOTES_UNISWAP_V3_"`
@@ -82,6 +83,15 @@ type BinanceConfig struct {
 	USDCtoUSDT         bool          `yaml:"usdc_to_usdt" env:"USDC_TO_USDT" env-default:"true"`
 	BatchPeriod        time.Duration `yaml:"batch_period" env:"BATCH_PERIOD" env-default:"5s"`
 	AssetsUpdatePeriod time.Duration `yaml:"assets_update_period" env:"ASSETS_UPDATE_PERIOD" env-default:"5m"`
+	Filter             FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
+}
+
+type MexcConfig struct {
+	USDCtoUSDT         bool          `yaml:"usdc_to_usdt" env:"USDC_TO_USDT" env-default:"true"`
+	BatchPeriod        time.Duration `yaml:"batch_period" env:"BATCH_PERIOD" env-default:"5s"`
+	AssetsUpdatePeriod time.Duration `yaml:"assets_update_period" env:"ASSETS_UPDATE_PERIOD" env-default:"5m"`
+	URL                string        `yaml:"url" env:"URL" env-default:"wss://ws.kraken.com"`
+	ReconnectPeriod    time.Duration `yaml:"period" env:"RECONNECT_PERIOD" env-default:"5s"`
 	Filter             FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
 }
 
