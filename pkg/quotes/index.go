@@ -60,7 +60,11 @@ func newIndexAggregator(
 		marketsMapping: marketsMapping,
 		aggregated:     inbox,
 	}
-	go index.computeAggregatePrice(inbox, config.Index.MaxPriceDiff, strategy, outbox)
+	maxPriceDiff, err := decimal.NewFromString(config.Index.MaxPriceDiff)
+	if err != nil {
+		panic(err) // impossible case if config structure is not amended
+	}
+	go index.computeAggregatePrice(inbox, maxPriceDiff, strategy, outbox)
 
 	return index
 }

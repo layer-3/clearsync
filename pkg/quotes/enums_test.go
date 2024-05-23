@@ -29,6 +29,11 @@ func TestDriverType(t *testing.T) {
 			expectYAML: "kraken\n",
 			expectErr:  false,
 		}, {
+			input:      DriverMexc,
+			expectJSON: `"mexc"`,
+			expectYAML: "mexc\n",
+			expectErr:  false,
+		}, {
 			input:      DriverOpendax,
 			expectJSON: `"opendax"`,
 			expectYAML: "opendax\n",

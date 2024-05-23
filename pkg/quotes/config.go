@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
-	"github.com/shopspring/decimal"
 )
 
 type Config struct {
@@ -14,6 +13,7 @@ type Config struct {
 
 	Binance   BinanceConfig   `yaml:"binance" env-prefix:"QUOTES_BINANCE_"`
 	Kraken    KrakenConfig    `yaml:"kraken" env-prefix:"QUOTES_KRAKEN_"`
+	Mexc      MexcConfig      `yaml:"mexc" env-prefix:"QUOTES_MEXC_"`
 	Opendax   OpendaxConfig   `yaml:"opendax" env-prefix:"QUOTES_OPENDAX_"`
 	Bitfaker  BitfakerConfig  `yaml:"bitfaker" env-prefix:"QUOTES_BITFAKER_"`
 	UniswapV3 UniswapV3Config `yaml:"uniswap_v3" env-prefix:"QUOTES_UNISWAP_V3_"`
@@ -40,6 +40,8 @@ func (config Config) GetByDriverType(driver DriverType) (Config, error) {
 		return Config{Drivers: []DriverType{DriverBinance}, Binance: config.Binance}, nil
 	case DriverKraken:
 		return Config{Drivers: []DriverType{DriverKraken}, Kraken: config.Kraken}, nil
+	case DriverMexc:
+		return Config{Drivers: []DriverType{DriverMexc}, Mexc: config.Mexc}, nil
 	case DriverOpendax:
 		return Config{Drivers: []DriverType{DriverOpendax}, Opendax: config.Opendax}, nil
 	case DriverBitfaker:
@@ -55,7 +57,7 @@ func (config Config) GetByDriverType(driver DriverType) (Config, error) {
 	case DriverSectaV3:
 		return Config{Drivers: []DriverType{DriverSectaV3}, SectaV3: config.SectaV3}, nil
 	default:
-		return config, nil
+		return Config{}, fmt.Errorf("driver is not supported: %s", driver)
 	}
 }
 
@@ -75,13 +77,22 @@ type IndexConfig struct {
 	MarketsMapping map[string][]string `yaml:"markets_mapping" env:"MARKETS_MAPPING"`
 	// MaxPriceDiff has default of `0.2` because our default leverage is 5x,
 	// and so if the user opens order on his full balance, he'll get liquidated on 20% price change.
-	MaxPriceDiff decimal.Decimal `yaml:"max_price_diff" env:"MAX_PRICE_DIFF" env-default:"0.2"`
+	MaxPriceDiff string `yaml:"max_price_diff" env:"MAX_PRICE_DIFF" env-default:"0.2"`
 }
 
 type BinanceConfig struct {
 	USDCtoUSDT         bool          `yaml:"usdc_to_usdt" env:"USDC_TO_USDT" env-default:"true"`
 	BatchPeriod        time.Duration `yaml:"batch_period" env:"BATCH_PERIOD" env-default:"5s"`
 	AssetsUpdatePeriod time.Duration `yaml:"assets_update_period" env:"ASSETS_UPDATE_PERIOD" env-default:"5m"`
+	Filter             FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
+}
+
+type MexcConfig struct {
+	USDCtoUSDT         bool          `yaml:"usdc_to_usdt" env:"USDC_TO_USDT" env-default:"true"`
+	BatchPeriod        time.Duration `yaml:"batch_period" env:"BATCH_PERIOD" env-default:"5s"`
+	AssetsUpdatePeriod time.Duration `yaml:"assets_update_period" env:"ASSETS_UPDATE_PERIOD" env-default:"5m"`
+	URL                string        `yaml:"url" env:"URL" env-default:"wss://ws.mexc.com/ws"`
+	ReconnectPeriod    time.Duration `yaml:"period" env:"RECONNECT_PERIOD" env-default:"5s"`
 	Filter             FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
 }
 

@@ -24,6 +24,7 @@ func TestNewDriver(t *testing.T) {
 	}{
 		{DriverBinance.String(), DriverBinance, (*binance)(nil)},
 		{DriverKraken.String(), DriverKraken, (*kraken)(nil)},
+		{DriverMexc.String(), DriverMexc, (*mexc)(nil)},
 		{DriverOpendax.String(), DriverOpendax, (*opendax)(nil)},
 		{DriverBitfaker.String(), DriverBitfaker, (*bitfaker)(nil)},
 		{DriverUniswapV3.String(), DriverUniswapV3, (*baseDEX[iuniswap_v3_pool.IUniswapV3PoolSwap, iuniswap_v3_pool.IUniswapV3Pool])(nil)},
