@@ -167,7 +167,6 @@ func (b *mexc) Stop() error {
 }
 
 func (b *mexc) Subscribe(market Market) error {
-	const maxRetries = 5
 	if !b.once.Subscribe() {
 		return ErrNotStarted
 	}
@@ -194,89 +193,93 @@ func (b *mexc) Subscribe(market Market) error {
 		return fmt.Errorf("market does not exist: %s", market)
 	}
 
-	idle := time.NewTimer(b.idlePeriod)
-	doneCh := make(chan struct{})
 	stopCh := make(chan struct{})
 	b.streams.Store(market, stopCh)
 
-	go func() {
-		defer idle.Stop()
-		defer close(doneCh)
-		url := "wss://wbs.mexc.com/ws"
-		conn, _, err := websocket.DefaultDialer.Dial(url, nil)
-		if err != nil {
-			loggerMexc.Errorw("failed to connect to websocket", "error", err)
-			return
-		}
-		defer conn.Close()
-
-		subMsg := map[string]interface{}{
-			"id":     b.requesID,
-			"method": "SUBSCRIPTION",
-			"params": []string{"spot@public.deals.v3.api@" + strings.ToUpper(symbol)},
-		}
-		b.requesID++
-		if err := conn.WriteJSON(subMsg); err != nil {
-			loggerMexc.Errorw("failed to subscribe", "error", err)
-			return
-		}
-
-		for {
-			select {
-			case <-stopCh:
-				unsubMsg := map[string]interface{}{
-					"id":     b.requesID,
-					"method": "UNSUBSCRIPTION",
-					"params": []string{"spot@public.deals.v3.api@" + strings.ToUpper(symbol)},
-				}
-				conn.WriteJSON(unsubMsg)
-				return
-			default:
-				_, message, err := conn.ReadMessage()
-				if err != nil {
-					loggerMexc.Errorw("read error", "error", err)
-					// Reconnect logic
-					for i := 0; i < maxRetries; i++ {
-						loggerMexc.Infow("attempting to reconnect", "attempt", i+1)
-						conn, _, err = websocket.DefaultDialer.Dial("wss://wbs.mexc.com/ws", nil)
-						if err == nil {
-							subMsg := map[string]interface{}{
-								"id":     b.requesID,
-								"method": "SUBSCRIPTION",
-								"params": []string{"spot@public.deals.v3.api@" + strings.ToUpper(symbol)},
-							}
-							if err := conn.WriteJSON(subMsg); err != nil {
-								loggerMexc.Errorw("failed to resubscribe", "error", err)
-							} else {
-								loggerMexc.Infow("resubscribed successfully", "symbol", symbol)
-								break
-							}
-						}
-						time.Sleep(time.Second * time.Duration(1<<i)) // Exponential backoff
-					}
-					if err != nil {
-						loggerMexc.Errorw("failed to reconnect after max retries", "error", err)
-						return
-					}
-				} else {
-					// {"c":"spot@public.deals.v3.api@ETHUSDT","d":{"deals":[{"p":"3709.00","v":"0.00172","S":1,"t":1716379423968}],"e":"spot@public.deals.v3.api"},"s":"ETHUSDT","t":1716379423970}
-					// Unmarshal the JSON message into the struct
-					var tradeMsg mexcTradeMessage
-					err = json.Unmarshal([]byte(message), &tradeMsg)
-					if err != nil {
-						fmt.Println("Error unmarshalling JSON:", err)
-						return
-					}
-
-					b.handleTrade(idle, tradeMsg)
-				}
-			}
-		}
-	}()
+	go b.watchTrades(symbol, stopCh)
 
 	recordSubscribed(DriverMexc, market)
 	loggerMexc.Infow("subscribed", "market", market)
 	return nil
+}
+
+func (b *mexc) watchTrades(symbol string, stopCh chan struct{}) {
+	idle := time.NewTimer(b.idlePeriod)
+	doneCh := make(chan struct{})
+	defer idle.Stop()
+	defer close(doneCh)
+
+	url := "wss://wbs.mexc.com/ws"
+	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
+	if err != nil {
+		loggerMexc.Errorw("failed to connect to websocket", "error", err)
+		return
+	}
+	defer conn.Close()
+
+	subMsg := map[string]interface{}{
+		"id":     b.requesID,
+		"method": "SUBSCRIPTION",
+		"params": []string{"spot@public.deals.v3.api@" + strings.ToUpper(symbol)},
+	}
+	b.requesID++
+	if err := conn.WriteJSON(subMsg); err != nil {
+		loggerMexc.Errorw("failed to subscribe", "error", err)
+		return
+	}
+
+	for {
+		select {
+		case <-stopCh:
+			unsubMsg := map[string]interface{}{
+				"id":     b.requesID,
+				"method": "UNSUBSCRIPTION",
+				"params": []string{"spot@public.deals.v3.api@" + strings.ToUpper(symbol)},
+			}
+			conn.WriteJSON(unsubMsg)
+			return
+		default:
+			_, message, err := conn.ReadMessage()
+			if err != nil {
+				loggerMexc.Errorw("read error", "error", err)
+				// Reconnect logic
+				const maxRetries = 5
+				for i := 0; i < maxRetries; i++ {
+					loggerMexc.Infow("attempting to reconnect", "attempt", i+1)
+					conn, _, err = websocket.DefaultDialer.Dial("wss://wbs.mexc.com/ws", nil)
+					if err == nil {
+						subMsg := map[string]interface{}{
+							"id":     b.requesID,
+							"method": "SUBSCRIPTION",
+							"params": []string{"spot@public.deals.v3.api@" + strings.ToUpper(symbol)},
+						}
+						if err := conn.WriteJSON(subMsg); err != nil {
+							loggerMexc.Errorw("failed to resubscribe", "error", err)
+						} else {
+							loggerMexc.Infow("resubscribed successfully", "symbol", symbol)
+							break
+						}
+					}
+					time.Sleep(time.Second * time.Duration(1<<i)) // Exponential backoff
+				}
+				if err != nil {
+					loggerMexc.Errorw("failed to reconnect after max retries", "error", err)
+					return
+				}
+			} else {
+				// {"c":"spot@public.deals.v3.api@ETHUSDT","d":{"deals":[{"p":"3709.00","v":"0.00172","S":1,"t":1716379423968}],"e":"spot@public.deals.v3.api"},"s":"ETHUSDT","t":1716379423970}
+				// Unmarshal the JSON message into the struct
+				var tradeMsg mexcTradeMessage
+				err = json.Unmarshal([]byte(message), &tradeMsg)
+				if err != nil {
+					fmt.Println("Error unmarshalling JSON:", err)
+					return
+				}
+
+				b.handleTrade(idle, tradeMsg)
+			}
+		}
+	}
 }
 
 func (b *mexc) Unsubscribe(market Market) error {
