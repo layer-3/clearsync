@@ -12,7 +12,7 @@ import (
 
 var (
 	loggerIndex           = log.Logger("index-aggregator")
-	defaultMarketsMapping = map[string][]string{"usd": {"weth", "matic"}}
+	defaultMarketsMapping = map[string][]string{"usd": {"weth"}}
 
 	maxAllowedPrice  = decimal.NewFromFloat(1e6)
 	minAllowedAmount = decimal.NewFromFloat(1e-18)
