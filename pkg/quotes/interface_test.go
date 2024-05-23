@@ -31,6 +31,7 @@ func TestNewDriver(t *testing.T) {
 		{DriverQuickswap.String(), DriverQuickswap, (*baseDEX[quickswap_v3_pool.IQuickswapV3PoolSwap, quickswap_v3_pool.IQuickswapV3Pool])(nil)},
 		{DriverSectaV2.String(), DriverSectaV2, (*baseDEX[isecta_v2_pair.ISectaV2PairSwap, isecta_v2_pair.ISectaV2Pair])(nil)},
 		{DriverSectaV3.String(), DriverSectaV3, (*baseDEX[isecta_v3_pool.ISectaV3PoolSwap, isecta_v3_pool.ISectaV3Pool])(nil)},
+		{DriverMexc.String(), DriverMexc, (*mexc)(nil)},
 	}
 
 	for _, tc := range testCases {

@@ -64,6 +64,11 @@ func TestDriverType(t *testing.T) {
 			expectYAML: "secta_v3\n",
 			expectErr:  false,
 		}, {
+			input:      DriverMexc,
+			expectJSON: `"mexc"`,
+			expectYAML: "mexc\n",
+			expectErr:  false,
+		}, {
 			input:      DriverInternal,
 			expectJSON: `"internal"`,
 			expectYAML: "internal\n",
