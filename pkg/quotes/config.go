@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
-	"github.com/shopspring/decimal"
 )
 
 type Config struct {
@@ -78,7 +77,7 @@ type IndexConfig struct {
 	MarketsMapping map[string][]string `yaml:"markets_mapping" env:"MARKETS_MAPPING"`
 	// MaxPriceDiff has default of `0.2` because our default leverage is 5x,
 	// and so if the user opens order on his full balance, he'll get liquidated on 20% price change.
-	MaxPriceDiff decimal.Decimal `yaml:"max_price_diff" env:"MAX_PRICE_DIFF" env-default:"0.2"`
+	MaxPriceDiff string `yaml:"max_price_diff" env:"MAX_PRICE_DIFF" env-default:"0.2"`
 }
 
 type BinanceConfig struct {
