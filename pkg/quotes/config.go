@@ -41,6 +41,8 @@ func (config Config) GetByDriverType(driver DriverType) (Config, error) {
 		return Config{Drivers: []DriverType{DriverBinance}, Binance: config.Binance}, nil
 	case DriverKraken:
 		return Config{Drivers: []DriverType{DriverKraken}, Kraken: config.Kraken}, nil
+	case DriverMexc:
+		return Config{Drivers: []DriverType{DriverMexc}, Mexc: config.Mexc}, nil
 	case DriverOpendax:
 		return Config{Drivers: []DriverType{DriverOpendax}, Opendax: config.Opendax}, nil
 	case DriverBitfaker:
@@ -56,7 +58,7 @@ func (config Config) GetByDriverType(driver DriverType) (Config, error) {
 	case DriverSectaV3:
 		return Config{Drivers: []DriverType{DriverSectaV3}, SectaV3: config.SectaV3}, nil
 	default:
-		return config, nil
+		return Config{}, fmt.Errorf("driver is not supported: %s", driver)
 	}
 }
 
@@ -90,7 +92,7 @@ type MexcConfig struct {
 	USDCtoUSDT         bool          `yaml:"usdc_to_usdt" env:"USDC_TO_USDT" env-default:"true"`
 	BatchPeriod        time.Duration `yaml:"batch_period" env:"BATCH_PERIOD" env-default:"5s"`
 	AssetsUpdatePeriod time.Duration `yaml:"assets_update_period" env:"ASSETS_UPDATE_PERIOD" env-default:"5m"`
-	URL                string        `yaml:"url" env:"URL" env-default:"wss://ws.kraken.com"`
+	URL                string        `yaml:"url" env:"URL" env-default:"wss://ws.mexc.com/ws"`
 	ReconnectPeriod    time.Duration `yaml:"period" env:"RECONNECT_PERIOD" env-default:"5s"`
 	Filter             FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
 }
