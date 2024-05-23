@@ -23,75 +23,75 @@ type mexc struct {
 	usdcToUSDT         bool
 	assetsUpdatePeriod time.Duration
 	idlePeriod         time.Duration
-	exchangeInfo       *ExchangeInfoService
+	exchangeInfo       *mexcExchangeInfoService
 	filter             Filter
 	batcherInbox       chan<- TradeEvent
 	outbox             chan<- TradeEvent
 	streams            safe.Map[Market, chan struct{}]
 	symbolToMarket     safe.Map[string, Market]
-	assets             safe.Map[Market, Symbol]
+	assets             safe.Map[Market, mexcSymbol]
 	requesID           int
 }
 
-type Symbol struct {
+type mexcSymbol struct {
 	Symbol     string `json:"symbol"`
 	Status     string `json:"status"`
 	BaseAsset  string `json:"baseAsset"`
 	QuoteAsset string `json:"quoteAsset"`
 }
 
-// Define the Deal struct
-type Deal struct {
+// Define the mexcDeal struct
+type mexcDeal struct {
 	Price    string `json:"p"`
 	Quantity string `json:"v"`
 	Side     int    `json:"S"`
 	Time     int64  `json:"t"`
 }
 
-// Define the MEXCTradeMessage struct
-type MEXCTradeMessage struct {
-	C      string `json:"c"`
-	D      Deals  `json:"d"`
-	Symbol string `json:"s"`
-	Time   int64  `json:"t"`
+// Define the mexcTradeMessage struct
+type mexcTradeMessage struct {
+	C      string    `json:"c"`
+	D      mexcDeals `json:"d"`
+	Symbol string    `json:"s"`
+	Time   int64     `json:"t"`
 }
 
-type Deals struct {
-	Deals []Deal `json:"deals"`
-	Event string `json:"e"`
+type mexcDeals struct {
+	Deals []mexcDeal `json:"deals"`
+	Event string     `json:"e"`
 }
 
-type ExchangeInfoService struct {
-	client *Client
+type mexcExchangeInfoService struct {
+	client *mexcClient
 }
 
-func (s *ExchangeInfoService) Do(ctx context.Context) (*ExchangeInfo, error) {
+func (s *mexcExchangeInfoService) Do(ctx context.Context) (*mexcExchangeInfo, error) {
 	url := "https://api.mexc.com/api/v3/exchangeInfo"
 	resp, err := s.client.get(ctx, url)
 	if err != nil {
 		return nil, err
 	}
-	var exchangeInfo ExchangeInfo
+	var exchangeInfo mexcExchangeInfo
 	if err := json.Unmarshal(resp, &exchangeInfo); err != nil {
 		return nil, err
 	}
 	return &exchangeInfo, nil
 }
 
-type ExchangeInfo struct {
-	Symbols []Symbol `json:"symbols"`
+type mexcExchangeInfo struct {
+	Symbols []mexcSymbol `json:"symbols"`
 }
 
-type Client struct {
+type mexcClient struct {
 	baseURL    string
 	httpClient *http.Client
 }
 
-func NewClient(baseURL string) *Client {
-	return &Client{baseURL: baseURL, httpClient: &http.Client{}}
+func newMexcClient(baseURL string) *mexcClient {
+	return &mexcClient{baseURL: baseURL, httpClient: &http.Client{}}
 }
 
-func (c *Client) get(ctx context.Context, url string) ([]byte, error) {
+func (c *mexcClient) get(ctx context.Context, url string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -112,13 +112,13 @@ func newMexc(config MexcConfig, outbox chan<- TradeEvent) Driver {
 		once:               newOnce(),
 		usdcToUSDT:         config.USDCtoUSDT,
 		assetsUpdatePeriod: config.AssetsUpdatePeriod,
-		exchangeInfo:       &ExchangeInfoService{client: NewClient("https://api.mexc.com")},
+		exchangeInfo:       &mexcExchangeInfoService{client: newMexcClient("https://api.mexc.com")},
 		filter:             NewFilter(config.Filter),
 		batcherInbox:       batcherInbox,
 		outbox:             outbox,
 		streams:            safe.NewMap[Market, chan struct{}](),
 		symbolToMarket:     safe.NewMap[string, Market](),
-		assets:             safe.NewMap[Market, Symbol](),
+		assets:             safe.NewMap[Market, mexcSymbol](),
 		requesID:           0,
 	}
 
@@ -261,7 +261,7 @@ func (b *mexc) Subscribe(market Market) error {
 				} else {
 					// {"c":"spot@public.deals.v3.api@ETHUSDT","d":{"deals":[{"p":"3709.00","v":"0.00172","S":1,"t":1716379423968}],"e":"spot@public.deals.v3.api"},"s":"ETHUSDT","t":1716379423970}
 					// Unmarshal the JSON message into the struct
-					var tradeMsg MEXCTradeMessage
+					var tradeMsg mexcTradeMessage
 					err = json.Unmarshal([]byte(message), &tradeMsg)
 					if err != nil {
 						fmt.Println("Error unmarshalling JSON:", err)
@@ -300,7 +300,7 @@ func (b *mexc) Unsubscribe(market Market) error {
 func (b *mexc) SetInbox(_ <-chan TradeEvent) {}
 
 func (b *mexc) updateAssets() {
-	var exchangeInfo *ExchangeInfo
+	var exchangeInfo *mexcExchangeInfo
 	var err error
 	for {
 		exchangeInfo, err = b.exchangeInfo.Do(context.Background())
@@ -322,7 +322,7 @@ func (b *mexc) updateAssets() {
 	}
 }
 
-func (b *mexc) handleTrade(idle *time.Timer, trade MEXCTradeMessage) {
+func (b *mexc) handleTrade(idle *time.Timer, trade mexcTradeMessage) {
 	idle.Reset(b.idlePeriod)
 
 	for _, deal := range trade.D.Deals {
@@ -331,7 +331,6 @@ func (b *mexc) handleTrade(idle *time.Timer, trade MEXCTradeMessage) {
 			loggerMexc.Errorw("failed to build trade event", "event", trade, "error", err)
 			return
 		}
-		fmt.Println(tradeEvent)
 
 		if !b.filter.Allow(tradeEvent) {
 			return
@@ -340,7 +339,7 @@ func (b *mexc) handleTrade(idle *time.Timer, trade MEXCTradeMessage) {
 	}
 }
 
-func (b *mexc) buildEvent(tr Deal, symbol string) (TradeEvent, error) {
+func (b *mexc) buildEvent(tr mexcDeal, symbol string) (TradeEvent, error) {
 	price, err := decimal.NewFromString(tr.Price)
 	if err != nil {
 		return TradeEvent{}, fmt.Errorf("failed to parse price: %+v", tr.Price)
