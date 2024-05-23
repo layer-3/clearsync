@@ -11,7 +11,7 @@ import (
 var defaultWeightsMap = map[DriverType]decimal.Decimal{
 	DriverKraken:    decimal.NewFromInt(15),
 	DriverBinance:   decimal.NewFromInt(20),
-	DriverBinance:   decimal.NewFromInt(15),
+	DriverMexc:      decimal.NewFromInt(15),
 	DriverUniswapV3: decimal.NewFromInt(50),
 	DriverSyncswap:  decimal.NewFromInt(50),
 	DriverQuickswap: decimal.NewFromInt(50),
