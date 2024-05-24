@@ -4,7 +4,7 @@
     "name": "OSIS",
     "finex_url": "wss://osis.neodax.app/ws",
     "clearport_b_url": "cp-responder-peer-grpc:50081",
-    "clearport_a_url": "wss://port-a.osis.neodax.app",
+    "clearport_a_url": "wss://port-a-osis.neodax.app",
     "description": "OSIS is creating the first Decentralized Sovereign Organization (DSO), building Web3 infrastructure for a free global economy.",
     "available": true,
     "metadata": {
