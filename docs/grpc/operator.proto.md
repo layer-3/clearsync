@@ -206,6 +206,7 @@ protolint:disable MAX_LINE_LENGTH
 | position_notification | [PositionNotification](#positionnotification) |  |
 | error_notification | [ErrorNotification](#errornotification) |  |
 | transaction_notification | [TransactionNotification](#transactionnotification) |  |
+| session_key_transaction_notification | [SessionKeyTransactionNotification](#sessionkeytransactionnotification) |  |
 
 
 
@@ -249,6 +250,23 @@ protolint:disable MAX_LINE_LENGTH
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | position | [core.Position](core.proto.md#position) |  |
+
+
+
+
+
+
+
+### SessionKeyTransactionNotification
+
+
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| incomplete_userop | [string](#string) |  |
+| enable_sig_offset | [uint64](#uint64) |  |
+| digest_hash | [string](#string) |  |
+| permissions | [string](#string) |  |
 
 
 
