@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -26,6 +27,7 @@ type baseDEX[Event any, Contract any] struct {
 	url        string
 	assetsURL  string
 	mappingURL string
+	idlePeriod time.Duration
 
 	// Hooks
 	postStart func(*baseDEX[Event, Contract]) error
@@ -33,14 +35,21 @@ type baseDEX[Event any, Contract any] struct {
 	parse     func(*Event, *dexPool[Event]) (TradeEvent, error)
 
 	// State
-	once    *once
-	client  *ethclient.Client
-	outbox  chan<- TradeEvent
-	logger  *log.ZapEventLogger
-	filter  Filter
-	streams safe.Map[Market, event.Subscription]
+	once   *once
+	client *ethclient.Client
+	outbox chan<- TradeEvent
+	logger *log.ZapEventLogger
+	filter Filter
+	// streams maps market to a map of DEX pools.
+	// The value of the map is a pointer to disallow copying of the underlying mutex
+	streams safe.Map[Market, *safe.Map[common.Address, dexStream[Event]]]
 	assets  safe.Map[string, poolToken]
 	mapping safe.Map[string, []string]
+}
+
+type dexStream[Event any] struct {
+	sub  event.Subscription
+	sink chan *Event
 }
 
 type baseDexConfig[Event any, Contract any] struct {
@@ -49,6 +58,7 @@ type baseDexConfig[Event any, Contract any] struct {
 	URL        string
 	AssetsURL  string
 	MappingURL string
+	IdlePeriod time.Duration
 
 	// Hooks
 	PostStartHook func(*baseDEX[Event, Contract]) error
@@ -68,6 +78,7 @@ func newBaseDEX[Event any, Contract any](config baseDexConfig[Event, Contract]) 
 		url:        config.URL,
 		assetsURL:  config.AssetsURL,
 		mappingURL: config.MappingURL,
+		idlePeriod: config.IdlePeriod,
 
 		// Hooks
 		postStart: config.PostStartHook,
@@ -80,7 +91,7 @@ func newBaseDEX[Event any, Contract any](config baseDexConfig[Event, Contract]) 
 		outbox:  config.Outbox,
 		logger:  config.Logger,
 		filter:  NewFilter(config.Filter),
-		streams: safe.NewMap[Market, event.Subscription](),
+		streams: safe.NewMap[Market, *safe.Map[common.Address, dexStream[Event]]](),
 		assets:  safe.NewMap[string, poolToken](),
 		mapping: safe.NewMap[string, []string](),
 	}
@@ -161,7 +172,7 @@ func (b *baseDEX[Event, Contract]) Stop() error {
 		var g errgroup.Group
 		g.SetLimit(10)
 
-		b.streams.Range(func(market Market, _ event.Subscription) bool {
+		b.streams.Range(func(market Market, _ *safe.Map[common.Address, dexStream[Event]]) bool {
 			if err := b.Unsubscribe(market); err != nil {
 				stopErr = err
 			}
@@ -204,6 +215,7 @@ func (b *baseDEX[Event, Contract]) Subscribe(market Market) error {
 	}
 
 	if _, ok := b.streams.Load(market); ok {
+		fmt.Println("Market already subscribed", market)
 		return fmt.Errorf("%s: %w", market, ErrAlreadySubbed)
 	}
 
@@ -213,24 +225,37 @@ func (b *baseDEX[Event, Contract]) Subscribe(market Market) error {
 	}
 
 	for _, pool := range pools {
-		sink := make(chan *Event, 128)
-
-		var sub event.Subscription
-		err := debounce.Debounce(b.logger, func() error {
-			opts := &bind.WatchOpts{Context: context.TODO()}
-			sub, err = pool.Contract.WatchSwap(opts, sink, []common.Address{}, []common.Address{})
+		if err := b.subscribePool(pool); err != nil {
 			return err
-		})
-		if err != nil {
-			close(sink)
-			return fmt.Errorf("failed to subscribe to swaps for market %s: %w", market, err)
 		}
-
-		go b.watchSwap(pool, sink, sub)
-		go b.streams.Store(market, sub) // to not block the loop since it's a blocking call with mutex under the hood
-		recordSubscribed(b.driverType, market)
 	}
 
+	return nil
+}
+
+func (b *baseDEX[Event, Contract]) subscribePool(pool *dexPool[Event]) error {
+	watchCtx, cancel := context.WithCancel(context.TODO())
+	sink := make(chan *Event, 128)
+
+	var sub event.Subscription
+	var err error
+	err = debounce.Debounce(b.logger, func() error {
+		opts := &bind.WatchOpts{Context: watchCtx}
+		sub, err = pool.Contract.WatchSwap(opts, sink, []common.Address{}, []common.Address{})
+		return err
+	})
+	if err != nil {
+		close(sink)
+		cancel()
+		return fmt.Errorf("failed to subscribe to swaps for market %s: %w", pool.Market, err)
+	}
+
+	pools := safe.NewMap[common.Address, dexStream[Event]]()
+	stream, _ := b.streams.LoadOrStore(pool.Market, &pools)
+	stream.Store(pool.Address, dexStream[Event]{sub: sub, sink: sink})
+
+	recordSubscribed(b.driverType, pool.Market)
+	go b.watchSwap(cancel, pool, sink, sub)
 	return nil
 }
 
@@ -243,10 +268,14 @@ func (b *baseDEX[Event, Contract]) Unsubscribe(market Market) error {
 	if !ok {
 		return fmt.Errorf("%s: %w", market, ErrNotSubbed)
 	}
+	stream.UpdateInTx(func(stream map[common.Address]dexStream[Event]) {
+		for _, s := range stream {
+			s.sub.Unsubscribe()
+			s.sub = nil
+			// do not delete the sink channel
+		}
+	})
 
-	stream.Unsubscribe()
-
-	b.streams.Delete(market)
 	recordUnsubscribed(b.driverType, market)
 	return nil
 }
@@ -254,26 +283,37 @@ func (b *baseDEX[Event, Contract]) Unsubscribe(market Market) error {
 func (b *baseDEX[Event, Contract]) SetInbox(_ <-chan TradeEvent) {}
 
 func (b *baseDEX[Event, Contract]) watchSwap(
+	cancel context.CancelFunc,
 	pool *dexPool[Event],
 	sink chan *Event,
 	sub event.Subscription,
 ) {
-	defer close(sink)
+	timer := time.NewTimer(b.idlePeriod)
+	defer timer.Stop()
+
 	for {
 		select {
 		case err := <-sub.Err():
+			if err == nil {
+				// A nil error indicates intentional unsubscribe
+				b.logger.Infow("intentional unsubscribe received, stopping watch", "market", pool.Market)
+				return
+			}
+
 			b.logger.Warnw("connection failed, resubscribing", "market", pool.Market, "err", err)
 			if _, ok := b.streams.Load(pool.Market); !ok {
-				break // market was unsubscribed earlier
+				return // market was unsubscribed earlier
 			}
-			if err := b.Unsubscribe(pool.Market); err != nil {
-				b.logger.Errorw("failed to resubscribe", "market", pool.Market, "err", err)
+
+			for {
+				if err := b.resubscribe(pool); err == nil {
+					return
+				}
+				<-time.After(5 * time.Second)
 			}
-			if err := b.Subscribe(pool.Market); err != nil {
-				b.logger.Errorw("failed to resubscribe", "market", pool.Market, "err", err)
-			}
-			return
+
 		case swap := <-sink:
+			timer.Reset(b.idlePeriod)
 			trade, err := b.parse(swap, pool)
 			if err != nil {
 				b.logger.Errorw("failed to parse swap event",
@@ -296,8 +336,36 @@ func (b *baseDEX[Event, Contract]) watchSwap(
 				continue
 			}
 			b.outbox <- trade
+
+		case <-timer.C:
+			b.logger.Warnw("market inactivity detected",
+				"market", pool.Market,
+				"pool_address", pool.Address,
+				"base_token", pool.BaseToken.Symbol,
+				"quote_token", pool.QuoteToken.Symbol)
+			cancel()
+			for {
+				if err := b.resubscribe(pool); err == nil {
+					return
+				}
+				<-time.After(5 * time.Second)
+			}
 		}
 	}
+}
+
+func (b *baseDEX[Event, Contract]) resubscribe(pool *dexPool[Event]) error {
+	if _, ok := b.streams.Load(pool.Market); !ok {
+		return nil // market was unsubscribed earlier
+	}
+
+	if err := b.subscribePool(pool); err != nil {
+		b.logger.Errorw("failed to resubscribe", "market", pool.Market, "error", err)
+		return err
+	}
+
+	b.logger.Infow("resubscribed", "market", pool.Market)
+	return nil
 }
 
 type dexPool[Event any] struct {
