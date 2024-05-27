@@ -211,6 +211,23 @@ func (b *binance) handleTrade(event *gobinance.WsTradeEvent) {
 func (b *binance) handleErr(market Market) func(error) {
 	return func(err error) {
 		loggerBinance.Errorw("received error", "market", market, "error", err)
+		if err.Error() == "websocket: close 1001 (going away)" || err.Error() == "websocket: close 1006 (abnormal closure): unexpected EOF" {
+			// Reconnect logic
+			const maxRetries = 5
+			b.Unsubscribe(market)
+			for i := 0; i < maxRetries; i++ {
+				loggerBinance.Infow("attempting to reconnect to market", "market", market, "attempt", i+1)
+				if err = b.Subscribe(market); err == nil {
+					loggerBinance.Infow("resubscribed successfully", "market", market)
+					break
+				}
+				loggerBinance.Errorw("failed to resubscribe", "market", market, "error", err)
+				time.Sleep(time.Second * time.Duration(1<<i)) // Exponential backoff
+			}
+			if err != nil {
+				loggerBinance.Errorw("failed to reconnect after max retries", "market", market, "error", err)
+			}
+		}
 	}
 }
 
