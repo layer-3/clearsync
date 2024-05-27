@@ -88,6 +88,7 @@ type BinanceConfig struct {
 	Filter             FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
 }
 
+// TODO: add idle period
 type MexcConfig struct {
 	USDCtoUSDT         bool          `yaml:"usdc_to_usdt" env:"USDC_TO_USDT" env-default:"true"`
 	BatchPeriod        time.Duration `yaml:"batch_period" env:"BATCH_PERIOD" env-default:"5s"`
@@ -97,6 +98,7 @@ type MexcConfig struct {
 	Filter             FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
 }
 
+// TODO: add idle period
 type KrakenConfig struct {
 	URL             string        `yaml:"url" env:"URL" env-default:"wss://ws.kraken.com"`
 	ReconnectPeriod time.Duration `yaml:"period" env:"RECONNECT_PERIOD" env-default:"5s"`
