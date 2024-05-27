@@ -338,7 +338,11 @@ func (b *baseDEX[Event, Contract]) watchSwap(
 			b.outbox <- trade
 
 		case <-timer.C:
-			b.logger.Warnw("market inactivity detected", "market", pool.Market, "pool address", pool.Address, "base toke", pool.BaseToken.Symbol, "quote token", pool.QuoteToken.Symbol)
+			b.logger.Warnw("market inactivity detected",
+				"market", pool.Market,
+				"pool_address", pool.Address,
+				"base_token", pool.BaseToken.Symbol,
+				"quote_token", pool.QuoteToken.Symbol)
 			cancel()
 			for {
 				if err := b.resubscribe(pool); err == nil {
