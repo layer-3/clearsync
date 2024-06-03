@@ -17,7 +17,7 @@ environment:
 
 services:
   - name: eth_node
-    image: quay.io/openware/geth:v0.1.7-amd64
+    image: quay.io/openware/geth:v0.1.9-amd64
   - name: bundler
     image: quay.io/openware/bundler:c7dd933
     entrypoint:
