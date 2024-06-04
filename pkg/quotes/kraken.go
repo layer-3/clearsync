@@ -184,7 +184,7 @@ func (k *kraken) Unsubscribe(market Market) error {
 	return nil
 }
 
-func (*kraken) HistoricalData(_ context.Context, _ Market, _ time.Duration) ([]TradeEvent, error) {
+func (*kraken) HistoricalData(_ context.Context, _ Market, _ time.Duration, _ uint64) ([]TradeEvent, error) {
 	return nil, errors.New("not implemented")
 }
 

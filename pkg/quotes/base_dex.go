@@ -228,6 +228,13 @@ func (b *baseDEX[Event, Contract, EventIterator]) Subscribe(market Market) error
 		return fmt.Errorf("failed to get pool for market %s: %s", market.StringWithoutMain(), err)
 	}
 
+	// Publish the last trade for a given pool using historical data
+	// since it may take too long to receive the first swap with DEXes.
+	if trades, err := b.HistoricalData(context.TODO(), market, 12*time.Hour, 1); err == nil && len(trades) > 0 {
+		b.outbox <- trades[0]
+	}
+
+	// Subscribe to the pools
 	for _, pool := range pools {
 		if err := b.subscribePool(pool); err != nil {
 			return err
@@ -284,8 +291,8 @@ func (b *baseDEX[Event, Contract, EventIterator]) Unsubscribe(market Market) err
 	return nil
 }
 
-func (b *baseDEX[Event, Contract, EventIterator]) HistoricalData(ctx context.Context, market Market, window time.Duration) ([]TradeEvent, error) {
-	trades, err := fetchHistoryDataFromExternalSource(ctx, b.history, market, window, b.logger)
+func (b *baseDEX[Event, Contract, EventIterator]) HistoricalData(ctx context.Context, market Market, window time.Duration, limit uint64) ([]TradeEvent, error) {
+	trades, err := fetchHistoryDataFromExternalSource(ctx, b.history, market, window, limit, b.logger)
 	if err == nil && len(trades) > 0 {
 		return trades, nil
 	}
@@ -329,18 +336,23 @@ func (b *baseDEX[Event, Contract, EventIterator]) HistoricalData(ctx context.Con
 				b.logger.Debugw("failed to deref iter", "iter", iter, "market", m)
 				continue
 			}
+
 			trade, err := b.parse(swap, pools[i])
 			if err != nil {
-				return nil, fmt.Errorf("failed to parse historical swap: %s (`%s`)", err, swap)
+				return nil, fmt.Errorf("failed to parse historical swap: %s (`%+v`)", err, swap)
 			}
+
 			trades = append(trades, trade)
+			if uint64(len(trades)) >= limit {
+				break
+			}
 		}
 		if iter.Error() != nil {
 			return nil, fmt.Errorf("failed to fetch historical swaps: %w", iter.Error())
 		}
 	}
 
-	sortTradeEvents(trades)
+	sortTradeEventsInPlace(trades)
 
 	return trades, nil
 }
@@ -731,6 +743,7 @@ func fetchHistoryDataFromExternalSource(
 	source HistoricalData,
 	market Market,
 	window time.Duration,
+	limit uint64,
 	logger *log.ZapEventLogger,
 ) ([]TradeEvent, error) {
 	if source == nil {
@@ -738,7 +751,7 @@ func fetchHistoryDataFromExternalSource(
 	}
 	logger.Infow("fetching historical data from external source", "market", market, "window", window.String())
 
-	trades, err := source.HistoricalData(ctx, market, window)
+	trades, err := source.HistoricalData(ctx, market, window, limit)
 	if err != nil {
 		logger.Warnw("failed to fetch historical data from external source",
 			"market", market,
@@ -754,11 +767,12 @@ func fetchHistoryDataFromExternalSource(
 		return nil, nil
 	}
 
-	sortTradeEvents(trades)
+	sortTradeEventsInPlace(trades)
+
 	stale := time.Now().Add(-10 * time.Minute)
 	lastTrade := trades[len(trades)-1]
 	if stale.Before(lastTrade.CreatedAt) {
-		logger.Infow("successfuly fetched historical data from external source",
+		logger.Infow("successfully fetched historical data from external source",
 			"market", market,
 			"window", window.String(),
 			"trades_num", len(trades))

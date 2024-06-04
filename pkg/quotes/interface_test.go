@@ -22,11 +22,14 @@ func TestNewDriver(t *testing.T) {
 		driverType DriverType
 		expected   interface{}
 	}{
+		// Centralized exchanges
 		{DriverBinance.String(), DriverBinance, (*binance)(nil)},
 		{DriverKraken.String(), DriverKraken, (*kraken)(nil)},
 		{DriverMexc.String(), DriverMexc, (*mexc)(nil)},
 		{DriverOpendax.String(), DriverOpendax, (*opendax)(nil)},
 		{DriverBitfaker.String(), DriverBitfaker, (*bitfaker)(nil)},
+
+		// Decentralized exchanges
 		{DriverUniswapV3.String(), DriverUniswapV3, (*baseDEX[iuniswap_v3_pool.IUniswapV3PoolSwap, iuniswap_v3_pool.IUniswapV3Pool, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator])(nil)},
 		{DriverSyncswap.String(), DriverSyncswap, (*baseDEX[isyncswap_pool.ISyncSwapPoolSwap, isyncswap_pool.ISyncSwapPool, *isyncswap_pool.ISyncSwapPoolSwapIterator])(nil)},
 		{DriverQuickswap.String(), DriverQuickswap, (*baseDEX[quickswap_v3_pool.IQuickswapV3PoolSwap, quickswap_v3_pool.IQuickswapV3Pool, *quickswap_v3_pool.IQuickswapV3PoolSwapIterator])(nil)},

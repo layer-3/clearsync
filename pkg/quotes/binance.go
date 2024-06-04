@@ -281,8 +281,8 @@ func (b *binance) buildEvent(tr *gobinance.WsTradeEvent, market Market) (TradeEv
 	}, nil
 }
 
-func (b *binance) HistoricalData(ctx context.Context, market Market, window time.Duration) ([]TradeEvent, error) {
-	trades, err := fetchHistoryDataFromExternalSource(ctx, b.history, market, window, loggerBinance)
+func (b *binance) HistoricalData(ctx context.Context, market Market, window time.Duration, limit uint64) ([]TradeEvent, error) {
+	trades, err := fetchHistoryDataFromExternalSource(ctx, b.history, market, window, limit, loggerBinance)
 	if err == nil && len(trades) > 0 {
 		return trades, nil
 	}
@@ -292,8 +292,7 @@ func (b *binance) HistoricalData(ctx context.Context, market Market, window time
 
 	aggTradesService.StartTime(time.Now().Add(-window).Unix() * 1000)
 	aggTradesService.EndTime(time.Now().Unix() * 1000)
-	const limit = 500
-	aggTradesService.Limit(limit)
+	aggTradesService.Limit(int(limit))
 
 	base := strings.ToLower(market.Base())
 	quote := strings.ToLower(market.Quote())
@@ -341,10 +340,7 @@ func (b *binance) HistoricalData(ctx context.Context, market Market, window time
 		trades = append(trades, trade)
 	}
 
-	// No need to take additional step
-	// of sorting trades by timestamp
-	// since Binance does that for us.
-
+	sortTradeEventsInPlace(trades)
 	return trades, nil
 }
 

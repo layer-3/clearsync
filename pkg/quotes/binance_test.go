@@ -20,7 +20,9 @@ func TestBinance_HistoricalData(t *testing.T) {
 
 	market := NewMarket("btc", "usdt")
 	window := 15 * time.Minute
-	trades, err := binance.HistoricalData(context.Background(), market, window)
+	limit := uint64(500)
+
+	trades, err := binance.HistoricalData(context.Background(), market, window, limit)
 	require.NoError(t, err)
 	require.NotEmpty(t, trades)
 	fmt.Println(trades)

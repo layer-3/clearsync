@@ -142,7 +142,7 @@ func (o *opendax) Unsubscribe(market Market) error {
 	return nil
 }
 
-func (*opendax) HistoricalData(_ context.Context, _ Market, _ time.Duration) ([]TradeEvent, error) {
+func (*opendax) HistoricalData(_ context.Context, _ Market, _ time.Duration, _ uint64) ([]TradeEvent, error) {
 	return nil, errors.New("not implemented")
 }
 

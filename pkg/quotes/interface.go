@@ -41,7 +41,7 @@ type HistoricalData interface {
 	// HistoricalData returns historical trade data for the given market.
 	// The returned data is ordered from oldest to newest.
 	// The window parameter defines the time range to fetch data for starting from now.
-	HistoricalData(ctx context.Context, market Market, window time.Duration) ([]TradeEvent, error)
+	HistoricalData(ctx context.Context, market Market, window time.Duration, limit uint64) ([]TradeEvent, error)
 }
 
 // NewDriver creates a new instance of the driver.
@@ -85,7 +85,7 @@ func NewDriver(config Config, outbox chan<- TradeEvent, inbox <-chan TradeEvent,
 	case DriverKraken:
 		return newKraken(config.Kraken, outbox, history)
 	case DriverMexc:
-		return newMexc(config.Mexc, outbox), nil
+		return newMexc(config.Mexc, outbox, history), nil
 	case DriverOpendax:
 		return newOpendax(config.Opendax, outbox, history)
 	case DriverBitfaker:

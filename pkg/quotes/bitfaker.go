@@ -95,7 +95,7 @@ func (b *bitfaker) startStream(market Market, period time.Duration, stopCh chan 
 	priceVolatility := 2.0
 	amountVolatility := 1.0
 
-	cnf, ok := b.marketConfigs[market.String()] // Defauld values are not supported by nested configs.
+	cnf, ok := b.marketConfigs[market.String()] // Default values are not supported by nested configs.
 	if ok {
 		if cnf.StartPrice != 0 {
 			startPrice = cnf.StartPrice
@@ -176,7 +176,7 @@ func (b *bitfaker) Unsubscribe(market Market) error {
 	return nil
 }
 
-func (*bitfaker) HistoricalData(_ context.Context, _ Market, _ time.Duration) ([]TradeEvent, error) {
+func (*bitfaker) HistoricalData(_ context.Context, _ Market, _ time.Duration, _ uint64) ([]TradeEvent, error) {
 	return nil, errors.New("by design Bitfaker does not support querying historical data, use a different provider")
 }
 

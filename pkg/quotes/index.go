@@ -264,7 +264,7 @@ func (a *indexAggregator) Stop() error {
 	return g.Wait()
 }
 
-func (a *indexAggregator) HistoricalData(ctx context.Context, market Market, window time.Duration) ([]TradeEvent, error) {
+func (a *indexAggregator) HistoricalData(ctx context.Context, market Market, window time.Duration, limit uint64) ([]TradeEvent, error) {
 	base := market.Base()
 	quote := market.Quote()
 	if quote == "usd" {
@@ -272,12 +272,12 @@ func (a *indexAggregator) HistoricalData(ctx context.Context, market Market, win
 	}
 	m := NewMarket(base, quote)
 
-	trades, err := fetchHistoryDataFromExternalSource(ctx, a.history, m, window, loggerIndex)
+	trades, err := fetchHistoryDataFromExternalSource(ctx, a.history, m, window, limit, loggerIndex)
 	if err == nil && len(trades) > 0 {
 		return trades, nil
 	}
 
-	trades, err = a.fetchHistoricalDataByExchangeType(ctx, ExchangeTypeCEX, m, window)
+	trades, err = a.fetchHistoricalDataByExchangeType(ctx, ExchangeTypeCEX, m, window, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -288,7 +288,7 @@ func (a *indexAggregator) HistoricalData(ctx context.Context, market Market, win
 		loggerIndex.Infow("no historical data found on CEXes, querying DEXes",
 			"market", m,
 			"window", window)
-		trades, err = a.fetchHistoricalDataByExchangeType(ctx, ExchangeTypeDEX, m, window)
+		trades, err = a.fetchHistoricalDataByExchangeType(ctx, ExchangeTypeDEX, m, window, limit)
 		if err != nil {
 			return nil, err
 		}
@@ -299,7 +299,10 @@ func (a *indexAggregator) HistoricalData(ctx context.Context, market Market, win
 		"window", window,
 		"trades_num", len(trades))
 
-	sortTradeEvents(trades)
+	// Trades need to be sorted
+	// since they are fetched from different sources
+	// and may be not ordered by time.
+	sortTradeEventsInPlace(trades)
 
 	return trades, nil
 }
@@ -309,6 +312,7 @@ func (a *indexAggregator) fetchHistoricalDataByExchangeType(
 	typ ExchangeType,
 	market Market,
 	window time.Duration,
+	limit uint64,
 ) ([]TradeEvent, error) {
 	var trades []TradeEvent
 
@@ -317,7 +321,7 @@ func (a *indexAggregator) fetchHistoricalDataByExchangeType(
 			continue
 		}
 
-		data, err := driver.HistoricalData(ctx, market, window)
+		data, err := driver.HistoricalData(ctx, market, window, limit)
 		if err != nil {
 			continue
 		}
