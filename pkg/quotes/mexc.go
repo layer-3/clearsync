@@ -31,7 +31,7 @@ type mexc struct {
 	streams            safe.Map[Market, chan struct{}]
 	symbolToMarket     safe.Map[string, Market]
 	assets             safe.Map[Market, mexcSymbol]
-	requesID           int
+	requestID          int
 }
 
 type mexcSymbol struct {
@@ -120,7 +120,7 @@ func newMexc(config MexcConfig, outbox chan<- TradeEvent) Driver {
 		streams:            safe.NewMap[Market, chan struct{}](),
 		symbolToMarket:     safe.NewMap[string, Market](),
 		assets:             safe.NewMap[Market, mexcSymbol](),
-		requesID:           0,
+		requestID:          0,
 	}
 
 	driver.updateAssets()
@@ -219,11 +219,11 @@ func (b *mexc) watchTrades(symbol string, stopCh chan struct{}) {
 	defer conn.Close()
 
 	subMsg := map[string]interface{}{
-		"id":     b.requesID,
+		"id":     b.requestID,
 		"method": "SUBSCRIPTION",
 		"params": []string{"spot@public.deals.v3.api@" + strings.ToUpper(symbol)},
 	}
-	b.requesID++
+	b.requestID++
 	if err := conn.WriteJSON(subMsg); err != nil {
 		loggerMexc.Errorw("failed to subscribe", "error", err)
 		return
@@ -233,7 +233,7 @@ func (b *mexc) watchTrades(symbol string, stopCh chan struct{}) {
 		select {
 		case <-stopCh:
 			unsubMsg := map[string]interface{}{
-				"id":     b.requesID,
+				"id":     b.requestID,
 				"method": "UNSUBSCRIPTION",
 				"params": []string{"spot@public.deals.v3.api@" + strings.ToUpper(symbol)},
 			}
@@ -250,7 +250,7 @@ func (b *mexc) watchTrades(symbol string, stopCh chan struct{}) {
 					conn, _, err = websocket.DefaultDialer.Dial("wss://wbs.mexc.com/ws", nil)
 					if err == nil {
 						subMsg := map[string]interface{}{
-							"id":     b.requesID,
+							"id":     b.requestID,
 							"method": "SUBSCRIPTION",
 							"params": []string{"spot@public.deals.v3.api@" + strings.ToUpper(symbol)},
 						}
