@@ -3,11 +3,11 @@ package quotes
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -31,7 +31,7 @@ type mexc struct {
 	streams            safe.Map[Market, chan struct{}]
 	symbolToMarket     safe.Map[string, Market]
 	assets             safe.Map[Market, mexcSymbol]
-	requestID          int
+	requestID          atomic.Int64
 }
 
 type mexcSymbol struct {
@@ -120,7 +120,7 @@ func newMexc(config MexcConfig, outbox chan<- TradeEvent) Driver {
 		streams:            safe.NewMap[Market, chan struct{}](),
 		symbolToMarket:     safe.NewMap[string, Market](),
 		assets:             safe.NewMap[Market, mexcSymbol](),
-		requestID:          0,
+		requestID:          atomic.Int64{},
 	}
 
 	driver.updateAssets()
@@ -219,11 +219,11 @@ func (b *mexc) watchTrades(symbol string, stopCh chan struct{}) {
 	defer conn.Close()
 
 	subMsg := map[string]interface{}{
-		"id":     b.requestID,
+		"id":     b.requestID.Load(),
 		"method": "SUBSCRIPTION",
 		"params": []string{"spot@public.deals.v3.api@" + strings.ToUpper(symbol)},
 	}
-	b.requestID++
+	b.requestID.Add(1)
 	if err := conn.WriteJSON(subMsg); err != nil {
 		loggerMexc.Errorw("failed to subscribe", "error", err)
 		return
@@ -233,10 +233,11 @@ func (b *mexc) watchTrades(symbol string, stopCh chan struct{}) {
 		select {
 		case <-stopCh:
 			unsubMsg := map[string]interface{}{
-				"id":     b.requestID,
+				"id":     b.requestID.Load(),
 				"method": "UNSUBSCRIPTION",
 				"params": []string{"spot@public.deals.v3.api@" + strings.ToUpper(symbol)},
 			}
+			b.requestID.Add(1)
 			conn.WriteJSON(unsubMsg)
 			return
 		default:
@@ -250,10 +251,11 @@ func (b *mexc) watchTrades(symbol string, stopCh chan struct{}) {
 					conn, _, err = websocket.DefaultDialer.Dial("wss://wbs.mexc.com/ws", nil)
 					if err == nil {
 						subMsg := map[string]interface{}{
-							"id":     b.requestID,
+							"id":     b.requestID.Load(),
 							"method": "SUBSCRIPTION",
 							"params": []string{"spot@public.deals.v3.api@" + strings.ToUpper(symbol)},
 						}
+						b.requestID.Add(1)
 						if err := conn.WriteJSON(subMsg); err != nil {
 							loggerMexc.Errorw("failed to resubscribe", "error", err)
 						} else {
@@ -301,9 +303,89 @@ func (b *mexc) Unsubscribe(market Market) error {
 	return nil
 }
 
+type mexcAggregatedTrades struct {
+	AggregateTradeID any    `json:"a"`
+	FirstTradeID     any    `json:"f"`
+	LastTradeID      any    `json:"l"`
+	Price            string `json:"p"`
+	Quantity         string `json:"q"`
+	Timestamp        int64  `json:"T"`
+	IsBuyerMaker     bool   `json:"m"` // Was the buyer the maker?
+	IsBestPriceMatch bool   `json:"M"` // Was the trade the best price match?
+}
+
+type mexcAggregatedTradesError struct {
+	Msg  string `json:"msg"`
+	Code int    `json:"code"`
+}
+
 func (b *mexc) HistoricalData(ctx context.Context, market Market, window time.Duration) ([]TradeEvent, error) {
-	//TODO implement me
-	return nil, errors.New("not implemented")
+	// Build request
+	const baseURL = "https://api.mexc.com/api/v3/aggTrades"
+
+	symbol := strings.ToUpper(market.Base() + market.Quote())
+	if strings.ToLower(market.Quote()) == "usd" {
+		symbol = symbol + "T" // USD -> USDT
+	}
+	endTime := time.Now().UnixMilli()
+	startTime := time.Now().Add(-window).UnixMilli()
+	const limit = 500
+
+	url := fmt.Sprintf("%s?symbol=%s&startTime=%d&endTime=%d&limit=%d",
+		baseURL, symbol, startTime, endTime, limit)
+
+	// Fetch historical data
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch historical data: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Parse historical data
+	var aggTrades []mexcAggregatedTrades
+	if err := json.Unmarshal(body, &aggTrades); err != nil {
+		var aggTradesErr mexcAggregatedTradesError
+		if err := json.Unmarshal(body, &aggTradesErr); err == nil {
+			return nil, fmt.Errorf("failed to fetch historical data: %s (code %d)", aggTradesErr.Msg, aggTradesErr.Code)
+		}
+		return nil, fmt.Errorf("failed to unmarshal response body: %w", err)
+	}
+
+	// Convert aggregated trades to trade events
+	trades := make([]TradeEvent, 0, len(aggTrades))
+	for _, trade := range aggTrades {
+		price, err := decimal.NewFromString(trade.Price)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse price: %+v", trade.Price)
+		}
+
+		amount, err := decimal.NewFromString(trade.Quantity)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse quantity: %+v", trade.Quantity)
+		}
+
+		takerType := TakerTypeBuy
+		if trade.IsBuyerMaker {
+			takerType = TakerTypeSell
+		}
+
+		trades = append(trades, TradeEvent{
+			Source:    DriverMexc,
+			Market:    market,
+			Price:     price,
+			Amount:    amount,
+			Total:     price.Mul(amount),
+			TakerType: takerType,
+			CreatedAt: time.UnixMilli(trade.Timestamp),
+		})
+	}
+
+	return trades, nil
 }
 
 func (b *mexc) updateAssets() {
