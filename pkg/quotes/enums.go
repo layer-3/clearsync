@@ -28,7 +28,7 @@ var (
 	DriverQuickswap = DriverType{"quickswap"}
 	DriverSectaV2   = DriverType{"secta_v2"}
 	DriverSectaV3   = DriverType{"secta_v3"}
-	DriverLynex     = DriverType{"lynex"}
+	DriverLynexV2   = DriverType{"lynex_v2"}
 	DriverInternal  = DriverType{"internal"} // Internal trades
 )
 
@@ -44,7 +44,7 @@ func ToDriverType(raw string) (DriverType, error) {
 		DriverQuickswap.String(): DriverQuickswap,
 		DriverSectaV2.String():   DriverSectaV2,
 		DriverSectaV3.String():   DriverSectaV3,
-		DriverLynex.String():     DriverLynex,
+		DriverLynexV2.String():   DriverLynexV2,
 		DriverInternal.String():  DriverInternal,
 	}
 

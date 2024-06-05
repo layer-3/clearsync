@@ -21,7 +21,7 @@ type Config struct {
 	Quickswap QuickswapConfig `yaml:"quickswap" env-prefix:"QUOTES_QUICKSWAP_"`
 	SectaV2   SectaV2Config   `yaml:"secta_v2" env-prefix:"QUOTES_SECTA_V2_"`
 	SectaV3   SectaV3Config   `yaml:"secta_v3" env-prefix:"QUOTES_SECTA_V3_"`
-	Lynex     LynexConfig     `yaml:"lynex" env-prefix:"QUOTES_LYNEX_"`
+	LynexV2   LynexV2Config   `yaml:"lynex_v2" env-prefix:"QUOTES_LYNEX_V2_"`
 }
 
 func (config Config) GetByDriverType(driver DriverType) (Config, error) {
@@ -57,18 +57,18 @@ func (config Config) GetByDriverType(driver DriverType) (Config, error) {
 		return Config{Drivers: []DriverType{DriverSectaV2}, SectaV2: config.SectaV2}, nil
 	case DriverSectaV3:
 		return Config{Drivers: []DriverType{DriverSectaV3}, SectaV3: config.SectaV3}, nil
+	case DriverLynexV2:
+		return Config{Drivers: []DriverType{DriverLynexV2}, LynexV2: config.LynexV2}, nil
 	default:
 		return Config{}, fmt.Errorf("driver is not supported: %s", driver)
 	}
 }
 
-func NewConfigFromFile(path string) (Config, error) {
-	var config Config
+func NewConfigFromFile(path string) (config Config, err error) {
 	return config, cleanenv.ReadConfig(path, &config)
 }
 
-func NewConfigFromEnv() (Config, error) {
-	var config Config
+func NewConfigFromEnv() (config Config, err error) {
 	return config, cleanenv.ReadEnv(&config)
 }
 
@@ -175,7 +175,7 @@ type SectaV3Config struct {
 	Filter         FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
 }
 
-type LynexConfig struct {
+type LynexV2Config struct {
 	URL               string        `yaml:"url" env:"URL"`
 	AssetsURL         string        `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/assets.json"`
 	MappingURL        string        `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/mapping.json"`

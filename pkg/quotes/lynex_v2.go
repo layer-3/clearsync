@@ -13,9 +13,9 @@ import (
 	"github.com/layer-3/clearsync/pkg/safe"
 )
 
-var loggerLynex = log.Logger("lynex")
+var loggerLynexV2 = log.Logger("lynex_v2")
 
-type lynex struct {
+type lynexV2 struct {
 	stablePoolMarkets map[Market]struct{}
 	factoryAddress    common.Address
 	factory           *ilynex_factory.ILynexFactory
@@ -24,19 +24,19 @@ type lynex struct {
 	client *ethclient.Client
 }
 
-func newLynex(config LynexConfig, outbox chan<- TradeEvent) Driver {
+func newLynexV2(config LynexV2Config, outbox chan<- TradeEvent) Driver {
 	stablePoolMarkets := make(map[Market]struct{})
 	for _, rawMarket := range config.StablePoolMarkets {
 		market, ok := NewMarketFromString(rawMarket)
 		if !ok {
-			loggerLynex.Errorw("failed to parse stable pool from market", "market", rawMarket)
+			loggerLynexV2.Errorw("failed to parse stable pool from market", "market", rawMarket)
 			continue
 		}
 		stablePoolMarkets[market] = struct{}{}
 	}
-	loggerLynex.Debugw("configured stable pool markets", "markets", stablePoolMarkets)
+	loggerLynexV2.Debugw("configured stable pool markets", "markets", stablePoolMarkets)
 
-	hooks := &lynex{
+	hooks := &lynexV2{
 		stablePoolMarkets: stablePoolMarkets,
 		factoryAddress:    common.HexToAddress(config.FactoryAddress),
 	}
@@ -46,7 +46,7 @@ func newLynex(config LynexConfig, outbox chan<- TradeEvent) Driver {
 		ilynex_pair.ILynexPair,
 	]{
 		// Params
-		DriverType: DriverLynex,
+		DriverType: DriverLynexV2,
 		URL:        config.URL,
 		AssetsURL:  config.AssetsURL,
 		MappingURL: config.MappingURL,
@@ -57,13 +57,13 @@ func newLynex(config LynexConfig, outbox chan<- TradeEvent) Driver {
 		EventParser:   hooks.parseSwap,
 		// State
 		Outbox: outbox,
-		Logger: loggerLynex,
+		Logger: loggerLynexV2,
 		Filter: config.Filter,
 	}
 	return newBaseDEX(params)
 }
 
-func (l *lynex) postStart(driver *baseDEX[
+func (l *lynexV2) postStart(driver *baseDEX[
 	ilynex_pair.ILynexPairSwap,
 	ilynex_pair.ILynexPair,
 ]) (err error) {
@@ -79,8 +79,8 @@ func (l *lynex) postStart(driver *baseDEX[
 	return nil
 }
 
-func (l *lynex) getPool(market Market) ([]*dexPool[ilynex_pair.ILynexPairSwap], error) {
-	baseToken, quoteToken, err := getTokens(l.assets, market, loggerLynex)
+func (l *lynexV2) getPool(market Market) ([]*dexPool[ilynex_pair.ILynexPairSwap], error) {
+	baseToken, quoteToken, err := getTokens(l.assets, market, loggerLynexV2)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tokens: %w", err)
 	}
@@ -88,24 +88,23 @@ func (l *lynex) getPool(market Market) ([]*dexPool[ilynex_pair.ILynexPairSwap], 
 	var poolAddress common.Address
 	_, isStablePool := l.stablePoolMarkets[market]
 
-	loggerLynex.Infow("searching for classic pool", "market", market)
-	err = debounce.Debounce(loggerLynex, func() error {
+	loggerLynexV2.Infow("searching for pool", "market", market)
+	err = debounce.Debounce(loggerLynexV2, func() error {
 		poolAddress, err = l.factory.GetPair(nil, baseToken.Address, quoteToken.Address, isStablePool)
 		return err
 	})
-	loggerLynex.Infow("found pool",
-		"market", market,
-		"address", poolAddress,
-		"is_stable", isStablePool)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pool address: %w", err)
 	}
 
 	zeroAddress := common.HexToAddress("0x0")
 	if poolAddress == zeroAddress {
-		return nil, fmt.Errorf("classic pool for market %s does not exist", market)
+		return nil, fmt.Errorf("pool for market %s does not exist", market)
 	}
-	loggerLynex.Infow("pool found", "market", market, "address", poolAddress)
+	loggerLynexV2.Infow("found pool",
+		"market", market,
+		"address", poolAddress,
+		"is_stable", isStablePool)
 
 	poolContract, err := ilynex_pair.NewILynexPair(poolAddress, l.client)
 	if err != nil {
@@ -113,7 +112,7 @@ func (l *lynex) getPool(market Market) ([]*dexPool[ilynex_pair.ILynexPairSwap], 
 	}
 
 	var basePoolToken common.Address
-	err = debounce.Debounce(loggerLynex, func() error {
+	err = debounce.Debounce(loggerLynexV2, func() error {
 		basePoolToken, err = poolContract.Token0(nil)
 		return err
 	})
@@ -122,7 +121,7 @@ func (l *lynex) getPool(market Market) ([]*dexPool[ilynex_pair.ILynexPairSwap], 
 	}
 
 	var quotePoolToken common.Address
-	err = debounce.Debounce(loggerLynex, func() error {
+	err = debounce.Debounce(loggerLynexV2, func() error {
 		quotePoolToken, err = poolContract.Token1(nil)
 		return err
 	})
@@ -147,19 +146,19 @@ func (l *lynex) getPool(market Market) ([]*dexPool[ilynex_pair.ILynexPairSwap], 
 	return nil, fmt.Errorf("failed to build Lynex pool for market %s: %w", market, err)
 }
 
-func (l *lynex) parseSwap(
+func (l *lynexV2) parseSwap(
 	swap *ilynex_pair.ILynexPairSwap,
 	pool *dexPool[ilynex_pair.ILynexPairSwap],
 ) (trade TradeEvent, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			loggerLynex.Errorw(ErrSwapParsing.Error(), "swap", swap, "pool", pool)
+			loggerLynexV2.Errorw(ErrSwapParsing.Error(), "swap", swap, "pool", pool)
 			err = fmt.Errorf("%s: %s", ErrSwapParsing, r)
 		}
 	}()
 
 	return buildV2Trade(
-		DriverLynex,
+		DriverLynexV2,
 		swap.Amount0In,
 		swap.Amount0Out,
 		swap.Amount1In,

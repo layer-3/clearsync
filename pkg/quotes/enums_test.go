@@ -69,7 +69,7 @@ func TestDriverType(t *testing.T) {
 			expectYAML: "secta_v3\n",
 			expectErr:  false,
 		}, {
-			input:      DriverLynex,
+			input:      DriverLynexV2,
 			expectJSON: `"lynex"`,
 			expectYAML: "lynex\n",
 			expectErr:  false,
