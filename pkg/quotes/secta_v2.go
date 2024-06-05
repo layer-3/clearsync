@@ -23,7 +23,7 @@ type sectaV2 struct {
 	client *ethclient.Client
 }
 
-func newSectaV2(config SectaV2Config, outbox chan<- TradeEvent) Driver {
+func newSectaV2(config SectaV2Config, outbox chan<- TradeEvent, history HistoricalData) (Driver, error) {
 	hooks := &sectaV2{
 		factoryAddress: common.HexToAddress(config.FactoryAddress),
 	}
@@ -31,6 +31,7 @@ func newSectaV2(config SectaV2Config, outbox chan<- TradeEvent) Driver {
 	params := baseDexConfig[
 		isecta_v2_pair.ISectaV2PairSwap,
 		isecta_v2_pair.ISectaV2Pair,
+		*isecta_v2_pair.ISectaV2PairSwapIterator,
 	]{
 		// Params
 		DriverType: DriverSectaV2,
@@ -42,15 +43,21 @@ func newSectaV2(config SectaV2Config, outbox chan<- TradeEvent) Driver {
 		PostStartHook: hooks.postStart,
 		PoolGetter:    hooks.getPool,
 		EventParser:   hooks.parseSwap,
+		IterDeref:     hooks.derefIter,
 		// State
-		Outbox: outbox,
-		Logger: loggerSectaV2,
-		Filter: config.Filter,
+		Outbox:  outbox,
+		Logger:  loggerSectaV2,
+		Filter:  config.Filter,
+		History: history,
 	}
 	return newBaseDEX(params)
 }
 
-func (s *sectaV2) postStart(driver *baseDEX[isecta_v2_pair.ISectaV2PairSwap, isecta_v2_pair.ISectaV2Pair]) (err error) {
+func (s *sectaV2) postStart(driver *baseDEX[
+	isecta_v2_pair.ISectaV2PairSwap,
+	isecta_v2_pair.ISectaV2Pair,
+	*isecta_v2_pair.ISectaV2PairSwapIterator,
+]) (err error) {
 	s.client = driver.Client()
 	s.assets = driver.Assets()
 
@@ -61,7 +68,7 @@ func (s *sectaV2) postStart(driver *baseDEX[isecta_v2_pair.ISectaV2PairSwap, ise
 	return nil
 }
 
-func (s *sectaV2) getPool(market Market) ([]*dexPool[isecta_v2_pair.ISectaV2PairSwap], error) {
+func (s *sectaV2) getPool(market Market) ([]*dexPool[isecta_v2_pair.ISectaV2PairSwap, *isecta_v2_pair.ISectaV2PairSwapIterator], error) {
 	baseToken, quoteToken, err := getTokens(s.assets, market, loggerSectaV2)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tokens: %w", err)
@@ -107,7 +114,7 @@ func (s *sectaV2) getPool(market Market) ([]*dexPool[isecta_v2_pair.ISectaV2Pair
 
 	isDirect := baseToken.Address == basePoolToken && quoteToken.Address == quotePoolToken
 	isReversed := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
-	pools := []*dexPool[isecta_v2_pair.ISectaV2PairSwap]{{
+	pools := []*dexPool[isecta_v2_pair.ISectaV2PairSwap, *isecta_v2_pair.ISectaV2PairSwapIterator]{{
 		Contract:   poolContract,
 		Address:    poolAddress,
 		BaseToken:  baseToken,
@@ -125,7 +132,7 @@ func (s *sectaV2) getPool(market Market) ([]*dexPool[isecta_v2_pair.ISectaV2Pair
 
 func (s *sectaV2) parseSwap(
 	swap *isecta_v2_pair.ISectaV2PairSwap,
-	pool *dexPool[isecta_v2_pair.ISectaV2PairSwap],
+	pool *dexPool[isecta_v2_pair.ISectaV2PairSwap, *isecta_v2_pair.ISectaV2PairSwapIterator],
 ) (trade TradeEvent, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -141,5 +148,13 @@ func (s *sectaV2) parseSwap(
 		swap.Amount1In,
 		swap.Amount1Out,
 		pool,
+		swap,
+		loggerSectaV2,
 	)
+}
+
+func (s *sectaV2) derefIter(
+	iter *isecta_v2_pair.ISectaV2PairSwapIterator,
+) *isecta_v2_pair.ISectaV2PairSwap {
+	return iter.Event
 }

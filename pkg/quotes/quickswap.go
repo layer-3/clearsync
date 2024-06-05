@@ -23,7 +23,7 @@ type quickswap struct {
 	client *ethclient.Client
 }
 
-func newQuickswap(config QuickswapConfig, outbox chan<- TradeEvent) Driver {
+func newQuickswap(config QuickswapConfig, outbox chan<- TradeEvent, history HistoricalData) (Driver, error) {
 	hooks := &quickswap{
 		poolFactoryAddress: common.HexToAddress(config.PoolFactoryAddress),
 	}
@@ -31,6 +31,7 @@ func newQuickswap(config QuickswapConfig, outbox chan<- TradeEvent) Driver {
 	params := baseDexConfig[
 		quickswap_v3_pool.IQuickswapV3PoolSwap,
 		quickswap_v3_pool.IQuickswapV3Pool,
+		*quickswap_v3_pool.IQuickswapV3PoolSwapIterator,
 	]{
 		// Params
 		DriverType: DriverQuickswap,
@@ -42,15 +43,21 @@ func newQuickswap(config QuickswapConfig, outbox chan<- TradeEvent) Driver {
 		PostStartHook: hooks.postStart,
 		PoolGetter:    hooks.getPool,
 		EventParser:   hooks.parseSwap,
+		IterDeref:     hooks.derefIter,
 		// State
-		Outbox: outbox,
-		Logger: loggerQuickswap,
-		Filter: config.Filter,
+		Outbox:  outbox,
+		Logger:  loggerQuickswap,
+		Filter:  config.Filter,
+		History: history,
 	}
 	return newBaseDEX(params)
 }
 
-func (s *quickswap) postStart(driver *baseDEX[quickswap_v3_pool.IQuickswapV3PoolSwap, quickswap_v3_pool.IQuickswapV3Pool]) (err error) {
+func (s *quickswap) postStart(driver *baseDEX[
+	quickswap_v3_pool.IQuickswapV3PoolSwap,
+	quickswap_v3_pool.IQuickswapV3Pool,
+	*quickswap_v3_pool.IQuickswapV3PoolSwapIterator,
+]) (err error) {
 	s.client = driver.Client()
 	s.assets = driver.Assets()
 
@@ -62,7 +69,7 @@ func (s *quickswap) postStart(driver *baseDEX[quickswap_v3_pool.IQuickswapV3Pool
 	return nil
 }
 
-func (s *quickswap) getPool(market Market) ([]*dexPool[quickswap_v3_pool.IQuickswapV3PoolSwap], error) {
+func (s *quickswap) getPool(market Market) ([]*dexPool[quickswap_v3_pool.IQuickswapV3PoolSwap, *quickswap_v3_pool.IQuickswapV3PoolSwapIterator], error) {
 	baseToken, quoteToken, err := getTokens(s.assets, market, loggerQuickswap)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tokens: %w", err)
@@ -109,7 +116,7 @@ func (s *quickswap) getPool(market Market) ([]*dexPool[quickswap_v3_pool.IQuicks
 	isDirect := baseToken.Address == basePoolToken && quoteToken.Address == quotePoolToken
 	isReversed := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
 
-	pools := []*dexPool[quickswap_v3_pool.IQuickswapV3PoolSwap]{{
+	pools := []*dexPool[quickswap_v3_pool.IQuickswapV3PoolSwap, *quickswap_v3_pool.IQuickswapV3PoolSwapIterator]{{
 		Contract:   poolContract,
 		Address:    poolAddress,
 		BaseToken:  baseToken,
@@ -127,9 +134,9 @@ func (s *quickswap) getPool(market Market) ([]*dexPool[quickswap_v3_pool.IQuicks
 
 func (s *quickswap) parseSwap(
 	swap *quickswap_v3_pool.IQuickswapV3PoolSwap,
-	pool *dexPool[quickswap_v3_pool.IQuickswapV3PoolSwap],
+	pool *dexPool[quickswap_v3_pool.IQuickswapV3PoolSwap, *quickswap_v3_pool.IQuickswapV3PoolSwapIterator],
 ) (trade TradeEvent, err error) {
-	opts := v3TradeOpts[quickswap_v3_pool.IQuickswapV3PoolSwap]{
+	opts := v3TradeOpts[quickswap_v3_pool.IQuickswapV3PoolSwap, *quickswap_v3_pool.IQuickswapV3PoolSwapIterator]{
 		Driver:          DriverQuickswap,
 		RawAmount0:      swap.Amount0,
 		RawAmount1:      swap.Amount1,
@@ -139,4 +146,10 @@ func (s *quickswap) parseSwap(
 		Logger:          loggerQuickswap,
 	}
 	return buildV3Trade(opts)
+}
+
+func (s *quickswap) derefIter(
+	iter *quickswap_v3_pool.IQuickswapV3PoolSwapIterator,
+) *quickswap_v3_pool.IQuickswapV3PoolSwap {
+	return iter.Event
 }

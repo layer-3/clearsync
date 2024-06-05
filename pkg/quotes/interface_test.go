@@ -22,16 +22,19 @@ func TestNewDriver(t *testing.T) {
 		driverType DriverType
 		expected   interface{}
 	}{
+		// Centralized exchanges
 		{DriverBinance.String(), DriverBinance, (*binance)(nil)},
 		{DriverKraken.String(), DriverKraken, (*kraken)(nil)},
 		{DriverMexc.String(), DriverMexc, (*mexc)(nil)},
 		{DriverOpendax.String(), DriverOpendax, (*opendax)(nil)},
 		{DriverBitfaker.String(), DriverBitfaker, (*bitfaker)(nil)},
-		{DriverUniswapV3.String(), DriverUniswapV3, (*baseDEX[iuniswap_v3_pool.IUniswapV3PoolSwap, iuniswap_v3_pool.IUniswapV3Pool])(nil)},
-		{DriverSyncswap.String(), DriverSyncswap, (*baseDEX[isyncswap_pool.ISyncSwapPoolSwap, isyncswap_pool.ISyncSwapPool])(nil)},
-		{DriverQuickswap.String(), DriverQuickswap, (*baseDEX[quickswap_v3_pool.IQuickswapV3PoolSwap, quickswap_v3_pool.IQuickswapV3Pool])(nil)},
-		{DriverSectaV2.String(), DriverSectaV2, (*baseDEX[isecta_v2_pair.ISectaV2PairSwap, isecta_v2_pair.ISectaV2Pair])(nil)},
-		{DriverSectaV3.String(), DriverSectaV3, (*baseDEX[isecta_v3_pool.ISectaV3PoolSwap, isecta_v3_pool.ISectaV3Pool])(nil)},
+
+		// Decentralized exchanges
+		{DriverUniswapV3.String(), DriverUniswapV3, (*baseDEX[iuniswap_v3_pool.IUniswapV3PoolSwap, iuniswap_v3_pool.IUniswapV3Pool, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator])(nil)},
+		{DriverSyncswap.String(), DriverSyncswap, (*baseDEX[isyncswap_pool.ISyncSwapPoolSwap, isyncswap_pool.ISyncSwapPool, *isyncswap_pool.ISyncSwapPoolSwapIterator])(nil)},
+		{DriverQuickswap.String(), DriverQuickswap, (*baseDEX[quickswap_v3_pool.IQuickswapV3PoolSwap, quickswap_v3_pool.IQuickswapV3Pool, *quickswap_v3_pool.IQuickswapV3PoolSwapIterator])(nil)},
+		{DriverSectaV2.String(), DriverSectaV2, (*baseDEX[isecta_v2_pair.ISectaV2PairSwap, isecta_v2_pair.ISectaV2Pair, *isecta_v2_pair.ISectaV2PairSwapIterator])(nil)},
+		{DriverSectaV3.String(), DriverSectaV3, (*baseDEX[isecta_v3_pool.ISectaV3PoolSwap, isecta_v3_pool.ISectaV3Pool, *isecta_v3_pool.ISectaV3PoolSwapIterator])(nil)},
 	}
 
 	for _, tc := range testCases {
@@ -45,7 +48,7 @@ func TestNewDriver(t *testing.T) {
 
 			outbox := make(chan<- TradeEvent, 1)
 
-			priceFeeds, err := NewDriver(config, outbox)
+			priceFeeds, err := NewDriver(config, outbox, nil, nil)
 			require.NoError(t, err)
 
 			actualType := reflect.TypeOf(priceFeeds)

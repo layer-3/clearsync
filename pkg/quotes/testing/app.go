@@ -52,7 +52,7 @@ func main() {
 	outboxStop := make(chan struct{}, 1)
 	go func() {
 		// You may add a lot of markets to subscribe
-		// and considering imposed rate limits
+		// and considering imposed rate limits of your RPC provider
 		// it may take a while to get the first trade
 		// if you run outbox processing AFTER subscriptions.
 		// That's why we start processing in an async manner beforehand.
@@ -67,7 +67,7 @@ func main() {
 		outboxStop <- struct{}{}
 	}()
 
-	driver, err := quotes.NewDriver(config, outbox)
+	driver, err := quotes.NewDriver(config, outbox, nil, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -90,19 +90,19 @@ func main() {
 		quotes.NewMarket("linda", "usdc"),
 	}
 
-	// atLeastOne := false
+	atLeastOne := false
 	for _, market := range markets {
 		if err = driver.Subscribe(market); err != nil {
 			slog.Warn("failed to subscribe", "market", market, "err", err)
 			continue
 		}
-		// atLeastOne = true
+		atLeastOne = true
 		slog.Info("subscribed", "market", market.String())
 	}
 
-	// if !atLeastOne {
-	// 	panic("failed to subscribe to at least one market")
-	// }
+	if !atLeastOne {
+		panic("failed to subscribe to at least one market")
+	}
 
 	slog.Info("waiting for trades")
 	<-outboxStop

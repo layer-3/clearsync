@@ -27,7 +27,7 @@ func Test_quickswap_parseSwap(t *testing.T) {
 
 	type args struct {
 		swap *quickswap_v3_pool.IQuickswapV3PoolSwap
-		pool *dexPool[quickswap_v3_pool.IQuickswapV3PoolSwap]
+		pool *dexPool[quickswap_v3_pool.IQuickswapV3PoolSwap, *quickswap_v3_pool.IQuickswapV3PoolSwapIterator]
 	}
 
 	tests := []struct {
@@ -64,7 +64,7 @@ func Test_quickswap_parseSwap(t *testing.T) {
 						Removed:     false,
 					},
 				},
-				pool: &dexPool[quickswap_v3_pool.IQuickswapV3PoolSwap]{
+				pool: &dexPool[quickswap_v3_pool.IQuickswapV3PoolSwap, *quickswap_v3_pool.IQuickswapV3PoolSwapIterator]{
 					BaseToken: poolToken{
 						Address:  common.HexToAddress("0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270"),
 						Symbol:   "wmatic",
@@ -118,7 +118,7 @@ func Test_quickswap_parseSwap(t *testing.T) {
 						Removed:     false,
 					},
 				},
-				pool: &dexPool[quickswap_v3_pool.IQuickswapV3PoolSwap]{
+				pool: &dexPool[quickswap_v3_pool.IQuickswapV3PoolSwap, *quickswap_v3_pool.IQuickswapV3PoolSwapIterator]{
 					Address: common.HexToAddress("0x9ceff2f5138fc59eb925d270b8a7a9c02a1810f2"),
 					BaseToken: poolToken{
 						Address:  common.HexToAddress("0x7ceb23fd6bc0add59e62ac25578270cff1b9f619"),

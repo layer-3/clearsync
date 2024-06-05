@@ -2,20 +2,15 @@ package quotes
 
 import (
 	"fmt"
-	"math/big"
-	"time"
-
-	"github.com/ethereum/go-ethereum/ethclient"
-
-	"github.com/layer-3/clearsync/pkg/debounce"
-	"github.com/layer-3/clearsync/pkg/safe"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ipfs/go-log/v2"
-	"github.com/shopspring/decimal"
 
 	"github.com/layer-3/clearsync/pkg/abi/isyncswap_factory"
 	"github.com/layer-3/clearsync/pkg/abi/isyncswap_pool"
+	"github.com/layer-3/clearsync/pkg/debounce"
+	"github.com/layer-3/clearsync/pkg/safe"
 )
 
 var loggerSyncswap = log.Logger("syncswap")
@@ -31,8 +26,9 @@ type syncswap struct {
 	client *ethclient.Client
 }
 
-func newSyncswap(config SyncswapConfig, outbox chan<- TradeEvent) Driver {
+func newSyncswap(config SyncswapConfig, outbox chan<- TradeEvent, history HistoricalData) (Driver, error) {
 	stablePoolMarkets := make(map[Market]struct{})
+	logStablePoolMarkets := make([]Market, 0, len(config.StablePoolMarkets))
 	for _, rawMarket := range config.StablePoolMarkets {
 		market, ok := NewMarketFromString(rawMarket)
 		if !ok {
@@ -40,8 +36,9 @@ func newSyncswap(config SyncswapConfig, outbox chan<- TradeEvent) Driver {
 			continue
 		}
 		stablePoolMarkets[market] = struct{}{}
+		logStablePoolMarkets = append(logStablePoolMarkets, market)
 	}
-	loggerSyncswap.Debugw("configured stable pool markets", "markets", stablePoolMarkets)
+	loggerSyncswap.Debugw("configured stable pool markets", "markets", logStablePoolMarkets)
 
 	hooks := &syncswap{
 		stablePoolMarkets:         stablePoolMarkets,
@@ -52,6 +49,7 @@ func newSyncswap(config SyncswapConfig, outbox chan<- TradeEvent) Driver {
 	params := baseDexConfig[
 		isyncswap_pool.ISyncSwapPoolSwap,
 		isyncswap_pool.ISyncSwapPool,
+		*isyncswap_pool.ISyncSwapPoolSwapIterator,
 	]{
 		// Params
 		DriverType: DriverSyncswap,
@@ -63,15 +61,21 @@ func newSyncswap(config SyncswapConfig, outbox chan<- TradeEvent) Driver {
 		PostStartHook: hooks.postStart,
 		PoolGetter:    hooks.getPool,
 		EventParser:   hooks.parseSwap,
+		IterDeref:     hooks.derefIter,
 		// State
-		Outbox: outbox,
-		Logger: loggerSyncswap,
-		Filter: config.Filter,
+		Outbox:  outbox,
+		Logger:  loggerSyncswap,
+		Filter:  config.Filter,
+		History: history,
 	}
 	return newBaseDEX(params)
 }
 
-func (s *syncswap) postStart(driver *baseDEX[isyncswap_pool.ISyncSwapPoolSwap, isyncswap_pool.ISyncSwapPool]) (err error) {
+func (s *syncswap) postStart(driver *baseDEX[
+	isyncswap_pool.ISyncSwapPoolSwap,
+	isyncswap_pool.ISyncSwapPool,
+	*isyncswap_pool.ISyncSwapPoolSwapIterator,
+]) (err error) {
 	s.client = driver.Client()
 	s.assets = driver.Assets()
 
@@ -88,7 +92,7 @@ func (s *syncswap) postStart(driver *baseDEX[isyncswap_pool.ISyncSwapPoolSwap, i
 	return nil
 }
 
-func (s *syncswap) getPool(market Market) ([]*dexPool[isyncswap_pool.ISyncSwapPoolSwap], error) {
+func (s *syncswap) getPool(market Market) ([]*dexPool[isyncswap_pool.ISyncSwapPoolSwap, *isyncswap_pool.ISyncSwapPoolSwapIterator], error) {
 	baseToken, quoteToken, err := getTokens(s.assets, market, loggerSyncswap)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tokens: %w", err)
@@ -144,7 +148,7 @@ func (s *syncswap) getPool(market Market) ([]*dexPool[isyncswap_pool.ISyncSwapPo
 	}
 
 	isReversed := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
-	pools := []*dexPool[isyncswap_pool.ISyncSwapPoolSwap]{{
+	pools := []*dexPool[isyncswap_pool.ISyncSwapPoolSwap, *isyncswap_pool.ISyncSwapPoolSwapIterator]{{
 		Contract:   poolContract,
 		Address:    poolAddress,
 		BaseToken:  baseToken,
@@ -162,7 +166,7 @@ func (s *syncswap) getPool(market Market) ([]*dexPool[isyncswap_pool.ISyncSwapPo
 
 func (s *syncswap) parseSwap(
 	swap *isyncswap_pool.ISyncSwapPoolSwap,
-	pool *dexPool[isyncswap_pool.ISyncSwapPoolSwap],
+	pool *dexPool[isyncswap_pool.ISyncSwapPoolSwap, *isyncswap_pool.ISyncSwapPoolSwapIterator],
 ) (trade TradeEvent, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -178,64 +182,13 @@ func (s *syncswap) parseSwap(
 		swap.Amount1In,
 		swap.Amount1Out,
 		pool,
+		swap,
+		loggerSyncswap,
 	)
 }
 
-func buildV2Trade[Event any](
-	driver DriverType,
-	rawAmount0In, rawAmount0Out, rawAmount1In, rawAmount1Out *big.Int,
-	pool *dexPool[Event],
-) (TradeEvent, error) {
-	if pool.Reversed {
-		copyAmount0In, copyAmount0Out := rawAmount0In, rawAmount0Out
-		rawAmount0In, rawAmount0Out = rawAmount1In, rawAmount1Out
-		rawAmount1In, rawAmount1Out = copyAmount0In, copyAmount0Out
-	}
-
-	var takerType TakerType
-	var price decimal.Decimal
-	var amount decimal.Decimal
-	var total decimal.Decimal
-
-	baseDecimals := pool.BaseToken.Decimals
-	quoteDecimals := pool.QuoteToken.Decimals
-
-	switch {
-	case isValidNonZero(rawAmount0In) && isValidNonZero(rawAmount1Out):
-		amount1Out := decimal.NewFromBigInt(rawAmount1Out, 0).Div(decimal.NewFromInt(10).Pow(quoteDecimals))
-		amount0In := decimal.NewFromBigInt(rawAmount0In, 0).Div(decimal.NewFromInt(10).Pow(baseDecimals))
-
-		takerType = TakerTypeSell
-		price = amount1Out.Div(amount0In) // NOTE: may panic here if `amount0In` is zero
-		total = amount1Out
-		amount = amount0In
-
-	case isValidNonZero(rawAmount0Out) && isValidNonZero(rawAmount1In):
-		amount0Out := decimal.NewFromBigInt(rawAmount0Out, 0).Div(decimal.NewFromInt(10).Pow(baseDecimals))
-		amount1In := decimal.NewFromBigInt(rawAmount1In, 0).Div(decimal.NewFromInt(10).Pow(quoteDecimals))
-
-		takerType = TakerTypeBuy
-		price = amount1In.Div(amount0Out) // NOTE: may panic here if `amount0Out` is zero
-		total = amount1In
-		amount = amount0Out
-	default:
-		return TradeEvent{}, fmt.Errorf("market %s: unknown swap type", pool.Market)
-	}
-
-	trade := TradeEvent{
-		Source:    driver,
-		Market:    pool.Market,
-		Price:     price,
-		Amount:    amount.Abs(),
-		Total:     total,
-		TakerType: takerType,
-		CreatedAt: time.Now(),
-	}
-	return trade, nil
-}
-
-func isValidNonZero(x *big.Int) bool {
-	// Note that negative values are allowed
-	// as they represent a reduction in the balance of the pool.
-	return x != nil && x.Sign() != 0
+func (s *syncswap) derefIter(
+	iter *isyncswap_pool.ISyncSwapPoolSwapIterator,
+) *isyncswap_pool.ISyncSwapPoolSwap {
+	return iter.Event
 }
