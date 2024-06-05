@@ -1,4 +1,8 @@
 [
-  "spot://MATIC/USD",
-  "spot://OSIS/USD"
+  {
+    "symbol": "spot://MATIC/USD"
+  },
+  {
+    "symbol": "spot://OSIS/USD"
+  }
 ]

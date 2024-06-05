@@ -1,12 +1,20 @@
 [
-  "spot://ETH/USD",
-  "spot://DUCKIES/USD",
-  "spot://LUBE/USD",
-  "spot://WBTC/USD",
-  "spot://LINDA/USD",
-  "spot://SHIB/USD",
-  "spot://BNB/USD",
-  "spot://PEPE/USD",
-  "spot://BADGER/USD",
-  "spot://FLOKI/USD"
+  {
+    "symbol": "spot://ETH/USD"
+  },
+  {
+    "symbol": "spot://DUCKIES/USD"
+  },
+  {
+    "symbol": "spot://WBTC/USD"
+  },
+  {
+    "symbol": "spot://USDT/USD"
+  },
+  {
+    "symbol": "spot://SOL/USD"
+  },
+  {
+    "symbol": "spot://LUBE/USD"
+  }
 ]

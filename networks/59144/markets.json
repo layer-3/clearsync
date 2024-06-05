@@ -1,10 +1,26 @@
 [
-  "spot://ETH/USD",
-  "spot://WBTC/USD",
-  "spot://MENDI/USD",
-  "spot://SHIB/USD",
-  "spot://PEPE/USD",
-  "spot://BADGER/USD",
-  "spot://FLOKI/USD",
-  "spot://LUBE/USD"
+  {
+    "symbol": "spot://ETH/USD"
+  },
+  {
+    "symbol": "spot://WBTC/USD"
+  },
+  {
+    "symbol": "spot://MENDI/USD"
+  },
+  {
+    "symbol": "spot://SHIB/USD"
+  },
+  {
+    "symbol": "spot://PEPE/USD"
+  },
+  {
+    "symbol": "spot://BADGER/USD"
+  },
+  {
+    "symbol": "spot://FLOKI/USD"
+  },
+  {
+    "symbol": "spot://LUBE/USD"
+  }
 ]

@@ -1,5 +1,11 @@
 [
-  "spot://MATIC/USD",
-  "spot://WETH/USD",
-  "spot://DUCKIES/USD"
+  {
+    "symbol": "spot://MATIC/USD"
+  },
+  {
+    "symbol": "spot://WETH/USD"
+  },
+  {
+    "symbol": "spot://DUCKIES/USD"
+  }
 ]
