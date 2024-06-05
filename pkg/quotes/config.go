@@ -21,6 +21,7 @@ type Config struct {
 	Quickswap QuickswapConfig `yaml:"quickswap" env-prefix:"QUOTES_QUICKSWAP_"`
 	SectaV2   SectaV2Config   `yaml:"secta_v2" env-prefix:"QUOTES_SECTA_V2_"`
 	SectaV3   SectaV3Config   `yaml:"secta_v3" env-prefix:"QUOTES_SECTA_V3_"`
+	Lynex     LynexConfig     `yaml:"lynex" env-prefix:"QUOTES_LYNEX_"`
 }
 
 func (config Config) GetByDriverType(driver DriverType) (Config, error) {
@@ -172,6 +173,16 @@ type SectaV3Config struct {
 	FactoryAddress string        `yaml:"factory_address" env:"FACTORY_ADDRESS" env-default:"0x9BD425a416A276C72a13c13bBd8145272680Cf07"`
 	IdlePeriod     time.Duration `yaml:"idle_period" env:"IDLE_PERIOD" env-default:"30m"`
 	Filter         FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
+}
+
+type LynexConfig struct {
+	URL               string        `yaml:"url" env:"URL"`
+	AssetsURL         string        `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/assets.json"`
+	MappingURL        string        `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/mapping.json"`
+	FactoryAddress    string        `yaml:"factory_address" env:"FACTORY_ADDRESS" env-default:"0xBc7695Fd00E3b32D08124b7a4287493aEE99f9ee"`
+	StablePoolMarkets []string      `yaml:"stable_pool_markets" env:"STABLE_POOL_MARKETS" env-default:"usdt/usdc"` // `env-default` tag value is a comma separated list of markets as in `usdt/usdc, usdc/dai`
+	IdlePeriod        time.Duration `yaml:"idle_period" env:"IDLE_PERIOD" env-default:"30m"`
+	Filter            FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
 }
 
 type SamplerFilterConfig struct {
