@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"math/big"
 	"net/url"
 
@@ -177,7 +176,7 @@ func NewClient(config ClientConfig) (Client, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get chain ID: %w", err)
 	}
-	slog.Debug("fetched chain ID", "chainID", chainID.String())
+	logger.Debug("fetched chain ID", "chainID", chainID.String())
 
 	bundlerURL, err := url.Parse(config.BundlerURL)
 	if err != nil {
@@ -259,7 +258,7 @@ func (c *backend) NewUserOp(
 
 	op := UserOperation{Sender: smartWallet, CallData: callData}
 
-	slog.Debug("applying middlewares to user operation")
+	logger.Debug("applying middlewares to user operation")
 
 	overridesPresent := overrides != nil
 
@@ -344,7 +343,7 @@ func (c *backend) NewUserOp(
 		return UserOperation{}, err
 	}
 
-	slog.Debug("middlewares applied successfully", "userop", op)
+	logger.Debug("middlewares applied successfully", "userop", op)
 	return op, nil
 }
 
@@ -373,12 +372,12 @@ func (c *backend) SendUserOp(ctx context.Context, op UserOperation) (<-chan Rece
 	go subscribeUserOpEvent(ctx, cancel, c.provider, recCh, c.entryPoint, userOpHash)
 
 	// ERC4337-standardized call to the bundler
-	slog.Debug("sending user operation")
+	logger.Debug("sending user operation")
 	if err := c.bundler.CallContext(ctx, &userOpHash, "eth_sendUserOperation", op, c.entryPoint); err != nil {
 		return nil, fmt.Errorf("call to `eth_sendUserOperation` failed: %w", err)
 	}
 
-	slog.Info("user operation sent successfully", "userOpHash", userOpHash.Hex())
+	logger.Info("user operation sent successfully", "userOpHash", userOpHash.Hex())
 	return recCh, nil
 }
 
@@ -395,7 +394,7 @@ func subscribeUserOpEvent(
 
 	entryPointContract, err := entry_point_v0_6_0.NewEntryPoint(entryPoint, client)
 	if err != nil {
-		slog.Error("failed to connect to the entry point contract", "error", err)
+		logger.Error("failed to connect to the entry point contract", "error", err)
 		cancel()
 		return
 	}
@@ -404,7 +403,7 @@ func subscribeUserOpEvent(
 
 	sub, err := entryPointContract.WatchUserOperationEvent(nil, eventCh, [][32]byte{userOpHash}, nil, nil)
 	if err != nil {
-		slog.Error("failed to subscribe to UserOperationEvent", "error", err)
+		logger.Error("failed to subscribe to UserOperationEvent", "error", err)
 		cancel()
 		return
 	}
@@ -414,16 +413,16 @@ func subscribeUserOpEvent(
 		receipt := processUserOpEvent(client, event)
 		recCh <- *receipt
 	case err := <-sub.Err():
-		slog.Error("subscription error", "error", err)
+		logger.Error("subscription error", "error", err)
 		cancel()
 	case <-ctx.Done():
 		err := ctx.Err()
 		if err == nil || errors.Is(err, context.Canceled) {
-			slog.Debug("context done for userOp event", "reason", "context canceled", "hash", userOpHash.Hex())
+			logger.Debug("context done for userOp event", "reason", "context canceled", "hash", userOpHash.Hex())
 		} else if errors.Is(err, context.DeadlineExceeded) {
-			slog.Error("context done for userOp event", "reason", "deadline exceeded", "hash", userOpHash.Hex())
+			logger.Error("context done for userOp event", "reason", "deadline exceeded", "hash", userOpHash.Hex())
 		} else {
-			slog.Error("context done for userOp event", "reason", "context error", "error", err, "hash", userOpHash.Hex())
+			logger.Error("context done for userOp event", "reason", "context error", "error", err, "hash", userOpHash.Hex())
 		}
 	}
 
@@ -444,27 +443,27 @@ func processUserOpEvent(client EthBackend, event *entry_point_v0_6_0.EntryPointU
 	if !receipt.Success { // Try to fetch revert reason.
 		txReceipt, err := client.TransactionReceipt(context.Background(), receipt.TxHash)
 		if err != nil {
-			slog.Error("failed to fetch userop transaction receipt by hash", "error", err)
+			logger.Error("failed to fetch userop transaction receipt by hash", "error", err)
 			return &receipt
 		}
 
 		if userOpRevertReasonLog := filterLogsByEventID(txReceipt.Logs, userOpRevertReasonID); userOpRevertReasonLog != nil {
 			unpackedRevertReasonParams, err := entryPointUserOpEventsABI.Unpack("UserOperationRevertReason", userOpRevertReasonLog.Data)
 			if err != nil {
-				slog.Error("Error decoding UserOperationRevertReason params:", err)
+				logger.Error("Error decoding UserOperationRevertReason params:", err)
 				return &receipt
 			}
 
 			if len(unpackedRevertReasonParams) == 2 {
-				slog.Debug("parsed userOperationRevertReason logs", "data", hexutil.Encode(userOpRevertReasonLog.Data), "parsedParams", unpackedRevertReasonParams)
+				logger.Debug("parsed userOperationRevertReason logs", "data", hexutil.Encode(userOpRevertReasonLog.Data), "parsedParams", unpackedRevertReasonParams)
 				revertData, ok := unpackedRevertReasonParams[1].([]byte)
 				if !ok {
-					slog.Error("failed to parse revert reason", "unpackedRevertReasonParams", unpackedRevertReasonParams)
+					logger.Error("failed to parse revert reason", "unpackedRevertReasonParams", unpackedRevertReasonParams)
 					return &receipt
 				}
 				receipt.RevertData = revertData
 			} else {
-				slog.Warn("unexpected number of unpackedRevertReasonParams", "unpackedRevertReasonParams", unpackedRevertReasonParams)
+				logger.Warn("unexpected number of unpackedRevertReasonParams", "unpackedRevertReasonParams", unpackedRevertReasonParams)
 			}
 		}
 	}

@@ -206,8 +206,8 @@ func TestNewClient(t *testing.T) {
 
 		ctx := context.Background()
 
-		require.False(t, slog.Default().Enabled(ctx, slog.LevelDebug))
-		require.True(t, slog.Default().Enabled(ctx, slog.LevelInfo))
+		require.False(t, logger.Enabled(ctx, slog.LevelDebug))
+		require.True(t, logger.Enabled(ctx, slog.LevelInfo))
 	})
 
 	t.Run("Logger level is parsed correctly", func(t *testing.T) {
@@ -222,7 +222,7 @@ func TestNewClient(t *testing.T) {
 
 		ctx := context.Background()
 
-		require.True(t, slog.Default().Enabled(ctx, slog.LevelDebug))
+		require.True(t, logger.Enabled(ctx, slog.LevelDebug))
 	})
 
 	t.Run("Error on incorrect logger level", func(t *testing.T) {

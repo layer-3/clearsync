@@ -3,7 +3,6 @@ package userop
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"math/big"
 	"strconv"
 
@@ -33,7 +32,7 @@ func getNonceMiddleware(entryPoint *entry_point_v0_6_0.EntryPoint) middleware {
 	nonceKeyRotator := NewNonceKeyRotator()
 
 	return func(_ context.Context, op *UserOperation) error {
-		slog.Debug("getting nonce")
+		logger.Debug("getting nonce")
 		key := nonceKeyRotator.Next()
 		nonce, err := entryPoint.GetNonce(nil, op.Sender, key)
 		if err != nil {
@@ -77,11 +76,11 @@ func getInitCodeMiddleware(provider EthBackend, smartWalletConfig smart_wallet.C
 func getGasPricesMiddleware(provider EthBackend, gasConfig GasConfig) middleware {
 	return func(ctx context.Context, op *UserOperation) error {
 		if !op.MaxFeePerGas.IsZero() && !op.MaxPriorityFeePerGas.IsZero() {
-			slog.Debug("skipping gas price estimation, using provided gas prices")
+			logger.Debug("skipping gas price estimation, using provided gas prices")
 			return nil
 		}
 
-		slog.Debug("getting gas prices")
+		logger.Debug("getting gas prices")
 
 		// Calculate maxPriorityFeePerGas
 		var maxPriorityFeePerGas *big.Int
@@ -117,13 +116,13 @@ func getGasPricesMiddleware(provider EthBackend, gasConfig GasConfig) middleware
 				return err
 			}
 			blockBaseFee := block.BaseFee()
-			slog.Debug("block base fee", "baseFee", blockBaseFee.String())
+			logger.Debug("block base fee", "baseFee", blockBaseFee.String())
 
 			maxFeePerGas = new(big.Int).Mul(blockBaseFee, gasConfig.MaxFeePerGasMultiplier.BigInt())
 			maxFeePerGas.Add(maxFeePerGas, maxPriorityFeePerGas)
 		}
 
-		slog.Debug("calculated gas price", "maxFeePerGas", maxFeePerGas, "maxPriorityFeePerGas", maxPriorityFeePerGas)
+		logger.Debug("calculated gas price", "maxFeePerGas", maxFeePerGas, "maxPriorityFeePerGas", maxPriorityFeePerGas)
 
 		op.MaxFeePerGas = decimal.NewFromBigInt(maxFeePerGas, 0)
 		op.MaxPriorityFeePerGas = decimal.NewFromBigInt(maxPriorityFeePerGas, 0)
@@ -151,7 +150,7 @@ func convertAndSetGasLimits(
 		preVerificationGas = op.PreVerificationGas.BigInt()
 	}
 
-	slog.Debug("estimated userOp gas", "callGasLimit", callGasLimit, "verificationGasLimit", verificationGasLimit, "preVerificationGas", preVerificationGas)
+	logger.Debug("estimated userOp gas", "callGasLimit", callGasLimit, "verificationGasLimit", verificationGasLimit, "preVerificationGas", preVerificationGas)
 
 	op.CallGasLimit = decimal.NewFromBigInt(callGasLimit, 0)
 	op.VerificationGasLimit = decimal.NewFromBigInt(verificationGasLimit, 0)
@@ -247,11 +246,11 @@ func getGasLimitsMiddleware(bundler RPCBackend, config ClientConfig) (middleware
 func estimateUserOperationGas(bundler RPCBackend, entryPoint common.Address) middleware {
 	return func(ctx context.Context, op *UserOperation) error {
 		if !op.CallGasLimit.IsZero() && !op.VerificationGasLimit.IsZero() && !op.PreVerificationGas.IsZero() {
-			slog.Debug("skipping gas estimation, using provided gas limits")
+			logger.Debug("skipping gas estimation, using provided gas limits")
 			return nil
 		}
 
-		slog.Debug("estimating userOp gas limits", "userOp", op)
+		logger.Debug("estimating userOp gas limits", "userOp", op)
 
 		// ERC4337-standardized gas estimation
 		var est gasEstimate
@@ -433,7 +432,7 @@ func getSignMiddleware(entryPoint common.Address, chainID *big.Int) middleware {
 			return fmt.Errorf("failed to calculate user operation hash: %w", err)
 		}
 
-		slog.Debug("userop signed",
+		logger.Debug("userop signed",
 			"hash", opHash.String(),
 			"json", string(b))
 

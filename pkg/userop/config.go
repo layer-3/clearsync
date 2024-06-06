@@ -11,6 +11,10 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+var logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+	Level: slog.LevelInfo,
+}))
+
 // ClientConfig represents the configuration
 // for the user operation client.
 type ClientConfig struct {
@@ -209,21 +213,19 @@ type Signer func(op UserOperation, entryPoint common.Address, chainID *big.Int) 
 func setLogLevelFromString(levelStr string) error {
 	logLevel := new(slog.Level)
 	if levelStr == "" {
-		levelStr = "info"
+		return nil // default logger already has info level
 	}
 	err := logLevel.UnmarshalText([]byte(levelStr))
 	if err != nil {
 		return err
 	}
 
-	// unmarshal the log level
 	lvl := new(slog.LevelVar)
 	lvl.Set(*logLevel)
 
-	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+	logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
 		Level: lvl,
 	}))
 
-	slog.SetDefault(logger)
 	return nil
 }
