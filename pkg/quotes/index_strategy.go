@@ -17,6 +17,8 @@ var defaultWeightsMap = map[DriverType]decimal.Decimal{
 	DriverQuickswap: decimal.NewFromInt(50),
 	DriverSectaV2:   decimal.NewFromInt(50),
 	DriverSectaV3:   decimal.NewFromInt(50),
+	DriverLynexV2:   decimal.NewFromInt(50),
+	DriverLynexV3:   decimal.NewFromInt(50),
 	DriverInternal:  decimal.NewFromInt(75),
 }
 
