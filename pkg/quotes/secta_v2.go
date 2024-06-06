@@ -38,6 +38,7 @@ func newSectaV2(rpcUrl string, config SectaV2Config, outbox chan<- TradeEvent, h
 		RPC:        rpcUrl,
 		AssetsURL:  config.AssetsURL,
 		MappingURL: config.MappingURL,
+		MarketsURL: config.MarketsURL,
 		IdlePeriod: config.IdlePeriod,
 		// Hooks
 		PostStartHook: hooks.postStart,

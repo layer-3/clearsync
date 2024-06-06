@@ -38,6 +38,7 @@ func newQuickswap(rpcUrl string, config QuickswapConfig, outbox chan<- TradeEven
 		RPC:        rpcUrl,
 		AssetsURL:  config.AssetsURL,
 		MappingURL: config.MappingURL,
+		MarketsURL: config.MarketsURL,
 		IdlePeriod: config.IdlePeriod,
 		// Hooks
 		PostStartHook: hooks.postStart,
