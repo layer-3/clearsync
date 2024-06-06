@@ -1,7 +1,6 @@
 package quotes
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
@@ -24,48 +23,6 @@ type Config struct {
 	SectaV3   SectaV3Config   `yaml:"secta_v3" env-prefix:"QUOTES_SECTA_V3_"`
 	LynexV2   LynexV2Config   `yaml:"lynex_v2" env-prefix:"QUOTES_LYNEX_V2_"`
 	LynexV3   LynexV3Config   `yaml:"lynex_v3" env-prefix:"QUOTES_LYNEX_V3_"`
-}
-
-func (config Config) GetByDriverType(driver DriverType) (Config, error) {
-	driverFound := false
-	for _, d := range config.Drivers {
-		if d == driver {
-			driverFound = true
-			break
-		}
-	}
-	if !driverFound {
-		return Config{}, fmt.Errorf("driver is not configured: %s", driver)
-	}
-
-	switch driver {
-	case DriverBinance:
-		return Config{Drivers: []DriverType{DriverBinance}, Binance: config.Binance}, nil
-	case DriverKraken:
-		return Config{Drivers: []DriverType{DriverKraken}, Kraken: config.Kraken}, nil
-	case DriverMexc:
-		return Config{Drivers: []DriverType{DriverMexc}, Mexc: config.Mexc}, nil
-	case DriverOpendax:
-		return Config{Drivers: []DriverType{DriverOpendax}, Opendax: config.Opendax}, nil
-	case DriverBitfaker:
-		return Config{Drivers: []DriverType{DriverBitfaker}, Bitfaker: config.Bitfaker}, nil
-	case DriverUniswapV3:
-		return Config{Drivers: []DriverType{DriverUniswapV3}, UniswapV3: config.UniswapV3}, nil
-	case DriverSyncswap:
-		return Config{Drivers: []DriverType{DriverSyncswap}, Syncswap: config.Syncswap}, nil
-	case DriverQuickswap:
-		return Config{Drivers: []DriverType{DriverQuickswap}, Quickswap: config.Quickswap}, nil
-	case DriverSectaV2:
-		return Config{Drivers: []DriverType{DriverSectaV2}, SectaV2: config.SectaV2}, nil
-	case DriverSectaV3:
-		return Config{Drivers: []DriverType{DriverSectaV3}, SectaV3: config.SectaV3}, nil
-	case DriverLynexV2:
-		return Config{Drivers: []DriverType{DriverLynexV2}, LynexV2: config.LynexV2}, nil
-	case DriverLynexV3:
-		return Config{Drivers: []DriverType{DriverLynexV3}, LynexV3: config.LynexV3}, nil
-	default:
-		return Config{}, fmt.Errorf("driver is not supported: %s", driver)
-	}
 }
 
 func NewConfigFromFile(path string) (config Config, err error) {

@@ -74,10 +74,8 @@ func newIndexAggregator(
 	drivers := make([]Driver, 0, len(config.Drivers))
 	for _, d := range config.Drivers {
 		loggerIndex.Infow("creating new driver", "driver", d)
-		driverConfig, err := config.GetByDriverType(d)
-		if err != nil {
-			return nil, err
-		}
+		driverConfig := config
+		driverConfig.Drivers = []DriverType{d}
 
 		driver, err := NewDriver(driverConfig, aggregator, nil, nil)
 		if err != nil {
