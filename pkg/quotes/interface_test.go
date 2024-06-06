@@ -48,6 +48,11 @@ func TestNewDriver(t *testing.T) {
 
 			config, err := NewConfigFromEnv()
 			require.NoError(t, err)
+			config.Rpc = RpcConfig{
+				Ethereum: "wss://mainnet.infura.io/ws/v3/changeme",
+				Polygon:  "wss://polygon-mainnet.infura.io/ws/v3/changeme",
+				Linea:    "wss://linea-mainnet.infura.io/ws/v3/changeme",
+			}
 			config.Drivers = []DriverType{tc.driverType}
 
 			outbox := make(chan<- TradeEvent, 1)
