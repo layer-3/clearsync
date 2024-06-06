@@ -2,7 +2,6 @@ package userop
 
 import (
 	"fmt"
-	"log/slog"
 	"math/big"
 	"strings"
 
@@ -14,7 +13,7 @@ import (
 
 func SignerForBiconomy(ecdsaSigner signer.Signer) Signer {
 	return func(op UserOperation, entryPoint common.Address, chainID *big.Int) ([]byte, error) {
-		slog.Debug("signing user operation")
+		logger.Debug("signing user operation")
 
 		hash, err := op.UserOpHash(entryPoint, chainID)
 		if err != nil {
@@ -41,7 +40,7 @@ func SignerForBiconomy(ecdsaSigner signer.Signer) Signer {
 			return nil, fmt.Errorf("failed to pack signature: %w", err)
 		}
 
-		slog.Debug("signed user operation for Biconomy",
+		logger.Debug("signed user operation for Biconomy",
 			"signature", hexutil.Encode(fullSignature),
 			"hash", hash.String())
 		return fullSignature, nil
@@ -50,8 +49,7 @@ func SignerForBiconomy(ecdsaSigner signer.Signer) Signer {
 
 func SignerForKernel(ecdsaSigner signer.Signer) Signer {
 	return func(op UserOperation, entryPoint common.Address, chainID *big.Int) ([]byte, error) {
-		// FIXME: not with session key
-		slog.Debug("signing user operation with session key")
+		logger.Debug("signing user operation")
 
 		hash, err := op.UserOpHash(entryPoint, chainID)
 		if err != nil {
@@ -72,7 +70,7 @@ func SignerForKernel(ecdsaSigner signer.Signer) Signer {
 			return nil, fmt.Errorf("failed to decode signature: %w", err)
 		}
 
-		slog.Debug("signed user operation with session key for Kernel",
+		logger.Debug("signed user operation for Kernel",
 			"signature", hexutil.Encode(fullSignature),
 			"hash", hash.String())
 		return fullSignature, nil

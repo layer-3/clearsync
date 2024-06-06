@@ -1,13 +1,19 @@
 package userop
 
 import (
+	"log/slog"
 	"math/big"
+	"os"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/layer-3/clearsync/pkg/smart_wallet"
 	"github.com/shopspring/decimal"
 )
+
+var logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+	Level: slog.LevelInfo,
+}))
 
 // ClientConfig represents the configuration
 // for the user operation client.
@@ -18,6 +24,7 @@ type ClientConfig struct {
 	Gas         GasConfig           `yaml:"gas"`
 	SmartWallet smart_wallet.Config `yaml:"smart_wallet"`
 	Paymaster   PaymasterConfig     `yaml:"paymaster"`
+	LoggerLevel string              `yaml:"logger_level" env:"USEROP_CLIENT_LOGGER_LEVEL"`
 }
 
 func (conf *ClientConfig) Init() {
@@ -202,3 +209,23 @@ type ECDSASigner interface {
 // The handler DOES NOT modify the operation itself,
 // but rather builds and returns the signature.
 type Signer func(op UserOperation, entryPoint common.Address, chainID *big.Int) ([]byte, error)
+
+func setLogLevelFromString(levelStr string) error {
+	logLevel := new(slog.Level)
+	if levelStr == "" {
+		return nil // default logger already has info level
+	}
+	err := logLevel.UnmarshalText([]byte(levelStr))
+	if err != nil {
+		return err
+	}
+
+	lvl := new(slog.LevelVar)
+	lvl.Set(*logLevel)
+
+	logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+		Level: lvl,
+	}))
+
+	return nil
+}
