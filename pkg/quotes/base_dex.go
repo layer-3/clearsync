@@ -79,6 +79,10 @@ type baseDexConfig[Event any, Contract any, EventIterator dexEventIterator] stru
 func newBaseDEX[Event any, Contract any, EventIterator dexEventIterator](
 	config baseDexConfig[Event, Contract, EventIterator],
 ) (*baseDEX[Event, Contract, EventIterator], error) {
+	if !(strings.HasPrefix(config.RPC, "ws://") || strings.HasPrefix(config.RPC, "wss://")) {
+		return nil, fmt.Errorf("%s (got '%s')", ErrInvalidWsUrl, config.RPC)
+	}
+
 	return &baseDEX[Event, Contract, EventIterator]{
 		// Params
 		driverType: config.DriverType,
@@ -126,11 +130,6 @@ func (b *baseDEX[Event, Contract, EventIterator]) Start() error {
 	var startErr error
 	started := b.once.Start(func() {
 		// Connect to the RPC provider
-
-		if !(strings.HasPrefix(b.rpc, "ws://") || strings.HasPrefix(b.rpc, "wss://")) {
-			startErr = fmt.Errorf("%s (got '%s')", ErrInvalidWsUrl, b.rpc)
-			return
-		}
 
 		client, err := ethclient.Dial(b.rpc)
 		if err != nil {

@@ -24,7 +24,7 @@ type lynexV2 struct {
 	client *ethclient.Client
 }
 
-func newLynexV2(config LynexV2Config, outbox chan<- TradeEvent, history HistoricalData) (Driver, error) {
+func newLynexV2(rpcUrl string, config LynexV2Config, outbox chan<- TradeEvent, history HistoricalData) (Driver, error) {
 	stablePoolMarkets := make(map[Market]struct{})
 	for _, rawMarket := range config.StablePoolMarkets {
 		market, ok := NewMarketFromString(rawMarket)
@@ -48,7 +48,7 @@ func newLynexV2(config LynexV2Config, outbox chan<- TradeEvent, history Historic
 	]{
 		// Params
 		DriverType: DriverLynexV2,
-		URL:        config.LineaURL,
+		RPC:        rpcUrl,
 		AssetsURL:  config.AssetsURL,
 		MappingURL: config.MappingURL,
 		IdlePeriod: config.IdlePeriod,

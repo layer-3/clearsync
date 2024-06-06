@@ -23,7 +23,7 @@ type lynexV3 struct {
 	client *ethclient.Client
 }
 
-func newLynexV3(config LynexV3Config, outbox chan<- TradeEvent, history HistoricalData) (Driver, error) {
+func newLynexV3(rpcUrl string, config LynexV3Config, outbox chan<- TradeEvent, history HistoricalData) (Driver, error) {
 	hooks := &lynexV3{
 		factoryAddress: common.HexToAddress(config.FactoryAddress),
 	}
@@ -35,7 +35,7 @@ func newLynexV3(config LynexV3Config, outbox chan<- TradeEvent, history Historic
 	]{
 		// Params
 		DriverType: DriverLynexV3,
-		URL:        config.LineaURL,
+		RPC:        rpcUrl,
 		AssetsURL:  config.AssetsURL,
 		MappingURL: config.MappingURL,
 		IdlePeriod: config.IdlePeriod,
