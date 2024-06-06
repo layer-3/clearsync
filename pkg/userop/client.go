@@ -158,6 +158,11 @@ func NewClient(config ClientConfig) (Client, error) {
 		return nil, fmt.Errorf("failed to validate config: %w", err)
 	}
 
+	err = setLogLevelFromString(config.LoggerLevel)
+	if err != nil {
+		return nil, fmt.Errorf("failed to set logger level: %w", err)
+	}
+
 	providerURL, err := url.Parse(config.ProviderURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse the blockchain RPC URL: %w", err)

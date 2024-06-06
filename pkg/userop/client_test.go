@@ -3,6 +3,7 @@ package userop
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -191,5 +192,47 @@ func TestNewClient(t *testing.T) {
 		_, err := NewClient(conf)
 
 		require.NoError(t, err)
+	})
+
+	t.Run("Logger level is info by default", func(t *testing.T) {
+		// t.Parallel() // can't be run in parallel due to global logger
+
+		conf := mockConfig()
+		conf.ProviderURL = defaultProviderURL()
+		conf.LoggerLevel = ""
+
+		_, err := NewClient(conf)
+		require.NoError(t, err)
+
+		ctx := context.Background()
+
+		require.False(t, slog.Default().Enabled(ctx, slog.LevelDebug))
+		require.True(t, slog.Default().Enabled(ctx, slog.LevelInfo))
+	})
+
+	t.Run("Logger level is parsed correctly", func(t *testing.T) {
+		// t.Parallel() // can't be run in parallel due to global logger
+
+		conf := mockConfig()
+		conf.ProviderURL = defaultProviderURL()
+		conf.LoggerLevel = "debug"
+
+		_, err := NewClient(conf)
+		require.NoError(t, err)
+
+		ctx := context.Background()
+
+		require.True(t, slog.Default().Enabled(ctx, slog.LevelDebug))
+	})
+
+	t.Run("Error on incorrect logger level", func(t *testing.T) {
+		// t.Parallel() // can't be run in parallel due to global logger
+
+		conf := mockConfig()
+		conf.ProviderURL = defaultProviderURL()
+		conf.LoggerLevel = "deafbeef"
+
+		_, err := NewClient(conf)
+		require.ErrorContains(t, err, "failed to set logger level")
 	})
 }

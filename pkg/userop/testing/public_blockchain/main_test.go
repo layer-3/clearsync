@@ -47,7 +47,7 @@ var (
 
 func TestPublicRPC(t *testing.T) {
 	t.Skip("this test is for manual execution only")
-	setLogLevel(slog.LevelDebug)
+	config.LoggerLevel = "info"
 
 	// create smartWallet client (with specific Wallet and Paymaster types)
 	client, err := userop.NewClient(config)
