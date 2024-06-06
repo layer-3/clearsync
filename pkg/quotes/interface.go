@@ -100,6 +100,10 @@ func NewDriver(config Config, outbox chan<- TradeEvent, inbox <-chan TradeEvent,
 		return newSectaV2(config.SectaV2, outbox, history)
 	case DriverSectaV3:
 		return newSectaV3(config.SectaV3, outbox, history)
+	case DriverLynexV2:
+		return newLynexV2(config.LynexV2, outbox, history)
+	case DriverLynexV3:
+		return newLynexV3(config.LynexV3, outbox, history)
 	default:
 		return nil, fmt.Errorf("unknown driver: %s", config.Drivers)
 	}
