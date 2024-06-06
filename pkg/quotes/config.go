@@ -94,9 +94,9 @@ type FakeMarketConfig struct {
 
 type UniswapV3Config struct {
 	URL            string        `yaml:"url" env:"URL"`
-	MarketsURL     string        `yaml:"markets_url" env:"MARKETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/1/markets.json"`
 	AssetsURL      string        `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/1/assets.json"`
 	MappingURL     string        `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/1/mapping.json"`
+	MarketsURL     string        `yaml:"markets_url" env:"MARKETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/1/markets.json"`
 	FactoryAddress string        `yaml:"factory_address" env:"FACTORY_ADDRESS" env-default:"0x1F98431c8aD98523631AE4a59f267346ea31F984"`
 	IdlePeriod     time.Duration `yaml:"idle_period" env:"IDLE_PERIOD" env-default:"30m"`
 	Filter         FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
@@ -104,9 +104,9 @@ type UniswapV3Config struct {
 
 type SyncswapConfig struct {
 	URL                       string        `yaml:"url" env:"URL"`
-	MarketsURL                string        `yaml:"markets_url" env:"MARKETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/markets.json"`
 	AssetsURL                 string        `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/assets.json"`
 	MappingURL                string        `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/mapping.json"`
+	MarketsURL                string        `yaml:"markets_url" env:"MARKETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/markets.json"`
 	ClassicPoolFactoryAddress string        `yaml:"classic_pool_factory_address" env:"CLASSIC_POOL_FACTORY_ADDRESS" env-default:"0x37BAc764494c8db4e54BDE72f6965beA9fa0AC2d"`
 	StablePoolFactoryAddress  string        `yaml:"stable_pool_factory_address" env:"STABLE_POOL_FACTORY_ADDRESS" env-default:"0xE4CF807E351b56720B17A59094179e7Ed9dD3727"`
 	StablePoolMarkets         []string      `yaml:"stable_pool_markets" env:"STABLE_POOL_MARKETS" env-default:"usdt/usdc"` // `env-default` tag value is a comma separated list of markets as in `usdt/usdc, usdc/dai`
@@ -116,9 +116,9 @@ type SyncswapConfig struct {
 
 type QuickswapConfig struct {
 	URL        string `yaml:"url" env:"URL"`
-	MarketsURL string `yaml:"markets_url" env:"MARKETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/137/markets.json"`
 	AssetsURL  string `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/137/assets.json"`
 	MappingURL string `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/137/mapping.json"`
+	MarketsURL string `yaml:"markets_url" env:"MARKETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/137/markets.json"`
 	// PoolFactoryAddress is the address of the factory contract.
 	// See docs at https://docs.quickswap.exchange/technical-reference/smart-contracts/v3/factory.
 	// Note that the contract used in this lib is compiled from https://github.com/code-423n4/2022-09-quickswap.
@@ -129,9 +129,9 @@ type QuickswapConfig struct {
 
 type SectaV2Config struct {
 	URL            string        `yaml:"url" env:"URL"`
-	MarketsURL     string        `yaml:"markets_url" env:"MARKETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/markets.json"`
 	AssetsURL      string        `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/assets.json"`
 	MappingURL     string        `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/mapping.json"`
+	MarketsURL     string        `yaml:"markets_url" env:"MARKETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/markets.json"`
 	FactoryAddress string        `yaml:"factory_address" env:"FACTORY_ADDRESS" env-default:"0x8Ad39bf99765E24012A28bEb0d444DE612903C43"`
 	IdlePeriod     time.Duration `yaml:"idle_period" env:"IDLE_PERIOD" env-default:"30m"`
 	Filter         FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
@@ -139,9 +139,9 @@ type SectaV2Config struct {
 
 type SectaV3Config struct {
 	URL            string        `yaml:"url" env:"URL"`
-	MarketsURL     string        `yaml:"markets_url" env:"MARKETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/markets.json"`
 	AssetsURL      string        `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/assets.json"`
 	MappingURL     string        `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/mapping.json"`
+	MarketsURL     string        `yaml:"markets_url" env:"MARKETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/markets.json"`
 	FactoryAddress string        `yaml:"factory_address" env:"FACTORY_ADDRESS" env-default:"0x9BD425a416A276C72a13c13bBd8145272680Cf07"`
 	IdlePeriod     time.Duration `yaml:"idle_period" env:"IDLE_PERIOD" env-default:"30m"`
 	Filter         FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
