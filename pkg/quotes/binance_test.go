@@ -2,7 +2,6 @@ package quotes
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -25,5 +24,4 @@ func TestBinance_HistoricalData(t *testing.T) {
 	trades, err := binance.HistoricalData(context.Background(), market, window, limit)
 	require.NoError(t, err)
 	require.NotEmpty(t, trades)
-	fmt.Println(trades)
 }
