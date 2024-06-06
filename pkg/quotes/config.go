@@ -22,6 +22,7 @@ type Config struct {
 	SectaV2   SectaV2Config   `yaml:"secta_v2" env-prefix:"QUOTES_SECTA_V2_"`
 	SectaV3   SectaV3Config   `yaml:"secta_v3" env-prefix:"QUOTES_SECTA_V3_"`
 	LynexV2   LynexV2Config   `yaml:"lynex_v2" env-prefix:"QUOTES_LYNEX_V2_"`
+	LynexV3   LynexV3Config   `yaml:"lynex_v3" env-prefix:"QUOTES_LYNEX_V3_"`
 }
 
 func (config Config) GetByDriverType(driver DriverType) (Config, error) {
@@ -59,6 +60,8 @@ func (config Config) GetByDriverType(driver DriverType) (Config, error) {
 		return Config{Drivers: []DriverType{DriverSectaV3}, SectaV3: config.SectaV3}, nil
 	case DriverLynexV2:
 		return Config{Drivers: []DriverType{DriverLynexV2}, LynexV2: config.LynexV2}, nil
+	case DriverLynexV3:
+		return Config{Drivers: []DriverType{DriverLynexV3}, LynexV3: config.LynexV3}, nil
 	default:
 		return Config{}, fmt.Errorf("driver is not supported: %s", driver)
 	}
@@ -183,6 +186,15 @@ type LynexV2Config struct {
 	StablePoolMarkets []string      `yaml:"stable_pool_markets" env:"STABLE_POOL_MARKETS" env-default:"usdt/usdc"` // `env-default` tag value is a comma separated list of markets as in `usdt/usdc, usdc/dai`
 	IdlePeriod        time.Duration `yaml:"idle_period" env:"IDLE_PERIOD" env-default:"30m"`
 	Filter            FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
+}
+
+type LynexV3Config struct {
+	URL            string        `yaml:"url" env:"URL"`
+	AssetsURL      string        `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/assets.json"`
+	MappingURL     string        `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/mapping.json"`
+	FactoryAddress string        `yaml:"factory_address" env:"FACTORY_ADDRESS" env-default:"0x622b2c98123D303ae067DB4925CD6282B3A08D0F"`
+	IdlePeriod     time.Duration `yaml:"idle_period" env:"IDLE_PERIOD" env-default:"30m"`
+	Filter         FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
 }
 
 type SamplerFilterConfig struct {

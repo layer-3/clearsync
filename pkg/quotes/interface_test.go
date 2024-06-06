@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/layer-3/clearsync/pkg/abi/ilynex_pair"
+	"github.com/layer-3/clearsync/pkg/abi/ilynex_v2_pair"
 	"github.com/layer-3/clearsync/pkg/abi/isecta_v2_pair"
 	"github.com/layer-3/clearsync/pkg/abi/isecta_v3_pool"
 	"github.com/layer-3/clearsync/pkg/abi/isyncswap_pool"
@@ -36,7 +36,8 @@ func TestNewDriver(t *testing.T) {
 		{DriverQuickswap.String(), DriverQuickswap, (*baseDEX[quickswap_v3_pool.IQuickswapV3PoolSwap, quickswap_v3_pool.IQuickswapV3Pool, *quickswap_v3_pool.IQuickswapV3PoolSwapIterator])(nil)},
 		{DriverSectaV2.String(), DriverSectaV2, (*baseDEX[isecta_v2_pair.ISectaV2PairSwap, isecta_v2_pair.ISectaV2Pair, *isecta_v2_pair.ISectaV2PairSwapIterator])(nil)},
 		{DriverSectaV3.String(), DriverSectaV3, (*baseDEX[isecta_v3_pool.ISectaV3PoolSwap, isecta_v3_pool.ISectaV3Pool, *isecta_v3_pool.ISectaV3PoolSwapIterator])(nil)},
-		{DriverLynexV2.String(), DriverLynexV2, (*baseDEX[ilynex_pair.ILynexPairSwap, ilynex_pair.ILynexPair])(nil)},
+		{DriverLynexV2.String(), DriverLynexV2, (*baseDEX[ilynex_v2_pair.ILynexPairSwap, ilynex_v2_pair.ILynexPair])(nil)},
+		{DriverLynexV3.String(), DriverLynexV3, (*baseDEX[ilynex_v2_pair.ILynexPairSwap, ilynex_v2_pair.ILynexPair])(nil)},
 	}
 
 	for _, tc := range testCases {
