@@ -33,6 +33,10 @@ type opendax struct {
 }
 
 func newOpendax(config OpendaxConfig, outbox chan<- TradeEvent, history HistoricalData) (Driver, error) {
+	if !(strings.HasPrefix(config.URL, "ws://") || strings.HasPrefix(config.URL, "wss://")) {
+		return nil, fmt.Errorf("%s (got '%s')", ErrInvalidWsUrl, config.URL)
+	}
+
 	return &opendax{
 		once:           newOnce(),
 		url:            config.URL,
@@ -58,11 +62,6 @@ func (b *opendax) ExchangeType() ExchangeType {
 func (o *opendax) Start() error {
 	var startErr error
 	started := o.once.Start(func() {
-		if !(strings.HasPrefix(o.url, "ws://") || strings.HasPrefix(o.url, "wss://")) {
-			startErr = fmt.Errorf("%s (got '%s')", ErrInvalidWsUrl, o.url)
-			return
-		}
-
 		o.connect()
 		go o.listen()
 	})

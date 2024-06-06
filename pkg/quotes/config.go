@@ -1,7 +1,6 @@
 package quotes
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
@@ -9,6 +8,7 @@ import (
 
 type Config struct {
 	Drivers []DriverType `yaml:"drivers" env:"QUOTES_DRIVERS" env-default:"binance,syncswap"`
+	Rpc     RpcConfig    `yaml:"rpc" env-prefix:"QUOTES_RPC_"`
 	Index   IndexConfig  `yaml:"index" env-prefix:"QUOTES_INDEX_"`
 
 	Binance   BinanceConfig   `yaml:"binance" env-prefix:"QUOTES_BINANCE_"`
@@ -25,54 +25,18 @@ type Config struct {
 	LynexV3   LynexV3Config   `yaml:"lynex_v3" env-prefix:"QUOTES_LYNEX_V3_"`
 }
 
-func (config Config) GetByDriverType(driver DriverType) (Config, error) {
-	driverFound := false
-	for _, d := range config.Drivers {
-		if d == driver {
-			driverFound = true
-			break
-		}
-	}
-	if !driverFound {
-		return Config{}, fmt.Errorf("driver is not configured: %s", driver)
-	}
-
-	switch driver {
-	case DriverBinance:
-		return Config{Drivers: []DriverType{DriverBinance}, Binance: config.Binance}, nil
-	case DriverKraken:
-		return Config{Drivers: []DriverType{DriverKraken}, Kraken: config.Kraken}, nil
-	case DriverMexc:
-		return Config{Drivers: []DriverType{DriverMexc}, Mexc: config.Mexc}, nil
-	case DriverOpendax:
-		return Config{Drivers: []DriverType{DriverOpendax}, Opendax: config.Opendax}, nil
-	case DriverBitfaker:
-		return Config{Drivers: []DriverType{DriverBitfaker}, Bitfaker: config.Bitfaker}, nil
-	case DriverUniswapV3:
-		return Config{Drivers: []DriverType{DriverUniswapV3}, UniswapV3: config.UniswapV3}, nil
-	case DriverSyncswap:
-		return Config{Drivers: []DriverType{DriverSyncswap}, Syncswap: config.Syncswap}, nil
-	case DriverQuickswap:
-		return Config{Drivers: []DriverType{DriverQuickswap}, Quickswap: config.Quickswap}, nil
-	case DriverSectaV2:
-		return Config{Drivers: []DriverType{DriverSectaV2}, SectaV2: config.SectaV2}, nil
-	case DriverSectaV3:
-		return Config{Drivers: []DriverType{DriverSectaV3}, SectaV3: config.SectaV3}, nil
-	case DriverLynexV2:
-		return Config{Drivers: []DriverType{DriverLynexV2}, LynexV2: config.LynexV2}, nil
-	case DriverLynexV3:
-		return Config{Drivers: []DriverType{DriverLynexV3}, LynexV3: config.LynexV3}, nil
-	default:
-		return Config{}, fmt.Errorf("driver is not supported: %s", driver)
-	}
-}
-
 func NewConfigFromFile(path string) (config Config, err error) {
 	return config, cleanenv.ReadConfig(path, &config)
 }
 
 func NewConfigFromEnv() (config Config, err error) {
 	return config, cleanenv.ReadEnv(&config)
+}
+
+type RpcConfig struct {
+	Ethereum string `yaml:"ethereum" env:"ETHEREUM"`
+	Polygon  string `yaml:"polygon" env:"POLYGON"`
+	Linea    string `yaml:"linea" env:"LINEA"`
 }
 
 type IndexConfig struct {
@@ -129,7 +93,6 @@ type FakeMarketConfig struct {
 }
 
 type UniswapV3Config struct {
-	URL            string        `yaml:"url" env:"URL"`
 	AssetsURL      string        `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/1/assets.json"`
 	MappingURL     string        `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/1/mapping.json"`
 	FactoryAddress string        `yaml:"factory_address" env:"FACTORY_ADDRESS" env-default:"0x1F98431c8aD98523631AE4a59f267346ea31F984"`
@@ -138,7 +101,6 @@ type UniswapV3Config struct {
 }
 
 type SyncswapConfig struct {
-	URL                       string        `yaml:"url" env:"URL"`
 	AssetsURL                 string        `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/assets.json"`
 	MappingURL                string        `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/mapping.json"`
 	ClassicPoolFactoryAddress string        `yaml:"classic_pool_factory_address" env:"CLASSIC_POOL_FACTORY_ADDRESS" env-default:"0x37BAc764494c8db4e54BDE72f6965beA9fa0AC2d"`
@@ -149,7 +111,6 @@ type SyncswapConfig struct {
 }
 
 type QuickswapConfig struct {
-	URL        string `yaml:"url" env:"URL"`
 	AssetsURL  string `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/137/assets.json"`
 	MappingURL string `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/137/mapping.json"`
 	// PoolFactoryAddress is the address of the factory contract.
@@ -161,7 +122,6 @@ type QuickswapConfig struct {
 }
 
 type SectaV2Config struct {
-	URL            string        `yaml:"url" env:"URL"`
 	AssetsURL      string        `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/assets.json"`
 	MappingURL     string        `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/mapping.json"`
 	FactoryAddress string        `yaml:"factory_address" env:"FACTORY_ADDRESS" env-default:"0x8Ad39bf99765E24012A28bEb0d444DE612903C43"`
@@ -170,7 +130,6 @@ type SectaV2Config struct {
 }
 
 type SectaV3Config struct {
-	URL            string        `yaml:"url" env:"URL"`
 	AssetsURL      string        `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/assets.json"`
 	MappingURL     string        `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/mapping.json"`
 	FactoryAddress string        `yaml:"factory_address" env:"FACTORY_ADDRESS" env-default:"0x9BD425a416A276C72a13c13bBd8145272680Cf07"`
@@ -179,7 +138,6 @@ type SectaV3Config struct {
 }
 
 type LynexV2Config struct {
-	URL               string        `yaml:"url" env:"URL"`
 	AssetsURL         string        `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/assets.json"`
 	MappingURL        string        `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/mapping.json"`
 	FactoryAddress    string        `yaml:"factory_address" env:"FACTORY_ADDRESS" env-default:"0xBc7695Fd00E3b32D08124b7a4287493aEE99f9ee"`
@@ -189,7 +147,6 @@ type LynexV2Config struct {
 }
 
 type LynexV3Config struct {
-	URL            string        `yaml:"url" env:"URL"`
 	AssetsURL      string        `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/assets.json"`
 	MappingURL     string        `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/mapping.json"`
 	FactoryAddress string        `yaml:"factory_address" env:"FACTORY_ADDRESS" env-default:"0x622b2c98123D303ae067DB4925CD6282B3A08D0F"`

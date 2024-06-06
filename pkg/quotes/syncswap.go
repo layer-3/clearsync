@@ -26,7 +26,7 @@ type syncswap struct {
 	client *ethclient.Client
 }
 
-func newSyncswap(config SyncswapConfig, outbox chan<- TradeEvent, history HistoricalData) (Driver, error) {
+func newSyncswap(rpcUrl string, config SyncswapConfig, outbox chan<- TradeEvent, history HistoricalData) (Driver, error) {
 	stablePoolMarkets := make(map[Market]struct{})
 	logStablePoolMarkets := make([]Market, 0, len(config.StablePoolMarkets))
 	for _, rawMarket := range config.StablePoolMarkets {
@@ -53,7 +53,7 @@ func newSyncswap(config SyncswapConfig, outbox chan<- TradeEvent, history Histor
 	]{
 		// Params
 		DriverType: DriverSyncswap,
-		URL:        config.URL,
+		RPC:        rpcUrl,
 		AssetsURL:  config.AssetsURL,
 		MappingURL: config.MappingURL,
 		IdlePeriod: config.IdlePeriod,

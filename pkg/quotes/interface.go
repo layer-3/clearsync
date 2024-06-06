@@ -91,19 +91,19 @@ func NewDriver(config Config, outbox chan<- TradeEvent, inbox <-chan TradeEvent,
 	case DriverBitfaker:
 		return newBitfaker(config.Bitfaker, outbox)
 	case DriverUniswapV3:
-		return newUniswapV3(config.UniswapV3, outbox, history)
+		return newUniswapV3(config.Rpc.Ethereum, config.UniswapV3, outbox, history)
 	case DriverSyncswap:
-		return newSyncswap(config.Syncswap, outbox, history)
+		return newSyncswap(config.Rpc.Linea, config.Syncswap, outbox, history)
 	case DriverQuickswap:
-		return newQuickswap(config.Quickswap, outbox, history)
+		return newQuickswap(config.Rpc.Polygon, config.Quickswap, outbox, history)
 	case DriverSectaV2:
-		return newSectaV2(config.SectaV2, outbox, history)
+		return newSectaV2(config.Rpc.Linea, config.SectaV2, outbox, history)
 	case DriverSectaV3:
-		return newSectaV3(config.SectaV3, outbox, history)
+		return newSectaV3(config.Rpc.Linea, config.SectaV3, outbox, history)
 	case DriverLynexV2:
-		return newLynexV2(config.LynexV2, outbox, history)
+		return newLynexV2(config.Rpc.Linea, config.LynexV2, outbox, history)
 	case DriverLynexV3:
-		return newLynexV3(config.LynexV3, outbox, history)
+		return newLynexV3(config.Rpc.Linea, config.LynexV3, outbox, history)
 	default:
 		return nil, fmt.Errorf("unknown driver: %s", config.Drivers)
 	}

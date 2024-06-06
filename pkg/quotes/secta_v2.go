@@ -23,7 +23,7 @@ type sectaV2 struct {
 	client *ethclient.Client
 }
 
-func newSectaV2(config SectaV2Config, outbox chan<- TradeEvent, history HistoricalData) (Driver, error) {
+func newSectaV2(rpcUrl string, config SectaV2Config, outbox chan<- TradeEvent, history HistoricalData) (Driver, error) {
 	hooks := &sectaV2{
 		factoryAddress: common.HexToAddress(config.FactoryAddress),
 	}
@@ -35,7 +35,7 @@ func newSectaV2(config SectaV2Config, outbox chan<- TradeEvent, history Historic
 	]{
 		// Params
 		DriverType: DriverSectaV2,
-		URL:        config.URL,
+		RPC:        rpcUrl,
 		AssetsURL:  config.AssetsURL,
 		MappingURL: config.MappingURL,
 		IdlePeriod: config.IdlePeriod,

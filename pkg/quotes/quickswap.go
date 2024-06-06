@@ -23,7 +23,7 @@ type quickswap struct {
 	client *ethclient.Client
 }
 
-func newQuickswap(config QuickswapConfig, outbox chan<- TradeEvent, history HistoricalData) (Driver, error) {
+func newQuickswap(rpcUrl string, config QuickswapConfig, outbox chan<- TradeEvent, history HistoricalData) (Driver, error) {
 	hooks := &quickswap{
 		poolFactoryAddress: common.HexToAddress(config.PoolFactoryAddress),
 	}
@@ -35,7 +35,7 @@ func newQuickswap(config QuickswapConfig, outbox chan<- TradeEvent, history Hist
 	]{
 		// Params
 		DriverType: DriverQuickswap,
-		URL:        config.URL,
+		RPC:        rpcUrl,
 		AssetsURL:  config.AssetsURL,
 		MappingURL: config.MappingURL,
 		IdlePeriod: config.IdlePeriod,

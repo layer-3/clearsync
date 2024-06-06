@@ -30,7 +30,7 @@ type uniswapV3 struct {
 	client *ethclient.Client
 }
 
-func newUniswapV3(config UniswapV3Config, outbox chan<- TradeEvent, history HistoricalData) (Driver, error) {
+func newUniswapV3(rpcUrl string, config UniswapV3Config, outbox chan<- TradeEvent, history HistoricalData) (Driver, error) {
 	hooks := &uniswapV3{
 		factoryAddress: common.HexToAddress(config.FactoryAddress),
 	}
@@ -42,7 +42,7 @@ func newUniswapV3(config UniswapV3Config, outbox chan<- TradeEvent, history Hist
 	]{
 		// Params
 		DriverType: DriverUniswapV3,
-		URL:        config.URL,
+		RPC:        rpcUrl,
 		AssetsURL:  config.AssetsURL,
 		MappingURL: config.MappingURL,
 		IdlePeriod: config.IdlePeriod,

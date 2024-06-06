@@ -45,6 +45,10 @@ func newKraken(config KrakenConfig, outbox chan<- TradeEvent, history Historical
 	// https://support.kraken.com/hc/en-us/articles/206548367-What-are-the-API-rate-limits-
 	limiter.WithRateLimit(1)
 
+	if !(strings.HasPrefix(config.URL, "ws://") || strings.HasPrefix(config.URL, "wss://")) {
+		return nil, fmt.Errorf("%s (got '%s')", ErrInvalidWsUrl, config.URL)
+	}
+
 	return &kraken{
 		once:           newOnce(),
 		url:            config.URL,
@@ -70,11 +74,6 @@ func (b *kraken) ExchangeType() ExchangeType {
 func (k *kraken) Start() error {
 	var startErr error
 	started := k.once.Start(func() {
-		if !(strings.HasPrefix(k.url, "ws://") || strings.HasPrefix(k.url, "wss://")) {
-			startErr = fmt.Errorf("%s (got '%s')", ErrInvalidWsUrl, k.url)
-			return
-		}
-
 		if err := k.getPairs(); err != nil {
 			startErr = err
 			return
