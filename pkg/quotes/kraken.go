@@ -85,6 +85,8 @@ func (k *kraken) Start() error {
 		}
 
 		go k.listen()
+
+		cexConfigured.CompareAndSwap(false, true)
 	})
 
 	if !started {
@@ -106,6 +108,7 @@ func (k *kraken) Stop() error {
 		k.availablePairs = safe.Map[string, krakenPair]{}
 		k.streams = safe.Map[Market, struct{}]{} // delete all stopped streams
 		stopErr = conn.Close()
+		cexConfigured.CompareAndSwap(true, false)
 	})
 
 	if !stopped {

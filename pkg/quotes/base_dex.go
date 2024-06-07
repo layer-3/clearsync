@@ -273,7 +273,7 @@ func (b *baseDEX[Event, Contract, EventIterator]) Subscribe(market Market) error
 	}
 
 	// Check if market is enabled for DEXes
-	if _, ok := b.disabledMarkets[market]; ok {
+	if _, ok := b.disabledMarkets[market]; ok && cexConfigured.Load() {
 		return fmt.Errorf("%w: %s", ErrMarketDisabled, market)
 	}
 
