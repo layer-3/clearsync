@@ -178,7 +178,7 @@ func (a *indexAggregator) ExchangeType() ExchangeType {
 // Start starts all drivers from the provided config.
 func (a *indexAggregator) Start() error {
 	var g errgroup.Group
-	g.SetLimit(10)
+	g.SetLimit(-1)
 
 	for _, d := range a.drivers {
 		d := d
@@ -189,18 +189,20 @@ func (a *indexAggregator) Start() error {
 				return err
 			}
 
-			for quoteMarket, baseMarkets := range defaultMarketsMapping {
-				for _, baseMarket := range baseMarkets {
-					m := NewMarket(baseMarket, quoteMarket)
-					if err := d.Subscribe(m); err != nil {
-						loggerIndex.Errorw("failed to subscribe to default market",
-							"driver", d.ActiveDrivers()[0],
-							"market", m,
-							"error", err)
-						continue
+			go func() {
+				for quoteMarket, baseMarkets := range defaultMarketsMapping {
+					for _, baseMarket := range baseMarkets {
+						m := NewMarket(baseMarket, quoteMarket)
+						if err := d.Subscribe(m); err != nil {
+							loggerIndex.Errorw("failed to subscribe to default market",
+								"driver", d.ActiveDrivers()[0],
+								"market", m,
+								"error", err)
+							continue
+						}
 					}
 				}
-			}
+			}()
 			return nil
 		})
 	}
@@ -252,7 +254,7 @@ func (a *indexAggregator) Unsubscribe(m Market) error {
 
 func (a *indexAggregator) Stop() error {
 	var g errgroup.Group
-	g.SetLimit(10)
+	g.SetLimit(-1)
 
 	for _, d := range a.drivers {
 		d := d
