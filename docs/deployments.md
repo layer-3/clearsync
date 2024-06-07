@@ -189,6 +189,7 @@ Repository: [layer-3/ClearSync](https://github.com/layer-3/clearsync).
 | Pepe ERC20 Token            | TestERC20         | [0xf532...1e3f](https://sepolia.lineascan.build/tx/0xf5324c39d4605cd808c84ddce4681dce991a4a10f64455121bfb794814e51e3f) | `0xC981Cd9be7a334e8F5ef24F245BbF18b181B8fa9`[↗](https://sepolia.lineascan.build/address/0xC981Cd9be7a334e8F5ef24F245BbF18b181B8fa9) | 2c6129a1831778972c4f07766ec69e25674d2438 |
 | Badger ERC20 Token          | TestERC20         | [0x1419...a500](https://sepolia.lineascan.build/tx/0x14197fdb8726043f90fd3aaeb70f8c5c2c644b59010f74a0c49907ef186ca500) | `0x2A7a211fB5860C63f2F53c8CB1FE400aBe222b92`[↗](https://sepolia.lineascan.build/address/0x2A7a211fB5860C63f2F53c8CB1FE400aBe222b92) | 2c6129a1831778972c4f07766ec69e25674d2438 |
 | FLOKI ERC20 Token           | TestERC20         | [0x8929...f215](https://sepolia.lineascan.build/tx/0x8929f1cf8e2947ec59b5862e788f0f14db9ab7b3791a90c039382257311df215) | `0xEC077c58C614707D4c09473C8ed1B359F7D2C935`[↗](https://sepolia.lineascan.build/address/0xEC077c58C614707D4c09473C8ed1B359F7D2C935) | 2c6129a1831778972c4f07766ec69e25674d2438 |
+| SHIBA INU ERC20 Token       | TestERC20         | [0x3f4a...b60a](https://sepolia.lineascan.build/tx/0x3f4ae0b6e313ea93c544e249d7dff1c87a2c66189434fd2f5dbb4bc3395cb60a) | `0x0fe19c1da3a8af033f11A349631Ea60F8244e6Ce`[↗](https://sepolia.lineascan.build/address/0x0fe19c1da3a8af033f11A349631Ea60F8244e6Ce) | 2c6129a1831778972c4f07766ec69e25674d2438 |
 
 Repository: [layer-3/chaintools](https://github.com/layer-3/chaintools).
 
