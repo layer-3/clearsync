@@ -1,12 +1,12 @@
 {
   "tokens": [
     {
-      "address": "0x0000000000000000000000000000000000000000",
-      "name": "Ether",
-      "symbol": "ETH",
-      "decimals": 18,
-      "precision": 6,
-      "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png?1696501628"
+        "address": "0x0000000000000000000000000000000000000000",
+        "name": "Ether",
+        "symbol": "ETH",
+        "decimals": 18,
+        "precision": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png?1696501628"
     },
     {
         "address": "0x38871D722689f6d799B2A1FE93bE096E98e00986",
@@ -55,21 +55,56 @@
         "extensions": {}
     },
     {
-        "address": "0xEB31ce20F5c72C568e82D0183aa8Da3B9e5e177f",
-        "name": "Wrapped Ether",
-        "symbol": "WETH",
-        "decimals": 18,
-        "precision": 6,
-        "logoURI": "https://token-repository.dappradar.com/tokens?protocol=ethereum&contract=0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2&file=logo.png",
-        "extensions": {}
-    },
-    {
         "address": "0xd15833D5184Ca08a8a26b923754EaA654F5Bb85F",
         "name": "Linda",
         "symbol": "LINDA",
         "decimals": 18,
         "precision": 6,
         "logoURI": "https://assets.coingecko.com/coins/images/33699/standard/linda-logo-200.png?1705166731",
+        "extensions": {}
+    },
+    {
+        "address": "0x0fe19c1da3a8af033f11A349631Ea60F8244e6Ce",
+        "name": "SHIBA INU",
+        "symbol": "SHIB",
+        "decimals": 18,
+        "precision": 0,
+        "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/sibainu-64x64.png"
+    },
+    {
+        "address": "0xd14c1883B0554c7Ca43797D8F06618922DEE973A",
+        "name": "BNB",
+        "symbol": "BNB",
+        "decimals": 18,
+        "precision": 6,
+        "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/bnb-64x64.png",
+        "extensions": {}
+    },
+    {
+        "address": "0xC981Cd9be7a334e8F5ef24F245BbF18b181B8fa9",
+        "name": "Pepe",
+        "symbol": "PEPE",
+        "decimals": 18,
+        "precision": 6,
+        "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/pepe-64x64.png",
+        "extensions": {}
+    },
+    {
+        "address": "0x2A7a211fB5860C63f2F53c8CB1FE400aBe222b92",
+        "name": "Badger",
+        "symbol": "BADGER",
+        "decimals": 18,
+        "precision": 6,
+        "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/badger-64x64.png",
+        "extensions": {}
+    },
+    {
+        "address": "0xEC077c58C614707D4c09473C8ed1B359F7D2C935",
+        "name": "FLOKI",
+        "symbol": "FLOKI",
+        "decimals": 9,
+        "precision": 6,
+        "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/floki-64x64.png",
         "extensions": {}
     }
   ]
