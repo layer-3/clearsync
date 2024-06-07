@@ -682,12 +682,12 @@
       ]
   },
   {
-      "url": "https://kayen.io/",
-      "name": "BitSafe Pro",
+      "url": "https://trade.ncx.cx",
+      "name": "NCX Exchange",
       "finex_url": "wss://kayen.io/ws",
       "clearport_b_url": "http://clearport-peer-grpc.kayen-prod:50081",
       "clearport_a_url": "wss://port-a.kayen.io/",
-      "description": "Description for BitSafe Pro.",
+      "description": "First all-in-one Hybrid CEX | DEX Crypto Exchange, Trading Platform & DeFi Ecosystem",
       "available": true,
       "metadata": {
           "coordinates": {
