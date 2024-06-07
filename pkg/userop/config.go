@@ -1,11 +1,15 @@
 package userop
 
 import (
+	"context"
+	"fmt"
 	"log/slog"
 	"math/big"
 	"os"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/layer-3/clearsync/pkg/smart_wallet"
 	"github.com/shopspring/decimal"
@@ -33,20 +37,46 @@ func (conf *ClientConfig) Init() {
 	conf.SmartWallet.Init()
 }
 
+func addressHasCode(address common.Address, provider ethereum.ChainStateReader) (bool, error) {
+	if address == (common.Address{}) {
+		return false, nil
+	}
+
+	code, err := provider.CodeAt(context.Background(), address, nil)
+	if err != nil {
+		return false, err
+	}
+
+	return len(code) > len("0x"), nil
+}
+
 func (conf ClientConfig) validate() error {
-	if conf.EntryPoint == (common.Address{}) {
+	provider, err := ethclient.Dial(conf.ProviderURL)
+	if err != nil {
+		return fmt.Errorf("failed to connect to provider: %w", err)
+	}
+
+	if hasCode, err := addressHasCode(conf.EntryPoint, provider); err != nil {
+		return fmt.Errorf("failed to check entry point code: %w", err)
+	} else if !hasCode {
 		return ErrInvalidEntryPointAddress
 	}
 
-	if conf.SmartWallet.Factory == (common.Address{}) {
+	if hasCode, err := addressHasCode(conf.SmartWallet.Factory, provider); err != nil {
+		return fmt.Errorf("failed to check smart wallet factory code: %w", err)
+	} else if !hasCode {
 		return ErrInvalidFactoryAddress
 	}
 
-	if conf.SmartWallet.Logic == (common.Address{}) {
+	if hasCode, err := addressHasCode(conf.SmartWallet.Logic, provider); err != nil {
+		return fmt.Errorf("failed to check smart wallet logic code: %w", err)
+	} else if !hasCode {
 		return ErrInvalidLogicAddress
 	}
 
-	if conf.SmartWallet.ECDSAValidator == (common.Address{}) {
+	if hasCode, err := addressHasCode(conf.SmartWallet.ECDSAValidator, provider); err != nil {
+		return fmt.Errorf("failed to check smart wallet ECDSA validator code: %w", err)
+	} else if !hasCode {
 		return ErrInvalidECDSAValidatorAddress
 	}
 
@@ -54,7 +84,10 @@ func (conf ClientConfig) validate() error {
 		// If sponsoring paymaster, then paymaster address can be omitted as
 		// a server will return it alongside other paymaster data (and the address can be dynamic)
 		*conf.Paymaster.Type != PaymasterPimlicoVerifying && *conf.Paymaster.Type != PaymasterBiconomySponsoring {
-		if conf.Paymaster.Address == (common.Address{}) {
+
+		if hasCode, err := addressHasCode(conf.Paymaster.Address, provider); err != nil {
+			return fmt.Errorf("failed to check paymaster code: %w", err)
+		} else if !hasCode {
 			return ErrInvalidPaymasterAddress
 		}
 	}

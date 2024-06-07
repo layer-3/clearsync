@@ -113,12 +113,27 @@ func TestClientNewUserOp(t *testing.T) {
 
 func TestNewClient(t *testing.T) {
 	t.Parallel()
+	// TODO: remove this after using local node
+	t.Skip("Requires private Provider endpoint")
+
+	EOA := common.HexToAddress("0xA869fB2Ea1aE7B4ffAdF23431aF0f3B0e5587148")
 
 	t.Run("Error when entrypoint address is empty", func(t *testing.T) {
 		t.Parallel()
 
 		conf := mockConfig()
 		conf.EntryPoint = common.Address{}
+
+		_, err := NewClient(conf)
+
+		require.EqualError(t, errors.Unwrap(err), ErrInvalidEntryPointAddress.Error())
+	})
+
+	t.Run("Error when entrypoint address has no code", func(t *testing.T) {
+		t.Parallel()
+
+		conf := mockConfig()
+		conf.EntryPoint = EOA
 
 		_, err := NewClient(conf)
 
@@ -136,11 +151,33 @@ func TestNewClient(t *testing.T) {
 		require.EqualError(t, errors.Unwrap(err), ErrInvalidFactoryAddress.Error())
 	})
 
+	t.Run("Error when factory address has no code", func(t *testing.T) {
+		t.Parallel()
+
+		conf := mockConfig()
+		conf.SmartWallet.Factory = EOA
+
+		_, err := NewClient(conf)
+
+		require.EqualError(t, errors.Unwrap(err), ErrInvalidFactoryAddress.Error())
+	})
+
 	t.Run("Error when logic address is empty", func(t *testing.T) {
 		t.Parallel()
 
 		conf := mockConfig()
 		conf.SmartWallet.Logic = common.Address{}
+
+		_, err := NewClient(conf)
+
+		require.EqualError(t, errors.Unwrap(err), ErrInvalidLogicAddress.Error())
+	})
+
+	t.Run("Error when logic address has no code", func(t *testing.T) {
+		t.Parallel()
+
+		conf := mockConfig()
+		conf.SmartWallet.Logic = EOA
 
 		_, err := NewClient(conf)
 
@@ -158,12 +195,35 @@ func TestNewClient(t *testing.T) {
 		require.EqualError(t, errors.Unwrap(err), ErrInvalidECDSAValidatorAddress.Error())
 	})
 
+	t.Run("Error when ECDSA validator address has no code", func(t *testing.T) {
+		t.Parallel()
+
+		conf := mockConfig()
+		conf.SmartWallet.ECDSAValidator = EOA
+
+		_, err := NewClient(conf)
+
+		require.EqualError(t, errors.Unwrap(err), ErrInvalidECDSAValidatorAddress.Error())
+	})
+
 	t.Run("Error when paymaster address is empty", func(t *testing.T) {
 		t.Parallel()
 
 		conf := mockConfig()
 		conf.Paymaster.Type = &PaymasterPimlicoERC20
 		conf.Paymaster.Address = common.Address{}
+
+		_, err := NewClient(conf)
+
+		require.EqualError(t, errors.Unwrap(err), ErrInvalidPaymasterAddress.Error())
+	})
+
+	t.Run("Error when paymaster address has no code", func(t *testing.T) {
+		t.Parallel()
+
+		conf := mockConfig()
+		conf.Paymaster.Type = &PaymasterPimlicoERC20
+		conf.Paymaster.Address = EOA
 
 		_, err := NewClient(conf)
 
