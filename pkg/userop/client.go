@@ -343,7 +343,12 @@ func (c *backend) NewUserOp(
 		return UserOperation{}, err
 	}
 
-	logger.Debug("middlewares applied successfully", "userop", op)
+	b, err := op.MarshalJSON()
+	if err != nil {
+		logger.Error("failed to marshal user operation", "error", err)
+	} else {
+		logger.Debug("middlewares applied successfully", "userop", string(b))
+	}
 	return op, nil
 }
 
