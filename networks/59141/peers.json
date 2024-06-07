@@ -18,7 +18,7 @@
             "logo": "https://kayen.io/images/logo.png",
             "sm_logo": "https://kayen.io/images/logo-white-mode.svg"
         },
-        "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
+        "address": "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3",
         "packages": [
             {
                 "name": "retail",
