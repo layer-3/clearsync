@@ -696,8 +696,7 @@
           },
           "region": "middle_east",
           "code": "ae",
-          "country": "UAE",
-          "logo": "https://trade.ncx.cx/images/LightLogo.svg"
+          "country": "UAE"
       },
       "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
       "packages": [
