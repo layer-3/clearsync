@@ -347,7 +347,7 @@ func (c *backend) NewUserOp(
 	if err != nil {
 		logger.Error("failed to marshal user operation", "error", err)
 	} else {
-		logger.Debug("middlewares applied successfully", "userop", b)
+		logger.Debug("middlewares applied successfully", "userop", string(b))
 	}
 	return op, nil
 }
