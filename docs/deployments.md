@@ -74,7 +74,10 @@ Deployed by: `0xfa89b5b708d8fbd174ebe9be4d3adf1cab03a0b5`[↗](https://lineascan
 
 ## Testnet
 
-### Goerli
+### ~~Goerli~~ (Deprecated)
+
+<details>
+  <summary>Expand</summary>
 
 Chain id: 5.
 
@@ -96,6 +99,8 @@ Repository: [layer-3/ClearSync](https://github.com/layer-3/clearsync).
 | State channels Margin App  | ConsensusApp      | [0xe03d...6f2e](https://goerli.etherscan.io/tx/0xe03dc0ececee4124eaa7af550b0a73ca0be8b96ec22ca5ecdc028f049e876f2e) | `0xB53e7c4c7741bc6bdc90F70704930a840bDa5B00`[↗](https://goerli.etherscan.io/address/0xB53e7c4c7741bc6bdc90F70704930a840bDa5B00) | c197bebe236ba3134ca2de8c0ac6fa08c2550430 |
 | State channels Escrow App  | ConsensusApp      | [0xdeeb...2fd9](https://goerli.etherscan.io/tx/0xdeebee80eaef3679ee732f1984aadfbef5e0cdaad15941cf047de1fc71a02fd9) | `0xE3094A9Fa0eBDef2Df5793b21286C096D90664e3`[↗](https://goerli.etherscan.io/address/0xE3094A9Fa0eBDef2Df5793b21286C096D90664e3) | c197bebe236ba3134ca2de8c0ac6fa08c2550430 |
 | WETH Test ERC20 Token      | TestERC20         | [0x7c15...5401](https://goerli.etherscan.io/tx/0x7c156a0664554cd3681b3c7f2494b5122b6bf32a855fd12cbb210b794ecf5401) | `0x660E49546d0b500490f88aee8e0A0aa5819170f0`[↗](https://goerli.etherscan.io/address/0x660E49546d0b500490f88aee8e0A0aa5819170f0) | 49aa81fef3bc28c84e92eb4c231a4fe19db4dcaa |
+
+</details>
 
 ### Sepolia
 
@@ -120,6 +125,12 @@ Repository: [layer-3/ClearSync](https://github.com/layer-3/clearsync).
 | Wrapped Ether ERC20 Token   | TestERC20         | [0x3d8d...50ad](https://sepolia.etherscan.io/tx/0x3d8dbe7ab18f85dfaf146fdc808b6816e792d95be8c56acd010466a4a63950ad) | `0x2Ff553CA05b647b0e352fe25828BB754a35Ff7dE`[↗](https://sepolia.etherscan.io/address/0x2ff553ca05b647b0e352fe25828bb754a35ff7de) | 418c72494d451b5c4593b602993b71d95517b83f |
 | Wrapped Matic ERC20 Token   | TestERC20         | [0x6542...f284](https://sepolia.etherscan.io/tx/0x654222f83fe14a1aa9d2d17be4e7fe2d86e2f1f31bcfcfc3b552b501d6e4f284) | `0x4e519DD7b0137D3D7a3Fe8EA2aC38E9c598230DB`[↗](https://sepolia.etherscan.io/address/0x4e519dd7b0137d3d7a3fe8ea2ac38e9c598230db) | 418c72494d451b5c4593b602993b71d95517b83f |
 | Yellow Duckies ERC20 Token  | TestERC20         | [0xf451...32e3](https://sepolia.etherscan.io/tx/0xf4512ec5b2893300e0f5d17c84e245346d5f7420599e96c0098ee6b6eeb632e3) | `0x63FD175d3215779deBA7532fC660fA0E10c18676`[↗](https://sepolia.etherscan.io/address/0x63fd175d3215779deba7532fc660fa0e10c18676) | 418c72494d451b5c4593b602993b71d95517b83f |
+
+Repository: [layer-3/chaintools](https://github.com/layer-3/chaintools).
+
+| Description                     | Contract Name | Transaction Hash                                                                                                    | Address                                                                                                                          | Git SHA                                  |
+| ------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| Modified Solady Create3 Factory | SoladyCreate3 | [0x279b...35b7](https://sepolia.etherscan.io/tx/0x279b547b940cd7d529acfa457f953c290722522e1093c907d982a3fd99a335b7) | `0x6c0bbB08ea7926E378ff2068af696E613E0B0cBb`[↗](https://sepolia.etherscan.io/address/0x6c0bbB08ea7926E378ff2068af696E613E0B0cBb) | 9b31a7018b5082c9472ac99b4475270b4ae8b689 |
 
 ### Amoy
 
@@ -157,7 +168,7 @@ Chain id: 59141.
 
 #### Contracts Deployed
 
-Last updated: April 5, 2024.
+Last updated: June 7, 2024.
 Deployed with account: `0x2185da3337cad307fd48dFDabA6D4C66A9fD2c71`[↗](https://sepolia.lineascan.build/address/0x2185da3337cad307fd48dfdaba6d4c66a9fd2c71).
 
 Repository: [layer-3/ClearSync](https://github.com/layer-3/clearsync).
@@ -174,6 +185,11 @@ Repository: [layer-3/ClearSync](https://github.com/layer-3/clearsync).
 | Wrapped Bitcoin ERC20 Token | TestERC20         | [0x931d...26c3](https://sepolia.lineascan.build/tx/0x931dd97e17191ff97d5dfee56cdaa9435376221989fb6d91147c5cee9a2826c3) | `0xE11E73Ce5f7c45580e6B4A63069C18b0A5d70CA2`[↗](https://sepolia.lineascan.build/address/0xE11E73Ce5f7c45580e6B4A63069C18b0A5d70CA2) | 2c6129a1831778972c4f07766ec69e25674d2438 |
 | Wrapped Ether ERC20 Token   | TestERC20         | [0xf620...49ae](https://sepolia.lineascan.build/tx/0xf6209bb534254ff4a574b2c874bc3c76581ecbd65f6a2cc648fff3d6b4a549ae) | `0xEB31ce20F5c72C568e82D0183aa8Da3B9e5e177f`[↗](https://sepolia.lineascan.build/address/0xEB31ce20F5c72C568e82D0183aa8Da3B9e5e177f) | 2c6129a1831778972c4f07766ec69e25674d2438 |
 | Linda ERC20 Token           | TestERC20         | [0xec40...e182](https://sepolia.lineascan.build/tx/0xec40f1fde8016615d483f038da3d64f7431e599efa787fe460f4c1949b1ce182) | `0xd15833D5184Ca08a8a26b923754EaA654F5Bb85F`[↗](https://sepolia.lineascan.build/address/0xd15833D5184Ca08a8a26b923754EaA654F5Bb85F) | 2c6129a1831778972c4f07766ec69e25674d2438 |
+| BNB ERC20 Token             | TestERC20         | [0x350b...a3de](https://sepolia.lineascan.build/tx/0x350bd04b1f7ae6431c00d830cddd883cd1ce80ec22a09033c922b6e83324a3de) | `0xd14c1883B0554c7Ca43797D8F06618922DEE973A`[↗](https://sepolia.lineascan.build/address/0xd14c1883B0554c7Ca43797D8F06618922DEE973A) | 2c6129a1831778972c4f07766ec69e25674d2438 |
+| Pepe ERC20 Token            | TestERC20         | [0xf532...1e3f](https://sepolia.lineascan.build/tx/0xf5324c39d4605cd808c84ddce4681dce991a4a10f64455121bfb794814e51e3f) | `0xC981Cd9be7a334e8F5ef24F245BbF18b181B8fa9`[↗](https://sepolia.lineascan.build/address/0xC981Cd9be7a334e8F5ef24F245BbF18b181B8fa9) | 2c6129a1831778972c4f07766ec69e25674d2438 |
+| Badger ERC20 Token          | TestERC20         | [0x1419...a500](https://sepolia.lineascan.build/tx/0x14197fdb8726043f90fd3aaeb70f8c5c2c644b59010f74a0c49907ef186ca500) | `0x2A7a211fB5860C63f2F53c8CB1FE400aBe222b92`[↗](https://sepolia.lineascan.build/address/0x2A7a211fB5860C63f2F53c8CB1FE400aBe222b92) | 2c6129a1831778972c4f07766ec69e25674d2438 |
+| FLOKI ERC20 Token           | TestERC20         | [0x8929...f215](https://sepolia.lineascan.build/tx/0x8929f1cf8e2947ec59b5862e788f0f14db9ab7b3791a90c039382257311df215) | `0xEC077c58C614707D4c09473C8ed1B359F7D2C935`[↗](https://sepolia.lineascan.build/address/0xEC077c58C614707D4c09473C8ed1B359F7D2C935) | 2c6129a1831778972c4f07766ec69e25674d2438 |
+| SHIBA INU ERC20 Token       | TestERC20         | [0x3f4a...b60a](https://sepolia.lineascan.build/tx/0x3f4ae0b6e313ea93c544e249d7dff1c87a2c66189434fd2f5dbb4bc3395cb60a) | `0x0fe19c1da3a8af033f11A349631Ea60F8244e6Ce`[↗](https://sepolia.lineascan.build/address/0x0fe19c1da3a8af033f11A349631Ea60F8244e6Ce) | 2c6129a1831778972c4f07766ec69e25674d2438 |
 
 Repository: [layer-3/chaintools](https://github.com/layer-3/chaintools).
 
