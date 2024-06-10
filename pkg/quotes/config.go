@@ -93,7 +93,6 @@ type FakeMarketConfig struct {
 }
 
 type UniswapV3Config struct {
-	URL            string        `yaml:"url" env:"URL"`
 	AssetsURL      string        `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/1/assets.json"`
 	MappingURL     string        `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/1/mapping.json"`
 	MarketsURL     string        `yaml:"markets_url" env:"MARKETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/1/markets.json"`
@@ -103,7 +102,6 @@ type UniswapV3Config struct {
 }
 
 type SyncswapConfig struct {
-	URL                       string        `yaml:"url" env:"URL"`
 	AssetsURL                 string        `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/assets.json"`
 	MappingURL                string        `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/mapping.json"`
 	MarketsURL                string        `yaml:"markets_url" env:"MARKETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/markets.json"`
@@ -115,7 +113,6 @@ type SyncswapConfig struct {
 }
 
 type QuickswapConfig struct {
-	URL        string `yaml:"url" env:"URL"`
 	AssetsURL  string `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/137/assets.json"`
 	MappingURL string `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/137/mapping.json"`
 	MarketsURL string `yaml:"markets_url" env:"MARKETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/137/markets.json"`
@@ -128,7 +125,6 @@ type QuickswapConfig struct {
 }
 
 type SectaV2Config struct {
-	URL            string        `yaml:"url" env:"URL"`
 	AssetsURL      string        `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/assets.json"`
 	MappingURL     string        `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/mapping.json"`
 	MarketsURL     string        `yaml:"markets_url" env:"MARKETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/markets.json"`
@@ -138,7 +134,6 @@ type SectaV2Config struct {
 }
 
 type SectaV3Config struct {
-	URL            string        `yaml:"url" env:"URL"`
 	AssetsURL      string        `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/assets.json"`
 	MappingURL     string        `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/mapping.json"`
 	MarketsURL     string        `yaml:"markets_url" env:"MARKETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/markets.json"`

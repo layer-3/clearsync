@@ -12,6 +12,30 @@
     }
   },
   {
+    "symbol": "spot://SHIB/USD",
+    "quotes": {
+      "dexs": false
+    }
+  },
+  {
+    "symbol": "spot://BNB/USD",
+    "quotes": {
+      "dexs": false
+    }
+  },
+  {
+    "symbol": "spot://PEPE/USD",
+    "quotes": {
+      "dexs": false
+    }
+  },
+  {
+    "symbol": "spot://FLOKI/USD",
+    "quotes": {
+      "dexs": false
+    }
+  },
+  {
     "symbol": "spot://DUCKIES/USD"
   },
   {
@@ -25,5 +49,11 @@
   },
   {
     "symbol": "spot://LUBE/USD"
+  },
+  {
+    "symbol": "spot://LINDA/USD"
+  },
+  {
+    "symbol": "spot://BADGER/USD"
   }
 ]
