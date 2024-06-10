@@ -26,12 +26,11 @@ var (
 	sessionKeyConfig     = exampleSessionKeyConfig
 	sessionKeySigner     = exampleSessionKeySigner
 
-	owner       = common.HexToAddress("0x2185da3337cad307fd48dFDabA6D4C66A9fD2c71")
-	walletIndex = decimal.NewFromInt(2)
-	smartWallet = common.HexToAddress("0xf4f44f7ba7c318e86b4240b8b8303aaf69fdd157")
-	receiver    = common.HexToAddress("0xb66bf78cad7cbab51988ddc792652cbabdff7675")
-	token       = common.HexToAddress("0x18e73A5333984549484348A94f4D219f4faB7b81") // Duckies
-	amount      = decimal.RequireFromString("11")                                   // wei
+	owner = common.HexToAddress("0x2185da3337cad307fd48dFDabA6D4C66A9fD2c71")
+	// Wallet: 0x69b36b0Cb89b1666d85Ed4fF48243730E9c53405
+	receiver = common.HexToAddress("0xb66bf78cad7cbab51988ddc792652cbabdff7675")
+	token    = common.HexToAddress("0x18e73A5333984549484348A94f4D219f4faB7b81") // Duckies
+	amount   = decimal.RequireFromString("11")                                   // wei
 )
 
 func main() {
@@ -55,7 +54,7 @@ func main() {
 	}
 
 	// calculate smart wallet address
-	walletAddress, err := userOpClient.GetAccountAddress(ctx, owner, walletIndex)
+	walletAddress, err := userOpClient.GetAccountAddress(ctx, owner, walletDeploymentOpts.Index)
 	if err != nil {
 		panic(fmt.Errorf("failed to get wallet address: %w", err))
 	}
@@ -66,7 +65,7 @@ func main() {
 	// 	To:    receiver,
 	// 	Value: amount.BigInt(),
 	// }
-	// if err := createAndSendUserop(userOpClient, userOpSigner, smartWallet, smart_wallet.Calls{transferNative}); err != nil {
+	// if err := createAndSendUserop(userOpClient, userOpSigner, walletAddress, smart_wallet.Calls{transferNative}); err != nil {
 	// 	panic(err)
 	// }
 
@@ -77,7 +76,7 @@ func main() {
 		panic(fmt.Errorf("failed to create session key client: %w", err))
 	}
 
-	enableDigest, err := sessionKeyClient.GetEnableDataDigest(smartWallet, sessionKeySigner.CommonAddress())
+	enableDigest, err := sessionKeyClient.GetEnableDataDigest(walletAddress, sessionKeySigner.CommonAddress())
 	if err != nil {
 		panic(fmt.Errorf("failed to get enable data digest: %w", err))
 	}
@@ -88,19 +87,19 @@ func main() {
 	}
 
 	// enable and use session key
-	// balanceOfCall, err := newBalanceOfCall(token, walletAddress)
-	// if err != nil {
-	// 	panic(fmt.Errorf("failed to build balanceOf call: %w", err))
-	// }
-
-	transferCall, err := newTransferERC20Call(token, receiver, amount)
+	balanceOfCall, err := newBalanceOfCall(token, walletAddress)
 	if err != nil {
-		panic(fmt.Errorf("failed to build transfer call: %w", err))
+		panic(fmt.Errorf("failed to build balanceOf call: %w", err))
 	}
+
+	// transferCall, err := newTransferERC20Call(token, receiver, amount)
+	// if err != nil {
+	// 	panic(fmt.Errorf("failed to build transfer call: %w", err))
+	// }
 
 	enablingSKSigner := sessionKeyClient.GetEnablingUserOpSigner(sessionKeySigner, enableSig)
 
-	if err = createAndSendUserop(userOpClient, enablingSKSigner, smartWallet, smart_wallet.Calls{transferCall}); err != nil {
+	if err = createAndSendUserop(userOpClient, enablingSKSigner, walletAddress, smart_wallet.Calls{balanceOfCall}); err != nil {
 		panic(fmt.Errorf("failed to build userop: %w", err))
 	}
 
@@ -112,7 +111,7 @@ func main() {
 		panic(fmt.Errorf("failed to build approve call: %w", err))
 	}
 
-	if err = createAndSendUserop(sponsoringUserOpClient, sessionKeyUserOpSigner, smartWallet, smart_wallet.Calls{approveCall}); err != nil {
+	if err = createAndSendUserop(sponsoringUserOpClient, sessionKeyUserOpSigner, walletAddress, smart_wallet.Calls{approveCall}); err != nil {
 		panic(fmt.Errorf("failed to build userop: %w", err))
 	}
 }
