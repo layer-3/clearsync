@@ -12,7 +12,7 @@ var (
 	// rpcRateLimiter limits the number of requests to the RPC provider for DEX drivers.
 	// As of spring 2024, Infura enables 10 req/s rate limit for free plan.
 	// A lower limit of 5 req/s is used here just to be safe.
-	rpcRateLimiter = rate.NewLimiter(5, 1)
+	rpcRateLimiter = rate.NewLimiter(10, 1)
 	httpRpcErrors  = map[int]rpcError{
 		400: {
 			Recoverable: false,

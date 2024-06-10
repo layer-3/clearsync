@@ -605,6 +605,8 @@ type dexPool[Event any, EventIterator dexEventIterator] struct {
 }
 
 type dexEvent[Event any, EventIterator dexEventIterator] interface {
+	Token0(opts *bind.CallOpts) (common.Address, error)
+	Token1(opts *bind.CallOpts) (common.Address, error)
 	WatchSwap(opts *bind.WatchOpts, sink chan<- *Event, from, to []common.Address) (event.Subscription, error)
 	FilterSwap(opts *bind.FilterOpts, sender, to []common.Address) (EventIterator, error)
 }
@@ -708,6 +710,19 @@ func buildV2Trade[Event any, EventIterator dexEventIterator](
 	return trade, nil
 }
 
+type v3TradeOpts[Event any, EventIterator dexEventIterator] struct {
+	client *ethclient.Client
+
+	Driver          DriverType
+	RawAmount0      *big.Int
+	RawAmount1      *big.Int
+	RawSqrtPriceX96 *big.Int
+	BlockNumber     uint64 // TODO: assign in drivers
+	Pool            *dexPool[Event, EventIterator]
+	Swap            *Event
+	Logger          *log.ZapEventLogger
+}
+
 func buildV3Trade[Event any, EventIterator dexEventIterator](o v3TradeOpts[Event, EventIterator]) (trade TradeEvent, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -730,6 +745,19 @@ func buildV3Trade[Event any, EventIterator dexEventIterator](o v3TradeOpts[Event
 		return TradeEvent{}, fmt.Errorf("raw sqrtPriceX96 (%s) is not a valid non-zero number", o.RawSqrtPriceX96)
 	}
 	sqrtPriceX96 := decimal.NewFromBigInt(o.RawSqrtPriceX96, 0)
+
+	var createdAt time.Time
+	if o.client != nil {
+		// TODO: cache the value to reduce the number of calls
+		//       across all pools and drivers that use the same chain.
+		block, err := o.client.BlockByNumber(context.TODO(), new(big.Int).SetUint64(o.BlockNumber))
+		if err != nil {
+			return TradeEvent{}, fmt.Errorf("failed to get block by number: %w", err)
+		}
+		createdAt = time.Unix(int64(block.Time()), 0)
+	} else {
+		createdAt = time.Now()
+	}
 
 	if o.Pool.Reversed {
 		amount0, amount1 = amount1, amount0
@@ -762,7 +790,7 @@ func buildV3Trade[Event any, EventIterator dexEventIterator](o v3TradeOpts[Event
 		Amount:    amount, // amount of BASE token received
 		Total:     total,  // total cost in QUOTE token
 		TakerType: takerType,
-		CreatedAt: time.Now(),
+		CreatedAt: createdAt,
 	}
 	return tr, nil
 }

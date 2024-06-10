@@ -5,7 +5,9 @@ go 1.21.3
 require (
 	github.com/adshao/go-binance/v2 v2.5.0
 	github.com/ethereum/go-ethereum v1.13.11
+	github.com/go-echarts/go-echarts/v2 v2.3.3
 	github.com/google/uuid v1.6.0
+	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/websocket v1.5.0
 	github.com/ipfs/go-log/v2 v2.5.1
 	github.com/layer-3/go-merkletree v0.2.3
@@ -48,6 +50,7 @@ require (
 	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
+	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/moby/patternmatcher v0.6.0 // indirect
 	github.com/moby/sys/sequential v0.5.0 // indirect
@@ -61,6 +64,7 @@ require (
 	github.com/prometheus/client_model v0.4.0 // indirect
 	github.com/prometheus/common v0.42.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
+	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/shirou/gopsutil/v3 v3.23.12 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
@@ -110,7 +114,7 @@ require (
 	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/net v0.18.0
 	golang.org/x/sync v0.5.0
-	golang.org/x/sys v0.16.0 // indirect
+	golang.org/x/sys v0.17.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.5.0
 	golang.org/x/tools v0.15.0 // indirect
