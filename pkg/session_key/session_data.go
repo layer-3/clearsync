@@ -14,7 +14,6 @@ const (
 	ValidatorApprovedStruct = "ValidatorApproved(bytes4 sig,uint256 validatorData,address executor,bytes enableData)"
 	DomainStruct            = "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
 	KernelDomainName        = "Kernel"
-	KernelDomainVersion     = "0.2.4"
 	KernelEnableDataLength  = 20 + 32 + 6 + 6 + 20 + 32
 )
 
