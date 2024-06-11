@@ -13,5 +13,8 @@
   "paymaster": {
     "type": "off"
   },
-  "session_key_validator": "0x18d865c12377cf6d106953b83ee1b5ba7c3073ac"
+  "session_key": {
+    "kernel_version": "0.2.2",
+    "session_key_validator": "0x18d865c12377cf6d106953b83ee1b5ba7c3073ac"
+  }
 }
