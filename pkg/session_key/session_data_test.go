@@ -82,6 +82,7 @@ func Test_getKernelSessionDataHash(t *testing.T) {
 		sessionData   SessionData
 		sig           [4]byte
 		chainId       *big.Int
+		kernelVersion string
 		kernelAddress common.Address
 		validator     common.Address
 		executor      common.Address
@@ -98,6 +99,7 @@ func Test_getKernelSessionDataHash(t *testing.T) {
 			},
 			sig:           KernelExecuteSig,
 			chainId:       big.NewInt(31337),
+			kernelVersion: "0.2.2",
 			kernelAddress: common.HexToAddress("0xBf1ca3AF628e173b067629F007c4860593779D79"),
 			validator:     common.HexToAddress("0xa0Cb889707d426A7A386870A03bc70d1b0697598"),
 			executor:      common.HexToAddress("0x"),
@@ -110,6 +112,7 @@ func Test_getKernelSessionDataHash(t *testing.T) {
 			tc.sessionData,
 			tc.sig,
 			tc.chainId,
+			tc.kernelVersion,
 			tc.kernelAddress,
 			tc.validator,
 			tc.executor,
@@ -122,18 +125,26 @@ func Test_getKernelSessionDataHash(t *testing.T) {
 func Test_buildKernelDomainSeparator(t *testing.T) {
 	tcs := []struct {
 		chainId       *big.Int
+		kernelVersion string
 		kernelAddress common.Address
 		hash          string
 	}{
 		{
 			chainId:       big.NewInt(31337),
+			kernelVersion: "0.2.2",
 			kernelAddress: common.HexToAddress("0xBf1ca3AF628e173b067629F007c4860593779D79"),
 			hash:          "0xff233fe31a7c621c000cd12803c14902809135522ffe1d656ef68a329e21c6b6",
+		},
+		{
+			chainId:       big.NewInt(31337),
+			kernelVersion: "0.2.4",
+			kernelAddress: common.HexToAddress("0xBf1ca3AF628e173b067629F007c4860593779D79"),
+			hash:          "0x82f5bbe912d741a8359d2efb223d959b193ae59b68534de08a2e2e870d5bcc26",
 		},
 	}
 
 	for _, tc := range tcs {
-		hash := getKernelDomainSeparator(tc.chainId, tc.kernelAddress)
+		hash := getKernelDomainSeparator(tc.chainId, tc.kernelVersion, tc.kernelAddress)
 		assert.Equal(t, tc.hash, hexutil.Encode(hash))
 	}
 }
