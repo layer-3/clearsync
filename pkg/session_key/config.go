@@ -16,7 +16,7 @@ const ECDSAValidatorAddress = "0xd9AB5096a832b9ce79914329DAEE236f8Eea0390"
 
 type ClientConfig struct {
 	ProviderURL                string
-	KernelVersion              string `yaml:"kernel_version" env:"SESSION_KEY_CLIENT_KERNEL_VERSION"`
+	KernelVersion              string
 	ExecuteInBatch             bool
 	SessionKeyValidAfter       uint64
 	SessionKeyValidUntil       uint64
