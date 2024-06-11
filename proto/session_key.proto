@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+option go_package = "github.com/layer-3/clearport/proto";
+
+message IncompleteUserOp {
+  string sender = 1;
+  int64 nonce = 2;
+  string init_code = 3;
+  string call_data = 4;
+  int64 call_gas_limit = 5;
+  int64 verification_gas_limit = 6;
+  int64 pre_verification_gas = 7;
+  int64 max_fee_per_gas = 8;
+  int64 max_priority_fee_per_gas = 9;
+  string paymaster_and_data = 10;
+  string signature = 11;
+}
+
+message SessionKeyPermission {
+  string target = 1;
+  string function_abi = 2;
+  string value_limit = 3;
+  repeated ParamRule param_rules = 4;
+}
+
+
+enum ParamCondition {
+  PARAM_CONDITION_UNSPECIFIED = 0;
+  PARAM_CONDITION_EQUAL = 1;
+  PARAM_CONDITION_GREATER_THAN = 2;
+  PARAM_CONDITION_LESS_THAN = 3;
+  PARAM_CONDITION_GREATER_THAN_OR_EQUAL = 4;
+  PARAM_CONDITION_LESS_THAN_OR_EQUAL = 5;
+  PARAM_CONDITION_NOT_EQUAL = 6;
+}
+
+message ParamRule {
+  ParamCondition condition = 1;
+  string param = 2;
+}

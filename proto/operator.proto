@@ -2,6 +2,7 @@ syntax = "proto3";
 
 import "auth.proto";
 import "core.proto";
+import "session_key.proto";
 import "settlement.proto";
 import "state_machine.proto";
 
@@ -157,10 +158,10 @@ message ErrorNotification {
 }
 
 message SessionKeyTransactionNotification {
-  string incomplete_userop = 1;
+  IncompleteUserOp incomplete_userop = 1;
   uint64 enable_sig_offset = 2;
   string digest_hash = 3;
-  string permissions = 4;
+  repeated SessionKeyPermission permissions = 4;
 }
 
 message SettlementRequest {

@@ -263,10 +263,10 @@ protolint:disable MAX_LINE_LENGTH
 
 | Field | Type | Description |
 | ----- | ---- | ----------- |
-| incomplete_userop | [string](#string) |  |
+| incomplete_userop | [IncompleteUserOp](#incompleteuserop) |  |
 | enable_sig_offset | [uint64](#uint64) |  |
 | digest_hash | [string](#string) |  |
-| permissions | [string](#string) |  |
+| permissions | [SessionKeyPermission](#sessionkeypermission) |  |
 
 
 
