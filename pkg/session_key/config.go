@@ -14,8 +14,9 @@ const SessionKeyValidatorAddress = "0x5C06CE2b673fD5E6e56076e40DD46aB67f5a72A5"
 // Kernel v2.2
 const ECDSAValidatorAddress = "0xd9AB5096a832b9ce79914329DAEE236f8Eea0390"
 
-type Config struct {
+type ClientConfig struct {
 	ProviderURL                string
+	KernelVersion              string `yaml:"kernel_version" env:"SESSION_KEY_CLIENT_KERNEL_VERSION"`
 	ExecuteInBatch             bool
 	SessionKeyValidAfter       uint64
 	SessionKeyValidUntil       uint64
@@ -41,4 +42,12 @@ func NewEthClient(rpcURLString string) (*ethclient.Client, error) {
 	}
 
 	return client, nil
+}
+
+func ValidateKernelVersion(version string) error {
+	if version != "0.2.2" && version != "0.2.4" {
+		return fmt.Errorf("kernel version not supported: %s", version)
+	}
+
+	return nil
 }

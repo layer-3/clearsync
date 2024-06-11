@@ -57,7 +57,7 @@ var (
 		)),
 	)
 
-	exampleSessionKeyConfig = session_key.Config{
+	exampleSessionKeyConfig = session_key.ClientConfig{
 		ProviderURL:                "https://NETWORK.infura.io/v3/YOUR_INFURA_API_KEY",
 		ExecuteInBatch:             true,
 		SessionKeyValidAfter:       0,

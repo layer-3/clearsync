@@ -56,6 +56,7 @@ type Client interface {
 type backend struct {
 	provider                   *ethclient.Client
 	chainId                    *big.Int
+	kernelVersion              string
 	executionSig               [4]byte
 	sessionKeyValidAfter       uint64
 	sessionKeyValidUntil       uint64
@@ -66,10 +67,15 @@ type backend struct {
 	permTree                   *mt.MerkleTree // root (hash) of the permission tree over all parameters as leaves
 }
 
-func NewClient(config Config) (Client, error) {
+func NewClient(config ClientConfig) (Client, error) {
 	provider, err := NewEthClient(config.ProviderURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Ethereum client: %w", err)
+	}
+
+	err = ValidateKernelVersion(config.KernelVersion)
+	if err != nil {
+		return nil, err
 	}
 
 	chainId, err := provider.ChainID(context.Background())
@@ -90,6 +96,7 @@ func NewClient(config Config) (Client, error) {
 	return &backend{
 		provider:                   provider,
 		chainId:                    chainId,
+		kernelVersion:              config.KernelVersion,
 		executionSig:               executionSig,
 		sessionKeyValidAfter:       config.SessionKeyValidAfter,
 		sessionKeyValidUntil:       config.SessionKeyValidUntil,
@@ -111,6 +118,7 @@ func (b *backend) GetEnableDataDigest(kernelAddress, sessionKey common.Address) 
 		sessionData,
 		b.executionSig,
 		b.chainId,
+		b.kernelVersion,
 		kernelAddress,
 		b.sessionKeyValidatorAddress,
 		b.executorAddress,

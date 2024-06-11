@@ -14,7 +14,7 @@ const (
 	ValidatorApprovedStruct = "ValidatorApproved(bytes4 sig,uint256 validatorData,address executor,bytes enableData)"
 	DomainStruct            = "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
 	KernelDomainName        = "Kernel"
-	KernelDomainVersion     = "0.2.2"
+	KernelDomainVersion     = "0.2.4"
 	KernelEnableDataLength  = 20 + 32 + 6 + 6 + 20 + 32
 )
 
@@ -76,10 +76,10 @@ func UnpackEnableData(signature []byte) (SessionData, error) {
 }
 
 // see https://github.com/Vectorized/solady/blob/v0.0.123/src/utils/EIP712.sol#L133-L141
-func getKernelSessionDataHash(sessionData SessionData, sig [4]byte, chainId *big.Int, kernelAddress, validator, executor common.Address) []byte {
+func getKernelSessionDataHash(sessionData SessionData, sig [4]byte, chainId *big.Int, kernelVersion string, kernelAddress, validator, executor common.Address) []byte {
 	enableData := sessionData.PackEnableData()
 	enableDataHash := getEnableDataHash(enableData, sig, validator, executor)
-	domainSeparator := getKernelDomainSeparator(chainId, kernelAddress)
+	domainSeparator := getKernelDomainSeparator(chainId, kernelVersion, kernelAddress)
 
 	typedData := make([]byte, 0, 2+32+32)
 	typedData = append(typedData, []byte{0x19, 0x01}...)
@@ -90,12 +90,12 @@ func getKernelSessionDataHash(sessionData SessionData, sig [4]byte, chainId *big
 }
 
 // see https://github.com/Vectorized/solady/blob/v0.0.123/src/utils/EIP712.sol#L188-L196
-func getKernelDomainSeparator(chainId *big.Int, kernelAddress common.Address) []byte {
+func getKernelDomainSeparator(chainId *big.Int, kernelVersion string, kernelAddress common.Address) []byte {
 	domainSeparator := make([]byte, 0, 32+32+32+32+32)
 
 	domainSeparator = append(domainSeparator, crypto.Keccak256([]byte(DomainStruct))...)
 	domainSeparator = append(domainSeparator, crypto.Keccak256([]byte(KernelDomainName))...)
-	domainSeparator = append(domainSeparator, crypto.Keccak256([]byte(KernelDomainVersion))...)
+	domainSeparator = append(domainSeparator, crypto.Keccak256([]byte(kernelVersion))...)
 	domainSeparator = append(domainSeparator, chainId.FillBytes(make([]byte, 32))...)
 	domainSeparator = append(domainSeparator, make([]byte, 12)...)
 	domainSeparator = append(domainSeparator, kernelAddress.Bytes()...)
