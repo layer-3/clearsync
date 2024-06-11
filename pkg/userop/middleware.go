@@ -97,6 +97,7 @@ func getGasPricesMiddleware(provider EthBackend, gasConfig GasConfig) middleware
 			if !ok {
 				return fmt.Errorf("failed to parse maxPriorityFeePerGas: %s", maxPriorityFeePerGasStr)
 			}
+			logger.Debug("fetched maxPriorityFeePerGas", "maxPriorityFeePerGas", maxPriorityFeePerGas.String())
 
 			// Increase maxPriorityFeePerGas to give user more
 			// flexibility in setting the gas price.
@@ -116,7 +117,7 @@ func getGasPricesMiddleware(provider EthBackend, gasConfig GasConfig) middleware
 				return err
 			}
 			blockBaseFee := block.BaseFee()
-			logger.Debug("block base fee", "baseFee", blockBaseFee.String())
+			logger.Debug("fetched block base fee", "baseFee", blockBaseFee.String())
 
 			maxFeePerGas = new(big.Int).Mul(blockBaseFee, gasConfig.MaxFeePerGasMultiplier.BigInt())
 			maxFeePerGas.Add(maxFeePerGas, maxPriorityFeePerGas)
