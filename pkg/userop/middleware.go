@@ -250,7 +250,12 @@ func estimateUserOperationGas(bundler RPCBackend, entryPoint common.Address) mid
 			return nil
 		}
 
-		logger.Debug("estimating userOp gas limits", "userOp", op)
+		b, err := op.MarshalJSON()
+		if err != nil {
+			logger.Error("failed to marshal user operation", "error", err)
+		} else {
+			logger.Debug("estimating userOp gas limits", "userOp", string(b))
+		}
 
 		// ERC4337-standardized gas estimation
 		var est gasEstimate
