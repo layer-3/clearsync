@@ -51,7 +51,7 @@ type baseDEX[Event any, Contract any, EventIterator dexEventIterator] struct {
 	// disabledMarkets is a set of markets that are enabled for DEXes.
 	// The map is assumed to be read-only,
 	// so there's no need for extra thread safety.
-	disabledMarkets map[Market]struct{}
+	disabledMarkets map[string]struct{}
 	mapping         safe.Map[string, []string]
 }
 
@@ -113,7 +113,7 @@ func newBaseDEX[Event any, Contract any, EventIterator dexEventIterator](
 		history:         config.History,
 		streams:         safe.NewMap[Market, *safe.Map[common.Address, dexStream[Event]]](),
 		assets:          safe.NewMap[string, poolToken](),
-		disabledMarkets: make(map[Market]struct{}),
+		disabledMarkets: make(map[string]struct{}),
 		mapping:         safe.NewMap[string, []string](),
 	}, nil
 }
@@ -204,7 +204,7 @@ func (b *baseDEX[Event, Contract, EventIterator]) Start() error {
 				return
 			}
 			market := NewMarket(tokens[0], tokens[1])
-			b.disabledMarkets[market] = struct{}{}
+			b.disabledMarkets[market.String()] = struct{}{}
 		}
 
 		// Run post-start hook
@@ -273,7 +273,7 @@ func (b *baseDEX[Event, Contract, EventIterator]) Subscribe(market Market) error
 	}
 
 	// Check if market is enabled for DEXes
-	if _, ok := b.disabledMarkets[market]; ok && cexConfigured.Load() {
+	if _, ok := b.disabledMarkets[market.String()]; ok && cexConfigured.Load() {
 		return fmt.Errorf("%w: %s", ErrMarketDisabled, market)
 	}
 
