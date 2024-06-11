@@ -56,6 +56,7 @@ func newSyncswap(rpcUrl string, config SyncswapConfig, outbox chan<- TradeEvent,
 		RPC:        rpcUrl,
 		AssetsURL:  config.AssetsURL,
 		MappingURL: config.MappingURL,
+		MarketsURL: config.MarketsURL,
 		IdlePeriod: config.IdlePeriod,
 		// Hooks
 		PostStartHook: hooks.postStart,

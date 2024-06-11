@@ -2,6 +2,7 @@ package quotes
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/big"
 	"slices"
@@ -220,7 +221,11 @@ func (a *indexAggregator) Subscribe(m Market) error {
 					// TODO: check if base and quote are same
 					m := NewMarketDerived(m.baseUnit, convertFrom, m.quoteUnit)
 					if err := d.Subscribe(m); err != nil {
-						loggerIndex.Infow("skipping market", "driver", d.ActiveDrivers()[0], "market", m, "error", err)
+						loggerIndex.Infow("skipping market",
+							"driver", d.ActiveDrivers()[0],
+							"market", m,
+							"is_disabled", errors.Is(err, ErrMarketDisabled),
+							"error", err)
 						continue
 					}
 					loggerIndex.Infow("subscribed to helper market",

@@ -28,6 +28,7 @@ type baseDEX[Event any, Contract any, EventIterator dexEventIterator] struct {
 	rpc        string
 	assetsURL  string
 	mappingURL string
+	marketsURL string
 	idlePeriod time.Duration
 
 	// Hooks
@@ -47,7 +48,11 @@ type baseDEX[Event any, Contract any, EventIterator dexEventIterator] struct {
 	// The value of the map is a pointer to disallow copying of the underlying mutex
 	streams safe.Map[Market, *safe.Map[common.Address, dexStream[Event]]]
 	assets  safe.Map[string, poolToken]
-	mapping safe.Map[string, []string]
+	// disabledMarkets is a set of markets that are enabled for DEXes.
+	// The map is assumed to be read-only,
+	// so there's no need for extra thread safety.
+	disabledMarkets map[Market]struct{}
+	mapping         safe.Map[string, []string]
 }
 
 type dexStream[Event any] struct {
@@ -61,6 +66,7 @@ type baseDexConfig[Event any, Contract any, EventIterator dexEventIterator] stru
 	RPC        string
 	AssetsURL  string
 	MappingURL string
+	MarketsURL string
 	IdlePeriod time.Duration
 
 	// Hooks
@@ -89,6 +95,7 @@ func newBaseDEX[Event any, Contract any, EventIterator dexEventIterator](
 		rpc:        config.RPC,
 		assetsURL:  config.AssetsURL,
 		mappingURL: config.MappingURL,
+		marketsURL: config.MarketsURL,
 		idlePeriod: config.IdlePeriod,
 
 		// Hooks
@@ -98,15 +105,16 @@ func newBaseDEX[Event any, Contract any, EventIterator dexEventIterator](
 		derefIter: config.IterDeref,
 
 		// State
-		once:    newOnce(),
-		client:  nil,
-		outbox:  config.Outbox,
-		logger:  config.Logger,
-		filter:  NewFilter(config.Filter),
-		history: config.History,
-		streams: safe.NewMap[Market, *safe.Map[common.Address, dexStream[Event]]](),
-		assets:  safe.NewMap[string, poolToken](),
-		mapping: safe.NewMap[string, []string](),
+		once:            newOnce(),
+		client:          nil,
+		outbox:          config.Outbox,
+		logger:          config.Logger,
+		filter:          NewFilter(config.Filter),
+		history:         config.History,
+		streams:         safe.NewMap[Market, *safe.Map[common.Address, dexStream[Event]]](),
+		assets:          safe.NewMap[string, poolToken](),
+		disabledMarkets: make(map[Market]struct{}),
+		mapping:         safe.NewMap[string, []string](),
 	}, nil
 }
 
@@ -140,24 +148,63 @@ func (b *baseDEX[Event, Contract, EventIterator]) Start() error {
 
 		// Fetch assets
 
-		assets, err := getAssets(b.assetsURL)
+		allAssets, err := fetch[map[string][]poolToken](b.assetsURL)
 		if err != nil {
 			startErr = fmt.Errorf("failed to fetch assets: %w", err)
 			return
 		}
-		for _, asset := range assets {
+		tokens, ok := allAssets["tokens"]
+		if !ok {
+			startErr = fmt.Errorf("failed to fetch assets: `tokens` key not found")
+			return
+		}
+		for _, asset := range tokens {
 			b.assets.Store(strings.ToUpper(asset.Symbol), asset)
 		}
 
 		// Fetch mappings
 
-		mapping, err := getMapping(b.mappingURL)
+		mappings, err := fetch[map[string]map[string][]string](b.mappingURL)
 		if err != nil {
 			startErr = fmt.Errorf("failed to fetch mapping: %w", err)
 			return
 		}
+		mapping, ok := mappings["tokens"]
+		if !ok {
+			startErr = fmt.Errorf("failed to fetch mappings: `tokens` key not found")
+			return
+		}
 		for key, mapItem := range mapping {
 			b.mapping.Store(key, mapItem)
+		}
+
+		// Fetch markets
+
+		markets, err := fetch[[]marketSymbol](b.marketsURL)
+		if err != nil {
+			startErr = fmt.Errorf("failed to fetch markets: %w", err)
+			return
+		}
+		for _, market := range markets {
+			if market.Quotes.Dexs {
+				continue
+			}
+
+			// Strip prefix to get base and quote tokens.
+			// Market is assumed to be in the following format:
+			// `<type>://<base>/<quote>`, like `spot://btc/usd`.
+			if !strings.HasPrefix(market.Symbol, "spot://") {
+				startErr = fmt.Errorf("invalid market symbol in markets config: %s", market.Symbol)
+				return
+			}
+			baseQuote := strings.Split(market.Symbol, "spot://")[1]
+			tokens := strings.Split(baseQuote, "/")
+			if len(tokens) != 2 {
+				startErr = fmt.Errorf("invalid market symbol in markets config: %s", market.Symbol)
+				return
+			}
+			market := NewMarket(tokens[0], tokens[1])
+			b.disabledMarkets[market] = struct{}{}
 		}
 
 		// Run post-start hook
@@ -196,6 +243,7 @@ func (b *baseDEX[Event, Contract, EventIterator]) Subscribe(market Market) error
 		return ErrNotStarted
 	}
 
+	// Subscribe to associated markets
 	// mapping map[BTC:[WBTC] ETH:[WETH] USD:[USDT USDC TUSD]]
 	var mappingErr error
 	b.mapping.Range(func(token string, mappings []string) bool {
@@ -217,9 +265,16 @@ func (b *baseDEX[Event, Contract, EventIterator]) Subscribe(market Market) error
 		return fmt.Errorf("failed to subscribe to helper markets: %w", mappingErr)
 	}
 
+	// Verify the market is available
+
 	if _, ok := b.streams.Load(market); ok {
 		fmt.Println("Market already subscribed", market)
 		return fmt.Errorf("%s: %w", market, ErrAlreadySubbed)
+	}
+
+	// Check if market is enabled for DEXes
+	if _, ok := b.disabledMarkets[market]; ok && cexConfigured.Load() {
+		return fmt.Errorf("%w: %s", ErrMarketDisabled, market)
 	}
 
 	pools, err := b.getPool(market)
@@ -233,7 +288,7 @@ func (b *baseDEX[Event, Contract, EventIterator]) Subscribe(market Market) error
 		b.outbox <- trades[0]
 	}
 
-	// Subscribe to the pools
+	// Subscribe to all pools
 	for _, pool := range pools {
 		if err := b.subscribePool(pool); err != nil {
 			return err
@@ -496,6 +551,50 @@ func (b *baseDEX[Event, Contract, EventIterator]) resubscribe(pool *dexPool[Even
 	return nil
 }
 
+func fetch[T any](url string) (data T, err error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return data, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return data, err
+	}
+
+	if err := json.Unmarshal(body, &data); err != nil {
+		return data, err
+	}
+
+	return data, nil
+}
+
+type marketConfig struct {
+	Dexs bool `json:"dexs"`
+}
+
+type marketSymbol struct {
+	Symbol string        `json:"symbol"`
+	Quotes *marketConfig `json:"quotes,omitempty"`
+}
+
+func (s *marketSymbol) UnmarshalJSON(data []byte) error {
+	type Alias marketSymbol
+	aux := &struct {
+		*Alias
+	}{
+		Alias: (*Alias)(s),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	if s.Quotes == nil {
+		s.Quotes = &marketConfig{Dexs: true}
+	}
+	return nil
+}
+
 type dexPool[Event any, EventIterator dexEventIterator] struct {
 	Contract   dexEvent[Event, EventIterator]
 	Address    common.Address // not used in code but is useful for logging
@@ -532,55 +631,17 @@ func getTokens(
 ) (baseToken poolToken, quoteToken poolToken, err error) {
 	baseToken, ok := assets.Load(strings.ToUpper(market.Base()))
 	if !ok {
-		return poolToken{}, poolToken{}, fmt.Errorf("base tokens does not exist for market %s", market.StringWithoutMain())
+		return baseToken, quoteToken, fmt.Errorf("base token does not exist for market %s", market.StringWithoutMain())
 	}
 	logger.Infow("found base token", "address", baseToken.Address, "market", market.StringWithoutMain())
 
 	quoteToken, ok = assets.Load(strings.ToUpper(market.Quote()))
 	if !ok {
-		return poolToken{}, poolToken{}, fmt.Errorf("quote tokens does not exist for market %s", market.StringWithoutMain())
+		return baseToken, quoteToken, fmt.Errorf("quote tokens does not exist for market %s", market.StringWithoutMain())
 	}
 	logger.Infow("found quote token", "address", quoteToken.Address, "market", market.StringWithoutMain())
 
 	return baseToken, quoteToken, nil
-}
-
-func getAssets(assetsURL string) ([]poolToken, error) {
-	resp, err := http.Get(assetsURL)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	var assets map[string][]poolToken
-	if err := json.Unmarshal(body, &assets); err != nil {
-		return nil, err
-	}
-	return assets["tokens"], nil
-}
-
-func getMapping(url string) (map[string][]string, error) {
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	var mappings map[string]map[string][]string
-	if err := json.Unmarshal(body, &mappings); err != nil {
-		return nil, err
-	}
-	return mappings["tokens"], nil
 }
 
 func buildV2Trade[Event any, EventIterator dexEventIterator](

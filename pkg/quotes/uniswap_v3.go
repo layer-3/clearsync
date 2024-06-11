@@ -45,6 +45,7 @@ func newUniswapV3(rpcUrl string, config UniswapV3Config, outbox chan<- TradeEven
 		RPC:        rpcUrl,
 		AssetsURL:  config.AssetsURL,
 		MappingURL: config.MappingURL,
+		MarketsURL: config.MarketsURL,
 		IdlePeriod: config.IdlePeriod,
 		// Hooks
 		PostStartHook: hooks.postStart,

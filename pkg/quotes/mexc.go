@@ -147,7 +147,10 @@ func (b *mexc) ExchangeType() ExchangeType {
 }
 
 func (b *mexc) Start() error {
-	if started := b.once.Start(func() {}); !started {
+	started := b.once.Start(func() {
+		cexConfigured.CompareAndSwap(false, true)
+	})
+	if !started {
 		return ErrAlreadyStarted
 	}
 	return nil
@@ -161,6 +164,7 @@ func (b *mexc) Stop() error {
 		})
 
 		b.streams = safe.NewMap[Market, chan struct{}]()
+		cexConfigured.CompareAndSwap(true, false)
 	})
 
 	if !stopped {

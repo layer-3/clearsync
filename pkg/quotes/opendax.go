@@ -64,6 +64,8 @@ func (o *opendax) Start() error {
 	started := o.once.Start(func() {
 		o.connect()
 		go o.listen()
+
+		cexConfigured.CompareAndSwap(false, true)
 	})
 
 	if !started {
@@ -83,6 +85,7 @@ func (o *opendax) Stop() error {
 		}
 
 		stopErr = conn.Close()
+		cexConfigured.CompareAndSwap(true, false)
 	})
 
 	if !stopped {

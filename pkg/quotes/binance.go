@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	gobinance "github.com/adshao/go-binance/v2"
@@ -13,7 +14,10 @@ import (
 	"github.com/layer-3/clearsync/pkg/safe"
 )
 
-var loggerBinance = log.Logger("binance")
+var (
+	loggerBinance = log.Logger("binance")
+	cexConfigured = atomic.Bool{}
+)
 
 type binance struct {
 	once               *once
@@ -71,7 +75,10 @@ func (b *binance) ExchangeType() ExchangeType {
 }
 
 func (b *binance) Start() error {
-	if started := b.once.Start(func() {}); !started {
+	started := b.once.Start(func() {
+		cexConfigured.CompareAndSwap(false, true)
+	})
+	if !started {
 		return ErrAlreadyStarted
 	}
 	return nil
@@ -85,6 +92,7 @@ func (b *binance) Stop() error {
 		})
 
 		b.streams = safe.NewMap[Market, chan struct{}]()
+		cexConfigured.CompareAndSwap(true, false)
 	})
 
 	if !stopped {
