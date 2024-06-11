@@ -51,6 +51,7 @@ func newLynexV2(rpcUrl string, config LynexV2Config, outbox chan<- TradeEvent, h
 		RPC:        rpcUrl,
 		AssetsURL:  config.AssetsURL,
 		MappingURL: config.MappingURL,
+		MarketsURL: config.MarketsURL,
 		IdlePeriod: config.IdlePeriod,
 		// Hooks
 		PostStartHook: hooks.postStart,

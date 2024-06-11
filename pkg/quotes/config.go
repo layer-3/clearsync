@@ -145,6 +145,7 @@ type SectaV3Config struct {
 type LynexV2Config struct {
 	AssetsURL         string        `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/assets.json"`
 	MappingURL        string        `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/mapping.json"`
+	MarketsURL        string        `yaml:"markets_url" env:"MARKETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/markets.json"`
 	FactoryAddress    string        `yaml:"factory_address" env:"FACTORY_ADDRESS" env-default:"0xBc7695Fd00E3b32D08124b7a4287493aEE99f9ee"`
 	StablePoolMarkets []string      `yaml:"stable_pool_markets" env:"STABLE_POOL_MARKETS" env-default:"usdt/usdc"` // `env-default` tag value is a comma separated list of markets as in `usdt/usdc, usdc/dai`
 	IdlePeriod        time.Duration `yaml:"idle_period" env:"IDLE_PERIOD" env-default:"30m"`
@@ -154,6 +155,7 @@ type LynexV2Config struct {
 type LynexV3Config struct {
 	AssetsURL      string        `yaml:"assets_url" env:"ASSETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/assets.json"`
 	MappingURL     string        `yaml:"mappings_url" env:"MAPPINGS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/mapping.json"`
+	MarketsURL     string        `yaml:"markets_url" env:"MARKETS_URL" env-default:"https://raw.githubusercontent.com/layer-3/clearsync/master/networks/59144/markets.json"`
 	FactoryAddress string        `yaml:"factory_address" env:"FACTORY_ADDRESS" env-default:"0x622b2c98123D303ae067DB4925CD6282B3A08D0F"`
 	IdlePeriod     time.Duration `yaml:"idle_period" env:"IDLE_PERIOD" env-default:"30m"`
 	Filter         FilterConfig  `yaml:"filter" env-prefix:"FILTER_"`
