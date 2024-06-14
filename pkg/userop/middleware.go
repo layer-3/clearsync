@@ -341,6 +341,8 @@ func getPimlicoVerifyingPaymasterAndData(
 			return fmt.Errorf("failed to call pm_sponsorUserOperation: %w", err)
 		}
 
+		logger.Debug("fetched pimlico gas estimates", "gasEst", gasEst)
+
 		paymasterAndData, err := hexutil.Decode(gasEst.PaymasterAndData)
 		if err != nil {
 			return fmt.Errorf("failed to decode paymasterAndData: %w", err)
