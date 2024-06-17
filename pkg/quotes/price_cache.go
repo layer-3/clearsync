@@ -53,7 +53,7 @@ func (p *PriceCache) AddTrade(market Market, price, volume decimal.Decimal, time
 		newTradesList := []priceCacheTrade{{Price: price, Volume: volume, Weight: decimal.Zero, Timestamp: timestamp, Source: source}}
 		// transfer all existing trades to a new array
 		for _, t := range driversTrades {
-			if t.Source != source && time.Now().Sub(t.Timestamp) <= p.bufferTime {
+			if t.Source != source && time.Since(t.Timestamp) <= p.bufferTime {
 				newTradesList = append(newTradesList, t)
 			}
 		}

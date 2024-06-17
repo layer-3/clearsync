@@ -244,7 +244,9 @@ func (b *mexc) watchTrades(symbol string, stopCh chan struct{}) {
 				"params": []string{"spot@public.deals.v3.api@" + strings.ToUpper(symbol)},
 			}
 			b.requestID.Add(1)
-			conn.WriteJSON(unsubMsg)
+			if err := conn.WriteJSON(unsubMsg); err != nil {
+				loggerMexc.Errorw("failed to write into websocket stream", "error", err)
+			}
 			return
 		default:
 			_, message, err := conn.ReadMessage()

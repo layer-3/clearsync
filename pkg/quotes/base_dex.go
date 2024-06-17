@@ -304,8 +304,8 @@ func (b *baseDEX[Event, Contract, EventIterator]) subscribePool(pool *dexPool[Ev
 
 	var sub event.Subscription
 	var err error
+	opts := &bind.WatchOpts{Context: watchCtx}
 	err = debounce.Debounce(b.logger, func() error {
-		opts := &bind.WatchOpts{Context: watchCtx}
 		sub, err = pool.Contract.WatchSwap(opts, sink, []common.Address{}, []common.Address{})
 		return err
 	})
