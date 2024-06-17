@@ -169,13 +169,6 @@ func (s *syncswap) parseSwap(
 	swap *isyncswap_pool.ISyncSwapPoolSwap,
 	pool *dexPool[isyncswap_pool.ISyncSwapPoolSwap, *isyncswap_pool.ISyncSwapPoolSwapIterator],
 ) (trade TradeEvent, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			loggerSyncswap.Errorw(ErrSwapParsing.Error(), "swap", swap, "pool", pool)
-			err = fmt.Errorf("%s: %s", ErrSwapParsing, r)
-		}
-	}()
-
 	return buildV2Trade(
 		DriverSyncswap,
 		swap.Amount0In,

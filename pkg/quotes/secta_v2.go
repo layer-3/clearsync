@@ -135,13 +135,6 @@ func (s *sectaV2) parseSwap(
 	swap *isecta_v2_pair.ISectaV2PairSwap,
 	pool *dexPool[isecta_v2_pair.ISectaV2PairSwap, *isecta_v2_pair.ISectaV2PairSwapIterator],
 ) (trade TradeEvent, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			loggerSectaV2.Errorw(ErrSwapParsing.Error(), "swap", swap, "pool", pool)
-			err = fmt.Errorf("%s: %s", ErrSwapParsing, r)
-		}
-	}()
-
 	return buildV2Trade(
 		DriverSectaV2,
 		swap.Amount0In,
