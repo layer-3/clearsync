@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math/big"
+	"net/url"
 	"os"
 
 	"github.com/ethereum/go-ethereum"
@@ -80,15 +81,24 @@ func (conf ClientConfig) validate() error {
 		return ErrInvalidECDSAValidatorAddress
 	}
 
-	if conf.Paymaster.Type != nil && *conf.Paymaster.Type != PaymasterDisabled &&
-		// If sponsoring paymaster, then paymaster address can be omitted as
-		// a server will return it alongside other paymaster data (and the address can be dynamic)
-		*conf.Paymaster.Type != PaymasterPimlicoVerifying && *conf.Paymaster.Type != PaymasterBiconomySponsoring {
+	if conf.Paymaster.Type != nil && *conf.Paymaster.Type != PaymasterDisabled {
+		// If sponsoring paymaster, URL must be specified and paymaster address is ignored
+		if *conf.Paymaster.Type == PaymasterPimlicoVerifying || *conf.Paymaster.Type == PaymasterBiconomySponsoring {
+			if conf.Paymaster.URL == "" {
+				return ErrInvalidPaymasterURL
+			}
+			if _, err := url.Parse(conf.Paymaster.URL); err != nil {
+				return ErrInvalidPaymasterURL
+			}
+		}
 
-		if hasCode, err := addressHasCode(conf.Paymaster.Address, provider); err != nil {
-			return fmt.Errorf("failed to check paymaster code: %w", err)
-		} else if !hasCode {
-			return ErrInvalidPaymasterAddress
+		// If ERC20 paymaster, address should be specified and paymaster URL is ignored
+		if *conf.Paymaster.Type == PaymasterPimlicoERC20 || *conf.Paymaster.Type == PaymasterBiconomyERC20 {
+			if hasCode, err := addressHasCode(conf.Paymaster.Address, provider); err != nil {
+				return fmt.Errorf("failed to check paymaster code: %w", err)
+			} else if !hasCode {
+				return ErrInvalidPaymasterAddress
+			}
 		}
 	}
 

@@ -123,9 +123,10 @@ type GasLimitOverrides struct {
 
 // backend represents a user operation client.
 type backend struct {
-	provider EthBackend
-	bundler  RPCBackend
-	chainID  *big.Int
+	provider  EthBackend
+	bundler   RPCBackend
+	pmBackend RPCBackend
+	chainID   *big.Int
 
 	smartWallet smart_wallet.Config
 	entryPoint  common.Address
@@ -188,6 +189,20 @@ func NewClient(config ClientConfig) (Client, error) {
 		return nil, fmt.Errorf("failed to connect to the bundler RPC: %w", err)
 	}
 
+	var pmRPC RPCBackend
+
+	if config.Paymaster.Type != nil && *config.Paymaster.Type != PaymasterDisabled && config.Paymaster.URL != "" {
+		pmURL, err := url.Parse(config.Paymaster.URL)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse the paymaster RPC URL: %w", err)
+		}
+
+		pmRPC, err = NewRPCBackend(*pmURL)
+		if err != nil {
+			return nil, fmt.Errorf("failed to connect to the paymaster RPC: %w", err)
+		}
+	}
+
 	entryPointContract, err := entry_point_v0_6_0.NewEntryPoint(config.EntryPoint, providerRPC)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to the entry point contract: %w", err)
@@ -198,15 +213,16 @@ func NewClient(config ClientConfig) (Client, error) {
 		return nil, fmt.Errorf("failed to build initCode middleware: %w", err)
 	}
 
-	getGasLimits, err := getGasLimitsMiddleware(bundlerRPC, config)
+	getGasLimits, err := getGasLimitsMiddleware(bundlerRPC, pmRPC, config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build gas limits estimation middleware: %w", err)
 	}
 
 	return &backend{
-		provider: providerRPC,
-		bundler:  bundlerRPC,
-		chainID:  chainID,
+		provider:  providerRPC,
+		bundler:   bundlerRPC,
+		pmBackend: pmRPC,
+		chainID:   chainID,
 
 		smartWallet: config.SmartWallet,
 		entryPoint:  config.EntryPoint,

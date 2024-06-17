@@ -130,7 +130,7 @@ func TestNewClient(t *testing.T) {
 	})
 
 	t.Run("Error when entrypoint address has no code", func(t *testing.T) {
-		t.Parallel()
+		// t.Parallel() - should not be run in parallel due to endpoint rate limits
 
 		conf := mockConfig()
 		conf.EntryPoint = EOA
@@ -152,7 +152,7 @@ func TestNewClient(t *testing.T) {
 	})
 
 	t.Run("Error when factory address has no code", func(t *testing.T) {
-		t.Parallel()
+		// t.Parallel()
 
 		conf := mockConfig()
 		conf.SmartWallet.Factory = EOA
@@ -174,7 +174,7 @@ func TestNewClient(t *testing.T) {
 	})
 
 	t.Run("Error when logic address has no code", func(t *testing.T) {
-		t.Parallel()
+		// t.Parallel()
 
 		conf := mockConfig()
 		conf.SmartWallet.Logic = EOA
@@ -196,7 +196,7 @@ func TestNewClient(t *testing.T) {
 	})
 
 	t.Run("Error when ECDSA validator address has no code", func(t *testing.T) {
-		t.Parallel()
+		// t.Parallel()
 
 		conf := mockConfig()
 		conf.SmartWallet.ECDSAValidator = EOA
@@ -206,7 +206,7 @@ func TestNewClient(t *testing.T) {
 		require.EqualError(t, errors.Unwrap(err), ErrInvalidECDSAValidatorAddress.Error())
 	})
 
-	t.Run("Error when paymaster address is empty", func(t *testing.T) {
+	t.Run("Error when paymaster address is empty and ERC20 type", func(t *testing.T) {
 		t.Parallel()
 
 		conf := mockConfig()
@@ -218,8 +218,8 @@ func TestNewClient(t *testing.T) {
 		require.EqualError(t, errors.Unwrap(err), ErrInvalidPaymasterAddress.Error())
 	})
 
-	t.Run("Error when paymaster address has no code", func(t *testing.T) {
-		t.Parallel()
+	t.Run("Error when paymaster address has no code and ERC20 type", func(t *testing.T) {
+		// t.Parallel()
 
 		conf := mockConfig()
 		conf.Paymaster.Type = &PaymasterPimlicoERC20
@@ -230,8 +230,20 @@ func TestNewClient(t *testing.T) {
 		require.EqualError(t, errors.Unwrap(err), ErrInvalidPaymasterAddress.Error())
 	})
 
-	t.Run("Paymaster address can be empty if no paymaster config", func(t *testing.T) {
+	t.Run("Error when no paymaster URL and Verifying type", func(t *testing.T) {
 		t.Parallel()
+
+		conf := mockConfig()
+		conf.Paymaster.Type = &PaymasterPimlicoVerifying
+		conf.Paymaster.URL = ""
+
+		_, err := NewClient(conf)
+
+		require.EqualError(t, errors.Unwrap(err), ErrInvalidPaymasterURL.Error())
+	})
+
+	t.Run("Paymaster address can be empty if no paymaster config", func(t *testing.T) {
+		// t.Parallel()
 
 		conf := mockConfig()
 		conf.ProviderURL = defaultProviderURL()
@@ -243,11 +255,23 @@ func TestNewClient(t *testing.T) {
 	})
 
 	t.Run("Paymaster address can be empty if paymaster is disabled", func(t *testing.T) {
-		t.Parallel()
+		// t.Parallel()
 
 		conf := mockConfig()
 		conf.ProviderURL = defaultProviderURL()
 		conf.Paymaster.Type = &PaymasterDisabled
+
+		_, err := NewClient(conf)
+
+		require.NoError(t, err)
+	})
+
+	t.Run("Paymaster URL can be empty if paymaster is disabled", func(t *testing.T) {
+		// t.Parallel()
+
+		conf := mockConfig()
+		conf.ProviderURL = defaultProviderURL()
+		conf.Paymaster.URL = ""
 
 		_, err := NewClient(conf)
 

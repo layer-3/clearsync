@@ -18,6 +18,8 @@ var (
 	ErrInvalidLogicAddress = errors.New("invalid logic address")
 	// ErrInvalidECDSAValidatorAddress is returned when the ECDSA validator address is invalid.
 	ErrInvalidECDSAValidatorAddress = errors.New("invalid ECDSA validator address")
+	// ErrInvalidPaymasterURL is returned when the paymaster URL is invalid.
+	ErrInvalidPaymasterURL = errors.New("invalid paymaster URL")
 	// ErrInvalidPaymasterAddress is returned when the paymaster address is invalid.
 	ErrInvalidPaymasterAddress = errors.New("invalid paymaster address")
 	// ErrNoSigner is returned when the signer is not specified.
