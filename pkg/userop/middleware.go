@@ -213,7 +213,7 @@ func getBiconomyPaymasterAndData(
 	}
 }
 
-func getGasLimitsMiddleware(bundler RPCBackend, config ClientConfig) (middleware, error) {
+func getGasLimitsMiddleware(bundler RPCBackend, paymaster RPCBackend, config ClientConfig) (middleware, error) {
 	estimateGas := estimateUserOperationGas(bundler, config.EntryPoint)
 
 	if config.Paymaster.Type != nil && *config.Paymaster.Type != PaymasterDisabled {
@@ -228,6 +228,7 @@ func getGasLimitsMiddleware(bundler RPCBackend, config ClientConfig) (middleware
 		case PaymasterPimlicoVerifying:
 			estimateGas = getPimlicoVerifyingPaymasterAndData(
 				bundler,
+				paymaster,
 				config.EntryPoint,
 				config.Paymaster.PimlicoVerifying,
 			)
@@ -299,6 +300,7 @@ func getPimlicoERC20PaymasterData(
 
 func getPimlicoVerifyingPaymasterAndData(
 	bundler RPCBackend,
+	pmBackend RPCBackend,
 	entryPoint common.Address,
 	pimlicoVerifyingConfig PimlicoVerifyingConfig,
 ) middleware {
@@ -337,9 +339,11 @@ func getPimlicoVerifyingPaymasterAndData(
 		// Pimlico-standardized gas estimation with paymaster
 		// see https://docs.pimlico.io/paymaster/verifying-paymaster/reference/endpoints#pm_sponsoruseroperation-v2
 		var gasEst gasEstimate
-		if err := bundler.CallContext(ctx, &gasEst, "pm_sponsorUserOperation", sponsorUserOpArgs...); err != nil {
+		if err := pmBackend.CallContext(ctx, &gasEst, "pm_sponsorUserOperation", sponsorUserOpArgs...); err != nil {
 			return fmt.Errorf("failed to call pm_sponsorUserOperation: %w", err)
 		}
+
+		logger.Debug("fetched pimlico gas estimates", "gasEst", gasEst)
 
 		paymasterAndData, err := hexutil.Decode(gasEst.PaymasterAndData)
 		if err != nil {
