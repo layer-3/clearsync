@@ -125,12 +125,12 @@ type GasLimitOverrides struct {
 type backend struct {
 	provider  EthBackend
 	bundler   RPCBackend
-	pmBackend RPCBackend
+	paymaster RPCBackend
 	chainID   *big.Int
 
-	smartWallet smart_wallet.Config
-	entryPoint  common.Address
-	paymaster   common.Address
+	smartWallet       smart_wallet.Config
+	entryPointAddress common.Address
+	paymasterAddress  common.Address
 
 	getNonce     middleware
 	getInitCode  middleware
@@ -189,15 +189,15 @@ func NewClient(config ClientConfig) (Client, error) {
 		return nil, fmt.Errorf("failed to connect to the bundler RPC: %w", err)
 	}
 
-	var pmRPC RPCBackend
+	var paymasterRPC RPCBackend
 
 	if config.Paymaster.Type != nil && *config.Paymaster.Type != PaymasterDisabled && config.Paymaster.URL != "" {
-		pmURL, err := url.Parse(config.Paymaster.URL)
+		paymasterURL, err := url.Parse(config.Paymaster.URL)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse the paymaster RPC URL: %w", err)
 		}
 
-		pmRPC, err = NewRPCBackend(*pmURL)
+		paymasterRPC, err = NewRPCBackend(*paymasterURL)
 		if err != nil {
 			return nil, fmt.Errorf("failed to connect to the paymaster RPC: %w", err)
 		}
@@ -213,7 +213,7 @@ func NewClient(config ClientConfig) (Client, error) {
 		return nil, fmt.Errorf("failed to build initCode middleware: %w", err)
 	}
 
-	getGasLimits, err := getGasLimitsMiddleware(bundlerRPC, pmRPC, config)
+	getGasLimits, err := getGasLimitsMiddleware(bundlerRPC, paymasterRPC, config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build gas limits estimation middleware: %w", err)
 	}
@@ -221,12 +221,12 @@ func NewClient(config ClientConfig) (Client, error) {
 	return &backend{
 		provider:  providerRPC,
 		bundler:   bundlerRPC,
-		pmBackend: pmRPC,
+		paymaster: paymasterRPC,
 		chainID:   chainID,
 
-		smartWallet: config.SmartWallet,
-		entryPoint:  config.EntryPoint,
-		paymaster:   config.Paymaster.Address,
+		smartWallet:       config.SmartWallet,
+		entryPointAddress: config.EntryPoint,
+		paymasterAddress:  config.Paymaster.Address,
 
 		getNonce:     getNonceMiddleware(entryPointContract),
 		getInitCode:  getInitCode,
@@ -246,7 +246,7 @@ func (c *backend) IsAccountDeployed(ctx context.Context, owner common.Address, i
 }
 
 func (c *backend) GetAccountAddress(ctx context.Context, owner common.Address, index decimal.Decimal) (common.Address, error) {
-	return smart_wallet.GetAccountAddress(ctx, c.provider, c.smartWallet, c.entryPoint, owner, index)
+	return smart_wallet.GetAccountAddress(ctx, c.provider, c.smartWallet, c.entryPointAddress, owner, index)
 }
 
 func (c *backend) NewUserOp(
@@ -383,18 +383,18 @@ func (c *backend) SignUserOp(ctx context.Context, op UserOperation, signer Signe
 
 func (c *backend) SendUserOp(ctx context.Context, op UserOperation) (<-chan Receipt, error) {
 	ctx, cancel := context.WithCancel(ctx)
-	userOpHash, err := op.UserOpHash(c.entryPoint, c.chainID)
+	userOpHash, err := op.UserOpHash(c.entryPointAddress, c.chainID)
 	if err != nil {
 		cancel()
 		return nil, fmt.Errorf("failed to calculate user operation hash: %w", err)
 	}
 	recCh := make(chan Receipt, 1)
 
-	go subscribeUserOpEvent(ctx, cancel, c.provider, recCh, c.entryPoint, userOpHash)
+	go subscribeUserOpEvent(ctx, cancel, c.provider, recCh, c.entryPointAddress, userOpHash)
 
 	// ERC4337-standardized call to the bundler
 	logger.Debug("sending user operation")
-	if err := c.bundler.CallContext(ctx, &userOpHash, "eth_sendUserOperation", op, c.entryPoint); err != nil {
+	if err := c.bundler.CallContext(ctx, &userOpHash, "eth_sendUserOperation", op, c.entryPointAddress); err != nil {
 		return nil, fmt.Errorf("call to `eth_sendUserOperation` failed: %w", err)
 	}
 

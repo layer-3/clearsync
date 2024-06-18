@@ -213,7 +213,7 @@ func getBiconomyPaymasterAndData(
 	}
 }
 
-func getGasLimitsMiddleware(bundler RPCBackend, pmBackend RPCBackend, config ClientConfig) (middleware, error) {
+func getGasLimitsMiddleware(bundler RPCBackend, paymaster RPCBackend, config ClientConfig) (middleware, error) {
 	estimateGas := estimateUserOperationGas(bundler, config.EntryPoint)
 
 	if config.Paymaster.Type != nil && *config.Paymaster.Type != PaymasterDisabled {
@@ -228,7 +228,7 @@ func getGasLimitsMiddleware(bundler RPCBackend, pmBackend RPCBackend, config Cli
 		case PaymasterPimlicoVerifying:
 			estimateGas = getPimlicoVerifyingPaymasterAndData(
 				bundler,
-				pmBackend,
+				paymaster,
 				config.EntryPoint,
 				config.Paymaster.PimlicoVerifying,
 			)
