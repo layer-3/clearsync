@@ -1,0 +1,12 @@
+apiVersion: apps.yellow.com/v1beta1
+kind: GrafanaScaler
+metadata:
+  labels:
+    app.kubernetes.io/name: grafanascaler
+    app.kubernetes.io/instance: grafanascaler-sample
+    app.kubernetes.io/part-of: autodown
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: autodown
+  name: grafanascaler-sample
+spec:
+  # TODO(user): Add fields here
