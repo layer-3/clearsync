@@ -1,0 +1,30 @@
+[
+    {
+        "url": "https://test.hackathon.neodax.app/",
+        "name": "Kayen",
+        "finex_url": "wss://test.hackathon.neodax.app/ws",
+        "clearport_b_url": "http://cp-responder-peer-grpc:50081",
+        "clearport_a_url": "wss://test.hackathon.neodax.app/clearport-ws",
+        "description": "This is a working test Broker!!!",
+        "available": true,
+        "metadata": {
+            "coordinates": {
+                "lat": 50.452,
+                "long": 30.534
+            },
+            "region": "europe",
+            "code": "ua",
+            "country": "Ukraine",
+            "logo": "https://kayen.io/images/logo.png",
+            "sm_logo": "https://kayen.io/images/logo-white-mode.svg"
+        },
+        "address": "0x0119a206636e0e9F03D15A5a5367c75279C68F9d",
+        "packages": [
+            {
+                "name": "Retail Package",
+                "margin": [1, 10],
+                "safety": "3"
+            }
+        ]
+    }
+]
