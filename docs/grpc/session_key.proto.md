@@ -12,17 +12,17 @@ This file describes the content of session_key.proto.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- |
-| sender | [string](#string) |  |
-| nonce | [int64](#int64) |  |
-| init_code | [string](#string) |  |
-| call_data | [string](#string) |  |
-| call_gas_limit | [int64](#int64) |  |
-| verification_gas_limit | [int64](#int64) |  |
-| pre_verification_gas | [int64](#int64) |  |
-| max_fee_per_gas | [int64](#int64) |  |
-| max_priority_fee_per_gas | [int64](#int64) |  |
-| paymaster_and_data | [string](#string) |  |
-| signature | [string](#string) |  |
+| sender | [core.Address](core.proto.md#address) |  |
+| nonce | [core.BigInt](core.proto.md#bigint) |  |
+| init_code | [bytes](#bytes) |  |
+| call_data | [bytes](#bytes) |  |
+| call_gas_limit | [core.BigInt](core.proto.md#bigint) |  |
+| verification_gas_limit | [core.BigInt](core.proto.md#bigint) |  |
+| pre_verification_gas | [core.BigInt](core.proto.md#bigint) |  |
+| max_fee_per_gas | [core.BigInt](core.proto.md#bigint) |  |
+| max_priority_fee_per_gas | [core.BigInt](core.proto.md#bigint) |  |
+| paymaster_and_data | [bytes](#bytes) |  |
+| signature | [bytes](#bytes) |  |
 
 
 
@@ -51,9 +51,9 @@ This file describes the content of session_key.proto.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- |
-| target | [string](#string) |  |
-| function_abi | [string](#string) |  |
-| value_limit | [string](#string) |  |
+| target | [core.Address](core.proto.md#address) |  |
+| function_abi | [bytes](#bytes) |  |
+| value_limit | [core.BigInt](core.proto.md#bigint) |  |
 | param_rules | [ParamRule](#paramrule) |  |
 
 

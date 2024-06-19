@@ -276,6 +276,53 @@ func (x *Decimal) GetValue() string {
 	return ""
 }
 
+type BigInt struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Value string `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
+}
+
+func (x *BigInt) Reset() {
+	*x = BigInt{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_core_proto_msgTypes[1]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *BigInt) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BigInt) ProtoMessage() {}
+
+func (x *BigInt) ProtoReflect() protoreflect.Message {
+	mi := &file_core_proto_msgTypes[1]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BigInt.ProtoReflect.Descriptor instead.
+func (*BigInt) Descriptor() ([]byte, []int) {
+	return file_core_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *BigInt) GetValue() string {
+	if x != nil {
+		return x.Value
+	}
+	return ""
+}
+
 // *
 // A 42-character hexadecimal address
 // derived from the last 20 bytes of the public key
@@ -290,7 +337,7 @@ type Address struct {
 func (x *Address) Reset() {
 	*x = Address{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_core_proto_msgTypes[1]
+		mi := &file_core_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -303,7 +350,7 @@ func (x *Address) String() string {
 func (*Address) ProtoMessage() {}
 
 func (x *Address) ProtoReflect() protoreflect.Message {
-	mi := &file_core_proto_msgTypes[1]
+	mi := &file_core_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -316,7 +363,7 @@ func (x *Address) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Address.ProtoReflect.Descriptor instead.
 func (*Address) Descriptor() ([]byte, []int) {
-	return file_core_proto_rawDescGZIP(), []int{1}
+	return file_core_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *Address) GetValue() string {
@@ -341,7 +388,7 @@ type Signature struct {
 func (x *Signature) Reset() {
 	*x = Signature{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_core_proto_msgTypes[2]
+		mi := &file_core_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -354,7 +401,7 @@ func (x *Signature) String() string {
 func (*Signature) ProtoMessage() {}
 
 func (x *Signature) ProtoReflect() protoreflect.Message {
-	mi := &file_core_proto_msgTypes[2]
+	mi := &file_core_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -367,7 +414,7 @@ func (x *Signature) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Signature.ProtoReflect.Descriptor instead.
 func (*Signature) Descriptor() ([]byte, []int) {
-	return file_core_proto_rawDescGZIP(), []int{2}
+	return file_core_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *Signature) GetV() uint32 {
@@ -403,7 +450,7 @@ type Market struct {
 func (x *Market) Reset() {
 	*x = Market{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_core_proto_msgTypes[3]
+		mi := &file_core_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -416,7 +463,7 @@ func (x *Market) String() string {
 func (*Market) ProtoMessage() {}
 
 func (x *Market) ProtoReflect() protoreflect.Message {
-	mi := &file_core_proto_msgTypes[3]
+	mi := &file_core_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -429,7 +476,7 @@ func (x *Market) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Market.ProtoReflect.Descriptor instead.
 func (*Market) Descriptor() ([]byte, []int) {
-	return file_core_proto_rawDescGZIP(), []int{3}
+	return file_core_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *Market) GetBase() string {
@@ -463,7 +510,7 @@ type Trade struct {
 func (x *Trade) Reset() {
 	*x = Trade{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_core_proto_msgTypes[4]
+		mi := &file_core_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -476,7 +523,7 @@ func (x *Trade) String() string {
 func (*Trade) ProtoMessage() {}
 
 func (x *Trade) ProtoReflect() protoreflect.Message {
-	mi := &file_core_proto_msgTypes[4]
+	mi := &file_core_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -489,7 +536,7 @@ func (x *Trade) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Trade.ProtoReflect.Descriptor instead.
 func (*Trade) Descriptor() ([]byte, []int) {
-	return file_core_proto_rawDescGZIP(), []int{4}
+	return file_core_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *Trade) GetChannelId() string {
@@ -560,7 +607,7 @@ type Position struct {
 func (x *Position) Reset() {
 	*x = Position{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_core_proto_msgTypes[5]
+		mi := &file_core_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -573,7 +620,7 @@ func (x *Position) String() string {
 func (*Position) ProtoMessage() {}
 
 func (x *Position) ProtoReflect() protoreflect.Message {
-	mi := &file_core_proto_msgTypes[5]
+	mi := &file_core_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -586,7 +633,7 @@ func (x *Position) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Position.ProtoReflect.Descriptor instead.
 func (*Position) Descriptor() ([]byte, []int) {
-	return file_core_proto_rawDescGZIP(), []int{5}
+	return file_core_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Position) GetId() string {
@@ -657,6 +704,8 @@ var File_core_proto protoreflect.FileDescriptor
 var file_core_proto_rawDesc = []byte{
 	0x0a, 0x0a, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x04, 0x63, 0x6f,
 	0x72, 0x65, 0x22, 0x1f, 0x0a, 0x07, 0x44, 0x65, 0x63, 0x69, 0x6d, 0x61, 0x6c, 0x12, 0x14, 0x0a,
+	0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x76, 0x61,
+	0x6c, 0x75, 0x65, 0x22, 0x1e, 0x0a, 0x06, 0x42, 0x69, 0x67, 0x49, 0x6e, 0x74, 0x12, 0x14, 0x0a,
 	0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x76, 0x61,
 	0x6c, 0x75, 0x65, 0x22, 0x1f, 0x0a, 0x07, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x12, 0x14,
 	0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x76,
@@ -751,25 +800,26 @@ func file_core_proto_rawDescGZIP() []byte {
 }
 
 var file_core_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_core_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_core_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_core_proto_goTypes = []interface{}{
 	(ProtocolIndex)(0),   // 0: core.ProtocolIndex
 	(Direction)(0),       // 1: core.Direction
 	(PositionStatus)(0),  // 2: core.PositionStatus
 	(MarginLimitType)(0), // 3: core.MarginLimitType
 	(*Decimal)(nil),      // 4: core.Decimal
-	(*Address)(nil),      // 5: core.Address
-	(*Signature)(nil),    // 6: core.Signature
-	(*Market)(nil),       // 7: core.Market
-	(*Trade)(nil),        // 8: core.Trade
-	(*Position)(nil),     // 9: core.Position
+	(*BigInt)(nil),       // 5: core.BigInt
+	(*Address)(nil),      // 6: core.Address
+	(*Signature)(nil),    // 7: core.Signature
+	(*Market)(nil),       // 8: core.Market
+	(*Trade)(nil),        // 9: core.Trade
+	(*Position)(nil),     // 10: core.Position
 }
 var file_core_proto_depIdxs = []int32{
-	7, // 0: core.Trade.market:type_name -> core.Market
+	8, // 0: core.Trade.market:type_name -> core.Market
 	1, // 1: core.Trade.direction:type_name -> core.Direction
 	4, // 2: core.Trade.amount:type_name -> core.Decimal
 	4, // 3: core.Trade.price:type_name -> core.Decimal
-	7, // 4: core.Position.market:type_name -> core.Market
+	8, // 4: core.Position.market:type_name -> core.Market
 	1, // 5: core.Position.direction:type_name -> core.Direction
 	2, // 6: core.Position.status:type_name -> core.PositionStatus
 	7, // [7:7] is the sub-list for method output_type
@@ -798,7 +848,7 @@ func file_core_proto_init() {
 			}
 		}
 		file_core_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Address); i {
+			switch v := v.(*BigInt); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -810,7 +860,7 @@ func file_core_proto_init() {
 			}
 		}
 		file_core_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Signature); i {
+			switch v := v.(*Address); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -822,7 +872,7 @@ func file_core_proto_init() {
 			}
 		}
 		file_core_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Market); i {
+			switch v := v.(*Signature); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -834,7 +884,7 @@ func file_core_proto_init() {
 			}
 		}
 		file_core_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Trade); i {
+			switch v := v.(*Market); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -846,6 +896,18 @@ func file_core_proto_init() {
 			}
 		}
 		file_core_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Trade); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_core_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Position); i {
 			case 0:
 				return &v.state
@@ -864,7 +926,7 @@ func file_core_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_core_proto_rawDesc,
 			NumEnums:      4,
-			NumMessages:   6,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -12,6 +12,10 @@ message Decimal {
   string value = 1;
 }
 
+message BigInt {
+  string value = 1;
+}
+
 /**
  * A 42-character hexadecimal address
  * derived from the last 20 bytes of the public key

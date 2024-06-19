@@ -21,6 +21,20 @@ derived from the last 20 bytes of the public key
 
 
 
+### BigInt
+
+
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| value | [string](#string) |  |
+
+
+
+
+
+
+
 ### Decimal
 Represent Decimal as a string
 Can be changed to 2 numbers
