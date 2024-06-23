@@ -6,18 +6,18 @@ package main
 #include <stdlib.h>
 
 typedef struct {
-    char* typ;
-	char* ecdsa_validator;
-	char* logic;
-	char* factory;
-} SmartWalletConfig;
+  char* typ;
+  char* ecdsa_validator;
+  char* logic;
+  char* factory;
+} SmartWalletConfig_GetAccountAddressParams;
 
 typedef struct {
-    char* provider_url;
-    SmartWalletConfig config;
-    char* entry_point_address;
-    char* owner_address;
-    int index;
+  char* provider_url;
+  SmartWalletConfig_GetAccountAddressParams config;
+  char* entry_point_address;
+  char* owner_address;
+  int index;
 } GetAccountAddressParams;
 */
 import "C"
