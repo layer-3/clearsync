@@ -282,6 +282,7 @@ protolint:disable MAX_LINE_LENGTH
 | ----- | ---- | ----------- |
 | channel_id | [string](#string) |  |
 | settlement_state | [settlement.SettlementState](settlement.proto.md#settlementstate) |  |
+| markets | [core.Market](core.proto.md#market) |  |
 
 
 
