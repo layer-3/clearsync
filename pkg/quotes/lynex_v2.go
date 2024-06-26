@@ -156,13 +156,6 @@ func (l *lynexV2) parseSwap(
 	swap *ilynex_v2_pair.ILynexPairSwap,
 	pool *dexPool[ilynex_v2_pair.ILynexPairSwap, *ilynex_v2_pair.ILynexPairSwapIterator],
 ) (trade TradeEvent, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			loggerLynexV2.Errorw(ErrSwapParsing.Error(), "swap", swap, "pool", pool)
-			err = fmt.Errorf("%s: %s", ErrSwapParsing, r)
-		}
-	}()
-
 	return buildV2Trade(
 		DriverLynexV2,
 		swap.Amount0In,

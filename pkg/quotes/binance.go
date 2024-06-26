@@ -57,8 +57,7 @@ func newBinance(config BinanceConfig, outbox chan<- TradeEvent, history Historic
 	go func() {
 		ticker := time.NewTicker(driver.assetsUpdatePeriod)
 		defer ticker.Stop()
-		for {
-			<-ticker.C
+		for range ticker.C {
 			driver.updateAssets()
 		}
 	}()
@@ -239,7 +238,10 @@ func (b *binance) handleErr(market Market) func(error) {
 		if err.Error() == "websocket: close 1001 (going away)" || err.Error() == "websocket: close 1006 (abnormal closure): unexpected EOF" {
 			// Reconnect logic
 			const maxRetries = 5
-			b.Unsubscribe(market)
+			if err := b.Unsubscribe(market); err != nil {
+				loggerBinance.Errorw("failed to unsubscribe from market", "market", market, "error", err)
+			}
+
 			for i := 0; i < maxRetries; i++ {
 				loggerBinance.Infow("attempting to reconnect to market", "market", market, "attempt", i+1)
 				if err = b.Subscribe(market); err == nil {
