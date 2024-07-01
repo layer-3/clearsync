@@ -708,6 +708,32 @@
       ]
   },
   {
+      "url": "https://u-trader.com",
+      "name": "U-trader",
+      "finex_url": "wss://kayen.io/ws",
+      "clearport_b_url": "http://clearport-peer-grpc.kayen-prod:50081",
+      "clearport_a_url": "wss://port-a.kayen.io/",
+      "description": "U-trader: Your premier all-in-one Hybrid CEX | DEX Crypto Exchange, Trading Platform & DeFi Ecosystem in the Bahamas. Offering seamless integration of centralized and decentralized trading, cutting-edge tools, and a comprehensive DeFi ecosystem for traders and investors.",
+      "available": true,
+      "metadata": {
+          "coordinates": {
+              "lat": 25.0343,
+              "long": -77.3963
+          },
+          "region": "caribbean",
+          "code": "bs",
+          "country": "Bahamas"
+      },
+      "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
+      "packages": [
+          {
+              "name": "Retail Package",
+              "margin": [1, 30],
+              "safety": "5.5"
+          }
+      ]
+  },
+  {
       "url": "https://kayen.io/",
       "name": "EtherVault",
       "finex_url": "wss://kayen.io/ws",
