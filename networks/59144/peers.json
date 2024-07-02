@@ -162,6 +162,32 @@
       ]
   },
   {
+      "url": "https://jdax.live",
+      "name": "JDAX",
+      "finex_url": "wss://kayen.io/ws",
+      "clearport_b_url": "http://clearport-peer-grpc.kayen-prod:50081",
+      "clearport_a_url": "wss://port-a.kayen.io/",
+      "description": "Johannensburg Digital Assets Exchange.",
+      "available": true,
+      "metadata": {
+          "coordinates": {
+              "lat": -26.2041,
+              "long": 28.0473
+        },
+          "region": "africa",
+          "code": "za",
+          "country": "South Africa"
+      },
+      "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
+      "packages": [
+          {
+              "name": "Retail Package",
+              "margin": [1, 30],
+              "safety": "5.5"
+          }
+      ]
+  },
+  {
       "url": "https://kayen.io/",
       "name": "NFT Nexus",
       "finex_url": "wss://kayen.io/ws",
