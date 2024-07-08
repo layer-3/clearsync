@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package clear_stream;
+
+import "core.proto";
+
+option go_package = "github.com/layer-3/clearport/proto";
+
+// ClearStream is aggregated message about status of the clearing protocol 
+// instance, including the nitro channel portfolio and settlement statuses
+message ClearStream {
+  string channel_id = 1;
+  repeated core.Position positions = 2;
+}

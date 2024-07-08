@@ -15,6 +15,7 @@ protolint:disable MAX_LINE_LENGTH
 | OpenChannel | [OpenChannelRequest](#openchannelrequest) | [OpenChannelResponse](#openchannelresponse) |  |
 | GetChannelJwt | [GetJwtRequest](#getjwtrequest) | [GetJwtResponse](#getjwtresponse) |  |
 | GetPositions | [GetPositionsRequest](#getpositionsrequest) | [GetPositionsResponse](#getpositionsresponse) |  |
+| GetActiveClearStreams | [GetActiveClearStreamsRequest](#getactiveclearstreamsrequest) | [GetActiveClearStreamsResponse](#getactiveclearstreamsresponse) |  |
 | RecordTrade | [TradeRequest](#traderequest) | [TradeResponse](#traderesponse) |  |
 | RecordTrades | [TradesRequest](#tradesrequest) | [TradesResponse](#tradesresponse) |  |
 | RequestSettlement | [SettlementRequest](#settlementrequest) | [SettlementResponse](#settlementresponse) |  |
@@ -102,6 +103,29 @@ protolint:disable MAX_LINE_LENGTH
 | msg | [string](#string) |  |
 | metadata | [ErrorMetadata](#errormetadata) |  |
 | action | [string](#string) |  |
+
+
+
+
+
+
+
+### GetActiveClearStreamsRequest
+
+
+
+
+
+
+
+
+### GetActiveClearStreamsResponse
+
+
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| clear_streams | [clear_stream.ClearStream](clear_stream.proto.md#clearstream) |  |
 
 
 
@@ -207,6 +231,7 @@ protolint:disable MAX_LINE_LENGTH
 | error_notification | [ErrorNotification](#errornotification) |  |
 | transaction_notification | [TransactionNotification](#transactionnotification) |  |
 | session_key_transaction_notification | [SessionKeyTransactionNotification](#sessionkeytransactionnotification) |  |
+| channel_id | [string](#string) |  |
 
 
 
@@ -283,6 +308,7 @@ protolint:disable MAX_LINE_LENGTH
 | channel_id | [string](#string) |  |
 | settlement_state | [settlement.SettlementState](settlement.proto.md#settlementstate) |  |
 | markets | [core.Market](core.proto.md#market) |  |
+| ledger | [settlement.SettlementLedger](settlement.proto.md#settlementledger) |  |
 
 
 

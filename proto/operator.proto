@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "auth.proto";
+import "clear_stream.proto";
 import "core.proto";
 import "session_key.proto";
 import "settlement.proto";
@@ -17,6 +18,7 @@ service Operator {
   rpc OpenChannel(OpenChannelRequest) returns (OpenChannelResponse);
   rpc GetChannelJwt(GetJwtRequest) returns (GetJwtResponse);
   rpc GetPositions(GetPositionsRequest) returns (GetPositionsResponse);
+  rpc GetActiveClearStreams(GetActiveClearStreamsRequest) returns (GetActiveClearStreamsResponse);
   rpc RecordTrade(TradeRequest) returns (TradeResponse);
   rpc RecordTrades(TradesRequest) returns (TradesResponse);
   rpc RequestSettlement(SettlementRequest) returns (SettlementResponse);
@@ -102,6 +104,8 @@ message Notification {
     TransactionNotification transaction_notification = 5;
     SessionKeyTransactionNotification session_key_transaction_notification = 6;
   }
+
+  string channel_id = 7;
 }
 
 enum NotificationType {
@@ -141,6 +145,7 @@ message SettlementNotification {
   string channel_id = 1;
   settlement.SettlementState settlement_state = 2;
   repeated core.Market markets = 3;
+  settlement.SettlementLedger ledger = 4;
 }
 
 message PositionNotification {
@@ -182,6 +187,13 @@ message GetPositionsRequest {
 message GetPositionsResponse {
   string channel_id = 1;
   repeated core.Position positions = 2;
+}
+
+message GetActiveClearStreamsRequest {
+}
+
+message GetActiveClearStreamsResponse {
+  repeated clear_stream.ClearStream clear_streams = 1;
 }
 
 message ErrorMetadata {
