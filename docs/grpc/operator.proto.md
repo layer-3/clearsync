@@ -231,7 +231,7 @@ protolint:disable MAX_LINE_LENGTH
 | error_notification | [ErrorNotification](#errornotification) |  |
 | transaction_notification | [TransactionNotification](#transactionnotification) |  |
 | session_key_transaction_notification | [SessionKeyTransactionNotification](#sessionkeytransactionnotification) |  |
-| channel_id | [string](#string) |  |
+| record_trade_notification | [RecordTradeNotification](#recordtradenotification) |  |
 
 
 
@@ -275,6 +275,21 @@ protolint:disable MAX_LINE_LENGTH
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | position | [core.Position](core.proto.md#position) |  |
+
+
+
+
+
+
+
+### RecordTradeNotification
+
+
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| trade | [core.Trade](core.proto.md#trade) |  |
+| revert_reason | [string](#string) |  |
 
 
 

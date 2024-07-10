@@ -103,9 +103,8 @@ message Notification {
     ErrorNotification error_notification = 4;
     TransactionNotification transaction_notification = 5;
     SessionKeyTransactionNotification session_key_transaction_notification = 6;
+    RecordTradeNotification record_trade_notification = 7;
   }
-
-  string channel_id = 7;
 }
 
 enum NotificationType {
@@ -168,6 +167,11 @@ message SessionKeyTransactionNotification {
   uint64 enable_sig_offset = 2;
   string digest_hash = 3;
   repeated SessionKeyPermission permissions = 4;
+}
+
+message RecordTradeNotification {
+  core.Trade trade = 1;
+  string revert_reason = 2;
 }
 
 message SettlementRequest {
