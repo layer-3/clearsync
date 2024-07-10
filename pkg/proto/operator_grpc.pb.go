@@ -24,6 +24,7 @@ type OperatorClient interface {
 	OpenChannel(ctx context.Context, in *OpenChannelRequest, opts ...grpc.CallOption) (*OpenChannelResponse, error)
 	GetChannelJwt(ctx context.Context, in *GetJwtRequest, opts ...grpc.CallOption) (*GetJwtResponse, error)
 	GetPositions(ctx context.Context, in *GetPositionsRequest, opts ...grpc.CallOption) (*GetPositionsResponse, error)
+	GetActiveClearStreams(ctx context.Context, in *GetActiveClearStreamsRequest, opts ...grpc.CallOption) (*GetActiveClearStreamsResponse, error)
 	RecordTrade(ctx context.Context, in *TradeRequest, opts ...grpc.CallOption) (*TradeResponse, error)
 	RecordTrades(ctx context.Context, in *TradesRequest, opts ...grpc.CallOption) (*TradesResponse, error)
 	RequestSettlement(ctx context.Context, in *SettlementRequest, opts ...grpc.CallOption) (*SettlementResponse, error)
@@ -87,6 +88,15 @@ func (c *operatorClient) GetChannelJwt(ctx context.Context, in *GetJwtRequest, o
 func (c *operatorClient) GetPositions(ctx context.Context, in *GetPositionsRequest, opts ...grpc.CallOption) (*GetPositionsResponse, error) {
 	out := new(GetPositionsResponse)
 	err := c.cc.Invoke(ctx, "/Operator/GetPositions", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *operatorClient) GetActiveClearStreams(ctx context.Context, in *GetActiveClearStreamsRequest, opts ...grpc.CallOption) (*GetActiveClearStreamsResponse, error) {
+	out := new(GetActiveClearStreamsResponse)
+	err := c.cc.Invoke(ctx, "/Operator/GetActiveClearStreams", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -171,6 +181,7 @@ type OperatorServer interface {
 	OpenChannel(context.Context, *OpenChannelRequest) (*OpenChannelResponse, error)
 	GetChannelJwt(context.Context, *GetJwtRequest) (*GetJwtResponse, error)
 	GetPositions(context.Context, *GetPositionsRequest) (*GetPositionsResponse, error)
+	GetActiveClearStreams(context.Context, *GetActiveClearStreamsRequest) (*GetActiveClearStreamsResponse, error)
 	RecordTrade(context.Context, *TradeRequest) (*TradeResponse, error)
 	RecordTrades(context.Context, *TradesRequest) (*TradesResponse, error)
 	RequestSettlement(context.Context, *SettlementRequest) (*SettlementResponse, error)
@@ -200,6 +211,9 @@ func (UnimplementedOperatorServer) GetChannelJwt(context.Context, *GetJwtRequest
 }
 func (UnimplementedOperatorServer) GetPositions(context.Context, *GetPositionsRequest) (*GetPositionsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetPositions not implemented")
+}
+func (UnimplementedOperatorServer) GetActiveClearStreams(context.Context, *GetActiveClearStreamsRequest) (*GetActiveClearStreamsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetActiveClearStreams not implemented")
 }
 func (UnimplementedOperatorServer) RecordTrade(context.Context, *TradeRequest) (*TradeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RecordTrade not implemented")
@@ -337,6 +351,24 @@ func _Operator_GetPositions_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Operator_GetActiveClearStreams_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetActiveClearStreamsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OperatorServer).GetActiveClearStreams(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Operator/GetActiveClearStreams",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OperatorServer).GetActiveClearStreams(ctx, req.(*GetActiveClearStreamsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Operator_RecordTrade_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(TradeRequest)
 	if err := dec(in); err != nil {
@@ -460,6 +492,10 @@ var Operator_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetPositions",
 			Handler:    _Operator_GetPositions_Handler,
+		},
+		{
+			MethodName: "GetActiveClearStreams",
+			Handler:    _Operator_GetActiveClearStreams_Handler,
 		},
 		{
 			MethodName: "RecordTrade",
