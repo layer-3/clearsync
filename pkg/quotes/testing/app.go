@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -44,6 +45,9 @@ func main() {
 	}
 
 	flag.Parse()
+	if blocks != nil {
+		quotes.StreamHistoricalEvents = true
+	}
 
 	var drivers []quotes.DriverType
 	if len(os.Args) >= 2 {
@@ -104,10 +108,14 @@ func main() {
 		quotes.NewMarket("linda", "usdc"),
 	}
 
+	var wg sync.WaitGroup
 	var atLeastOne atomic.Bool
+
 	for _, market := range markets {
 		market := market
+		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			if err = driver.Subscribe(market); err != nil {
 				slog.Warn("failed to subscribe", "market", market, "err", err)
 				return
@@ -116,6 +124,8 @@ func main() {
 			slog.Info("subscribed", "market", market.String())
 		}()
 	}
+
+	wg.Wait()
 	if !atLeastOne.Load() {
 		panic("failed to subscribe to at least one market")
 	}

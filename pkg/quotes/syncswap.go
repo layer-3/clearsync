@@ -3,8 +3,10 @@ package quotes
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/event"
 	"github.com/ipfs/go-log/v2"
 
 	"github.com/layer-3/clearsync/pkg/abi/isyncswap_factory"
@@ -125,7 +127,12 @@ func (s *syncswap) getPool(market Market) ([]*dexPool[isyncswap_pool.ISyncSwapPo
 	}
 	loggerSyncswap.Infow("pool found", "market", market, "address", poolAddress)
 
-	poolContract, err := isyncswap_pool.NewISyncSwapPool(poolAddress, s.client)
+	var poolContract dexEvent[isyncswap_pool.ISyncSwapPoolSwap, *isyncswap_pool.ISyncSwapPoolSwapIterator]
+	if StreamHistoricalEvents {
+		poolContract, err = newSyncswapPoolStreaming(poolAddress, s.client)
+	} else {
+		poolContract, err = isyncswap_pool.NewISyncSwapPool(poolAddress, s.client)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to build Syncswap pool contract: %w", err)
 	}
@@ -185,4 +192,84 @@ func (s *syncswap) derefIter(
 	iter *isyncswap_pool.ISyncSwapPoolSwapIterator,
 ) *isyncswap_pool.ISyncSwapPoolSwap {
 	return iter.Event
+}
+
+type syncswapPoolStreaming struct {
+	address  common.Address
+	backend  *ethclient.Client
+	contract *isyncswap_pool.ISyncSwapPool
+}
+
+func newSyncswapPoolStreaming(
+	address common.Address,
+	backend *ethclient.Client,
+) (dexEvent[isyncswap_pool.ISyncSwapPoolSwap, *isyncswap_pool.ISyncSwapPoolSwapIterator], error) {
+	contract, err := isyncswap_pool.NewISyncSwapPool(address, backend)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build Syncswap pool: %w", err)
+	}
+
+	return &syncswapPoolStreaming{
+		address:  address,
+		backend:  backend,
+		contract: contract,
+	}, nil
+}
+
+func (t *syncswapPoolStreaming) Token0(opts *bind.CallOpts) (common.Address, error) {
+	return t.contract.Token0(opts)
+}
+
+func (t *syncswapPoolStreaming) Token1(opts *bind.CallOpts) (common.Address, error) {
+	return t.contract.Token1(opts)
+}
+
+func (t *syncswapPoolStreaming) WatchSwap(
+	opts *bind.WatchOpts,
+	sink chan<- *isyncswap_pool.ISyncSwapPoolSwap,
+	from []common.Address,
+	to []common.Address,
+) (event.Subscription, error) {
+	currBlock, err := t.backend.BlockNumber(opts.Context)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current block number: %w", err)
+	}
+
+	startBlock := int64(currBlock) - 500
+	if startBlock < 0 {
+		startBlock = 0
+	}
+
+	filterOpts := &bind.FilterOpts{
+		Context: opts.Context,
+		Start:   uint64(startBlock),
+	}
+	iter, err := t.contract.FilterSwap(filterOpts, from, to)
+	if err != nil {
+		return nil, fmt.Errorf("failed to filter swaps: %w", err)
+	}
+
+	sub := event.NewSubscription(func(unsub <-chan struct{}) error {
+		defer iter.Close()
+
+		for iter.Next() {
+			swap := iter.Event
+			if swap == nil {
+				loggerSyncswap.Debugw("failed to deref iter", "iter", iter, "test_mode", true)
+				continue
+			}
+
+			sink <- swap
+		}
+		if iter.Error() != nil {
+			return fmt.Errorf("failed to fetch historical swaps: %w", iter.Error())
+		}
+
+		return nil
+	})
+	return sub, nil
+}
+
+func (t *syncswapPoolStreaming) FilterSwap(opts *bind.FilterOpts, sender, to []common.Address) (*isyncswap_pool.ISyncSwapPoolSwapIterator, error) {
+	return t.contract.FilterSwap(opts, sender, to)
 }

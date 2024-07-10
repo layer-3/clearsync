@@ -112,8 +112,12 @@ func (u *uniswapV3) getPool(market Market) ([]*dexPool[iuniswap_v3_pool.IUniswap
 
 	pools := make([]*dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator], 0, len(poolAddresses))
 	for _, poolAddress := range poolAddresses {
-		//poolContract, err := iuniswap_v3_pool.NewIUniswapV3Pool(poolAddress, u.client)
-		poolContract, err := newTestUniswapV3Pool(poolAddress, u.client)
+		var poolContract dexEvent[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator]
+		if StreamHistoricalEvents {
+			poolContract, err = newUniswapV3PoolStreaming(poolAddress, u.client)
+		} else {
+			poolContract, err = iuniswap_v3_pool.NewIUniswapV3Pool(poolAddress, u.client)
+		}
 		if err != nil {
 			return nil, fmt.Errorf("failed to build Uniswap v3 pool contract: %w", err)
 		}
@@ -182,34 +186,37 @@ func (u *uniswapV3) derefIter(
 	return iter.Event
 }
 
-type testUniswapV3Pool struct {
+type uniswapV3PoolStreaming struct {
 	address  common.Address
 	backend  *ethclient.Client
 	contract *iuniswap_v3_pool.IUniswapV3Pool
 }
 
-func newTestUniswapV3Pool(address common.Address, backend *ethclient.Client) (*testUniswapV3Pool, error) {
+func newUniswapV3PoolStreaming(
+	address common.Address,
+	backend *ethclient.Client,
+) (dexEvent[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator], error) {
 	contract, err := iuniswap_v3_pool.NewIUniswapV3Pool(address, backend)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build Uniswap v3 pool: %w", err)
 	}
 
-	return &testUniswapV3Pool{
+	return &uniswapV3PoolStreaming{
 		address:  address,
 		backend:  backend,
 		contract: contract,
 	}, nil
 }
 
-func (t *testUniswapV3Pool) Token0(opts *bind.CallOpts) (common.Address, error) {
+func (t *uniswapV3PoolStreaming) Token0(opts *bind.CallOpts) (common.Address, error) {
 	return t.contract.Token0(opts)
 }
 
-func (t *testUniswapV3Pool) Token1(opts *bind.CallOpts) (common.Address, error) {
+func (t *uniswapV3PoolStreaming) Token1(opts *bind.CallOpts) (common.Address, error) {
 	return t.contract.Token1(opts)
 }
 
-func (t *testUniswapV3Pool) WatchSwap(
+func (t *uniswapV3PoolStreaming) WatchSwap(
 	opts *bind.WatchOpts,
 	sink chan<- *iuniswap_v3_pool.IUniswapV3PoolSwap,
 	from []common.Address,
@@ -254,6 +261,6 @@ func (t *testUniswapV3Pool) WatchSwap(
 	}), nil
 }
 
-func (t *testUniswapV3Pool) FilterSwap(opts *bind.FilterOpts, sender, to []common.Address) (*iuniswap_v3_pool.IUniswapV3PoolSwapIterator, error) {
+func (t *uniswapV3PoolStreaming) FilterSwap(opts *bind.FilterOpts, sender, to []common.Address) (*iuniswap_v3_pool.IUniswapV3PoolSwapIterator, error) {
 	return t.contract.FilterSwap(opts, sender, to)
 }
