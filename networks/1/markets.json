@@ -1,9 +1,15 @@
 [
   {
-    "symbol": "spot://ETH/USD"
+    "symbol": "spot://ETH/USD",
+    "quotes":{
+      "dexs": false
+    }
   },
   {
-    "symbol": "spot://WETH/USD"
+    "symbol": "spot://WBTC/USD",
+    "quotes": {
+      "dexs": false
+    }
   },
   {
     "symbol": "spot://WBTC/USD"
@@ -12,7 +18,10 @@
     "symbol": "spot://DUCKIES/USD"
   },
   {
-    "symbol": "spot://SHIB/USD"
+    "symbol": "spot://SHIB/USD",
+    "quotes": {
+      "dexs": false
+    }
   },
   {
     "symbol": "spot://WSOL/USD"
