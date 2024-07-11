@@ -30,6 +30,7 @@
     "symbol": "spot://FLOKI/USD"
   },
   {
-    "symbol": "spot://LUBE/USD"
+    "symbol": "spot://LUBE/USD",
+    "leverage": 1
   }
 ]
