@@ -6,7 +6,7 @@
     }
   },
   {
-    "symbol": "spot://WBTC/USD",
+    "symbol": "spot://WETH/USD",
     "quotes": {
       "dexs": false
     }
