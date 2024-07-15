@@ -21,13 +21,15 @@
     }
   },
   {
-    "symbol": "spot://PEPE/USD"
+    "symbol": "spot://PEPE/USD",
+    "leverage": 2
   },
   {
     "symbol": "spot://BADGER/USD"
   },
   {
-    "symbol": "spot://FLOKI/USD"
+    "symbol": "spot://FLOKI/USD",
+    "leverage": 1
   },
   {
     "symbol": "spot://LUBE/USD",
