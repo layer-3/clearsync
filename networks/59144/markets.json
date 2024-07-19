@@ -12,7 +12,8 @@
     }
   },
   {
-    "symbol": "spot://MENDI/USD"
+    "symbol": "spot://MENDI/USD",
+    "leverage": 1
   },
   {
     "symbol": "spot://SHIB/USD",
@@ -22,14 +23,21 @@
   },
   {
     "symbol": "spot://PEPE/USD",
-    "leverage": 2
+    "quotes": {
+      "dexs": false
+    }
   },
   {
-    "symbol": "spot://BADGER/USD"
+    "symbol": "spot://BADGER/USD",
+    "quotes": {
+      "dexs": false
+    }
   },
   {
     "symbol": "spot://FLOKI/USD",
-    "leverage": 1
+    "quotes": {
+      "dexs": false
+    }
   },
   {
     "symbol": "spot://LUBE/USD",
