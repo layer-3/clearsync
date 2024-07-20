@@ -48,7 +48,7 @@ func GetFactoryCallData(smartWalletConfig Config, ownerAddress common.Address, i
 	return initCode, nil
 }
 
-// GetKernelInitData returns the calldata needed call the factory
+// GetKernelFactoryCallData returns the calldata needed call the factory
 // to deploy a Zerodev Kernel smart account.
 func GetKernelFactoryCallData(owner common.Address, index decimal.Decimal, accountLogic, ecdsaValidator common.Address) ([]byte, error) {
 	// Initialize Kernel Smart Account with default validation module and its calldata
@@ -68,7 +68,7 @@ func GetKernelFactoryCallData(owner common.Address, index decimal.Decimal, accou
 	return callData, nil
 }
 
-// GetKernelInitData returns the calldata needed call the factory
+// GetBiconomyFactoryCallData returns the calldata needed call the factory
 // to deploy a Biconomy smart account.
 func GetBiconomyFactoryCallData(owner common.Address, index decimal.Decimal, ecdsaValidator common.Address) ([]byte, error) {
 	// Initialize SCW validation module with owner address

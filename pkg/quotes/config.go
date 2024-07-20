@@ -6,6 +6,8 @@ import (
 	"github.com/ilyakaznacheev/cleanenv"
 )
 
+var StreamHistoricalEvents = true
+
 type Config struct {
 	Drivers []DriverType `yaml:"drivers" env:"QUOTES_DRIVERS" env-default:"binance,syncswap"`
 	Rpc     RpcConfig    `yaml:"rpc" env-prefix:"QUOTES_RPC_"`

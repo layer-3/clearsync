@@ -18,7 +18,6 @@ var (
 		BaseToken:  poolToken{Decimals: decimal.NewFromBigInt(baseTokenDecimals, 0)},
 		QuoteToken: poolToken{Decimals: decimal.NewFromBigInt(quoteTokenDecimals, 0)},
 	}
-	market = Market{} // Assuming market is correctly initialized for the test
 )
 
 func TestParseSwapSellETHUSDC(t *testing.T) {
