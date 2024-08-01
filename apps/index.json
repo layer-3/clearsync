@@ -1,0 +1,134 @@
+[
+    {
+        "id": "0",
+        "title": "Yellow Terminal",
+        "description": "Yellow Terminal is a highly optimized, cross-chain application designed for seamless and secure trading of cryptocurrency assets.",
+        "url": "https://terminal.yellow.com",
+        "isComingSoon": false,
+        "image": "https://wallet.yellow.com/logo.png",
+        "networks": ["mainnet"],
+        "tags": []
+    },
+    {
+        "id": "1",
+        "title": "SyncSwap",
+        "description": "SyncSwap is a seamless decentralized exchange DEX on Ethereum ZK Rollups, brings easy-to-use and low-cost DeFi to everyone with full Ethereum security powered by zero-knowledge technology.",
+        "url": "https://syncswap.xyz",
+        "isComingSoon": false,
+        "image": "https://syncswap.xyz/images/syncswap.svg",
+        "networks": ["mainnet"],
+        "tags": [
+            {
+                "name": "DeFi",
+                "id": "defi",
+                "color": "blue"
+            }
+        ]
+    },
+    {
+        "id": "2",
+        "title": "Mendi Finance",
+        "description": "Mendi Finance is a decentralized lending protocol for individuals, institutions and protocols to access financial services. It is a permissionless, open source protocol serving users on Linea. Users can deposit their assets, use them as collateral and borrow against them.",
+        "url": "https://mendi.finance",
+        "isComingSoon": false,
+        "image": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/mendi.svg",
+        "networks": ["mainnet"],
+        "tags": []
+    },
+    {
+        "id": "3",
+        "title": "Quickswap",
+        "description": "QuickSwap is a next-gen #DEX for #DeFi. Trade at lightning-fast speeds with near-zero gas fees.",
+        "url": "https://quickswap.exchange/#/",
+        "isComingSoon": false,
+        "image": "https://s2.coinmarketcap.com/static/img/coins/64x64/19966.png",
+        "networks": ["mainnet"],
+        "tags": [
+            {
+                "name": "DeFi",
+                "id": "defi",
+                "color": "blue"
+            }
+        ]
+    },
+    {
+        "id": "4",
+        "title": "Pancakeswap",
+        "description": "PancakeSwap is a leading multichain decentralized exchange that operates on an automated market maker (AMM) model built on BNB Chain, Ethereum, and Aptos.",
+        "url": "https://pancakeswap.finance/",
+        "isComingSoon": false,
+        "image": "https://cryptologos.cc/logos/pancakeswap-cake-logo.png?v=029",
+        "networks": ["mainnet"],
+        "tags": [
+            {
+                "name": "DeFi",
+                "id": "defi",
+                "color": "blue"
+            }
+        ]
+    },
+    {
+        "id": "5",
+        "title": "DODO",
+        "description": "DODO is a decentralized trading platform that uses the innovative Proactive Market Maker (PMM) algorithm to provide efficient on-chain liquidity for Web3 assets, making it easy for everyone to issue and trade these assets.",
+        "url": "https://dodoex.io/en",
+        "isComingSoon": false,
+        "image": "https://pbs.twimg.com/profile_images/1749662203987509248/Qqt701qt_400x400.jpg",
+        "networks": ["mainnet"],
+        "tags": [
+            {
+                "name": "DeFi",
+                "id": "defi",
+                "color": "blue"
+            }
+        ]
+    },
+    {
+        "id": "6",
+        "title": "EchoDEX",
+        "description": "EchoDEX has launched its mainnet, allowing users to utilize nearly all features. However, some asset types will be added soon, such as USDT, USDC, DAI, and more",
+        "url": "https://www.echodex.io/",
+        "isComingSoon": false,
+        "image": "https://s2.coinmarketcap.com/static/img/coins/64x64/27690.png",
+        "networks": ["mainnet", "testnet"],
+        "tags": [
+            {
+                "name": "DeFi",
+                "id": "defi",
+                "color": "blue"
+            }
+        ]
+    },
+    {
+        "id": "7",
+        "title": "Sushi",
+        "description": "Sushi (sushi.com) is a decentralized trading platform, we aim to be a one-stop shop for all your Decentralized Finance (DeFi) needs.",
+        "url": "https://www.sushi.com",
+        "isComingSoon": false,
+        "image": "https://s2.coinmarketcap.com/static/img/coins/64x64/6758.png",
+        "networks": ["mainnet"],
+        "tags": [
+            {
+                "name": "DeFi",
+                "id": "defi",
+                "color": "blue"
+            }
+        ]
+    },
+    {
+        "id": "8",
+        "title": "Orbiter-Finance",
+        "description": "Orbiter Finance is a ZK-tech Based Ethereum Acceleration Engine, boosting L2s performance and decreasing gas consumption.",
+        "url": "http://orbiter.finance/",
+        "isComingSoon": false,
+        "image": "https://avatars.githubusercontent.com/u/102346948?s=280&v=4",
+        "networks": ["mainnet"],
+        "tags": [
+            {
+                "name": "Bridge",
+                "id": "bridge",
+                "color": "green"
+            }
+        ]
+    }
+]
