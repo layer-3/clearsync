@@ -6,12 +6,10 @@ import (
 	"io"
 	"net/http"
 	"strings"
-)
 
-type Token struct {
-	ID     string
-	Symbol string
-}
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/shopspring/decimal"
+)
 
 type Prices map[string]map[string]float64
 
@@ -46,11 +44,11 @@ func FetchTokens() ([]Asset, error) {
 	return asset, nil
 }
 
-// FetchPrices fetches the current prices for a list of tokens from CoinGecko.
-func FetchPrices(tokens []Token) (Prices, error) {
+// FetchPrices fetches the current prices for a map of tokens from CoinGecko (map[CoinGeckoID]address).
+func FetchPrices(tokens map[string]common.Address) (map[common.Address]decimal.Decimal, error) {
 	ids := make([]string, len(tokens))
-	for i, token := range tokens {
-		ids[i] = token.ID
+	for id := range tokens {
+		ids = append(ids, id)
 	}
 	idsQuery := strings.Join(ids, ",")
 
@@ -75,13 +73,22 @@ func FetchPrices(tokens []Token) (Prices, error) {
 		return nil, fmt.Errorf("failed to unmarshal response: %v", err)
 	}
 
-	return prices, nil
+	tokenPrices := make(map[common.Address]decimal.Decimal)
+	for id, price := range prices {
+		price, ok := price["usd"]
+		if ok {
+			tokenPrices[tokens[id]] = decimal.NewFromFloat(price)
+			continue
+		}
+	}
+
+	return tokenPrices, nil
 }
 
 // TokenExists checks if a token is in the list.
-func TokenExists(token Token, tokens []Asset) bool {
+func TokenExists(tokenID string, tokens []Asset) bool {
 	for _, t := range tokens {
-		if t.ID == token.ID {
+		if t.ID == tokenID {
 			return true
 		}
 	}

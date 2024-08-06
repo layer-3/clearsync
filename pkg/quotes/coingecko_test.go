@@ -4,18 +4,19 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCoingecko_GetPrices(t *testing.T) {
 	t.Run("Fetch token prices", func(t *testing.T) {
 		// Each request supports up to 250 tokens.
-		tokens := []Token{
-			{ID: "bitcoin", Symbol: "BTC"},
-			{ID: "ethereum", Symbol: "ETH"},
-			{ID: "osis", Symbol: "OSIS"},
-			{ID: "matic-network", Symbol: "MATIC"},
-			{ID: "duckies", Symbol: "DUCKIES"},
+		tokens := map[string]common.Address{
+			"bitcoin":       {1},
+			"ethereum":      {2},
+			"osis":          {3},
+			"matic-network": {4},
+			"duckies":       {5},
 		}
 
 		assets, err := FetchTokens()
@@ -24,12 +25,12 @@ func TestCoingecko_GetPrices(t *testing.T) {
 			return
 		}
 
-		var validTokens []Token
-		for _, token := range tokens {
-			if TokenExists(token, assets) {
-				validTokens = append(validTokens, token)
+		validTokens := make(map[string]common.Address)
+		for id, token := range tokens {
+			if TokenExists(id, assets) {
+				validTokens[id] = token
 			} else {
-				fmt.Printf("Token not found on CoinGecko: %s (%s)\n", token.Symbol, token.ID)
+				fmt.Printf("Token not found on CoinGecko: %s (%s)\n", id, token)
 			}
 		}
 
@@ -44,12 +45,12 @@ func TestCoingecko_GetPrices(t *testing.T) {
 			return
 		}
 
-		for _, token := range validTokens {
-			price, ok := prices[token.ID]["usd"]
+		for id, token := range validTokens {
+			price, ok := prices[token]
 			if !ok {
-				fmt.Printf("Price for %s not found\n", token.Symbol)
+				fmt.Printf("Price for %s not found\n", id)
 			} else {
-				fmt.Printf("Price for %s is $%.5f USD\n", token.Symbol, price)
+				fmt.Printf("Price for %s is %s USD\n", id, price)
 			}
 		}
 
