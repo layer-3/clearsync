@@ -24,7 +24,10 @@
         "decimals": 6,
         "precision": 6,
         "logoURI": "https://lineascan.build/token/images/usdtlogo_32.png",
-        "extensions": {}
+        "extensions":
+        {
+          "allow_locking": true
+        }
     },
     {
         "address": "0x8d48ba6D6ABD283E672B917cdfBd6222DD1b80dB",
@@ -34,7 +37,10 @@
         "decimals": 6,
         "precision": 6,
         "logoURI": "https://lineascan.build/token/images/centre-usdc_28.png",
-        "extensions": {}
+        "extensions":
+        {
+          "allow_locking": true
+        }
     },
     {
         "address": "0x57634f3202E291e37801C426408b86a1eD0dB23d",
@@ -52,7 +58,10 @@
         "decimals": 18,
         "precision": 6,
         "logoURI": "https://lineascan.build/token/images/wbtc_28.png",
-        "extensions": {}
+        "extensions":
+        {
+          "allow_locking": true
+        }
     },
     {
         "address": "0xd15833D5184Ca08a8a26b923754EaA654F5Bb85F",

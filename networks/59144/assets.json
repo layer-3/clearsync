@@ -32,7 +32,11 @@
       "symbol": "USDT",
       "decimals": 6,
       "precision": 4,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/tether-64x64.png"
+      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/tether-64x64.png",
+      "extensions":
+      {
+        "allow_locking": true
+      }
     },
     {
       "address": "0x176211869ca2b568f2a7d4ee941e073a821ee1ff",
@@ -41,7 +45,11 @@
       "alias": "USD",
       "decimals": 6,
       "precision": 4,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/usdc-64x64.png"
+      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/usdc-64x64.png",
+      "extensions":
+      {
+        "allow_locking": true
+      }
     },
     {
       "address": "0x43E8809ea748EFf3204ee01F08872F063e44065f",
@@ -65,7 +73,11 @@
       "symbol": "WBTC",
       "decimals": 8,
       "precision": 6,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/btc-64x64.png"
+      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/btc-64x64.png",
+      "extensions":
+      {
+        "allow_locking": true
+      }
     },
     {
       "address": "0x0000000000000000000000000000000000000000",
@@ -73,7 +85,11 @@
       "symbol": "ETH",
       "decimals": 18,
       "precision": 6,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/ethereum-64x64.png"
+      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/ethereum-64x64.png",
+      "extensions":
+      {
+        "allow_locking": true
+      }
     },
     {
       "address": "0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f",
@@ -81,7 +97,11 @@
       "symbol": "WETH",
       "decimals": 18,
       "precision": 6,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/wrapped-eth-64x64.png"
+      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/wrapped-eth-64x64.png",
+      "extensions":
+      {
+        "allow_locking": true
+      }
     },
     {
       "address": "0x82cc61354d78b846016b559e3ccd766fa7e793d5",

@@ -15,7 +15,10 @@
         "decimals": 8,
         "precision": 6,
         "logoURI": "https://www.yellow.org/images/duckies_200x200.png",
-        "extensions": {}
+        "extensions":
+        {
+          "allow_locking": true
+        }
     },
     {
         "address": "0xE22e3af98FdF9d6a429150D92d446fcEeEA967fF",
@@ -24,7 +27,10 @@
         "decimals": 6,
         "precision": 6,
         "logoURI": "https://lineascan.build/token/images/usdtlogo_32.png",
-        "extensions": {}
+        "extensions":
+        {
+          "allow_locking": true
+        }
     },
     {
         "address": "0x8d48ba6D6ABD283E672B917cdfBd6222DD1b80dB",
@@ -34,7 +40,10 @@
         "decimals": 6,
         "precision": 6,
         "logoURI": "https://lineascan.build/token/images/centre-usdc_28.png",
-        "extensions": {}
+        "extensions":
+        {
+          "allow_locking": true
+        }
     },
     {
         "address": "0x57634f3202E291e37801C426408b86a1eD0dB23d",
@@ -52,7 +61,10 @@
         "decimals": 18,
         "precision": 6,
         "logoURI": "https://lineascan.build/token/images/wbtc_28.png",
-        "extensions": {}
+        "extensions":
+        {
+          "allow_locking": true
+        }
     },
     {
         "address": "0xEB31ce20F5c72C568e82D0183aa8Da3B9e5e177f",
@@ -61,7 +73,10 @@
         "decimals": 18,
         "precision": 6,
         "logoURI": "https://token-repository.dappradar.com/tokens?protocol=ethereum&contract=0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2&file=logo.png",
-        "extensions": {}
+        "extensions":
+        {
+          "allow_locking": true
+        }
     },
     {
         "address": "0xd15833D5184Ca08a8a26b923754EaA654F5Bb85F",
