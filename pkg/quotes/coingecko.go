@@ -44,7 +44,7 @@ func FetchTokens() ([]Asset, error) {
 }
 
 // FetchPrices fetches the current prices for a map of tokens from CoinGecko (map[address]CoinGeckoID).
-func FetchPrices(tokens map[string]string) (map[string]decimal.Decimal, error) {
+func FetchPrices(tokens map[string]string, apiKey string) (map[string]decimal.Decimal, error) {
 	ids := make([]string, len(tokens))
 	for _, id := range tokens {
 		ids = append(ids, id)
@@ -52,7 +52,17 @@ func FetchPrices(tokens map[string]string) (map[string]decimal.Decimal, error) {
 	idsQuery := strings.Join(ids, ",")
 
 	url := fmt.Sprintf("%s?ids=%s&vs_currencies=usd", "https://api.coingecko.com/api/v3/simple/price", idsQuery)
-	resp, err := http.Get(url)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+
+	if apiKey != "" {
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", apiKey))
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch prices: %v", err)
 	}

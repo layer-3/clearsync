@@ -38,14 +38,14 @@ func TestCoingecko_GetPrices(t *testing.T) {
 			return
 		}
 
-		prices, err := FetchPrices(validTokens)
+		prices, err := FetchPrices(validTokens, "")
 		if err != nil {
 			fmt.Printf("Error fetching prices: %v\n", err)
 			return
 		}
 
-		for id, token := range validTokens {
-			price, ok := prices[token]
+		for address, id := range validTokens {
+			price, ok := prices[address]
 			if !ok {
 				fmt.Printf("Price for %s not found\n", id)
 			} else {
