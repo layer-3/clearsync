@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/shopspring/decimal"
 )
 
@@ -44,10 +43,10 @@ func FetchTokens() ([]Asset, error) {
 	return asset, nil
 }
 
-// FetchPrices fetches the current prices for a map of tokens from CoinGecko (map[CoinGeckoID]address).
-func FetchPrices(tokens map[string]common.Address) (map[common.Address]decimal.Decimal, error) {
+// FetchPrices fetches the current prices for a map of tokens from CoinGecko (map[address]CoinGeckoID).
+func FetchPrices(tokens map[string]string) (map[string]decimal.Decimal, error) {
 	ids := make([]string, len(tokens))
-	for id := range tokens {
+	for _, id := range tokens {
 		ids = append(ids, id)
 	}
 	idsQuery := strings.Join(ids, ",")
@@ -73,11 +72,15 @@ func FetchPrices(tokens map[string]common.Address) (map[common.Address]decimal.D
 		return nil, fmt.Errorf("failed to unmarshal response: %v", err)
 	}
 
-	tokenPrices := make(map[common.Address]decimal.Decimal)
+	tokenPrices := make(map[string]decimal.Decimal)
 	for id, price := range prices {
 		price, ok := price["usd"]
 		if ok {
-			tokenPrices[tokens[id]] = decimal.NewFromFloat(price)
+			for addr, apiID := range tokens {
+				if apiID == id {
+					tokenPrices[addr] = decimal.NewFromFloat(price)
+				}
+			}
 			continue
 		}
 	}
