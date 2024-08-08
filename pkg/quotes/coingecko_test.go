@@ -4,19 +4,18 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCoingecko_GetPrices(t *testing.T) {
 	t.Run("Fetch token prices", func(t *testing.T) {
 		// Each request supports up to 250 tokens.
-		tokens := map[string]common.Address{
-			"bitcoin":       {1},
-			"ethereum":      {2},
-			"osis":          {3},
-			"matic-network": {4},
-			"duckies":       {5},
+		tokens := map[string]string{
+			"bitcoin_token_address":  "bitcoin",
+			"ethereum_token_address": "ethereum",
+			"osis_token_address":     "osis",
+			"matic_token_address":    "matic-network",
+			"duckies_token_address":  "duckies",
 		}
 
 		assets, err := FetchTokens()
@@ -25,10 +24,10 @@ func TestCoingecko_GetPrices(t *testing.T) {
 			return
 		}
 
-		validTokens := make(map[string]common.Address)
-		for id, token := range tokens {
+		validTokens := make(map[string]string)
+		for token, id := range tokens {
 			if TokenExists(id, assets) {
-				validTokens[id] = token
+				validTokens[token] = id
 			} else {
 				fmt.Printf("Token not found on CoinGecko: %s (%s)\n", id, token)
 			}
