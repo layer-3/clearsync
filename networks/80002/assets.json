@@ -17,7 +17,8 @@
         "logoURI": "https://www.yellow.org/images/duckies_200x200.png",
         "extensions":
         {
-          "allow_locking": true
+          "allow_locking": true,
+          "coingecko_api_id": "duckies"
         }
     },
     {
@@ -29,7 +30,8 @@
         "logoURI": "https://lineascan.build/token/images/usdtlogo_32.png",
         "extensions":
         {
-          "allow_locking": true
+          "allow_locking": true,
+          "coingecko_api_id": "tether"
         }
     },
     {
@@ -42,7 +44,8 @@
         "logoURI": "https://lineascan.build/token/images/centre-usdc_28.png",
         "extensions":
         {
-          "allow_locking": true
+          "allow_locking": true,
+          "coingecko_api_id": "usd-coin"
         }
     },
     {
@@ -63,7 +66,8 @@
         "logoURI": "https://lineascan.build/token/images/wbtc_28.png",
         "extensions":
         {
-          "allow_locking": true
+          "allow_locking": true,
+          "coingecko_api_id": "wrapped-bitcoin"
         }
     },
     {
@@ -75,7 +79,8 @@
         "logoURI": "https://token-repository.dappradar.com/tokens?protocol=ethereum&contract=0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2&file=logo.png",
         "extensions":
         {
-          "allow_locking": true
+          "allow_locking": true,
+          "coingecko_api_id": "weth"
         }
     },
     {

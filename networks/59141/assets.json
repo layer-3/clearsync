@@ -26,7 +26,8 @@
         "logoURI": "https://lineascan.build/token/images/usdtlogo_32.png",
         "extensions":
         {
-          "allow_locking": true
+          "allow_locking": true,
+          "coingecko_api_id": "tether"
         }
     },
     {
@@ -39,7 +40,8 @@
         "logoURI": "https://lineascan.build/token/images/centre-usdc_28.png",
         "extensions":
         {
-          "allow_locking": true
+          "allow_locking": true,
+          "coingecko_api_id": "usd-coin"
         }
     },
     {
@@ -60,7 +62,8 @@
         "logoURI": "https://lineascan.build/token/images/wbtc_28.png",
         "extensions":
         {
-          "allow_locking": true
+          "allow_locking": true,
+          "coingecko_api_id": "wrapped-bitcoin"
         }
     },
     {

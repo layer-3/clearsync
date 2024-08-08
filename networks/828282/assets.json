@@ -8,7 +8,8 @@
           "precision": 4,
           "extensions":
           {
-            "allow_locking": true
+            "allow_locking": true,
+            "coingecko_api_id": "tether"
           }
         },
         {
@@ -20,7 +21,8 @@
           "precision": 4,
           "extensions":
           {
-            "allow_locking": true
+            "allow_locking": true,
+            "coingecko_api_id": "usd-coin"
           }
         },
         {
@@ -38,7 +40,8 @@
           "precision": 8,
           "extensions":
           {
-            "allow_locking": true
+            "allow_locking": true,
+            "coingecko_api_id": "bitcoin"
           }
         },
         {
@@ -49,7 +52,8 @@
           "precision": 8,
           "extensions":
           {
-            "allow_locking": true
+            "allow_locking": true,
+            "coingecko_api_id": "ethereum"
           }
         },
         {

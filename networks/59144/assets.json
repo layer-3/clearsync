@@ -35,7 +35,8 @@
       "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/tether-64x64.png",
       "extensions":
       {
-        "allow_locking": true
+        "allow_locking": true,
+        "coingecko_api_id": "tether"
       }
     },
     {
@@ -48,7 +49,8 @@
       "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/usdc-64x64.png",
       "extensions":
       {
-        "allow_locking": true
+        "allow_locking": true,
+        "coingecko_api_id": "usd-coin"
       }
     },
     {
@@ -76,7 +78,8 @@
       "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/btc-64x64.png",
       "extensions":
       {
-        "allow_locking": true
+        "allow_locking": true,
+        "coingecko_api_id": "wrapped-bitcoin"
       }
     },
     {
@@ -88,7 +91,8 @@
       "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/ethereum-64x64.png",
       "extensions":
       {
-        "allow_locking": true
+        "allow_locking": true,
+        "coingecko_api_id": "ethereum"
       }
     },
     {
@@ -100,7 +104,8 @@
       "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/wrapped-eth-64x64.png",
       "extensions":
       {
-        "allow_locking": true
+        "allow_locking": true,
+        "coingecko_api_id": "weth"
       }
     },
     {

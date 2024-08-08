@@ -17,7 +17,8 @@
         "logoURI": "https://cryptologos.cc/logos/tether-usdt-logo.png",
         "extensions":
         {
-          "allow_locking": true
+          "allow_locking": true,
+          "coingecko_api_id": "tether"
         }
       },
       {
@@ -30,7 +31,8 @@
         "logoURI": "https://assets.coingecko.com/coins/images/6319/large/usdc.png?1696506694",
         "extensions":
         {
-          "allow_locking": true
+          "allow_locking": true,
+          "coingecko_api_id": "usd-coin"
         }
       },
       {
@@ -50,7 +52,8 @@
         "logoURI": "https://s2.coinmarketcap.com/static/img/coins/64x64/3717.png",
         "extensions":
         {
-          "allow_locking": true
+          "allow_locking": true,
+          "coingecko_api_id": "wrapped-bitcoin"
         }
       },
       {
@@ -62,7 +65,8 @@
         "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png?1696501628",
         "extensions":
         {
-          "allow_locking": true
+          "allow_locking": true,
+          "coingecko_api_id": "ethereum"
         }
       },
       {
@@ -74,7 +78,8 @@
         "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png?1696501628",
         "extensions":
         {
-          "allow_locking": true
+          "allow_locking": true,
+          "coingecko_api_id": "weth"
         }
       },
       {
@@ -104,7 +109,8 @@
         "logoURI": "https://lineascan.build/token/images/daistablecoin_32.png",
         "extensions":
         {
-          "allow_locking": true
+          "allow_locking": true,
+          "coingecko_api_id": "dai"
         }
       },
       {
