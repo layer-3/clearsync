@@ -22,7 +22,12 @@
         "symbol": "USDC",
         "decimals": 6,
         "precision": 4,
-        "logoURI": "https://assets.coingecko.com/coins/images/6319/large/usdc.png?1696506694"
+        "logoURI": "https://assets.coingecko.com/coins/images/6319/large/usdc.png?1696506694",
+        "extensions":
+        {
+          "allow_locking": true,
+          "coingecko_api_id": "usd-coin"
+        }
       },
       {
         "address": "0x7964e43d2d2aea8d528a2a6d7b004d22ca5657a7",
@@ -38,7 +43,12 @@
         "symbol": "ETH",
         "decimals": 18,
         "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png?1696501628"
+        "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png?1696501628",
+        "extensions":
+        {
+          "allow_locking": true,
+          "coingecko_api_id": "ethereum"
+        }
       },
       {
         "address": "0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f",
@@ -46,7 +56,12 @@
         "symbol": "WETH",
         "decimals": 18,
         "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png?1696501628"
+        "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png?1696501628",
+        "extensions":
+        {
+          "allow_locking": true,
+          "coingecko_api_id": "weth"
+        }
       }
     ]
   }

@@ -14,7 +14,12 @@
       "symbol": "USDT",
       "decimals": 6,
       "precision": 4,
-      "logoURI": "https://lineascan.build/token/images/usdtlogo_32.png"
+      "logoURI": "https://lineascan.build/token/images/usdtlogo_32.png",
+      "extensions":
+      {
+        "allow_locking": true,
+        "coingecko_api_id": "tether"
+      }
     },
     {
       "address": "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
@@ -23,7 +28,12 @@
       "alias": "USD",
       "decimals": 6,
       "precision": 4,
-      "logoURI": "https://lineascan.build/token/images/centre-usdc_28.png"
+      "logoURI": "https://lineascan.build/token/images/centre-usdc_28.png",
+      "extensions":
+      {
+        "allow_locking": true,
+        "coingecko_api_id": "usd-coin"
+      }
     },
     {
       "address": "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
@@ -31,7 +41,12 @@
       "symbol": "USDC.e",
       "decimals": 6,
       "precision": 4,
-      "logoURI": "https://lineascan.build/token/images/centre-usdc_28.png"
+      "logoURI": "https://lineascan.build/token/images/centre-usdc_28.png",
+      "extensions":
+      {
+        "allow_locking": true,
+        "coingecko_api_id": "usd-coin"
+      }
     },
     {
       "address": "0x3e5351935595600D8e094dEE3Ec7E942CAf9907F",
@@ -55,7 +70,12 @@
       "symbol": "WBTC",
       "decimals": 8,
       "precision": 6,
-      "logoURI": "https://lineascan.build/token/images/wbtc_28.png"
+      "logoURI": "https://lineascan.build/token/images/wbtc_28.png",
+      "extensions":
+      {
+        "allow_locking": true,
+        "coingecko_api_id": "wrapped-bitcoin"
+      }
     },
     {
       "address": "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
@@ -63,7 +83,12 @@
       "symbol": "WETH",
       "decimals": 18,
       "precision": 6,
-      "logoURI": "https://lineascan.build/token/images/weth_32.png"
+      "logoURI": "https://lineascan.build/token/images/weth_32.png",
+      "extensions":
+      {
+        "allow_locking": true,
+        "coingecko_api_id": "weth"
+      }
     },
     {
       "address": "0x0000000000000000000000000000000000000000",

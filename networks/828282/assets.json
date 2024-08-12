@@ -5,7 +5,12 @@
           "name": "USD Tether",
           "symbol": "USDT",
           "decimals": 6,
-          "precision": 4
+          "precision": 4,
+          "extensions":
+          {
+            "allow_locking": true,
+            "coingecko_api_id": "tether"
+          }
         },
         {
           "address": "0x0B7d2d621Fc80900fD345eb9542018b67fEF474F",
@@ -13,7 +18,12 @@
           "symbol": "USDC",
           "alias": "USD",
           "decimals": 6,
-          "precision": 4
+          "precision": 4,
+          "extensions":
+          {
+            "allow_locking": true,
+            "coingecko_api_id": "usd-coin"
+          }
         },
         {
           "address": "0xFb0782Cc546CcF1A8e12B6E1429aa7ce120c4b35",
@@ -27,14 +37,24 @@
           "name": "Bitcoin",
           "symbol": "BTC",
           "decimals": 18,
-          "precision": 8
+          "precision": 8,
+          "extensions":
+          {
+            "allow_locking": true,
+            "coingecko_api_id": "bitcoin"
+          }
         },
         {
           "address": "0x42b757f0B530cb44139ceDd9F0C47249175CBC7E",
           "name": "Ether",
           "symbol": "ETH",
           "decimals": 18,
-          "precision": 8
+          "precision": 8,
+          "extensions":
+          {
+            "allow_locking": true,
+            "coingecko_api_id": "ethereum"
+          }
         },
         {
           "address": "0x3e594179ad7E013f817bCddF310a7e75b2b069a9",
