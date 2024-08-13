@@ -10,12 +10,12 @@ import (
 func TestCoingecko_GetPrices(t *testing.T) {
 	t.Run("Fetch token prices", func(t *testing.T) {
 		// Each request supports up to 250 tokens.
-		tokens := map[string]string{
-			"bitcoin_token_address":  "bitcoin",
-			"ethereum_token_address": "ethereum",
-			"osis_token_address":     "osis",
-			"matic_token_address":    "matic-network",
-			"duckies_token_address":  "duckies",
+		tokens := map[TokenNetwork]string{
+			{"bitcoin_token_address", 1}:  "bitcoin",
+			{"ethereum_token_address", 2}: "ethereum",
+			{"osis_token_address", 3}:     "osis",
+			{"matic_token_address", 4}:    "matic-network",
+			{"duckies_token_address", 5}:  "duckies",
 		}
 
 		assets, err := FetchTokens()
@@ -24,12 +24,12 @@ func TestCoingecko_GetPrices(t *testing.T) {
 			return
 		}
 
-		validTokens := make(map[string]string)
+		validTokens := make(map[TokenNetwork]string)
 		for token, id := range tokens {
 			if TokenExists(id, assets) {
 				validTokens[token] = id
 			} else {
-				fmt.Printf("Token not found on CoinGecko: %s (%s)\n", id, token)
+				fmt.Printf("Token not found on CoinGecko: %s (%s)\n", id, token.TokenAddress)
 			}
 		}
 
