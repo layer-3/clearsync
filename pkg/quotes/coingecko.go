@@ -18,6 +18,11 @@ type Asset struct {
 	Name   string `json:"name"`
 }
 
+type TokenNetwork struct {
+	TokenAddress string
+	ChainID      uint32
+}
+
 // FetchTokens fetches the list of all available tokens from CoinGecko.
 func FetchTokens() ([]Asset, error) {
 	resp, err := http.Get("https://api.coingecko.com/api/v3/coins/list")
@@ -44,7 +49,7 @@ func FetchTokens() ([]Asset, error) {
 }
 
 // FetchPrices fetches the current prices for a map of tokens from CoinGecko (map[address]CoinGeckoID).
-func FetchPrices(tokens map[string]string, apiKey string) (map[string]decimal.Decimal, error) {
+func FetchPrices(tokens map[TokenNetwork]string, apiKey string) (map[TokenNetwork]decimal.Decimal, error) {
 	ids := make([]string, len(tokens))
 	for _, id := range tokens {
 		ids = append(ids, id)
@@ -82,7 +87,7 @@ func FetchPrices(tokens map[string]string, apiKey string) (map[string]decimal.De
 		return nil, fmt.Errorf("failed to unmarshal response: %v", err)
 	}
 
-	tokenPrices := make(map[string]decimal.Decimal)
+	tokenPrices := make(map[TokenNetwork]decimal.Decimal)
 	for id, price := range prices {
 		price, ok := price["usd"]
 		if ok {
