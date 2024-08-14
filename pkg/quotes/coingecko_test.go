@@ -18,7 +18,7 @@ func TestCoingecko_GetPrices(t *testing.T) {
 			{"duckies_token_address", 5}:  "duckies",
 		}
 
-		assets, err := FetchTokens()
+		assets, err := FetchTokens("")
 		if err != nil {
 			fmt.Printf("Error fetching coin list: %v\n", err)
 			return
