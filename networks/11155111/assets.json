@@ -1,0 +1,31 @@
+{
+  "tokens": [
+    {
+        "address": "0x0000000000000000000000000000000000000000",
+        "name": "Ether",
+        "symbol": "ETH",
+        "decimals": 18,
+        "precision": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png?1696501628",
+        "extensions":
+        {
+          "allow_locking": true,
+          "coingecko_api_id": "ethereum"
+        }
+    },
+    {
+        "address": "0x0141b670C454705086217ab707eD7F1ECbe7dbC0",
+        "name": "USD Coin",
+        "symbol": "USDC",
+        "alias": "USD",
+        "decimals": 6,
+        "precision": 6,
+        "logoURI": "https://lineascan.build/token/images/centre-usdc_28.png",
+        "extensions":
+        {
+          "allow_locking": true,
+          "coingecko_api_id": "usd-coin"
+        }
+    }
+  ]
+}
