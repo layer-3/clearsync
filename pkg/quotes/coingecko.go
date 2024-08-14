@@ -24,8 +24,19 @@ type TokenNetwork struct {
 }
 
 // FetchTokens fetches the list of all available tokens from CoinGecko.
-func FetchTokens() ([]Asset, error) {
-	resp, err := http.Get("https://api.coingecko.com/api/v3/coins/list")
+func FetchTokens(apiKey string) ([]Asset, error) {
+	url := "https://api.coingecko.com/api/v3/coins/list"
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+
+	if apiKey != "" {
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", apiKey))
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch coin list: %v", err)
 	}
