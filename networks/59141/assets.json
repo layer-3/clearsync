@@ -6,7 +6,12 @@
         "symbol": "ETH",
         "decimals": 18,
         "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png?1696501628"
+        "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png?1696501628",
+        "extensions":
+        {
+          "allow_locking": true,
+          "coingecko_api_id": "ethereum"
+        }
     },
     {
         "address": "0x38871D722689f6d799B2A1FE93bE096E98e00986",
