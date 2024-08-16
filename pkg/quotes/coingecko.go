@@ -61,6 +61,13 @@ func FetchTokens(apiKey string) ([]Asset, error) {
 
 // FetchPrices fetches the current prices for a map of tokens from CoinGecko (map[address]CoinGeckoID).
 func FetchPrices(tokens map[TokenNetwork]string, apiKey string) (map[TokenNetwork]decimal.Decimal, error) {
+	// Filter out recurring IDs, to lower the number of credits spent
+	uniqueIDs := make(map[string]struct{})
+	for _, id := range tokens {
+		uniqueIDs[id] = struct{}{}
+	}
+
+	// Convert map to slice
 	ids := make([]string, len(tokens))
 	for _, id := range tokens {
 		ids = append(ids, id)
