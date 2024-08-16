@@ -23,6 +23,13 @@ type TokenNetwork struct {
 	ChainID      uint32
 }
 
+// TODO: add support for Pro subscription (API endpoint + Header name)
+func setAuthHeader(req *http.Request, apiKey string) {
+	if apiKey != "" {
+		req.Header.Set("x-cg-demo-api-key", apiKey)
+	}
+}
+
 // FetchTokens fetches the list of all available tokens from CoinGecko.
 func FetchTokens(apiKey string) ([]Asset, error) {
 	url := "https://api.coingecko.com/api/v3/coins/list"
@@ -31,9 +38,7 @@ func FetchTokens(apiKey string) ([]Asset, error) {
 		return nil, fmt.Errorf("failed to create request: %v", err)
 	}
 
-	if apiKey != "" {
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", apiKey))
-	}
+	setAuthHeader(req, apiKey)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -80,9 +85,7 @@ func FetchPrices(tokens map[TokenNetwork]string, apiKey string) (map[TokenNetwor
 		return nil, fmt.Errorf("failed to create request: %v", err)
 	}
 
-	if apiKey != "" {
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", apiKey))
-	}
+	setAuthHeader(req, apiKey)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
