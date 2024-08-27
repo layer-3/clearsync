@@ -2,6 +2,7 @@ package quest
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -28,14 +29,16 @@ func HandlePOST(w http.ResponseWriter, r *http.Request) {
 
 	var req struct {
 		Address string `json:"address"`
+		QuestID string `json:"quest_id"`
 	}
+
 	err = json.Unmarshal(body, &req)
-	if err != nil || req.Address == "" {
+	if err != nil || req.Address == "" || req.QuestID == "" {
 		http.Error(w, "Invalid request or missing user address", http.StatusBadRequest)
 		return
 	}
 
-	handler, exists := GetHandler(questKey)
+	handler, exists := GetHandler(questKey, req.QuestID)
 	if !exists {
 		http.Error(w, "Handler not found for given quest ID", http.StatusNotFound)
 		return
@@ -68,7 +71,14 @@ func HandleGET(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	handler, exists := GetHandler(questKey)
+	questID := r.URL.Query().Get("quest_id")
+	if questID == "" {
+		fmt.Println("error")
+		http.Error(w, "quest_id is required", http.StatusBadRequest)
+		return
+	}
+
+	handler, exists := GetHandler(questKey, questID)
 	if !exists {
 		http.Error(w, "Handler not found for given quest ID", http.StatusNotFound)
 		return

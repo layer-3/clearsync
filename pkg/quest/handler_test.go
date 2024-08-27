@@ -22,7 +22,7 @@ func (h *MockHandler) Handle(ctx context.Context, userAddress string) (Result, e
 
 func init() {
 	// Register mock handler for testing
-	RegisterHandler("galxe_balance", &MockHandler{})
+	RegisterHandler("galxe_balance", "1", &MockHandler{})
 }
 
 func TestPostHandler(t *testing.T) {
@@ -38,7 +38,7 @@ func TestPostHandler(t *testing.T) {
 			name:           "Valid POST Request",
 			method:         http.MethodPost,
 			url:            "/galxe/balance",
-			body:           bytes.NewBuffer([]byte(`{"address": "0xUserAddress"}`)),
+			body:           bytes.NewBuffer([]byte(`{"address": "0xUserAddress", "quest_id": "1"}`)),
 			expectedStatus: http.StatusOK,
 			expectedBody: Result{
 				Valid: true,
@@ -49,7 +49,7 @@ func TestPostHandler(t *testing.T) {
 			name:           "Invalid Path Format",
 			method:         http.MethodPost,
 			url:            "/galxe",
-			body:           bytes.NewBuffer([]byte(`{"address": "0xUserAddress"}`)),
+			body:           bytes.NewBuffer([]byte(`{"address": "0xUserAddress", "quest_id": "1"}`)),
 			expectedStatus: http.StatusBadRequest,
 			expectedBody:   Result{},
 		},
@@ -73,7 +73,7 @@ func TestPostHandler(t *testing.T) {
 			name:           "Handler Not Found",
 			method:         http.MethodPost,
 			url:            "/galxe/unknown",
-			body:           bytes.NewBuffer([]byte(`{"address": "0xUserAddress"}`)),
+			body:           bytes.NewBuffer([]byte(`{"address": "0xUserAddress", "quest_id": "1"}`)),
 			expectedStatus: http.StatusNotFound,
 			expectedBody:   Result{},
 		},
@@ -116,7 +116,7 @@ func TestGetHandler(t *testing.T) {
 		{
 			name:           "Valid GET Request",
 			method:         http.MethodGet,
-			url:            "/galxe/balance?address=0xUserAddress",
+			url:            "/galxe/balance?address=0xUserAddress&quest_id=1",
 			expectedStatus: http.StatusOK,
 			expectedBody: Result{
 				Valid: true,
@@ -140,7 +140,7 @@ func TestGetHandler(t *testing.T) {
 		{
 			name:           "Handler Not Found",
 			method:         http.MethodGet,
-			url:            "/galxe/unknown?address=0xUserAddress",
+			url:            "/galxe/balance?address=0xUserAddress&quest_id=2",
 			expectedStatus: http.StatusNotFound,
 			expectedBody:   Result{},
 		},
