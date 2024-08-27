@@ -13,11 +13,8 @@ import (
 // Mock handler for testing
 type MockHandler struct{}
 
-func (h *MockHandler) Handle(ctx context.Context, userAddress string) (Result, error) {
-	return Result{
-		Valid: true,
-		Data:  map[string]interface{}{"token_balance": 10.0},
-	}, nil
+func (h *MockHandler) Handle(ctx context.Context, userAddress string) (bool, error) {
+	return true, nil
 }
 
 func init() {
@@ -32,7 +29,7 @@ func TestPostHandler(t *testing.T) {
 		url            string
 		body           io.Reader
 		expectedStatus int
-		expectedBody   Result
+		expectedBody   bool
 	}{
 		{
 			name:           "Valid POST Request",
@@ -40,10 +37,7 @@ func TestPostHandler(t *testing.T) {
 			url:            "/galxe/balance",
 			body:           bytes.NewBuffer([]byte(`{"address": "0xUserAddress", "quest_id": "1"}`)),
 			expectedStatus: http.StatusOK,
-			expectedBody: Result{
-				Valid: true,
-				Data:  map[string]interface{}{"token_balance": 10.0},
-			},
+			expectedBody:   true,
 		},
 		{
 			name:           "Invalid Path Format",
@@ -51,7 +45,7 @@ func TestPostHandler(t *testing.T) {
 			url:            "/galxe",
 			body:           bytes.NewBuffer([]byte(`{"address": "0xUserAddress", "quest_id": "1"}`)),
 			expectedStatus: http.StatusBadRequest,
-			expectedBody:   Result{},
+			expectedBody:   false,
 		},
 		{
 			name:           "Missing Body",
@@ -59,7 +53,7 @@ func TestPostHandler(t *testing.T) {
 			url:            "/galxe/balance",
 			body:           nil,
 			expectedStatus: http.StatusBadRequest,
-			expectedBody:   Result{},
+			expectedBody:   false,
 		},
 		{
 			name:           "Invalid Body",
@@ -67,7 +61,7 @@ func TestPostHandler(t *testing.T) {
 			url:            "/galxe/balance",
 			body:           bytes.NewBuffer([]byte(`{}`)),
 			expectedStatus: http.StatusBadRequest,
-			expectedBody:   Result{},
+			expectedBody:   false,
 		},
 		{
 			name:           "Handler Not Found",
@@ -75,7 +69,7 @@ func TestPostHandler(t *testing.T) {
 			url:            "/galxe/unknown",
 			body:           bytes.NewBuffer([]byte(`{"address": "0xUserAddress", "quest_id": "1"}`)),
 			expectedStatus: http.StatusNotFound,
-			expectedBody:   Result{},
+			expectedBody:   false,
 		},
 	}
 
@@ -91,15 +85,11 @@ func TestPostHandler(t *testing.T) {
 			}
 
 			// Decode JSON response and compare with expected body
-			var actualBody Result
+			var actualBody bool
 			json.NewDecoder(rec.Body).Decode(&actualBody)
 
-			if tt.expectedStatus == http.StatusOK && actualBody.Valid != tt.expectedBody.Valid {
-				t.Errorf("expected valid %v, got %v", tt.expectedBody.Valid, actualBody.Valid)
-			}
-
-			if tt.expectedStatus == http.StatusOK && actualBody.Data["token_balance"] != tt.expectedBody.Data["token_balance"] {
-				t.Errorf("expected token_balance %v, got %v", tt.expectedBody.Data["token_balance"], actualBody.Data["token_balance"])
+			if tt.expectedStatus == http.StatusOK && actualBody != tt.expectedBody {
+				t.Errorf("expected valid %v, got %v", tt.expectedBody, actualBody)
 			}
 		})
 	}
@@ -111,38 +101,35 @@ func TestGetHandler(t *testing.T) {
 		method         string
 		url            string
 		expectedStatus int
-		expectedBody   Result
+		expectedBody   bool
 	}{
 		{
 			name:           "Valid GET Request",
 			method:         http.MethodGet,
 			url:            "/galxe/balance?address=0xUserAddress&quest_id=1",
 			expectedStatus: http.StatusOK,
-			expectedBody: Result{
-				Valid: true,
-				Data:  map[string]interface{}{"token_balance": 10.0},
-			},
+			expectedBody:   true,
 		},
 		{
 			name:           "Invalid Path Format",
 			method:         http.MethodGet,
 			url:            "/galxe",
 			expectedStatus: http.StatusBadRequest,
-			expectedBody:   Result{},
+			expectedBody:   false,
 		},
 		{
 			name:           "Missing User Address",
 			method:         http.MethodGet,
 			url:            "/galxe/balance",
 			expectedStatus: http.StatusBadRequest,
-			expectedBody:   Result{},
+			expectedBody:   false,
 		},
 		{
 			name:           "Handler Not Found",
 			method:         http.MethodGet,
 			url:            "/galxe/balance?address=0xUserAddress&quest_id=2",
 			expectedStatus: http.StatusNotFound,
-			expectedBody:   Result{},
+			expectedBody:   false,
 		},
 	}
 
@@ -158,15 +145,11 @@ func TestGetHandler(t *testing.T) {
 			}
 
 			// Decode JSON response and compare with expected body
-			var actualBody Result
+			var actualBody bool
 			json.NewDecoder(rec.Body).Decode(&actualBody)
 
-			if tt.expectedStatus == http.StatusOK && actualBody.Valid != tt.expectedBody.Valid {
-				t.Errorf("expected valid %v, got %v", tt.expectedBody.Valid, actualBody.Valid)
-			}
-
-			if tt.expectedStatus == http.StatusOK && actualBody.Data["token_balance"] != tt.expectedBody.Data["token_balance"] {
-				t.Errorf("expected token_balance %v, got %v", tt.expectedBody.Data["token_balance"], actualBody.Data["token_balance"])
+			if tt.expectedStatus == http.StatusOK && actualBody != tt.expectedBody {
+				t.Errorf("expected valid %v, got %v", tt.expectedBody, actualBody)
 			}
 		})
 	}
