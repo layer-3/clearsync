@@ -5,7 +5,13 @@ import (
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
+
+func GinHandlePOST(c *gin.Context) {
+	HandlePOST(c.Writer, c.Request)
+}
 
 func HandlePOST(w http.ResponseWriter, r *http.Request) {
 	questKey, err := extractQuestKey(r.URL.Path)
@@ -43,6 +49,10 @@ func HandlePOST(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(result)
+}
+
+func GinHandleGET(c *gin.Context) {
+	HandleGET(c.Writer, c.Request)
 }
 
 func HandleGET(w http.ResponseWriter, r *http.Request) {
