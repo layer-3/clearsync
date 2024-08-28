@@ -1,12 +1,17 @@
 package quest
 
-var registry = map[string]Handler{}
+var registry = map[handlerKey]Handler{}
+
+type handlerKey struct {
+	key string
+	id  string
+}
 
 func RegisterHandler(key string, questID string, handler Handler) {
-	registry[key+"_"+questID] = handler
+	registry[handlerKey{key: key, id: questID}] = handler
 }
 
 func GetHandler(key string, questID string) (Handler, bool) {
-	handler, exists := registry[key+"_"+questID]
+	handler, exists := registry[handlerKey{key: key, id: questID}]
 	return handler, exists
 }

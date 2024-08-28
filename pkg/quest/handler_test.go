@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/gin-gonic/gin"
 )
 
 // Mock handler for testing
@@ -78,7 +80,10 @@ func TestPostHandler(t *testing.T) {
 			req := httptest.NewRequest(tt.method, tt.url, tt.body)
 			rec := httptest.NewRecorder()
 
-			HandlePOST(rec, req)
+			c, _ := gin.CreateTestContext(rec)
+			c.Request = req
+
+			HandlePOST(c)
 
 			if rec.Code != tt.expectedStatus {
 				t.Errorf("expected status %d, got %d", tt.expectedStatus, rec.Code)
@@ -138,7 +143,10 @@ func TestGetHandler(t *testing.T) {
 			req := httptest.NewRequest(tt.method, tt.url, nil)
 			rec := httptest.NewRecorder()
 
-			HandleGET(rec, req)
+			c, _ := gin.CreateTestContext(rec)
+			c.Request = req
+
+			HandleGET(c)
 
 			if rec.Code != tt.expectedStatus {
 				t.Errorf("expected status %d, got %d", tt.expectedStatus, rec.Code)
