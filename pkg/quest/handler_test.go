@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/require"
 )
 
 // Mock handler for testing
@@ -36,8 +37,8 @@ func TestPostHandler(t *testing.T) {
 		{
 			name:           "Valid POST Request",
 			method:         http.MethodPost,
-			url:            "/galxe/balance",
-			body:           bytes.NewBuffer([]byte(`{"address": "0xUserAddress", "quest_id": "1"}`)),
+			url:            "/galxe/balance/1",
+			body:           bytes.NewBuffer([]byte(`{"address": "0xUserAddress"}`)),
 			expectedStatus: http.StatusOK,
 			expectedBody:   true,
 		},
@@ -45,14 +46,14 @@ func TestPostHandler(t *testing.T) {
 			name:           "Invalid Path Format",
 			method:         http.MethodPost,
 			url:            "/galxe",
-			body:           bytes.NewBuffer([]byte(`{"address": "0xUserAddress", "quest_id": "1"}`)),
-			expectedStatus: http.StatusBadRequest,
+			body:           bytes.NewBuffer([]byte(`{"address": "0xUserAddress"}`)),
+			expectedStatus: http.StatusNotFound,
 			expectedBody:   false,
 		},
 		{
 			name:           "Missing Body",
 			method:         http.MethodPost,
-			url:            "/galxe/balance",
+			url:            "/galxe/balance/1",
 			body:           nil,
 			expectedStatus: http.StatusBadRequest,
 			expectedBody:   false,
@@ -60,7 +61,7 @@ func TestPostHandler(t *testing.T) {
 		{
 			name:           "Invalid Body",
 			method:         http.MethodPost,
-			url:            "/galxe/balance",
+			url:            "/galxe/balance/1",
 			body:           bytes.NewBuffer([]byte(`{}`)),
 			expectedStatus: http.StatusBadRequest,
 			expectedBody:   false,
@@ -69,7 +70,7 @@ func TestPostHandler(t *testing.T) {
 			name:           "Handler Not Found",
 			method:         http.MethodPost,
 			url:            "/galxe/unknown",
-			body:           bytes.NewBuffer([]byte(`{"address": "0xUserAddress", "quest_id": "1"}`)),
+			body:           bytes.NewBuffer([]byte(`{"address": "0xUserAddress"}`)),
 			expectedStatus: http.StatusNotFound,
 			expectedBody:   false,
 		},
@@ -77,24 +78,26 @@ func TestPostHandler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			router := gin.Default()
+			router.POST("/galxe/balance/:id", HandlePOST)
+
 			req := httptest.NewRequest(tt.method, tt.url, tt.body)
 			rec := httptest.NewRecorder()
 
-			c, _ := gin.CreateTestContext(rec)
-			c.Request = req
-
-			HandlePOST(c)
+			router.ServeHTTP(rec, req)
 
 			if rec.Code != tt.expectedStatus {
 				t.Errorf("expected status %d, got %d", tt.expectedStatus, rec.Code)
 			}
 
-			// Decode JSON response and compare with expected body
-			var actualBody bool
-			json.NewDecoder(rec.Body).Decode(&actualBody)
+			if tt.expectedStatus == http.StatusOK {
+				var response bool
+				err := json.NewDecoder(rec.Body).Decode(&response)
+				require.NoError(t, err)
 
-			if tt.expectedStatus == http.StatusOK && actualBody != tt.expectedBody {
-				t.Errorf("expected valid %v, got %v", tt.expectedBody, actualBody)
+				if response != tt.expectedBody {
+					t.Errorf("expected valid %v, got %v", tt.expectedBody, response)
+				}
 			}
 		})
 	}
@@ -111,7 +114,7 @@ func TestGetHandler(t *testing.T) {
 		{
 			name:           "Valid GET Request",
 			method:         http.MethodGet,
-			url:            "/galxe/balance?address=0xUserAddress&quest_id=1",
+			url:            "/galxe/balance/1?address=0xUserAddress",
 			expectedStatus: http.StatusOK,
 			expectedBody:   true,
 		},
@@ -119,20 +122,20 @@ func TestGetHandler(t *testing.T) {
 			name:           "Invalid Path Format",
 			method:         http.MethodGet,
 			url:            "/galxe",
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusNotFound,
 			expectedBody:   false,
 		},
 		{
 			name:           "Missing User Address",
 			method:         http.MethodGet,
-			url:            "/galxe/balance",
+			url:            "/galxe/balance/1",
 			expectedStatus: http.StatusBadRequest,
 			expectedBody:   false,
 		},
 		{
 			name:           "Handler Not Found",
 			method:         http.MethodGet,
-			url:            "/galxe/balance?address=0xUserAddress&quest_id=2",
+			url:            "/galxe/balance/2?address=0xUserAddress",
 			expectedStatus: http.StatusNotFound,
 			expectedBody:   false,
 		},
@@ -140,24 +143,27 @@ func TestGetHandler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Initialize a new Gin router
+			router := gin.Default()
+			router.GET("/galxe/balance/:id", HandleGET)
+
 			req := httptest.NewRequest(tt.method, tt.url, nil)
 			rec := httptest.NewRecorder()
 
-			c, _ := gin.CreateTestContext(rec)
-			c.Request = req
+			// Serve the HTTP request using the router
+			router.ServeHTTP(rec, req)
 
-			HandleGET(c)
+			// Assert the expected status code
+			require.Equal(t, tt.expectedStatus, rec.Code)
 
-			if rec.Code != tt.expectedStatus {
-				t.Errorf("expected status %d, got %d", tt.expectedStatus, rec.Code)
-			}
+			// Decode JSON response if the status is OK
+			if tt.expectedStatus == http.StatusOK {
+				var response bool
+				err := json.NewDecoder(rec.Body).Decode(&response)
+				require.NoError(t, err)
 
-			// Decode JSON response and compare with expected body
-			var actualBody bool
-			json.NewDecoder(rec.Body).Decode(&actualBody)
-
-			if tt.expectedStatus == http.StatusOK && actualBody != tt.expectedBody {
-				t.Errorf("expected valid %v, got %v", tt.expectedBody, actualBody)
+				// Check the response body
+				require.Equal(t, tt.expectedBody, response)
 			}
 		})
 	}
