@@ -2,7 +2,6 @@ package quest
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -28,16 +27,16 @@ func HandlePOST(c *gin.Context) {
 
 	var req struct {
 		Address string `json:"address"`
-		QuestID string `json:"quest_id"`
 	}
 
 	err = json.Unmarshal(body, &req)
-	if err != nil || req.Address == "" || req.QuestID == "" {
+	if err != nil || req.Address == "" {
 		http.Error(w, "Invalid request or missing user address", http.StatusBadRequest)
 		return
 	}
 
-	handler, exists := GetHandler(questKey, req.QuestID)
+	questID := c.Param("id")
+	handler, exists := GetHandler(questKey, questID)
 	if !exists {
 		http.Error(w, "Handler not found for given quest ID", http.StatusNotFound)
 		return
@@ -69,13 +68,7 @@ func HandleGET(c *gin.Context) {
 		return
 	}
 
-	questID := r.URL.Query().Get("quest_id")
-	if questID == "" {
-		fmt.Println("error")
-		http.Error(w, "quest_id is required", http.StatusBadRequest)
-		return
-	}
-
+	questID := c.Param("id")
 	handler, exists := GetHandler(questKey, questID)
 	if !exists {
 		http.Error(w, "Handler not found for given quest ID", http.StatusNotFound)
@@ -93,9 +86,9 @@ func HandleGET(c *gin.Context) {
 }
 
 func extractQuestKey(path string) (string, error) {
-	// Input example: /galxe/balance
+	// Input example: /galxe/balance/1
 	segments := strings.Split(strings.Trim(path, "/"), "/")
-	if len(segments) != 2 {
+	if len(segments) != 3 {
 		return "", http.ErrNotSupported
 	}
 	// "galxe_balance"
