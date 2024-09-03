@@ -471,7 +471,7 @@ func processUserOpEvent(client EthBackend, event *entry_point_v0_6_0.EntryPointU
 		if userOpRevertReasonLog := filterLogsByEventID(txReceipt.Logs, userOpRevertReasonID); userOpRevertReasonLog != nil {
 			unpackedRevertReasonParams, err := entryPointUserOpEventsABI.Unpack("UserOperationRevertReason", userOpRevertReasonLog.Data)
 			if err != nil {
-				logger.Error("Error decoding UserOperationRevertReason params:", err)
+				logger.Error("Error decoding UserOperationRevertReason params", "error", err)
 				return &receipt
 			}
 
