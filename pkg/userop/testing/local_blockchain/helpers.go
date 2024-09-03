@@ -3,10 +3,16 @@ package local_blockchain
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"math/big"
+	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/layer-3/clearsync/pkg/userop"
+	"github.com/shopspring/decimal"
+	"github.com/stretchr/testify/require"
 )
 
 func SendNative(ctx context.Context, node *EthNode, from, to Account, fundAmount *big.Int) error {
@@ -70,4 +76,24 @@ func WaitMined(ctx context.Context, node *EthNode, tx *types.Transaction) (*type
 		case <-queryTicker.C:
 		}
 	}
+}
+
+func setupAccounts(ctx context.Context, t *testing.T, userOpClient userop.Client, node *EthNode) (Account, Account, common.Address) {
+	eoaBalance := decimal.NewFromFloat(2e18 /* 2 ETH */).BigInt()
+	eoa, err := NewAccountWithBalance(ctx, eoaBalance, node) // EOA = Externally Owned Account
+	require.NoError(t, err, "failed to create EOA")
+	slog.Info("eoa", "address", eoa.Address)
+
+	swAddress, err := userOpClient.GetAccountAddress(ctx, eoa.Address, decimal.Zero)
+	sender := Account{Address: swAddress}
+	require.NoError(t, err, "failed to compute sender account address")
+	slog.Info("sender", "address", sender.Address)
+	err = SendNative(ctx, node, eoa, sender, big.NewInt(1e18 /* 1 ETH */))
+	require.NoError(t, err, "failed to fund sender account")
+
+	receiver, err := NewAccount(ctx, node)
+	require.NoError(t, err, "failed to create receiver account")
+	slog.Info("receiver", "address", receiver.Address)
+
+	return eoa, receiver, swAddress
 }

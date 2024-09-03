@@ -3,7 +3,6 @@ package local_blockchain
 import (
 	"context"
 	"log/slog"
-	"math/big"
 	"os"
 	"testing"
 
@@ -51,28 +50,14 @@ func TestSimulatedRPC(t *testing.T) {
 	client := buildClient(t, node.LocalURL, bundlerURL, addresses)
 
 	// 5. Create and fund smart account
-	eoaBalance := decimal.NewFromFloat(2e18 /* 2 ETH */).BigInt()
-	eoa, err := NewAccountWithBalance(ctx, eoaBalance, node) // EOA = Externally Owned Account
-	require.NoError(t, err, "failed to create EOA")
-	slog.Info("eoa", "address", eoa.Address)
-
-	senderAddress, err := client.GetAccountAddress(ctx, eoa.Address, decimal.Zero)
-	sender := Account{Address: senderAddress}
-	require.NoError(t, err, "failed to compute sender account address")
-	slog.Info("sender", "address", sender.Address)
-	err = SendNative(ctx, node, eoa, sender, big.NewInt(1e18 /* 1 ETH */))
-	require.NoError(t, err, "failed to fund sender account")
-
-	receiver, err := NewAccount(ctx, node)
-	require.NoError(t, err, "failed to create receiver account")
-	slog.Info("receiver", "address", receiver.Address)
+	eoa, receiver, swAddress := setupAccounts(ctx, t, client, node)
 
 	// 6. Submit user operation
 	signer := userop.SignerForKernel(signer.NewLocalSigner(eoa.PrivateKey))
 	transferAmount := decimal.NewFromInt(1 /* 1 wei */).BigInt()
 	calls := smart_wallet.Calls{{To: receiver.Address, Value: transferAmount}}
 	params := &userop.WalletDeploymentOpts{Index: decimal.Zero, Owner: eoa.Address}
-	op, err := client.NewUserOp(ctx, sender.Address, signer, calls, params, nil)
+	op, err := client.NewUserOp(ctx, swAddress, signer, calls, params, nil)
 	require.NoError(t, err, "failed to create new user operation")
 	slog.Info("ready to send", "userop", op)
 

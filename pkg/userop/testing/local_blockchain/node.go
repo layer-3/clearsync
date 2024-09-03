@@ -352,7 +352,7 @@ func getContractAddressesFromEnv() Contracts {
 	}
 }
 
-func buildClient(t *testing.T, rpcURL, bundlerURL url.URL, addresses Contracts) userop.Client {
+func defaultClientConfig(t *testing.T, rpcURL, bundlerURL url.URL, addresses Contracts) userop.ClientConfig {
 	config, err := userop.NewClientConfigFromEnv()
 	require.NoError(t, err)
 
@@ -368,6 +368,11 @@ func buildClient(t *testing.T, rpcURL, bundlerURL url.URL, addresses Contracts) 
 	config.Paymaster.Type = &userop.PaymasterDisabled
 	config.Paymaster.Address = addresses.Paymaster
 
+	return config
+}
+
+func buildClient(t *testing.T, rpcURL, bundlerURL url.URL, addresses Contracts) userop.Client {
+	config := defaultClientConfig(t, rpcURL, bundlerURL, addresses)
 	client, err := userop.NewClient(config)
 	require.NoError(t, err)
 	return client
