@@ -1,0 +1,10 @@
+{
+  "tokens": {
+    "BTC": ["WTCB"],
+    "ETH": ["WETH"],
+    "USD": ["USDC"]
+  },
+  "markets": {
+    "USDC": ["ETH", "WETH"]
+  }
+}
