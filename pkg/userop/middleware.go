@@ -132,8 +132,9 @@ func getGasPricesMiddleware(provider EthBackend, gasConfig GasConfig) middleware
 	}
 }
 
-func convertAndSetGasLimits(
-	est gasEstimate,
+// / convertAndApplyGasLimits applies gas limits if they are not already set.
+func convertAndApplyGasLimits(
+	est GasEstimate,
 	op *UserOperation,
 ) error {
 	preVerificationGas, verificationGasLimit, callGasLimit, err := est.convert()
@@ -149,6 +150,25 @@ func convertAndSetGasLimits(
 	}
 	if !op.PreVerificationGas.IsZero() {
 		preVerificationGas = op.PreVerificationGas.BigInt()
+	}
+
+	logger.Debug("estimated userOp gas", "callGasLimit", callGasLimit, "verificationGasLimit", verificationGasLimit, "preVerificationGas", preVerificationGas)
+
+	op.CallGasLimit = decimal.NewFromBigInt(callGasLimit, 0)
+	op.VerificationGasLimit = decimal.NewFromBigInt(verificationGasLimit, 0)
+	op.PreVerificationGas = decimal.NewFromBigInt(preVerificationGas, 0)
+
+	return nil
+}
+
+// / convertAndOverwriteGasLimits overwrites gas limits with the ones from the estimate.
+func convertAndOverwriteGasLimits(
+	est GasEstimate,
+	op *UserOperation,
+) error {
+	preVerificationGas, verificationGasLimit, callGasLimit, err := est.convert()
+	if err != nil {
+		return fmt.Errorf("failed to convert gas estimates: %w", err)
 	}
 
 	logger.Debug("estimated userOp gas", "callGasLimit", callGasLimit, "verificationGasLimit", verificationGasLimit, "preVerificationGas", preVerificationGas)
@@ -194,12 +214,12 @@ func getBiconomyPaymasterAndData(
 
 		// Biconomy-standardized gas estimation with paymaster
 		// see https://docs.biconomy.io/Paymaster/api/sponsor-useroperation#sponsorship-paymaster
-		var est gasEstimate
+		var est GasEstimate
 		if err := bundler.CallContext(ctx, &est, "pm_sponsorUserOperation", opModified, entryPoint, paymasterCtx); err != nil {
 			return fmt.Errorf("failed to call pm_sponsorUserOperation: %w", err)
 		}
 
-		if err := convertAndSetGasLimits(est, op); err != nil {
+		if err := convertAndOverwriteGasLimits(est, op); err != nil {
 			return err
 		}
 
@@ -260,7 +280,7 @@ func estimateUserOperationGas(bundler RPCBackend, entryPoint common.Address) mid
 		}
 
 		// ERC4337-standardized gas estimation
-		var est gasEstimate
+		var est GasEstimate
 		if err := bundler.CallContext(
 			ctx,
 			&est,
@@ -271,7 +291,7 @@ func estimateUserOperationGas(bundler RPCBackend, entryPoint common.Address) mid
 			return fmt.Errorf("error estimating gas: %w", err)
 		}
 
-		if err := convertAndSetGasLimits(est, op); err != nil {
+		if err := convertAndApplyGasLimits(est, op); err != nil {
 			return err
 		}
 
@@ -338,7 +358,7 @@ func getPimlicoVerifyingPaymasterAndData(
 
 		// Pimlico-standardized gas estimation with paymaster
 		// see https://docs.pimlico.io/paymaster/verifying-paymaster/reference/endpoints#pm_sponsoruseroperation-v2
-		var gasEst gasEstimate
+		var gasEst GasEstimate
 		if err := pmBackend.CallContext(ctx, &gasEst, "pm_sponsorUserOperation", sponsorUserOpArgs...); err != nil {
 			return fmt.Errorf("failed to call pm_sponsorUserOperation: %w", err)
 		}
@@ -356,12 +376,12 @@ func getPimlicoVerifyingPaymasterAndData(
 			return estimate(ctx, op)
 		}
 
-		return convertAndSetGasLimits(gasEst, op)
+		return convertAndOverwriteGasLimits(gasEst, op)
 	}
 }
 
-// gasEstimate holds gas estimates for a user operation.
-type gasEstimate struct {
+// GasEstimate holds gas estimates for a user operation.
+type GasEstimate struct {
 	// depending on provider, any of the following types can be received here: string, int
 	CallGasLimit         any `json:"callGasLimit"`
 	VerificationGasLimit any `json:"verificationGasLimit"`
@@ -370,7 +390,7 @@ type gasEstimate struct {
 	PaymasterAndData string `json:"paymasterAndData,omitempty"`
 }
 
-func (est gasEstimate) convert() (
+func (est GasEstimate) convert() (
 	preVerificationGas *big.Int,
 	verificationGasLimit *big.Int,
 	callGasLimit *big.Int,
@@ -397,7 +417,7 @@ func (est gasEstimate) convert() (
 		nil
 }
 
-func (est gasEstimate) fromAny(a any) (*big.Int, error) {
+func (est GasEstimate) fromAny(a any) (*big.Int, error) {
 	switch v := a.(type) {
 	case string:
 		n, err := strconv.ParseInt(v, 16, 64)
