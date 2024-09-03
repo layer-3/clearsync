@@ -132,8 +132,8 @@ func getGasPricesMiddleware(provider EthBackend, gasConfig GasConfig) middleware
 	}
 }
 
-// / convertAndApplyGasLimits applies gas limits if they are not already set.
-func convertAndApplyGasLimits(
+// overwriteGasLimitsIfUnset applies gas limits if they are not already set.
+func overwriteGasLimitsIfUnset(
 	est GasEstimate,
 	op *UserOperation,
 ) error {
@@ -161,8 +161,8 @@ func convertAndApplyGasLimits(
 	return nil
 }
 
-// / convertAndOverwriteGasLimits overwrites gas limits with the ones from the estimate.
-func convertAndOverwriteGasLimits(
+// overwriteGasLimits overwrites gas limits with the ones from the estimate.
+func overwriteGasLimits(
 	est GasEstimate,
 	op *UserOperation,
 ) error {
@@ -219,7 +219,7 @@ func getBiconomyPaymasterAndData(
 			return fmt.Errorf("failed to call pm_sponsorUserOperation: %w", err)
 		}
 
-		if err := convertAndOverwriteGasLimits(est, op); err != nil {
+		if err := overwriteGasLimits(est, op); err != nil {
 			return err
 		}
 
@@ -291,7 +291,7 @@ func estimateUserOperationGas(bundler RPCBackend, entryPoint common.Address) mid
 			return fmt.Errorf("error estimating gas: %w", err)
 		}
 
-		if err := convertAndApplyGasLimits(est, op); err != nil {
+		if err := overwriteGasLimitsIfUnset(est, op); err != nil {
 			return err
 		}
 
@@ -376,7 +376,7 @@ func getPimlicoVerifyingPaymasterAndData(
 			return estimate(ctx, op)
 		}
 
-		return convertAndOverwriteGasLimits(gasEst, op)
+		return overwriteGasLimits(gasEst, op)
 	}
 }
 
