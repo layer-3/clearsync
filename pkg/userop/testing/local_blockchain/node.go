@@ -400,7 +400,7 @@ func defaultClientConfig(t *testing.T, rpcURL, bundlerURL url.URL, addresses Con
 	return config
 }
 
-func buildClient(t *testing.T, rpcURL, bundlerURL url.URL, addresses Contracts, paymasterConfig userop.PaymasterConfig) userop.Client {
+func BuildClient(t *testing.T, rpcURL, bundlerURL url.URL, addresses Contracts, paymasterConfig userop.PaymasterConfig) userop.Client {
 	config := defaultClientConfig(t, rpcURL, bundlerURL, addresses, paymasterConfig)
 	client, err := userop.NewClient(config)
 	require.NoError(t, err)

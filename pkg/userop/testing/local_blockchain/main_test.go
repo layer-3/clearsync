@@ -50,7 +50,7 @@ func TestSimulatedRPC(t *testing.T) {
 	bundler := NewBundler(ctx, t, node, addresses.EntryPoint)
 
 	// 4. Build client
-	client := buildClient(t, node.LocalURL, bundler.LocalURL, addresses, userop.PaymasterConfig{
+	client := BuildClient(t, node.LocalURL, bundler.LocalURL, addresses, userop.PaymasterConfig{
 		Type: &userop.PaymasterDisabled,
 	})
 
@@ -101,7 +101,7 @@ func TestSimulatedPaymaster(t *testing.T) {
 	paymasterURL := SetupPaymaster(ctx, t, node, bundler, token)
 
 	// Build client
-	client := buildClient(t, node.LocalURL, bundler.LocalURL, addresses, userop.PaymasterConfig{
+	client := BuildClient(t, node.LocalURL, bundler.LocalURL, addresses, userop.PaymasterConfig{
 		Type:    &userop.PaymasterPimlicoVerifying,
 		URL:     paymasterURL.String(),
 		Address: addresses.Paymaster,

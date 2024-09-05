@@ -40,7 +40,7 @@ func TestGasLimitOverrides(t *testing.T) {
 
 	t.Run("overrides persist if no paymaster", func(t *testing.T) {
 		// 4. Build client
-		client := buildClient(t, node.LocalURL, bundler.LocalURL, addresses, userop.PaymasterConfig{
+		client := BuildClient(t, node.LocalURL, bundler.LocalURL, addresses, userop.PaymasterConfig{
 			Type: &userop.PaymasterDisabled,
 		})
 
