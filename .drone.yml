@@ -27,6 +27,14 @@ services:
       - cd /app
       - while ! nc -z eth_node 8545; do sleep 1; done; sleep 1
       - pnpm start --port 3000 --networkName mainnet --entryPoint $${ENTRY_POINT_ADDRESS} --signerPrivateKeys 0x$${DEPLOYER_PK} --utilityPrivateKey 0x$${DEPLOYER_PK} --minBalance 1000000000000000000 --rpcUrl http://eth_node:8545 --logLevel info --noEthCallOverrideSupport true --useUserOperationGasLimitsForSubmission true
+  - name: paymaster
+    image: quay.io/openware/paymaster:v0.1.0-mock-amd64
+    environment:
+      - ALTO_RPC=http://bundler:3000
+      - ANVIL_RPC=http://eth_node:8545
+      - PORT=3001
+    ports:
+      - 3001:3001
 
 steps:
   - name: Clone
