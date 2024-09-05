@@ -3,6 +3,7 @@ package local_blockchain
 import (
 	"context"
 	"log/slog"
+	"math/big"
 	"os"
 	"testing"
 
