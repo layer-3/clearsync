@@ -36,7 +36,6 @@ import (
 
 // These addresses are hardcoded in the Paymaster contract and determined by CREATE2
 const ENTRY_POINT_ADDRESS_V06 = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789"
-const VERIFYING_PAYMASTER_ADDRESS_V06 = "0x28ec0633192d0cBd9E1156CE05D5FdACAcB93947"
 
 type EthNode struct {
 	Container    testcontainers.Container
@@ -356,6 +355,8 @@ func SetupContracts(ctx context.Context, t *testing.T, node *EthNode) Contracts 
 	require.NoError(t, err)
 	slog.Info("set Kernel implementation", "tx", tx.Hash().Hex())
 
+	var paymaster common.Address // TODO: deploy Paymaster contract
+
 	slog.Info("done deploying contracts")
 	contracts := Contracts{
 		EntryPoint:          entryPoint,
@@ -363,7 +364,7 @@ func SetupContracts(ctx context.Context, t *testing.T, node *EthNode) Contracts 
 		SessionKeyValidator: sessionKeyValidator,
 		Logic:               logic,
 		Factory:             factory,
-		Paymaster:           common.HexToAddress(VERIFYING_PAYMASTER_ADDRESS_V06),
+		Paymaster:           paymaster,
 	}
 
 	cachedContracts = &contracts
@@ -407,7 +408,7 @@ func BuildClient(t *testing.T, rpcURL, bundlerURL url.URL, addresses Contracts, 
 	return client
 }
 
-func SetupPaymaster(ctx context.Context, t *testing.T, node *EthNode, bundler *BundlerNode, tokenAddress common.Address) *url.URL {
+func SetupPaymaster(ctx context.Context, t *testing.T, node *EthNode, bundler *BundlerNode) *url.URL {
 	deployDeterministicDeployer(ctx, t, node)
 
 	const port = "3001"

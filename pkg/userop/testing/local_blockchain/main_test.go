@@ -3,11 +3,9 @@ package local_blockchain
 import (
 	"context"
 	"log/slog"
-	"math/big"
 	"os"
 	"testing"
 
-	"github.com/layer-3/clearsync/pkg/artifacts/test_erc20"
 	"github.com/layer-3/clearsync/pkg/signer"
 	"github.com/layer-3/clearsync/pkg/smart_wallet"
 	"github.com/layer-3/clearsync/pkg/userop"
@@ -88,23 +86,16 @@ func TestSimulatedPaymaster(t *testing.T) {
 	// Deploy the required contracts
 	addresses := SetupContracts(ctx, t, node)
 
+	// Start the bundler
 	bundler := NewBundler(ctx, t, node, addresses.EntryPoint)
-	balance := decimal.NewFromFloat(50e18 /* 50 ETH */).BigInt()
-	owner, err := NewAccountWithBalance(ctx, balance, node)
-	require.NoError(t, err, "failed to create owner account")
-
-	// Deploy ERC20 token
-	token, _, _, err := test_erc20.DeployTestERC20(owner.TransactOpts, node.Client, "TestToken", "TT", 6, big.NewInt(1000*1e6)) // 1000 tokens
-	require.NoError(t, err, "failed to deploy ERC20 token")
 
 	// Deploy paymaster
-	paymasterURL := SetupPaymaster(ctx, t, node, bundler, token)
+	paymasterURL := SetupPaymaster(ctx, t, node, bundler)
 
 	// Build client
 	client := BuildClient(t, node.LocalURL, bundler.LocalURL, addresses, userop.PaymasterConfig{
-		Type:    &userop.PaymasterPimlicoVerifying,
-		URL:     paymasterURL.String(),
-		Address: addresses.Paymaster,
+		Type: &userop.PaymasterPimlicoVerifying,
+		URL:  paymasterURL.String(),
 	})
 
 	// Create smart account
