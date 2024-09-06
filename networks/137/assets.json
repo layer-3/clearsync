@@ -100,7 +100,7 @@
       "extensions":
       {
         "allow_locking": true,
-        "coingecko_api_id": "polygon"
+        "coingecko_api_id": "pol"
       }
     }
   ]
