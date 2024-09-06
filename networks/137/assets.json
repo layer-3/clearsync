@@ -99,7 +99,6 @@
       "logoURI": "https://assets.coingecko.com/coins/images/4713/standard/polygon.png?1698233745",
       "extensions":
       {
-        "allow_locking": true,
         "coingecko_api_id": "polygon-ecosystem-token"
       }
     }
