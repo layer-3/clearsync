@@ -92,11 +92,16 @@
     },
     {
       "address": "0x0000000000000000000000000000000000000000",
-      "name": "Polygon Matic",
-      "symbol": "MATIC",
+      "name": "Polygon",
+      "symbol": "POL",
       "decimals": 18,
       "precision": 4,
-      "logoURI": "https://assets.coingecko.com/coins/images/4713/standard/polygon.png?1698233745"
+      "logoURI": "https://assets.coingecko.com/coins/images/4713/standard/polygon.png?1698233745",
+      "extensions":
+      {
+        "allow_locking": true,
+        "coingecko_api_id": "polygon"
+      }
     }
   ]
 }
