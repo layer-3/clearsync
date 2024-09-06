@@ -288,14 +288,12 @@ func NewBundler(ctx context.Context, t *testing.T, node *EthNode, entryPoint com
 }
 
 type Contracts struct {
-	EntryPoint            common.Address
-	ECDSAValidator        common.Address
-	SessionKeyValidator   common.Address
-	Logic                 common.Address
-	Factory               common.Address
-	Paymaster             common.Address
-	PaymasterManualOracle common.Address
-	PaymasterOwner        common.Address
+	EntryPoint          common.Address
+	ECDSAValidator      common.Address
+	SessionKeyValidator common.Address
+	Logic               common.Address
+	Factory             common.Address
+	Paymaster           common.Address
 }
 
 var (
@@ -409,50 +407,38 @@ func BuildClient(t *testing.T, rpcURL, bundlerURL url.URL, addresses Contracts, 
 }
 
 func SetupPaymaster(ctx context.Context, t *testing.T, node *EthNode, bundler *BundlerNode) *url.URL {
-	deployDeterministicDeployer(ctx, t, node)
+	var (
+		err    error
+		rpcURL *url.URL
+	)
 
-	const port = "3001"
-	paymasterContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "quay.io/openware/paymaster:v0.1.0-mock-amd64",
-			Env: map[string]string{
-				"ALTO_RPC":  bundler.ContainerURL.String(),
-				"ANVIL_RPC": node.ContainerURL.String(),
-				"PORT":      port,
+	if u := os.Getenv("PAYMASTER_RPC_URL"); u != "" {
+		rpcURL, err = url.Parse(u)
+		require.NoError(t, err, "failed to parse local RPC URL")
+	} else {
+		const port = "3001"
+		paymasterContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image: "quay.io/openware/paymaster:v0.1.0-mock-amd64",
+				Env: map[string]string{
+					"ALTO_RPC":  bundler.ContainerURL.String(),
+					"ANVIL_RPC": node.ContainerURL.String(),
+					"PORT":      port,
+				},
+				ImagePlatform: "linux/amd64",
+				ExposedPorts:  []string{fmt.Sprintf("%s:%s/tcp", port, port)},
+				WaitingFor:    wait.ForLog("Listening on"),
 			},
-			ImagePlatform: "linux/amd64",
-			ExposedPorts:  []string{fmt.Sprintf("%s:%s/tcp", port, port)},
-			WaitingFor:    wait.ForLog("Listening on"),
-		},
-		Started: true,
-	})
-	require.NoError(t, err, "failed to start Paymaster container")
+			Started: true,
+		})
+		require.NoError(t, err, "failed to start Paymaster container")
 
-	containerPort, err := paymasterContainer.MappedPort(ctx, port)
-	require.NoError(t, err, "failed to get Paymaster container port")
+		rpcPort, err := paymasterContainer.MappedPort(ctx, port)
+		require.NoError(t, err, "failed to get Paymaster container port")
 
-	paymasterURL, err := url.Parse(fmt.Sprintf("http://0.0.0.0:%s", containerPort.Port()))
-	require.NoError(t, err, "failed to parse local Paymaster URL")
-
-	return paymasterURL
-}
-
-var (
-	isDeterministicDeployerDeployed = false
-)
-
-// NOTE: to get the idea about deploying deterministic deployer, check the following
-// page: https://github.com/Arachnid/deterministic-deployment-proxy/blob/master/README.md
-func deployDeterministicDeployer(ctx context.Context, t *testing.T, node *EthNode) {
-	if isDeterministicDeployerDeployed {
-		return
+		rpcURL, err = url.Parse(fmt.Sprintf("http://0.0.0.0:%s", rpcPort.Port()))
+		require.NoError(t, err, "failed to parse local Paymaster URL")
 	}
 
-	err := node.RPCClient.CallContext(ctx, nil, "anvil_setBalance", "0x3fab184622dc19b6109349b94811493bf2a45362", fmt.Sprintf("%x", big.NewInt(1e18).String()))
-	require.NoError(t, err)
-
-	err = node.RPCClient.CallContext(ctx, nil, "eth_sendRawTransaction", "0xf8a58085174876e800830186a08080b853604580600e600039806000f350fe7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf31ba02222222222222222222222222222222222222222222222222222222222222222a02222222222222222222222222222222222222222222222222222222222222222")
-	require.NoError(t, err)
-
-	isDeterministicDeployerDeployed = true
+	return rpcURL
 }
