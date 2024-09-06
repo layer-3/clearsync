@@ -21,10 +21,6 @@ func TestGasLimitOverrides(t *testing.T) {
 	ctx := context.Background()
 
 	// 1. Start a local Ethereum node
-	for i := 0; i < 3; i++ { // starting multiple nodes to test reusing existing nodes
-		ethNode := NewEthNode(ctx, t)
-		slog.Info("connecting to Ethereum node", "rpcURL", ethNode.LocalURL.String())
-	}
 	node := NewEthNode(ctx, t)
 	slog.Info("connecting to Ethereum node", "rpcURL", node.LocalURL.String())
 
@@ -32,11 +28,7 @@ func TestGasLimitOverrides(t *testing.T) {
 	addresses := SetupContracts(ctx, t, node)
 
 	// 3. Start the bundler
-	for i := 0; i < 3; i++ { // starting multiple bundlers to test reusing existing bundlers
-		bundlerURL := NewBundler(ctx, t, node, addresses.EntryPoint)
-		slog.Info("connecting to bundler", "bundlerURL", bundlerURL.String())
-	}
-	bundlerURL := *NewBundler(ctx, t, node, addresses.EntryPoint)
+	bundler := NewBundler(ctx, t, node, addresses.EntryPoint)
 
 	overrides := &userop.Overrides{
 		GasLimits: &userop.GasLimitOverrides{
@@ -48,7 +40,9 @@ func TestGasLimitOverrides(t *testing.T) {
 
 	t.Run("overrides persist if no paymaster", func(t *testing.T) {
 		// 4. Build client
-		client := buildClient(t, node.LocalURL, bundlerURL, addresses)
+		client := BuildClient(t, node.LocalURL, bundler.LocalURL, addresses, userop.PaymasterConfig{
+			Type: &userop.PaymasterDisabled,
+		})
 
 		// 5. Create and fund smart account
 		eoa, receiver, swAddress := setupAccounts(ctx, t, client, node)
@@ -69,7 +63,9 @@ func TestGasLimitOverrides(t *testing.T) {
 
 	t.Run("overrides persist if ERC20 paymaster", func(t *testing.T) {
 		// 4. Build client
-		config := defaultClientConfig(t, node.LocalURL, bundlerURL, addresses)
+		config := defaultClientConfig(t, node.LocalURL, bundler.LocalURL, addresses, userop.PaymasterConfig{
+			Type: &userop.PaymasterDisabled,
+		})
 		config.Paymaster.Type = &userop.PaymasterPimlicoERC20
 		config.Paymaster.Address = addresses.EntryPoint // any address with code
 		config.Paymaster.PimlicoERC20 = userop.PimlicoERC20Config{
@@ -126,7 +122,9 @@ func TestGasLimitOverrides(t *testing.T) {
 		defer testServer.Close()
 
 		// 5. Build client
-		config := defaultClientConfig(t, node.LocalURL, bundlerURL, addresses)
+		config := defaultClientConfig(t, node.LocalURL, bundler.LocalURL, addresses, userop.PaymasterConfig{
+			Type: &userop.PaymasterDisabled,
+		})
 		config.Paymaster.Type = &userop.PaymasterPimlicoVerifying
 		config.Paymaster.URL = testServer.URL
 

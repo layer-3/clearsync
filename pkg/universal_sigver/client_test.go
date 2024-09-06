@@ -52,11 +52,11 @@ func TestVerify(t *testing.T) {
 		index := decimal.Zero
 
 		// 3. Start bundler, create client and kernel signer
-		bundlerUrl := local_blockchain.NewBundler(ctx, t, node, contracts.EntryPoint)
+		bundler := local_blockchain.NewBundler(ctx, t, node, contracts.EntryPoint)
 		useropCfg := userop.ClientConfig{}
 		useropCfg.Init()
 		useropCfg.ProviderURL = node.LocalURL.String()
-		useropCfg.BundlerURL = bundlerUrl.String()
+		useropCfg.BundlerURL = bundler.LocalURL.String()
 		useropCfg.EntryPoint = contracts.EntryPoint
 		useropCfg.SmartWallet = swCfg
 		useropCfg.Paymaster = userop.PaymasterConfig{

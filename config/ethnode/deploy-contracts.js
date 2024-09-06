@@ -6,6 +6,24 @@ let eth = web3.eth;
 
 let deployerAccount;
 
+web3.extend({
+  property: 'cheats',
+  methods: [
+    {
+      name: 'setBalance',
+      call: 'anvil_setBalance',
+    },
+    {
+      name: 'setCode',
+      call: 'anvil_setCode',
+    },
+    {
+      name: 'sendRawTransaction',
+      call: 'eth_sendRawTransaction',
+    },
+  ],
+});
+
 const deployer = process.env.DEPLOYER_ADDRESS;
 const deployerPk = process.env.DEPLOYER_PK;
 const expectedEntryPointAddress = process.env.ENTRY_POINT_ADDRESS;
@@ -31,12 +49,10 @@ async function DeployEntryPoint() {
 
   let contractAddress = await deployContract(abi, bin);
 
-  assert(
-    cmpAddresses(contractAddress, expectedEntryPointAddress),
-    `Get unexpected EntryPoint address, expected: ${expectedEntryPointAddress}, got: ${contractAddress}`,
-  );
+  let contractCode = await eth.getCode(contractAddress);
+  await web3.cheats.setCode(expectedEntryPointAddress, contractCode);
 
-  return contractAddress;
+  return expectedEntryPointAddress;
 }
 
 async function DeployKernelECDSAValidator() {
@@ -91,7 +107,7 @@ async function DeployKernelFactory(deployerAddress, entryPointAddress, kernelAdd
 
 async function DeploySessionKeyValidator() {
   let { abi, bin } = JSON.parse(fs.readFileSync('/app/contracts/SessionKeyValidator.json'));
-  
+
   let contractAddress = await deployContract(abi, bin);
 
   assert(

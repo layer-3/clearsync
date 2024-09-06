@@ -9,7 +9,7 @@ clone:
 environment:
   DEPLOYER_PK: ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
   DEPLOYER_ADDRESS: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
-  ENTRY_POINT_ADDRESS: '0x5fbdb2315678afecb367f032d93f642f64180aa3'
+  ENTRY_POINT_ADDRESS: '0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789'
   KERNEL_ECDSA_VALIDATOR_ADDRESS: '0xe7f1725e7734ce288f8367e1bb143e90bb3f0512'
   KERNEL_ADDRESS: '0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0'
   KERNEL_FACTORY_ADDRESS: '0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9'
@@ -17,7 +17,7 @@ environment:
 
 services:
   - name: eth_node
-    image: quay.io/openware/geth:v0.1.9-amd64
+    image: quay.io/openware/geth:v0.2.5-amd64
   - name: bundler
     image: quay.io/openware/bundler:c7dd933
     entrypoint:
@@ -27,6 +27,12 @@ services:
       - cd /app
       - while ! nc -z eth_node 8545; do sleep 1; done; sleep 1
       - pnpm start --port 3000 --networkName mainnet --entryPoint $${ENTRY_POINT_ADDRESS} --signerPrivateKeys 0x$${DEPLOYER_PK} --utilityPrivateKey 0x$${DEPLOYER_PK} --minBalance 1000000000000000000 --rpcUrl http://eth_node:8545 --logLevel info --noEthCallOverrideSupport true --useUserOperationGasLimitsForSubmission true
+  - name: paymaster
+    image: quay.io/openware/paymaster:v0.1.0-mock-amd64
+    environment:
+      ALTO_RPC: http://bundler:3000
+      ANVIL_RPC: http://eth_node:8545
+      PORT: 3001
 
 steps:
   - name: Clone
@@ -42,6 +48,7 @@ steps:
       GETH_NODE_RPC_URL: ws://eth_node:8545
       BUNDLER_USE_HARDCODED_CONTRACTS: true
       BUNDLER_RPC_URL: http://bundler:3000
+      PAYMASTER_RPC_URL: http://paymaster:3001
     commands:
       - go vet ./...
       - go test -race ./...
