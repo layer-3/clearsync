@@ -48,8 +48,8 @@ func getPolygonGasPrices(chainId *big.Int) (*big.Int, *big.Int, error) {
 		return nil, nil, fmt.Errorf("error unmarshalling JSON: %v", err)
 	}
 
-	maxFeePerGas := decimal.NewFromFloatWithExponent(gasData.Fast.MaxFee, -9).BigInt()
-	maxPriorityFeePerGas := decimal.NewFromFloatWithExponent(gasData.Fast.MaxPriorityFee, -9).BigInt()
+	maxFeePerGas := decimal.NewFromFloat(gasData.Fast.MaxFee).Mul(decimal.NewFromInt(1e9)).BigInt()
+	maxPriorityFeePerGas := decimal.NewFromFloat(gasData.Fast.MaxPriorityFee).Mul(decimal.NewFromInt(1e9)).BigInt()
 
 	return maxFeePerGas, maxPriorityFeePerGas, nil
 }
