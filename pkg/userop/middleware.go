@@ -2,8 +2,11 @@ package userop
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"math/big"
+	"net/http"
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -82,54 +85,118 @@ func getGasPricesMiddleware(provider EthBackend, gasConfig GasConfig) middleware
 
 		logger.Debug("getting gas prices")
 
-		// Calculate maxPriorityFeePerGas
 		var maxPriorityFeePerGas *big.Int
-		if !op.MaxPriorityFeePerGas.IsZero() {
-			maxPriorityFeePerGas = op.MaxPriorityFeePerGas.BigInt()
-		} else {
-			var maxPriorityFeePerGasStr string
-			if err := provider.RPC().CallContext(ctx, &maxPriorityFeePerGasStr, "eth_maxPriorityFeePerGas"); err != nil {
-				return err
-			}
-
-			var ok bool
-			maxPriorityFeePerGas, ok = new(big.Int).SetString(maxPriorityFeePerGasStr, 0)
-			if !ok {
-				return fmt.Errorf("failed to parse maxPriorityFeePerGas: %s", maxPriorityFeePerGasStr)
-			}
-			logger.Debug("fetched maxPriorityFeePerGas", "maxPriorityFeePerGas", maxPriorityFeePerGas.String())
-
-			// Increase maxPriorityFeePerGas to give user more
-			// flexibility in setting the gas price.
-			maxPriorityFeePerGas.Mul(
-				maxPriorityFeePerGas,
-				gasConfig.MaxPriorityFeePerGasMultiplier.BigInt())
-		}
-
-		// Calculate maxFeePerGas
 		var maxFeePerGas *big.Int
-		if !op.MaxFeePerGas.IsZero() {
-			maxFeePerGas = op.MaxFeePerGas.BigInt()
-		} else {
-			// Get the latest block to read its base fee
-			block, err := provider.BlockByNumber(ctx, nil)
-			if err != nil {
-				return err
-			}
-			blockBaseFee := block.BaseFee()
-			logger.Debug("fetched block base fee", "baseFee", blockBaseFee.String())
 
-			maxFeePerGas = new(big.Int).Mul(blockBaseFee, gasConfig.MaxFeePerGasMultiplier.BigInt())
-			maxFeePerGas.Add(maxFeePerGas, maxPriorityFeePerGas)
+		chainId, err := provider.ChainID(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to get chain ID: %w", err)
 		}
+
+		isPolygon := chainId.Cmp(big.NewInt(137)) == 0 || chainId.Cmp(big.NewInt(80002)) == 0
+
+		// for Polygon and Amoy, fetch from polygon gas station
+		if isPolygon {
+			maxFeePerGas, maxPriorityFeePerGas, err = getPolygonGasPrices(chainId)
+			if err != nil {
+				logger.Error("failed to get gas prices from polygon gas station", "error", err)
+			}
+		}
+
+		// for other chains, or in case gas station is down, fetch from provider
+		if !isPolygon || err != nil {
+			maxFeePerGas, maxPriorityFeePerGas, err = getGasPrices(ctx, provider)
+		}
+
+		if err != nil {
+			return fmt.Errorf("failed to get gas prices: %w", err)
+		}
+
+		logger.Debug("fetched gas price", "maxFeePerGas", maxFeePerGas, "maxPriorityFeePerGas", maxPriorityFeePerGas)
+
+		maxFeePerGas.Mul(maxFeePerGas, gasConfig.MaxFeePerGasMultiplier.BigInt())
+
+		maxPriorityFeePerGas.Mul(
+			maxPriorityFeePerGas,
+			gasConfig.MaxPriorityFeePerGasMultiplier.BigInt())
 
 		logger.Debug("calculated gas price", "maxFeePerGas", maxFeePerGas, "maxPriorityFeePerGas", maxPriorityFeePerGas)
 
-		op.MaxFeePerGas = decimal.NewFromBigInt(maxFeePerGas, 0)
-		op.MaxPriorityFeePerGas = decimal.NewFromBigInt(maxPriorityFeePerGas, 0)
+		if op.MaxFeePerGas.IsZero() {
+			op.MaxFeePerGas = decimal.NewFromBigInt(maxFeePerGas, 0)
+		}
+		if op.MaxPriorityFeePerGas.IsZero() {
+			op.MaxPriorityFeePerGas = decimal.NewFromBigInt(maxPriorityFeePerGas, 0)
+		}
 
 		return nil
 	}
+}
+
+func getPolygonGasPrices(chainId *big.Int) (*big.Int, *big.Int, error) {
+	var resp *http.Response
+	var err error
+
+	switch {
+	case chainId.Cmp(big.NewInt(137)) == 0:
+		resp, err = http.Get("https://gasstation.polygon.technology/v2")
+	case chainId.Cmp(big.NewInt(80002)) == 0:
+		resp, err = http.Get("https://gasstation.polygon.technology/amoy")
+	default:
+		return nil, nil, fmt.Errorf("unsupported chain ID: %v", chainId)
+	}
+
+	if err != nil {
+		return nil, nil, fmt.Errorf("error fetching data: %v", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error reading response body: %v", err)
+	}
+
+	var gasData struct {
+		Fast struct {
+			MaxPriorityFee float64 `json:"maxPriorityFee"`
+			MaxFee         float64 `json:"maxFee"`
+		} `json:"fast"`
+	}
+
+	err = json.Unmarshal(body, &gasData)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error unmarshalling JSON: %v", err)
+	}
+
+	maxFeePerGas := decimal.NewFromFloatWithExponent(gasData.Fast.MaxFee, -9).BigInt()
+	maxPriorityFeePerGas := decimal.NewFromFloatWithExponent(gasData.Fast.MaxPriorityFee, -9).BigInt()
+
+	return maxFeePerGas, maxPriorityFeePerGas, nil
+}
+
+func getGasPrices(ctx context.Context, provider EthBackend) (*big.Int, *big.Int, error) {
+	var maxPriorityFeePerGasStr string
+	if err := provider.RPC().CallContext(ctx, &maxPriorityFeePerGasStr, "eth_maxPriorityFeePerGas"); err != nil {
+		return nil, nil, err
+	}
+
+	maxPriorityFeePerGas, ok := new(big.Int).SetString(maxPriorityFeePerGasStr, 0)
+	if !ok {
+		return nil, nil, fmt.Errorf("failed to parse maxPriorityFeePerGas: %s", maxPriorityFeePerGasStr)
+	}
+	logger.Debug("fetched maxPriorityFeePerGas", "maxPriorityFeePerGas", maxPriorityFeePerGas.String())
+
+	// Get the latest block to read its base fee
+	block, err := provider.BlockByNumber(ctx, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+	blockBaseFee := block.BaseFee()
+	logger.Debug("fetched block base fee", "baseFee", blockBaseFee.String())
+
+	maxFeePerGas := blockBaseFee.Add(blockBaseFee, maxPriorityFeePerGas)
+
+	return maxFeePerGas, maxPriorityFeePerGas, nil
 }
 
 // overwriteGasLimitsIfUnset applies gas limits if they are not already set.
