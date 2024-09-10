@@ -85,11 +85,11 @@ func getGasPricesMiddleware(provider EthBackend, gasConfig GasConfig) middleware
 		var maxFeePerGas *big.Int
 
 		chainId, err := provider.ChainID(ctx)
-		if err != nil {
+		if err != nil || chainId == nil {
 			return fmt.Errorf("failed to get chain ID: %w", err)
 		}
 
-		isPolygon := chainId.Cmp(big.NewInt(137)) == 0 || chainId.Cmp(big.NewInt(80002)) == 0
+		isPolygon := chainId.Uint64() == 137 || chainId.Uint64() == 80002
 
 		// for Polygon and Amoy, fetch from polygon gas station
 		if isPolygon {
@@ -102,10 +102,9 @@ func getGasPricesMiddleware(provider EthBackend, gasConfig GasConfig) middleware
 		// for other chains, or in case gas station is down, fetch from provider
 		if !isPolygon || err != nil {
 			maxFeePerGas, maxPriorityFeePerGas, err = getGasPrices(ctx, provider)
-		}
-
-		if err != nil {
-			return fmt.Errorf("failed to get gas prices: %w", err)
+			if err != nil {
+				return fmt.Errorf("failed to get gas prices: %w", err)
+			}
 		}
 
 		logger.Debug("fetched gas price", "maxFeePerGas", maxFeePerGas, "maxPriorityFeePerGas", maxPriorityFeePerGas)

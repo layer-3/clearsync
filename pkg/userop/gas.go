@@ -17,10 +17,14 @@ func getPolygonGasPrices(chainId *big.Int) (*big.Int, *big.Int, error) {
 	var resp *http.Response
 	var err error
 
+	if chainId == nil {
+		return nil, nil, fmt.Errorf("chain ID is nil")
+	}
+
 	switch {
-	case chainId.Cmp(big.NewInt(137)) == 0:
+	case chainId.Uint64() == 137:
 		resp, err = http.Get("https://gasstation.polygon.technology/v2")
-	case chainId.Cmp(big.NewInt(80002)) == 0:
+	case chainId.Uint64() == 80002:
 		resp, err = http.Get("https://gasstation.polygon.technology/amoy")
 	default:
 		return nil, nil, fmt.Errorf("unsupported chain ID: %v", chainId)
@@ -38,8 +42,8 @@ func getPolygonGasPrices(chainId *big.Int) (*big.Int, *big.Int, error) {
 
 	var gasData struct {
 		Fast struct {
-			MaxPriorityFee float64 `json:"maxPriorityFee"`
-			MaxFee         float64 `json:"maxFee"`
+			MaxPriorityFee decimal.Decimal `json:"maxPriorityFee"`
+			MaxFee         decimal.Decimal `json:"maxFee"`
 		} `json:"fast"`
 	}
 
@@ -48,8 +52,10 @@ func getPolygonGasPrices(chainId *big.Int) (*big.Int, *big.Int, error) {
 		return nil, nil, fmt.Errorf("error unmarshalling JSON: %v", err)
 	}
 
-	maxFeePerGas := decimal.NewFromFloat(gasData.Fast.MaxFee).Mul(decimal.NewFromInt(1e9)).BigInt()
-	maxPriorityFeePerGas := decimal.NewFromFloat(gasData.Fast.MaxPriorityFee).Mul(decimal.NewFromInt(1e9)).BigInt()
+	gweiMult := decimal.NewFromInt(1e9)
+
+	maxFeePerGas := gasData.Fast.MaxFee.Mul(gweiMult).BigInt()
+	maxPriorityFeePerGas := gasData.Fast.MaxPriorityFee.Mul(gweiMult).BigInt()
 
 	return maxFeePerGas, maxPriorityFeePerGas, nil
 }

@@ -31,4 +31,9 @@ func TestGetPolygonGasPrices(t *testing.T) {
 		_, _, err := getPolygonGasPrices(chainId)
 		require.Error(t, err)
 	})
+
+	t.Run("Should return error if chainId is nil", func(t *testing.T) {
+		_, _, err := getPolygonGasPrices(nil)
+		require.Error(t, err)
+	})
 }
