@@ -1,0 +1,100 @@
+{
+  "tokens": [
+    {
+      "address": "0x7130d2a12b9bcfaae4f2634d864a1ee1ce3ead9c",
+      "name": "Bitcoin BEP2",
+      "symbol": "BTCB",
+      "decimals": 18,
+      "precision": 4,
+      "logoURI": "https://raw.githubusercontent.com/U-Coin/wallet_assets/master/networks/icons/btc-64x64.png"
+    },
+    {
+      "address": "0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+      "name": "Ethereum",
+      "symbol": "ETH",
+      "decimals": 18,
+      "precision": 4,
+      "logoURI": "https://raw.githubusercontent.com/U-Coin/wallet_assets/master/networks/icons/ethereum-64x64.png"
+    },
+    {
+      "address": "0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82",
+      "name": "PancakeSwap",
+      "symbol": "CAKE",
+      "decimals": 18,
+      "precision": 4,
+      "logoURI": "https://raw.githubusercontent.com/U-Coin/wallet_assets/master/networks/icons/pancakeswap-64x64.png"
+    },
+    {
+      "address": "0x55d398326f99059ff775485246999027b3197955",
+      "name": "Tether USD",
+      "symbol": "USDT",
+      "decimals": 18,
+      "precision": 4,
+      "logoURI": "https://raw.githubusercontent.com/U-Coin/wallet_assets/master/networks/icons/tetherusd-64x64.png"
+    },
+    {
+      "address": "0xe9e7cea3dedca5984780bafc599bd69add087d56",
+      "name": "Binance USD",
+      "symbol": "BUSD",
+      "decimals": 18,
+      "precision": 4,
+      "logoURI": "https://raw.githubusercontent.com/U-Coin/wallet_assets/master/networks/icons/binanceusd-64x64.png"
+    },
+    {
+      "address": "0xb8c77482e45f1f44de1745f52c74426c631bdd52",
+      "name": "Binance Coin",
+      "symbol": "BNB",
+      "decimals": 18,
+      "precision": 4,
+      "logoURI": "https://raw.githubusercontent.com/U-Coin/wallet_assets/master/networks/icons/bnb-64x64.png"
+    },
+    {
+      "address": "0xf8a0bf9cf54bb92f17374d9e9a321e6a111a51bd",
+      "name": "Chainlink",
+      "symbol": "LINK",
+      "decimals": 18,
+      "precision": 4,
+      "logoURI": "https://raw.githubusercontent.com/U-Coin/wallet_assets/master/networks/icons/chainlink-64x64.png"
+    },
+    {
+      "address": "0x3ee2200efb3400fabb9aacf31297cbdd1d435d47",
+      "name": "Cardano",
+      "symbol": "ADA",
+      "decimals": 18,
+      "precision": 4,
+      "logoURI": "https://raw.githubusercontent.com/U-Coin/wallet_assets/master/networks/icons/cardano-64x64.png"
+    },
+    {
+      "address": "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d",
+      "name": "USD Coin",
+      "symbol": "USDC",
+      "decimals": 18,
+      "precision": 4,
+      "logoURI": "https://raw.githubusercontent.com/U-Coin/wallet_assets/master/networks/icons/usdc-64x64.png"
+    },
+    {
+      "address": "0xba2ae424d960c26247dd6c32edc70b295c744c43",
+      "name": "Dogecoin",
+      "symbol": "DOGE",
+      "decimals": 8,
+      "precision": 4,
+      "logoURI": "https://raw.githubusercontent.com/U-Coin/wallet_assets/master/networks/icons/dogecoin-64x64.png"
+    },
+    {
+      "address": "0x111111111117dc0aa78b770fa6a738034120c302",
+      "name": "1inch",
+      "symbol": "1INCH",
+      "decimals": 18,
+      "precision": 4,
+      "logoURI": "https://raw.githubusercontent.com/U-Coin/wallet_assets/master/networks/icons/1inch-64x64.png"
+    },
+    {
+      "address": "0xbf5140a22578168fd562dccf235e5d43a02ce9b1",
+      "name": "Uniswap",
+      "symbol": "UNI",
+      "decimals": 18,
+      "precision": 4,
+      "logoURI": "https://raw.githubusercontent.com/U-Coin/wallet_assets/master/networks/icons/uniswap-64x64.png"
+    }
+  ]
+}

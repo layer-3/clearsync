@@ -1,0 +1,36 @@
+{
+  "tokens": [
+    {
+      "address": "0x0000000000000000000000000000000000000000",
+      "name": "Ethereum",
+      "symbol": "ETH",
+      "decimals": 18,
+      "precision": 4,
+      "logoURI": "https://raw.githubusercontent.com/U-Coin/wallet_assets/master/networks/icons/ethereum-64x64.png"
+    },
+    {
+      "address": "0x4200000000000000000000000000000000000006",
+      "name": "Wrapped ETH",
+      "symbol": "WETH",
+      "decimals": 18,
+      "precision": 4,
+      "logoURI": "https://raw.githubusercontent.com/U-Coin/wallet_assets/master/networks/icons/wrapped-eth-64x64.png"
+    },
+    {
+      "address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "name": "USD Coin",
+      "symbol": "USDC",
+      "decimals": 6,
+      "precision": 4,
+      "logoURI": "https://raw.githubusercontent.com/U-Coin/wallet_assets/master/networks/icons/usdc-64x64.png"
+    },
+    {
+      "address": "0x50c5725949a6f0c72e6c4a641f24049a917db0cb",
+      "name": "DAI",
+      "symbol": "DAI",
+      "decimals": 18,
+      "precision": 4,
+      "logoURI": "https://raw.githubusercontent.com/U-Coin/wallet_assets/master/networks/icons/dai-64x64.png"
+    }
+  ]
+}
