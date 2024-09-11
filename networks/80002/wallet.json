@@ -1,3 +1,11 @@
 {
-  "paymaster": []
+  "paymaster": [],
+  "transactions": {
+    "withdrawal": "native",
+    "swap": "native",
+    "lock": "sponsor",
+    "unlock": "native",
+    "daily_claim": "sponsor",
+    "base": "native"
+  }
 }
