@@ -254,7 +254,7 @@
         "symbol": "DISCO",
         "decimals": 4,
         "precision": 0,
-        "logoURI": "",
+        "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/disco-192x192.png",
         "extensions": {}
       },
       {
@@ -263,7 +263,7 @@
         "symbol": "KAYEN",
         "decimals": 6,
         "precision": 3,
-        "logoURI": "",
+        "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/kayen-64x64.png",
         "extensions": {}
       }
     ]
