@@ -279,18 +279,29 @@ For example
 
 This section applies if Forge is used for testing.
 
-#### 1. Test file names should follow Solidity Style Guide conventions for files names and also have `.t` before `.sol`
+#### 1. Test files and contracts
+
+##### A. Test file names should follow Solidity Style Guide conventions for files names and also have `.t` before `.sol`
 
 For example, `ERC20.t.sol`
 
-#### 2. Mocked contract names should start from "Test", followed by the contract being mocked
+##### B. Harness contract names should start from "Test", followed by the contract under test
 
 For example,
 
 - `TestERC20`
 - `TestDailyClaim`
 
-#### 3. Test contract names should include the name of the contract or function being tested, followed by "Test"
+##### C. Integration tests should be in a separate file with a name that follows the convention `<ContractName>Test_integration_<functionName>.t.sol`
+
+Integration test files can also contain tests for multiple functions, in which case the `<functionName>` part can be omitted.
+
+For example:
+
+- `ERC20Test_integration_transfer.t.sol`
+- `DailyClaimTest_integration.t.sol`
+
+##### D. Test contract names should include the name of the contract being tested, followed by "Test", with an optional suffix for the function being tested
 
 For example,
 
@@ -305,13 +316,59 @@ NO:
 - `TestERC20Test`
 - `TestDailyClaimTest`
 
-#### 4. Test names should follow the convention `test_functionName_outcome_optionalContext`
+##### E. Prefer separate test contracts for complex functions
+
+Unit tests for complex functions should be in their own test contract. This makes it easier to understand what is being tested and to debug failures.
+
+Simple functions, on the other hand, can be tested in the same root test contract.
+
+For example, the contract "ERC20" has a complex function `transferFrom`. This function should have its own test contract, `ERC20Test_transferFrom`.
+In the same time, the function `decimals` can be tested in the root test contract, `ERC20Test`.
+
+##### F. Test contracts/functions should be written in the same order as the original functions in the contract-under-test
+
+#### 2. Test functions
+
+##### A. In harness contract, each internal function that is tested should be exposed via an external one with a name that follows the pattern `exposed\_<function_name>`
+
+For example,
+
+```solidity
+// file: src/MyContract.sol
+contract MyContract {
+  function myInternalMethod() internal returns (uint) {
+    return 42;
+  }
+}
+
+// file: test/MyContract.t.sol
+import { MyContract } from 'src/MyContract.sol';
+
+contract MyContractHarness is MyContract {
+  // Deploy this contract then call this method to test `myInternalMethod`.
+  function exposed_myInternalMethod() external returns (uint) {
+    return myInternalMethod();
+  }
+}
+```
+
+##### B. In harness contracts, workaround functions should be named `workaround_<function_name>`
+
+Harnesses can also be used to expose functionality or information otherwise unavailable in the original smart contract.
+The most straightforward example is when we want to test the length of a public array.
+
+For example:
+
+- `workaround_queueLength()`
+- `workaround_isElementInMapping()`
+
+##### C. Test names should follow the convention `test_functionName_outcome_optionalContext`
 
 For example
 
 - `test_transferFrom_debitsFromAccountBalance`
 - `test_transferFrom_debitsFromAccountBalance_whenCalledViaPermit`
-- `test_transferFrom_reverts_whenAmountExceedsBalance`
+- `test_transferFrom_revert_ifAmountExceedsBalance`
 
 If the contract is named after a function, then function name can be omitted.
 
@@ -321,7 +378,9 @@ contract TransferFromTest {
 }
 ```
 
-#### 5. Prefer tests that test one thing
+##### D. Reverting tests should follow the convention `test_functionName_revert_[if|when]Condition`
+
+##### E. Prefer tests that test one thing
 
 This is generally good practice, but especially so because Forge does not give line numbers on assertion failures. This makes it hard to track down what, exactly, failed if a test has many assertions.
 
@@ -366,7 +425,7 @@ function test_transferFrom_creditsTo() {
 }
 ```
 
-#### 6. Use variables for important values in tests
+##### F. Use variables for important values in tests
 
 YES:
 
@@ -389,7 +448,17 @@ function test_transferFrom_creditsTo() {
 }
 ```
 
-#### 7. Prefer fuzz tests
+##### G. When testing events, prefer using `vm.expectEmit()`
+
+`vm.expectEmit()` is equal to `vm.expectEmit(true,true,true,true)`.
+
+Benefits:
+
+- This ensures you test everything in your event.
+- If you add a topic (i.e. a new indexed parameter), it’s now tested by default.
+- Even if you only have 1 topic, the extra true arguments don’t hurt.
+
+##### H. Prefer fuzz tests
 
 All else being equal, prefer fuzz tests.
 
