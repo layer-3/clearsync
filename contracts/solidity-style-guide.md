@@ -51,7 +51,13 @@ Custom errors are in some cases more gas efficient and allow passing useful info
 
 For example, `InsufficientBalance`.
 
-#### 2. Events
+#### 2. Functions
+
+##### A. Do not use `override` keyword when implementing an interface function
+
+Functions defined in an interface are inherently abstract and must be implemented by the inheriting contract, which means there is nothing to override in the traditional sense.
+
+#### 3. Events
 
 ##### A. Events names should be past tense
 
@@ -85,7 +91,7 @@ NO:
 event UpdatedOwner(address newOwner);
 ```
 
-#### 3. Named arguments and parameters
+#### 4. Named arguments and parameters
 
 ##### A. Avoid unnecessary named return arguments
 
@@ -173,7 +179,7 @@ mapping(uint256 => mapping(address => uint256)) public balances;
 
 When passing a contract as an argument, use the contract type instead of `address`, as the former provides type safety, allows direct interaction with the contract, and makes the code more readable and maintainable.
 
-#### 4. Structure of a Contract
+#### 5. Structure of a Contract
 
 ##### A. Prefer composition over inheritance
 
@@ -185,7 +191,7 @@ Note this _does not_ mean that we should avoid inheritance, in general. Inherita
 
 Assembly code is hard to read and audit. We should avoid it unless the gas savings are very consequential, e.g. > 25%.
 
-#### 4. Versioning
+#### 6. Versioning
 
 ##### A. Avoid unnecessary version Pragma constraints
 
@@ -195,13 +201,13 @@ While the main contracts we deploy should specify a single Solidity version, all
 pragma solidity ^0.8.0;
 ```
 
-#### 5. Struct and Error Definitions
+#### 7. Struct and Error Definitions
 
 ##### A. Prefer declaring structs and errors within the interface, contract, or library where they are used
 
 ##### B. If a struct or error is used across many files, with no interface, contract, or library reasonably being the "owner," then define them in their own file. Multiple structs and errors can be defined together in one file
 
-#### 6. Imports
+#### 8. Imports
 
 ##### A. Use named imports
 
@@ -257,7 +263,7 @@ import {MyHelper} from '../src/MyHelper.sol'
 import {Mock} from './mocks/Mock.sol'
 ```
 
-#### 7. Comments
+#### 9. Comments
 
 ##### A. Commenting to group sections of the code is permitted
 
