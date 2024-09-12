@@ -169,6 +169,10 @@ NO:
 mapping(uint256 => mapping(address => uint256)) public balances;
 ```
 
+##### D. Prefer contract type for function arguments
+
+When passing a contract as an argument, use the contract type instead of `address`, as the former provides type safety, allows direct interaction with the contract, and makes the code more readable and maintainable.
+
 #### 4. Structure of a Contract
 
 ##### A. Prefer composition over inheritance
