@@ -35,6 +35,22 @@ func must[T any](x T, err error) T {
 	return x
 }
 
+// Encode multiple vouchers into a byte slice according to Ethereum ABI.
+// Useful for encoding "use" method argument and generation signature.
+func EncodeMultiple(vouchers []ivoucher_v2.IVoucherVoucher) ([]byte, error) {
+	voucherABI, err := ivoucher_v2.IVoucherMetaData.GetAbi()
+	if err != nil {
+		return nil, err
+	}
+
+	packed, err := voucherABI.Methods["use"].Inputs[0:1].Pack(vouchers)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode: %w", err)
+	}
+
+	return packed, nil
+}
+
 // Encode encodes the Voucher into a byte slice according to Ethereum ABI.
 func Encode(voucher ivoucher_v2.IVoucherVoucher) ([]byte, error) {
 	packed, err := voucherArgs.Pack(
