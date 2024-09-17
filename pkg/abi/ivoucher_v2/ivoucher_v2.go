@@ -37,11 +37,12 @@ type IVoucherVoucher struct {
 	ExpireAt    uint64
 	Nonce       *big.Int
 	Data        []byte
+	Signature   []byte
 }
 
 // IVoucherMetaData contains all meta data concerning the IVoucher contract.
 var IVoucherMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[],\"name\":\"InvalidExecutor\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidIssuer\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidSignature\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"VoucherAlreadyUsed\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"VoucherExpired\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"components\":[{\"internalType\":\"uint32\",\"name\":\"chainId\",\"type\":\"uint32\"},{\"internalType\":\"address\",\"name\":\"router\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"executor\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"beneficiary\",\"type\":\"address\"},{\"internalType\":\"uint64\",\"name\":\"expireAt\",\"type\":\"uint64\"},{\"internalType\":\"uint128\",\"name\":\"nonce\",\"type\":\"uint128\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"indexed\":false,\"internalType\":\"structIVoucher.Voucher\",\"name\":\"voucher\",\"type\":\"tuple\"}],\"name\":\"Used\",\"type\":\"event\"},{\"inputs\":[{\"components\":[{\"internalType\":\"uint32\",\"name\":\"chainId\",\"type\":\"uint32\"},{\"internalType\":\"address\",\"name\":\"router\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"executor\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"beneficiary\",\"type\":\"address\"},{\"internalType\":\"uint64\",\"name\":\"expireAt\",\"type\":\"uint64\"},{\"internalType\":\"uint128\",\"name\":\"nonce\",\"type\":\"uint128\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"internalType\":\"structIVoucher.Voucher[]\",\"name\":\"vouchers\",\"type\":\"tuple[]\"},{\"internalType\":\"bytes\",\"name\":\"signature\",\"type\":\"bytes\"}],\"name\":\"use\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[],\"name\":\"InvalidChainId\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidExecutor\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidIssuer\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidRouter\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidSignature\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"VoucherAlreadyUsed\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"VoucherExpired\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"components\":[{\"internalType\":\"uint32\",\"name\":\"chainId\",\"type\":\"uint32\"},{\"internalType\":\"address\",\"name\":\"router\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"executor\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"beneficiary\",\"type\":\"address\"},{\"internalType\":\"uint64\",\"name\":\"expireAt\",\"type\":\"uint64\"},{\"internalType\":\"uint128\",\"name\":\"nonce\",\"type\":\"uint128\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"signature\",\"type\":\"bytes\"}],\"indexed\":false,\"internalType\":\"structIVoucher.Voucher\",\"name\":\"voucher\",\"type\":\"tuple\"}],\"name\":\"Used\",\"type\":\"event\"},{\"inputs\":[{\"components\":[{\"internalType\":\"uint32\",\"name\":\"chainId\",\"type\":\"uint32\"},{\"internalType\":\"address\",\"name\":\"router\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"executor\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"beneficiary\",\"type\":\"address\"},{\"internalType\":\"uint64\",\"name\":\"expireAt\",\"type\":\"uint64\"},{\"internalType\":\"uint128\",\"name\":\"nonce\",\"type\":\"uint128\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"signature\",\"type\":\"bytes\"}],\"internalType\":\"structIVoucher.Voucher[]\",\"name\":\"vouchers\",\"type\":\"tuple[]\"}],\"name\":\"use\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
 }
 
 // IVoucherABI is the input ABI used to generate the binding from.
@@ -190,25 +191,25 @@ func (_IVoucher *IVoucherTransactorRaw) Transact(opts *bind.TransactOpts, method
 	return _IVoucher.Contract.contract.Transact(opts, method, params...)
 }
 
-// Use is a paid mutator transaction binding the contract method 0xac64bf74.
+// Use is a paid mutator transaction binding the contract method 0x142cfda8.
 //
-// Solidity: function use((uint32,address,address,address,uint64,uint128,bytes)[] vouchers, bytes signature) returns()
-func (_IVoucher *IVoucherTransactor) Use(opts *bind.TransactOpts, vouchers []IVoucherVoucher, signature []byte) (*types.Transaction, error) {
-	return _IVoucher.contract.Transact(opts, "use", vouchers, signature)
+// Solidity: function use((uint32,address,address,address,uint64,uint128,bytes,bytes)[] vouchers) returns()
+func (_IVoucher *IVoucherTransactor) Use(opts *bind.TransactOpts, vouchers []IVoucherVoucher) (*types.Transaction, error) {
+	return _IVoucher.contract.Transact(opts, "use", vouchers)
 }
 
-// Use is a paid mutator transaction binding the contract method 0xac64bf74.
+// Use is a paid mutator transaction binding the contract method 0x142cfda8.
 //
-// Solidity: function use((uint32,address,address,address,uint64,uint128,bytes)[] vouchers, bytes signature) returns()
-func (_IVoucher *IVoucherSession) Use(vouchers []IVoucherVoucher, signature []byte) (*types.Transaction, error) {
-	return _IVoucher.Contract.Use(&_IVoucher.TransactOpts, vouchers, signature)
+// Solidity: function use((uint32,address,address,address,uint64,uint128,bytes,bytes)[] vouchers) returns()
+func (_IVoucher *IVoucherSession) Use(vouchers []IVoucherVoucher) (*types.Transaction, error) {
+	return _IVoucher.Contract.Use(&_IVoucher.TransactOpts, vouchers)
 }
 
-// Use is a paid mutator transaction binding the contract method 0xac64bf74.
+// Use is a paid mutator transaction binding the contract method 0x142cfda8.
 //
-// Solidity: function use((uint32,address,address,address,uint64,uint128,bytes)[] vouchers, bytes signature) returns()
-func (_IVoucher *IVoucherTransactorSession) Use(vouchers []IVoucherVoucher, signature []byte) (*types.Transaction, error) {
-	return _IVoucher.Contract.Use(&_IVoucher.TransactOpts, vouchers, signature)
+// Solidity: function use((uint32,address,address,address,uint64,uint128,bytes,bytes)[] vouchers) returns()
+func (_IVoucher *IVoucherTransactorSession) Use(vouchers []IVoucherVoucher) (*types.Transaction, error) {
+	return _IVoucher.Contract.Use(&_IVoucher.TransactOpts, vouchers)
 }
 
 // IVoucherUsedIterator is returned from FilterUsed and is used to iterate over the raw logs and unpacked data for Used events raised by the IVoucher contract.
@@ -284,9 +285,9 @@ type IVoucherUsed struct {
 	Raw     types.Log // Blockchain specific contextual infos
 }
 
-// FilterUsed is a free log retrieval operation binding the contract event 0x529d0da930197d0fb2407e85a896ee16c04868777913baec820453f13e8a79cb.
+// FilterUsed is a free log retrieval operation binding the contract event 0xe119867e6fc31f0cd6fded9dd3fdf7841204668080a573db5e5bd791a78cbbb0.
 //
-// Solidity: event Used((uint32,address,address,address,uint64,uint128,bytes) voucher)
+// Solidity: event Used((uint32,address,address,address,uint64,uint128,bytes,bytes) voucher)
 func (_IVoucher *IVoucherFilterer) FilterUsed(opts *bind.FilterOpts) (*IVoucherUsedIterator, error) {
 
 	logs, sub, err := _IVoucher.contract.FilterLogs(opts, "Used")
@@ -296,9 +297,9 @@ func (_IVoucher *IVoucherFilterer) FilterUsed(opts *bind.FilterOpts) (*IVoucherU
 	return &IVoucherUsedIterator{contract: _IVoucher.contract, event: "Used", logs: logs, sub: sub}, nil
 }
 
-// WatchUsed is a free log subscription operation binding the contract event 0x529d0da930197d0fb2407e85a896ee16c04868777913baec820453f13e8a79cb.
+// WatchUsed is a free log subscription operation binding the contract event 0xe119867e6fc31f0cd6fded9dd3fdf7841204668080a573db5e5bd791a78cbbb0.
 //
-// Solidity: event Used((uint32,address,address,address,uint64,uint128,bytes) voucher)
+// Solidity: event Used((uint32,address,address,address,uint64,uint128,bytes,bytes) voucher)
 func (_IVoucher *IVoucherFilterer) WatchUsed(opts *bind.WatchOpts, sink chan<- *IVoucherUsed) (event.Subscription, error) {
 
 	logs, sub, err := _IVoucher.contract.WatchLogs(opts, "Used")
@@ -333,9 +334,9 @@ func (_IVoucher *IVoucherFilterer) WatchUsed(opts *bind.WatchOpts, sink chan<- *
 	}), nil
 }
 
-// ParseUsed is a log parse operation binding the contract event 0x529d0da930197d0fb2407e85a896ee16c04868777913baec820453f13e8a79cb.
+// ParseUsed is a log parse operation binding the contract event 0xe119867e6fc31f0cd6fded9dd3fdf7841204668080a573db5e5bd791a78cbbb0.
 //
-// Solidity: event Used((uint32,address,address,address,uint64,uint128,bytes) voucher)
+// Solidity: event Used((uint32,address,address,address,uint64,uint128,bytes,bytes) voucher)
 func (_IVoucher *IVoucherFilterer) ParseUsed(log types.Log) (*IVoucherUsed, error) {
 	event := new(IVoucherUsed)
 	if err := _IVoucher.contract.UnpackLog(event, "Used", log); err != nil {

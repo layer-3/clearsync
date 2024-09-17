@@ -25,6 +25,7 @@ var (
 		{Name: "expireAt", Type: uint64Ty},
 		{Name: "nonce", Type: uint128Ty},
 		{Name: "data", Type: bytesTy},
+		{Name: "signature", Type: bytesTy},
 	}
 )
 
@@ -52,6 +53,9 @@ func EncodeMultiple(vouchers []ivoucher_v2.IVoucherVoucher) ([]byte, error) {
 }
 
 // Encode encodes the Voucher into a byte slice according to Ethereum ABI.
+// TODO: not sure if this is the right way to encode the voucher.
+// NOTE: to receive data to sign first encode the voucher without signature,
+// then sign the data and encode it again with the signature.
 func Encode(voucher ivoucher_v2.IVoucherVoucher) ([]byte, error) {
 	packed, err := voucherArgs.Pack(
 		voucher.ChainId,
@@ -61,6 +65,7 @@ func Encode(voucher ivoucher_v2.IVoucherVoucher) ([]byte, error) {
 		voucher.ExpireAt,
 		voucher.Nonce,
 		voucher.Data,
+		voucher.Signature,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode: %w", err)
@@ -85,6 +90,7 @@ func Decode(voucher []byte) (ivoucher_v2.IVoucherVoucher, error) {
 		"expireAt":    reflect.TypeOf(result.ExpireAt),
 		"nonce":       reflect.TypeOf(result.Nonce),
 		"data":        reflect.TypeOf(result.Data),
+		"signature":   reflect.TypeOf(result.Signature),
 	}
 
 	valResult := reflect.ValueOf(&result).Elem()
