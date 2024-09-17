@@ -7,7 +7,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 
+	ecrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/layer-3/clearsync/pkg/abi/ivoucher_v2"
+	signer_pkg "github.com/layer-3/clearsync/pkg/signer"
 )
 
 var (
@@ -53,9 +55,6 @@ func EncodeMultiple(vouchers []ivoucher_v2.IVoucherVoucher) ([]byte, error) {
 }
 
 // Encode encodes the Voucher into a byte slice according to Ethereum ABI.
-// TODO: not sure if this is the right way to encode the voucher.
-// NOTE: to receive data to sign first encode the voucher without signature,
-// then sign the data and encode it again with the signature.
 func Encode(voucher ivoucher_v2.IVoucherVoucher) ([]byte, error) {
 	packed, err := voucherArgs.Pack(
 		voucher.ChainId,
@@ -72,6 +71,23 @@ func Encode(voucher ivoucher_v2.IVoucherVoucher) ([]byte, error) {
 	}
 
 	return packed, nil
+}
+
+func SignAndEncode(voucher ivoucher_v2.IVoucherVoucher, signer signer_pkg.Signer) ([]byte, error) {
+	voucher.Signature = nil
+	data, err := Encode(voucher)
+	if err != nil {
+		return nil, err
+	}
+
+	hashedBytes := ecrypto.Keccak256Hash(data).Bytes()
+	signature, err := signer_pkg.SignEthMessage(signer, hashedBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	voucher.Signature = signature.Raw()
+	return Encode(voucher)
 }
 
 // Decode decodes a byte slice into a Voucher struct according to Ethereum ABI.
