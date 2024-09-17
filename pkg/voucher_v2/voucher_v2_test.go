@@ -8,9 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 
-	ecrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/layer-3/clearsync/pkg/abi/ivoucher_v2"
-	signer_pkg "github.com/layer-3/clearsync/pkg/signer"
 )
 
 func TestEncodeDecode(t *testing.T) {
@@ -51,33 +49,6 @@ func TestEncodeDecode(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, decodedVoucher, "Decode() decoded voucher is nil")
 			require.True(t, reflect.DeepEqual(decodedVoucher, tt.voucher), "Decode() got = %v, want %v", decodedVoucher, tt.voucher)
-		})
-
-		t.Run(tt.name+"_Sign", func(t *testing.T) {
-			privateKey, err := ecrypto.GenerateKey()
-			require.NoError(t, err)
-
-			signer := signer_pkg.NewLocalSigner(privateKey)
-			encodedData, err := SignAndEncode(tt.voucher, signer)
-			require.NoError(t, err)
-			require.NotEmpty(t, encodedData, "Encode() encoded data is empty")
-			require.NotEmpty(t, common.Bytes2Hex(encodedData), "Encode() encoded data is empty")
-
-			// Test Decoding
-			decodedVoucher, err := Decode(encodedData)
-			require.NoError(t, err)
-			require.NotNil(t, decodedVoucher, "Decode() decoded voucher is nil")
-
-			signature := signer_pkg.NewSignatureFromBytes(decodedVoucher.Signature)
-
-			tt.voucher.Signature = nil
-			unsignedEncodedData, err := Encode(tt.voucher)
-			require.NoError(t, err)
-
-			signedHashedBytes := ecrypto.Keccak256Hash(unsignedEncodedData).Bytes()
-			recoveredPubKey, err := signer_pkg.RecoverEthMessageSigner(signature, signedHashedBytes)
-			require.NoError(t, err)
-			require.Equal(t, *recoveredPubKey, privateKey.PublicKey)
 		})
 	}
 }

@@ -7,9 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 
-	ecrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/layer-3/clearsync/pkg/abi/ivoucher_v2"
-	signer_pkg "github.com/layer-3/clearsync/pkg/signer"
 )
 
 var (
@@ -38,22 +36,6 @@ func must[T any](x T, err error) T {
 	return x
 }
 
-// Encode multiple vouchers into a byte slice according to Ethereum ABI.
-// Useful for encoding "use" method argument and generation signature.
-func EncodeMultiple(vouchers []ivoucher_v2.IVoucherVoucher) ([]byte, error) {
-	voucherABI, err := ivoucher_v2.IVoucherMetaData.GetAbi()
-	if err != nil {
-		return nil, err
-	}
-
-	packed, err := voucherABI.Methods["use"].Inputs[0:1].Pack(vouchers)
-	if err != nil {
-		return nil, fmt.Errorf("failed to encode: %w", err)
-	}
-
-	return packed, nil
-}
-
 // Encode encodes the Voucher into a byte slice according to Ethereum ABI.
 func Encode(voucher ivoucher_v2.IVoucherVoucher) ([]byte, error) {
 	packed, err := voucherArgs.Pack(
@@ -71,23 +53,6 @@ func Encode(voucher ivoucher_v2.IVoucherVoucher) ([]byte, error) {
 	}
 
 	return packed, nil
-}
-
-func SignAndEncode(voucher ivoucher_v2.IVoucherVoucher, signer signer_pkg.Signer) ([]byte, error) {
-	voucher.Signature = nil
-	data, err := Encode(voucher)
-	if err != nil {
-		return nil, err
-	}
-
-	hashedBytes := ecrypto.Keccak256Hash(data).Bytes()
-	signature, err := signer_pkg.SignEthMessage(signer, hashedBytes)
-	if err != nil {
-		return nil, err
-	}
-
-	voucher.Signature = signature.Raw()
-	return Encode(voucher)
 }
 
 // Decode decodes a byte slice into a Voucher struct according to Ethereum ABI.
