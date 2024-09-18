@@ -53,12 +53,12 @@ func (vs *VoucherSigner) Sign() error {
 }
 
 func (vs *VoucherSigner) Encode() ([]byte, error) {
-	voucherABI, err := ivoucher_v2.IVoucherMetaData.GetAbi()
+	voucherRouterABI, err := ivoucher_v2.VoucherRouterMetaData.GetAbi()
 	if err != nil {
 		return nil, err
 	}
 
-	packed, err := voucherABI.Methods["use"].Inputs[0:1].Pack(vs.vs)
+	packed, err := voucherRouterABI.Methods["use"].Inputs[0:1].Pack(vs.vs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode: %w", err)
 	}
