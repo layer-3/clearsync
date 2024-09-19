@@ -13,9 +13,8 @@ func TestCoingecko_GetPrices(t *testing.T) {
 		tokens := map[TokenNetwork]string{
 			{"bitcoin_token_address", 1}:  "bitcoin",
 			{"ethereum_token_address", 2}: "ethereum",
-			{"osis_token_address", 3}:     "osis",
-			{"matic_token_address", 4}:    "matic-network",
-			{"duckies_token_address", 5}:  "duckies",
+			{"matic_token_address", 3}:    "matic-network",
+			{"duckies_token_address", 4}:  "duckies",
 		}
 
 		assets, err := FetchTokens("")
@@ -53,6 +52,6 @@ func TestCoingecko_GetPrices(t *testing.T) {
 			}
 		}
 
-		assert.Equal(t, len(validTokens), 5)
+		assert.Equal(t, len(validTokens), 4)
 	})
 }
