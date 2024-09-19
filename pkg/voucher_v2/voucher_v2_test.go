@@ -34,7 +34,6 @@ func TestEncodeDecode(t *testing.T) {
 				ExpireAt:    1715100785,
 				Nonce:       big.NewInt(1234567890),
 				Data:        []byte("paramData"),
-				Signature:   []byte("paramSignature"),
 			},
 		},
 	}

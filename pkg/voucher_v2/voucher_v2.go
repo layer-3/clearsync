@@ -46,7 +46,6 @@ func Encode(voucher ivoucher_v2.IVoucherVoucher) ([]byte, error) {
 		voucher.ExpireAt,
 		voucher.Nonce,
 		voucher.Data,
-		// voucher.Signature,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode: %w", err)
@@ -71,7 +70,6 @@ func Decode(voucher []byte) (ivoucher_v2.IVoucherVoucher, error) {
 		"expireAt":    reflect.TypeOf(result.ExpireAt),
 		"nonce":       reflect.TypeOf(result.Nonce),
 		"data":        reflect.TypeOf(result.Data),
-		// "signature":   reflect.TypeOf(result.Signature),
 	}
 
 	valResult := reflect.ValueOf(&result).Elem()
