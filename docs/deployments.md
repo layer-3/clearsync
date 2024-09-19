@@ -8,7 +8,7 @@ Yellow Network may be conducting testing and operations on different networks, a
 
 Chain id: 1.
 
-Last updated: September 6, 2024.
+Last updated: September 19, 2024.
 
 | Description                | Contract Name       | Address                                                                                                                  | Git SHA and Repository                                                                                                                    | Notes                                                     |
 | -------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
@@ -16,12 +16,23 @@ Last updated: September 6, 2024.
 | Daily Claim for Locking    | DailyAirClaim       | `0x5df971419a39CC846B801b22D56Af59234b86238`[↗](https://etherscan.io/address/0x5df971419a39CC846B801b22D56Af59234b86238) | `fbd0529`[↗](https://github.com/layer-3/dailyclaim/blob/fbd05290e7a7ebd4c275775653f5685a9f5c03ea/src/DailyAirClaim.sol)                   | Issuer - 0x0Ae441d4CC3c819CD1cb744b5fa5a5084ccaDb22       |
 | Outside range authorizer   | TimeRangeAuthorizer | `0x547d613C2f613c9bC78d49051093F092924aaD1c`[↗](https://etherscan.io/address/0x547d613C2f613c9bC78d49051093F092924aaD1c) | `fff15f5`[↗](https://github.com/layer-3/broker-contracts/blob/fff15f51b0e6c3963aeeb01b0f3ce661721c8c9b/src/vault/TimeRangeAuthorizer.sol) | Time range is set to Sep 6th - November 10th 23:59:59 UTC |
 | Yellow Vault               | LiteVault           | `0xb5F3a9dD92270f55e55B7Ac7247639953538A261`[↗](https://etherscan.io/address/0xb5F3a9dD92270f55e55B7Ac7247639953538A261) | `fff15f5`[↗](https://github.com/layer-3/broker-contracts/blob/fff15f51b0e6c3963aeeb01b0f3ce661721c8c9b/src/vault/LiteVault.sol)           |                                                           |
+| Yellow Voucher Router      | VoucherRouter       | `0x2A8B51821884CF9A7ea1A24C72E46Ff52dCb4F16`[↗](https://etherscan.io/address/0x2A8B51821884CF9A7ea1A24C72E46Ff52dCb4F16) | `88fe036`[↗](https://github.com/layer-3/dailyclaim/blob/88fe03638a4936bf4a719ab156158b43a2d0af0b/src/voucher/VoucherRouter.sol)           |                                                           |
+
+### BSC
+
+Chain id: 56.
+
+Last updated: September 19, 2024.
+
+| Description           | Contract Name | Address                                                                                                                 | Git SHA and Repository                                                                                                          | Notes |
+| --------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| Yellow Voucher Router | VoucherRouter | `0x2A8B51821884CF9A7ea1A24C72E46Ff52dCb4F16`[↗](https://bscscan.com/address/0x2A8B51821884CF9A7ea1A24C72E46Ff52dCb4F16) | `88fe036`[↗](https://github.com/layer-3/dailyclaim/blob/88fe03638a4936bf4a719ab156158b43a2d0af0b/src/voucher/VoucherRouter.sol) |       |
 
 ### Polygon
 
 Chain id: 137.
 
-Last updated: September 6, 2024.
+Last updated: September 19, 2024.
 
 | Description                     | Contract Name       | Address                                                                                                                     | Git SHA and Repository                                                                                                                       | Notes                                                     |
 | ------------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
@@ -37,6 +48,29 @@ Last updated: September 6, 2024.
 | Daily Claim for Tap App         | Attendance          | `0xF100DBEb1BFa3D5f73D71fba4Ec4f015a3C2d5Eb`[↗](https://polygonscan.com/address/0xF100DBEb1BFa3D5f73D71fba4Ec4f015a3C2d5Eb) | `98e7813`[↗](https://github.com/layer-3/dailyclaim/blob/98e781375dafa68c6af1d3b006670ebb800c9eaf/src/Attendance.sol)                         | Owner - 0xc022a398aada4fc2666e50a5545cb561361e3419        |
 | Outside range authorizer        | TimeRangeAuthorizer | `0x547d613C2f613c9bC78d49051093F092924aaD1c`[↗](https://polygonscan.com/address/0x547d613C2f613c9bC78d49051093F092924aaD1c) | `fff15f5`[↗](https://github.com/layer-3/broker-contracts/blob/fff15f51b0e6c3963aeeb01b0f3ce661721c8c9b/src/vault/TimeRangeAuthorizer.sol)    | Time range is set to Sep 6th - November 10th 23:59:59 UTC |
 | Yellow Vault                    | LiteVault           | `0xb5F3a9dD92270f55e55B7Ac7247639953538A261`[↗](https://polygonscan.com/address/0xb5F3a9dD92270f55e55B7Ac7247639953538A261) | `fff15f5`[↗](https://github.com/layer-3/broker-contracts/blob/fff15f51b0e6c3963aeeb01b0f3ce661721c8c9b/src/vault/LiteVault.sol)              |                                                           |
+| Yellow Voucher Router           | VoucherRouter       | `0x2A8B51821884CF9A7ea1A24C72E46Ff52dCb4F16`[↗](https://polygonscan.com/address/0x2A8B51821884CF9A7ea1A24C72E46Ff52dCb4F16) | `88fe036`[↗](https://github.com/layer-3/dailyclaim/blob/88fe03638a4936bf4a719ab156158b43a2d0af0b/src/voucher/VoucherRouter.sol)              |                                                           |
+| Streak counter for Tap App      | LiteStreakExecutor  | `0x4844c01b783Ddc5F1c5917Dcbe71F9993C920A26`[↗](https://polygonscan.com/address/0x4844c01b783Ddc5F1c5917Dcbe71F9993C920A26) | `TODO:`[↗](https://github.com/layer-3/dailyclaim/blob/TODO:/src/voucher/executors/LiteStreakExecutor.sol)                                    |                                                           |
+| Dummy executor                  | DummyExecutor       | `0x81B17571bdb2caC980A0143F39Ad5dBc8455B2D0`[↗](https://polygonscan.com/address/0x81B17571bdb2caC980A0143F39Ad5dBc8455B2D0) | `959a2b0`[↗](https://github.com/layer-3/dailyclaim/blob/959a2b04335fdc045e240c8114ccab3a69ff3302/src/voucher/executors/DummyExecutor.sol)    |                                                           |
+
+### Base
+
+Chain id: 8453.
+
+Last updated: September 19, 2024.
+
+| Description           | Contract Name | Address                                                                                                                  | Git SHA and Repository                                                                                                          | Notes |
+| --------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| Yellow Voucher Router | VoucherRouter | `0x2A8B51821884CF9A7ea1A24C72E46Ff52dCb4F16`[↗](https://basescan.org/address/0x2A8B51821884CF9A7ea1A24C72E46Ff52dCb4F16) | `88fe036`[↗](https://github.com/layer-3/dailyclaim/blob/88fe03638a4936bf4a719ab156158b43a2d0af0b/src/voucher/VoucherRouter.sol) |       |
+
+### Arbitrum
+
+Chain id: 42161.
+
+Last updated: September 19, 2024.
+
+| Description           | Contract Name | Address                                                                                                                 | Git SHA and Repository                                                                                                          | Notes |
+| --------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| Yellow Voucher Router | VoucherRouter | `0x2A8B51821884CF9A7ea1A24C72E46Ff52dCb4F16`[↗](https://arbiscan.io/address/0x2A8B51821884CF9A7ea1A24C72E46Ff52dCb4F16) | `88fe036`[↗](https://github.com/layer-3/dailyclaim/blob/88fe03638a4936bf4a719ab156158b43a2d0af0b/src/voucher/VoucherRouter.sol) |       |
 
 ### Linea
 
@@ -54,7 +88,7 @@ Bridged Token Smart Contract: [`BridgedToken.sol`](https://github.com/Consensys/
 
 #### Contracts Deployed
 
-Last updated: January 31, 2024.
+Last updated: September 19, 2024.
 
 | Description                | Contract Name       | Address                                                                                                                     | Git SHA and Repository                                                                                                                    | Notes                                                                                                                            |
 | -------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
@@ -67,6 +101,7 @@ Last updated: January 31, 2024.
 | Twap Kayen - WETH oracle   | TwapOracle          | `0xc81e747d93abedddb014d51ee9c16f03f1f31ba1`[↗](https://lineascan.build/address/0xc81e747d93abedddb014d51ee9c16f03f1f31ba1) | `d2ecc1f`[↗](https://github.com/layer-3/erc20-paymaster/blob/d2ecc1fbb6c6a4d5cfbfc8d168f417dd730a0600/src/oracles/TwapOracle.sol)         | Base token (WETH) - 0xe5d7c2a44ffddf6b295a15c148167daaaf5cf34f, quote token (KAYEN) - 0xb195e26c23aa1adf66db73417defa32a45f38ce7 |
 | Fixed oracle               | FixedOracle         | `0x55f82f706d438d40c49f0c231f20c25bd730aaab`[↗](https://lineascan.build/address/0x55f82f706d438d40c49f0c231f20c25bd730aaab) | `d2ecc1f`[↗](https://github.com/layer-3/erc20-paymaster/blob/d2ecc1fbb6c6a4d5cfbfc8d168f417dd730a0600/src/oracles/FixedOracle.sol)        | Price - 100000000                                                                                                                |
 | Custom fee token Paymaster | ERC20PaymasterV06   | `0x72E83B5BCce5ABc3e19DB6A4A5fcCDDaD0B61527`[↗](https://lineascan.build/address/0x72E83B5BCce5ABc3e19DB6A4A5fcCDDaD0B61527) | `d2ecc1f`[↗](https://github.com/layer-3/erc20-paymaster/blob/d2ecc1fbb6c6a4d5cfbfc8d168f417dd730a0600/src/ERC20PaymasterV06.sol)          | Token (Kayen) - 0xb195e26c23aa1adf66db73417defa32a45f38ce7                                                                       |
+| Yellow Voucher Router      | VoucherRouter       | `0x2A8B51821884CF9A7ea1A24C72E46Ff52dCb4F16`[↗](https://lineascan.build/address/0x2A8B51821884CF9A7ea1A24C72E46Ff52dCb4F16) | `88fe036`[↗](https://github.com/layer-3/dailyclaim/blob/88fe03638a4936bf4a719ab156158b43a2d0af0b/src/voucher/VoucherRouter.sol)           |                                                                                                                                  |
 
 ## Testnet
 
