@@ -6,6 +6,7 @@
     "lock": "sponsor",
     "unlock": "native",
     "daily_claim": "sponsor",
-    "base": "native"
+    "base": "native",
+    "mint": "sponsor"
   }
 }
