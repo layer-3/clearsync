@@ -31,7 +31,7 @@ using Library for bytes
 bytes._function()
 ```
 
-Note, we cannot remedy this by insisting on the use public functions. Whether a library functions are internal or external has important implications. From the [Solidity documentation](https://docs.soliditylang.org/en/latest/contracts.html#libraries)
+Note, we cannot remedy this by insisting on the use of public functions. Whether a library functions are internal or external has important implications. From the [Solidity documentation](https://docs.soliditylang.org/en/latest/contracts.html#libraries)
 
 > ... the code of internal library functions that are called from a contract and all functions called from therein will at compile time be included in the calling contract, and a regular JUMP call will be used instead of a DELEGATECALL.
 
@@ -49,9 +49,17 @@ Custom errors are in some cases more gas efficient and allow passing useful info
 
 ##### B. Custom error names should be CapWords style
 
-For example, `InsufficientBalance`.
+YES:
 
-#### 2. Functions
+```solidity
+error InsufficientBalance();
+```
+
+NO:
+
+```solidity
+error insufficient_balance();
+```
 
 ##### A. Do not use `override` keyword when implementing an interface function
 
@@ -61,7 +69,7 @@ Functions defined in an interface are inherently abstract and must be implemente
 
 ##### A. Events names should be past tense
 
-Events should track things that _happened_ and so should be past tense. Using past tense also helps avoid naming collisions with structs or functions.
+Events should track things that _happened_ and so should be past tense. Using past tense also helps prevent naming collisions with structs or functions.
 
 We are aware this does not follow precedent from early ERCs, like [ERC-20](https://eips.ethereum.org/EIPS/eip-20). However it does align with some more recent high profile Solidity, e.g. [1](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/976a3d53624849ecaef1231019d2052a16a39ce4/contracts/access/Ownable.sol#L33), [2](https://github.com/aave/aave-v3-core/blob/724a9ef43adf139437ba87dcbab63462394d4601/contracts/interfaces/IAaveOracle.sol#L25-L31), [3](https://github.com/ProjectOpenSea/seaport/blob/1d12e33b71b6988cbbe955373ddbc40a87bd5b16/contracts/zones/interfaces/PausableZoneEventsAndErrors.sol#L25-L41).
 
@@ -144,7 +152,7 @@ function validate(
 
 ##### B. Prefer named arguments
 
-Passing arguments to functions, events, and errors with explicit naming is helpful for clarity, when the name of the variable passed does not explain its purpose.
+Passing arguments to functions, events, and errors with explicit naming is helpful for clarity, when the name of the variable passed does not provide sufficient context.
 
 YES:
 
@@ -161,7 +169,7 @@ pow(x, y, v);
 
 ##### C. Prefer named parameters in mapping types
 
-Explicit naming parameters in mapping types is helpful for clarity, especially when nesting is used.
+Explicitly naming parameters in mapping types is helpful for clarity, especially when nesting is used.
 
 YES:
 
@@ -195,7 +203,7 @@ Assembly code is hard to read and audit. We should avoid it unless the gas savin
 
 ##### A. Avoid unnecessary version Pragma constraints
 
-While the main contracts we deploy should specify a single Solidity version, all supporting contracts and libraries should have as open a Pragma as possible. A good rule of thumb is to the next major version. For example
+While the main contracts we deploy should specify a single Solidity version, all supporting contracts and libraries should have as open a Pragma as possible. A rule of thumb is to specify compatibility with the next major version. For example:
 
 ```solidity
 pragma solidity ^0.8.0;
@@ -245,22 +253,37 @@ import {A} from './A.sol'
 
 ##### C. Group imports by external and local with a new line in between
 
-For example
+YES:
 
 ```solidity
-import {Math} from '/solady/Math.sol'
+import { Math } from '/solady/Math.sol';
 
-import {MyHelper} from './MyHelper.sol'
+import { MyHelper } from './MyHelper.sol';
 ```
 
 In test files, imports from `/test` should be their own group, as well.
 
+YES:
+
 ```solidity
-import {Math} from '/solady/Math.sol'
+import { Math } from '/solady/Math.sol';
 
-import {MyHelper} from '../src/MyHelper.sol'
+import { MyHelper } from '../src/MyHelper.sol';
 
-import {Mock} from './mocks/Mock.sol'
+import { Mock } from './mocks/Mock.sol';
+```
+
+NO:
+
+```solidity
+import { MyHelper } from './MyHelper.sol';
+
+import { Math } from '/solady/Math.sol';
+
+// or
+
+import { Math } from '/solady/Math.sol';
+import { MyHelper } from './MyHelper.sol';
 ```
 
 #### 9. Comments
@@ -269,7 +292,7 @@ import {Mock} from './mocks/Mock.sol'
 
 Sometimes authors and readers find it helpful to comment dividers between groups of functions. This permitted, however ensure the style guide [ordering of functions](https://docs.soliditylang.org/en/latest/style-guide.html#order-of-functions) is still followed.
 
-For example
+YES:
 
 ```solidity
 /// External Functions ///
@@ -293,11 +316,14 @@ This section applies if Forge is used for testing.
 
 ##### A. Test file names should follow Solidity Style Guide conventions for files names and also have `.t` before `.sol`
 
-For example, `ERC20.t.sol`
+YES:
+
+- AuthorizerTest.t.sol
+- ERC20Test.t.sol
 
 ##### B. Harness contract names should start from "Test", followed by the contract under test
 
-For example,
+YES:
 
 - `TestERC20`
 - `TestDailyClaim`
@@ -306,14 +332,14 @@ For example,
 
 Integration test files can also contain tests for multiple functions, in which case the `<functionName>` part can be omitted.
 
-For example:
+YES:
 
 - `ERC20Test_integration_transfer.t.sol`
 - `DailyClaimTest_integration.t.sol`
 
 ##### D. Test contract names should include the name of the contract being tested, followed by "Test", with an optional suffix for the function being tested
 
-For example,
+YEs:
 
 - `ERC20Test`
 - `ERC20Test_transfer`
@@ -341,7 +367,7 @@ In the same time, the function `decimals` can be tested in the root test contrac
 
 ##### A. In harness contract, each internal function that is tested should be exposed via an external one with a name that follows the pattern `exposed\_<function_name>`
 
-For example,
+YES:
 
 ```solidity
 // file: src/MyContract.sol
@@ -349,15 +375,50 @@ contract MyContract {
   function myInternalMethod() internal returns (uint) {
     return 42;
   }
+
+  function _mySecondInternalMethod() internal returns (uint) {
+    return 442;
+  }
 }
 
 // file: test/MyContract.t.sol
 import { MyContract } from 'src/MyContract.sol';
 
 contract MyContractHarness is MyContract {
-  // Deploy this contract then call this method to test `myInternalMethod`.
   function exposed_myInternalMethod() external returns (uint) {
     return myInternalMethod();
+  }
+
+  function exposed_mySecondInternalMethod() external returns (uint) {
+    return _mySecondInternalMethod();
+  }
+}
+```
+
+NO:
+
+```solidity
+// file: src/MyContract.sol
+contract MyContract {
+  function myInternalMethod() internal returns (uint) {
+    return 42;
+  }
+
+  function _mySecondInternalMethod() internal returns (uint) {
+    return 442;
+  }
+}
+
+// file: test/MyContract.t.sol
+import { MyContract } from 'src/MyContract.sol';
+
+contract MyContractHarness is MyContract {
+  function getMyInternalMethod() external returns (uint) {
+    return myInternalMethod();
+  }
+
+  function mySecondInternalMethod() external returns (uint) {
+    return _mySecondInternalMethod();
   }
 }
 ```
@@ -367,20 +428,34 @@ contract MyContractHarness is MyContract {
 Harnesses can also be used to expose functionality or information otherwise unavailable in the original smart contract.
 The most straightforward example is when we want to test the length of a public array.
 
-For example:
+YES:
 
 - `workaround_queueLength()`
 - `workaround_isElementInMapping()`
 
+NO:
+
+- `getQueueLength()`
+- `setAuthorizerWithoutOwner()`
+
 ##### C. Test names should follow the convention `test_functionName_outcome_optionalContext`
 
-For example
+YES:
 
 - `test_transferFrom_debitsFromAccountBalance`
 - `test_transferFrom_debitsFromAccountBalance_whenCalledViaPermit`
 - `test_transferFrom_revert_ifAmountExceedsBalance`
 
+NO:
+
+- `testTransfer`
+- `test_transferFrom`
+- `test_success_transfer`
+- `test_transferFromWhenNoBalance`
+
 If the contract is named after a function, then function name can be omitted.
+
+YES:
 
 ```solidity
 contract TransferFromTest {
@@ -388,7 +463,26 @@ contract TransferFromTest {
 }
 ```
 
+NO:
+
+```solidity
+contract TransferFromTest {
+  function test_transferFrom_debitsFromAccountBalance() ...
+}
+```
+
 ##### D. Reverting tests should follow the convention `test_functionName_revert_[if|when]Condition`
+
+YES:
+
+- `test_transferFrom_revert_ifAmountExceedsBalance`
+- `test_transferFrom_revert_ifNotOwner`
+
+NO:
+
+- `test_transferFrom_revert`
+- `test_transferFrom_revertWhenAmountExceedsBalance`
+- `test_transferFromRevertIfNotOwner`
 
 ##### E. Prefer tests that test one thing
 
@@ -427,6 +521,8 @@ function test_transferFrom_works() {
 
 Note, this does not mean a test should only ever have one assertion. Sometimes having multiple assertions is helpful for certainty on what is being tested.
 
+YES:
+
 ```solidity
 function test_transferFrom_creditsTo() {
   assertEq(balanceOf(to), 0);
@@ -460,7 +556,29 @@ function test_transferFrom_creditsTo() {
 
 ##### G. When testing events, prefer using `vm.expectEmit()`
 
-`vm.expectEmit()` is equal to `vm.expectEmit(true,true,true,true)`.
+YES:
+
+```solidity
+function test_transferFrom_emitsCorrectly() {
+  vm.expectEmit();
+  emit IERC20.Transfer(from, to, 10);
+  token.transferFrom(from, to, 10);
+}
+```
+
+NO:
+
+```solidity
+function test_transferFrom_emitsCorrectly() {
+  vm.expectEmit(true, true, true, true);
+  token.transferFrom(from, to, 10);
+  vm.expectEmit();
+}
+```
+
+Benefits:
+
+- `vm.expectEmit()` is equal to `vm.expectEmit(true,true,true,true)`, but takes less space.
 
 Benefits:
 
@@ -508,11 +626,45 @@ We should avoid adding to these or defining any remappings explicitly, as it mak
 
 ### D. Upgradability
 
-#### 1. Prefer [ERC-7201](https://eips.ethereum.org/EIPS/eip-7201) "Namespaced Storage Layout" convention to avoid storage collisions
+#### 1. Prefer [ERC-7201](https://eips.ethereum.org/EIPS/eip-7201) "Namespaced Storage Layout" convention to prevent storage collisions
 
 ### E. Structs
 
 #### 1. Where possible, struct values should be packed to minimize SLOADs and SSTOREs
+
+YES:
+
+```solidity
+struct Position {
+  // slot 1:
+  uint256 amount;
+  // slot 2:
+  address beneficiary;
+  uint64 id;
+  uint32 validUntil;
+  // slot 3*:
+  bytes data;
+}
+```
+
+NO:
+
+```solidity
+struct Position {
+  // slot 1:
+  address beneficiary;
+  // slot 2:
+  uint256 amount;
+  // slot 3:
+  uint64 id;
+  // slot 4*:
+  bytes data;
+  // slot 5:
+  uint32 validUntil;
+}
+```
+
+\* - in fact, dynamic data takes more that one slot and is not stored conqecutively with other fields.
 
 #### 2. Timestamp fields in a struct should be at least uint32 and ideally be uint40
 
@@ -531,6 +683,8 @@ Minimally including `@notice`. `@param` and `@return` should be present if there
 #### 2. Struct NatSpec
 
 Structs can be documented with a `@notice` above and, if desired, `@dev` for each field.
+
+YES:
 
 ```solidity
 /// @notice A struct describing an accounts position
