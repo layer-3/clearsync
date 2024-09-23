@@ -2,6 +2,10 @@
 
 This style guide is a set of rules and conventions for writing Solidity code. It is based on the [Solidity Style Guide](https://docs.soliditylang.org/en/latest/style-guide.html), [Coinbase Style Guide](https://github.com/coinbase/solidity-style-guide/blob/7e29d890be81b7df9beefb38f04ff212cc32fb6c/README.md) and includes some additional rules and conventions specific to Yellow Network.
 
+The document contains "syntax" and "semantics" rules for naming, structure, and formatting of Solidity code and tests. If not applied, they will not cause a compilation error or make the code more prone to bugs or vulnerabilities. However, they will make the code consistent, more readable, and easier to maintain.
+
+On the other hand, the [Development Practices](./solidity-development-practices.md) document contains development practises and technics that do change the logic and make the contract more secure, gas-efficient or increase operability.
+
 ## 1. Style
 
 ### A. Unless an exception or addition is specifically noted, we follow the [Solidity Style Guide](https://docs.soliditylang.org/en/latest/style-guide.html)
@@ -65,7 +69,7 @@ error insufficient_balance();
 
 Functions defined in an interface are inherently abstract and must be implemented by the inheriting contract, which means there is nothing to override in the traditional sense.
 
-#### 3. Events
+#### 2. Events
 
 ##### A. Events names should be past tense
 
@@ -97,6 +101,28 @@ NO:
 
 ```solidity
 event UpdatedOwner(address newOwner);
+```
+
+#### 3. Functions
+
+##### A. `public` functions not used internally must be marked `external`
+
+YES:
+
+```solidity
+/// @dev Not used anywhere else
+function withdraw(address to, uint256 amount) external {
+  ...
+}
+```
+
+NO:
+
+```solidity
+/// @dev Not used anywhere else
+function withdraw(address to, uint256 amount) public {
+  ...
+}
 ```
 
 #### 4. Named arguments and parameters
@@ -627,48 +653,6 @@ We should avoid adding to these or defining any remappings explicitly, as it mak
 ### D. Upgradability
 
 #### 1. Prefer [ERC-7201](https://eips.ethereum.org/EIPS/eip-7201) "Namespaced Storage Layout" convention to prevent storage collisions
-
-### E. Structs
-
-#### 1. Where possible, struct values should be packed to minimize SLOADs and SSTOREs
-
-YES:
-
-```solidity
-struct Position {
-  // slot 1:
-  uint256 amount;
-  // slot 2:
-  address beneficiary;
-  uint64 id;
-  uint32 validUntil;
-  // slot 3*:
-  bytes data;
-}
-```
-
-NO:
-
-```solidity
-struct Position {
-  // slot 1:
-  address beneficiary;
-  // slot 2:
-  uint256 amount;
-  // slot 3:
-  uint64 id;
-  // slot 4*:
-  bytes data;
-  // slot 5:
-  uint32 validUntil;
-}
-```
-
-\* - in fact, dynamic data takes more that one slot and is not stored conqecutively with other fields.
-
-#### 2. Timestamp fields in a struct should be at least uint32 and ideally be uint40
-
-`uint32` will give the contract ~82 years of validity `(2^32 / (60*60*24*365)) - (2024 - 1970)`. If space allows, uint40 is the preferred size.
 
 ## 3. NatSpec
 
