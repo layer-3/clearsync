@@ -7,7 +7,7 @@ This document contains:
 
 - Security Best Practices
 - Gas Optimization and Efficiency technics
-- Operational Advices
+- Operational Advice
 
 ## 1. Security Best Practices
 
@@ -135,7 +135,7 @@ struct Position {
 
 `uint32` will give the contract ~82 years of validity `(2^32 / (60*60*24*365)) - (2024 - 1970)`. If space allows, uint40 is the preferred size.
 
-## 3. Operational Advices
+## 3. Operational Advice
 
 ### A. Interoperability
 
@@ -155,4 +155,28 @@ NO:
 
 ```solidity
 msg.sender.transfer(_amount);
+```
+
+#### 2. Avoid using `msg.sender` for permissionless functions
+
+Using `msg.sender` instead of an explicit address parameter can preclude certain communication logic and use cases.
+It is recommended to use an explicit address parameter for functions that don't have a permission-based access, e.g. view functions, deposits, etc.
+
+YES:
+
+```solidity
+function deposit(address beneficiary, address token, uint256 amount) public {
+  require(amount > 0, 'Invalid amount');
+  require(beneficiary != address(0), 'Invalid beneficiary');
+  // deposit logic to beneficiary
+}
+```
+
+NO:
+
+```solidity
+function deposit(address token, uint256 amount) public {
+  require(amount > 0, 'Invalid amount');
+  // deposit logic to msg.sender
+}
 ```
