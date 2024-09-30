@@ -6,7 +6,7 @@
     "swap": "native",
     "lock": "native",
     "unlock": "native",
-    "daily_claim": "native",
+    "daily_claim": "sponsor",
     "base": "native"
   }
 }
