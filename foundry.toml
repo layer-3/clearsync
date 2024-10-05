@@ -1,0 +1,22 @@
+[profile.default]
+src = "contracts"
+out = "artifacts"
+test = 'test'
+solc = "0.8.22"
+optimizer = true
+optimizer_runs = 100000
+gas_price = 1000000000
+ast = true
+libs = ["node_modules", "lib"]
+remappings = [
+    "@openzeppelin/=node_modules/@openzeppelin/",
+    "@statechannels/=node_modules/@statechannels/",
+    "@syncswap/=node_modules/@syncswap/",
+    "@uniswap/=node_modules/@uniswap/",
+    "base64-sol/=node_modules/base64-sol/",
+    "eth-gas-reporter/=node_modules/eth-gas-reporter/",
+    "hardhat-deploy/=node_modules/hardhat-deploy/",
+    "hardhat/=node_modules/hardhat/",
+]
+
+# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
