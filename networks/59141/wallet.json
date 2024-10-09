@@ -2,7 +2,7 @@
   "paymaster": [],
   "litevault": "0x67c5751b62BaD721969bb996Ea0dbdF731267643",
   "transactions": {
-    "withdrawal": "native",
+    "withdrawal": "sponsor",
     "swap": "native",
     "lock": "native",
     "unlock": "native",
