@@ -4,7 +4,7 @@
   "transactions": {
     "withdrawal": "native",
     "swap": "native",
-    "lock": "sponsor",
+    "lock": "sp_whole_toro",
     "unlock": "native",
     "daily_claim": "native",
     "base": "native"
