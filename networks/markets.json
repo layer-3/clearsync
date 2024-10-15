@@ -1,0 +1,12 @@
+[
+    {
+        "symbol": "btcusd",
+        "base": "BTC",
+        "quote": "USDC"
+    },
+    {
+        "symbol": "ethusd",
+        "base": "ETH",
+        "quote": "USDC"
+    }
+]
