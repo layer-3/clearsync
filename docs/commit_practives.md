@@ -81,7 +81,7 @@ fix(UI/tx modal): not closing on click
 
 ### Description
 
-The description is a brief summary of the changes made in the commit. It should be clear, concise, and written in the imperative mood.
+The description is a brief summary of the changes made in the commit. It should be clear, concise, and written in the imperative style. The imperative style is used to describe _what would happend if the commit is applied to the codebase_.
 
 The type, scope and description can not exceed 50 charecters. Therefore, the description should be short and to the point.
 
@@ -94,6 +94,24 @@ If the description is too long, it should be split into the body.
 ### Optinal body
 
 The body provides additional information about the changes made in the commit. It is optional and can be omitted if the description is sufficient.
+
+#### Example of a good body
+
+Free-form description:
+```txt
+feat: add tx modal component
+
+Add a new component for displaying transaction details. The component includes a modal window with a close button and a list of transaction details.
+```
+
+A breakdown of larger commit:
+```txt
+refact(api/cache): improve caching system
+
+- Optimize cache key generation to avoid collisions
+- Refactor cache invalidation to account for edge cases
+- Add tests for cache hit/miss scenarios
+```
 
 ### Footer(s)
 
@@ -116,7 +134,5 @@ This repository contains the shared configuration for commitizen, which is used 
 ### CI/CD pipeline
 
 The CI/CD pipeline is configured to run a pre-commit hook that checks the commit message format before allowing the pipeline to proceed.
-
-If the commit message does not adhere to the conventional commit format, the pre-commit hook will fail, and the commit will be rejected, thus the pipeline will not proceed.
 
 Using such a mechanism ensures that all commits in the repository follow the commit practices and would allow us to automatically compile a changelog, determine a semantic version bump, and trigger build and publish processes in other repositories that depend on a given one (e.g. `github.com/layer-3/clearsync` triggers `github.com/layer-3/neodax` bump dependency version, which in turn adds a changelog entries for both repos).
