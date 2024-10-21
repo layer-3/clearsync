@@ -2,7 +2,7 @@
 
 This document explains the importance and benefits of commit practices and the format of the commit message.
 
-Inspired by and following [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/).
+> Inspired by and following [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/).
 
 If you have any questions, open the link above.
 
@@ -103,10 +103,20 @@ The footer is used to reference issues, provide additional context, or link to e
 
 _footers_ other than BREAKING CHANGE: \<description\> may be provided and follow a convention similar to [git trailer format](https://git-scm.com/docs/git-interpret-trailers).
 
-## Tools
+## Enforcing the practice
+
+### Developer tools
 
 The commitizen is used to enforce the commit message format. It is a command-line utility that prompts users to fill in the required fields and generates a commit message based on the input.
 
-Each repository integrates the commitizen tool as an npm development dependency and configures it to use the conventional commit format.
+Each repository integrates the commitizen tool as an `npm` development dependency and configures it to use the conventional commit format.
 
 This repository contains the shared configuration for commitizen, which is used by all projects in the organization.
+
+### CI/CD pipeline
+
+The CI/CD pipeline is configured to run a pre-commit hook that checks the commit message format before allowing the pipeline to proceed.
+
+If the commit message does not adhere to the conventional commit format, the pre-commit hook will fail, and the commit will be rejected, thus the pipeline will not proceed.
+
+Using such a mechanism ensures that all commits in the repository follow the commit practices and would allow us to automatically compile a changelog, determine a semantic version bump, and trigger build and publish processes in other repositories that depend on a given one (e.g. `github.com/layer-3/clearsync` triggers `github.com/layer-3/neodax` bump dependency version, which in turn adds a changelog entries for both repos).
