@@ -6,8 +6,8 @@
     "swap": "native",
     "lock": "sp_good_black_panther",
     "unlock": "native",
-    "daily_claim": "sp_good_black_panther",
-    "daily_claim_tap_app": "sp_lazy_menace",
+    "daily_claim": "sp_quick_dormammu",
+    "daily_claim_tap_app": "sp_quick_dormammu",
     "mint_tap_app": "sp_lazy_menace",
     "base": "native"
   }
