@@ -2,10 +2,10 @@ package quest
 
 import (
 	"encoding/json"
-	"io"
 	"net/http"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,18 +19,11 @@ func HandlePOST(c *gin.Context) {
 		return
 	}
 
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, "Failed to read request body", http.StatusBadRequest)
-		return
-	}
-
 	var req struct {
-		Address string `json:"address"`
+		Address common.Address `json:"address" binding:"required"`
 	}
 
-	err = json.Unmarshal(body, &req)
-	if err != nil || req.Address == "" {
+	if err := c.BindJSON(&req); err != nil {
 		http.Error(w, "Invalid request or missing user address", http.StatusBadRequest)
 		return
 	}
@@ -42,7 +35,7 @@ func HandlePOST(c *gin.Context) {
 		return
 	}
 
-	result, err := handler.Handle(r.Context(), req.Address)
+	result, err := handler.Handle(r.Context(), req.Address.Hex())
 	if err != nil {
 		http.Error(w, "Error processing request", http.StatusInternalServerError)
 		return
@@ -62,11 +55,16 @@ func HandleGET(c *gin.Context) {
 		return
 	}
 
-	userAddress := r.URL.Query().Get("address")
-	if userAddress == "" {
-		http.Error(w, "address is required", http.StatusBadRequest)
+	var req struct {
+		Address string `form:"address" binding:"required"`
+	}
+
+	if err := c.Bind(&req); err != nil {
+		http.Error(w, "Invalid request or missing user address", http.StatusBadRequest)
 		return
 	}
+
+	userAddress := common.HexToAddress(req.Address)
 
 	questID := c.Param("id")
 	handler, exists := GetHandler(questKey, questID)
@@ -75,7 +73,7 @@ func HandleGET(c *gin.Context) {
 		return
 	}
 
-	result, err := handler.Handle(r.Context(), userAddress)
+	result, err := handler.Handle(r.Context(), userAddress.Hex())
 	if err != nil {
 		http.Error(w, "Error processing request", http.StatusInternalServerError)
 		return
