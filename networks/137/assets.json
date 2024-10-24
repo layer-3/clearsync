@@ -49,14 +49,6 @@
       }
     },
     {
-      "address": "0x3e5351935595600D8e094dEE3Ec7E942CAf9907F",
-      "name": "OSIS",
-      "symbol": "OSIS",
-      "decimals": 18,
-      "precision": 0,
-      "logoURI": "https://polygonscan.com/token/images/osisworld_32.png"
-    },
-    {
       "address": "0x6f8a06447Ff6FcF75d803135a7de15CE88C1d4ec",
       "name": "SHIBA INU",
       "symbol": "SHIBA",

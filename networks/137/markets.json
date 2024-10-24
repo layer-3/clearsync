@@ -4,9 +4,5 @@
     "quotes": {
       "dexs": false
     }
-  },
-  {
-    "symbol": "spot://OSIS/USD",
-    "leverage": 1
   }
 ]
