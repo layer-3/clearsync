@@ -109,6 +109,19 @@
       }
     },
     {
+      "address": "0xB5beDd42000b71FddE22D3eE8a79Bd49A568fC8F",
+      "name": "Wrapped Liquid Staked Ether 2.0",
+      "symbol": "wstETH",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://assets.coingecko.com/coins/images/18834/standard/wstETH.png",
+      "extensions":
+      {
+        "allow_locking": true,
+        "coingecko_api_id": "ethereum"
+      }
+    },
+    {
       "address": "0x82cc61354d78b846016b559e3ccd766fa7e793d5",
       "name": "Linda",
       "symbol": "LINDA",
