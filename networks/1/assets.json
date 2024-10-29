@@ -83,6 +83,19 @@
         }
       },
       {
+        "address": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
+        "name": "Wrapped Liquid Staked Ether 2.0",
+        "symbol": "wstETH",
+        "decimals": 18,
+        "precision": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/18834/standard/wstETH.png",
+        "extensions":
+        {
+          "allow_locking": true,
+          "coingecko_api_id": "ethereum"
+        }
+      },
+      {
         "address": "0xD31a59c85aE9D8edEFeC411D448f90841571b89c",
         "name": "Wrapped Solana",
         "symbol": "WSOL",
