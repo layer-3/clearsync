@@ -18,6 +18,7 @@ Last updated: September 19, 2024.
 | Yellow Vault                   | LiteVault           | `0xb5F3a9dD92270f55e55B7Ac7247639953538A261`[↗](https://etherscan.io/address/0xb5F3a9dD92270f55e55B7Ac7247639953538A261) | `fff15f5`[↗](https://github.com/layer-3/broker-contracts/blob/fff15f51b0e6c3963aeeb01b0f3ce661721c8c9b/src/vault/LiteVault.sol)           |                                                           |
 | Yellow Voucher Router          | VoucherRouter       | `0x2A8B51821884CF9A7ea1A24C72E46Ff52dCb4F16`[↗](https://etherscan.io/address/0x2A8B51821884CF9A7ea1A24C72E46Ff52dCb4F16) | `88fe036`[↗](https://github.com/layer-3/dailyclaim/blob/88fe03638a4936bf4a719ab156158b43a2d0af0b/src/voucher/VoucherRouter.sol)           |                                                           |
 | Points claimer for Leaderboard | ClaimExecutor       | `0x4844c01b783Ddc5F1c5917Dcbe71F9993C920A26`[↗](https://etherscan.io/address/0x4844c01b783Ddc5F1c5917Dcbe71F9993C920A26) | `cadfd37`[↗](https://github.com/layer-3/dailyclaim/blob/cadfd378c76f3ce777cd59e1d5d261b9c4d6fd1d/src/voucher/executors/ClaimExecutor.sol) |                                                           |
+| Outside range authorizer       | TimeRangeAuthorizer | `0xaFbA1A80b4f9A6F15D84Ce5515c70c724cc10da1`[↗](https://etherscan.io/address/0xaFbA1A80b4f9A6F15D84Ce5515c70c724cc10da1) | `dc84b5e`[↗](https://github.com/layer-3/broker-contracts/blob/dc84b5e1a30db420ff3b881a74fca6f4556fbc36/src/vault/TimeRangeAuthorizer.sol) | Time range is set to Sep 6th - November 11th 23:59:59 UTC |
 
 ### BSC
 
@@ -34,7 +35,7 @@ Last updated: September 19, 2024.
 
 Chain id: 137.
 
-Last updated: September 19, 2024.
+Last updated: November 8, 2024.
 
 | Description                     | Contract Name       | Address                                                                                                                     | Git SHA and Repository                                                                                                                         | Notes                                                     |
 | ------------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
@@ -54,6 +55,7 @@ Last updated: September 19, 2024.
 | Streak counter for Tap App      | LiteStreakExecutor  | `0x4844c01b783Ddc5F1c5917Dcbe71F9993C920A26`[↗](https://polygonscan.com/address/0x4844c01b783Ddc5F1c5917Dcbe71F9993C920A26) | `986948a`[↗](https://github.com/layer-3/dailyclaim/blob/986948aa1cc3b9a45daba3f4efc35738ca9265fa/src/voucher/executors/LiteStreakExecutor.sol) |                                                           |
 | Dummy executor                  | DummyExecutor       | `0x6a9DC7deAbF360ca573a2Db459B96e11e490480c`[↗](https://polygonscan.com/address/0x6a9DC7deAbF360ca573a2Db459B96e11e490480c) | `986948a`[↗](https://github.com/layer-3/dailyclaim/blob/986948aa1cc3b9a45daba3f4efc35738ca9265fa/src/voucher/executors/DummyExecutor.sol)      |                                                           |
 | Points claimer for Leaderboard  | ClaimExecutor       | `0x0fb43b1CE0016df92e945155a7EADD3C9F2b2830`[↗](https://polygonscan.com/address/0x0fb43b1CE0016df92e945155a7EADD3C9F2b2830) | `cadfd37`[↗](https://github.com/layer-3/dailyclaim/blob/cadfd378c76f3ce777cd59e1d5d261b9c4d6fd1d/src/voucher/executors/ClaimExecutor.sol)      |                                                           |
+| Outside range authorizer        | TimeRangeAuthorizer | `0xc37E72F518672E7B529f3f93bcDf7BD00ebeB100`[↗](https://polygonscan.com/address/0xc37E72F518672E7B529f3f93bcDf7BD00ebeB100) | `dc84b5e`[↗](https://github.com/layer-3/broker-contracts/blob/dc84b5e1a30db420ff3b881a74fca6f4556fbc36/src/vault/TimeRangeAuthorizer.sol)      | Time range is set to Sep 6th - November 11th 23:59:59 UTC |
 
 ### Base
 
@@ -108,6 +110,7 @@ Last updated: September 19, 2024.
 | Custom fee token Paymaster     | ERC20PaymasterV06   | `0x72E83B5BCce5ABc3e19DB6A4A5fcCDDaD0B61527`[↗](https://lineascan.build/address/0x72E83B5BCce5ABc3e19DB6A4A5fcCDDaD0B61527) | `d2ecc1f`[↗](https://github.com/layer-3/erc20-paymaster/blob/d2ecc1fbb6c6a4d5cfbfc8d168f417dd730a0600/src/ERC20PaymasterV06.sol)          | Token (Kayen) - 0xb195e26c23aa1adf66db73417defa32a45f38ce7                                                                       |
 | Yellow Voucher Router          | VoucherRouter       | `0x2A8B51821884CF9A7ea1A24C72E46Ff52dCb4F16`[↗](https://lineascan.build/address/0x2A8B51821884CF9A7ea1A24C72E46Ff52dCb4F16) | `88fe036`[↗](https://github.com/layer-3/dailyclaim/blob/88fe03638a4936bf4a719ab156158b43a2d0af0b/src/voucher/VoucherRouter.sol)           |                                                                                                                                  |
 | Points claimer for Leaderboard | ClaimExecutor       | `0x4844c01b783Ddc5F1c5917Dcbe71F9993C920A26`[↗](https://lineascan.build/address/0x4844c01b783Ddc5F1c5917Dcbe71F9993C920A26) | `cadfd37`[↗](https://github.com/layer-3/dailyclaim/blob/cadfd378c76f3ce777cd59e1d5d261b9c4d6fd1d/src/voucher/executors/ClaimExecutor.sol) |                                                                                                                                  |
+| Outside range authorizer       | TimeRangeAuthorizer | `0xaFbA1A80b4f9A6F15D84Ce5515c70c724cc10da1`[↗](https://lineascan.build/address/0xaFbA1A80b4f9A6F15D84Ce5515c70c724cc10da1) | `dc84b5e`[↗](https://github.com/layer-3/broker-contracts/blob/dc84b5e1a30db420ff3b881a74fca6f4556fbc36/src/vault/TimeRangeAuthorizer.sol) | Time range is set to Sep 6th - November 11th 23:59:59 UTC                                                                        |
 
 ## Testnet
 
