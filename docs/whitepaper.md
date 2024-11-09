@@ -8,7 +8,7 @@
 
 As a new form of distributed ledger technology (DLT), Bitcoin has set out to decentralize the issuance of money as well as the transfer thereof through [a peer-to-peer electronic cash system](https://bitcoin.org/bitcoin.pdf)[^1]. Ensuing DLT systems like Ethereum generally referred to as [smart contract](https://ethereum.org/en/whitepaper/)[^2] or [general-purpose](https://www.oreilly.com/library/view/mastering-ethereum/9781491971932/ch01.html) blockchains,[^3] have been designed to decentralize trading and finance at large.
 
-While blockchain technology has reliably enabled decentralized computation, current manifestations have yet to be able to scale to match the needs of traditional finance. Decentralized computation on a base layer blockchain, although secure, must be faster and improve the scalability of crypto trading. We are faced with an inherent [scalability trilemma](https://vitalik.ca/general/2021/04/07/sharding.html)[^4], as of the end of February 2023, [126](https://blockchain-comparison.com/blockchain-protocols/)[^5] layer-1 blockchain protocols have been competing and experimenting in an attempt to find a solution.
+While blockchain technology has reliably enabled decentralized computation, current manifestations have yet to be able to scale to match the needs of traditional finance. Decentralized computation on a base layer blockchain, although secure, must be faster and improve the scalability of crypto trading. We are faced with an inherent [scalability trilemma](https://vitalik.eth.limo/general/2021/04/07/sharding.html)[^4], as of the end of February 2023, [126](https://blockchain-comparison.com/blockchain-protocols/)[^5] layer-1 blockchain protocols have been competing and experimenting in an attempt to find a solution.
 
 Although we are convinced that much innovation will spring from this vibrant competition, the current blockchain environment must address three main problems. These are:
 
@@ -235,7 +235,7 @@ Building out Yellow Network as a built-in solution and natively supported platfo
 [^1]: Nakamoto Satoshi, "Bitcoin: A Peer-to-Peer Electronic Cash System." [www.bitcoin.org](http://www.bitcoin.org), October 2008: <https://bitcoin.org/bitcoin.pdf>
 [^2]: Buterin Vitalik, "Ethereum White paper." [www.ethereum.org](http://www.ethereum.org), November 2014: <https://ethereum.org/en/whitepaper/>
 [^3]: Antonopouos Andreas, Wood Gavin, "Mastering Ethereum." O\'Reilly Media, Inc., November 2018: <https://www.oreilly.com/library/view/mastering-ethereum/9781491971932/>
-[^4]: Buterin Vitalik, "Why sharding is great: demystifying the technical properties." [www.vitalik.ca](http://www.vitalik.ca), April 2021: <https://vitalik.ca/general/2021/04/07/sharding.html>
+[^4]: Buterin Vitalik, "Why sharding is great: demystifying the technical properties." [www.vitalik.eth.limo](http://www.vitalik.eth.limo), April 2021: <https://vitalik.eth.limo/general/2021/04/07/sharding.html>
 [^5]: Blockchain Comparison: <https://blockchain-comparison.com/blockchain-protocols/>
 [^6]: L2beat: <https://l2beat.com/scaling/tvl/>
 [^7]: Chainalysis Team, "Vulnerabilities in Cross-chain Bridge Protocols Emerge as Top Security Risk." Chainalysis Blog, August 2022: <https://blog.chainalysis.com/reports/cross-chain-bridge-hacks-2022/>
