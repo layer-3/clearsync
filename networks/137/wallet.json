@@ -1,14 +1,57 @@
 {
-  "paymaster": [],
-  "litevault": "0xb5F3a9dD92270f55e55B7Ac7247639953538A261",
-  "transactions": {
-    "withdrawal": "native",
-    "swap": "native",
-    "lock": "sponsor",
-    "unlock": "native",
-    "daily_claim": "native",
-    "daily_claim_tap_app": "sponsor",
-    "mint_tap_app": "sponsor",
-    "base": "native"
-  }
+  "erc20Paymasters": {},
+  "liteVaultAddress": "0xb5F3a9dD92270f55e55B7Ac7247639953538A261",
+  "userOpTypes": {
+    "withdrawal": {
+      "allowedFeeTypes": [
+        "native"
+      ]
+    },
+    "swap": {
+      "allowedFeeTypes": [
+        "native"
+      ]
+    },
+    "lock": {
+      "allowedFeeTypes": [
+        "native",
+        "sponsored"
+      ]
+    },
+    "unlock": {
+      "allowedFeeTypes": [
+        "native"
+      ]
+    },
+    "daily_claim": {
+      "allowedFeeTypes": [
+        "native"
+      ]
+    },
+    "daily_claim_tap_app": {
+      "allowedFeeTypes": [
+        "native",
+        "sponsored"
+      ],
+      "sponsorshipPolicyId": "sp_lazy_menace"
+    },
+    "mint_tap_app": {
+      "allowedFeeTypes": [
+        "native",
+        "sponsored"
+      ],
+      "sponsorshipPolicyId": "sp_lazy_menace"
+    },
+    "base": {
+      "allowedFeeTypes": [
+        "native"
+      ]
+    }
+  },
+  "trustedAddresses": [
+    "0x435b74f6DC4A0723CA19e4dD2AC8Aa1361c7B0f0",
+    "0xb66bf78cad7cbab51988ddc792652cbabdff7675",
+    "0xb5F3a9dD92270f55e55B7Ac7247639953538A261",
+    "0x2A8B51821884CF9A7ea1A24C72E46Ff52dCb4F16"
+  ]
 }

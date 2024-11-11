@@ -1,12 +1,42 @@
 {
-  "paymaster": [],
-  "litevault": "0xb5F3a9dD92270f55e55B7Ac7247639953538A261",
-  "transactions": {
-    "withdrawal": "native",
-    "swap": "native",
-    "lock": "sponsor",
-    "unlock": "native",
-    "daily_claim": "native",
-    "base": "native"
-  }
+  "erc20Paymasters": {},
+  "liteVaultAddress": "0xb5F3a9dD92270f55e55B7Ac7247639953538A261",
+  "userOpTypes": {
+    "withdrawal": {
+      "allowedFeeTypes": [
+        "native"
+      ]
+    },
+    "swap": {
+      "allowedFeeTypes": [
+        "native"
+      ]
+    },
+    "lock": {
+      "allowedFeeTypes": [
+        "native",
+        "sponsored"
+      ],
+      "sponsorshipPolicyId": "sp_whole_toro"
+    },
+    "unlock": {
+      "allowedFeeTypes": [
+        "native"
+      ]
+    },
+    "daily_claim": {
+      "allowedFeeTypes": [
+        "native"
+      ]
+    },
+    "base": {
+      "allowedFeeTypes": [
+        "native"
+      ]
+    }
+  },
+  "trustedAddresses": [
+    "0xb5F3a9dD92270f55e55B7Ac7247639953538A261",
+    "0x2A8B51821884CF9A7ea1A24C72E46Ff52dCb4F16"
+  ]
 }

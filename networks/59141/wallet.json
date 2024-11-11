@@ -1,12 +1,40 @@
 {
-  "paymaster": [],
-  "litevault": "0x67c5751b62BaD721969bb996Ea0dbdF731267643",
-  "transactions": {
-    "withdrawal": "native",
-    "swap": "native",
-    "lock": "native",
-    "unlock": "native",
-    "daily_claim": "native",
-    "base": "native"
-  }
+  "erc20Paymasters": {},
+  "liteVaultAddress": "0x67c5751b62BaD721969bb996Ea0dbdF731267643",
+  "userOpTypes": {
+    "withdrawal": {
+      "allowedFeeTypes": [
+        "native"
+      ]
+    },
+    "swap": {
+      "allowedFeeTypes": [
+        "native"
+      ]
+    },
+    "lock": {
+      "allowedFeeTypes": [
+        "native"
+      ]
+    },
+    "unlock": {
+      "allowedFeeTypes": [
+        "native"
+      ]
+    },
+    "daily_claim": {
+      "allowedFeeTypes": [
+        "native"
+      ]
+    },
+    "base": {
+      "allowedFeeTypes": [
+        "native"
+      ]
+    }
+  },
+  "trustedAddresses": [
+    "0x67c5751b62BaD721969bb996Ea0dbdF731267643",
+    "0x3a9941C3D7B2b02304dBFC7FC33809f77e2d2ef4"
+  ]
 }
