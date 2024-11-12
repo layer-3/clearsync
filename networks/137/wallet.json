@@ -5,7 +5,7 @@
     "withdrawal": "native",
     "swap": "native",
     "lock": "sp_good_black_panther",
-    "unlock": "native",
+    "unlock": "sp_good_black_panther",
     "daily_claim": "sp_good_black_panther",
     "daily_claim_tap_app": "sp_lazy_menace",
     "mint_tap_app": "sp_lazy_menace",
