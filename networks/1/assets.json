@@ -92,7 +92,8 @@
         "extensions":
         {
           "allow_locking": true,
-          "coingecko_api_id": "ethereum"
+          "coingecko_api_id": "ethereum",
+          "locking_multiplier": 1.5
         }
       },
       {
