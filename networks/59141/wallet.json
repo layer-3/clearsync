@@ -6,7 +6,7 @@
     "swap": "native",
     "lock": "native",
     "unlock": "native",
-    "daily_claim": "sp_random_zebra",
+    "daily_claim": "native",
     "base": "native"
   }
 }
