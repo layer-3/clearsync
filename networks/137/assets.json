@@ -6,7 +6,12 @@
       "symbol": "DUCKIES",
       "decimals": 8,
       "precision": 0,
-      "logoURI": "https://www.yellow.org/images/duckies_200x200.png"
+      "logoURI": "https://www.yellow.org/images/duckies_200x200.png",
+      "extensions":
+      {
+        "allow_locking": false,
+        "coingecko_api_id": "duckies"
+      }
     },
     {
       "address": "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
@@ -54,7 +59,12 @@
       "symbol": "SHIBA",
       "decimals": 18,
       "precision": 0,
-      "logoURI": "https://lineascan.build/token/images/shibainu_32.png"
+      "logoURI": "https://lineascan.build/token/images/shibainu_32.png",
+      "extensions":
+      {
+        "allow_locking": false,
+        "coingecko_api_id": "shiba-inu"
+      }
     },
     {
       "address": "0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6",

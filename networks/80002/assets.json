@@ -6,7 +6,12 @@
         "symbol": "MATIC",
         "decimals": 18,
         "precision": 8,
-        "logoURI": "https://polygonscan.com/token/images/polygonmatic_new_32.png"
+        "logoURI": "https://polygonscan.com/token/images/polygonmatic_new_32.png",
+        "extensions":
+        {
+          "allow_locking": false,
+          "coingecko_api_id": "matic-network"
+        }
     },
     {
         "address": "0x38871D722689f6d799B2A1FE93bE096E98e00986",
@@ -55,7 +60,11 @@
         "decimals": 18,
         "precision": 6,
         "logoURI": "https://assets.coingecko.com/coins/images/33070/standard/200x200.png?1700536826",
-        "extensions": {}
+        "extensions":
+        {
+          "allow_locking": false,
+          "coingecko_api_id": "lube"
+        }
     },
     {
         "address": "0xE11E73Ce5f7c45580e6B4A63069C18b0A5d70CA2",
@@ -90,7 +99,11 @@
         "decimals": 18,
         "precision": 6,
         "logoURI": "https://assets.coingecko.com/coins/images/33699/standard/linda-logo-200.png?1705166731",
-        "extensions": {}
+        "extensions":
+        {
+          "allow_locking": false,
+          "coingecko_api_id": "linda-2"
+        }
     }
   ]
 }
