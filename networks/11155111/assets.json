@@ -14,7 +14,7 @@
         }
     },
     {
-        "address": "0x0141b670c454705086217ab707ed7f1ecbe7dbc0",
+        "address": "0x42b757f0B530cb44139ceDd9F0C47249175CBC7E",
         "name": "USD Coin",
         "symbol": "USDC",
         "alias": "USD",
@@ -26,6 +26,15 @@
           "allow_locking": true,
           "coingecko_api_id": "usd-coin"
         }
-    }
+    },
+    {
+      "address": "0x63FD175d3215779deBA7532fC660fA0E10c18676",
+      "name": "Yellow Duckies",
+      "symbol": "DUCKIES",
+      "decimals": 2,
+      "precision": 2,
+      "logoURI": "https://www.yellow.org/images/duckies_200x200.png",
+      "extensions": {}
+  }
   ]
 }
