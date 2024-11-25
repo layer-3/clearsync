@@ -1,12 +1,16 @@
 {
-  "paymaster": [],
+  "paymaster": [
+    {
+      "0x63FD175d3215779deBA7532fC660fA0E10c18676": "0xBD8D351356a222b934a7B0315F69B0037871F1c6"
+    }
+  ],
   "litevault":  "0xdAD067C90af43948f2A389DFC93d94481A72705c",
   "transactions": {
-    "withdrawal": "native",
+    "withdrawal": "with_paymaster",
     "swap": "native",
     "lock": "native",
     "unlock": "native",
-    "daily_claim": "native",
+    "daily_claim": "with_paymaster",
     "base": "native"
   }
 }
