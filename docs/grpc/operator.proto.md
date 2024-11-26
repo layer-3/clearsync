@@ -364,8 +364,8 @@ protolint:disable MAX_LINE_LENGTH
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | channel_id | [string](#string) |  |
-| notification_type | [NotificationType](#notificationtype) |  |
-| channel_status | [ChannelStatus](#channelstatus) |  |
+| event | [ClearingEvent](#clearingevent) |  |
+| state | [ClearingState](#clearingstate) |  |
 | my_role | [core.ProtocolIndex](core.proto.md#protocolindex) |  |
 | peer | [auth.Peer](auth.proto.md#peer) |  |
 | margin_limit_type | [core.MarginLimitType](core.proto.md#marginlimittype) |  |
@@ -481,33 +481,56 @@ Maximum number of trades per request is 6765
 
 
 
-### ChannelStatus
+### ClearingEvent
 
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| CHANNEL_STATUS_UNSPECIFIED | 0 |  |
-| CHANNEL_STATUS_OPENING | 1 |  |
-| CHANNEL_STATUS_OPEN | 2 |  |
-| CHANNEL_STATUS_CHALLENGING | 3 |  |
-| CHANNEL_STATUS_CLOSED | 4 |  |
+| CLEARING_EVENT_UNSPECIFIED | 0 |  |
+| CLEARING_EVENT_INSTANTIATED | 1 |  |
+| CLEARING_EVENT_ACCEPTED | 2 |  |
+| CLEARING_EVENT_FAILED | 3 |  |
+| CLEARING_EVENT_INITIATOR_FUNDED | 4 |  |
+| CLEARING_EVENT_RESPONDER_FUNDED | 5 |  |
+| CLEARING_EVENT_POSTFUND_PROPOSED | 6 |  |
+| CLEARING_EVENT_AGREED_ON_POSTFUND | 7 |  |
+| CLEARING_EVENT_MOVE_TO_OPERATIONAL | 8 |  |
+| CLEARING_EVENT_PROCESS_MARGIN_CALL | 9 |  |
+| CLEARING_EVENT_STARTED_SETTLEMENT | 10 |  |
+| CLEARING_EVENT_PROCESS_POST_SETTLEMENT_MARGIN | 11 |  |
+| CLEARING_EVENT_FINALIZE_SETTLEMENT | 12 |  |
+| CLEARING_EVENT_FAILED_SETTLEMENT | 13 |  |
+| CLEARING_EVENT_CHALLENGE | 14 |  |
+| CLEARING_EVENT_FINALIZE | 15 |  |
+| CLEARING_EVENT_WITHDRAW | 16 |  |
+| CLEARING_EVENT_CLEAR_CHALLENGE | 17 |  |
+| CLEARING_EVENT_TIMEOUT_CHALLENGE | 18 |  |
 
 
 
 
-### NotificationType
+### ClearingState
 
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| NOTIFICATION_TYPE_UNSPECIFIED | 0 |  |
-| NOTIFICATION_TYPE_CHANNEL_OPENING | 1 |  |
-| NOTIFICATION_TYPE_CHANNEL_OPENED | 2 |  |
-| NOTIFICATION_TYPE_CHANNEL_CLOSED | 3 |  |
-| NOTIFICATION_TYPE_CHALLENGE_STARTED | 4 |  |
-| NOTIFICATION_TYPE_CHALLENGE_CLEARED | 5 |  |
-| NOTIFICATION_TYPE_CHALLENGE_FINISHED | 6 |  |
-| NOTIFICATION_TYPE_MARGIN_UPDATED | 7 |  |
+| CLEARING_STATE_UNSPECIFIED | 0 |  |
+| CLEARING_STATE_INSTANTIATED | 1 |  |
+| CLEARING_STATE_ACCEPTED | 2 |  |
+| CLEARING_STATE_FAILED | 3 |  |
+| CLEARING_STATE_INITIATOR_FUNDED | 4 |  |
+| CLEARING_STATE_FUNDED | 5 |  |
+| CLEARING_STATE_OPERATIONAL | 6 |  |
+| CLEARING_STATE_ISSUING_MARGIN_CALL | 7 |  |
+| CLEARING_STATE_PROCESSING_MARGIN_CALL | 8 |  |
+| CLEARING_STATE_ACTIVE_SETTLEMENT | 9 |  |
+| CLEARING_STATE_ISSUING_POST_SETTLEMENT_MARGIN | 10 |  |
+| CLEARING_STATE_PROCESSING_POST_SETTLEMENT_MARGIN | 11 |  |
+| CLEARING_STATE_CHALLENGING | 12 |  |
+| CLEARING_STATE_FINALIZING | 13 |  |
+| CLEARING_STATE_WITHDRAWING | 14 |  |
+| CLEARING_STATE_CONCLUDING | 15 |  |
+| CLEARING_STATE_DEFAULT | 16 |  |
 
 
  <!-- end enums -->
