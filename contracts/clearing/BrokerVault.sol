@@ -39,6 +39,9 @@ contract BrokerVault is IVault2, ISettle, Ownable2Step, ReentrancyGuard {
 	// ---------- View functions ----------
 
 	function balanceOf(address user, address token) external view returns (uint256) {
+		if (user != broker) {
+			return 0;
+		}
 		return _balances[token];
 	}
 
@@ -46,6 +49,10 @@ contract BrokerVault is IVault2, ISettle, Ownable2Step, ReentrancyGuard {
 		address user,
 		address[] calldata tokens
 	) external view returns (uint256[] memory) {
+		if (user != broker) {
+			return new uint256[](tokens.length);
+		}
+
 		uint256[] memory balances = new uint256[](tokens.length);
 		for (uint256 i = 0; i < tokens.length; i++) {
 			balances[i] = _balances[tokens[i]];
@@ -62,15 +69,9 @@ contract BrokerVault is IVault2, ISettle, Ownable2Step, ReentrancyGuard {
 	// ---------- Write functions ----------
 
 	function deposit(address token, uint256 amount, address to) external payable {
-		if (msg.value == 0) {
-			revert InvalidAmount(msg.value);
-		}
-		if (token == address(0)) {
-			revert InvalidAddress();
-		}
-		if (to == broker) {
-			revert InvalidAddress();
-		}
+		require(msg.value != 0, InvalidAmount(msg.value));
+		require(token != address(0), InvalidAddress());
+		require(to != broker, InvalidAddress());
 
 		IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
 		_balances[token] += amount;
@@ -79,12 +80,8 @@ contract BrokerVault is IVault2, ISettle, Ownable2Step, ReentrancyGuard {
 	}
 
 	function withdraw(address token, uint256 amount, address to) external {
-		if (token == address(0)) {
-			revert InvalidAddress();
-		}
-		if (_balances[token] < amount) {
-			revert InsufficientBalance(token, amount, _balances[token]);
-		}
+		require(token != address(0), InvalidAddress());
+		require(_balances[token] >= amount, InsufficientBalance(token, amount, _balances[token]));
 
 		_balances[token] -= amount;
 		IERC20(token).safeTransfer(to, amount);
@@ -98,13 +95,12 @@ contract BrokerVault is IVault2, ISettle, Ownable2Step, ReentrancyGuard {
 		INitroTypes.RecoveredVariablePart calldata candidate
 	) external {
 		uint256 channelId = NitroUtils.getChannelId(fixedPart);
-		if (performedSettlements[channelId]) {
-			revert SettlementAlreadyPerformed(channelId);
-		}
+		require(!performedSettlements[channelId], SettlementAlreadyPerformed(channelId));
 
-		if (fixedPart.participants[1] != broker) {
-			revert BrokerNotParticipant(fixedPart.participants[1], broker);
-		}
+		require(
+			fixedPart.participants[0] == broker,
+			BrokerNotParticipant(fixedPart.participants[1], broker)
+		);
 		address trader = fixedPart.participants[0];
 
 		(bool isStateValid, string memory reason) = tradingApp.isStateTransitionValid(
@@ -112,9 +108,7 @@ contract BrokerVault is IVault2, ISettle, Ownable2Step, ReentrancyGuard {
 			proof,
 			candidate
 		);
-		if (!isStateValid) {
-			revert InvalidStateTransition(reason);
-		}
+		require(isStateValid, InvalidStateTransition(reason));
 
 		ITradingStructs.Settlement memory settlement = abi.decode(
 			candidate.variablePart.appData,
@@ -124,9 +118,10 @@ contract BrokerVault is IVault2, ISettle, Ownable2Step, ReentrancyGuard {
 		for (uint256 i = 0; i < settlement.toTrader.length; i++) {
 			address token = settlement.toTrader[i].asset;
 			uint256 amount = settlement.toTrader[i].amount;
-			if (_balances[token] < amount) {
-				revert InsufficientBalance(token, amount, _balances[token]);
-			}
+			require(
+				_balances[token] >= amount,
+				InsufficientBalance(token, amount, _balances[token])
+			);
 			IERC20(token).safeTransfer(trader, amount);
 			_balances[token] -= amount;
 		}
