@@ -14,7 +14,7 @@ contract BrokerVault is IVault2, ISettle, Ownable2Step, ReentrancyGuard {
 
 	mapping(address token => uint256 balance) internal _balances;
 	TradingApp internal _tradingApp;
-	mapping(uint256 channel_id => bool done) internal performedSettlements;
+	mapping(uint256 channel_id => bool done) internal _performedSettlements;
 	address public _broker;
 
 	// ====== Constructor ======
@@ -85,7 +85,7 @@ contract BrokerVault is IVault2, ISettle, Ownable2Step, ReentrancyGuard {
 	) external {
 		uint256 channelId = NitroUtils.getChannelId(fixedPart);
 
-		require(!performedSettlements[channelId], 'Settlement already performed');
+		require(!_performedSettlements[channelId], 'Settlement already performed');
 		require(fixedPart.participants[1] == broker, 'Broker is not a participant');
 		require(
 			_tradingApp.isStateTransitionValid(fixedPart, proof, candidate),
@@ -110,6 +110,6 @@ contract BrokerVault is IVault2, ISettle, Ownable2Step, ReentrancyGuard {
 			uint256 amount = settlement.toBroker[i].amount;
 			_balances[token] += amount;
 		}
-		performedSettlements[channelId] = true;
+		_performedSettlements[channelId] = true;
 	}
 }
