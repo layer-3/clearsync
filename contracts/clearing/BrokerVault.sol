@@ -69,22 +69,35 @@ contract BrokerVault is IVault2, ISettle, Ownable2Step, ReentrancyGuard {
 	// ---------- Write functions ----------
 
 	function deposit(address token, uint256 amount, address to) external payable {
-		require(msg.value != 0, InvalidAmount(msg.value));
-		require(token != address(0), InvalidAddress());
 		require(to != broker, InvalidAddress());
 
-		IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
-		_balances[token] += amount;
+		if (token == address(0)) {
+			if (msg.value != amount) revert IncorrectValue();
+			_balances[address(0)] += amount;
+		} else {
+			if (msg.value != 0) revert IncorrectValue();
+			_balances[token] += amount;
+			IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+		}
 
 		emit Deposited(to, token, amount);
 	}
 
 	function withdraw(address token, uint256 amount, address to) external {
-		require(token != address(0), InvalidAddress());
-		require(_balances[token] >= amount, InsufficientBalance(token, amount, _balances[token]));
+		uint256 currentBalance = _balances[token];
+		if (currentBalance < amount) {
+			revert InsufficientBalance(token, amount, currentBalance);
+		}
 
 		_balances[token] -= amount;
-		IERC20(token).safeTransfer(to, amount);
+
+		if (token == address(0)) {
+			/// @dev using `call` instead of `transfer` to overcome 2300 gas ceiling that could make it revert with some AA wallets
+			(bool success, ) = to.call{value: amount}('');
+			require(success, NativeTransferFailed());
+		} else {
+			IERC20(token).safeTransfer(to, amount);
+		}
 
 		emit Withdrawn(to, token, amount);
 	}
