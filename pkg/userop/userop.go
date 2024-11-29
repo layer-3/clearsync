@@ -15,6 +15,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+// TODO: replace `decimal.Decimal` with `*big.Int` as corresponding fields are always integers.
 // UserOperation represents an EIP-4337 style transaction for a smart contract account.
 type UserOperation struct {
 	Sender               common.Address  `json:"sender"`
@@ -87,29 +88,57 @@ func (op *UserOperation) UserOpHash(entryPoint common.Address, chainID *big.Int)
 	), nil
 }
 
-// MarshalJSON returns a JSON encoding of the UserOperation.
-func (op UserOperation) MarshalJSON() ([]byte, error) {
-	ic := "0x"
-	if fa := op.GetFactory(); fa != common.HexToAddress("0x") {
-		ic = fmt.Sprintf("%s%s", fa, common.Bytes2Hex(op.GetFactoryData()))
+// DeepCopy creates and returns a deep copy of the UserOperation.
+func (op *UserOperation) DeepCopy() *UserOperation {
+	if op == nil {
+		return nil
 	}
 
-	return json.Marshal(&struct {
-		Sender               string `json:"sender"`
-		Nonce                string `json:"nonce"`
-		InitCode             string `json:"initCode"`
-		CallData             string `json:"callData"`
-		CallGasLimit         string `json:"callGasLimit"`
-		VerificationGasLimit string `json:"verificationGasLimit"`
-		PreVerificationGas   string `json:"preVerificationGas"`
-		MaxFeePerGas         string `json:"maxFeePerGas"`
-		MaxPriorityFeePerGas string `json:"maxPriorityFeePerGas"`
-		PaymasterAndData     string `json:"paymasterAndData"`
-		Signature            string `json:"signature"`
-	}{
+	copyOp := &UserOperation{
+		Sender:               op.Sender,
+		Nonce:                op.Nonce,
+		CallGasLimit:         op.CallGasLimit,
+		VerificationGasLimit: op.VerificationGasLimit,
+		PreVerificationGas:   op.PreVerificationGas,
+		MaxFeePerGas:         op.MaxFeePerGas,
+		MaxPriorityFeePerGas: op.MaxPriorityFeePerGas,
+	}
+
+	copyOp.InitCode = make([]byte, len(op.InitCode))
+	copy(copyOp.InitCode, op.InitCode)
+
+	copyOp.CallData = make([]byte, len(op.CallData))
+	copy(copyOp.CallData, op.CallData)
+
+	copyOp.PaymasterAndData = make([]byte, len(op.PaymasterAndData))
+	copy(copyOp.PaymasterAndData, op.PaymasterAndData)
+
+	copyOp.Signature = make([]byte, len(op.Signature))
+	copy(copyOp.Signature, op.Signature)
+
+	return copyOp
+}
+
+type UserOperationDTO struct {
+	Sender               string `json:"sender"`
+	Nonce                string `json:"nonce"`
+	InitCode             string `json:"initCode"`
+	CallData             string `json:"callData"`
+	CallGasLimit         string `json:"callGasLimit"`
+	VerificationGasLimit string `json:"verificationGasLimit"`
+	PreVerificationGas   string `json:"preVerificationGas"`
+	MaxFeePerGas         string `json:"maxFeePerGas"`
+	MaxPriorityFeePerGas string `json:"maxPriorityFeePerGas"`
+	PaymasterAndData     string `json:"paymasterAndData"`
+	Signature            string `json:"signature"`
+}
+
+// MarshalJSON returns a JSON encoding of the UserOperation.
+func (op UserOperation) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&UserOperationDTO{
 		Sender:               op.Sender.String(),
 		Nonce:                hexutil.EncodeBig(op.Nonce.BigInt()),
-		InitCode:             ic,
+		InitCode:             hexutil.Encode(op.InitCode),
 		CallData:             hexutil.Encode(op.CallData),
 		CallGasLimit:         hexutil.EncodeBig(op.CallGasLimit.BigInt()),
 		VerificationGasLimit: hexutil.EncodeBig(op.VerificationGasLimit.BigInt()),
@@ -119,4 +148,61 @@ func (op UserOperation) MarshalJSON() ([]byte, error) {
 		PaymasterAndData:     hexutil.Encode(op.PaymasterAndData),
 		Signature:            hexutil.Encode(op.Signature),
 	})
+}
+
+// UnmarshalJSON decodes a JSON encoding into a UserOperation.
+func UnmarshalJSON(data []byte) (*UserOperation, error) {
+	var uoDTO UserOperationDTO
+	if err := json.Unmarshal(data, &uoDTO); err != nil {
+		return nil, err
+	}
+
+	var op UserOperation
+	var err error
+	op.Sender = common.HexToAddress(uoDTO.Sender)
+	fmt.Printf("raw.Nonce: %s\n", uoDTO.Nonce)
+	if nonceBI, ok := big.NewInt(0).SetString(uoDTO.Nonce, 0); !ok {
+		return nil, fmt.Errorf("invalid nonce: %w", err)
+	} else {
+		op.Nonce = decimal.NewFromBigInt(nonceBI, 0)
+	}
+	if op.InitCode, err = hexutil.Decode(uoDTO.InitCode); err != nil {
+		return nil, fmt.Errorf("invalid initCode: %w", err)
+	}
+	if op.CallData, err = hexutil.Decode(uoDTO.CallData); err != nil {
+		return nil, fmt.Errorf("invalid callData: %w", err)
+	}
+	if callGasLimitBI, ok := new(big.Int).SetString(uoDTO.CallGasLimit, 0); !ok {
+		return nil, fmt.Errorf("invalid callGasLimit: %w", err)
+	} else {
+		op.CallGasLimit = decimal.NewFromBigInt(callGasLimitBI, 0)
+	}
+	if verificationGasLimitBI, ok := new(big.Int).SetString(uoDTO.VerificationGasLimit, 0); !ok {
+		return nil, fmt.Errorf("invalid verificationGasLimit: %w", err)
+	} else {
+		op.VerificationGasLimit = decimal.NewFromBigInt(verificationGasLimitBI, 0)
+	}
+	if preVerificationGasBI, ok := new(big.Int).SetString(uoDTO.PreVerificationGas, 0); !ok {
+		return nil, fmt.Errorf("invalid preVerificationGas: %w", err)
+	} else {
+		op.PreVerificationGas = decimal.NewFromBigInt(preVerificationGasBI, 0)
+	}
+	if maxFeePerGasBI, ok := new(big.Int).SetString(uoDTO.MaxFeePerGas, 0); !ok {
+		return nil, fmt.Errorf("invalid maxFeePerGas: %w", err)
+	} else {
+		op.MaxFeePerGas = decimal.NewFromBigInt(maxFeePerGasBI, 0)
+	}
+	if maxPriorityFeePerGasBI, ok := new(big.Int).SetString(uoDTO.MaxPriorityFeePerGas, 0); !ok {
+		return nil, fmt.Errorf("invalid maxPriorityFeePerGas: %w", err)
+	} else {
+		op.MaxPriorityFeePerGas = decimal.NewFromBigInt(maxPriorityFeePerGasBI, 0)
+	}
+	if op.PaymasterAndData, err = hexutil.Decode(uoDTO.PaymasterAndData); err != nil {
+		return nil, fmt.Errorf("invalid paymasterAndData: %w", err)
+	}
+	if op.Signature, err = hexutil.Decode(uoDTO.Signature); err != nil {
+		return nil, fmt.Errorf("invalid signature: %w", err)
+	}
+
+	return &op, nil
 }
