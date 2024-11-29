@@ -41,25 +41,25 @@ func TestMarshal(t *testing.T) {
 	marshalled, err := userOp.MarshalJSON()
 	require.NoError(t, err)
 
-	var userOpRaw UserOperationRaw
-	err = json.Unmarshal(marshalled, &userOpRaw)
+	var userOpDTO UserOperationDTO
+	err = json.Unmarshal(marshalled, &userOpDTO)
 	require.NoError(t, err)
 
-	assert.Equal(t, userOp.Sender.String(), userOpRaw.Sender)
-	assert.Equal(t, "0x"+userOp.Nonce.BigInt().Text(16), userOpRaw.Nonce)
-	assert.Equal(t, hexutil.Encode(userOp.InitCode), userOpRaw.InitCode)
-	assert.Equal(t, hexutil.Encode(userOp.CallData), userOpRaw.CallData)
-	assert.Equal(t, "0x"+userOp.CallGasLimit.BigInt().Text(16), userOpRaw.CallGasLimit)
-	assert.Equal(t, "0x"+userOp.VerificationGasLimit.BigInt().Text(16), userOpRaw.VerificationGasLimit)
-	assert.Equal(t, "0x"+userOp.PreVerificationGas.BigInt().Text(16), userOpRaw.PreVerificationGas)
-	assert.Equal(t, "0x"+userOp.MaxFeePerGas.BigInt().Text(16), userOpRaw.MaxFeePerGas)
-	assert.Equal(t, "0x"+userOp.MaxPriorityFeePerGas.BigInt().Text(16), userOpRaw.MaxPriorityFeePerGas)
-	assert.Equal(t, hexutil.Encode(userOp.PaymasterAndData), userOpRaw.PaymasterAndData)
-	assert.Equal(t, hexutil.Encode(userOp.Signature), userOpRaw.Signature)
+	assert.Equal(t, userOp.Sender.String(), userOpDTO.Sender)
+	assert.Equal(t, "0x"+userOp.Nonce.BigInt().Text(16), userOpDTO.Nonce)
+	assert.Equal(t, hexutil.Encode(userOp.InitCode), userOpDTO.InitCode)
+	assert.Equal(t, hexutil.Encode(userOp.CallData), userOpDTO.CallData)
+	assert.Equal(t, "0x"+userOp.CallGasLimit.BigInt().Text(16), userOpDTO.CallGasLimit)
+	assert.Equal(t, "0x"+userOp.VerificationGasLimit.BigInt().Text(16), userOpDTO.VerificationGasLimit)
+	assert.Equal(t, "0x"+userOp.PreVerificationGas.BigInt().Text(16), userOpDTO.PreVerificationGas)
+	assert.Equal(t, "0x"+userOp.MaxFeePerGas.BigInt().Text(16), userOpDTO.MaxFeePerGas)
+	assert.Equal(t, "0x"+userOp.MaxPriorityFeePerGas.BigInt().Text(16), userOpDTO.MaxPriorityFeePerGas)
+	assert.Equal(t, hexutil.Encode(userOp.PaymasterAndData), userOpDTO.PaymasterAndData)
+	assert.Equal(t, hexutil.Encode(userOp.Signature), userOpDTO.Signature)
 }
 
 func TestUnmarshal(t *testing.T) {
-	userOpRaw := UserOperationRaw{
+	userOpDTO := UserOperationDTO{
 		Sender:               "0xDBB20123Ccc4Bc5cC283948969a196cBc573b5f5",
 		Nonce:                "0x130",
 		InitCode:             "0xbeefdead",
@@ -73,22 +73,22 @@ func TestUnmarshal(t *testing.T) {
 		Signature:            "0x00000000d00449d477e0ba7bce872b7bb85e64a3c97d7bfe0fb9b2d93ecddd28c295c0d93b9e18a567d688bccb9757e8c9e4dcb2a638889e3f76887a366ee56f476a1cda1c",
 	}
 
-	userOpBytes, err := json.Marshal(userOpRaw)
+	userOpBytes, err := json.Marshal(userOpDTO)
 	require.NoError(t, err)
 
 	userOp, err := UnmarshalJSON(userOpBytes)
 	require.NoError(t, err)
-	assert.Equal(t, userOpRaw.Sender, userOp.Sender.String())
-	assert.Equal(t, userOpRaw.Nonce, "0x"+userOp.Nonce.BigInt().Text(16))
-	assert.Equal(t, userOpRaw.InitCode, hexutil.Encode(userOp.InitCode))
-	assert.Equal(t, userOpRaw.CallData, hexutil.Encode(userOp.CallData))
-	assert.Equal(t, userOpRaw.CallGasLimit, "0x"+userOp.CallGasLimit.BigInt().Text(16))
-	assert.Equal(t, userOpRaw.VerificationGasLimit, "0x"+userOp.VerificationGasLimit.BigInt().Text(16))
-	assert.Equal(t, userOpRaw.PreVerificationGas, "0x"+userOp.PreVerificationGas.BigInt().Text(16))
-	assert.Equal(t, userOpRaw.MaxFeePerGas, "0x"+userOp.MaxFeePerGas.BigInt().Text(16))
-	assert.Equal(t, userOpRaw.MaxPriorityFeePerGas, "0x"+userOp.MaxPriorityFeePerGas.BigInt().Text(16))
-	assert.Equal(t, userOpRaw.PaymasterAndData, hexutil.Encode(userOp.PaymasterAndData))
-	assert.Equal(t, userOpRaw.Signature, hexutil.Encode(userOp.Signature))
+	assert.Equal(t, userOpDTO.Sender, userOp.Sender.String())
+	assert.Equal(t, userOpDTO.Nonce, "0x"+userOp.Nonce.BigInt().Text(16))
+	assert.Equal(t, userOpDTO.InitCode, hexutil.Encode(userOp.InitCode))
+	assert.Equal(t, userOpDTO.CallData, hexutil.Encode(userOp.CallData))
+	assert.Equal(t, userOpDTO.CallGasLimit, "0x"+userOp.CallGasLimit.BigInt().Text(16))
+	assert.Equal(t, userOpDTO.VerificationGasLimit, "0x"+userOp.VerificationGasLimit.BigInt().Text(16))
+	assert.Equal(t, userOpDTO.PreVerificationGas, "0x"+userOp.PreVerificationGas.BigInt().Text(16))
+	assert.Equal(t, userOpDTO.MaxFeePerGas, "0x"+userOp.MaxFeePerGas.BigInt().Text(16))
+	assert.Equal(t, userOpDTO.MaxPriorityFeePerGas, "0x"+userOp.MaxPriorityFeePerGas.BigInt().Text(16))
+	assert.Equal(t, userOpDTO.PaymasterAndData, hexutil.Encode(userOp.PaymasterAndData))
+	assert.Equal(t, userOpDTO.Signature, hexutil.Encode(userOp.Signature))
 }
 func TestDeepCopy(t *testing.T) {
 	initCode, err := hexutil.Decode("0xbeefdead")
@@ -119,15 +119,22 @@ func TestDeepCopy(t *testing.T) {
 
 	userOpCopy := userOp.DeepCopy()
 
-	userOpBytes, err := json.Marshal(userOp)
-	require.NoError(t, err)
+	// Verify pointers are different for slices
+	require.False(t, &userOp.InitCode[0] == &userOpCopy.InitCode[0], "InitCode slice points to the same memory")
+	require.False(t, &userOp.CallData[0] == &userOpCopy.CallData[0], "CallData slice points to the same memory")
+	require.False(t, &userOp.PaymasterAndData[0] == &userOpCopy.PaymasterAndData[0], "PaymasterAndData slice points to the same memory")
+	require.False(t, &userOp.Signature[0] == &userOpCopy.Signature[0], "Signature slice points to the same memory")
 
-	userOpCopyBytes, err := json.Marshal(userOpCopy)
-	require.NoError(t, err)
+	// Modify the cloned object and ensure the original object remains unchanged
+	userOpCopy.InitCode[0] = 0xAA
+	assert.NotEqual(t, userOp.InitCode[0], userOpCopy.InitCode[0])
 
-	assert.Equal(t, hexutil.Encode(userOpBytes), hexutil.Encode(userOpCopyBytes))
+	userOpCopy.CallData[0] = 0xBB
+	assert.NotEqual(t, userOp.CallData[0], userOpCopy.CallData[0])
 
-	userOpCopy.Sender = common.HexToAddress("0xEE9053397D83469C3621f2B6Ab171Aa3a1CC55e0")
+	userOpCopy.PaymasterAndData[0] = 0xCC
+	assert.NotEqual(t, userOp.PaymasterAndData[0], userOpCopy.PaymasterAndData[0])
 
-	assert.NotEqual(t, userOp.Sender, userOpCopy.Sender)
+	userOpCopy.Signature[0] = 0xDD
+	assert.NotEqual(t, userOp.Signature[0], userOpCopy.Signature[0])
 }
