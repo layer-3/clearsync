@@ -76,7 +76,8 @@ func TestUnmarshal(t *testing.T) {
 	userOpBytes, err := json.Marshal(userOpDTO)
 	require.NoError(t, err)
 
-	userOp, err := UnmarshalJSON(userOpBytes)
+	var userOp UserOperation
+	err = json.Unmarshal(userOpBytes, &userOp)
 	require.NoError(t, err)
 	assert.Equal(t, userOpDTO.Sender, userOp.Sender.String())
 	assert.Equal(t, userOpDTO.Nonce, "0x"+userOp.Nonce.BigInt().Text(16))
