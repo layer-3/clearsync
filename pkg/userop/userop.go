@@ -151,58 +151,56 @@ func (op UserOperation) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON decodes a JSON encoding into a UserOperation.
-func UnmarshalJSON(data []byte) (*UserOperation, error) {
+func (op *UserOperation) UnmarshalJSON(data []byte) error {
 	var uoDTO UserOperationDTO
 	if err := json.Unmarshal(data, &uoDTO); err != nil {
-		return nil, err
+		return err
 	}
 
-	var op UserOperation
 	var err error
 	op.Sender = common.HexToAddress(uoDTO.Sender)
-	fmt.Printf("raw.Nonce: %s\n", uoDTO.Nonce)
 	if nonceBI, ok := big.NewInt(0).SetString(uoDTO.Nonce, 0); !ok {
-		return nil, fmt.Errorf("invalid nonce: %w", err)
+		return fmt.Errorf("invalid nonce: %w", err)
 	} else {
 		op.Nonce = decimal.NewFromBigInt(nonceBI, 0)
 	}
 	if op.InitCode, err = hexutil.Decode(uoDTO.InitCode); err != nil {
-		return nil, fmt.Errorf("invalid initCode: %w", err)
+		return fmt.Errorf("invalid initCode: %w", err)
 	}
 	if op.CallData, err = hexutil.Decode(uoDTO.CallData); err != nil {
-		return nil, fmt.Errorf("invalid callData: %w", err)
+		return fmt.Errorf("invalid callData: %w", err)
 	}
 	if callGasLimitBI, ok := new(big.Int).SetString(uoDTO.CallGasLimit, 0); !ok {
-		return nil, fmt.Errorf("invalid callGasLimit: %w", err)
+		return fmt.Errorf("invalid callGasLimit: %w", err)
 	} else {
 		op.CallGasLimit = decimal.NewFromBigInt(callGasLimitBI, 0)
 	}
 	if verificationGasLimitBI, ok := new(big.Int).SetString(uoDTO.VerificationGasLimit, 0); !ok {
-		return nil, fmt.Errorf("invalid verificationGasLimit: %w", err)
+		return fmt.Errorf("invalid verificationGasLimit: %w", err)
 	} else {
 		op.VerificationGasLimit = decimal.NewFromBigInt(verificationGasLimitBI, 0)
 	}
 	if preVerificationGasBI, ok := new(big.Int).SetString(uoDTO.PreVerificationGas, 0); !ok {
-		return nil, fmt.Errorf("invalid preVerificationGas: %w", err)
+		return fmt.Errorf("invalid preVerificationGas: %w", err)
 	} else {
 		op.PreVerificationGas = decimal.NewFromBigInt(preVerificationGasBI, 0)
 	}
 	if maxFeePerGasBI, ok := new(big.Int).SetString(uoDTO.MaxFeePerGas, 0); !ok {
-		return nil, fmt.Errorf("invalid maxFeePerGas: %w", err)
+		return fmt.Errorf("invalid maxFeePerGas: %w", err)
 	} else {
 		op.MaxFeePerGas = decimal.NewFromBigInt(maxFeePerGasBI, 0)
 	}
 	if maxPriorityFeePerGasBI, ok := new(big.Int).SetString(uoDTO.MaxPriorityFeePerGas, 0); !ok {
-		return nil, fmt.Errorf("invalid maxPriorityFeePerGas: %w", err)
+		return fmt.Errorf("invalid maxPriorityFeePerGas: %w", err)
 	} else {
 		op.MaxPriorityFeePerGas = decimal.NewFromBigInt(maxPriorityFeePerGasBI, 0)
 	}
 	if op.PaymasterAndData, err = hexutil.Decode(uoDTO.PaymasterAndData); err != nil {
-		return nil, fmt.Errorf("invalid paymasterAndData: %w", err)
+		return fmt.Errorf("invalid paymasterAndData: %w", err)
 	}
 	if op.Signature, err = hexutil.Decode(uoDTO.Signature); err != nil {
-		return nil, fmt.Errorf("invalid signature: %w", err)
+		return fmt.Errorf("invalid signature: %w", err)
 	}
 
-	return &op, nil
+	return nil
 }
