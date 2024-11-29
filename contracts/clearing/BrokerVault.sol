@@ -68,14 +68,14 @@ contract BrokerVault is IVault2, ISettle, Ownable2Step, ReentrancyGuard {
 
 	// ---------- Write functions ----------
 
-	function deposit(address token, uint256 amount, address to) external payable {
-		require(to != broker, InvalidAddress());
+	function deposit(address token, uint256 amount, address to) external payable nonReentrant {
+		require(to == broker, InvalidAddress());
 
 		if (token == address(0)) {
-			if (msg.value != amount) revert IncorrectValue();
+			require(msg.value == amount, IncorrectValue());
 			_balances[address(0)] += amount;
 		} else {
-			if (msg.value != 0) revert IncorrectValue();
+			require(msg.value == 0, IncorrectValue());
 			_balances[token] += amount;
 			IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
 		}
@@ -83,11 +83,9 @@ contract BrokerVault is IVault2, ISettle, Ownable2Step, ReentrancyGuard {
 		emit Deposited(to, token, amount);
 	}
 
-	function withdraw(address token, uint256 amount, address to) external {
+	function withdraw(address token, uint256 amount, address to) external nonReentrant {
 		uint256 currentBalance = _balances[token];
-		if (currentBalance < amount) {
-			revert InsufficientBalance(token, amount, currentBalance);
-		}
+		require(currentBalance >= amount, InsufficientBalance(token, amount, currentBalance));
 
 		_balances[token] -= amount;
 
@@ -106,7 +104,7 @@ contract BrokerVault is IVault2, ISettle, Ownable2Step, ReentrancyGuard {
 		INitroTypes.FixedPart calldata fixedPart,
 		INitroTypes.RecoveredVariablePart[] calldata proof,
 		INitroTypes.RecoveredVariablePart calldata candidate
-	) external {
+	) external nonReentrant {
 		uint256 channelId = NitroUtils.getChannelId(fixedPart);
 		require(!performedSettlements[channelId], SettlementAlreadyPerformed(channelId));
 
