@@ -1,6 +1,6 @@
 {
   "erc20Paymasters": {},
-  "userOpTypes": {
+  "callTypes": {
     "withdrawal": {
       "allowedFeeTypes": [
         "native"

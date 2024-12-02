@@ -7,7 +7,7 @@
     }
   },
   "liteVaultAddress": "0xdAD067C90af43948f2A389DFC93d94481A72705c",
-  "userOpTypes": {
+  "callTypes": {
     "withdrawal": {
       "allowedFeeTypes": [
         "native"
