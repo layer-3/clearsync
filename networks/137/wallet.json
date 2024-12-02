@@ -1,7 +1,7 @@
 {
   "erc20Paymasters": {},
   "liteVaultAddress": "0xb5F3a9dD92270f55e55B7Ac7247639953538A261",
-  "userOpTypes": {
+  "callTypes": {
     "withdrawal": {
       "allowedFeeTypes": [
         "native"
