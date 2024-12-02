@@ -28,21 +28,21 @@
         "native"
       ]
     },
-    "daily_claim_tap_app": {
+    "daily_tap_reward": {
       "allowedFeeTypes": [
         "native",
         "sponsored"
       ],
       "sponsorshipPolicyId": "sp_lazy_menace"
     },
-    "mint_tap_app": {
+    "mint": {
       "allowedFeeTypes": [
         "native",
         "sponsored"
       ],
       "sponsorshipPolicyId": "sp_lazy_menace"
     },
-    "base": {
+    "other": {
       "allowedFeeTypes": [
         "native"
       ]
