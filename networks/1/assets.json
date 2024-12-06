@@ -97,6 +97,20 @@
         }
       },
       {
+        "address": "0xae78736Cd615f374D3085123A210448E74Fc6393",
+        "name": "TokenRocket Pool ETH",
+        "symbol": "rETH",
+        "decimals": 18,
+        "precision": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/20764/standard/reth.png",
+        "extensions":
+        {
+          "allow_locking": true,
+          "coingecko_api_id": "ethereum",
+          "locking_multiplier": 1.5
+        }
+      },
+      {
         "address": "0xD31a59c85aE9D8edEFeC411D448f90841571b89c",
         "name": "Wrapped Solana",
         "symbol": "WSOL",
