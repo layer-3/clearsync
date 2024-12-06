@@ -22,6 +22,20 @@
         }
       },
       {
+        "address": "0xae78736Cd615f374D3085123A210448E74Fc6393",
+        "name": "TokenRocket Pool ETH",
+        "symbol": "rETH",
+        "decimals": 18,
+        "precision": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/20764/standard/reth.png",
+        "extensions":
+        {
+          "allow_locking": true,
+          "coingecko_api_id": "ethereum",
+          "locking_multiplier": 1.5
+        }
+      },
+      {
         "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
         "name": "USD Coin",
         "symbol": "USDC",
@@ -89,20 +103,6 @@
         "decimals": 18,
         "precision": 6,
         "logoURI": "https://assets.coingecko.com/coins/images/18834/standard/wstETH.png",
-        "extensions":
-        {
-          "allow_locking": true,
-          "coingecko_api_id": "ethereum",
-          "locking_multiplier": 1.5
-        }
-      },
-      {
-        "address": "0xae78736Cd615f374D3085123A210448E74Fc6393",
-        "name": "TokenRocket Pool ETH",
-        "symbol": "rETH",
-        "decimals": 18,
-        "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/20764/standard/reth.png",
         "extensions":
         {
           "allow_locking": true,
