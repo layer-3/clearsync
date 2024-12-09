@@ -2,85 +2,28 @@ package userop
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"math/big"
-	"net/http"
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/shopspring/decimal"
 )
 
-func getPolygonGasPrices(chainId *big.Int) (*big.Int, *big.Int, error) {
-	var resp *http.Response
-	var err error
+func getGasPricesAndApplyMultipliers(ctx context.Context, provider GasPriceProvider, gasConfig GasConfig) (maxFeePerGas, maxPriorityFeePerGas *big.Int, err error) {
+	logger.Debug("getting gas prices")
 
-	if chainId == nil {
-		return nil, nil, fmt.Errorf("chain ID is nil")
-	}
-
-	switch {
-	case chainId.Uint64() == 137:
-		resp, err = http.Get("https://gasstation.polygon.technology/v2")
-	case chainId.Uint64() == 80002:
-		resp, err = http.Get("https://gasstation.polygon.technology/amoy")
-	default:
-		return nil, nil, fmt.Errorf("unsupported chain ID: %v", chainId)
-	}
-
+	maxFeePerGas, maxPriorityFeePerGas, err = provider.GetGasPrices(ctx)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error fetching data: %v", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, nil, fmt.Errorf("error reading response body: %v", err)
+		return nil, nil, fmt.Errorf("failed to get gas prices: %w", err)
 	}
 
-	var gasData struct {
-		Fast struct {
-			MaxPriorityFee decimal.Decimal `json:"maxPriorityFee"`
-			MaxFee         decimal.Decimal `json:"maxFee"`
-		} `json:"fast"`
-	}
+	logger.Debug("fetched gas price", "maxFeePerGas", maxFeePerGas, "maxPriorityFeePerGas", maxPriorityFeePerGas)
 
-	err = json.Unmarshal(body, &gasData)
-	if err != nil {
-		return nil, nil, fmt.Errorf("error unmarshalling JSON: %v", err)
-	}
+	maxFeePerGas = decimal.NewFromBigInt(maxFeePerGas, 0).Mul(gasConfig.MaxFeePerGasMultiplier).BigInt()
+	maxPriorityFeePerGas = decimal.NewFromBigInt(maxPriorityFeePerGas, 0).Mul(gasConfig.MaxPriorityFeePerGasMultiplier).BigInt()
 
-	gweiMult := decimal.NewFromInt(1e9)
-
-	maxFeePerGas := gasData.Fast.MaxFee.Mul(gweiMult).BigInt()
-	maxPriorityFeePerGas := gasData.Fast.MaxPriorityFee.Mul(gweiMult).BigInt()
-
-	return maxFeePerGas, maxPriorityFeePerGas, nil
-}
-
-func getGasPrices(ctx context.Context, provider EthBackend) (*big.Int, *big.Int, error) {
-	var maxPriorityFeePerGasStr string
-	if err := provider.RPC().CallContext(ctx, &maxPriorityFeePerGasStr, "eth_maxPriorityFeePerGas"); err != nil {
-		return nil, nil, err
-	}
-
-	maxPriorityFeePerGas, ok := new(big.Int).SetString(maxPriorityFeePerGasStr, 0)
-	if !ok {
-		return nil, nil, fmt.Errorf("failed to parse maxPriorityFeePerGas: %s", maxPriorityFeePerGasStr)
-	}
-	logger.Debug("fetched maxPriorityFeePerGas", "maxPriorityFeePerGas", maxPriorityFeePerGas.String())
-
-	// Get the latest block to read its base fee
-	block, err := provider.BlockByNumber(ctx, nil)
-	if err != nil {
-		return nil, nil, err
-	}
-	blockBaseFee := block.BaseFee()
-	logger.Debug("fetched block base fee", "baseFee", blockBaseFee.String())
-
-	maxFeePerGas := blockBaseFee.Add(blockBaseFee, maxPriorityFeePerGas)
+	logger.Debug("calculated gas price", "maxFeePerGas", maxFeePerGas, "maxPriorityFeePerGas", maxPriorityFeePerGas)
 
 	return maxFeePerGas, maxPriorityFeePerGas, nil
 }
