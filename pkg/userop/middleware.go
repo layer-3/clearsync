@@ -79,7 +79,20 @@ func getGasPricesMiddleware(provider EthBackend, gasConfig GasConfig) middleware
 			return nil
 		}
 
-		maxFeePerGas, maxPriorityFeePerGas, err := getGasPricesAndApplyMultipliers(ctx, provider, gasConfig)
+		chainId, err := provider.ChainID(ctx)
+		if err != nil || chainId == nil {
+			return fmt.Errorf("failed to get chain ID: %w", err)
+		}
+
+		var gProvider GasPriceProvider
+		switch chainId.Uint64() {
+		case 137, 80002:
+			gProvider = NewPolygonGasPriceProvider(chainId)
+		default:
+			gProvider = NewEVMGasPriceProvider(provider)
+		}
+
+		maxFeePerGas, maxPriorityFeePerGas, err := getGasPricesAndApplyMultipliers(ctx, gProvider, gasConfig)
 		if err != nil {
 			return fmt.Errorf("failed to get gas prices: %w", err)
 		}
