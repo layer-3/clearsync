@@ -13,6 +13,42 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+func getGasPricesAndApplyMultipliers(ctx context.Context, provider EthBackend, gasConfig GasConfig) (maxFeePerGas, maxPriorityFeePerGas *big.Int, err error) {
+	logger.Debug("getting gas prices")
+
+	chainId, err := provider.ChainID(ctx)
+	if err != nil || chainId == nil {
+		return nil, nil, fmt.Errorf("failed to get chain ID: %w", err)
+	}
+
+	isPolygon := chainId.Uint64() == 137 || chainId.Uint64() == 80002
+
+	// for Polygon and Amoy, fetch from polygon gas station
+	if isPolygon {
+		maxFeePerGas, maxPriorityFeePerGas, err = getPolygonGasPrices(chainId)
+		if err != nil {
+			logger.Error("failed to get gas prices from polygon gas station", "error", err)
+		}
+	}
+
+	// for other chains, or in case gas station is down, fetch from provider
+	if !isPolygon || err != nil {
+		maxFeePerGas, maxPriorityFeePerGas, err = getGasPrices(ctx, provider)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to get gas prices: %w", err)
+		}
+	}
+
+	logger.Debug("fetched gas price", "maxFeePerGas", maxFeePerGas, "maxPriorityFeePerGas", maxPriorityFeePerGas)
+
+	maxFeePerGas = decimal.NewFromBigInt(maxFeePerGas, 0).Mul(gasConfig.MaxFeePerGasMultiplier).BigInt()
+	maxPriorityFeePerGas = decimal.NewFromBigInt(maxPriorityFeePerGas, 0).Mul(gasConfig.MaxPriorityFeePerGasMultiplier).BigInt()
+
+	logger.Debug("calculated gas price", "maxFeePerGas", maxFeePerGas, "maxPriorityFeePerGas", maxPriorityFeePerGas)
+
+	return maxFeePerGas, maxPriorityFeePerGas, nil
+}
+
 func getPolygonGasPrices(chainId *big.Int) (*big.Int, *big.Int, error) {
 	var resp *http.Response
 	var err error
