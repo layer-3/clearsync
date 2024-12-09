@@ -9,6 +9,8 @@ import (
 )
 
 func TestGetPolygonGasPrices(t *testing.T) {
+	t.Skip("should not depend on external services in test environment")
+
 	tests := []struct {
 		name    string
 		chainId *big.Int
