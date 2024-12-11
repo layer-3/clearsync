@@ -32,7 +32,7 @@
       "symbol": "USDT",
       "decimals": 6,
       "precision": 4,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/tether-64x64.png",
+      "logoURI": "https://cryptologos.cc/logos/tether-usdt-logo.png",
       "extensions":
       {
         "allow_locking": true,
