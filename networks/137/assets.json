@@ -14,7 +14,7 @@
       "symbol": "USDT",
       "decimals": 6,
       "precision": 4,
-      "logoURI": "https://lineascan.build/token/images/usdtlogo_32.png",
+      "logoURI": "https://cryptologos.cc/logos/tether-usdt-logo.png",
       "extensions":
       {
         "allow_locking": true,
