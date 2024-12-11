@@ -78,6 +78,19 @@ Last updated: September 19, 2024.
 | Yellow Voucher Router          | VoucherRouter | `0x2A8B51821884CF9A7ea1A24C72E46Ff52dCb4F16`[↗](https://arbiscan.io/address/0x2A8B51821884CF9A7ea1A24C72E46Ff52dCb4F16) | `88fe036`[↗](https://github.com/layer-3/dailyclaim/blob/88fe03638a4936bf4a719ab156158b43a2d0af0b/src/voucher/VoucherRouter.sol)           |       |
 | Points claimer for Leaderboard | ClaimExecutor | `0x4844c01b783Ddc5F1c5917Dcbe71F9993C920A26`[↗](https://arbiscan.io/address/0x4844c01b783Ddc5F1c5917Dcbe71F9993C920A26) | `cadfd37`[↗](https://github.com/layer-3/dailyclaim/blob/cadfd378c76f3ce777cd59e1d5d261b9c4d6fd1d/src/voucher/executors/ClaimExecutor.sol) |       |
 
+### Avalanche C-chain
+
+Chain id: 43114.
+
+Last updated: December 11, 2024.
+
+| Description                    | Contract Name       | Address                                                                                                                                  | Git SHA and Repository                                                                                                                          | Notes                                                          |
+| ------------------------------ | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Outside range authorizer       | TimeRangeAuthorizer | `0x547d613C2f613c9bC78d49051093F092924aaD1c`[↗](https://subnets.avax.network/c-chain/address/0x547d613C2f613c9bC78d49051093F092924aaD1c) | `dc84b5e`[↗](https://github.com/layer-3/broker-contracts/blob/dc84b5e1a30db420ff3b881a74fca6f4556fbc36/src/vault/TimeRangeAuthorizer.sol)       | Time range is set to Nov 14th 00:00:00 - Jan 13th 23:59:59 UTC |
+| Yellow Vault                   | LiteVault           | `0x1c4f55FbB4c6d3Fb4Fbc0f933c6478c9564994c9`[↗](https://subnets.avax.network/c-chain/address/0x1c4f55FbB4c6d3Fb4Fbc0f933c6478c9564994c9) | `dc84b5e`[↗](https://github.com/layer-3/broker-contracts/blob/dc84b5e1a30db420ff3b881a74fca6f4556fbc36/src/vault/LiteVault.sol)                 |                                                                |
+| Yellow Voucher Router          | VoucherRouter       | `0x852b6eF2fBF26f25d1096CDd24bD6f5F9D62B301`[↗](https://subnets.avax.network/c-chain/address/0x852b6eF2fBF26f25d1096CDd24bD6f5F9D62B301) | `dc84b5e`[↗](https://github.com/layer-3/broker-contracts/blob/dc84b5e1a30db420ff3b881a74fca6f4556fbc36/src/voucher/VoucherRouter.sol)           |                                                                |
+| Points claimer for Leaderboard | ClaimExecutor       | `0x5df971419a39CC846B801b22D56Af59234b86238`[↗](https://subnets.avax.network/c-chain/address/0x5df971419a39CC846B801b22D56Af59234b86238) | `dc84b5e`[↗](https://github.com/layer-3/broker-contracts/blob/dc84b5e1a30db420ff3b881a74fca6f4556fbc36/src/voucher/executors/ClaimExecutor.sol) |                                                                |
+
 ### Linea
 
 Chain id: 59144.
