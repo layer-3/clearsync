@@ -15,7 +15,8 @@
     },
     "withdrawal": {
       "allowedFeeTypes": [
-        "native"
+        "native",
+        "paymaster"
       ]
     },
     "swap": {
@@ -25,7 +26,8 @@
     },
     "lock": {
       "allowedFeeTypes": [
-        "native"
+        "native",
+        "sponsored"
       ]
     },
     "unlock": {
