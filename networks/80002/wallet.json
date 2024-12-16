@@ -37,5 +37,7 @@
       ]
     }
   },
-  "trustedAddresses": []
+  "trustedAddresses": [
+    "0xf81A43EBA92538B0323fCDb1A040F2183B352Ca3"
+  ]
 }
