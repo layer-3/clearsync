@@ -28,7 +28,8 @@
       "allowedFeeTypes": [
         "native",
         "sponsored"
-      ]
+      ],
+      "sponsorshipPolicyId": "sp_quick_dormammu"
     },
     "unlock": {
       "allowedFeeTypes": [
