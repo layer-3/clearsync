@@ -91,6 +91,29 @@ func TestUnmarshal(t *testing.T) {
 	assert.Equal(t, userOpDTO.PaymasterAndData, hexutil.Encode(userOp.PaymasterAndData))
 	assert.Equal(t, userOpDTO.Signature, hexutil.Encode(userOp.Signature))
 }
+
+func TestUnmarshalEmpty(t *testing.T) {
+	userOpDTO := UserOperationDTO{}
+
+	userOpBytes, err := json.Marshal(userOpDTO)
+	require.NoError(t, err)
+
+	var userOp UserOperation
+	err = json.Unmarshal(userOpBytes, &userOp)
+	require.NoError(t, err)
+	assert.Equal(t, common.Address{}.String(), userOp.Sender.String())
+	assert.Equal(t, "0x0", "0x"+userOp.Nonce.BigInt().Text(16))
+	assert.Equal(t, "0x", hexutil.Encode(userOp.InitCode))
+	assert.Equal(t, "0x", hexutil.Encode(userOp.CallData))
+	assert.Equal(t, "0x0", "0x"+userOp.CallGasLimit.BigInt().Text(16))
+	assert.Equal(t, "0x0", "0x"+userOp.VerificationGasLimit.BigInt().Text(16))
+	assert.Equal(t, "0x0", "0x"+userOp.PreVerificationGas.BigInt().Text(16))
+	assert.Equal(t, "0x0", "0x"+userOp.MaxFeePerGas.BigInt().Text(16))
+	assert.Equal(t, "0x0", "0x"+userOp.MaxPriorityFeePerGas.BigInt().Text(16))
+	assert.Equal(t, "0x", hexutil.Encode(userOp.PaymasterAndData))
+	assert.Equal(t, "0x", hexutil.Encode(userOp.Signature))
+}
+
 func TestDeepCopy(t *testing.T) {
 	initCode, err := hexutil.Decode("0xbeefdead")
 	require.NoError(t, err)

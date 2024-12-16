@@ -159,47 +159,97 @@ func (op *UserOperation) UnmarshalJSON(data []byte) error {
 
 	var err error
 	op.Sender = common.HexToAddress(uoDTO.Sender)
-	if nonceBI, ok := big.NewInt(0).SetString(uoDTO.Nonce, 0); !ok {
-		return fmt.Errorf("invalid nonce: %w", err)
+
+	if uoDTO.Nonce == "" {
+		op.Nonce = decimal.NewFromInt(0)
 	} else {
-		op.Nonce = decimal.NewFromBigInt(nonceBI, 0)
+		if nonceBI, ok := big.NewInt(0).SetString(uoDTO.Nonce, 0); !ok {
+			return fmt.Errorf("invalid nonce: %w", err)
+		} else {
+			op.Nonce = decimal.NewFromBigInt(nonceBI, 0)
+		}
 	}
-	if op.InitCode, err = hexutil.Decode(uoDTO.InitCode); err != nil {
-		return fmt.Errorf("invalid initCode: %w", err)
-	}
-	if op.CallData, err = hexutil.Decode(uoDTO.CallData); err != nil {
-		return fmt.Errorf("invalid callData: %w", err)
-	}
-	if callGasLimitBI, ok := new(big.Int).SetString(uoDTO.CallGasLimit, 0); !ok {
-		return fmt.Errorf("invalid callGasLimit: %w", err)
+
+	if uoDTO.InitCode == "" {
+		op.InitCode = []byte{}
 	} else {
-		op.CallGasLimit = decimal.NewFromBigInt(callGasLimitBI, 0)
+		if op.InitCode, err = hexutil.Decode(uoDTO.InitCode); err != nil {
+			return fmt.Errorf("invalid initCode: %w", err)
+		}
 	}
-	if verificationGasLimitBI, ok := new(big.Int).SetString(uoDTO.VerificationGasLimit, 0); !ok {
-		return fmt.Errorf("invalid verificationGasLimit: %w", err)
+
+	if uoDTO.CallData == "" {
+		op.CallData = []byte{}
 	} else {
-		op.VerificationGasLimit = decimal.NewFromBigInt(verificationGasLimitBI, 0)
+		if op.CallData, err = hexutil.Decode(uoDTO.CallData); err != nil {
+			return fmt.Errorf("invalid callData: %w", err)
+		}
 	}
-	if preVerificationGasBI, ok := new(big.Int).SetString(uoDTO.PreVerificationGas, 0); !ok {
-		return fmt.Errorf("invalid preVerificationGas: %w", err)
+
+	if uoDTO.CallGasLimit == "" {
+		op.CallGasLimit = decimal.NewFromInt(0)
 	} else {
-		op.PreVerificationGas = decimal.NewFromBigInt(preVerificationGasBI, 0)
+		if callGasLimitBI, ok := new(big.Int).SetString(uoDTO.CallGasLimit, 0); !ok {
+			return fmt.Errorf("invalid callGasLimit: %w", err)
+		} else {
+			op.CallGasLimit = decimal.NewFromBigInt(callGasLimitBI, 0)
+		}
 	}
-	if maxFeePerGasBI, ok := new(big.Int).SetString(uoDTO.MaxFeePerGas, 0); !ok {
-		return fmt.Errorf("invalid maxFeePerGas: %w", err)
+
+	if uoDTO.VerificationGasLimit == "" {
+		op.VerificationGasLimit = decimal.NewFromInt(0)
 	} else {
-		op.MaxFeePerGas = decimal.NewFromBigInt(maxFeePerGasBI, 0)
+		if verificationGasLimitBI, ok := new(big.Int).SetString(uoDTO.VerificationGasLimit, 0); !ok {
+			return fmt.Errorf("invalid verificationGasLimit: %w", err)
+		} else {
+			op.VerificationGasLimit = decimal.NewFromBigInt(verificationGasLimitBI, 0)
+		}
 	}
-	if maxPriorityFeePerGasBI, ok := new(big.Int).SetString(uoDTO.MaxPriorityFeePerGas, 0); !ok {
-		return fmt.Errorf("invalid maxPriorityFeePerGas: %w", err)
+
+	if uoDTO.PreVerificationGas == "" {
+		op.PreVerificationGas = decimal.NewFromInt(0)
 	} else {
-		op.MaxPriorityFeePerGas = decimal.NewFromBigInt(maxPriorityFeePerGasBI, 0)
+		if preVerificationGasBI, ok := new(big.Int).SetString(uoDTO.PreVerificationGas, 0); !ok {
+			return fmt.Errorf("invalid preVerificationGas: %w", err)
+		} else {
+			op.PreVerificationGas = decimal.NewFromBigInt(preVerificationGasBI, 0)
+		}
 	}
-	if op.PaymasterAndData, err = hexutil.Decode(uoDTO.PaymasterAndData); err != nil {
-		return fmt.Errorf("invalid paymasterAndData: %w", err)
+
+	if uoDTO.MaxFeePerGas == "" {
+		op.MaxFeePerGas = decimal.NewFromInt(0)
+	} else {
+		if maxFeePerGasBI, ok := new(big.Int).SetString(uoDTO.MaxFeePerGas, 0); !ok {
+			return fmt.Errorf("invalid maxFeePerGas: %w", err)
+		} else {
+			op.MaxFeePerGas = decimal.NewFromBigInt(maxFeePerGasBI, 0)
+		}
 	}
-	if op.Signature, err = hexutil.Decode(uoDTO.Signature); err != nil {
-		return fmt.Errorf("invalid signature: %w", err)
+
+	if uoDTO.MaxPriorityFeePerGas == "" {
+		op.MaxPriorityFeePerGas = decimal.NewFromInt(0)
+	} else {
+		if maxPriorityFeePerGasBI, ok := new(big.Int).SetString(uoDTO.MaxPriorityFeePerGas, 0); !ok {
+			return fmt.Errorf("invalid maxPriorityFeePerGas: %w", err)
+		} else {
+			op.MaxPriorityFeePerGas = decimal.NewFromBigInt(maxPriorityFeePerGasBI, 0)
+		}
+	}
+
+	if uoDTO.PaymasterAndData == "" {
+		op.PaymasterAndData = []byte{}
+	} else {
+		if op.PaymasterAndData, err = hexutil.Decode(uoDTO.PaymasterAndData); err != nil {
+			return fmt.Errorf("invalid paymasterAndData: %w", err)
+		}
+	}
+
+	if uoDTO.Signature == "" {
+		op.Signature = []byte{}
+	} else {
+		if op.Signature, err = hexutil.Decode(uoDTO.Signature); err != nil {
+			return fmt.Errorf("invalid signature: %w", err)
+		}
 	}
 
 	return nil
