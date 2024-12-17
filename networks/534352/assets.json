@@ -1,14 +1,13 @@
 {
   "tokens": [
     {
-      "address":"0xd29687c813D741E2F938F4aC377128810E217b1b",
+      "address": "0xd29687c813D741E2F938F4aC377128810E217b1b",
       "name": "Scroll",
       "symbol": "SCR",
       "decimals": 18,
       "precision": 6,
       "logoURI": "https://assets.coingecko.com/coins/images/50571/standard/scroll.jpg",
-      "extensions":
-      {
+      "extensions": {
         "allow_locking": false,
         "coingecko_api_id": "scroll"
       }
@@ -20,8 +19,7 @@
       "decimals": 6,
       "precision": 4,
       "logoURI": "https://cryptologos.cc/logos/tether-usdt-logo.png",
-      "extensions":
-      {
+      "extensions": {
         "allow_locking": true,
         "coingecko_api_id": "tether"
       }
@@ -34,8 +32,7 @@
       "decimals": 6,
       "precision": 4,
       "logoURI": "https://assets.coingecko.com/coins/images/6319/large/usdc.png?1696506694",
-      "extensions":
-      {
+      "extensions": {
         "allow_locking": true,
         "coingecko_api_id": "usd-coin"
       }
@@ -47,8 +44,7 @@
       "decimals": 8,
       "precision": 6,
       "logoURI": "https://s2.coinmarketcap.com/static/img/coins/64x64/3717.png",
-      "extensions":
-      {
+      "extensions": {
         "allow_locking": true,
         "coingecko_api_id": "wrapped-bitcoin"
       }
@@ -60,8 +56,7 @@
       "decimals": 18,
       "precision": 6,
       "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png?1696501628",
-      "extensions":
-      {
+      "extensions": {
         "allow_locking": true,
         "coingecko_api_id": "ethereum"
       }
@@ -73,8 +68,7 @@
       "decimals": 18,
       "precision": 6,
       "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png?1696501628",
-      "extensions":
-      {
+      "extensions": {
         "allow_locking": true,
         "coingecko_api_id": "weth"
       }
@@ -86,8 +80,7 @@
       "decimals": 18,
       "precision": 6,
       "logoURI": "https://assets.coingecko.com/coins/images/18834/standard/wstETH.png",
-      "extensions":
-      {
+      "extensions": {
         "allow_locking": true,
         "coingecko_api_id": "ethereum",
         "locking_multiplier": 1.5
@@ -100,8 +93,7 @@
       "decimals": 18,
       "precision": 6,
       "logoURI": "https://assets.coingecko.com/coins/images/20764/standard/reth.png",
-      "extensions":
-      {
+      "extensions": {
         "allow_locking": true,
         "coingecko_api_id": "ethereum",
         "locking_multiplier": 1.5
@@ -114,8 +106,7 @@
       "decimals": 18,
       "precision": 6,
       "logoURI": "https://lineascan.build/token/images/daistablecoin_32.png",
-      "extensions":
-      {
+      "extensions": {
         "allow_locking": true,
         "coingecko_api_id": "dai"
       }
