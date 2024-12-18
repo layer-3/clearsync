@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.27;
 
-import {IVault2} from '../interfaces/IVault2.sol';
+import {IVault} from '../interfaces/IVault.sol';
 import {TradingApp, ISettle} from './TradingApp.sol';
 import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import {Ownable2Step} from '@openzeppelin/contracts/access/Ownable2Step.sol';
 import {ReentrancyGuard} from '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 import {NitroUtils} from '../nitro/libraries/NitroUtils.sol';
 
-contract BrokerVault is IVault2, ISettle, Ownable2Step, ReentrancyGuard {
+contract BrokerVault is IVault, ISettle, Ownable2Step, ReentrancyGuard {
 	/// @dev Using SafeERC20 to support non fully ERC20-compliant tokens,
 	/// that may not return a boolean value on success.
 	using SafeERC20 for IERC20;
@@ -68,9 +68,7 @@ contract BrokerVault is IVault2, ISettle, Ownable2Step, ReentrancyGuard {
 
 	// ---------- Write functions ----------
 
-	function deposit(address token, uint256 amount, address to) external payable nonReentrant {
-		require(to == broker, InvalidAddress());
-
+	function deposit(address token, uint256 amount) external payable nonReentrant {
 		if (token == address(0)) {
 			require(msg.value == amount, IncorrectValue());
 			_balances[address(0)] += amount;
@@ -80,10 +78,10 @@ contract BrokerVault is IVault2, ISettle, Ownable2Step, ReentrancyGuard {
 			IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
 		}
 
-		emit Deposited(to, token, amount);
+		emit Deposited(msg.sender, token, amount);
 	}
 
-	function withdraw(address token, uint256 amount, address to) external nonReentrant {
+	function withdraw(address token, uint256 amount) external nonReentrant {
 		uint256 currentBalance = _balances[token];
 		require(currentBalance >= amount, InsufficientBalance(token, amount, currentBalance));
 
@@ -91,13 +89,13 @@ contract BrokerVault is IVault2, ISettle, Ownable2Step, ReentrancyGuard {
 
 		if (token == address(0)) {
 			/// @dev using `call` instead of `transfer` to overcome 2300 gas ceiling that could make it revert with some AA wallets
-			(bool success, ) = to.call{value: amount}('');
+			(bool success, ) = msg.sender.call{value: amount}('');
 			require(success, NativeTransferFailed());
 		} else {
-			IERC20(token).safeTransfer(to, amount);
+			IERC20(token).safeTransfer(msg.sender, amount);
 		}
 
-		emit Withdrawn(to, token, amount);
+		emit Withdrawn(msg.sender, token, amount);
 	}
 
 	function settle(

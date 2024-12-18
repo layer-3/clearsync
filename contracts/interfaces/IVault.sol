@@ -65,15 +65,13 @@ interface IVault {
      * @dev Deposits a specified amount of tokens or ETH into the vault.
      * @param token The address of the token to deposit. Use address(0) for ETH.
      * @param amount The amount of tokens or ETH to deposit.
-     * @param to The address to send the tokens to.
      */
-    function deposit(address token, uint256 amount, address to) external payable;
+    function deposit(address token, uint256 amount) external payable;
 
     /**
      * @dev Withdraws a specified amount of tokens or ETH from the vault.
      * @param token The address of the token to withdraw. Use address(0) for ETH.
      * @param amount The amount of tokens or ETH to withdraw.
-     * @param to The address to send the tokens to.
      */
-    function withdraw(address token, uint256 amount, address to) external;
+    function withdraw(address token, uint256 amount) external;
 }

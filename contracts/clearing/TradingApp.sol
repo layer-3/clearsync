@@ -6,65 +6,7 @@ import {ExitFormat as Outcome} from '@statechannels/exit-format/contracts/ExitFo
 import {StrictTurnTaking} from '../nitro/libraries/signature-logic/StrictTurnTaking.sol';
 import {Consensus} from '../nitro/libraries/signature-logic/Consensus.sol';
 import {IForceMoveApp} from '../nitro/interfaces/IForceMoveApp.sol';
-import {NitroUtils} from '../nitro/libraries/NitroUtils.sol';
-import {INitroTypes} from '../nitro/interfaces/INitroTypes.sol';
-
-interface ITradingStructs {
-	struct Order {
-		bytes32 orderID;
-	}
-
-	enum OrderResponseType {
-		ACCEPT,
-		REJECT
-	}
-
-	struct OrderResponse {
-		OrderResponseType responseType;
-		bytes32 orderID; // orderID making the trade
-	}
-
-	struct AssetAndAmount {
-		address asset;
-		uint256 amount;
-	}
-
-	struct Settlement {
-		AssetAndAmount[] toTrader;
-		AssetAndAmount[] toBroker;
-	}
-}
-
-// FIXME: should Vault support multiple brokers?
-interface ISettle {
-	// ========== Events ==========
-
-	/**
-	 * @notice Emitted when a channel is settled.
-	 * @param trader The address of the trader.
-	 * @param broker The address of the broker.
-	 * @param channelId The ID of the channel.
-	 */
-	event Settled(address indexed trader, address indexed broker, bytes32 indexed channelId);
-
-	// ========== Errors ==========
-
-	error InvalidStateTransition(string reason);
-
-	// ========== Functions ==========
-
-	/**
-	 * @notice Settle a channel.
-	 * @param fixedPart The fixed part of the state.
-	 * @param proof The proof of the state.
-	 * @param candidate The candidate state.
-	 */
-	function settle(
-		INitroTypes.FixedPart calldata fixedPart,
-		INitroTypes.RecoveredVariablePart[] calldata proof,
-		INitroTypes.RecoveredVariablePart calldata candidate
-	) external;
-}
+import {ITradingTypes} from '../interfaces/ITradingTypes.sol';
 
 contract TradingApp is IForceMoveApp {
 	function stateIsSupported(
@@ -94,9 +36,9 @@ contract TradingApp is IForceMoveApp {
 		if (candTurnNum % 2 == 0 && proof.length == 0) {
 			Consensus.requireConsensus(fixedPart, proof, candidate);
 			// NOTE: used just to check the data structure validity
-			ITradingStructs.Settlement memory _unused = abi.decode(
+			ITradingTypes.Settlement memory _unused = abi.decode(
 				candidateData,
-				(ITradingStructs.Settlement)
+				(ITradingTypes.Settlement)
 			);
 			return (true, '');
 		}
@@ -114,41 +56,41 @@ contract TradingApp is IForceMoveApp {
 
 		// order
 		if (candTurnNum % 2 == 0) {
-			ITradingStructs.Order memory prevOrder = abi.decode(
+			ITradingTypes.Order memory prevOrder = abi.decode(
 				proof0.appData,
-				(ITradingStructs.Order)
+				(ITradingTypes.Order)
 			);
-			ITradingStructs.OrderResponse memory prevOrderResponse = abi.decode(
+			ITradingTypes.OrderResponse memory prevOrderResponse = abi.decode(
 				proof1.appData,
-				(ITradingStructs.OrderResponse)
+				(ITradingTypes.OrderResponse)
 			);
-			if (prevOrderResponse.responseType == ITradingStructs.OrderResponseType.ACCEPT) {
+			if (prevOrderResponse.responseType == ITradingTypes.OrderResponseType.ACCEPT) {
 				require(
 					prevOrderResponse.orderID == prevOrder.orderID,
 					'orderResponse.orderID != prevOrder.orderID, candidate is order'
 				);
 			}
 			// NOTE: used just to check the data structure validity
-			ITradingStructs.Order memory _candOrder = abi.decode(
+			ITradingTypes.Order memory _candOrder = abi.decode(
 				candidateData,
-				(ITradingStructs.Order)
+				(ITradingTypes.Order)
 			);
 			return (true, '');
 		}
 
 		// orderResponse
 		// NOTE: used just to check the data structure validity
-		ITradingStructs.OrderResponse memory _prevOrderResponse = abi.decode(
+		ITradingTypes.OrderResponse memory _prevOrderResponse = abi.decode(
 			proof0.appData,
-			(ITradingStructs.OrderResponse)
+			(ITradingTypes.OrderResponse)
 		);
 
-		ITradingStructs.Order memory order = abi.decode(proof1.appData, (ITradingStructs.Order));
-		ITradingStructs.OrderResponse memory orderResponse = abi.decode(
+		ITradingTypes.Order memory order = abi.decode(proof1.appData, (ITradingTypes.Order));
+		ITradingTypes.OrderResponse memory orderResponse = abi.decode(
 			candidateData,
-			(ITradingStructs.OrderResponse)
+			(ITradingTypes.OrderResponse)
 		);
-		if (orderResponse.responseType == ITradingStructs.OrderResponseType.ACCEPT) {
+		if (orderResponse.responseType == ITradingTypes.OrderResponseType.ACCEPT) {
 			require(
 				orderResponse.orderID == order.orderID,
 				'orderResponse.orderID != order.orderID, candidate is orderResponse'
