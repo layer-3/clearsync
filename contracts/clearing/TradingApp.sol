@@ -32,14 +32,55 @@ contract TradingApp is IForceMoveApp {
 
 		bytes memory candidateData = candidate.variablePart.appData;
 		// settlement
-		// TODO: unsure whether we should check the proof when consensus is reached
-		if (candTurnNum % 2 == 0 && proof.length == 0) {
+		if (candTurnNum % 2 == 0 && proof.length != 0) {
 			Consensus.requireConsensus(fixedPart, proof, candidate);
-			// NOTE: used just to check the data structure validity
+			// Check the settlement data structure validity
 			ITradingTypes.Settlement memory _unused = abi.decode(
 				candidateData,
 				(ITradingTypes.Settlement)
 			);
+
+			VariablePart memory prevProof = proof[proof.lenght - 1].variablePart;
+			ITradingTypes.Order memory prevOrder = abi.decode(
+				prevProof.appData,
+				(ITradingTypes.Order)
+			);
+			for (uint256 i = proof.lenght - 2; i >= 0; i--) {
+				VariablePart memory currProof = proof[i].variablePart;
+
+				// Verify that turns are consecutive
+				require(prevProof.turnNum == currProof.turnNum - 1, 'proofs are not consecutive');
+
+				// Verify validity of orders and responses
+				if (i % 2 == 0) {
+					// If current proof contains an order,
+					// then the previous one must contain a response
+					// with the same order ID
+					ITradingTypes.Order memory order = abi.decode(
+						currProof.appData,
+						(ITradingTypes.Order)
+					);
+					require(
+						order.orderID == prevOrder.orderID,
+						'order.orderID != prevOrder.orderID'
+					);
+				} else {
+					// If current proof contains a response,
+					// then the previous one must be an order
+					// with different order ID, since they are not related
+					ITradingTypes.OrderResponse memory orderResponse = abi.decode(
+						currProof.appData,
+						(ITradingTypes.OrderResponse)
+					);
+					require(
+						orderResponse.orderID == prevOrder.orderID,
+						'orderResponse.orderID != prevOrder.orderID'
+					);
+				}
+
+				prevProof = currProof;
+			}
+
 			return (true, '');
 		}
 
