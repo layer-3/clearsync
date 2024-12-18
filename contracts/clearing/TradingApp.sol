@@ -40,12 +40,12 @@ contract TradingApp is IForceMoveApp {
 				(ITradingTypes.Settlement)
 			);
 
-			VariablePart memory prevProof = proof[proof.lenght - 1].variablePart;
+			VariablePart memory prevProof = proof[proof.length - 1].variablePart;
 			ITradingTypes.Order memory prevOrder = abi.decode(
 				prevProof.appData,
 				(ITradingTypes.Order)
 			);
-			for (uint256 i = proof.lenght - 2; i >= 0; i--) {
+			for (uint256 i = proof.length - 2; i >= 0; i--) {
 				VariablePart memory currProof = proof[i].variablePart;
 
 				// Verify that turns are consecutive
@@ -56,24 +56,24 @@ contract TradingApp is IForceMoveApp {
 					// If current proof contains an order,
 					// then the previous one must contain a response
 					// with different order ID, since they are not related
-					ITradingTypes.Order memory order = abi.decode(
+					ITradingTypes.Order memory currOrder = abi.decode(
 						currProof.appData,
 						(ITradingTypes.Order)
 					);
 					require(
-						order.orderID != prevOrder.orderID,
+						currOrder.orderID != prevOrder.orderID,
 						'order.orderID != prevOrder.orderID'
 					);
 				} else {
 					// If current proof contains a response,
 					// then the previous one must be an order
 					// with the same order ID
-					ITradingTypes.OrderResponse memory orderResponse = abi.decode(
+					ITradingTypes.OrderResponse memory currOrderResponse = abi.decode(
 						currProof.appData,
 						(ITradingTypes.OrderResponse)
 					);
 					require(
-						orderResponse.orderID == prevOrder.orderID,
+						currOrderResponse.orderID == prevOrder.orderID,
 						'orderResponse.orderID != prevOrder.orderID'
 					);
 				}
