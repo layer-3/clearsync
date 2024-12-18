@@ -55,19 +55,19 @@ contract TradingApp is IForceMoveApp {
 				if (i % 2 == 0) {
 					// If current proof contains an order,
 					// then the previous one must contain a response
-					// with the same order ID
+					// with different order ID, since they are not related
 					ITradingTypes.Order memory order = abi.decode(
 						currProof.appData,
 						(ITradingTypes.Order)
 					);
 					require(
-						order.orderID == prevOrder.orderID,
+						order.orderID != prevOrder.orderID,
 						'order.orderID != prevOrder.orderID'
 					);
 				} else {
 					// If current proof contains a response,
 					// then the previous one must be an order
-					// with different order ID, since they are not related
+					// with the same order ID
 					ITradingTypes.OrderResponse memory orderResponse = abi.decode(
 						currProof.appData,
 						(ITradingTypes.OrderResponse)
