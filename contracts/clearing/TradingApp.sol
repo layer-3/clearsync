@@ -9,6 +9,8 @@ import {IForceMoveApp} from '../nitro/interfaces/IForceMoveApp.sol';
 import {ITradingTypes} from '../interfaces/ITradingTypes.sol';
 
 contract TradingApp is IForceMoveApp {
+	// TODO: add errors
+
 	function stateIsSupported(
 		FixedPart calldata fixedPart,
 		RecoveredVariablePart[] calldata proof,
@@ -35,12 +37,12 @@ contract TradingApp is IForceMoveApp {
 		if (candTurnNum % 2 == 0 && proof.length > 0) {
 			Consensus.requireConsensus(fixedPart, proof, candidate);
 			// Check the settlement data structure validity
-			ITradingTypes.Settlement memory _unused = abi.decode(
+			ITradingTypes.Settlement memory settlement = abi.decode(
 				candidateData,
 				(ITradingTypes.Settlement)
 			);
 
-			verifyProofForSettlement(proof);
+			verifyProofForSettlement(settlement, proof);
 			return (true, '');
 		}
 
@@ -100,13 +102,17 @@ contract TradingApp is IForceMoveApp {
 		return (true, '');
 	}
 
-	function verifyProofForSettlement(RecoveredVariablePart[] calldata proof) internal pure {
+	function verifyProofForSettlement(
+		ITradingTypes.Settlement memory settlement,
+		RecoveredVariablePart[] calldata proof
+	) internal pure {
 		if (proof.length == 1) {
 			VariablePart memory proof = proof[0].variablePart;
 			ITradingTypes.Order memory order = abi.decode(proof.appData, (ITradingTypes.Order));
 			return;
 		}
 
+		bytes32[] memory orderIDs = new bytes32[](proof.length);
 		for (uint256 i = 0; i < proof.length - 1; i++) {
 			VariablePart memory currProof = proof[i].variablePart;
 			VariablePart memory nextProof = proof[i + 1].variablePart;
@@ -130,6 +136,7 @@ contract TradingApp is IForceMoveApp {
 					orderResponse.orderID == order.orderID,
 					'orderResponse.orderID != order.orderID'
 				);
+				orderIDs[i] = order.orderID;
 			} else {
 				// If current proof contains a response,
 				// then the next one must be an order
@@ -146,7 +153,11 @@ contract TradingApp is IForceMoveApp {
 					order.orderID != orderResponse.orderID,
 					'order.orderID == orderResponse.orderID'
 				);
+				orderIDs[i] = order.orderID;
 			}
 		}
+
+		bytes32 proofHash = keccak256(abi.encode(orderIDs));
+		require(proofHash == settlement.proofHash, 'proof has been tampered with');
 	}
 }

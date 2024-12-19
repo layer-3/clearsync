@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.22;
 
-
 interface ITradingTypes {
 	struct Order {
 		bytes32 orderID;
@@ -25,5 +24,8 @@ interface ITradingTypes {
 	struct Settlement {
 		AssetAndAmount[] toTrader;
 		AssetAndAmount[] toBroker;
+		// proofHash is to avoid tampering
+		// with the orders and order responses in the proof
+		bytes32 proofHash;
 	}
 }
