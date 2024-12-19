@@ -40,7 +40,7 @@ contract TradingApp is IForceMoveApp {
 			candTurnNum % 2 == 0 /* is either order or settlement */ &&
 			signaturesNum == 2 /* is settlement */ &&
 			proof.length >= 2 /* contains at least one order+response pair */ &&
-			proof.length % 2 == 0 /* contains pairs of order+response */
+			proof.length % 2 == 0 /* contains full pairs only, no dangling values */
 		) {
 			Consensus.requireConsensus(fixedPart, proof, candidate);
 			// Check the settlement data structure validity
@@ -114,52 +114,34 @@ contract TradingApp is IForceMoveApp {
 		RecoveredVariablePart[] calldata proof
 	) internal pure {
 		bytes32[] memory orderIDs = new bytes32[](proof.length);
-		for (uint256 i = 0; i < proof.length - 1; i++) {
+		uint256 prevTurnNum = 0;
+		for (uint256 i = 0; i < proof.length - 1; i += 2) {
 			VariablePart memory currProof = proof[i].variablePart;
 			VariablePart memory nextProof = proof[i + 1].variablePart;
 
 			require(
 				currProof.turnNum >= 2 && nextProof.turnNum >= 2,
-				'only prefund and postfund can have turnNum < 2'
+				'only prefund and postfund can have turn number < 2'
 			);
+			require(prevTurnNum + 1 == currProof.turnNum, 'turns are not consecutive');
 			require(currProof.turnNum + 1 == nextProof.turnNum, 'turns are not consecutive');
 
 			// Verify validity of orders and responses
-			if (i % 2 == 0) {
-				// If current proof contains an order,
-				// then the next one must contain a response
-				// with the same order ID
-				ITradingTypes.Order memory order = abi.decode(
-					currProof.appData,
-					(ITradingTypes.Order)
-				);
-				ITradingTypes.OrderResponse memory orderResponse = abi.decode(
-					nextProof.appData,
-					(ITradingTypes.OrderResponse)
-				);
-				require(
-					orderResponse.orderID == order.orderID,
-					'orderResponse.orderID != order.orderID'
-				);
-				orderIDs[i] = order.orderID;
-			} else {
-				// If current proof contains a response,
-				// then the next one must be an order
-				// with a different order ID, since they are not related
-				ITradingTypes.OrderResponse memory orderResponse = abi.decode(
-					currProof.appData,
-					(ITradingTypes.OrderResponse)
-				);
-				ITradingTypes.Order memory order = abi.decode(
-					nextProof.appData,
-					(ITradingTypes.Order)
-				);
-				require(
-					order.orderID != orderResponse.orderID,
-					'order.orderID == orderResponse.orderID'
-				);
-				orderIDs[i] = order.orderID;
-			}
+			ITradingTypes.Order memory order = abi.decode(currProof.appData, (ITradingTypes.Order));
+			ITradingTypes.OrderResponse memory orderResponse = abi.decode(
+				nextProof.appData,
+				(ITradingTypes.OrderResponse)
+			);
+
+			// If current proof contains an order,
+			// then the next one must contain a response
+			// with the same order ID
+			require(
+				orderResponse.orderID == order.orderID,
+				'order and response orderIDs do not match'
+			);
+			orderIDs[i] = order.orderID;
+			prevTurnNum = nextProof.turnNum;
 		}
 
 		bytes32 ordersChecksum = keccak256(abi.encode(orderIDs));
