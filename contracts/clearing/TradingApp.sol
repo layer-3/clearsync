@@ -36,7 +36,12 @@ contract TradingApp is IForceMoveApp {
 
 		// settlement
 		uint8 signaturesNum = NitroUtils.getClaimedSignersNum(candidate.signedBy);
-		if (candTurnNum % 2 == 0 && signaturesNum == 2 && proof.length > 0) {
+		if (
+			candTurnNum % 2 == 0 /* is either order or settlement */ &&
+			signaturesNum == 2 /* is settlement */ &&
+			proof.length >= 2 /* contains at least one order+response pair */ &&
+			proof.length % 2 == 0 /* contains pairs of order+response */
+		) {
 			Consensus.requireConsensus(fixedPart, proof, candidate);
 			// Check the settlement data structure validity
 			ITradingTypes.Settlement memory settlement = abi.decode(
@@ -51,7 +56,7 @@ contract TradingApp is IForceMoveApp {
 		// participant 1 signs odd turns
 		StrictTurnTaking.requireValidTurnTaking(fixedPart, proof, candidate);
 		require(signaturesNum == 1, 'signaturesNum != 1');
-		require(proof.length == 2, 'proof.length < 2');
+		require(proof.length == 2, 'proof.length != 2');
 		(VariablePart memory proof0, VariablePart memory proof1) = (
 			proof[0].variablePart,
 			proof[1].variablePart
@@ -108,17 +113,15 @@ contract TradingApp is IForceMoveApp {
 		ITradingTypes.Settlement memory settlement,
 		RecoveredVariablePart[] calldata proof
 	) internal pure {
-		if (proof.length == 1) {
-			VariablePart memory proof = proof[0].variablePart;
-			ITradingTypes.Order memory order = abi.decode(proof.appData, (ITradingTypes.Order));
-			return;
-		}
-
 		bytes32[] memory orderIDs = new bytes32[](proof.length);
 		for (uint256 i = 0; i < proof.length - 1; i++) {
 			VariablePart memory currProof = proof[i].variablePart;
 			VariablePart memory nextProof = proof[i + 1].variablePart;
 
+			require(
+				currProof.turnNum >= 2 && nextProof.turnNum >= 2,
+				'only prefund and postfund can have turnNum < 2'
+			);
 			require(currProof.turnNum + 1 == nextProof.turnNum, 'turns are not consecutive');
 
 			// Verify validity of orders and responses
