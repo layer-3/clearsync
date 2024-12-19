@@ -32,7 +32,7 @@ contract TradingApp is IForceMoveApp {
 
 		bytes memory candidateData = candidate.variablePart.appData;
 		// settlement
-		if (candTurnNum % 2 == 0 && proof.length != 0) {
+		if (candTurnNum % 2 == 0 && proof.length > 0) {
 			Consensus.requireConsensus(fixedPart, proof, candidate);
 			// Check the settlement data structure validity
 			ITradingTypes.Settlement memory _unused = abi.decode(
@@ -40,47 +40,7 @@ contract TradingApp is IForceMoveApp {
 				(ITradingTypes.Settlement)
 			);
 
-			VariablePart memory prevProof = proof[proof.length - 1].variablePart;
-			ITradingTypes.Order memory prevOrder = abi.decode(
-				prevProof.appData,
-				(ITradingTypes.Order)
-			);
-			for (uint256 i = proof.length - 2; i >= 0; i--) {
-				VariablePart memory currProof = proof[i].variablePart;
-
-				// Verify that turns are consecutive
-				require(prevProof.turnNum == currProof.turnNum - 1, 'proofs are not consecutive');
-
-				// Verify validity of orders and responses
-				if (i % 2 == 0) {
-					// If current proof contains an order,
-					// then the previous one must contain a response
-					// with different order ID, since they are not related
-					ITradingTypes.Order memory currOrder = abi.decode(
-						currProof.appData,
-						(ITradingTypes.Order)
-					);
-					require(
-						currOrder.orderID != prevOrder.orderID,
-						'order.orderID != prevOrder.orderID'
-					);
-				} else {
-					// If current proof contains a response,
-					// then the previous one must be an order
-					// with the same order ID
-					ITradingTypes.OrderResponse memory currOrderResponse = abi.decode(
-						currProof.appData,
-						(ITradingTypes.OrderResponse)
-					);
-					require(
-						currOrderResponse.orderID == prevOrder.orderID,
-						'orderResponse.orderID != prevOrder.orderID'
-					);
-				}
-
-				prevProof = currProof;
-			}
-
+			verifyProofForSettlement(proof);
 			return (true, '');
 		}
 
@@ -138,5 +98,55 @@ contract TradingApp is IForceMoveApp {
 			);
 		}
 		return (true, '');
+	}
+
+	function verifyProofForSettlement(RecoveredVariablePart[] calldata proof) internal pure {
+		if (proof.length == 1) {
+			VariablePart memory proof = proof[0].variablePart;
+			ITradingTypes.Order memory order = abi.decode(proof.appData, (ITradingTypes.Order));
+			return;
+		}
+
+		for (uint256 i = 0; i < proof.length - 1; i++) {
+			VariablePart memory currProof = proof[i].variablePart;
+			VariablePart memory nextProof = proof[i + 1].variablePart;
+
+			require(currProof.turnNum + 1 == nextProof.turnNum, 'turns are not consecutive');
+
+			// Verify validity of orders and responses
+			if (i % 2 == 0) {
+				// If current proof contains an order,
+				// then the next one must contain a response
+				// with the same order ID
+				ITradingTypes.Order memory order = abi.decode(
+					currProof.appData,
+					(ITradingTypes.Order)
+				);
+				ITradingTypes.OrderResponse memory orderResponse = abi.decode(
+					nextProof.appData,
+					(ITradingTypes.OrderResponse)
+				);
+				require(
+					orderResponse.orderID == order.orderID,
+					'orderResponse.orderID != order.orderID'
+				);
+			} else {
+				// If current proof contains a response,
+				// then the next one must be an order
+				// with a different order ID, since they are not related
+				ITradingTypes.OrderResponse memory orderResponse = abi.decode(
+					currProof.appData,
+					(ITradingTypes.OrderResponse)
+				);
+				ITradingTypes.Order memory order = abi.decode(
+					nextProof.appData,
+					(ITradingTypes.Order)
+				);
+				require(
+					order.orderID != orderResponse.orderID,
+					'order.orderID == orderResponse.orderID'
+				);
+			}
+		}
 	}
 }
