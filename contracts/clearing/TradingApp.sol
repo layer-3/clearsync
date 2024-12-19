@@ -37,7 +37,7 @@ contract TradingApp is IForceMoveApp {
 		if (candTurnNum % 2 == 0 && proof.length > 0) {
 			Consensus.requireConsensus(fixedPart, proof, candidate);
 			// Check the settlement data structure validity
-			try this.decodeSettlement(candidateData) returns (
+			try abi.decode(candidateData, (ITradingTypes.Settlement)) returns (
 				ITradingTypes.Settlement memory settlement
 			) {
 				verifyProofForSettlement(settlement, proof);
