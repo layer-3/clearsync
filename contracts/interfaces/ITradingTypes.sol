@@ -24,8 +24,8 @@ interface ITradingTypes {
 	struct Settlement {
 		AssetAndAmount[] toTrader;
 		AssetAndAmount[] toBroker;
-		// orderChecksum is to avoid tampering
+		// ordersChecksum is to avoid tampering
 		// with the orders and order responses in the proof
-		bytes32 orderChecksum;
+		bytes32 ordersChecksum;
 	}
 }

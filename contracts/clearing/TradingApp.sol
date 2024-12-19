@@ -159,7 +159,7 @@ contract TradingApp is IForceMoveApp {
 			}
 		}
 
-		bytes32 orderChecksum = keccak256(abi.encode(orderIDs));
-		require(orderChecksum == settlement.orderChecksum, 'proof has been tampered with');
+		bytes32 ordersChecksum = keccak256(abi.encode(orderIDs));
+		require(ordersChecksum == settlement.ordersChecksum, 'proof has been tampered with');
 	}
 }
