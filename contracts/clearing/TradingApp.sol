@@ -113,16 +113,19 @@ contract TradingApp is IForceMoveApp {
 		ITradingTypes.Settlement memory settlement,
 		RecoveredVariablePart[] calldata proof
 	) internal pure {
+		VariablePart memory currProof = proof[0].variablePart;
+		VariablePart memory nextProof = proof[1].variablePart;
+		require(
+			currProof.turnNum >= 2 && nextProof.turnNum >= 2,
+			'only prefund and postfund can have turn number < 2'
+		);
+
 		bytes32[] memory orderIDs = new bytes32[](proof.length);
 		uint256 prevTurnNum = 0;
 		for (uint256 i = 0; i < proof.length - 1; i += 2) {
-			VariablePart memory currProof = proof[i].variablePart;
-			VariablePart memory nextProof = proof[i + 1].variablePart;
+			currProof = proof[i].variablePart;
+			nextProof = proof[i + 1].variablePart;
 
-			require(
-				currProof.turnNum >= 2 && nextProof.turnNum >= 2,
-				'only prefund and postfund can have turn number < 2'
-			);
 			require(prevTurnNum + 1 == currProof.turnNum, 'turns are not consecutive');
 			require(currProof.turnNum + 1 == nextProof.turnNum, 'turns are not consecutive');
 
