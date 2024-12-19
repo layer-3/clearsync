@@ -113,18 +113,11 @@ contract TradingApp is IForceMoveApp {
 		ITradingTypes.Settlement memory settlement,
 		RecoveredVariablePart[] calldata proof
 	) internal pure {
-		VariablePart memory currProof = proof[0].variablePart;
-		VariablePart memory nextProof = proof[1].variablePart;
-		require(
-			currProof.turnNum >= 2 && nextProof.turnNum >= 2,
-			'only prefund and postfund can have turn number < 2'
-		);
-
-		bytes32[] memory orderIDs = new bytes32[](proof.length);
-		uint256 prevTurnNum = 0;
+		bytes32[] memory proofDataHashes = new bytes32[](proof.length);
+		uint256 prevTurnNum = 1; // postfund state
 		for (uint256 i = 0; i < proof.length - 1; i += 2) {
-			currProof = proof[i].variablePart;
-			nextProof = proof[i + 1].variablePart;
+			VariablePart memory currProof = proof[i].variablePart;
+			VariablePart memory nextProof = proof[i + 1].variablePart;
 
 			require(prevTurnNum + 1 == currProof.turnNum, 'turns are not consecutive');
 			require(currProof.turnNum + 1 == nextProof.turnNum, 'turns are not consecutive');
@@ -141,13 +134,15 @@ contract TradingApp is IForceMoveApp {
 			// with the same order ID
 			require(
 				orderResponse.orderID == order.orderID,
-				'order and response orderIDs do not match'
+				'order and response IDs do not match'
 			);
-			orderIDs[i] = order.orderID;
+
+			proofDataHashes[i] = keccak256(currProof.appData);
+			proofDataHashes[i + 1] = keccak256(nextProof.appData);
 			prevTurnNum = nextProof.turnNum;
 		}
 
-		bytes32 ordersChecksum = keccak256(abi.encode(orderIDs));
+		bytes32 ordersChecksum = keccak256(abi.encode(proofDataHashes));
 		require(ordersChecksum == settlement.ordersChecksum, 'proof has been tampered with');
 	}
 }
