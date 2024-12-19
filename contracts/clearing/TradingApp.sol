@@ -33,25 +33,24 @@ contract TradingApp is IForceMoveApp {
 		}
 
 		bytes memory candidateData = candidate.variablePart.appData;
+
 		// settlement
-		if (candTurnNum % 2 == 0 && proof.length > 0) {
+		uint8 signaturesNum = NitroUtils.getClaimedSignersNum(candidate.signedBy);
+		if (candTurnNum % 2 == 0 && signaturesNum == 2 && proof.length > 0) {
 			Consensus.requireConsensus(fixedPart, proof, candidate);
 			// Check the settlement data structure validity
-			try abi.decode(candidateData, (ITradingTypes.Settlement)) returns (
-				ITradingTypes.Settlement memory settlement
-			) {
-				verifyProofForSettlement(settlement, proof);
-				return (true, '');
-			} catch {
-				// Decoding failed.
-				// This is not a settlement, so proceed
-				// with the normal order/response verification.
-			}
+			ITradingTypes.Settlement memory settlement = abi.decode(
+				candidateData,
+				(ITradingTypes.Settlement)
+			);
+			verifyProofForSettlement(settlement, proof);
+			return (true, '');
 		}
 
 		// participant 0 signs even turns
 		// participant 1 signs odd turns
 		StrictTurnTaking.requireValidTurnTaking(fixedPart, proof, candidate);
+		require(signaturesNum == 1, 'signaturesNum != 1');
 		require(proof.length == 2, 'proof.length < 2');
 		(VariablePart memory proof0, VariablePart memory proof1) = (
 			proof[0].variablePart,
@@ -160,7 +159,7 @@ contract TradingApp is IForceMoveApp {
 			}
 		}
 
-		bytes32 proofHash = keccak256(abi.encode(orderIDs));
-		require(proofHash == settlement.proofHash, 'proof has been tampered with');
+		bytes32 orderChecksum = keccak256(abi.encode(orderIDs));
+		require(orderChecksum == settlement.orderChecksum, 'proof has been tampered with');
 	}
 }
