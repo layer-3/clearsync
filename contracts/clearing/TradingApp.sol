@@ -6,45 +6,11 @@ import {ExitFormat as Outcome} from '@statechannels/exit-format/contracts/ExitFo
 import {StrictTurnTaking} from '../nitro/libraries/signature-logic/StrictTurnTaking.sol';
 import {Consensus} from '../nitro/libraries/signature-logic/Consensus.sol';
 import {IForceMoveApp} from '../nitro/interfaces/IForceMoveApp.sol';
-import {NitroUtils} from '../nitro/libraries/NitroUtils.sol';
-import {INitroTypes} from '../nitro/interfaces/INitroTypes.sol';
-
-interface ITradingStructs {
-	struct Order {
-		bytes32 orderID; // tradeID
-	}
-
-	enum OrderResponseType {
-		ACCEPT,
-		REJECT
-	}
-
-	struct OrderResponse {
-		OrderResponseType responseType;
-		bytes32 orderID; // orderID making the trade
-	}
-
-	struct AssetAndAmount {
-		address asset;
-		uint256 amount;
-	}
-
-	struct Settlement {
-		AssetAndAmount[] toTrader;
-		AssetAndAmount[] toBroker;
-	}
-}
-
-// FIXME: should Vault support multiple brokers?
-interface ISettle {
-	function settle(
-		INitroTypes.FixedPart calldata fixedPart,
-		INitroTypes.RecoveredVariablePart[] calldata proof,
-		INitroTypes.RecoveredVariablePart calldata candidate
-	) external;
-}
+import {ITradingTypes} from '../interfaces/ITradingTypes.sol';
 
 contract TradingApp is IForceMoveApp {
+	// TODO: add errors
+
 	function stateIsSupported(
 		FixedPart calldata fixedPart,
 		RecoveredVariablePart[] calldata proof,
@@ -67,22 +33,30 @@ contract TradingApp is IForceMoveApp {
 		}
 
 		bytes memory candidateData = candidate.variablePart.appData;
+
 		// settlement
-		// TODO: unsure whether we should check the proof when consensus is reached
-		if (candTurnNum % 2 == 0 && proof.length == 0) {
+		uint8 signaturesNum = NitroUtils.getClaimedSignersNum(candidate.signedBy);
+		if (
+			candTurnNum % 2 == 0 /* is either order or settlement */ &&
+			signaturesNum == 2 /* is settlement */ &&
+			proof.length >= 2 /* contains at least one order+response pair */ &&
+			proof.length % 2 == 0 /* contains full pairs only, no dangling values */
+		) {
 			Consensus.requireConsensus(fixedPart, proof, candidate);
-			// NOTE: used just to check the data structure validity
-			ITradingStructs.Settlement memory _unused = abi.decode(
+			// Check the settlement data structure validity
+			ITradingTypes.Settlement memory settlement = abi.decode(
 				candidateData,
-				(ITradingStructs.Settlement)
+				(ITradingTypes.Settlement)
 			);
+			verifyProofForSettlement(settlement, proof);
 			return (true, '');
 		}
 
 		// participant 0 signs even turns
 		// participant 1 signs odd turns
 		StrictTurnTaking.requireValidTurnTaking(fixedPart, proof, candidate);
-		require(proof.length == 2, 'proof.length < 2');
+		require(signaturesNum == 1, 'signaturesNum != 1');
+		require(proof.length == 2, 'proof.length != 2');
 		(VariablePart memory proof0, VariablePart memory proof1) = (
 			proof[0].variablePart,
 			proof[1].variablePart
@@ -92,46 +66,83 @@ contract TradingApp is IForceMoveApp {
 
 		// order
 		if (candTurnNum % 2 == 0) {
-			ITradingStructs.Order memory prevOrder = abi.decode(
+			ITradingTypes.Order memory prevOrder = abi.decode(
 				proof0.appData,
-				(ITradingStructs.Order)
+				(ITradingTypes.Order)
 			);
-			ITradingStructs.OrderResponse memory prevOrderResponse = abi.decode(
+			ITradingTypes.OrderResponse memory prevOrderResponse = abi.decode(
 				proof1.appData,
-				(ITradingStructs.OrderResponse)
+				(ITradingTypes.OrderResponse)
 			);
-			if (prevOrderResponse.responseType == ITradingStructs.OrderResponseType.ACCEPT) {
+			if (prevOrderResponse.responseType == ITradingTypes.OrderResponseType.ACCEPT) {
 				require(
 					prevOrderResponse.orderID == prevOrder.orderID,
 					'orderResponse.orderID != prevOrder.orderID, candidate is order'
 				);
 			}
 			// NOTE: used just to check the data structure validity
-			ITradingStructs.Order memory _candOrder = abi.decode(
+			ITradingTypes.Order memory _candOrder = abi.decode(
 				candidateData,
-				(ITradingStructs.Order)
+				(ITradingTypes.Order)
 			);
 			return (true, '');
 		}
 
 		// orderResponse
 		// NOTE: used just to check the data structure validity
-		ITradingStructs.OrderResponse memory _prevOrderResponse = abi.decode(
+		ITradingTypes.OrderResponse memory _prevOrderResponse = abi.decode(
 			proof0.appData,
-			(ITradingStructs.OrderResponse)
+			(ITradingTypes.OrderResponse)
 		);
 
-		ITradingStructs.Order memory order = abi.decode(proof1.appData, (ITradingStructs.Order));
-		ITradingStructs.OrderResponse memory orderResponse = abi.decode(
+		ITradingTypes.Order memory order = abi.decode(proof1.appData, (ITradingTypes.Order));
+		ITradingTypes.OrderResponse memory orderResponse = abi.decode(
 			candidateData,
-			(ITradingStructs.OrderResponse)
+			(ITradingTypes.OrderResponse)
 		);
-		if (orderResponse.responseType == ITradingStructs.OrderResponseType.ACCEPT) {
+		if (orderResponse.responseType == ITradingTypes.OrderResponseType.ACCEPT) {
 			require(
 				orderResponse.orderID == order.orderID,
 				'orderResponse.orderID != order.orderID, candidate is orderResponse'
 			);
 		}
 		return (true, '');
+	}
+
+	function verifyProofForSettlement(
+		ITradingTypes.Settlement memory settlement,
+		RecoveredVariablePart[] calldata proof
+	) internal pure {
+		bytes32[] memory proofDataHashes = new bytes32[](proof.length);
+		uint256 prevTurnNum = 1; // postfund state
+		for (uint256 i = 0; i < proof.length - 1; i += 2) {
+			VariablePart memory currProof = proof[i].variablePart;
+			VariablePart memory nextProof = proof[i + 1].variablePart;
+
+			require(prevTurnNum + 1 == currProof.turnNum, 'turns are not consecutive');
+			require(currProof.turnNum + 1 == nextProof.turnNum, 'turns are not consecutive');
+
+			// Verify validity of orders and responses
+			ITradingTypes.Order memory order = abi.decode(currProof.appData, (ITradingTypes.Order));
+			ITradingTypes.OrderResponse memory orderResponse = abi.decode(
+				nextProof.appData,
+				(ITradingTypes.OrderResponse)
+			);
+
+			// If current proof contains an order,
+			// then the next one must contain a response
+			// with the same order ID
+			require(
+				orderResponse.orderID == order.orderID,
+				'order and response IDs do not match'
+			);
+
+			proofDataHashes[i] = keccak256(currProof.appData);
+			proofDataHashes[i + 1] = keccak256(nextProof.appData);
+			prevTurnNum = nextProof.turnNum;
+		}
+
+		bytes32 ordersChecksum = keccak256(abi.encode(proofDataHashes));
+		require(ordersChecksum == settlement.ordersChecksum, 'proof has been tampered with');
 	}
 }
