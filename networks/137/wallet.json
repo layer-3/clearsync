@@ -4,11 +4,11 @@
   "transactions": {
     "withdrawal": "native",
     "swap": "native",
-    "lock": "sp_good_black_panther",
+    "lock": "sponsor",
     "unlock": "native",
     "daily_claim": "native",
-    "daily_claim_tap_app": "sp_lazy_menace",
-    "mint_tap_app": "sp_lazy_menace",
+    "daily_claim_tap_app": "sponsor",
+    "mint_tap_app": "sponsor",
     "base": "native"
   }
 }
