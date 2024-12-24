@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.22;
+pragma solidity ^0.8.22;
 
 import {ExitFormat as Outcome} from '@statechannels/exit-format/contracts/ExitFormat.sol';
 
@@ -10,7 +10,7 @@ import {ITradingTypes} from '../interfaces/ITradingTypes.sol';
 import {NitroUtils} from '../nitro/libraries/NitroUtils.sol';
 
 contract TradingApp is IForceMoveApp {
-	// TODO: add errors
+	// TODO: add custom errors after contract logic is finalized
 
 	function stateIsSupported(
 		FixedPart calldata fixedPart,
