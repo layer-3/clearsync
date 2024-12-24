@@ -47,17 +47,22 @@ interface IVault {
 
 	/**
 	 * @dev Returns the balance of a specified token for a user.
+	 * @param user The address of the user.
 	 * @param token The address of the token. Use address(0) for ETH.
 	 * @return The balance of the specified token for the user.
 	 */
-	function balanceOf(address token) external view returns (uint256);
+	function balanceOf(address user, address token) external view returns (uint256);
 
 	/**
 	 * @dev Returns the balances of multiple tokens for a user.
+	 * @param user The address of the user.
 	 * @param tokens The addresses of the tokens. Use address(0) for ETH.
 	 * @return The balances of the specified tokens for the user.
 	 */
-	function balancesOfTokens(address[] calldata tokens) external view returns (uint256[] memory);
+	function balancesOfTokens(
+		address user,
+		address[] calldata tokens
+	) external view returns (uint256[] memory);
 
 	/**
 	 * @dev Deposits a specified amount of tokens or ETH into the vault.

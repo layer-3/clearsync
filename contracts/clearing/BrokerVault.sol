@@ -2,11 +2,16 @@
 pragma solidity 0.8.27;
 
 import {IVault} from '../interfaces/IVault.sol';
-import {TradingApp, ISettle} from './TradingApp.sol';
+import {ISettle} from '../interfaces/ISettle.sol';
+import {ITradingTypes} from '../interfaces/ITradingTypes.sol';
+import {TradingApp} from './TradingApp.sol';
 import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
+import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {Ownable2Step} from '@openzeppelin/contracts/access/Ownable2Step.sol';
+import {Ownable} from '@openzeppelin/contracts/access/Ownable.sol';
 import {ReentrancyGuard} from '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 import {NitroUtils} from '../nitro/libraries/NitroUtils.sol';
+import {INitroTypes} from '../nitro/interfaces/INitroTypes.sol';
 
 contract BrokerVault is IVault, ISettle, Ownable2Step, ReentrancyGuard {
 	/// @dev Using SafeERC20 to support non fully ERC20-compliant tokens,
@@ -23,8 +28,6 @@ contract BrokerVault is IVault, ISettle, Ownable2Step, ReentrancyGuard {
 
 	// ====== Errors ======
 
-	error InsufficientBalance(address token, uint256 required, uint256 available);
-	error InvalidAddress();
 	error InvalidAmount(uint256 amount);
 	error SettlementAlreadyPerformed(bytes32 channelId);
 	error BrokerNotParticipant(address actual, address expectedBroker);
@@ -103,7 +106,7 @@ contract BrokerVault is IVault, ISettle, Ownable2Step, ReentrancyGuard {
 		INitroTypes.RecoveredVariablePart[] calldata proof,
 		INitroTypes.RecoveredVariablePart calldata candidate
 	) external nonReentrant {
-		uint256 channelId = NitroUtils.getChannelId(fixedPart);
+		bytes32 channelId = NitroUtils.getChannelId(fixedPart);
 		require(!performedSettlements[channelId], SettlementAlreadyPerformed(channelId));
 
 		require(
@@ -112,16 +115,16 @@ contract BrokerVault is IVault, ISettle, Ownable2Step, ReentrancyGuard {
 		);
 		address trader = fixedPart.participants[0];
 
-		(bool isStateValid, string memory reason) = tradingApp.isStateTransitionValid(
+		(bool isStateValid, string memory reason) = tradingApp.stateIsSupported(
 			fixedPart,
 			proof,
 			candidate
 		);
 		require(isStateValid, InvalidStateTransition(reason));
 
-		ITradingStructs.Settlement memory settlement = abi.decode(
+		ITradingTypes.Settlement memory settlement = abi.decode(
 			candidate.variablePart.appData,
-			(ITradingStructs.Settlement)
+			(ITradingTypes.Settlement)
 		);
 
 		for (uint256 i = 0; i < settlement.toTrader.length; i++) {
