@@ -7,6 +7,7 @@ import {StrictTurnTaking} from '../nitro/libraries/signature-logic/StrictTurnTak
 import {Consensus} from '../nitro/libraries/signature-logic/Consensus.sol';
 import {IForceMoveApp} from '../nitro/interfaces/IForceMoveApp.sol';
 import {ITradingTypes} from '../interfaces/ITradingTypes.sol';
+import {NitroUtils} from '../nitro/libraries/NitroUtils.sol';
 
 contract TradingApp is IForceMoveApp {
 	// TODO: add errors
@@ -16,7 +17,6 @@ contract TradingApp is IForceMoveApp {
 		RecoveredVariablePart[] calldata proof,
 		RecoveredVariablePart calldata candidate
 	) external pure override returns (bool, string memory) {
-		// FIXME: does the Broker deposit to the Adjudicator?
 		// turn nums:
 		// 0 - prefund
 		// 1 - postfund
@@ -132,10 +132,7 @@ contract TradingApp is IForceMoveApp {
 			// If current proof contains an order,
 			// then the next one must contain a response
 			// with the same order ID
-			require(
-				orderResponse.orderID == order.orderID,
-				'order and response IDs do not match'
-			);
+			require(orderResponse.orderID == order.orderID, 'order and response IDs do not match');
 
 			proofDataHashes[i] = keccak256(currProof.appData);
 			proofDataHashes[i + 1] = keccak256(nextProof.appData);
