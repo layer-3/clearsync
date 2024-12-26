@@ -1,0 +1,86 @@
+[
+  {
+    "symbol": "spot://ETH/USD",
+    "quotes":{
+      "dexs": false
+    }
+  },
+  {
+    "symbol": "spot://WETH/USD",
+    "quotes": {
+      "dexs": false
+    }
+  },
+  {
+    "symbol": "spot://WBTC/USD"
+  },
+  {
+    "symbol": "spot://DUCKIES/USD"
+  },
+  {
+    "symbol": "spot://SHIB/USD",
+    "quotes": {
+      "dexs": false
+    }
+  },
+  {
+    "symbol": "spot://WSOL/USD"
+  },
+  {
+    "symbol": "spot://DAI/USD"
+  },
+  {
+    "symbol": "spot://USDT/USD"
+  },
+  {
+    "symbol": "spot://PEPE/USD"
+  },
+  {
+    "symbol": "spot://BADGER/USD"
+  },
+  {
+    "symbol": "spot://FLOKI/USD"
+  },
+  {
+    "symbol": "spot://MEME/USD"
+  },
+  {
+    "symbol": "spot://UNI/USD"
+  },
+  {
+    "symbol": "spot://SUSHI/USD"
+  },
+  {
+    "symbol": "spot://DODO/USD"
+  },
+  {
+    "symbol": "spot://BEAM/USD"
+  },
+  {
+    "symbol": "spot://CHZ/USD"
+  },
+  {
+    "symbol": "spot://WTON/USD"
+  },
+  {
+    "symbol": "spot://BABYDOGE/USD"
+  },
+  {
+    "symbol": "spot://BANANA/USD"
+  },
+  {
+    "symbol": "spot://ELON/USD"
+  },
+  {
+    "symbol": "spot://FOX/USD"
+  },
+  {
+    "symbol": "spot://GROK/USD"
+  },
+  {
+    "symbol": "spot://DISCO/USD"
+  },
+  {
+    "symbol": "spot://KAYEN/USD"
+  }
+]
