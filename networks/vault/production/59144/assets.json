@@ -1,0 +1,180 @@
+{
+  "tokens": [
+    {
+      "address": "0x796000FAd0d00B003B9dd8e531BA90cff39E01E0",
+      "name": "Yellow Duckies",
+      "symbol": "DUCKIES",
+      "decimals": 8,
+      "precision": 0,
+      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/duckies-200x200.png"
+    },
+    {
+      "address": "0xC9B1A0d6cec7F31a8548295D134a0468f636B85D",
+      "name": "DISCO",
+      "symbol": "DISCO",
+      "decimals": 4,
+      "precision": 3,
+      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/disco-192x192.png",
+      "extensions": {}
+    },
+    {
+      "address": "0xb195E26c23aa1AdF66Db73417DEfA32A45F38Ce7",
+      "name": "KAYEN",
+      "symbol": "KAYEN",
+      "decimals": 6,
+      "precision": 4,
+      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/kayen-64x64.png",
+      "extensions": {}
+    },
+    {
+      "address": "0xA219439258ca9da29E9Cc4cE5596924745e12B93",
+      "name": "USD Tether",
+      "symbol": "USDT",
+      "decimals": 6,
+      "precision": 4,
+      "logoURI": "https://cryptologos.cc/logos/tether-usdt-logo.png",
+      "extensions":
+      {
+        "allow_locking": true,
+        "coingecko_api_id": "tether"
+      }
+    },
+    {
+      "address": "0x176211869cA2b568f2A7D4EE941E073a821EE1ff",
+      "name": "USD Coin",
+      "symbol": "USDC",
+      "alias": "USD",
+      "decimals": 6,
+      "precision": 4,
+      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/usdc-64x64.png",
+      "extensions":
+      {
+        "allow_locking": true,
+        "coingecko_api_id": "usd-coin"
+      }
+    },
+    {
+      "address": "0x43E8809ea748EFf3204ee01F08872F063e44065f",
+      "name": "Mendi Finance",
+      "symbol": "MENDI",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/mendi.svg"
+    },
+    {
+      "address": "0x99AD925C1Dc14Ac7cc6ca1244eeF8043C74E99d5",
+      "name": "SHIBA INU",
+      "symbol": "SHIB",
+      "decimals": 18,
+      "precision": 0,
+      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/sibainu-64x64.png"
+    },
+    {
+      "address": "0x3aAB2285ddcDdaD8edf438C1bAB47e1a9D05a9b4",
+      "name": "Wrapped Bitcoin",
+      "symbol": "WBTC",
+      "decimals": 8,
+      "precision": 6,
+      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/btc-64x64.png",
+      "extensions":
+      {
+        "allow_locking": true,
+        "coingecko_api_id": "wrapped-bitcoin"
+      }
+    },
+    {
+      "address": "0x0000000000000000000000000000000000000000",
+      "name": "Ether",
+      "symbol": "ETH",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/ethereum-64x64.png",
+      "extensions":
+      {
+        "allow_locking": true,
+        "coingecko_api_id": "ethereum"
+      }
+    },
+    {
+      "address": "0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f",
+      "name": "Wrapped Ether",
+      "symbol": "WETH",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/wrapped-eth-64x64.png",
+      "extensions":
+      {
+        "allow_locking": true,
+        "coingecko_api_id": "weth"
+      }
+    },
+    {
+      "address": "0xB5beDd42000b71FddE22D3eE8a79Bd49A568fC8F",
+      "name": "Wrapped Liquid Staked Ether 2.0",
+      "symbol": "wstETH",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://assets.coingecko.com/coins/images/18834/standard/wstETH.png",
+      "extensions":
+      {
+        "allow_locking": true,
+        "coingecko_api_id": "ethereum",
+        "locking_multiplier": 1.5
+      }
+    },
+    {
+      "address": "0x82cc61354d78b846016b559e3ccd766fa7e793d5",
+      "name": "Linda",
+      "symbol": "LINDA",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/linda-64x64.png",
+      "extensions": {}
+    },
+    {
+      "address": "0x1be3735dd0c0eb229fb11094b6c277192349ebbf",
+      "name": "LUBE",
+      "symbol": "LUBE",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/lube-64x64.png",
+      "extensions": {}
+    },
+    {
+      "address": "0xf5C6825015280CdfD0b56903F9F8B5A2233476F5",
+      "name": "BNB",
+      "symbol": "BNB",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/bnb-64x64.png",
+      "extensions": {}
+    },
+    {
+      "address": "0x7da14988E4f390C2E34ed41DF1814467D3aDe0c3",
+      "name": "Pepe",
+      "symbol": "PEPE",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/pepe-64x64.png",
+      "extensions": {}
+    },
+    {
+      "address": "0x92CcE828c4eF31C3762baAc29724dEa03e503e3F",
+      "name": "Badger",
+      "symbol": "BADGER",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/badger-64x64.png",
+      "extensions": {}
+    },
+    {
+      "address": "0xbf6761aD8C9cB253d026C96327160240Fc2Ce3A6",
+      "name": "FLOKI",
+      "symbol": "FLOKI",
+      "decimals": 9,
+      "precision": 6,
+      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/floki-64x64.png",
+      "extensions": {}
+    }
+  ]
+}
