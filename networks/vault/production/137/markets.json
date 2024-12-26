@@ -1,0 +1,8 @@
+[
+  {
+    "symbol": "spot://MATIC/USD",
+    "quotes": {
+      "dexs": false
+    }
+  }
+]

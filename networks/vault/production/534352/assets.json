@@ -1,0 +1,115 @@
+{
+  "tokens": [
+    {
+      "address": "0xd29687c813D741E2F938F4aC377128810E217b1b",
+      "name": "Scroll",
+      "symbol": "SCR",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://assets.coingecko.com/coins/images/50571/standard/scroll.jpg",
+      "extensions": {
+        "allow_locking": false,
+        "coingecko_api_id": "scroll"
+      }
+    },
+    {
+      "address": "0xf55BEC9cafDbE8730f096Aa55dad6D22d44099Df",
+      "name": "USD Tether",
+      "symbol": "USDT",
+      "decimals": 6,
+      "precision": 4,
+      "logoURI": "https://cryptologos.cc/logos/tether-usdt-logo.png",
+      "extensions": {
+        "allow_locking": true,
+        "coingecko_api_id": "tether"
+      }
+    },
+    {
+      "address": "0x06eFdBFf2a14a7c8E15944D1F4A48F9F95F663A4",
+      "name": "USD Coin",
+      "symbol": "USDC",
+      "alias": "USD",
+      "decimals": 6,
+      "precision": 4,
+      "logoURI": "https://assets.coingecko.com/coins/images/6319/large/usdc.png?1696506694",
+      "extensions": {
+        "allow_locking": true,
+        "coingecko_api_id": "usd-coin"
+      }
+    },
+    {
+      "address": "0x3C1BCa5a656e69edCD0D4E36BEbb3FcDAcA60Cf1",
+      "name": "Wrapped Bitcoin",
+      "symbol": "WBTC",
+      "decimals": 8,
+      "precision": 6,
+      "logoURI": "https://s2.coinmarketcap.com/static/img/coins/64x64/3717.png",
+      "extensions": {
+        "allow_locking": true,
+        "coingecko_api_id": "wrapped-bitcoin"
+      }
+    },
+    {
+      "address": "0x0000000000000000000000000000000000000000",
+      "name": "Ether",
+      "symbol": "ETH",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png?1696501628",
+      "extensions": {
+        "allow_locking": true,
+        "coingecko_api_id": "ethereum"
+      }
+    },
+    {
+      "address": "0x5300000000000000000000000000000000000004",
+      "name": "Wrapped Ether",
+      "symbol": "WETH",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png?1696501628",
+      "extensions": {
+        "allow_locking": true,
+        "coingecko_api_id": "weth"
+      }
+    },
+    {
+      "address": "0xf610A9dfB7C89644979b4A0f27063E9e7d7Cda32",
+      "name": "Wrapped Liquid Staked Ether 2.0",
+      "symbol": "wstETH",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://assets.coingecko.com/coins/images/18834/standard/wstETH.png",
+      "extensions": {
+        "allow_locking": true,
+        "coingecko_api_id": "ethereum",
+        "locking_multiplier": 1.5
+      }
+    },
+    {
+      "address": "0x53878B874283351D26d206FA512aEcE1Bef6C0dD",
+      "name": "TokenRocket Pool ETH",
+      "symbol": "rETH",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://assets.coingecko.com/coins/images/20764/standard/reth.png",
+      "extensions": {
+        "allow_locking": true,
+        "coingecko_api_id": "ethereum",
+        "locking_multiplier": 1.5
+      }
+    },
+    {
+      "address": "0xcA77eB3fEFe3725Dc33bccB54eDEFc3D9f764f97",
+      "name": "Dai Stablecoin",
+      "symbol": "DAI",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://lineascan.build/token/images/daistablecoin_32.png",
+      "extensions": {
+        "allow_locking": true,
+        "coingecko_api_id": "dai"
+      }
+    }
+  ]
+}
