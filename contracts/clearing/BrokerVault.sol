@@ -28,7 +28,7 @@ contract BrokerVault is IVault, ISettle, Ownable2Step, ReentrancyGuard {
 
 	// ====== Errors ======
 
-	error InvalidAmount(uint256 amount);
+	error UnauthorizedWithdrawal();
 	error SettlementAlreadyPerformed(bytes32 channelId);
 	error BrokerNotParticipant(address actual, address expectedBroker);
 
@@ -72,19 +72,24 @@ contract BrokerVault is IVault, ISettle, Ownable2Step, ReentrancyGuard {
 	// ---------- Write functions ----------
 
 	function deposit(address token, uint256 amount) external payable nonReentrant {
+		address account = msg.sender;
+
 		if (token == address(0)) {
 			require(msg.value == amount, IncorrectValue());
 			_balances[address(0)] += amount;
 		} else {
 			require(msg.value == 0, IncorrectValue());
 			_balances[token] += amount;
-			IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+			IERC20(token).safeTransferFromaccount, address(this), amount);
 		}
 
-		emit Deposited(msg.sender, token, amount);
+		emit Deposited(account, token, amount);
 	}
 
 	function withdraw(address token, uint256 amount) external nonReentrant {
+		address account = msg.sender;
+		require(account == broker, UnauthorizedWithdrawal());
+
 		uint256 currentBalance = _balances[token];
 		require(currentBalance >= amount, InsufficientBalance(token, amount, currentBalance));
 
@@ -92,13 +97,13 @@ contract BrokerVault is IVault, ISettle, Ownable2Step, ReentrancyGuard {
 
 		if (token == address(0)) {
 			/// @dev using `call` instead of `transfer` to overcome 2300 gas ceiling that could make it revert with some AA wallets
-			(bool success, ) = msg.sender.call{value: amount}('');
+			(bool success, ) = account.call{value: amount}('');
 			require(success, NativeTransferFailed());
 		} else {
-			IERC20(token).safeTransfer(msg.sender, amount);
+			IERC20(token).safeTransfer(account, amount);
 		}
 
-		emit Withdrawn(msg.sender, token, amount);
+		emit Withdrawn(account, token, amount);
 	}
 
 	function settle(
