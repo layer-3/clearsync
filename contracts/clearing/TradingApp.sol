@@ -42,8 +42,12 @@ contract TradingApp is IForceMoveApp {
 		if (proof.length == 1) {
 			// first order
 			if (candidate.variablePart.turnNum == 2) {
-				require(proof[0].variablePart.turnNum == 1, 'proof[0].turnNum != 1');
-				_requireStateConsensus(fixedPart, proof[0]);
+				require(
+					proof[0].variablePart.turnNum == 1,
+					'invalid proof turn num on first order'
+				);
+				// check consensus of postfund
+				Consensus.requireConsensus(fixedPart, new RecoveredVariablePart[](0), proof[0]);
 				StrictTurnTaking.isSignedByMover(fixedPart, candidate);
 				// NOTE: used just to check the data structure validity
 				ITradingTypes.Order memory _candOrder = abi.decode(
@@ -57,7 +61,6 @@ contract TradingApp is IForceMoveApp {
 			// participant 1 signs odd turns
 			StrictTurnTaking.requireValidTurnTaking(fixedPart, proof, candidate);
 			VariablePart memory proof0 = proof[0].variablePart;
-			require(proof0.turnNum == candTurnNum - 1, 'proof1.turnNum != candTurnNum - 1');
 
 			// order
 			if (candTurnNum % 2 == 0) {
@@ -81,10 +84,7 @@ contract TradingApp is IForceMoveApp {
 				(ITradingTypes.OrderResponse)
 			);
 			if (orderResponse.responseType == ITradingTypes.OrderResponseType.ACCEPT) {
-				require(
-					orderResponse.orderID == order.orderID,
-					'orderResponse.orderID != order.orderID, candidate is orderResponse'
-				);
+				require(orderResponse.orderID == order.orderID, 'order and response IDs mismatch');
 			}
 			return (true, '');
 		}
@@ -96,7 +96,8 @@ contract TradingApp is IForceMoveApp {
 				proof.length % 2 == 0 /* contains full pairs only, no dangling values */,
 			'settlement conditions not met'
 		);
-		_requireStateConsensus(fixedPart, candidate);
+		// check consensus of candidate
+		Consensus.requireConsensus(fixedPart, new RecoveredVariablePart[](0), candidate);
 		// Check the settlement data structure validity
 		ITradingTypes.Settlement memory settlement = abi.decode(
 			candidateData,
@@ -104,16 +105,6 @@ contract TradingApp is IForceMoveApp {
 		);
 		_verifyProofForSettlement(fixedPart, settlement, proof);
 		return (true, '');
-	}
-
-	function _requireStateConsensus(
-		FixedPart calldata fixedPart,
-		RecoveredVariablePart calldata candidate
-	) internal pure {
-		require(
-			NitroUtils.getClaimedSignersNum(candidate.signedBy) == fixedPart.participants.length,
-			'!unanimous'
-		);
 	}
 
 	function _verifyProofForSettlement(
@@ -142,7 +133,7 @@ contract TradingApp is IForceMoveApp {
 			// If current proof contains an order,
 			// then the next one must contain a response
 			// with the same order ID
-			require(orderResponse.orderID == order.orderID, 'order and response IDs do not match');
+			require(orderResponse.orderID == order.orderID, 'order and response IDs mismatch');
 
 			proofDataHashes[i] = keccak256(currProof.appData);
 			proofDataHashes[i + 1] = keccak256(nextProof.appData);
@@ -150,6 +141,6 @@ contract TradingApp is IForceMoveApp {
 		}
 
 		bytes32 ordersChecksum = keccak256(abi.encode(proofDataHashes));
-		require(ordersChecksum == settlement.ordersChecksum, 'proof has been tampered with');
+		require(ordersChecksum == settlement.ordersChecksum, 'settlement checksum mismatch');
 	}
 }
