@@ -17,12 +17,15 @@ contract TradingApp is IForceMoveApp {
 		RecoveredVariablePart[] calldata proof,
 		RecoveredVariablePart calldata candidate
 	) external pure override returns (bool, string memory) {
+		// TODO: add liquidation state (proof.length == 0, signedBy Broker, contains Liquidation struct with Trader margin amount that goes to the Broker)
 		// turn nums:
 		// 0 - prefund
 		// 1 - postfund
 		// 2 - order
 		// 2n+1 - order response
 		// 2n - order or settlement
+
+		// TODO: add outcome (includes only Trader's margin) validation logic
 
 		uint48 candTurnNum = candidate.variablePart.turnNum;
 
@@ -33,79 +36,62 @@ contract TradingApp is IForceMoveApp {
 		}
 
 		bytes memory candidateData = candidate.variablePart.appData;
-
-		// settlement
 		uint8 signaturesNum = NitroUtils.getClaimedSignersNum(candidate.signedBy);
-		if (
-			candTurnNum % 2 == 0 /* is either order or settlement */ &&
-			signaturesNum == 2 /* is settlement */ &&
-			proof.length >= 2 /* contains at least one order+response pair */ &&
-			proof.length % 2 == 0 /* contains full pairs only, no dangling values */
-		) {
-			Consensus.requireConsensus(fixedPart, proof, candidate);
-			// Check the settlement data structure validity
-			ITradingTypes.Settlement memory settlement = abi.decode(
+
+		// order or orderResponse
+		if (proof.length == 1) {
+			// participant 0 signs even turns
+			// participant 1 signs odd turns
+			StrictTurnTaking.requireValidTurnTaking(fixedPart, proof, candidate);
+			require(signaturesNum == 1, 'signaturesNum != 1');
+			VariablePart memory proof0 = proof[0].variablePart;
+			require(proof0.turnNum == candTurnNum - 1, 'proof1.turnNum != candTurnNum - 1');
+
+			// order
+			if (candTurnNum % 2 == 0) {
+				// NOTE: used just to check the data structure validity
+				ITradingTypes.OrderResponse memory _prevOrderResponse = abi.decode(
+					proof0.appData,
+					(ITradingTypes.OrderResponse)
+				);
+				// NOTE: used just to check the data structure validity
+				ITradingTypes.Order memory _candOrder = abi.decode(
+					candidateData,
+					(ITradingTypes.Order)
+				);
+				return (true, '');
+			}
+
+			// orderResponse
+			ITradingTypes.Order memory order = abi.decode(proof0.appData, (ITradingTypes.Order));
+			ITradingTypes.OrderResponse memory orderResponse = abi.decode(
 				candidateData,
-				(ITradingTypes.Settlement)
-			);
-			verifyProofForSettlement(settlement, proof);
-			return (true, '');
-		}
-
-		// participant 0 signs even turns
-		// participant 1 signs odd turns
-		StrictTurnTaking.requireValidTurnTaking(fixedPart, proof, candidate);
-		require(signaturesNum == 1, 'signaturesNum != 1');
-		require(proof.length == 2, 'proof.length != 2');
-		(VariablePart memory proof0, VariablePart memory proof1) = (
-			proof[0].variablePart,
-			proof[1].variablePart
-		);
-		require(proof0.turnNum == candTurnNum - 2, 'proof0.turnNum != candTurnNum - 1');
-		require(proof1.turnNum == candTurnNum - 1, 'proof1.turnNum != candTurnNum - 1');
-
-		// order
-		if (candTurnNum % 2 == 0) {
-			ITradingTypes.Order memory prevOrder = abi.decode(
-				proof0.appData,
-				(ITradingTypes.Order)
-			);
-			ITradingTypes.OrderResponse memory prevOrderResponse = abi.decode(
-				proof1.appData,
 				(ITradingTypes.OrderResponse)
 			);
-			if (prevOrderResponse.responseType == ITradingTypes.OrderResponseType.ACCEPT) {
+			if (orderResponse.responseType == ITradingTypes.OrderResponseType.ACCEPT) {
 				require(
-					prevOrderResponse.orderID == prevOrder.orderID,
-					'orderResponse.orderID != prevOrder.orderID, candidate is order'
+					orderResponse.orderID == order.orderID,
+					'orderResponse.orderID != order.orderID, candidate is orderResponse'
 				);
 			}
-			// NOTE: used just to check the data structure validity
-			ITradingTypes.Order memory _candOrder = abi.decode(
-				candidateData,
-				(ITradingTypes.Order)
-			);
 			return (true, '');
 		}
 
-		// orderResponse
-		// NOTE: used just to check the data structure validity
-		ITradingTypes.OrderResponse memory _prevOrderResponse = abi.decode(
-			proof0.appData,
-			(ITradingTypes.OrderResponse)
+		// settlement
+		require(
+			candTurnNum % 2 == 0 /* is either order or settlement */ &&
+				signaturesNum == 2 /* is settlement */ &&
+				proof.length >= 2 /* contains at least one order+response pair */ &&
+				proof.length % 2 == 0 /* contains full pairs only, no dangling values */,
+			'settlement conditions not met'
 		);
-
-		ITradingTypes.Order memory order = abi.decode(proof1.appData, (ITradingTypes.Order));
-		ITradingTypes.OrderResponse memory orderResponse = abi.decode(
+		Consensus.requireConsensus(fixedPart, proof, candidate);
+		// Check the settlement data structure validity
+		ITradingTypes.Settlement memory settlement = abi.decode(
 			candidateData,
-			(ITradingTypes.OrderResponse)
+			(ITradingTypes.Settlement)
 		);
-		if (orderResponse.responseType == ITradingTypes.OrderResponseType.ACCEPT) {
-			require(
-				orderResponse.orderID == order.orderID,
-				'orderResponse.orderID != order.orderID, candidate is orderResponse'
-			);
-		}
+		verifyProofForSettlement(settlement, proof);
 		return (true, '');
 	}
 
