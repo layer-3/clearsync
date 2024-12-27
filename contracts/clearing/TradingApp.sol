@@ -31,19 +31,31 @@ contract TradingApp is IForceMoveApp {
 
 		// prefund or postfund
 		if (candTurnNum == 0 || candTurnNum == 1) {
+			// no proof, candidate consensus
 			Consensus.requireConsensus(fixedPart, proof, candidate);
 			return (true, '');
 		}
 
 		bytes memory candidateData = candidate.variablePart.appData;
-		uint8 signaturesNum = NitroUtils.getClaimedSignersNum(candidate.signedBy);
 
 		// order or orderResponse
 		if (proof.length == 1) {
+			// first order
+			if (candidate.variablePart.turnNum == 2) {
+				require(proof[0].variablePart.turnNum == 1, 'proof[0].turnNum != 1');
+				_requireStateConsensus(fixedPart, proof[0]);
+				StrictTurnTaking.isSignedByMover(fixedPart, candidate);
+				// NOTE: used just to check the data structure validity
+				ITradingTypes.Order memory _candOrder = abi.decode(
+					candidateData,
+					(ITradingTypes.Order)
+				);
+				return (true, '');
+			}
+
 			// participant 0 signs even turns
 			// participant 1 signs odd turns
 			StrictTurnTaking.requireValidTurnTaking(fixedPart, proof, candidate);
-			require(signaturesNum == 1, 'signaturesNum != 1');
 			VariablePart memory proof0 = proof[0].variablePart;
 			require(proof0.turnNum == candTurnNum - 1, 'proof1.turnNum != candTurnNum - 1');
 
@@ -79,23 +91,33 @@ contract TradingApp is IForceMoveApp {
 
 		// settlement
 		require(
-			candTurnNum % 2 == 0 /* is either order or settlement */ &&
-				signaturesNum == 2 /* is settlement */ &&
+			candTurnNum % 2 == 0 /* is settlement */ &&
 				proof.length >= 2 /* contains at least one order+response pair */ &&
 				proof.length % 2 == 0 /* contains full pairs only, no dangling values */,
 			'settlement conditions not met'
 		);
-		Consensus.requireConsensus(fixedPart, proof, candidate);
+		_requireStateConsensus(fixedPart, candidate);
 		// Check the settlement data structure validity
 		ITradingTypes.Settlement memory settlement = abi.decode(
 			candidateData,
 			(ITradingTypes.Settlement)
 		);
-		verifyProofForSettlement(settlement, proof);
+		_verifyProofForSettlement(fixedPart, settlement, proof);
 		return (true, '');
 	}
 
-	function verifyProofForSettlement(
+	function _requireStateConsensus(
+		FixedPart calldata fixedPart,
+		RecoveredVariablePart calldata candidate
+	) internal pure {
+		require(
+			NitroUtils.getClaimedSignersNum(candidate.signedBy) == fixedPart.participants.length,
+			'!unanimous'
+		);
+	}
+
+	function _verifyProofForSettlement(
+		FixedPart calldata fixedPart,
 		ITradingTypes.Settlement memory settlement,
 		RecoveredVariablePart[] calldata proof
 	) internal pure {
@@ -105,6 +127,8 @@ contract TradingApp is IForceMoveApp {
 			VariablePart memory currProof = proof[i].variablePart;
 			VariablePart memory nextProof = proof[i + 1].variablePart;
 
+			StrictTurnTaking.isSignedByMover(fixedPart, proof[i]);
+			StrictTurnTaking.isSignedByMover(fixedPart, proof[i + 1]);
 			require(prevTurnNum + 1 == currProof.turnNum, 'turns are not consecutive');
 			require(currProof.turnNum + 1 == nextProof.turnNum, 'turns are not consecutive');
 
