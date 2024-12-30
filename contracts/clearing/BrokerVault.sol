@@ -80,7 +80,7 @@ contract BrokerVault is IVault, ISettle, Ownable2Step, ReentrancyGuard {
 		} else {
 			require(msg.value == 0, IncorrectValue());
 			_balances[token] += amount;
-			IERC20(token).safeTransferFromaccount, address(this), amount);
+			IERC20(token).safeTransferFrom(account, address(this), amount);
 		}
 
 		emit Deposited(account, token, amount);
