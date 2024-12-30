@@ -15,6 +15,8 @@ contract TradingAppTest_stateIsSupported is Test {
 	address traderAddress = vm.createWallet('trader').addr;
 	address brokerAddress = vm.createWallet('broker').addr;
 
+	uint256 marginAmount = 42;
+
 	function setUp() public {
 		tradingApp = new TradingApp();
 		address[] memory participants = new address[](2);
@@ -29,13 +31,68 @@ contract TradingAppTest_stateIsSupported is Test {
 		});
 	}
 
+	// NOTE: this is not a storage variable, as copying an array of structs from memory to storage is not yet supported in Solidity
+	function traderOutcome() public view returns (Outcome.SingleAssetExit[] memory) {
+		return createSingleOutcome(address(42), traderAddress, marginAmount);
+	}
+
+	function createSingleOutcome(
+		address asset,
+		address destination,
+		uint256 amount
+	) public pure returns (Outcome.SingleAssetExit[] memory) {
+		Outcome.Allocation[] memory allocations = new Outcome.Allocation[](1);
+		allocations[0] = Outcome.Allocation({
+			destination: bytes20(destination),
+			amount: amount,
+			allocationType: 0,
+			metadata: new bytes(0)
+		});
+		Outcome.SingleAssetExit[] memory outcome = new Outcome.SingleAssetExit[](1);
+		outcome[0] = Outcome.SingleAssetExit({
+			asset: asset,
+			assetMetadata: Outcome.AssetMetadata({
+				assetType: Outcome.AssetType.Default,
+				metadata: new bytes(0)
+			}),
+			allocations: allocations
+		});
+		return outcome;
+	}
+
+	function createDupleOutcome(
+		address asset,
+		address[2] memory addresses,
+		uint256[2] memory amounts
+	) public pure returns (Outcome.SingleAssetExit[] memory) {
+		Outcome.Allocation[] memory allocations = new Outcome.Allocation[](2);
+		for (uint256 i = 0; i < 2; i++) {
+			allocations[i] = Outcome.Allocation({
+				destination: bytes20(addresses[i]),
+				amount: amounts[i],
+				allocationType: 0,
+				metadata: new bytes(0)
+			});
+		}
+		Outcome.SingleAssetExit[] memory outcome = new Outcome.SingleAssetExit[](1);
+		outcome[0] = Outcome.SingleAssetExit({
+			asset: asset,
+			assetMetadata: Outcome.AssetMetadata({
+				assetType: Outcome.AssetType.Default,
+				metadata: new bytes(0)
+			}),
+			allocations: allocations
+		});
+		return outcome;
+	}
+
 	function createRVP(
+		Outcome.SingleAssetExit[] memory outcome,
 		bytes memory appData,
 		uint48 turnNum,
 		bool isFinal,
 		uint8[] memory signedByIndices
 	) public pure returns (INitroTypes.RecoveredVariablePart memory) {
-		Outcome.SingleAssetExit[] memory outcome = new Outcome.SingleAssetExit[](0);
 		INitroTypes.VariablePart memory variablePart = INitroTypes.VariablePart({
 			outcome: outcome,
 			appData: appData,
@@ -67,9 +124,10 @@ contract TradingAppTest_stateIsSupported is Test {
 			1
 		);
 		// postfund
-		proof[0] = createRVP(new bytes(0), 1, false, newUint8_2(0, 1));
+		proof[0] = createRVP(traderOutcome(), new bytes(0), 1, false, newUint8_2(0, 1));
 
 		INitroTypes.RecoveredVariablePart memory candidate = createRVP(
+			traderOutcome(),
 			abi.encode(ITradingTypes.Order({orderID: bytes32('order1')})),
 			2,
 			false,
@@ -91,6 +149,7 @@ contract TradingAppTest_stateIsSupported is Test {
 		);
 		// order
 		proof[0] = createRVP(
+			traderOutcome(),
 			abi.encode(ITradingTypes.Order({orderID: bytes32('order1')})),
 			2,
 			false,
@@ -98,6 +157,7 @@ contract TradingAppTest_stateIsSupported is Test {
 		);
 
 		INitroTypes.RecoveredVariablePart memory candidate = createRVP(
+			traderOutcome(),
 			abi.encode(
 				ITradingTypes.OrderResponse({
 					orderID: bytes32('order1'),
@@ -124,6 +184,7 @@ contract TradingAppTest_stateIsSupported is Test {
 		);
 		// order
 		proof[0] = createRVP(
+			traderOutcome(),
 			abi.encode(
 				ITradingTypes.OrderResponse({
 					orderID: bytes32('order1'),
@@ -136,6 +197,7 @@ contract TradingAppTest_stateIsSupported is Test {
 		);
 
 		INitroTypes.RecoveredVariablePart memory candidate = createRVP(
+			traderOutcome(),
 			abi.encode(ITradingTypes.Order({orderID: bytes32('order2')})),
 			4,
 			false,
@@ -161,17 +223,20 @@ contract TradingAppTest_stateIsSupported is Test {
 		INitroTypes.RecoveredVariablePart[] memory proof = new INitroTypes.RecoveredVariablePart[](
 			2
 		);
-		proof[0] = createRVP(abi.encode(order1), 2, false, newUint8_1(0));
-		proof[1] = createRVP(abi.encode(response1), 3, false, newUint8_1(1));
+		proof[0] = createRVP(traderOutcome(), abi.encode(order1), 2, false, newUint8_1(0));
+		proof[1] = createRVP(traderOutcome(), abi.encode(response1), 3, false, newUint8_1(1));
 
 		INitroTypes.RecoveredVariablePart memory candidate = createRVP(
+			createDupleOutcome(
+				address(42),
+				[traderAddress, brokerAddress],
+				[uint256(1), marginAmount - 1]
+			),
 			new bytes(0),
 			4,
 			false,
 			newUint8_1(1)
 		);
-
-		// console.log(NitroUtils.getClaimedSignersNum(candidate.signedBy));
 
 		(bool supported, string memory reason) = tradingApp.stateIsSupported(
 			fixedPart,
@@ -219,12 +284,13 @@ contract TradingAppTest_stateIsSupported is Test {
 		INitroTypes.RecoveredVariablePart[] memory proof = new INitroTypes.RecoveredVariablePart[](
 			4
 		);
-		proof[0] = createRVP(abi.encode(order1), 2, false, newUint8_1(0));
-		proof[1] = createRVP(abi.encode(response1), 3, false, newUint8_1(1));
-		proof[2] = createRVP(abi.encode(order2), 4, false, newUint8_1(0));
-		proof[3] = createRVP(abi.encode(response2), 5, false, newUint8_1(1));
+		proof[0] = createRVP(traderOutcome(), abi.encode(order1), 2, false, newUint8_1(0));
+		proof[1] = createRVP(traderOutcome(), abi.encode(response1), 3, false, newUint8_1(1));
+		proof[2] = createRVP(traderOutcome(), abi.encode(order2), 4, false, newUint8_1(0));
+		proof[3] = createRVP(traderOutcome(), abi.encode(response2), 5, false, newUint8_1(1));
 
 		INitroTypes.RecoveredVariablePart memory candidate = createRVP(
+			traderOutcome(),
 			abi.encode(settlement),
 			6,
 			false,

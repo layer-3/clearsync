@@ -26,8 +26,6 @@ contract TradingApp is IForceMoveApp {
 		// 2n+1 - order response
 		// 2n - order or settlement
 
-		// TODO: add outcome (includes only Trader's margin) validation logic
-
 		require(fixedPart.participants.length == 2, 'invalid number of participants, expected 2');
 
 		uint48 candTurnNum = candidate.variablePart.turnNum;
@@ -43,7 +41,12 @@ contract TradingApp is IForceMoveApp {
 
 		// order or orderResponse
 		if (proof.length == 1) {
-			// TODO: validate outcome does not change
+			_requireSingleAllocation(proof[0].variablePart.outcome);
+			_requireSingleAllocation(candidate.variablePart.outcome);
+			_requireNoAllocationAmountChange(
+				proof[0].variablePart.outcome,
+				candidate.variablePart.outcome
+			);
 
 			// first order
 			if (candidate.variablePart.turnNum == 2) {
@@ -137,8 +140,17 @@ contract TradingApp is IForceMoveApp {
 					'not signed by broker'
 				);
 
-				// TODO: validate outcome
-
+				// outcomes
+				_requireSingleAllocation(proof[0].variablePart.outcome);
+				_requireSingleAllocation(proof[1].variablePart.outcome);
+				_requireNoAllocationAmountChange(
+					proof[0].variablePart.outcome,
+					proof[1].variablePart.outcome
+				);
+				_requireValidFundsSplit(
+					proof[1].variablePart.outcome,
+					candidate.variablePart.outcome
+				);
 				return (true, '');
 			}
 			// settlement
@@ -159,12 +171,41 @@ contract TradingApp is IForceMoveApp {
 		revert('invalid proof length');
 	}
 
+	function _requireSingleAllocation(Outcome.SingleAssetExit[] memory outcome) internal pure {
+		require(outcome.length == 1, 'not 1 asset');
+		require(outcome[0].allocations.length == 1, 'not 1 allocation');
+	}
+
+	function _requireNoAllocationAmountChange(
+		Outcome.SingleAssetExit[] memory prevOutcome,
+		Outcome.SingleAssetExit[] memory nextOutcome
+	) internal pure {
+		require(
+			prevOutcome[0].allocations[0].destination == nextOutcome[0].allocations[0].destination,
+			'destination changed in allocation'
+		);
+		require(
+			prevOutcome[0].allocations[0].amount == nextOutcome[0].allocations[0].amount,
+			'amount changed in allocation'
+		);
+	}
+
+	function _requireValidFundsSplit(
+		Outcome.SingleAssetExit[] memory prevOutcome,
+		Outcome.SingleAssetExit[] memory nextOutcome
+	) internal pure {
+		require(
+			prevOutcome[0].allocations[0].amount ==
+				nextOutcome[0].allocations[0].amount + nextOutcome[0].allocations[1].amount,
+			'amounts sum mismatch'
+		);
+	}
+
 	function _verifyProofForSettlement(
 		FixedPart calldata fixedPart,
 		ITradingTypes.Settlement memory settlement,
 		RecoveredVariablePart[] calldata proof
 	) internal pure {
-		// TODO: validate outcome does not change
 		bytes32[] memory proofDataHashes = new bytes32[](proof.length);
 		uint256 prevTurnNum = 1; // postfund state
 		for (uint256 i = 0; i < proof.length - 1; i += 2) {
@@ -187,6 +228,20 @@ contract TradingApp is IForceMoveApp {
 			// then the next one must contain a response
 			// with the same order ID
 			require(orderResponse.orderID == order.orderID, 'order and response IDs mismatch');
+
+			// outcomes
+			if (i != 0) {
+				_requireNoAllocationAmountChange(
+					proof[i - 1].variablePart.outcome,
+					proof[i].variablePart.outcome
+				);
+			}
+			_requireSingleAllocation(proof[i].variablePart.outcome);
+			_requireSingleAllocation(proof[i + 1].variablePart.outcome);
+			_requireNoAllocationAmountChange(
+				proof[i].variablePart.outcome,
+				proof[i + 1].variablePart.outcome
+			);
 
 			proofDataHashes[i] = keccak256(currProof.appData);
 			proofDataHashes[i + 1] = keccak256(nextProof.appData);
