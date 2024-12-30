@@ -17,7 +17,8 @@ contract TradingApp is IForceMoveApp {
 		RecoveredVariablePart[] calldata proof,
 		RecoveredVariablePart calldata candidate
 	) external pure override returns (bool, string memory) {
-		// TODO: add liquidation state (proof.length == 0, signedBy Broker, contains Liquidation struct with Trader margin amount that goes to the Broker)
+		// TODO: refactor by extracting logic into several functions
+		// TODO: do we want to continue operating this channel after settlement? If so, we need to support such state change. Changes to liquidation validation are required.
 		// turn nums:
 		// 0 - prefund
 		// 1 - postfund
@@ -26,6 +27,8 @@ contract TradingApp is IForceMoveApp {
 		// 2n - order or settlement
 
 		// TODO: add outcome (includes only Trader's margin) validation logic
+
+		require(fixedPart.participants.length == 2, 'invalid number of participants, expected 2');
 
 		uint48 candTurnNum = candidate.variablePart.turnNum;
 
@@ -40,6 +43,8 @@ contract TradingApp is IForceMoveApp {
 
 		// order or orderResponse
 		if (proof.length == 1) {
+			// TODO: validate outcome does not change
+
 			// first order
 			if (candidate.variablePart.turnNum == 2) {
 				require(
@@ -88,23 +93,70 @@ contract TradingApp is IForceMoveApp {
 			}
 			return (true, '');
 		}
+		// settlement or liquidation
+		else if (proof.length >= 2) {
+			// both can only happen after an OrderResponse
+			require(candTurnNum % 2 == 0, 'invalid candidate turn num');
 
-		// settlement
-		require(
-			candTurnNum % 2 == 0 /* is settlement */ &&
-				proof.length >= 2 /* contains at least one order+response pair */ &&
-				proof.length % 2 == 0 /* contains full pairs only, no dangling values */,
-			'settlement conditions not met'
-		);
-		// check consensus of candidate
-		Consensus.requireConsensus(fixedPart, new RecoveredVariablePart[](0), candidate);
-		// Check the settlement data structure validity
-		ITradingTypes.Settlement memory settlement = abi.decode(
-			candidateData,
-			(ITradingTypes.Settlement)
-		);
-		_verifyProofForSettlement(fixedPart, settlement, proof);
-		return (true, '');
+			// liquidation
+			if (NitroUtils.getClaimedSignersNum(candidate.signedBy) == 1) {
+				require(proof.length == 2, 'liquidation proof too long');
+				// check proof[0] - order
+				StrictTurnTaking.isSignedByMover(fixedPart, proof[0]);
+				ITradingTypes.Order memory order = abi.decode(
+					proof[0].variablePart.appData,
+					(ITradingTypes.Order)
+				);
+
+				// check proof[1] - ACCEPT orderResponse
+				StrictTurnTaking.isSignedByMover(fixedPart, proof[1]);
+				require(
+					proof[1].variablePart.turnNum == proof[0].variablePart.turnNum + 1,
+					'turns are not consecutive'
+				);
+				ITradingTypes.OrderResponse memory orderResponse = abi.decode(
+					proof[1].variablePart.appData,
+					(ITradingTypes.OrderResponse)
+				);
+				require(orderResponse.orderID == order.orderID, 'order and response IDs mismatch');
+				require(
+					orderResponse.responseType == ITradingTypes.OrderResponseType.ACCEPT,
+					'order not accepted'
+				);
+
+				// check candidate - liquidation state
+				require(
+					// NOTE: liquidation can be not a direct successor of the ACCEPT orderResponse to allow
+					// for liquidation after REJECT orderResponse
+					candidate.variablePart.turnNum > proof[1].variablePart.turnNum,
+					'invalid liquidation turn num'
+				);
+				require(
+					// trader is mover #0, broker is mover #1
+					NitroUtils.isClaimedSignedOnlyBy(candidate.signedBy, 1),
+					'not signed by broker'
+				);
+
+				// TODO: validate outcome
+
+				return (true, '');
+			}
+			// settlement
+			else {
+				require(proof.length % 2 == 0, 'settlement proof contains dangling values');
+				// check consensus of candidate
+				Consensus.requireConsensus(fixedPart, new RecoveredVariablePart[](0), candidate);
+				// Check the settlement data structure validity
+				ITradingTypes.Settlement memory settlement = abi.decode(
+					candidateData,
+					(ITradingTypes.Settlement)
+				);
+				_verifyProofForSettlement(fixedPart, settlement, proof);
+				return (true, '');
+			}
+		}
+
+		revert('invalid proof length');
 	}
 
 	function _verifyProofForSettlement(
@@ -112,6 +164,7 @@ contract TradingApp is IForceMoveApp {
 		ITradingTypes.Settlement memory settlement,
 		RecoveredVariablePart[] calldata proof
 	) internal pure {
+		// TODO: validate outcome does not change
 		bytes32[] memory proofDataHashes = new bytes32[](proof.length);
 		uint256 prevTurnNum = 1; // postfund state
 		for (uint256 i = 0; i < proof.length - 1; i += 2) {

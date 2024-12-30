@@ -3,10 +3,11 @@ pragma solidity ^0.8.22;
 
 import {Test, console} from 'forge-std/Test.sol';
 
+import {ExitFormat as Outcome} from '@statechannels/exit-format/contracts/ExitFormat.sol';
+
 import {TradingApp} from '../../contracts/clearing/TradingApp.sol';
 import {ITradingTypes} from '../../contracts/interfaces/ITradingTypes.sol';
 import {INitroTypes} from '../../contracts/nitro/interfaces/INitroTypes.sol';
-import {ExitFormat as Outcome} from '@statechannels/exit-format/contracts/ExitFormat.sol';
 
 contract TradingAppTest_stateIsSupported is Test {
 	TradingApp public tradingApp;
@@ -140,6 +141,37 @@ contract TradingAppTest_stateIsSupported is Test {
 			false,
 			newUint8_1(0)
 		);
+
+		(bool supported, string memory reason) = tradingApp.stateIsSupported(
+			fixedPart,
+			proof,
+			candidate
+		);
+		assertTrue(supported);
+		assertEq(reason, '');
+	}
+
+	function test_supported_liquidation() public view {
+		ITradingTypes.Order memory order1 = ITradingTypes.Order({orderID: bytes32('order1')});
+		ITradingTypes.OrderResponse memory response1 = ITradingTypes.OrderResponse({
+			orderID: bytes32('order1'),
+			responseType: ITradingTypes.OrderResponseType.ACCEPT
+		});
+
+		INitroTypes.RecoveredVariablePart[] memory proof = new INitroTypes.RecoveredVariablePart[](
+			2
+		);
+		proof[0] = createRVP(abi.encode(order1), 2, false, newUint8_1(0));
+		proof[1] = createRVP(abi.encode(response1), 3, false, newUint8_1(1));
+
+		INitroTypes.RecoveredVariablePart memory candidate = createRVP(
+			new bytes(0),
+			4,
+			false,
+			newUint8_1(1)
+		);
+
+		// console.log(NitroUtils.getClaimedSignersNum(candidate.signedBy));
 
 		(bool supported, string memory reason) = tradingApp.stateIsSupported(
 			fixedPart,
