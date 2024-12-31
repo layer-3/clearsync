@@ -1,0 +1,7 @@
+module common
+
+typealias Address = String(matches(Regex(#"0x[a-fA-F0-9]{40}"#)))
+
+typealias WsUrl = String(matches(Regex(#"ws(s?)://[^\s]+"#)))
+typealias HttpUrl = String(matches(Regex(#"http(s?)://[^\s]+"#)))
+typealias Url = WsUrl | HttpUrl

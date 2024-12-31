@@ -3,7 +3,7 @@
     "url": "https://preprod.neodax.app/",
     "name": "Kayen",
     "finex_url": "wss://preprod.neodax.app/ws",
-    "clearport_b_url": "cp-responder-peer-grpc:50081",
+    "clearport_b_url": "http://cp-responder-peer-grpc:50081",
     "clearport_a_url": "wss://cpa-preprod.neodax.app",
     "description": "Kayen is a clearing house for digital assets. It is a regulated entity that provides clearing and settlement services for digital assets and derivatives. Kayen is a subsidiary of OpenDAX, a leading global digital asset exchange operator.",
     "available": true,

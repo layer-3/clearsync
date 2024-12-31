@@ -118,7 +118,9 @@
             },
             "region": "north_america",
             "code": "us",
-            "country": "USA"
+            "country": "USA",
+            "logo": "",
+            "sm_logo": ""
         },
         "address": "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3",
         "packages": [
@@ -180,7 +182,9 @@
             },
             "region": "africa",
             "code": "za",
-            "country": "South Africa"
+            "country": "South Africa",
+            "logo": "",
+            "sm_logo": ""
         },
         "address": "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3",
         "packages": [
@@ -211,7 +215,9 @@
             },
             "region": "asia_pacific",
             "code": "cn",
-            "country": "China"
+            "country": "China",
+            "logo": "",
+            "sm_logo": ""
         },
         "address": "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3",
         "packages": [
@@ -242,7 +248,9 @@
             },
             "region": "asia_pacific",
             "code": "in",
-            "country": "India"
+            "country": "India",
+            "logo": "",
+            "sm_logo": ""
         },
         "address": "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3",
         "packages": [
@@ -273,7 +281,9 @@
             },
             "region": "asia_pacific",
             "code": "id",
-            "country": "Indonesia"
+            "country": "Indonesia",
+            "logo": "",
+            "sm_logo": ""
         },
         "address": "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3",
         "packages": [
@@ -304,7 +314,9 @@
             },
             "region": "asia_pacific",
             "code": "au",
-            "country": "Australia"
+            "country": "Australia",
+            "logo": "",
+            "sm_logo": ""
         },
         "address": "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3",
         "packages": [
@@ -335,7 +347,9 @@
             },
             "region": "asia_pacific",
             "code": "in",
-            "country": "India"
+            "country": "India",
+            "logo": "",
+            "sm_logo": ""
         },
         "address": "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3",
         "packages": [
@@ -366,7 +380,9 @@
             },
             "region": "asia_pacific",
             "code": "jp",
-            "country": "Japan"
+            "country": "Japan",
+            "logo": "",
+            "sm_logo": ""
         },
         "address": "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3",
         "packages": [
@@ -397,7 +413,9 @@
             },
             "region": "asia_pacific",
             "code": "kr",
-            "country": "Korea"
+            "country": "Korea",
+            "logo": "",
+            "sm_logo": ""
         },
         "address": "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3",
         "packages": [
@@ -428,7 +446,9 @@
             },
             "region": "asia_pacific",
             "code": "id",
-            "country": "Indonesia"
+            "country": "Indonesia",
+            "logo": "",
+            "sm_logo": ""
         },
         "address": "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3",
         "packages": [
@@ -459,7 +479,9 @@
             },
             "region": "asia_pacific",
             "code": "au",
-            "country": "Australia"
+            "country": "Australia",
+            "logo": "",
+            "sm_logo": ""
         },
         "address": "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3",
         "packages": [
@@ -490,7 +512,9 @@
             },
             "region": "asia_pacific",
             "code": "jp",
-            "country": "Japan"
+            "country": "Japan",
+            "logo": "",
+            "sm_logo": ""
         },
         "address": "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3",
         "packages": [
@@ -521,7 +545,9 @@
             },
             "region": "north_america",
             "code": "ca",
-            "country": "Canada"
+            "country": "Canada",
+            "logo": "",
+            "sm_logo": ""
         },
         "address": "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3",
         "packages": [
@@ -552,7 +578,9 @@
             },
             "region": "europe",
             "code": "ie",
-            "country": "Ireland"
+            "country": "Ireland",
+            "logo": "",
+            "sm_logo": ""
         },
         "address": "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3",
         "packages": [
