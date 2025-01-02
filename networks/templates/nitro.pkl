@@ -1,0 +1,8 @@
+module Nitro
+
+import "./common.pkl"
+
+adjudicatorAddress: common.Address
+clearingAppAddress: common.Address
+escrowAppAddress: common.Address
+marginTokenAddress: common.Address

@@ -45,8 +45,8 @@ peers {
     description = "BitMint Pro is a leading crypto trading platform based in US East (Virginia). Specializing in a variety of digital currencies, our platform offers advanced trading tools, secure wallet services, and a user-friendly interface for optimal trading. Our expert team provides insights and support to navigate the crypto market effectively."
     available = true
     metadata = new {
-      logo = ""
-      sm_logo = ""
+      logo = null
+      sm_logo = null
       region = "north_america"
       code = "us"
       country = "USA"
@@ -78,8 +78,8 @@ peers {
     description = "EtherTradeX is a cutting-edge cryptocurrency trading platform located in the US East (Ohio) region. Our platform specializes in providing a wide range of digital currency trading options, advanced trading tools, top-notch security features, and an intuitive user interface designed to enhance your trading experience. Our team of experts is dedicated to helping you navigate the dynamic world of cryptocurrency trading effectively and efficiently."
     available = true
     metadata = new {
-      logo = ""
-      sm_logo = ""
+      logo = null
+      sm_logo = null
       region = "north_america"
       code = "us"
       country = "USA"
@@ -123,8 +123,8 @@ peers {
       region = "north_america"
       code = "us"
       country = "USA"
-      logo = ""
-      sm_logo = ""
+      logo = null
+      sm_logo = null
     }
     address = "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3"
     packages = new {
@@ -156,8 +156,8 @@ peers {
       region = "north_america"
       code = "us"
       country = "USA"
-      logo = ""
-      sm_logo = ""
+      logo = null
+      sm_logo = null
     }
     address = "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3"
     packages = new {
@@ -189,8 +189,8 @@ peers {
       region = "africa"
       code = "za"
       country = "South Africa"
-      logo = ""
-      sm_logo = ""
+      logo = null
+      sm_logo = null
     }
     address = "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3"
     packages = new {
@@ -222,8 +222,8 @@ peers {
       region = "asia_pacific"
       code = "cn"
       country = "China"
-      logo = ""
-      sm_logo = ""
+      logo = null
+      sm_logo = null
     }
     address = "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3"
     packages = new {
@@ -255,8 +255,8 @@ peers {
       region = "asia_pacific"
       code = "in"
       country = "India"
-      logo = ""
-      sm_logo = ""
+      logo = null
+      sm_logo = null
     }
     address = "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3"
     packages = new {
@@ -288,8 +288,8 @@ peers {
       region = "asia_pacific"
       code = "id"
       country = "Indonesia"
-      logo = ""
-      sm_logo = ""
+      logo = null
+      sm_logo = null
     }
     address = "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3"
     packages = new {
@@ -321,8 +321,8 @@ peers {
       region = "asia_pacific"
       code = "au"
       country = "Australia"
-      logo = ""
-      sm_logo = ""
+      logo = null
+      sm_logo = null
     }
     address = "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3"
     packages = new {
@@ -354,8 +354,8 @@ peers {
       region = "asia_pacific"
       code = "in"
       country = "India"
-      logo = ""
-      sm_logo = ""
+      logo = null
+      sm_logo = null
     }
     address = "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3"
     packages = new {
@@ -387,8 +387,8 @@ peers {
       region = "asia_pacific"
       code = "jp"
       country = "Japan"
-      logo = ""
-      sm_logo = ""
+      logo = null
+      sm_logo = null
     }
     address = "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3"
     packages = new {
@@ -420,8 +420,8 @@ peers {
       region = "asia_pacific"
       code = "kr"
       country = "Korea"
-      logo = ""
-      sm_logo = ""
+      logo = null
+      sm_logo = null
     }
     address = "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3"
     packages = new {
@@ -453,8 +453,8 @@ peers {
       region = "asia_pacific"
       code = "id"
       country = "Indonesia"
-      logo = ""
-      sm_logo = ""
+      logo = null
+      sm_logo = null
     }
     address = "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3"
     packages = new {
@@ -486,8 +486,8 @@ peers {
       region = "asia_pacific"
       code = "au"
       country = "Australia"
-      logo = ""
-      sm_logo = ""
+      logo = null
+      sm_logo = null
     }
     address = "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3"
     packages = new {
@@ -519,8 +519,8 @@ peers {
       region = "asia_pacific"
       code = "jp"
       country = "Japan"
-      logo = ""
-      sm_logo = ""
+      logo = null
+      sm_logo = null
     }
     address = "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3"
     packages = new {
@@ -552,8 +552,8 @@ peers {
       region = "north_america"
       code = "ca"
       country = "Canada"
-      logo = ""
-      sm_logo = ""
+      logo = null
+      sm_logo = null
     }
     address = "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3"
     packages = new {
@@ -585,8 +585,8 @@ peers {
       region = "europe"
       code = "ie"
       country = "Ireland"
-      logo = ""
-      sm_logo = ""
+      logo = null
+      sm_logo = null
     }
     address = "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3"
     packages = new {
@@ -618,8 +618,8 @@ peers {
       region = "europe"
       code = "gb"
       country = "United Kingdom"
-      logo = ""
-      sm_logo = ""
+      logo = null
+      sm_logo = null
     }
     address = "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3"
     packages = new {
@@ -651,8 +651,8 @@ peers {
       region = "europe"
       code = "it"
       country = "Italy"
-      logo = ""
-      sm_logo = ""
+      logo = null
+      sm_logo = null
     }
     address = "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3"
     packages = new {
@@ -684,8 +684,8 @@ peers {
       region = "europe"
       code = "fr"
       country = "France"
-      logo = ""
-      sm_logo = ""
+      logo = null
+      sm_logo = null
     }
     address = "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3"
     packages = new {
@@ -717,8 +717,8 @@ peers {
       region = "europe"
       code = "es"
       country = "Spain"
-      logo = ""
-      sm_logo = ""
+      logo = null
+      sm_logo = null
     }
     address = "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3"
     packages = new {
@@ -750,8 +750,8 @@ peers {
       region = "europe"
       code = "se"
       country = "Sweden"
-      logo = ""
-      sm_logo = ""
+      logo = null
+      sm_logo = null
     }
     address = "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3"
     packages = new {
@@ -783,8 +783,8 @@ peers {
       region = "europe"
       code = "ch"
       country = "Switzerland"
-      logo = ""
-      sm_logo = ""
+      logo = null
+      sm_logo = null
     }
     address = "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3"
     packages = new {
@@ -816,8 +816,8 @@ peers {
       region = "middle_east"
       code = "il"
       country = "Israel"
-      logo = ""
-      sm_logo = ""
+      logo = null
+      sm_logo = null
     }
     address = "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3"
     packages = new {
@@ -849,8 +849,8 @@ peers {
       region = "middle_east"
       code = "bh"
       country = "Bahrain"
-      logo = ""
-      sm_logo = ""
+      logo = null
+      sm_logo = null
     }
     address = "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3"
     packages = new {
@@ -882,8 +882,8 @@ peers {
       region = "middle_east"
       code = "ae"
       country = "UAE"
-      logo = ""
-      sm_logo = ""
+      logo = null
+      sm_logo = null
     }
     address = "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3"
     packages = new {
@@ -915,8 +915,8 @@ peers {
       region = "South America"
       code = "br"
       country = "Brazil"
-      logo = ""
-      sm_logo = ""
+      logo = null
+      sm_logo = null
     }
     address = "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3"
     packages = new {

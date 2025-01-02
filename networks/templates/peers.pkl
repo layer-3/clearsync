@@ -28,8 +28,8 @@ class Metadata {
   code: String(length == 2)
   country: String(!isEmpty)
 
-  logo: common.Url | String(isEmpty)
-  sm_logo: common.Url | String(isEmpty)
+  logo: common.Url?
+  sm_logo: common.Url?
 }
 
 class Coordinates {

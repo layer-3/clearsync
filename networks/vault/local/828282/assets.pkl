@@ -1,0 +1,70 @@
+amends "../../../templates/assets.pkl"
+
+tokens = new {
+  new {
+    address = "0xa52755E0dbb3fEa119Ddef928149C6bbe0709F5B"
+    name = "USD Tether"
+    symbol = "USDT"
+    decimals = 6
+    precision = 4
+    extensions = new {
+      allow_locking = true
+      coingecko_api_id = "tether"
+    }
+  }
+  new {
+    address = "0x0B7d2d621Fc80900fD345eb9542018b67fEF474F"
+    name = "USD Coin"
+    symbol = "USDC"
+    alias = "USD"
+    decimals = 6
+    precision = 4
+    extensions = new {
+      allow_locking = true
+      coingecko_api_id = "usd-coin"
+    }
+  }
+  new {
+    address = "0xFb0782Cc546CcF1A8e12B6E1429aa7ce120c4b35"
+    name = "Shiba Inu"
+    symbol = "SHIB"
+    decimals = 18
+    precision = 8
+  }
+  new {
+    address = "0x98e255A2D9e36d5174a7787aBA7053e60F47Fc08"
+    name = "Bitcoin"
+    symbol = "BTC"
+    decimals = 18
+    precision = 8
+    extensions = new {
+      allow_locking = true
+      coingecko_api_id = "bitcoin"
+    }
+  }
+  new {
+    address = "0x42b757f0B530cb44139ceDd9F0C47249175CBC7E"
+    name = "Ether"
+    symbol = "ETH"
+    decimals = 18
+    precision = 8
+    extensions = new {
+      allow_locking = true
+      coingecko_api_id = "ethereum"
+    }
+  }
+  new {
+    address = "0x3e594179ad7E013f817bCddF310a7e75b2b069a9"
+    name = "Polygon"
+    symbol = "MATIC"
+    decimals = 18
+    precision = 6
+  }
+  new {
+    address = "0x9cEF6720Ba49c8C94Df1CfA0D713828B7B9fAEB1"
+    name = "Duckies, the canary network for Yellow "
+    symbol = "DUCKIES"
+    decimals = 2
+    precision = 2
+  }
+}

@@ -31,8 +31,10 @@ class SessionKey {
   session_key_validator: common.Address
 }
 
-//================================================
+// ================================================
 // PAYMASTER TYPES
+// ================================================
+
 class Paymaster {
   type: "off" | "pimlico_erc20" | "pimlico_verifying" | "biconomy_erc20" | "biconomy_sponsoring"
   url: common.HttpUrl

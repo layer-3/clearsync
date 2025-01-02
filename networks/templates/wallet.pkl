@@ -1,0 +1,20 @@
+module Wallet
+
+import "./common.pkl"
+
+paymaster: Mapping<common.Address, common.Address>
+litevault: common.Address?
+transactions: Transactions
+
+class Transactions {
+  withdrawal: SponsorshipPolicy
+  swap: SponsorshipPolicy
+  lock: SponsorshipPolicy
+  unlock: SponsorshipPolicy
+  daily_claim: SponsorshipPolicy
+  daily_claim_tap_app: SponsorshipPolicy
+  mint_tap_app: SponsorshipPolicy
+  base: SponsorshipPolicy
+}
+
+typealias SponsorshipPolicy = *"native" | "sponsor" | "with_paymaster"

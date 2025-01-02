@@ -1,0 +1,16 @@
+amends "../../../templates/markets.pkl"
+
+markets = new {
+  new {
+    symbol = "spot://BTC/USDT"
+  }
+  new {
+    symbol = "spot://ETH/USDT"
+  }
+  new {
+    symbol = "spot://MATIC/USDT"
+  }
+  new {
+    symbol = "spot://SHIB/USDT"
+  }
+}

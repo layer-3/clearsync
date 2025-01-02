@@ -1,0 +1,8 @@
+module AssetMapping
+
+import "./common.pkl"
+
+tokens: Mapping<Ticker, Listing<Ticker>>
+markets: Mapping<Ticker, Listing<Ticker>>
+
+typealias Ticker = String(!isEmpty)

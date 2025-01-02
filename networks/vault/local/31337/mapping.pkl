@@ -1,0 +1,10 @@
+amends "../../../templates/mapping.pkl"
+
+tokens = new {
+  ["BTC"] = new { "WBTC" }
+  ["ETH"] = new { "WETH" }
+  ["USDC"] = new { "USDT" "USD" "TUSD" }
+}
+markets = new {
+  ["USDC"] = new { "ETH" "MATIC" }
+}

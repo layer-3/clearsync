@@ -1,0 +1,20 @@
+module Assets
+
+import "./common.pkl"
+
+tokens: Listing<Token>(isDistinctBy((it) -> it.address))
+
+class Token {
+  address: common.Address
+  name: String(!isEmpty)
+  alias: String(!isEmpty && this != name)?
+  symbol: String(length <= name.length)
+  decimals: UInt(isBetween(0, 18))
+  precision: UInt(isBetween(0, 18))
+  extensions: Extensions?
+}
+
+class Extensions {
+  allow_locking: Boolean
+  coingecko_api_id: String(!isEmpty)
+}
