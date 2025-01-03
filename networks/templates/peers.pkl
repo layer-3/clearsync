@@ -1,0 +1,48 @@
+module Peers
+
+import "./common.pkl"
+
+peers: Listing<Peer>(isDistinctBy((it) -> it.name))
+
+class Peer {
+  url: common.HttpUrl
+
+  name: String(!isEmpty)
+
+  finex_url: common.WsUrl
+
+  clearport_b_url: common.Url
+  clearport_a_url: common.Url
+
+  description: String(!isEmpty)
+
+  available: Boolean
+  metadata: Metadata
+  address: common.Address
+  packages: Listing<Package>(isDistinctBy((it) -> it.name))
+}
+
+class Metadata {
+  coordinates: Coordinates
+  region: String(!isEmpty)
+  code: String(length == 2)
+  country: String(!isEmpty)
+
+  logo: common.Url?
+  sm_logo: common.Url?
+}
+
+class Coordinates {
+  lat: Float(isBetween(-90, 90))
+  long: Float(isBetween(-180, 180))
+}
+
+class Package {
+  name: String(!isEmpty)
+  margin: Listing<UInt>(length == 2 && this[0] < this[1])
+  safety: String(matches(Regex(#"\d+(\.\d+)?"#)))
+}
+
+output {
+  value = peers
+}

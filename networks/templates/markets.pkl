@@ -1,0 +1,18 @@
+module Markets
+
+import "./common.pkl"
+
+markets: Listing<Market>(isDistinctBy((it) -> it.symbol))
+
+class Market {
+  symbol: String(matches(Regex(#"(spot)://[A-Z]+/[A-Z]+"#)))
+  quotes: Quotes?
+}
+
+class Quotes {
+  dexs: Boolean
+}
+
+output {
+  value = markets
+}

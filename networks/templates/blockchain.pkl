@@ -1,0 +1,10 @@
+module Blockchain
+
+import "./common.pkl"
+
+chainId: UInt
+blockchainRPC: common.WsUrl
+adjudicatorAddress: common.Address
+clearingAppAddress: common.Address
+escrowAppAddress: common.Address
+marginTokenAddress: common.Address

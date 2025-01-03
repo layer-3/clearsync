@@ -1,0 +1,70 @@
+amends "../../../templates/peers.pkl"
+
+peers = new {
+  new {
+    url = "http://localhost:50081/"
+    name = "localhost.ynt"
+    finex_url = "wss://localhost:50081/ws"
+    clearport_b_url = "ws://changeme" // TODO: what's the value here?
+    clearport_a_url = "ws://changeme" // TODO: what's the value here?
+    description = "Localhost broker"
+    available = true
+    metadata = new {
+      coordinates = new {
+        lat = 50.1109
+        long = 8.6821
+      }
+      region = "europe"
+      code = "de"
+      country = "Germany"
+      logo = null
+      sm_logo = null
+    }
+    address = "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3"
+    packages = new {
+      new {
+        name = "retail"
+        margin = new { 5 100 }
+        safety = "5.5"
+      }
+      new {
+        name = "prime"
+        margin = new { 100 1000 }
+        safety = "3.5"
+      }
+    }
+  }
+  new {
+    url = "http://clearport.v4.uat.opendax.app:30051"
+    name = "kayen.ynt"
+    finex_url = "wss://clearport.v4.uat.opendax.app:30051/ws"
+    clearport_b_url = "ws://changeme" // TODO: what's the value here?
+    clearport_a_url = "ws://changeme" // TODO: what's the value here?
+    description = "Description for Ynet broker"
+    available = true
+    metadata = new {
+      coordinates = new {
+        lat = 51.5099
+        long = -0.118
+      }
+      region = "europe"
+      code = "gb"
+      country = "United Kingdom"
+      logo = null
+      sm_logo = null
+    }
+    address = "0x14e1Bfb671B152AA9E79202263d71Bd2568aF3C3"
+    packages = new {
+      new {
+        name = "retail"
+        margin = new { 5 100 }
+        safety = "5.5"
+      }
+      new {
+        name = "prime"
+        margin = new { 100 1000 }
+        safety = "3.5"
+      }
+    }
+  }
+}

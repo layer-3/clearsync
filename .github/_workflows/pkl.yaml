@@ -1,0 +1,43 @@
+on:
+  push:
+    paths: [ "networks/**" ]
+    branches: [ "main" ]
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install pkl
+        uses: pkl-community/setup-pkl@v0
+        with:
+          pkl-version: 0.27.1
+
+      - name: Find and process .pkl files
+        run: |
+          # Iterate over each directory in TARGET_DIRS
+          for dir in networks/terminal networks/vault; do
+            # Find all .pkl files in the given dirs
+            find "$dir" -name '*.pkl' | while read -r pkl_file; do
+              json_file="${pkl_file%.pkl}.json"
+              pkl eval -f json -o "$json_file" "$pkl_file"
+              git add "$json_file"
+            done
+          done
+
+      - name: Configure Git
+        run: | # TODO: replace username and email
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit and push changes
+        run: |
+          # Check if there are any changes
+          if [ -n "$(git status --porcelain)" ]; then
+            git commit -m "chore: generate configs from Pkl"
+            git push
+          else
+            echo "No changes to commit"
+          fi

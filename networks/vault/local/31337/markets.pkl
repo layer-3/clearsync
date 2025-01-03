@@ -1,0 +1,19 @@
+amends "../../../templates/markets.pkl"
+
+markets = new {
+  new {
+    symbol = "spot://ETH/USDC"
+  }
+  new {
+    symbol = "spot://WETH/USDC"
+  }
+  new {
+    symbol = "spot://BTC/USDC"
+  }
+  new {
+    symbol = "spot://DUCKIES/USDC"
+  }
+  new {
+    symbol = "spot://YELLOW/USDC"
+  }
+}

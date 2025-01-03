@@ -1,0 +1,87 @@
+module AccountAbstraction
+
+import "./common.pkl"
+import "pkl:semver"
+
+config: AccountAbstraction
+
+class AccountAbstraction {
+  entry_point: common.Address
+  gas: Gas
+  smart_wallet: SmartWallet
+  paymaster: Paymaster
+  session_key: SessionKey
+}
+
+class Gas {
+  max_priority_fee_per_gas_multiplier: Float(isFinite)
+  max_fee_per_gas_multiplier: Float(isFinite)
+}
+
+class SmartWallet {
+  type: "simple_account" | "biconomy" | "kernel"
+  ecdsa_validator: common.Address
+  logic: common.Address
+  factory: common.Address
+}
+
+
+class SessionKey {
+  kernel_version: semver.Version
+  session_key_validator: common.Address
+}
+
+// ================================================
+// PAYMASTER TYPES
+// ================================================
+
+class Paymaster {
+  type: "off" | "pimlico_erc20" | "pimlico_verifying" | "biconomy_erc20" | "biconomy_sponsoring"
+  url: common.HttpUrl
+  address: common.Address
+
+  pimlico_erc20: PimlicoERC20Paymaster
+	pimlico_verifying: PimlicoVerifyingPaymaster
+	biconomy_erc20: BiconomyERC20Paymaster
+	biconomy_sponsoring: BiconomySponsoringPaymaster
+}
+
+class PimlicoERC20Paymaster {
+  max_token_cost: Float(isFinite)
+  verification_gas_overhead: Float(isFinite)
+}
+
+class PimlicoVerifyingPaymaster {
+  sponsorship_policy_id: String
+}
+
+class BiconomyERC20Paymaster {
+  mode: "ERC20"
+  calculate_gas_limits: Boolean
+  token_info: BiconomyTokenInfo
+}
+
+class BiconomySponsoringPaymaster {
+  mode: "SPONSORED"
+  calculate_gas_limits: Boolean
+  expiry_duration: Duration(isPositive)
+  sponsorship_info: BiconomySponsorshipInfo
+}
+
+class BiconomyTokenInfo {
+  fee_token_address: common.Address
+}
+
+class BiconomySponsorshipInfo {
+  webhook_data: Mapping<String, Any>
+  smart_account_info: BiconomySmartAccountInfo
+}
+
+class BiconomySmartAccountInfo {
+  name: String
+  version: common.Address
+}
+
+output {
+  value = config
+}
