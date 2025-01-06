@@ -141,6 +141,7 @@ contract BrokerVault is IVault, ISettle, Ownable2Step, ReentrancyGuard {
 			);
 			IERC20(token).safeTransfer(trader, amount);
 			_balances[token] -= amount;
+			emit Withdrawn(broker, token, amount);
 		}
 
 		for (uint256 i = 0; i < settlement.toBroker.length; i++) {
@@ -148,9 +149,10 @@ contract BrokerVault is IVault, ISettle, Ownable2Step, ReentrancyGuard {
 			uint256 amount = settlement.toBroker[i].amount;
 			IERC20(token).safeTransferFrom(trader, broker, amount);
 			_balances[token] += amount;
+			emit Deposited(trader, token, amount);
 		}
 
 		performedSettlements[channelId] = true;
-		emit Settled(trader, broker, channelId);
+		emit Settled(trader, broker, channelId, settlement.ordersChecksum);
 	}
 }

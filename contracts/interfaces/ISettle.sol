@@ -16,7 +16,12 @@ interface ISettle {
 	 * @param broker The address of the broker.
 	 * @param channelId The ID of the channel.
 	 */
-	event Settled(address indexed trader, address indexed broker, bytes32 indexed channelId);
+	event Settled(
+		address indexed trader,
+		address indexed broker,
+		bytes32 indexed channelId,
+		bytes32 settlementId
+	);
 
 	// ========== Errors ==========
 
