@@ -21,8 +21,7 @@
       "allowedFeeTypes": [
         "native",
         "sponsored"
-      ],
-      "sponsorshipPolicyId": "sp_whole_toro"
+      ]
     },
     "unlock": {
       "allowedFeeTypes": [
