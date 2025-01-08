@@ -8,8 +8,9 @@
       "precision": 6,
       "logoURI": "https://assets.coingecko.com/coins/images/50571/standard/scroll.jpg",
       "extensions": {
-        "allow_locking": false,
-        "coingecko_api_id": "scroll"
+        "allow_locking": true,
+        "coingecko_api_id": "scroll",
+        "locking_multiplier": 1.5
       }
     },
     {
