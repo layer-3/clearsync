@@ -144,7 +144,7 @@ type rpcError struct {
 func Debounce(
 	ctx context.Context,
 	logger *log.ZapEventLogger,
-	f func() error,
+	f func(context.Context) error,
 ) error {
 	for {
 		if err := rpcRateLimiter.Wait(ctx); err != nil {
@@ -154,11 +154,12 @@ func Debounce(
 			return err
 		}
 
-		err := f()
+		err := f(ctx)
 		if err == nil {
 			return nil
 		}
 
+		// Search for the error in the list of known HTTP RPC errors
 		for _, httpRpcError := range httpRpcErrors {
 			for _, pattern := range httpRpcError.Patterns {
 				if strings.Contains(err.Error(), pattern) && httpRpcError.Recoverable {
