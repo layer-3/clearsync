@@ -1,0 +1,46 @@
+[
+  {
+    "symbol": "spot://ETH/USD",
+    "quotes": {
+      "dexs": false
+    }
+  },
+  {
+    "symbol": "spot://WBTC/USD",
+    "quotes": {
+      "dexs": false
+    }
+  },
+  {
+    "symbol": "spot://MENDI/USD",
+    "leverage": 1
+  },
+  {
+    "symbol": "spot://SHIB/USD",
+    "quotes": {
+      "dexs": false
+    }
+  },
+  {
+    "symbol": "spot://PEPE/USD",
+    "quotes": {
+      "dexs": false
+    }
+  },
+  {
+    "symbol": "spot://BADGER/USD",
+    "quotes": {
+      "dexs": false
+    }
+  },
+  {
+    "symbol": "spot://FLOKI/USD",
+    "quotes": {
+      "dexs": false
+    }
+  },
+  {
+    "symbol": "spot://LUBE/USD",
+    "leverage": 1
+  }
+]

@@ -1,0 +1,6 @@
+{
+  "adjudicatorAddress": "0x0ba4d7cb34ff4b4a60338a0234576f52d1631182",
+  "clearingAppAddress": "0x6178d14644d29c389b9fdb3b0d25dbdc7c428cad",
+  "escrowAppAddress": "0xa230bc7f76351dfbf97064a16e0b1a9e141cbf9c",
+  "marginTokenAddress": "0x176211869cA2b568f2A7D4EE941E073a821EE1ff"
+}

@@ -1,0 +1,30 @@
+[
+  {
+    "url": "https://dex.osisplatform.com/",
+    "name": "OSIS",
+    "finex_url": "wss://osis.neodax.app/ws",
+    "clearport_b_url": "cp-responder-peer-grpc:50081",
+    "clearport_a_url": "wss://port-a-osis.neodax.app",
+    "description": "OSIS is creating the first Decentralized Sovereign Organization (DSO), building Web3 infrastructure for a free global economy.",
+    "available": true,
+    "metadata": {
+        "coordinates": {
+            "lat": 50.1109,
+            "long": 8.6821
+        },
+        "region": "europe",
+        "code": "de",
+        "country": "Germany",
+        "logo": "https://dex.osisplatform.com/images/logo.png",
+        "sm_logo": "https://dex.osisplatform.com/images/logo-white-mode.svg"
+    },
+    "address": "0x269F993271D845efBc7298d9EbC2be557Cc5284e",
+    "packages": [
+        {
+            "name": "Retail Package",
+            "margin": [1, 30],
+            "safety": "5.5"
+        }
+    ]
+  }
+]

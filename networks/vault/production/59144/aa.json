@@ -1,0 +1,20 @@
+{
+  "entry_point": "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",
+  "gas": {
+    "max_priority_fee_per_gas_multiplier": "2",
+    "max_fee_per_gas_multiplier": "4"
+  },
+  "smart_wallet": {
+    "type": "kernel",
+    "ecdsa_validator": "0xd9AB5096a832b9ce79914329DAEE236f8Eea0390",
+    "logic": "0x0DA6a956B9488eD4dd761E59f52FDc6c8068E6B5",
+    "factory": "0x5de4839a76cf55d0c90e2061ef4386d962E15ae3"
+  },
+  "paymaster": {
+    "type": "off"
+  },
+  "session_key": {
+    "kernel_version": "0.2.2",
+    "session_key_validator": "0x5C06CE2b673fD5E6e56076e40DD46aB67f5a72A5"
+  }
+}
