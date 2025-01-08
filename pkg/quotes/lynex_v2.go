@@ -1,7 +1,9 @@
 package quotes
 
 import (
+	"context"
 	"fmt"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -85,7 +87,7 @@ func (l *lynexV2) postStart(driver *baseDEX[
 	return nil
 }
 
-func (l *lynexV2) getPool(market Market) ([]*dexPool[ilynex_v2_pair.ILynexPairSwap, *ilynex_v2_pair.ILynexPairSwapIterator], error) {
+func (l *lynexV2) getPool(ctx context.Context, market Market) ([]*dexPool[ilynex_v2_pair.ILynexPairSwap, *ilynex_v2_pair.ILynexPairSwapIterator], error) {
 	baseToken, quoteToken, err := getTokens(l.assets, market, loggerLynexV2)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tokens: %w", err)
@@ -95,8 +97,8 @@ func (l *lynexV2) getPool(market Market) ([]*dexPool[ilynex_v2_pair.ILynexPairSw
 	_, isStablePool := l.stablePoolMarkets[market]
 
 	loggerLynexV2.Infow("searching for pool", "market", market)
-	err = debounce.Debounce(loggerLynexV2, func() error {
-		poolAddress, err = l.factory.GetPair(nil, baseToken.Address, quoteToken.Address, isStablePool)
+	err = debounce.Debounce(context.TODO(), loggerLynexV2, func(ctx context.Context) error {
+		poolAddress, err = l.factory.GetPair(&bind.CallOpts{Context: ctx}, baseToken.Address, quoteToken.Address, isStablePool)
 		return err
 	})
 	if err != nil {
@@ -118,8 +120,8 @@ func (l *lynexV2) getPool(market Market) ([]*dexPool[ilynex_v2_pair.ILynexPairSw
 	}
 
 	var basePoolToken common.Address
-	err = debounce.Debounce(loggerLynexV2, func() error {
-		basePoolToken, err = poolContract.Token0(nil)
+	err = debounce.Debounce(ctx, loggerLynexV2, func(ctx context.Context) error {
+		basePoolToken, err = poolContract.Token0(&bind.CallOpts{Context: ctx})
 		return err
 	})
 	if err != nil {
@@ -127,8 +129,8 @@ func (l *lynexV2) getPool(market Market) ([]*dexPool[ilynex_v2_pair.ILynexPairSw
 	}
 
 	var quotePoolToken common.Address
-	err = debounce.Debounce(loggerLynexV2, func() error {
-		quotePoolToken, err = poolContract.Token1(nil)
+	err = debounce.Debounce(ctx, loggerLynexV2, func(ctx context.Context) error {
+		quotePoolToken, err = poolContract.Token1(&bind.CallOpts{Context: ctx})
 		return err
 	})
 	if err != nil {

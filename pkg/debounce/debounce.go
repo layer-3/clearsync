@@ -141,23 +141,28 @@ type rpcError struct {
 
 // Debounce is a wrapper around the rate limiter
 // that retries the request if it fails with rate limit error.
-func Debounce(logger *log.ZapEventLogger, f func() error) error {
+func Debounce(
+	ctx context.Context,
+	logger *log.ZapEventLogger,
+	f func(context.Context) error,
+) error {
 	for {
-		if err := rpcRateLimiter.Wait(context.TODO()); err != nil {
+		if err := rpcRateLimiter.Wait(ctx); err != nil {
 			if logger != nil {
 				logger.Warnf("failed to acquire rate limiter: %s", err)
 			}
 			return err
 		}
 
-		err := f()
+		err := f(ctx)
 		if err == nil {
 			return nil
 		}
 
+		// Search for the error in the list of known HTTP RPC errors
 		for _, httpRpcError := range httpRpcErrors {
 			for _, pattern := range httpRpcError.Patterns {
-				if strings.Contains(err.Error(), pattern) {
+				if strings.Contains(err.Error(), pattern) && httpRpcError.Recoverable {
 					if logger != nil {
 						logger.Warn("recoverable error",
 							"message", httpRpcError.Message,

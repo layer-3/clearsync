@@ -1,7 +1,9 @@
 package quotes
 
 import (
+	"context"
 	"fmt"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -93,7 +95,7 @@ func (s *syncswap) postStart(driver *baseDEX[
 	return nil
 }
 
-func (s *syncswap) getPool(market Market) ([]*dexPool[isyncswap_pool.ISyncSwapPoolSwap, *isyncswap_pool.ISyncSwapPoolSwapIterator], error) {
+func (s *syncswap) getPool(ctx context.Context, market Market) ([]*dexPool[isyncswap_pool.ISyncSwapPoolSwap, *isyncswap_pool.ISyncSwapPoolSwapIterator], error) {
 	baseToken, quoteToken, err := getTokens(s.assets, market, loggerSyncswap)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tokens: %w", err)
@@ -102,15 +104,15 @@ func (s *syncswap) getPool(market Market) ([]*dexPool[isyncswap_pool.ISyncSwapPo
 	var poolAddress common.Address
 	if _, ok := s.stablePoolMarkets[market]; ok {
 		loggerSyncswap.Infow("searching for stable pool", "market", market, "address", poolAddress)
-		err = debounce.Debounce(loggerSyncswap, func() error {
-			poolAddress, err = s.stableFactory.GetPool(nil, baseToken.Address, quoteToken.Address)
+		err = debounce.Debounce(ctx, loggerSyncswap, func(ctx context.Context) error {
+			poolAddress, err = s.stableFactory.GetPool(&bind.CallOpts{Context: ctx}, baseToken.Address, quoteToken.Address)
 			return err
 		})
 		loggerSyncswap.Infow("found stable pool", "market", market)
 	} else {
 		loggerSyncswap.Infow("searching for classic pool", "market", market)
-		err = debounce.Debounce(loggerSyncswap, func() error {
-			poolAddress, err = s.classicFactory.GetPool(nil, baseToken.Address, quoteToken.Address)
+		err = debounce.Debounce(ctx, loggerSyncswap, func(ctx context.Context) error {
+			poolAddress, err = s.classicFactory.GetPool(&bind.CallOpts{Context: ctx}, baseToken.Address, quoteToken.Address)
 			return err
 		})
 		loggerSyncswap.Infow("found classic pool", "market", market, "address", poolAddress)
@@ -131,8 +133,8 @@ func (s *syncswap) getPool(market Market) ([]*dexPool[isyncswap_pool.ISyncSwapPo
 	}
 
 	var basePoolToken common.Address
-	err = debounce.Debounce(loggerSyncswap, func() error {
-		basePoolToken, err = poolContract.Token0(nil)
+	err = debounce.Debounce(ctx, loggerSyncswap, func(ctx context.Context) error {
+		basePoolToken, err = poolContract.Token0(&bind.CallOpts{Context: ctx})
 		return err
 	})
 	if err != nil {
@@ -140,8 +142,8 @@ func (s *syncswap) getPool(market Market) ([]*dexPool[isyncswap_pool.ISyncSwapPo
 	}
 
 	var quotePoolToken common.Address
-	err = debounce.Debounce(loggerSyncswap, func() error {
-		quotePoolToken, err = poolContract.Token1(nil)
+	err = debounce.Debounce(ctx, loggerSyncswap, func(ctx context.Context) error {
+		quotePoolToken, err = poolContract.Token1(&bind.CallOpts{Context: ctx})
 		return err
 	})
 	if err != nil {

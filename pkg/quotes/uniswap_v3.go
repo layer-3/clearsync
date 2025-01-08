@@ -1,7 +1,9 @@
 package quotes
 
 import (
+	"context"
 	"fmt"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"math/big"
 	"strings"
 
@@ -77,7 +79,7 @@ func (u *uniswapV3) postStart(driver *baseDEX[
 	return nil
 }
 
-func (u *uniswapV3) getPool(market Market) ([]*dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator], error) {
+func (u *uniswapV3) getPool(ctx context.Context, market Market) ([]*dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator], error) {
 	baseToken, quoteToken, err := getTokens(u.assets, market, loggerUniswapV3)
 	if err != nil {
 		return nil, err
@@ -91,8 +93,8 @@ func (u *uniswapV3) getPool(market Market) ([]*dexPool[iuniswap_v3_pool.IUniswap
 	zeroAddress := common.HexToAddress("0x0")
 	for _, feeTier := range uniswapV3FeeTiers {
 		var poolAddress common.Address
-		err = debounce.Debounce(loggerUniswapV3, func() error {
-			poolAddress, err = u.factory.GetPool(nil, baseToken.Address, quoteToken.Address, big.NewInt(int64(feeTier)))
+		err = debounce.Debounce(ctx, loggerUniswapV3, func(ctx context.Context) error {
+			poolAddress, err = u.factory.GetPool(&bind.CallOpts{Context: ctx}, baseToken.Address, quoteToken.Address, big.NewInt(int64(feeTier)))
 			return err
 		})
 		if err != nil {
@@ -116,8 +118,8 @@ func (u *uniswapV3) getPool(market Market) ([]*dexPool[iuniswap_v3_pool.IUniswap
 		}
 
 		var basePoolToken common.Address
-		err = debounce.Debounce(loggerUniswapV3, func() error {
-			basePoolToken, err = poolContract.Token0(nil)
+		err = debounce.Debounce(ctx, loggerUniswapV3, func(ctx context.Context) error {
+			basePoolToken, err = poolContract.Token0(&bind.CallOpts{Context: ctx})
 			return err
 		})
 		if err != nil {
@@ -125,8 +127,8 @@ func (u *uniswapV3) getPool(market Market) ([]*dexPool[iuniswap_v3_pool.IUniswap
 		}
 
 		var quotePoolToken common.Address
-		err = debounce.Debounce(loggerUniswapV3, func() error {
-			quotePoolToken, err = poolContract.Token1(nil)
+		err = debounce.Debounce(ctx, loggerUniswapV3, func(ctx context.Context) error {
+			quotePoolToken, err = poolContract.Token1(&bind.CallOpts{Context: ctx})
 			return err
 		})
 		if err != nil {

@@ -1,7 +1,9 @@
 package quotes
 
 import (
+	"context"
 	"fmt"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"math/big"
 	"strings"
 
@@ -75,7 +77,7 @@ func (s *sectaV3) postStart(driver *baseDEX[
 	return nil
 }
 
-func (s *sectaV3) getPool(market Market) ([]*dexPool[isecta_v3_pool.ISectaV3PoolSwap, *isecta_v3_pool.ISectaV3PoolSwapIterator], error) {
+func (s *sectaV3) getPool(ctx context.Context, market Market) ([]*dexPool[isecta_v3_pool.ISectaV3PoolSwap, *isecta_v3_pool.ISectaV3PoolSwapIterator], error) {
 	baseToken, quoteToken, err := getTokens(s.assets, market, loggerSectaV3)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tokens: %w", err)
@@ -89,8 +91,8 @@ func (s *sectaV3) getPool(market Market) ([]*dexPool[isecta_v3_pool.ISectaV3Pool
 	zeroAddress := common.HexToAddress("0x0")
 	for _, feeTier := range sectaV3FeeTiers {
 		var poolAddress common.Address
-		err = debounce.Debounce(loggerSectaV3, func() error {
-			poolAddress, err = s.factory.GetPool(nil, baseToken.Address, quoteToken.Address, big.NewInt(int64(feeTier)))
+		err = debounce.Debounce(ctx, loggerSectaV3, func(ctx context.Context) error {
+			poolAddress, err = s.factory.GetPool(&bind.CallOpts{Context: ctx}, baseToken.Address, quoteToken.Address, big.NewInt(int64(feeTier)))
 			return err
 		})
 		if err != nil {
@@ -114,8 +116,8 @@ func (s *sectaV3) getPool(market Market) ([]*dexPool[isecta_v3_pool.ISectaV3Pool
 		}
 
 		var basePoolToken common.Address
-		err = debounce.Debounce(loggerSectaV3, func() error {
-			basePoolToken, err = poolContract.Token0(nil)
+		err = debounce.Debounce(ctx, loggerSectaV3, func(ctx context.Context) error {
+			basePoolToken, err = poolContract.Token0(&bind.CallOpts{Context: ctx})
 			return err
 		})
 		if err != nil {
@@ -123,8 +125,8 @@ func (s *sectaV3) getPool(market Market) ([]*dexPool[isecta_v3_pool.ISectaV3Pool
 		}
 
 		var quotePoolToken common.Address
-		err = debounce.Debounce(loggerSectaV3, func() error {
-			quotePoolToken, err = poolContract.Token1(nil)
+		err = debounce.Debounce(ctx, loggerSectaV3, func(ctx context.Context) error {
+			quotePoolToken, err = poolContract.Token1(&bind.CallOpts{Context: ctx})
 			return err
 		})
 		if err != nil {

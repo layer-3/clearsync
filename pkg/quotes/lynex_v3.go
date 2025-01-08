@@ -1,7 +1,9 @@
 package quotes
 
 import (
+	"context"
 	"fmt"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -71,7 +73,7 @@ func (l *lynexV3) postStart(driver *baseDEX[
 	return nil
 }
 
-func (l *lynexV3) getPool(market Market) ([]*dexPool[ilynex_v3_pool.ILynexV3PoolSwap, *ilynex_v3_pool.ILynexV3PoolSwapIterator], error) {
+func (l *lynexV3) getPool(ctx context.Context, market Market) ([]*dexPool[ilynex_v3_pool.ILynexV3PoolSwap, *ilynex_v3_pool.ILynexV3PoolSwapIterator], error) {
 	baseToken, quoteToken, err := getTokens(l.assets, market, loggerLynexV3)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tokens: %w", err)
@@ -79,8 +81,8 @@ func (l *lynexV3) getPool(market Market) ([]*dexPool[ilynex_v3_pool.ILynexV3Pool
 
 	var poolAddress common.Address
 	loggerLynexV3.Infow("searching for pool", "market", market)
-	err = debounce.Debounce(loggerLynexV3, func() error {
-		poolAddress, err = l.factory.PoolByPair(nil, baseToken.Address, quoteToken.Address)
+	err = debounce.Debounce(ctx, loggerLynexV3, func(ctx context.Context) error {
+		poolAddress, err = l.factory.PoolByPair(&bind.CallOpts{Context: ctx}, baseToken.Address, quoteToken.Address)
 		return err
 	})
 	if err != nil {
@@ -101,8 +103,8 @@ func (l *lynexV3) getPool(market Market) ([]*dexPool[ilynex_v3_pool.ILynexV3Pool
 	}
 
 	var basePoolToken common.Address
-	err = debounce.Debounce(loggerLynexV3, func() error {
-		basePoolToken, err = poolContract.Token0(nil)
+	err = debounce.Debounce(ctx, loggerLynexV3, func(ctx context.Context) error {
+		basePoolToken, err = poolContract.Token0(&bind.CallOpts{Context: ctx})
 		return err
 	})
 	if err != nil {
@@ -110,8 +112,8 @@ func (l *lynexV3) getPool(market Market) ([]*dexPool[ilynex_v3_pool.ILynexV3Pool
 	}
 
 	var quotePoolToken common.Address
-	err = debounce.Debounce(loggerLynexV3, func() error {
-		quotePoolToken, err = poolContract.Token1(nil)
+	err = debounce.Debounce(ctx, loggerLynexV3, func(ctx context.Context) error {
+		quotePoolToken, err = poolContract.Token1(&bind.CallOpts{Context: ctx})
 		return err
 	})
 	if err != nil {
