@@ -1,7 +1,9 @@
 package quotes
 
 import (
+	"context"
 	"fmt"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -70,15 +72,15 @@ func (s *quickswap) postStart(driver *baseDEX[
 	return nil
 }
 
-func (s *quickswap) getPool(market Market) ([]*dexPool[quickswap_v3_pool.IQuickswapV3PoolSwap, *quickswap_v3_pool.IQuickswapV3PoolSwapIterator], error) {
+func (s *quickswap) getPool(ctx context.Context, market Market) ([]*dexPool[quickswap_v3_pool.IQuickswapV3PoolSwap, *quickswap_v3_pool.IQuickswapV3PoolSwapIterator], error) {
 	baseToken, quoteToken, err := getTokens(s.assets, market, loggerQuickswap)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tokens: %w", err)
 	}
 
 	var poolAddress common.Address
-	err = debounce.Debounce(loggerQuickswap, func() error {
-		poolAddress, err = s.factory.PoolByPair(nil, baseToken.Address, quoteToken.Address)
+	err = debounce.Debounce(ctx, loggerQuickswap, func(ctx context.Context) error {
+		poolAddress, err = s.factory.PoolByPair(&bind.CallOpts{Context: ctx}, baseToken.Address, quoteToken.Address)
 		return err
 	})
 	if err != nil {
@@ -97,8 +99,8 @@ func (s *quickswap) getPool(market Market) ([]*dexPool[quickswap_v3_pool.IQuicks
 	}
 
 	var basePoolToken common.Address
-	err = debounce.Debounce(loggerQuickswap, func() error {
-		basePoolToken, err = poolContract.Token0(nil)
+	err = debounce.Debounce(ctx, loggerQuickswap, func(ctx context.Context) error {
+		basePoolToken, err = poolContract.Token0(&bind.CallOpts{Context: ctx})
 		return err
 	})
 	if err != nil {
@@ -106,8 +108,8 @@ func (s *quickswap) getPool(market Market) ([]*dexPool[quickswap_v3_pool.IQuicks
 	}
 
 	var quotePoolToken common.Address
-	err = debounce.Debounce(loggerQuickswap, func() error {
-		quotePoolToken, err = poolContract.Token1(nil)
+	err = debounce.Debounce(ctx, loggerQuickswap, func(ctx context.Context) error {
+		quotePoolToken, err = poolContract.Token1(&bind.CallOpts{Context: ctx})
 		return err
 	})
 	if err != nil {

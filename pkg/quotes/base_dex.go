@@ -33,7 +33,7 @@ type baseDEX[Event any, Contract any, EventIterator dexEventIterator] struct {
 
 	// Hooks
 	postStart func(*baseDEX[Event, Contract, EventIterator]) error
-	getPool   func(Market) ([]*dexPool[Event, EventIterator], error)
+	getPool   func(context.Context, Market) ([]*dexPool[Event, EventIterator], error)
 	parse     func(*Event, *dexPool[Event, EventIterator]) (TradeEvent, error)
 	derefIter func(EventIterator) *Event
 
@@ -71,7 +71,7 @@ type baseDexConfig[Event any, Contract any, EventIterator dexEventIterator] stru
 
 	// Hooks
 	PostStartHook func(*baseDEX[Event, Contract, EventIterator]) error
-	PoolGetter    func(Market) ([]*dexPool[Event, EventIterator], error)
+	PoolGetter    func(context.Context, Market) ([]*dexPool[Event, EventIterator], error)
 	EventParser   func(*Event, *dexPool[Event, EventIterator]) (TradeEvent, error)
 	IterDeref     func(EventIterator) *Event
 
@@ -239,6 +239,8 @@ func (b *baseDEX[Event, Contract, EventIterator]) Stop() error {
 }
 
 func (b *baseDEX[Event, Contract, EventIterator]) Subscribe(market Market) error {
+	ctx := context.TODO()
+
 	if !b.once.Subscribe() {
 		return ErrNotStarted
 	}
@@ -253,7 +255,7 @@ func (b *baseDEX[Event, Contract, EventIterator]) Subscribe(market Market) error
 
 		for _, mappedToken := range mappings {
 			market := NewMarketWithMainQuote(market.Base(), mappedToken, market.Quote())
-			if err := debounce.Debounce(b.logger, func() error { return b.Subscribe(market) }); err != nil {
+			if err := debounce.Debounce(ctx, b.logger, func(_ context.Context) error { return b.Subscribe(market) }); err != nil {
 				b.logger.Errorf("failed to subscribe to market %s: %s", market, err)
 				mappingErr = err
 			}
@@ -277,7 +279,7 @@ func (b *baseDEX[Event, Contract, EventIterator]) Subscribe(market Market) error
 		return fmt.Errorf("%w: %s", ErrMarketDisabled, market)
 	}
 
-	pools, err := b.getPool(market)
+	pools, err := b.getPool(ctx, market)
 	if err != nil {
 		return fmt.Errorf("failed to get pool for market %s: %s", market.StringWithoutMain(), err)
 	}
@@ -304,8 +306,8 @@ func (b *baseDEX[Event, Contract, EventIterator]) subscribePool(pool *dexPool[Ev
 
 	var sub event.Subscription
 	var err error
-	err = debounce.Debounce(b.logger, func() error {
-		opts := &bind.WatchOpts{Context: watchCtx}
+	err = debounce.Debounce(watchCtx, b.logger, func(ctx context.Context) error {
+		opts := &bind.WatchOpts{Context: ctx}
 		sub, err = pool.Contract.WatchSwap(opts, sink, []common.Address{}, []common.Address{})
 		return err
 	})
@@ -357,7 +359,7 @@ func (b *baseDEX[Event, Contract, EventIterator]) HistoricalData(ctx context.Con
 	if strings.ToLower(market.Quote()) == "usd" {
 		m = NewMarket(market.Base(), market.Quote()+"t") // convert USD quote to USDT
 	}
-	pools, err := b.getPool(m)
+	pools, err := b.getPool(ctx, m)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pool for market %s: %w", m, err)
 	}
@@ -373,7 +375,7 @@ func (b *baseDEX[Event, Contract, EventIterator]) HistoricalData(ctx context.Con
 	for i, pool := range pools {
 		var iter EventIterator
 
-		err = debounce.Debounce(b.logger, func() error {
+		err = debounce.Debounce(ctx, b.logger, func(ctx context.Context) error {
 			opts := &bind.FilterOpts{Start: block.Uint64(), Context: ctx}
 			iter, err = pool.Contract.FilterSwap(opts, nil, nil)
 			return err
@@ -426,7 +428,7 @@ func (b *baseDEX[Event, Contract, EventIterator]) findBlockByTimestamp(
 
 	var header *types.Header
 	var err error
-	err = debounce.Debounce(b.logger, func() error {
+	err = debounce.Debounce(ctx, b.logger, func(ctx context.Context) error {
 		header, err = client.HeaderByNumber(ctx, nil)
 		return err
 	})
@@ -442,7 +444,7 @@ func (b *baseDEX[Event, Contract, EventIterator]) findBlockByTimestamp(
 		mid := new(big.Int).Add(low, high)
 		mid.Div(mid, big.NewInt(2))
 
-		err = debounce.Debounce(b.logger, func() error {
+		err = debounce.Debounce(ctx, b.logger, func(ctx context.Context) error {
 			header, err = client.HeaderByNumber(ctx, mid)
 			return err
 		})

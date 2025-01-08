@@ -1,7 +1,9 @@
 package quotes
 
 import (
+	"context"
 	"fmt"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -69,15 +71,15 @@ func (s *sectaV2) postStart(driver *baseDEX[
 	return nil
 }
 
-func (s *sectaV2) getPool(market Market) ([]*dexPool[isecta_v2_pair.ISectaV2PairSwap, *isecta_v2_pair.ISectaV2PairSwapIterator], error) {
+func (s *sectaV2) getPool(ctx context.Context, market Market) ([]*dexPool[isecta_v2_pair.ISectaV2PairSwap, *isecta_v2_pair.ISectaV2PairSwapIterator], error) {
 	baseToken, quoteToken, err := getTokens(s.assets, market, loggerSectaV2)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tokens: %w", err)
 	}
 
 	var poolAddress common.Address
-	err = debounce.Debounce(loggerSectaV2, func() error {
-		poolAddress, err = s.factory.GetPair(nil, baseToken.Address, quoteToken.Address)
+	err = debounce.Debounce(ctx, loggerSectaV2, func(ctx context.Context) error {
+		poolAddress, err = s.factory.GetPair(&bind.CallOpts{Context: ctx}, baseToken.Address, quoteToken.Address)
 		return err
 	})
 	if err != nil {
@@ -96,8 +98,8 @@ func (s *sectaV2) getPool(market Market) ([]*dexPool[isecta_v2_pair.ISectaV2Pair
 	}
 
 	var basePoolToken common.Address
-	err = debounce.Debounce(loggerSectaV2, func() error {
-		basePoolToken, err = poolContract.Token0(nil)
+	err = debounce.Debounce(ctx, loggerSectaV2, func(ctx context.Context) error {
+		basePoolToken, err = poolContract.Token0(&bind.CallOpts{Context: ctx})
 		return err
 	})
 	if err != nil {
@@ -105,7 +107,7 @@ func (s *sectaV2) getPool(market Market) ([]*dexPool[isecta_v2_pair.ISectaV2Pair
 	}
 
 	var quotePoolToken common.Address
-	err = debounce.Debounce(loggerSectaV2, func() error {
+	err = debounce.Debounce(ctx, loggerSectaV2, func(ctx context.Context) error {
 		quotePoolToken, err = poolContract.Token1(nil)
 		return err
 	})
