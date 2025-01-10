@@ -34,7 +34,6 @@ const (
 	// it does not mean that Nth request will be successful.
 	// Maybe the rate limit is right on the edge,
 	// then it does not make any sense to decrease the burst after Nth-1.
-	// Hence burstDecrementAfter
 	burstDecrementAfter = 5
 	// burstBias is to avoid rate limiting on the first few requests.
 	// The client will eventually work its way up to the actual rate limit.
