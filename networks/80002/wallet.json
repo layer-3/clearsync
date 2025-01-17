@@ -1,11 +1,43 @@
 {
-  "paymaster": [],
-  "transactions": {
-    "withdrawal": "native",
-    "swap": "native",
-    "lock": "native",
-    "unlock": "native",
-    "daily_claim": "native",
-    "base": "native"
-  }
+  "erc20Paymasters": {},
+  "callTypes": {
+    "approve": {
+      "allowedFeeTypes": [
+        "native"
+      ]
+    },
+    "withdrawal": {
+      "allowedFeeTypes": [
+        "native"
+      ]
+    },
+    "swap": {
+      "allowedFeeTypes": [
+        "native"
+      ]
+    },
+    "lock": {
+      "allowedFeeTypes": [
+        "native"
+      ]
+    },
+    "unlock": {
+      "allowedFeeTypes": [
+        "native"
+      ]
+    },
+    "daily_claim": {
+      "allowedFeeTypes": [
+        "native"
+      ]
+    },
+    "other": {
+      "allowedFeeTypes": [
+        "native"
+      ]
+    }
+  },
+  "trustedAddresses": [
+    "0xf81A43EBA92538B0323fCDb1A040F2183B352Ca3"
+  ]
 }
