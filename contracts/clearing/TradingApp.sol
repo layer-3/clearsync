@@ -24,7 +24,7 @@ contract TradingApp is IForceMoveApp {
 		// 1 - postfund
 		// 2 - order
 		// 2n+1 - order response
-		// 2n - order or settlement
+		// 2n+2 - order / settlement / liquidation
 
 		require(fixedPart.participants.length == 2, 'invalid number of participants, expected 2');
 
