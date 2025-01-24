@@ -118,7 +118,7 @@
       "extensions":
       {
         "allow_locking": true,
-        "coingecko_api_id": "ethereum",
+        "coingecko_api_id": "polygon-bridged-wsteth-polygon",
         "locking_multiplier": 1.5
       }
     },
