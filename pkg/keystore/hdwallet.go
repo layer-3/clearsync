@@ -11,7 +11,7 @@ import (
 	"github.com/layer-3/clearsync/pkg/signer"
 )
 
-// Wallet represents a master wallet that can create signers.
+// HdWallet represents a master wallet that can create signers.
 type HdWallet struct {
 	masterKey *hdkeychain.ExtendedKey
 	mx        sync.RWMutex

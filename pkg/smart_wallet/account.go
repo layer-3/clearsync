@@ -66,7 +66,7 @@ func GetAccountAddress(ctx context.Context, provider ethereum.ContractCaller, co
 
 	// check if the error data has the correct length
 	if len(errorData) < 74 {
-		return common.Address{}, fmt.Errorf("'getSenderAddress' revert data expected to have lenght of 74, but got: %d", len(errorData))
+		return common.Address{}, fmt.Errorf("'getSenderAddress' revert data expected to have length of 74, but got: %d", len(errorData))
 	}
 
 	swAddress := common.HexToAddress(errorData[34:])

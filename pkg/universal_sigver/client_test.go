@@ -42,13 +42,13 @@ func TestVerify(t *testing.T) {
 	msgHash := common.BytesToHash(signer_pkg.ComputeEthereumSignedMessageHash(msg))
 	rawSig := sig.Raw()
 
-	t.Run("Successfuly verify ECDSA signature", func(t *testing.T) {
+	t.Run("Successfully verify ECDSA signature", func(t *testing.T) {
 		ok, err := sigver.Verify(ctx, signer.CommonAddress(), msgHash, rawSig)
 		require.NoError(t, err)
 		require.True(t, ok)
 	})
 
-	t.Run("Successfuly verify ERC-1271 signature", func(t *testing.T) {
+	t.Run("Successfully verify ERC-1271 signature", func(t *testing.T) {
 		index := decimal.Zero
 
 		// 3. Start bundler, create client and kernel signer
@@ -88,7 +88,7 @@ func TestVerify(t *testing.T) {
 		require.True(t, ok)
 	})
 
-	t.Run("Successfuly verify ERC-6492 signature", func(t *testing.T) {
+	t.Run("Successfully verify ERC-6492 signature", func(t *testing.T) {
 		index := decimal.NewFromInt(1)
 
 		// 3. Calculate smart wallet address
