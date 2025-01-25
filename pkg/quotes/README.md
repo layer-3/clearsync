@@ -143,7 +143,7 @@ index_price = totalPriceVolume / totalVolume
 Uniswap V3 uses [Q notation](https://en.wikipedia.org/wiki/Q_(number_format)), which is a type of fixed-point arithmetics, to encode swap price.
  
 Q notation allows variables to remain integers, but function similarly to floating point numbers.
-Additionally piping the price through square root allows to reduce dimentionality of the number.
+Additionally piping the price through square root allows to reduce dimensionality of the number.
 Predictable size of the number encoded this way enables efficient caching and fast retrieval of data from chain.
 
 #### How to calculate price?
