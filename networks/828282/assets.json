@@ -30,7 +30,12 @@
           "name": "Shiba Inu",
           "symbol": "SHIB",
           "decimals": 18,
-          "precision": 8
+          "precision": 8,
+          "extensions":
+          {
+            "allow_locking": false,
+            "coingecko_api_id": "shiba-inu"
+          }
         },
         {
           "address": "0x98e255A2D9e36d5174a7787aBA7053e60F47Fc08",
@@ -61,14 +66,24 @@
           "name": "Polygon",
           "symbol": "MATIC",
           "decimals": 18,
-          "precision": 6
+          "precision": 6,
+          "extensions":
+          {
+            "allow_locking": false,
+            "coingecko_api_id": "matic-network"
+          }
         },
         {
           "address": "0x9cEF6720Ba49c8C94Df1CfA0D713828B7B9fAEB1",
           "name": "Duckies, the canary network for Yellow ",
           "symbol": "DUCKIES",
           "decimals": 2,
-          "precision": 2
+          "precision": 2,
+          "extensions":
+          {
+            "allow_locking": false,
+            "coingecko_api_id": "duckies"
+          }
         }
     ]
 }

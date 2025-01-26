@@ -6,7 +6,12 @@
         "symbol": "DUCKIES",
         "decimals": 8,
         "precision": 0,
-        "logoURI": "https://www.yellow.org/images/duckies_200x200.png"
+        "logoURI": "https://www.yellow.org/images/duckies_200x200.png",
+        "extensions":
+        {
+          "allow_locking": false,
+          "coingecko_api_id": "duckies"
+        }
       },
       {
         "address": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
@@ -55,7 +60,12 @@
         "symbol": "SHIB",
         "decimals": 18,
         "precision": 0,
-        "logoURI": "https://s2.coinmarketcap.com/static/img/coins/64x64/5994.png"
+        "logoURI": "https://s2.coinmarketcap.com/static/img/coins/64x64/5994.png",
+        "extensions":
+        {
+          "allow_locking": false,
+          "coingecko_api_id": "shiba-inu"
+        }
       },
       {
         "address": "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
@@ -117,7 +127,11 @@
         "decimals": 9,
         "precision": 6,
         "logoURI": "https://assets.coingecko.com/coins/images/4128/standard/solana.png?1696504756",
-        "extensions": {}
+        "extensions":
+        {
+          "allow_locking": false,
+          "coingecko_api_id": "wrapped-solana"
+        }
       },
       {
         "address": "0xB8c77482e45F1F44dE1745F52C74426C631bDD52",
@@ -126,7 +140,11 @@
         "decimals": 18,
         "precision": 6,
         "logoURI": "https://assets.coingecko.com/coins/images/825/standard/bnb-icon2_2x.png?1696501970",
-        "extensions": {}
+        "extensions":
+        {
+          "allow_locking": false,
+          "coingecko_api_id": "binancecoin"
+        }
       },
       {
         "address": "0x6B175474E89094C44Da98b954EedeAC495271d0F",
@@ -148,7 +166,11 @@
         "decimals": 18,
         "precision": 6,
         "logoURI": "https://assets.coingecko.com/coins/images/29850/standard/pepe-token.jpeg?1696528776",
-        "extensions": {}
+        "extensions":
+        {
+          "allow_locking": false,
+          "coingecko_api_id": "pepe"
+        }
       },
       {
         "address": "0x3472a5a71965499acd81997a54bba8d852c6e53d",
@@ -157,7 +179,11 @@
         "decimals": 18,
         "precision": 6,
         "logoURI": "https://assets.coingecko.com/coins/images/13287/standard/badger_dao_logo.jpg?1696513059",
-        "extensions": {}
+        "extensions":
+        {
+          "allow_locking": false,
+          "coingecko_api_id": "badger-dao"
+        }
       },
       {
         "address": "0xcf0c122c6b73ff809c693db761e7baebe62b6a2e",
@@ -166,7 +192,11 @@
         "decimals": 9,
         "precision": 6,
         "logoURI": "https://assets.coingecko.com/coins/images/16746/standard/PNG_image.png?1696516318",
-        "extensions": {}
+        "extensions":
+        {
+          "allow_locking": false,
+          "coingecko_api_id": "floki"
+        }
       },
       {
         "address": "0xb131f4a55907b10d1f0a50d8ab8fa09ec342cd74",
@@ -175,7 +205,11 @@
         "decimals": 18,
         "precision": 6,
         "logoURI": "https://assets.coingecko.com/coins/images/32528/standard/memecoin_%282%29.png?1698912168",
-        "extensions": {}
+        "extensions":
+        {
+          "allow_locking": false,
+          "coingecko_api_id": "memecoin"
+        }
       },
       {
         "address": "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984",
@@ -184,7 +218,11 @@
         "decimals": 18,
         "precision": 6,
         "logoURI": "https://assets.coingecko.com/coins/images/12504/standard/uni.jpg?1696512319",
-        "extensions": {}
+        "extensions":
+        {
+          "allow_locking": false,
+          "coingecko_api_id": "uniswap"
+        }
       },
       {
         "address": "0x6B3595068778DD592e39A122f4f5a5cF09C90fE2",
@@ -193,7 +231,11 @@
         "decimals": 18,
         "precision": 6,
         "logoURI": "https://assets.coingecko.com/coins/images/12271/standard/512x512_Logo_no_chop.png?1696512101",
-        "extensions": {}
+        "extensions":
+        {
+          "allow_locking": false,
+          "coingecko_api_id": "sushi"
+        }
       },
       {
         "address": "0x43Dfc4159D86F3A37A5A4B3D4580b888ad7d4DDd",
@@ -202,7 +244,11 @@
         "decimals": 18,
         "precision": 6,
         "logoURI": "https://assets.coingecko.com/coins/images/12651/standard/dodo_logo.png?1696512458",
-        "extensions": {}
+        "extensions":
+        {
+          "allow_locking": false,
+          "coingecko_api_id": "dodo"
+        }
       },
       {
         "address": "0x62D0A8458eD7719FDAF978fe5929C6D342B0bFcE",
@@ -211,7 +257,11 @@
         "decimals": 18,
         "precision": 6,
         "logoURI": "https://assets.coingecko.com/coins/images/32417/standard/chain-logo.png?1698114384",
-        "extensions": {}
+        "extensions":
+        {
+          "allow_locking": false,
+          "coingecko_api_id": "beam"
+        }
       },
       {
         "address": "0x3506424F91fD33084466F402d5D97f05F8e3b4AF",
@@ -220,7 +270,11 @@
         "decimals": 18,
         "precision": 6,
         "logoURI": "https://assets.coingecko.com/coins/images/8834/standard/CHZ_Token_updated.png?1696508986",
-        "extensions": {}
+        "extensions":
+        {
+          "allow_locking": false,
+          "coingecko_api_id": "chiliz"
+        }
       },
       {
         "address": "0xc770eefad204b5180df6a14ee197d99d808ee52d",
@@ -229,7 +283,11 @@
         "decimals": 18,
         "precision": 6,
         "logoURI": "https://s2.coinmarketcap.com/static/img/coins/64x64/8200.png",
-        "extensions": {}
+        "extensions":
+        {
+          "allow_locking": false,
+          "coingecko_api_id": "farmers-only"
+        }
       },
       {
         "address": "0x582d872A1B094FC48F5DE31D3B73F2D9bE47def1",
@@ -238,7 +296,11 @@
         "decimals": 9,
         "precision": 6,
         "logoURI": "https://assets.coingecko.com/coins/images/17980/standard/ton_symbol.png?1696517498",
-        "extensions": {}
+        "extensions":
+        {
+          "allow_locking": false,
+          "coingecko_api_id": "megaton-finance-wrapped-toncoin"
+        }
       },
       {
         "address": "0xac57de9c1a09fec648e93eb98875b212db0d460b",
@@ -247,7 +309,11 @@
         "decimals": 9,
         "precision": 6,
         "logoURI": "https://assets.coingecko.com/coins/images/16125/standard/babydoge.jpg?1696515731",
-        "extensions": {}
+        "extensions":
+        {
+          "allow_locking": false,
+          "coingecko_api_id": "baby-doge-coin"
+        }
       },
       {
         "address": "0x38E68A37E401F7271568CecaAc63c6B1e19130B4",
@@ -256,7 +322,11 @@
         "decimals": 18,
         "precision": 6,
         "logoURI": "https://assets.coingecko.com/coins/images/17521/standard/banana-token-cg.png?1696517059",
-        "extensions": {}
+        "extensions":
+        {
+          "allow_locking": false,
+          "coingecko_api_id": "banana-gun"
+        }
       },
       {
         "address": "0x761d38e5ddf6ccf6cf7c55759d5210750b5d60f3",
@@ -265,7 +335,11 @@
         "decimals": 18,
         "precision": 6,
         "logoURI": "https://assets.coingecko.com/coins/images/14962/standard/6GxcPRo3_400x400.jpg?1696514622",
-        "extensions": {}
+        "extensions":
+        {
+          "allow_locking": false,
+          "coingecko_api_id": "dogelon-mars"
+        }
       },
       {
         "address": "0x8390a1DA07E376ef7aDd4Be859BA74Fb83aA02D5",
@@ -274,7 +348,11 @@
         "decimals": 9,
         "precision": 6,
         "logoURI": "https://assets.coingecko.com/coins/images/32788/standard/GROK.png?1707579427",
-        "extensions": {}
+        "extensions":
+        {
+          "allow_locking": false,
+          "coingecko_api_id": "grok-2"
+        }
       },
       {
         "address": "0x9aACaCC094df2885DF2d1690c3B2B106D0b8F32D",
