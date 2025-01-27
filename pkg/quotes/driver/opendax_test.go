@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/layer-3/clearsync/pkg/quotes/common"
+	"github.com/layer-3/clearsync/pkg/quotes/filter"
 	protocol "github.com/layer-3/clearsync/pkg/quotes/opendax_protocol"
 	"github.com/layer-3/clearsync/pkg/safe"
 )
@@ -91,8 +92,8 @@ func TestOpendax_parse(t *testing.T) {
 		require.NoError(t, err)
 
 		number, _ := decimal.NewFromString("1")
-		expVal := &TradeEvent{
-			Market:    NewMarket("btc", "usd"),
+		expVal := &common.TradeEvent{
+			Market:    common.NewMarket("btc", "usd"),
 			Price:     number,
 			Amount:    number,
 			Total:     number,
@@ -145,12 +146,12 @@ func TestOpendax_Subscribe(t *testing.T) {
 				messages:    []ODAPIMockMsg{{}},
 				isConnected: true,
 			},
-			streams:        safe.NewMap[Market, struct{}](),
-			symbolToMarket: safe.NewMap[string, Market](),
+			streams:        safe.NewMap[common.Market, struct{}](),
+			symbolToMarket: safe.NewMap[string, common.Market](),
 		}
 
 		client.once.Start(func() {})
-		err := client.Subscribe(NewMarket("btc", "usdt"))
+		err := client.Subscribe(common.NewMarket("btc", "usdt"))
 		require.NoError(t, err)
 	})
 
@@ -163,7 +164,7 @@ func TestOpendax_Subscribe(t *testing.T) {
 		}
 
 		client.once.Start(func() {})
-		err := client.Subscribe(NewMarket("btc", "usdt"))
+		err := client.Subscribe(common.NewMarket("btc", "usdt"))
 		require.Error(t, err)
 	})
 }
@@ -206,13 +207,13 @@ func TestOpendax_connect(t *testing.T) {
 func TestOpendax_listen(t *testing.T) {
 	t.Parallel()
 
-	disabledFilter := NewFilter(FilterConfig{FilterType: DisabledFilterType})
+	disabledFilter := filter.New(filter.Config{Type: filter.TypeDisabled})
 
 	t.Run("Error reading from connection", func(t *testing.T) {
 		t.Parallel()
 
 		// Setup an error message
-		outbox := make(chan TradeEvent, 1)
+		outbox := make(chan common.TradeEvent, 1)
 		client := &opendax{
 			once: common.NewOnce(),
 			conn: &ODAPIMock{
@@ -252,7 +253,7 @@ func TestOpendax_listen(t *testing.T) {
 		rawMsg, err := update.Encode()
 		require.NoError(t, err)
 
-		outbox := make(chan TradeEvent, 1)
+		outbox := make(chan common.TradeEvent, 1)
 		client := &opendax{
 			once: common.NewOnce(),
 			conn: &ODAPIMock{

@@ -8,27 +8,28 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/layer-3/clearsync/pkg/quotes/common"
+	"github.com/layer-3/clearsync/pkg/quotes/filter"
 )
 
 func TestBitfaker_Subscribe(t *testing.T) {
 	t.Parallel()
 
-	disabledFilter := NewFilter(FilterConfig{FilterType: DisabledFilterType})
+	disabledFilter := filter.New(filter.Config{Type: filter.TypeDisabled})
 
 	t.Run("Single market", func(t *testing.T) {
 		t.Parallel()
 
-		outbox := make(chan TradeEvent, 16)
+		outbox := make(chan common.TradeEvent, 16)
 		client := bitfaker{
 			once:          common.NewOnce(),
 			outbox:        outbox,
-			streamPeriods: make(map[quotes_common.Market]time.Duration),
-			streams:       make(map[quotes_common.Market]chan struct{}),
+			streamPeriods: make(map[common.Market]time.Duration),
+			streams:       make(map[common.Market]chan struct{}),
 			filter:        disabledFilter,
 		}
 		require.NoError(t, client.Start())
 
-		m := NewMarket("btc", "usd")
+		m := common.NewMarket("btc", "usd")
 
 		err := client.Subscribe(m)
 		require.Nil(t, err)
@@ -42,21 +43,21 @@ func TestBitfaker_Subscribe(t *testing.T) {
 	t.Run("Multiple markets", func(t *testing.T) {
 		t.Parallel()
 
-		outbox := make(chan TradeEvent, 16)
+		outbox := make(chan common.TradeEvent, 16)
 		client := bitfaker{
 			once:          common.NewOnce(),
 			outbox:        outbox,
-			streamPeriods: make(map[quotes_common.Market]time.Duration),
-			streams:       make(map[quotes_common.Market]chan struct{}),
+			streamPeriods: make(map[common.Market]time.Duration),
+			streams:       make(map[common.Market]chan struct{}),
 			filter:        disabledFilter,
 		}
 		require.NoError(t, client.Start())
 
-		market1 := NewMarket("btc", "usd")
+		market1 := common.NewMarket("btc", "usd")
 		err := client.Subscribe(market1)
 		require.Nil(t, err)
 
-		market2 := NewMarket("eth", "usd")
+		market2 := common.NewMarket("eth", "usd")
 		err = client.Subscribe(market2)
 		require.Nil(t, err)
 
@@ -72,17 +73,17 @@ func TestBitfaker_Subscribe(t *testing.T) {
 	t.Run("Subscribe to a market already subscribed to", func(t *testing.T) {
 		t.Parallel()
 
-		outbox := make(chan TradeEvent, 16)
+		outbox := make(chan common.TradeEvent, 16)
 		client := bitfaker{
 			once:          common.NewOnce(),
 			outbox:        outbox,
-			streamPeriods: make(map[quotes_common.Market]time.Duration),
-			streams:       make(map[quotes_common.Market]chan struct{}),
+			streamPeriods: make(map[common.Market]time.Duration),
+			streams:       make(map[common.Market]chan struct{}),
 			filter:        disabledFilter,
 		}
 		require.NoError(t, client.Start())
 
-		market := NewMarket("btc", "usd")
+		market := common.NewMarket("btc", "usd")
 		err := client.Subscribe(market)
 		require.Nil(t, err)
 
@@ -94,23 +95,23 @@ func TestBitfaker_Subscribe(t *testing.T) {
 func TestBitfaker_Unsubscribe(t *testing.T) {
 	t.Parallel()
 
-	disabledFilter := NewFilter(FilterConfig{FilterType: DisabledFilterType})
+	disabledFilter := filter.New(filter.Config{Type: filter.TypeDisabled})
 
 	t.Run("Unsubscribe from multiple markets", func(t *testing.T) {
 		t.Parallel()
 
-		outbox := make(chan TradeEvent, 16)
+		outbox := make(chan common.TradeEvent, 16)
 		client := bitfaker{
 			once:          common.NewOnce(),
 			outbox:        outbox,
-			streamPeriods: make(map[quotes_common.Market]time.Duration),
-			streams:       make(map[quotes_common.Market]chan struct{}),
+			streamPeriods: make(map[common.Market]time.Duration),
+			streams:       make(map[common.Market]chan struct{}),
 			filter:        disabledFilter,
 		}
 		require.NoError(t, client.Start())
 
-		market1 := NewMarket("btc", "usd")
-		market2 := NewMarket("eth", "usd")
+		market1 := common.NewMarket("btc", "usd")
+		market2 := common.NewMarket("eth", "usd")
 		require.NoError(t, client.Subscribe(market1))
 		require.NoError(t, client.Subscribe(market2))
 
@@ -124,17 +125,17 @@ func TestBitfaker_Unsubscribe(t *testing.T) {
 	t.Run("Unsubscribe from a market not subscribed to", func(t *testing.T) {
 		t.Parallel()
 
-		outbox := make(chan TradeEvent, 16)
+		outbox := make(chan common.TradeEvent, 16)
 		client := bitfaker{
 			once:          common.NewOnce(),
 			outbox:        outbox,
-			streamPeriods: make(map[quotes_common.Market]time.Duration),
-			streams:       make(map[quotes_common.Market]chan struct{}),
+			streamPeriods: make(map[common.Market]time.Duration),
+			streams:       make(map[common.Market]chan struct{}),
 			filter:        disabledFilter,
 		}
 		require.NoError(t, client.Start())
 
-		market := NewMarket("xrp", "usd")
+		market := common.NewMarket("xrp", "usd")
 		err := client.Unsubscribe(market)
 
 		require.Error(t, err)
@@ -143,18 +144,18 @@ func TestBitfaker_Unsubscribe(t *testing.T) {
 	t.Run("No effect on other subscriptions after unsubscribing", func(t *testing.T) {
 		t.Parallel()
 
-		outbox := make(chan TradeEvent, 16)
+		outbox := make(chan common.TradeEvent, 16)
 		client := bitfaker{
 			once:          common.NewOnce(),
 			outbox:        outbox,
-			streamPeriods: make(map[quotes_common.Market]time.Duration),
-			streams:       make(map[quotes_common.Market]chan struct{}),
+			streamPeriods: make(map[common.Market]time.Duration),
+			streams:       make(map[common.Market]chan struct{}),
 			filter:        disabledFilter,
 		}
 		require.NoError(t, client.Start())
 
-		market1 := NewMarket("btc", "usd")
-		market2 := NewMarket("eth", "usd")
+		market1 := common.NewMarket("btc", "usd")
+		market2 := common.NewMarket("eth", "usd")
 		require.NoError(t, client.Subscribe(market1))
 		require.NoError(t, client.Subscribe(market2))
 
@@ -168,15 +169,15 @@ func TestBitfaker_Unsubscribe(t *testing.T) {
 func TestCreateTradeEvent(t *testing.T) {
 	t.Parallel()
 
-	disabledFilter := NewFilter(FilterConfig{FilterType: DisabledFilterType})
+	disabledFilter := filter.New(filter.Config{Type: filter.TypeDisabled})
 
-	outbox := make(chan TradeEvent)
+	outbox := make(chan common.TradeEvent)
 	client := bitfaker{
 		outbox:        outbox,
 		once:          common.NewOnce(),
 		filter:        disabledFilter,
-		streamPeriods: make(map[quotes_common.Market]time.Duration),
-		streams:       make(map[quotes_common.Market]chan struct{}),
+		streamPeriods: make(map[common.Market]time.Duration),
+		streams:       make(map[common.Market]chan struct{}),
 	}
 	require.NoError(t, client.Start())
 
@@ -188,7 +189,7 @@ func TestCreateTradeEvent(t *testing.T) {
 	newPrice := initializeMarket(startPrice, priceVolatility)
 	newAmount := initializeMarket(startAmount, amountVolatility)
 
-	go func() { client.createTradeEvent(NewMarket("btc", "usd"), newPrice, newAmount) }()
+	go func() { client.createTradeEvent(common.NewMarket("btc", "usd"), newPrice, newAmount) }()
 
 	event := <-outbox
 	assert.NotEmpty(t, event)

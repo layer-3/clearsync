@@ -34,7 +34,7 @@ func Test_quickswap_parseSwap(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    TradeEvent
+		want    quotes_common.TradeEvent
 		wantErr bool
 	}{
 		{
@@ -77,12 +77,12 @@ func Test_quickswap_parseSwap(t *testing.T) {
 						Decimals: decimal.NewFromInt(18),
 					},
 					Reversed: true,
-					Market:   NewMarket("wmatic", "weth"),
+					Market:   quotes_common.NewMarket("wmatic", "weth"),
 				},
 			},
-			want: TradeEvent{
+			want: quotes_common.TradeEvent{
 				Source:    quotes_common.DriverQuickswap,
-				Market:    Market{baseUnit: "wmatic", quoteUnit: "weth"},
+				Market:    quotes_common.NewMarket("wmatic", "weth"),
 				Price:     decimal.RequireFromString("3421.5756126711160865"),
 				Amount:    decimal.RequireFromString("1.7607605890778538"),
 				Total:     decimal.RequireFromString("6035.9860273201849237"),
@@ -132,12 +132,12 @@ func Test_quickswap_parseSwap(t *testing.T) {
 						Decimals: decimal.NewFromInt(6),
 					},
 					Reversed: false,
-					Market:   NewMarket("weth", "usdt"),
+					Market:   quotes_common.NewMarket("weth", "usdt"),
 				},
 			},
-			want: TradeEvent{
+			want: quotes_common.TradeEvent{
 				Source:    quotes_common.DriverQuickswap,
-				Market:    NewMarket("weth", "usdt"),
+				Market:    quotes_common.NewMarket("weth", "usdt"),
 				Price:     decimal.RequireFromString("2894.0819654229875328"),
 				Amount:    decimal.RequireFromString("0.3664133509714869"),
 				Total:     decimal.RequireFromString("1059.059758"),

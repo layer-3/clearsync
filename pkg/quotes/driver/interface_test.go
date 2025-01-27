@@ -56,7 +56,7 @@ func TestNew(t *testing.T) {
 			}
 			config.Drivers = []common.DriverType{tc.driverType}
 
-			outbox := make(chan<- TradeEvent, 1)
+			outbox := make(chan<- common.TradeEvent, 1)
 
 			priceFeeds, err := New(config, outbox, nil)
 			require.NoError(t, err)

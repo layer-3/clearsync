@@ -15,14 +15,14 @@ const (
 )
 
 type Config struct {
-	FilterType Type `yaml:"filter_type" env:"TYPE" env-default:"disabled"`
+	Type Type `yaml:"filter_type" env:"TYPE" env-default:"disabled"`
 
 	SamplerFilter   SamplerConfig   `yaml:"sampler" env-prefix:"SAMPLER_"`
 	PriceDiffFilter PriceDiffConfig `yaml:"price_diff" env-prefix:"PRICE_DIFF_"`
 }
 
 func New(conf Config) Filter {
-	switch conf.FilterType {
+	switch conf.Type {
 	case TypeSampler:
 		return newSamplerFilter(conf.SamplerFilter)
 	case TypePriceDiff:
