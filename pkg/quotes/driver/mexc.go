@@ -140,12 +140,8 @@ func newMexc(config MexcConfig, outbox chan<- common.TradeEvent, history Histori
 	return driver
 }
 
-func (b *mexc) ActiveDrivers() []common.DriverType {
-	return []common.DriverType{common.DriverMexc}
-}
-
-func (b *mexc) ExchangeType() common.ExchangeType {
-	return common.ExchangeTypeCEX
+func (b *mexc) Type() (common.DriverType, common.ExchangeType) {
+	return common.DriverMexc, common.ExchangeTypeCEX
 }
 
 func (b *mexc) Start() error {

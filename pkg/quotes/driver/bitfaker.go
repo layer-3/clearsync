@@ -45,12 +45,8 @@ func newBitfaker(config BitfakerConfig, outbox chan<- common.TradeEvent) (Driver
 	}, nil
 }
 
-func (b *bitfaker) ActiveDrivers() []common.DriverType {
-	return []common.DriverType{common.DriverBitfaker}
-}
-
-func (b *bitfaker) ExchangeType() common.ExchangeType {
-	return common.ExchangeTypeUnspecified
+func (b *bitfaker) Type() (common.DriverType, common.ExchangeType) {
+	return common.DriverBitfaker, common.ExchangeTypeHybrid
 }
 
 func (b *bitfaker) Start() error {

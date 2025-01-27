@@ -68,12 +68,8 @@ func newBinance(config BinanceConfig, outbox chan<- common.TradeEvent, history H
 	return driver, nil
 }
 
-func (b *binance) ActiveDrivers() []common.DriverType {
-	return []common.DriverType{common.DriverBinance}
-}
-
-func (b *binance) ExchangeType() common.ExchangeType {
-	return common.ExchangeTypeCEX
+func (b *binance) Type() (common.DriverType, common.ExchangeType) {
+	return common.DriverBinance, common.ExchangeTypeCEX
 }
 
 func (b *binance) Start() error {

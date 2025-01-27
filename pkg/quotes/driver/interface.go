@@ -15,11 +15,9 @@ import (
 // It is used to stream trades from different exchanges
 // and aggregate them into a single outbox channel.
 type Driver interface {
-	// ActiveDrivers returns all configured data providers.
-	ActiveDrivers() []common.DriverType
-	// ExchangeType returns the type of the exchange.
-	ExchangeType() common.ExchangeType
-
+	// Type returns the type of the configured data provider
+	// and the type of the exchange it represents.
+	Type() (common.DriverType, common.ExchangeType)
 	// Start handles the initialization of the driver.
 	// It should be called before any other method.
 	Start() error

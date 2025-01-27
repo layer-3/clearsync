@@ -53,12 +53,8 @@ func newOpendax(config OpendaxConfig, outbox chan<- common.TradeEvent, history H
 	}, nil
 }
 
-func (o *opendax) ActiveDrivers() []common.DriverType {
-	return []common.DriverType{common.DriverOpendax}
-}
-
-func (b *opendax) ExchangeType() common.ExchangeType {
-	return common.ExchangeTypeHybrid
+func (o *opendax) Type() (common.DriverType, common.ExchangeType) {
+	return common.DriverOpendax, common.ExchangeTypeHybrid
 }
 
 func (o *opendax) Start() error {

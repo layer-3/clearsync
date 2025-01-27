@@ -65,12 +65,8 @@ func newKraken(config KrakenConfig, outbox chan<- common.TradeEvent, history His
 	}, nil
 }
 
-func (k *kraken) ActiveDrivers() []common.DriverType {
-	return []common.DriverType{common.DriverKraken}
-}
-
-func (b *kraken) ExchangeType() common.ExchangeType {
-	return common.ExchangeTypeCEX
+func (k *kraken) Type() (common.DriverType, common.ExchangeType) {
+	return common.DriverKraken, common.ExchangeTypeCEX
 }
 
 func (k *kraken) Start() error {

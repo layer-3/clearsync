@@ -128,12 +128,8 @@ func (b *baseDEX[Event, Contract, EventIterator]) Assets() *safe.Map[string, poo
 	return &b.assets
 }
 
-func (b *baseDEX[Event, Contract, EventIterator]) ActiveDrivers() []quotes_common.DriverType {
-	return []quotes_common.DriverType{b.driverType}
-}
-
-func (b *baseDEX[Event, Contract, EventIterator]) ExchangeType() quotes_common.ExchangeType {
-	return quotes_common.ExchangeTypeDEX
+func (b *baseDEX[Event, Contract, EventIterator]) Type() (quotes_common.DriverType, quotes_common.ExchangeType) {
+	return b.driverType, quotes_common.ExchangeTypeDEX
 }
 
 func (b *baseDEX[Event, Contract, EventIterator]) Start() error {
