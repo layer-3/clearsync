@@ -33,7 +33,7 @@ type uniswapV3 struct {
 	client *ethclient.Client
 }
 
-func newUniswapV3(rpcUrl string, config UniswapV3Config, outbox chan<- quotes_common.TradeEvent, history HistoricalData) (Driver, error) {
+func newUniswapV3(rpcUrl string, config UniswapV3Config, outbox chan<- quotes_common.TradeEvent, history HistoricalDataDriver) (Driver, error) {
 	hooks := &uniswapV3{
 		factoryAddress: common.HexToAddress(config.FactoryAddress),
 	}

@@ -29,7 +29,7 @@ type syncswap struct {
 	client *ethclient.Client
 }
 
-func newSyncswap(rpcUrl string, config SyncswapConfig, outbox chan<- quotes_common.TradeEvent, history HistoricalData) (Driver, error) {
+func newSyncswap(rpcUrl string, config SyncswapConfig, outbox chan<- quotes_common.TradeEvent, history HistoricalDataDriver) (Driver, error) {
 	stablePoolMarkets := make(map[quotes_common.Market]struct{})
 	logStablePoolMarkets := make([]quotes_common.Market, 0, len(config.StablePoolMarkets))
 	for _, rawMarket := range config.StablePoolMarkets {

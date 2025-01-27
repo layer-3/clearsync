@@ -27,14 +27,14 @@ type opendax struct {
 
 	outbox         chan<- common.TradeEvent
 	filter         filter.Filter
-	history        HistoricalData
+	history        HistoricalDataDriver
 	period         time.Duration
 	reqID          atomic.Uint64
 	streams        safe.Map[common.Market, struct{}]
 	symbolToMarket safe.Map[string, common.Market]
 }
 
-func newOpendax(config OpendaxConfig, outbox chan<- common.TradeEvent, history HistoricalData) (Driver, error) {
+func newOpendax(config OpendaxConfig, outbox chan<- common.TradeEvent, history HistoricalDataDriver) (Driver, error) {
 	if !(strings.HasPrefix(config.URL, "ws://") || strings.HasPrefix(config.URL, "wss://")) {
 		return nil, fmt.Errorf("%s (got '%s')", common.ErrInvalidWsUrl, config.URL)
 	}

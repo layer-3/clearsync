@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math/big"
 	"slices"
 	"time"
 
@@ -17,27 +16,59 @@ import (
 )
 
 var (
-	loggerIndex           = log.Logger("index-aggregator")
+	logger                = log.Logger("index-aggregator")
 	defaultMarketsMapping = map[string][]string{"usd": {"weth"}}
 
 	maxAllowedPrice  = decimal.NewFromFloat(1e6)
 	minAllowedAmount = decimal.NewFromFloat(1e-18)
 )
 
-// newIndex creates a new instance of IndexAggregator with VWA strategy and default drivers weights.
-func newIndex(config driver.Config, outbox chan<- common.TradeEvent, inbox <-chan common.TradeEvent, history driver.HistoricalData) (driver.Driver, error) {
-	marketsMapping := config.Index.MarketsMapping
+type Config struct {
+	TradesCached   int                 `yaml:"trades_cached" env:"TRADES_CACHED" env-default:"20"`
+	BufferWindow   time.Duration       `yaml:"buffer_window" env:"BUFFER_WINDOW" env-default:"5s"`
+	MarketsMapping map[string][]string `yaml:"markets_mapping" env:"MARKETS_MAPPING"`
+	// MaxPriceDiff has default of `0.2` because our default leverage is 5x,
+	// and so if the user opens order on his full balance, he'll get liquidated on 20% price change.
+	MaxPriceDiff string `yaml:"max_price_diff" env:"MAX_PRICE_DIFF" env-default:"0.2"`
+}
+
+// New creates an instance of IndexAggregator with VWA strategy and default drivers weights.
+//
+// Params:
+//   - drivers: a list of drivers to aggregate trades from
+//   - config: index configuration
+//   - outbox: a channel where the driver sends aggregated trades to
+//   - inbox:  an optional channel where the package user can send trades from his own source.
+//     If you don't { have / need } your own source, pass `nil` here.
+//   - external: an optional adapter to fetch historical data from instead of querying RPC provider,
+//     If you don't { have / need } a historical data adapter, pass `nil` here.
+func New(
+	drivers []driver.Driver,
+	config Config,
+	outbox chan<- common.TradeEvent,
+	inbox <-chan common.TradeEvent,
+	external driver.HistoricalDataDriver,
+) (driver.Driver, error) {
+	marketsMapping := config.MarketsMapping
 	if marketsMapping == nil {
 		marketsMapping = defaultMarketsMapping
 	}
 
+	priceCache := newPriceCache(
+		defaultWeightsMap,
+		config.TradesCached,
+		config.BufferWindow,
+	)
+	strategy := newIndexStrategy(withCustomPriceCache(priceCache))
+
 	return newIndexAggregator(
+		drivers,
 		config,
 		marketsMapping,
-		newIndexStrategy(withCustomPriceCache(newPriceCache(defaultWeightsMap, config.Index.TradesCached, time.Duration(config.Index.BufferSeconds)*time.Second))),
+		strategy,
 		outbox,
 		inbox,
-		history,
+		external,
 	)
 }
 
@@ -48,7 +79,7 @@ type indexAggregator struct {
 	strategy       priceCalculator
 	aggregator     chan common.TradeEvent
 	outbox         chan<- common.TradeEvent
-	history        driver.HistoricalData
+	history        driver.HistoricalDataDriver
 }
 
 type priceCalculator interface {
@@ -59,12 +90,13 @@ type priceCalculator interface {
 
 // newIndexAggregator creates a new instance of IndexAggregator.
 func newIndexAggregator(
-	config driver.Config,
+	drivers []driver.Driver,
+	config Config,
 	marketsMapping map[string][]string,
 	strategy priceCalculator,
 	outbox chan<- common.TradeEvent,
 	inbox <-chan common.TradeEvent,
-	history driver.HistoricalData,
+	history driver.HistoricalDataDriver,
 ) (driver.Driver, error) {
 	aggregator := make(chan common.TradeEvent, 128)
 	if inbox != nil {
@@ -75,21 +107,7 @@ func newIndexAggregator(
 		}()
 	}
 
-	drivers := make([]driver.Driver, 0, len(config.Drivers))
-	for _, d := range config.Drivers {
-		loggerIndex.Infow("creating new driver", "driver", d)
-		driverConfig := config
-		driverConfig.Drivers = []common.DriverType{d}
-
-		driver, err := driver.NewDriver(driverConfig, aggregator, nil, nil)
-		if err != nil {
-			loggerIndex.Warnw("failed to create driver", "driver", d, "error", err)
-			continue
-		}
-		drivers = append(drivers, driver)
-	}
-
-	maxPriceDiff, err := decimal.NewFromString(config.Index.MaxPriceDiff)
+	maxPriceDiff, err := decimal.NewFromString(config.MaxPriceDiff)
 	if err != nil {
 		return nil, err
 	}
@@ -112,25 +130,25 @@ func newIndexAggregator(
 func (a *indexAggregator) computeAggregatePrice() {
 	for event := range a.aggregator {
 		if event.Price.GreaterThanOrEqual(maxAllowedPrice) {
-			loggerIndex.Warnw("skipping trade with price out of range",
+			logger.Warnw("skipping trade with price out of range",
 				"max_price", maxAllowedPrice,
 				"event", event)
 			continue
 		}
 		if event.Amount.LessThan(minAllowedAmount) {
-			loggerIndex.Warnw("skipping trade with amount out of range",
+			logger.Warnw("skipping trade with amount out of range",
 				"min_amount", minAllowedAmount,
 				"event", event)
 			continue
 		}
 		if event.Total.IsZero() {
-			loggerIndex.Warnw("skipping zeroes trade", "event", event)
+			logger.Warnw("skipping zeroes trade", "event", event)
 			continue
 		}
 
 		lastPrice := a.strategy.getLastPrice(event.Market)
 		if !lastPrice.IsZero() && isPriceOutOfRange(event.Price, lastPrice, a.maxPriceDiff) {
-			loggerIndex.Warnw("skipping incoming outlier trade",
+			logger.Warnw("skipping incoming outlier trade",
 				"event", event,
 				"last_price", lastPrice)
 			continue
@@ -160,7 +178,7 @@ func (a *indexAggregator) computeAggregatePrice() {
 
 		// Double check to avoid broken trades
 		if event.Amount.IsZero() || event.Price.IsZero() || event.Total.IsZero() {
-			loggerIndex.Warnw("skipping zeroed trade", "event", event)
+			logger.Warnw("skipping zeroed trade", "event", event)
 			continue
 		}
 		a.outbox <- event
@@ -187,9 +205,9 @@ func (a *indexAggregator) Start() error {
 	for _, d := range a.drivers {
 		d := d
 		g.Go(func() error {
-			loggerIndex.Infow("starting driver for index", "driver", d.ActiveDrivers()[0])
+			logger.Infow("starting driver for index", "driver", d.ActiveDrivers()[0])
 			if err := d.Start(); err != nil {
-				loggerIndex.Errorw("failed to start driver", "driver", d.ActiveDrivers()[0], "error", err)
+				logger.Errorw("failed to start driver", "driver", d.ActiveDrivers()[0], "error", err)
 				return err
 			}
 
@@ -198,7 +216,7 @@ func (a *indexAggregator) Start() error {
 					for _, baseMarket := range baseMarkets {
 						m := common.NewMarket(baseMarket, quoteMarket)
 						if err := d.Subscribe(m); err != nil {
-							loggerIndex.Errorw("failed to subscribe to default market",
+							logger.Errorw("failed to subscribe to default market",
 								"driver", d.ActiveDrivers()[0],
 								"market", m,
 								"error", err)
@@ -216,7 +234,7 @@ func (a *indexAggregator) Start() error {
 
 func (a *indexAggregator) Subscribe(m common.Market) error {
 	for _, d := range a.drivers {
-		loggerIndex.Infow("subscribing", "driver", d.ActiveDrivers()[0], "market", m)
+		logger.Infow("subscribing", "driver", d.ActiveDrivers()[0], "market", m)
 
 		if err := d.Subscribe(m); err != nil {
 			if d.ExchangeType() == common.ExchangeTypeDEX {
@@ -224,20 +242,20 @@ func (a *indexAggregator) Subscribe(m common.Market) error {
 					// TODO: check if base and quote are same
 					m := common.NewMarketDerived(m.baseUnit, convertFrom, m.quoteUnit)
 					if err := d.Subscribe(m); err != nil {
-						loggerIndex.Infow("skipping market",
+						logger.Infow("skipping market",
 							"driver", d.ActiveDrivers()[0],
 							"market", m,
 							"is_disabled", errors.Is(err, common.ErrMarketDisabled),
 							"error", err)
 						continue
 					}
-					loggerIndex.Infow("subscribed to helper market",
+					logger.Infow("subscribed to helper market",
 						"driver", d.ActiveDrivers()[0],
 						"market", fmt.Sprintf("%s/%s", m.baseUnit, convertFrom))
 				}
 			}
 		}
-		loggerIndex.Infow("subscribed", "driver", d.ActiveDrivers()[0], "market", m)
+		logger.Infow("subscribed", "driver", d.ActiveDrivers()[0], "market", m)
 	}
 	return nil
 }
@@ -250,7 +268,7 @@ func (a *indexAggregator) Unsubscribe(m common.Market) error {
 		m := m
 		g.Go(func() error {
 			if err := d.Unsubscribe(m); err != nil {
-				loggerIndex.Warnw("failed to unsubscribe", "driver", d.ActiveDrivers()[0], "market", m, "error", err.Error())
+				logger.Warnw("failed to unsubscribe", "driver", d.ActiveDrivers()[0], "market", m, "error", err.Error())
 				return err
 			}
 			return nil
@@ -280,7 +298,7 @@ func (a *indexAggregator) HistoricalData(ctx context.Context, market common.Mark
 	}
 	m := common.NewMarket(base, quote)
 
-	trades, err := driver.FetchHistoryDataFromExternalSource(ctx, a.history, m, window, limit, loggerIndex)
+	trades, err := driver.FetchHistoryDataFromExternalSource(ctx, a.history, m, window, limit, logger)
 	if err == nil && len(trades) > 0 {
 		return trades, nil
 	}
@@ -293,7 +311,7 @@ func (a *indexAggregator) HistoricalData(ctx context.Context, market common.Mark
 	// NOTE: DEXes are not reliable enough in terms of market trend stability
 	// to be used as a source of historical data.
 	if len(trades) == 0 {
-		loggerIndex.Infow("no historical data found on CEXes, querying DEXes",
+		logger.Infow("no historical data found on CEXes, querying DEXes",
 			"market", m,
 			"window", window)
 		trades, err = a.fetchHistoricalDataByExchangeType(ctx, common.ExchangeTypeDEX, m, window, limit)
@@ -302,7 +320,7 @@ func (a *indexAggregator) HistoricalData(ctx context.Context, market common.Mark
 		}
 	}
 
-	loggerIndex.Infow("fetched historical data",
+	logger.Infow("fetched historical data",
 		"market", m,
 		"window", window,
 		"trades_num", len(trades))
@@ -324,12 +342,12 @@ func (a *indexAggregator) fetchHistoricalDataByExchangeType(
 ) ([]common.TradeEvent, error) {
 	var trades []common.TradeEvent
 
-	for _, driver := range a.drivers {
-		if driver.ExchangeType() != typ {
+	for _, d := range a.drivers {
+		if d.ExchangeType() != typ {
 			continue
 		}
 
-		data, err := driver.HistoricalData(ctx, market, window, limit)
+		data, err := d.HistoricalData(ctx, market, window, limit)
 		if err != nil {
 			continue
 		}

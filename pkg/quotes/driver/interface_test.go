@@ -1,7 +1,6 @@
 package driver
 
 import (
-	"github.com/layer-3/clearsync/pkg/quotes/common"
 	"reflect"
 	"testing"
 
@@ -15,9 +14,10 @@ import (
 	"github.com/layer-3/clearsync/pkg/abi/isyncswap_pool"
 	"github.com/layer-3/clearsync/pkg/abi/iuniswap_v3_pool"
 	"github.com/layer-3/clearsync/pkg/artifacts/quickswap_v3_pool"
+	"github.com/layer-3/clearsync/pkg/quotes/common"
 )
 
-func TestNewDriver(t *testing.T) {
+func TestNew(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
@@ -58,7 +58,7 @@ func TestNewDriver(t *testing.T) {
 
 			outbox := make(chan<- TradeEvent, 1)
 
-			priceFeeds, err := NewDriver(config, outbox, nil, nil)
+			priceFeeds, err := New(config, outbox, nil)
 			require.NoError(t, err)
 
 			actualType := reflect.TypeOf(priceFeeds)

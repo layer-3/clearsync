@@ -68,7 +68,7 @@ func main() {
 		outboxStop <- struct{}{}
 	}()
 
-	driver, err := driver.NewDriver(config, outbox, nil, nil)
+	driver, err := driver.New(config, outbox, nil)
 	if err != nil {
 		panic(err)
 	}

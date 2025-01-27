@@ -34,7 +34,7 @@ var (
 )
 
 func ToDriverType(raw string) (DriverType, error) {
-	allDrivers := map[string]DriverType{
+	driver, ok := map[string]DriverType{
 		DriverBinance.String():   DriverBinance,
 		DriverKraken.String():    DriverKraken,
 		DriverMexc.String():      DriverMexc,
@@ -48,9 +48,7 @@ func ToDriverType(raw string) (DriverType, error) {
 		DriverLynexV2.String():   DriverLynexV2,
 		DriverLynexV3.String():   DriverLynexV3,
 		DriverInternal.String():  DriverInternal,
-	}
-
-	driver, ok := allDrivers[raw]
+	}[raw]
 	if !ok {
 		return DriverType{}, fmt.Errorf("invalid driver type: %v", raw)
 	}
@@ -133,13 +131,11 @@ var (
 )
 
 func ToTakerType(raw string) (TakerType, error) {
-	allTypes := map[string]TakerType{
+	typ, ok := map[string]TakerType{
 		TakerTypeUnknown.String(): TakerTypeUnknown,
 		TakerTypeBuy.String():     TakerTypeBuy,
 		TakerTypeSell.String():    TakerTypeSell,
-	}
-
-	typ, ok := allTypes[raw]
+	}[raw]
 	if !ok {
 		return TakerType{}, fmt.Errorf("invalid taker type: %v", raw)
 	}

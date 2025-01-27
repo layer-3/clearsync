@@ -45,7 +45,7 @@ type baseDEX[Event any, Contract any, EventIterator dexEventIterator] struct {
 	outbox  chan<- quotes_common.TradeEvent
 	logger  *log.ZapEventLogger
 	filter  filter.Filter
-	history HistoricalData
+	history HistoricalDataDriver
 	// streams maps market to a map of DEX pools.
 	// The value of the map is a pointer to disallow copying of the underlying mutex
 	streams safe.Map[quotes_common.Market, *safe.Map[common.Address, dexStream[Event]]]
@@ -81,7 +81,7 @@ type baseDexConfig[Event any, Contract any, EventIterator dexEventIterator] stru
 	Outbox  chan<- quotes_common.TradeEvent
 	Logger  *log.ZapEventLogger
 	Filter  filter.Config
-	History HistoricalData
+	History HistoricalDataDriver
 }
 
 func newBaseDEX[Event any, Contract any, EventIterator dexEventIterator](
@@ -810,7 +810,7 @@ func isValidNonZero(x *big.Int) bool {
 
 func FetchHistoryDataFromExternalSource(
 	ctx context.Context,
-	source HistoricalData,
+	source HistoricalDataDriver,
 	market quotes_common.Market,
 	window time.Duration,
 	limit uint64,

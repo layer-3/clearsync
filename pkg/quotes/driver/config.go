@@ -12,7 +12,6 @@ import (
 type Config struct {
 	Drivers []common.DriverType `yaml:"drivers" env:"QUOTES_DRIVERS" env-default:"binance,syncswap"`
 	Rpc     RpcConfig           `yaml:"rpc" env-prefix:"QUOTES_RPC_"`
-	Index   IndexConfig         `yaml:"index" env-prefix:"QUOTES_INDEX_"`
 
 	Binance   BinanceConfig   `yaml:"binance" env-prefix:"QUOTES_BINANCE_"`
 	Kraken    KrakenConfig    `yaml:"kraken" env-prefix:"QUOTES_KRAKEN_"`
@@ -40,15 +39,6 @@ type RpcConfig struct {
 	Ethereum string `yaml:"ethereum" env:"ETHEREUM"`
 	Polygon  string `yaml:"polygon" env:"POLYGON"`
 	Linea    string `yaml:"linea" env:"LINEA"`
-}
-
-type IndexConfig struct {
-	TradesCached   int                 `yaml:"trades_cached" env:"TRADES_CACHED" env-default:"20"`
-	BufferSeconds  int                 `yaml:"buffer_minutes" env:"BUFFER_MINUTES" env-default:"5"`
-	MarketsMapping map[string][]string `yaml:"markets_mapping" env:"MARKETS_MAPPING"`
-	// MaxPriceDiff has default of `0.2` because our default leverage is 5x,
-	// and so if the user opens order on his full balance, he'll get liquidated on 20% price change.
-	MaxPriceDiff string `yaml:"max_price_diff" env:"MAX_PRICE_DIFF" env-default:"0.2"`
 }
 
 type BinanceConfig struct {

@@ -1,4 +1,4 @@
-// Package quotes implements multiple price feed adapters.
+// Package driver implements adapters for trade event streaming.
 package driver
 
 import (
@@ -36,34 +36,29 @@ type Driver interface {
 	// After calling this method, the driver won't send any more trades for the given market.
 	// If the market is not subscribed yet, this method returns an error.
 	Unsubscribe(market common.Market) error
-	HistoricalData
+	HistoricalDataDriver
 }
 
-type HistoricalData interface {
+// HistoricalDataDriver is an interface that represents trades adapter
+// that can fetch historical data on demand.
+type HistoricalDataDriver interface {
 	// HistoricalData returns historical trade data for the given market.
 	// The returned data is ordered from oldest to newest.
 	// The window parameter defines the time range to fetch data for starting from now.
 	HistoricalData(ctx context.Context, market common.Market, window time.Duration, limit uint64) ([]common.TradeEvent, error)
 }
 
-// NewDriver creates a new instance of the driver.
+// New creates an instance of trades streaming driver.
 //
 // If no drivers appear in the `config.Drivers` array,
 // the constructor assumes no drives are configured and returns an error.
 //
-// Index driver is configured automatically
-// if at least one of the following conditions is met:
-//  1. `config.Drivers` contains multiple drivers;
-//  2. a valid non-nil `inbox` channel is provided;
-//
 // Params:
 //   - config: contains the configuration for the driver(s) to be created
 //   - outbox: a channel where the driver sends aggregated trades
-//   - inbox:  an optional channel where the package user can send trades from his own source.
-//     If you don't { have / need } your own source, pass `nil` here.
-//   - trades: an optional adapter to fetch historical data from instead of querying RPC provider,
+//   - external: an optional adapter to fetch historical data from instead of querying RPC provider,
 //     If you don't { have / need } a historical data adapter, pass `nil` here.
-func NewDriver(config Config, outbox chan<- common.TradeEvent, inbox <-chan common.TradeEvent, history HistoricalData) (Driver, error) {
+func New(config Config, outbox chan<- common.TradeEvent, external HistoricalDataDriver) (Driver, error) {
 	// Remove duplicate drivers
 	seen := make(map[common.DriverType]struct{})
 	var unique []common.DriverType
@@ -77,35 +72,33 @@ func NewDriver(config Config, outbox chan<- common.TradeEvent, inbox <-chan comm
 
 	if len(config.Drivers) == 0 {
 		return nil, fmt.Errorf("no drivers are configured")
-	} else if len(config.Drivers) > 1 || inbox != nil {
-		return newIndex(config, outbox, inbox, history)
 	}
 
 	switch config.Drivers[0] {
 	case common.DriverBinance:
-		return newBinance(config.Binance, outbox, history)
+		return newBinance(config.Binance, outbox, external)
 	case common.DriverKraken:
-		return newKraken(config.Kraken, outbox, history)
+		return newKraken(config.Kraken, outbox, external)
 	case common.DriverMexc:
-		return newMexc(config.Mexc, outbox, history), nil
+		return newMexc(config.Mexc, outbox, external), nil
 	case common.DriverOpendax:
-		return newOpendax(config.Opendax, outbox, history)
+		return newOpendax(config.Opendax, outbox, external)
 	case common.DriverBitfaker:
 		return newBitfaker(config.Bitfaker, outbox)
 	case common.DriverUniswapV3:
-		return newUniswapV3(config.Rpc.Ethereum, config.UniswapV3, outbox, history)
+		return newUniswapV3(config.Rpc.Ethereum, config.UniswapV3, outbox, external)
 	case common.DriverSyncswap:
-		return newSyncswap(config.Rpc.Linea, config.Syncswap, outbox, history)
+		return newSyncswap(config.Rpc.Linea, config.Syncswap, outbox, external)
 	case common.DriverQuickswap:
-		return newQuickswap(config.Rpc.Polygon, config.Quickswap, outbox, history)
+		return newQuickswap(config.Rpc.Polygon, config.Quickswap, outbox, external)
 	case common.DriverSectaV2:
-		return newSectaV2(config.Rpc.Linea, config.SectaV2, outbox, history)
+		return newSectaV2(config.Rpc.Linea, config.SectaV2, outbox, external)
 	case common.DriverSectaV3:
-		return newSectaV3(config.Rpc.Linea, config.SectaV3, outbox, history)
+		return newSectaV3(config.Rpc.Linea, config.SectaV3, outbox, external)
 	case common.DriverLynexV2:
-		return newLynexV2(config.Rpc.Linea, config.LynexV2, outbox, history)
+		return newLynexV2(config.Rpc.Linea, config.LynexV2, outbox, external)
 	case common.DriverLynexV3:
-		return newLynexV3(config.Rpc.Linea, config.LynexV3, outbox, history)
+		return newLynexV3(config.Rpc.Linea, config.LynexV3, outbox, external)
 	default:
 		return nil, fmt.Errorf("unknown driver: %s", config.Drivers)
 	}

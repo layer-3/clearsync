@@ -28,7 +28,7 @@ type mexc struct {
 	idlePeriod         time.Duration
 	exchangeInfo       *mexcExchangeInfoService
 	filter             filter.Filter
-	history            HistoricalData
+	history            HistoricalDataDriver
 	batcherInbox       chan<- common.TradeEvent
 	outbox             chan<- common.TradeEvent
 	streams            safe.Map[common.Market, chan struct{}]
@@ -108,7 +108,7 @@ func (c *mexcClient) get(ctx context.Context, url string) ([]byte, error) {
 	return io.ReadAll(resp.Body)
 }
 
-func newMexc(config MexcConfig, outbox chan<- common.TradeEvent, history HistoricalData) Driver {
+func newMexc(config MexcConfig, outbox chan<- common.TradeEvent, history HistoricalDataDriver) Driver {
 	batcherInbox := make(chan common.TradeEvent, 1024)
 	go batchMexc(config.BatchPeriod, batcherInbox, outbox)
 

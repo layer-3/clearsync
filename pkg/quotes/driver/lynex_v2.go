@@ -27,7 +27,7 @@ type lynexV2 struct {
 	client *ethclient.Client
 }
 
-func newLynexV2(rpcUrl string, config LynexV2Config, outbox chan<- quotes_common.TradeEvent, history HistoricalData) (Driver, error) {
+func newLynexV2(rpcUrl string, config LynexV2Config, outbox chan<- quotes_common.TradeEvent, history HistoricalDataDriver) (Driver, error) {
 	stablePoolMarkets := make(map[quotes_common.Market]struct{})
 	for _, rawMarket := range config.StablePoolMarkets {
 		market, ok := quotes_common.NewMarketFromString(rawMarket)
