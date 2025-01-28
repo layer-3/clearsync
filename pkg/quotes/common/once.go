@@ -15,7 +15,7 @@ type Once struct {
 
 	// Using plain bool is not thread-safe in this case,
 	// since sync.Once executes passed function in a synchronized way,
-	// but Subscribe and Unsubscribe may be called from async context.
+	// but Start, Stop, and IsStarted may be called from async context.
 	started atomic.Bool
 }
 

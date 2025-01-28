@@ -55,7 +55,7 @@ func TestOnce_Stop(t *testing.T) {
 	})
 }
 
-func TestOnce_Subscribe(t *testing.T) {
+func TestOnce_IsStarted(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Should return false if Start has not been called", func(t *testing.T) {
