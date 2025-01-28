@@ -558,12 +558,7 @@ func fetch[T any](url string) (data T, err error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return data, err
-	}
-
-	if err := json.Unmarshal(body, &data); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
 		return data, err
 	}
 
@@ -586,10 +581,14 @@ func (s *marketSymbol) UnmarshalJSON(data []byte) error {
 	}{
 		Alias: (*Alias)(s),
 	}
+
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
 	}
 	if s.Quotes == nil {
+		// Default value for `Dexs` is `true`.
+		// If the field is not present in the JSON,
+		// then it is overridden.
 		s.Quotes = &marketConfig{Dexs: true}
 	}
 	return nil
@@ -604,8 +603,31 @@ type dexPool[Event any, EventIterator dexEventIterator] struct {
 	Reversed   bool
 }
 
+// dexEvent represents an interface for interacting with DEX contract events.
+// When a smart contract with events is processed using `abigen`, the generated
+// event bindings conform to this interface. It defines a subset of methods
+// available in the event binding.
+//
+// Event: A generic type representing the specific event structure.
+// EventIterator: A generic type representing the iterator for filtering events.
 type dexEvent[Event any, EventIterator dexEventIterator] interface {
+	// WatchSwap subscribes to the "Swap" event, streaming events to the provided sink channel.
+	// Parameters:
+	// - opts: Options for configuring the subscription, such as context and block start/end.
+	// - sink: Channel to receive the streamed event data.
+	// - from, to: Filter the event by sender and recipient addresses.
+	// Returns:
+	// - A subscription object for managing the event stream.
+	// - An error, if the subscription fails.
 	WatchSwap(opts *bind.WatchOpts, sink chan<- *Event, from, to []common.Address) (event.Subscription, error)
+
+	// FilterSwap retrieves past "Swap" events matching the provided filter criteria.
+	// Parameters:
+	// - opts: Options for configuring the filter, such as block range.
+	// - sender, to: Filter the events by sender and recipient addresses.
+	// Returns:
+	// - An iterator for accessing the matching events.
+	// - An error, if the filtering fails.
 	FilterSwap(opts *bind.FilterOpts, sender, to []common.Address) (EventIterator, error)
 }
 
@@ -676,8 +698,8 @@ func buildV2Trade[Event any, EventIterator dexEventIterator](
 
 	switch {
 	case isValidNonZero(rawAmount0In) && isValidNonZero(rawAmount1Out):
-		amount1Out := decimal.NewFromBigInt(rawAmount1Out, 0).Div(decimal.NewFromInt(10).Pow(quoteDecimals))
-		amount0In := decimal.NewFromBigInt(rawAmount0In, 0).Div(decimal.NewFromInt(10).Pow(baseDecimals))
+		amount1Out := decimal.NewFromBigInt(rawAmount1Out, 0).Div(ten.Pow(quoteDecimals))
+		amount0In := decimal.NewFromBigInt(rawAmount0In, 0).Div(ten.Pow(baseDecimals))
 
 		takerType = quotes_common.TakerTypeSell
 		price = amount1Out.Div(amount0In) // NOTE: may panic here if `amount0In` is zero
@@ -685,8 +707,8 @@ func buildV2Trade[Event any, EventIterator dexEventIterator](
 		amount = amount0In
 
 	case isValidNonZero(rawAmount0Out) && isValidNonZero(rawAmount1In):
-		amount0Out := decimal.NewFromBigInt(rawAmount0Out, 0).Div(decimal.NewFromInt(10).Pow(baseDecimals))
-		amount1In := decimal.NewFromBigInt(rawAmount1In, 0).Div(decimal.NewFromInt(10).Pow(quoteDecimals))
+		amount0Out := decimal.NewFromBigInt(rawAmount0Out, 0).Div(ten.Pow(baseDecimals))
+		amount1In := decimal.NewFromBigInt(rawAmount1In, 0).Div(ten.Pow(quoteDecimals))
 
 		takerType = quotes_common.TakerTypeBuy
 		price = amount1In.Div(amount0Out) // NOTE: may panic here if `amount0Out` is zero
