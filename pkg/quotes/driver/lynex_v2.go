@@ -167,16 +167,20 @@ func (l *lynexV2) parseSwap(
 		}
 	}()
 
-	return base.BuildV2Trade(
-		quotes_common.DriverLynexV2,
-		swap.Amount0In,
-		swap.Amount0Out,
-		swap.Amount1In,
-		swap.Amount1Out,
-		pool,
-		swap,
-		loggerLynexV2,
-	)
+	opts := base.V2TradeOpts[
+		ilynex_v2_pair.ILynexPairSwap,
+		*ilynex_v2_pair.ILynexPairSwapIterator,
+	]{
+		Driver:        quotes_common.DriverLynexV2,
+		RawAmount0In:  swap.Amount0In,
+		RawAmount0Out: swap.Amount0Out,
+		RawAmount1In:  swap.Amount1In,
+		RawAmount1Out: swap.Amount1Out,
+		Pool:          pool,
+		Swap:          swap,
+		Logger:        loggerLynexV2,
+	}
+	return base.BuildV2Trade(opts)
 }
 
 func (l *lynexV2) derefIter(

@@ -146,16 +146,20 @@ func (s *sectaV2) parseSwap(
 		}
 	}()
 
-	return base.BuildV2Trade(
-		quotes_common.DriverSectaV2,
-		swap.Amount0In,
-		swap.Amount0Out,
-		swap.Amount1In,
-		swap.Amount1Out,
-		pool,
-		swap,
-		loggerSectaV2,
-	)
+	opts := base.V2TradeOpts[
+		isecta_v2_pair.ISectaV2PairSwap,
+		*isecta_v2_pair.ISectaV2PairSwapIterator,
+	]{
+		Driver:        quotes_common.DriverSectaV2,
+		RawAmount0In:  swap.Amount0In,
+		RawAmount0Out: swap.Amount0Out,
+		RawAmount1In:  swap.Amount1In,
+		RawAmount1Out: swap.Amount1Out,
+		Pool:          pool,
+		Swap:          swap,
+		Logger:        loggerSectaV2,
+	}
+	return base.BuildV2Trade(opts)
 }
 
 func (s *sectaV2) derefIter(

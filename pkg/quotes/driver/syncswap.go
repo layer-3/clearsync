@@ -180,16 +180,20 @@ func (s *syncswap) parseSwap(
 		}
 	}()
 
-	return base.BuildV2Trade(
-		quotes_common.DriverSyncswap,
-		swap.Amount0In,
-		swap.Amount0Out,
-		swap.Amount1In,
-		swap.Amount1Out,
-		pool,
-		swap,
-		loggerSyncswap,
-	)
+	opts := base.V2TradeOpts[
+		isyncswap_pool.ISyncSwapPoolSwap,
+		*isyncswap_pool.ISyncSwapPoolSwapIterator,
+	]{
+		Driver:        quotes_common.DriverSyncswap,
+		RawAmount0In:  swap.Amount0In,
+		RawAmount0Out: swap.Amount0Out,
+		RawAmount1In:  swap.Amount1In,
+		RawAmount1Out: swap.Amount1Out,
+		Pool:          pool,
+		Swap:          swap,
+		Logger:        loggerSyncswap,
+	}
+	return base.BuildV2Trade(opts)
 }
 
 func (s *syncswap) derefIter(

@@ -666,26 +666,30 @@ func GetTokens(
 	return baseToken, quoteToken, nil
 }
 
-func BuildV2Trade[Event any, EventIterator dexEventIterator](
-	driver quotes_common.DriverType,
-	rawAmount0In, rawAmount0Out, rawAmount1In, rawAmount1Out *big.Int,
-	pool *DexPool[Event, EventIterator],
+type V2TradeOpts[Event any, EventIterator dexEventIterator] struct {
+	Driver        quotes_common.DriverType
+	RawAmount0In  *big.Int
+	RawAmount0Out *big.Int
+	RawAmount1In  *big.Int
+	RawAmount1Out *big.Int
+	Pool          *DexPool[Event, EventIterator]
+	Swap          *Event
+	Logger        *log.ZapEventLogger
+}
 
-	swap *Event,
-	logger *log.ZapEventLogger,
-) (trade quotes_common.TradeEvent, err error) {
+func BuildV2Trade[Event any, EventIterator dexEventIterator](o V2TradeOpts[Event, EventIterator]) (trade quotes_common.TradeEvent, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			msg := "recovered in from panic during swap parsing"
-			logger.Errorw(msg, "swap", swap)
-			err = fmt.Errorf("%s: %v (swap: %#v)", msg, r, swap)
+			o.Logger.Errorw(msg, "swap", o.Swap)
+			err = fmt.Errorf("%s: %v (swap: %#v)", msg, r, o.Swap)
 		}
 	}()
 
-	if pool.Reversed {
-		copyAmount0In, copyAmount0Out := rawAmount0In, rawAmount0Out
-		rawAmount0In, rawAmount0Out = rawAmount1In, rawAmount1Out
-		rawAmount1In, rawAmount1Out = copyAmount0In, copyAmount0Out
+	if o.Pool.Reversed {
+		copyAmount0In, copyAmount0Out := o.RawAmount0In, o.RawAmount0Out
+		o.RawAmount0In, o.RawAmount0Out = o.RawAmount1In, o.RawAmount1Out
+		o.RawAmount1In, o.RawAmount1Out = copyAmount0In, copyAmount0Out
 	}
 
 	var takerType quotes_common.TakerType
@@ -693,34 +697,34 @@ func BuildV2Trade[Event any, EventIterator dexEventIterator](
 	var amount decimal.Decimal
 	var total decimal.Decimal
 
-	baseDecimals := pool.BaseToken.Decimals
-	quoteDecimals := pool.QuoteToken.Decimals
+	baseDecimals := o.Pool.BaseToken.Decimals
+	quoteDecimals := o.Pool.QuoteToken.Decimals
 
 	switch {
-	case isValidNonZero(rawAmount0In) && isValidNonZero(rawAmount1Out):
-		amount1Out := decimal.NewFromBigInt(rawAmount1Out, 0).Div(ten.Pow(quoteDecimals))
-		amount0In := decimal.NewFromBigInt(rawAmount0In, 0).Div(ten.Pow(baseDecimals))
+	case isValidNonZero(o.RawAmount0In) && isValidNonZero(o.RawAmount1Out):
+		amount1Out := decimal.NewFromBigInt(o.RawAmount1Out, 0).Div(ten.Pow(quoteDecimals))
+		amount0In := decimal.NewFromBigInt(o.RawAmount0In, 0).Div(ten.Pow(baseDecimals))
 
 		takerType = quotes_common.TakerTypeSell
 		price = amount1Out.Div(amount0In) // NOTE: may panic here if `amount0In` is zero
 		total = amount1Out
 		amount = amount0In
 
-	case isValidNonZero(rawAmount0Out) && isValidNonZero(rawAmount1In):
-		amount0Out := decimal.NewFromBigInt(rawAmount0Out, 0).Div(ten.Pow(baseDecimals))
-		amount1In := decimal.NewFromBigInt(rawAmount1In, 0).Div(ten.Pow(quoteDecimals))
+	case isValidNonZero(o.RawAmount0Out) && isValidNonZero(o.RawAmount1In):
+		amount0Out := decimal.NewFromBigInt(o.RawAmount0Out, 0).Div(ten.Pow(baseDecimals))
+		amount1In := decimal.NewFromBigInt(o.RawAmount1In, 0).Div(ten.Pow(quoteDecimals))
 
 		takerType = quotes_common.TakerTypeBuy
 		price = amount1In.Div(amount0Out) // NOTE: may panic here if `amount0Out` is zero
 		total = amount1In
 		amount = amount0Out
 	default:
-		return quotes_common.TradeEvent{}, fmt.Errorf("market %s: unknown swap type", pool.Market)
+		return quotes_common.TradeEvent{}, fmt.Errorf("market %s: unknown swap type", o.Pool.Market)
 	}
 
 	trade = quotes_common.TradeEvent{
-		Source:    driver,
-		Market:    pool.Market,
+		Source:    o.Driver,
+		Market:    o.Pool.Market,
 		Price:     price,
 		Amount:    amount.Abs(),
 		Total:     total,
