@@ -11,33 +11,33 @@ import (
 )
 
 type Market struct {
-	baseUnit  string // e.g. `lube` // Base currency
-	quoteUnit string // e.g. `usdt` // Quote currency
-	mainQuote string // e.g. `usd` // Main quote currency
-	// If convertTo specified, the index driver will convert quote currency to the specified one.
-	convertTo string // e.g. `usdc`
+	BaseUnit  string // e.g. `lube` // Base currency
+	QuoteUnit string // e.g. `usdt` // Quote currency
+	MainQuote string // e.g. `usd` // Main quote currency
+	// If ConvertTo specified, the index driver will convert quote currency to the specified one.
+	ConvertTo string // e.g. `usdc`
 }
 
 func NewMarket(base, quote string) Market {
 	return Market{
-		baseUnit:  strings.ToLower(base),
-		quoteUnit: strings.ToLower(quote),
+		BaseUnit:  strings.ToLower(base),
+		QuoteUnit: strings.ToLower(quote),
 	}
 }
 
 func NewMarketWithMainQuote(base, quote, mainQuote string) Market {
 	return Market{
-		baseUnit:  strings.ToLower(base),
-		quoteUnit: strings.ToLower(quote),
-		mainQuote: strings.ToLower(mainQuote),
+		BaseUnit:  strings.ToLower(base),
+		QuoteUnit: strings.ToLower(quote),
+		MainQuote: strings.ToLower(mainQuote),
 	}
 }
 
 func NewMarketDerived(base, quote, convertQuoteTo string) Market {
 	return Market{
-		baseUnit:  strings.ToLower(base),
-		quoteUnit: strings.ToLower(quote),
-		convertTo: strings.ToLower(convertQuoteTo),
+		BaseUnit:  strings.ToLower(base),
+		QuoteUnit: strings.ToLower(quote),
+		ConvertTo: strings.ToLower(convertQuoteTo),
 	}
 }
 
@@ -55,39 +55,39 @@ func NewMarketFromString(s string) (Market, bool) {
 // String returns a string representation of the market.
 // Example: `Market{btc, usdt}` -> "btc/usdt"
 func (m Market) String() string {
-	if m.mainQuote != "" {
-		return fmt.Sprintf("%s/%s", m.baseUnit, m.mainQuote)
+	if m.MainQuote != "" {
+		return fmt.Sprintf("%s/%s", m.BaseUnit, m.MainQuote)
 	}
-	return fmt.Sprintf("%s/%s", m.baseUnit, m.quoteUnit)
+	return fmt.Sprintf("%s/%s", m.BaseUnit, m.QuoteUnit)
 }
 
 func (m Market) StringWithoutMain() string {
-	return fmt.Sprintf("%s/%s", m.baseUnit, m.quoteUnit)
+	return fmt.Sprintf("%s/%s", m.BaseUnit, m.QuoteUnit)
 }
 
 func (m Market) ApplyMainQuote() Market {
-	if m.mainQuote == "" {
+	if m.MainQuote == "" {
 		return m
 	}
 
-	m.quoteUnit = m.mainQuote
+	m.QuoteUnit = m.MainQuote
 	return m
 }
 
 func (m Market) Base() string {
-	return m.baseUnit
+	return m.BaseUnit
 }
 
 func (m Market) Quote() string {
-	return m.quoteUnit
+	return m.QuoteUnit
 }
 
 func (m Market) LegacyQuote() string {
-	return m.mainQuote
+	return m.MainQuote
 }
 
 func (m Market) IsEmpty() bool {
-	return m.baseUnit == "" || m.quoteUnit == ""
+	return m.BaseUnit == "" || m.QuoteUnit == ""
 }
 
 func (m Market) MarshalJSON() ([]byte, error) {
@@ -105,7 +105,7 @@ func (m *Market) UnmarshalJSON(raw []byte) error {
 		return fmt.Errorf("invalid market format: got '%s' instead of e.g. 'btc/usdt'", rawParsed)
 	}
 
-	*m = Market{baseUnit: parts[0], quoteUnit: parts[1]}
+	*m = Market{BaseUnit: parts[0], QuoteUnit: parts[1]}
 	return nil
 }
 

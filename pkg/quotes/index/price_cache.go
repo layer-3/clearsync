@@ -44,7 +44,7 @@ func newPriceCache(driversWeights map[common.DriverType]decimal.Decimal, nTrades
 
 // AddTrade adds a new trade to the cache for a market.
 func (p *PriceCache) AddTrade(market common.Market, price, volume decimal.Decimal, timestamp time.Time, source common.DriverType) {
-	key := marketKey{baseUnit: market.baseUnit, quoteUnit: market.quoteUnit}
+	key := marketKey{baseUnit: market.BaseUnit, quoteUnit: market.QuoteUnit}
 	p.market.UpdateInTx(func(m map[marketKey][]priceCacheTrade) {
 		driversTrades, ok := m[key]
 		if !ok {
@@ -86,14 +86,14 @@ func (p *PriceCache) AddTrade(market common.Market, price, volume decimal.Decima
 }
 
 func (p *PriceCache) setLastPrice(market common.Market, newPrice decimal.Decimal) {
-	key := marketKey{baseUnit: market.baseUnit, quoteUnit: market.quoteUnit}
+	key := marketKey{baseUnit: market.BaseUnit, quoteUnit: market.QuoteUnit}
 	p.lastPrice.UpdateInTx(func(m map[marketKey]decimal.Decimal) {
 		m[key] = newPrice
 	})
 }
 
 func (p *PriceCache) getLastPrice(market common.Market) decimal.Decimal {
-	record, ok := p.lastPrice.Load(marketKey{baseUnit: market.baseUnit, quoteUnit: market.quoteUnit})
+	record, ok := p.lastPrice.Load(marketKey{baseUnit: market.BaseUnit, quoteUnit: market.QuoteUnit})
 	if !ok {
 		return decimal.Zero
 	}
@@ -101,7 +101,7 @@ func (p *PriceCache) getLastPrice(market common.Market) decimal.Decimal {
 }
 
 func (p *PriceCache) GetIndexPrice(event *common.TradeEvent) (decimal.Decimal, bool) {
-	trades, ok := p.market.Load(marketKey{baseUnit: event.Market.baseUnit, quoteUnit: event.Market.quoteUnit})
+	trades, ok := p.market.Load(marketKey{baseUnit: event.Market.BaseUnit, quoteUnit: event.Market.QuoteUnit})
 	if !ok || len(trades) == 0 {
 		return event.Price, false
 	}
@@ -119,8 +119,8 @@ func (p *PriceCache) GetIndexPrice(event *common.TradeEvent) (decimal.Decimal, b
 	}
 
 	quotePrice := decimal.NewFromInt(1)
-	if event.Market.convertTo != "" {
-		event.Market = common.Market{baseUnit: event.Market.quoteUnit, quoteUnit: event.Market.convertTo}
+	if event.Market.ConvertTo != "" {
+		event.Market = common.Market{BaseUnit: event.Market.QuoteUnit, QuoteUnit: event.Market.ConvertTo}
 		quotePrice, ok = p.GetIndexPrice(event)
 		if !ok {
 			return decimal.Zero, false

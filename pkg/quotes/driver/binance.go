@@ -262,8 +262,8 @@ func (b *binance) buildEvent(tr *gobinance.WsTradeEvent, market common.Market) (
 		return common.TradeEvent{}, fmt.Errorf("failed to parse quantity: %+v", tr.Quantity)
 	}
 
-	if b.usdcToUSDT && (market.quoteUnit == "usdt" || market.quoteUnit == "usdc") {
-		market.quoteUnit = "usd"
+	if b.usdcToUSDT && (market.QuoteUnit == "usdt" || market.QuoteUnit == "usdc") {
+		market.QuoteUnit = "usd"
 	}
 
 	// IsBuyerMaker: true => the trade was initiated by the sell-side; the buy-side was the order book already.

@@ -158,8 +158,8 @@ func (a *indexAggregator) computeAggregatePrice() {
 			continue
 		}
 
-		if event.Market.mainQuote != "" {
-			event.Market.quoteUnit = event.Market.mainQuote
+		if event.Market.MainQuote != "" {
+			event.Market.QuoteUnit = event.Market.MainQuote
 		}
 
 		indexPrice, ok := a.strategy.calculateIndexPrice(event)
@@ -167,16 +167,16 @@ func (a *indexAggregator) computeAggregatePrice() {
 			continue
 		}
 
-		if event.Market.convertTo != "" {
-			event.Market.quoteUnit = event.Market.convertTo
+		if event.Market.ConvertTo != "" {
+			event.Market.QuoteUnit = event.Market.ConvertTo
 		}
 		event.Price = indexPrice
-		event.Source = common.DriverType{"index/" + event.Source.String()}
+		// event.Source = common.DriverType{"index/" + event.Source.String()} // TODO: refactor Market type to drop Source field
 
 		a.strategy.setLastPrice(event.Market, event.Price)
 
-		baseMarkets, ok := defaultMarketsMapping[event.Market.quoteUnit]
-		if !ok || slices.Contains(baseMarkets, event.Market.baseUnit) {
+		baseMarkets, ok := defaultMarketsMapping[event.Market.QuoteUnit]
+		if !ok || slices.Contains(baseMarkets, event.Market.BaseUnit) {
 			continue
 		}
 
@@ -237,9 +237,9 @@ func (a *indexAggregator) Subscribe(m common.Market) error {
 
 		if err := d.Subscribe(m); err != nil {
 			if exchangeType == common.ExchangeTypeDEX {
-				for _, convertFrom := range a.marketsMapping[m.quoteUnit] {
+				for _, convertFrom := range a.marketsMapping[m.QuoteUnit] {
 					// TODO: check if base and quote are same
-					m := common.NewMarketDerived(m.baseUnit, convertFrom, m.quoteUnit)
+					m := common.NewMarketDerived(m.BaseUnit, convertFrom, m.QuoteUnit)
 					if err := d.Subscribe(m); err != nil {
 						logger.Infow("skipping market",
 							"driver", driverType,
@@ -250,7 +250,7 @@ func (a *indexAggregator) Subscribe(m common.Market) error {
 					}
 					logger.Infow("subscribed to helper market",
 						"driver", driverType,
-						"market", fmt.Sprintf("%s/%s", m.baseUnit, convertFrom))
+						"market", fmt.Sprintf("%s/%s", m.BaseUnit, convertFrom))
 				}
 			}
 		}

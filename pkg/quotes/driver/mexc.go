@@ -454,8 +454,8 @@ func (b *mexc) buildEvent(tr mexcDeal, symbol string) (common.TradeEvent, error)
 		return common.TradeEvent{}, fmt.Errorf("failed to load market: %+v", symbol)
 	}
 
-	if b.usdcToUSDT && (market.quoteUnit == "usdt" || market.quoteUnit == "usdc") {
-		market.quoteUnit = "usd"
+	if b.usdcToUSDT && (market.QuoteUnit == "usdt" || market.QuoteUnit == "usdc") {
+		market.QuoteUnit = "usd"
 	}
 
 	takerType := common.TakerTypeBuy
