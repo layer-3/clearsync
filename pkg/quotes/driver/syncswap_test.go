@@ -9,15 +9,16 @@ import (
 
 	"github.com/layer-3/clearsync/pkg/abi/isyncswap_pool"
 	"github.com/layer-3/clearsync/pkg/quotes/common"
+	"github.com/layer-3/clearsync/pkg/quotes/driver/base"
 )
 
 // Mock data for testing
 var (
 	baseTokenDecimals  = big.NewInt(18) // Example: 18 decimals for ETH
 	quoteTokenDecimals = big.NewInt(6)  // Example: 6 decimals for USDC
-	pool               = dexPool[isyncswap_pool.ISyncSwapPoolSwap, *isyncswap_pool.ISyncSwapPoolSwapIterator]{
-		BaseToken:  poolToken{Decimals: decimal.NewFromBigInt(baseTokenDecimals, 0)},
-		QuoteToken: poolToken{Decimals: decimal.NewFromBigInt(quoteTokenDecimals, 0)},
+	pool               = base.DexPool[isyncswap_pool.ISyncSwapPoolSwap, *isyncswap_pool.ISyncSwapPoolSwapIterator]{
+		BaseToken:  base.DexPoolToken{Decimals: decimal.NewFromBigInt(baseTokenDecimals, 0)},
+		QuoteToken: base.DexPoolToken{Decimals: decimal.NewFromBigInt(quoteTokenDecimals, 0)},
 	}
 	market = common.Market{} // Assuming market is correctly initialized for the test
 )
@@ -67,9 +68,9 @@ func TestParseSwapBuyETHUSDC(t *testing.T) {
 func TestParseSwapBuyLINDAWETH(t *testing.T) {
 	baseTokenDecimals = big.NewInt(18)  // Example: 18 decimals for LINDA
 	quoteTokenDecimals = big.NewInt(18) // Example: 18 decimals for WETH
-	pool = dexPool[isyncswap_pool.ISyncSwapPoolSwap, *isyncswap_pool.ISyncSwapPoolSwapIterator]{
-		BaseToken:  poolToken{Decimals: decimal.NewFromBigInt(baseTokenDecimals, 0)},
-		QuoteToken: poolToken{Decimals: decimal.NewFromBigInt(quoteTokenDecimals, 0)},
+	pool = base.DexPool[isyncswap_pool.ISyncSwapPoolSwap, *isyncswap_pool.ISyncSwapPoolSwapIterator]{
+		BaseToken:  base.DexPoolToken{Decimals: decimal.NewFromBigInt(baseTokenDecimals, 0)},
+		QuoteToken: base.DexPoolToken{Decimals: decimal.NewFromBigInt(quoteTokenDecimals, 0)},
 	}
 
 	value := new(big.Int)
@@ -97,9 +98,9 @@ func TestParseSwapBuyLINDAWETH(t *testing.T) {
 func TestParseSwapSellLINDAWETH(t *testing.T) {
 	baseTokenDecimals = big.NewInt(18)  // Example: 18 decimals for LINDA
 	quoteTokenDecimals = big.NewInt(18) // Example: 18 decimals for WETH
-	pool = dexPool[isyncswap_pool.ISyncSwapPoolSwap, *isyncswap_pool.ISyncSwapPoolSwapIterator]{
-		BaseToken:  poolToken{Decimals: decimal.NewFromBigInt(baseTokenDecimals, 0)},
-		QuoteToken: poolToken{Decimals: decimal.NewFromBigInt(quoteTokenDecimals, 0)},
+	pool = base.DexPool[isyncswap_pool.ISyncSwapPoolSwap, *isyncswap_pool.ISyncSwapPoolSwapIterator]{
+		BaseToken:  base.DexPoolToken{Decimals: decimal.NewFromBigInt(baseTokenDecimals, 0)},
+		QuoteToken: base.DexPoolToken{Decimals: decimal.NewFromBigInt(quoteTokenDecimals, 0)},
 	}
 
 	value := new(big.Int)

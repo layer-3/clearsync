@@ -15,6 +15,7 @@ import (
 	"github.com/layer-3/clearsync/pkg/abi/isecta_v3_pool"
 	"github.com/layer-3/clearsync/pkg/debounce"
 	quotes_common "github.com/layer-3/clearsync/pkg/quotes/common"
+	"github.com/layer-3/clearsync/pkg/quotes/driver/base"
 	"github.com/layer-3/clearsync/pkg/safe"
 )
 
@@ -28,16 +29,16 @@ type sectaV3 struct {
 	factoryAddress common.Address
 	factory        *isecta_v3_factory.ISectaV3Factory
 
-	assets *safe.Map[string, poolToken]
+	assets *safe.Map[string, base.DexPoolToken]
 	client *ethclient.Client
 }
 
-func newSectaV3(rpcUrl string, config SectaV3Config, outbox chan<- quotes_common.TradeEvent, history HistoricalDataDriver) (Driver, error) {
+func newSectaV3(rpcUrl string, config SectaV3Config, outbox chan<- quotes_common.TradeEvent, history base.HistoricalDataDriver) (base.Driver, error) {
 	hooks := &sectaV3{
 		factoryAddress: common.HexToAddress(config.FactoryAddress),
 	}
 
-	params := baseDexConfig[
+	params := base.DexConfig[
 		isecta_v3_pool.ISectaV3PoolSwap,
 		isecta_v3_pool.ISectaV3Pool,
 		*isecta_v3_pool.ISectaV3PoolSwapIterator,
@@ -60,10 +61,10 @@ func newSectaV3(rpcUrl string, config SectaV3Config, outbox chan<- quotes_common
 		Filter:  config.Filter,
 		History: history,
 	}
-	return newBaseDEX(params)
+	return base.NewDEX(params)
 }
 
-func (s *sectaV3) postStart(driver *baseDEX[
+func (s *sectaV3) postStart(driver *base.DEX[
 	isecta_v3_pool.ISectaV3PoolSwap,
 	isecta_v3_pool.ISectaV3Pool,
 	*isecta_v3_pool.ISectaV3PoolSwapIterator,
@@ -78,8 +79,8 @@ func (s *sectaV3) postStart(driver *baseDEX[
 	return nil
 }
 
-func (s *sectaV3) getPool(ctx context.Context, market quotes_common.Market) ([]*dexPool[isecta_v3_pool.ISectaV3PoolSwap, *isecta_v3_pool.ISectaV3PoolSwapIterator], error) {
-	baseToken, quoteToken, err := getTokens(s.assets, market, loggerSectaV3)
+func (s *sectaV3) getPool(ctx context.Context, market quotes_common.Market) ([]*base.DexPool[isecta_v3_pool.ISectaV3PoolSwap, *isecta_v3_pool.ISectaV3PoolSwapIterator], error) {
+	baseToken, quoteToken, err := base.GetTokens(s.assets, market, loggerSectaV3)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tokens: %w", err)
 	}
@@ -109,7 +110,7 @@ func (s *sectaV3) getPool(ctx context.Context, market quotes_common.Market) ([]*
 		}
 	}
 
-	pools := make([]*dexPool[isecta_v3_pool.ISectaV3PoolSwap, *isecta_v3_pool.ISectaV3PoolSwapIterator], 0, len(poolAddresses))
+	pools := make([]*base.DexPool[isecta_v3_pool.ISectaV3PoolSwap, *isecta_v3_pool.ISectaV3PoolSwapIterator], 0, len(poolAddresses))
 	for _, poolAddress := range poolAddresses {
 		poolContract, err := isecta_v3_pool.NewISectaV3Pool(poolAddress, s.client)
 		if err != nil {
@@ -136,7 +137,7 @@ func (s *sectaV3) getPool(ctx context.Context, market quotes_common.Market) ([]*
 
 		isDirect := baseToken.Address == basePoolToken && quoteToken.Address == quotePoolToken
 		isReversed := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
-		pool := &dexPool[isecta_v3_pool.ISectaV3PoolSwap, *isecta_v3_pool.ISectaV3PoolSwapIterator]{
+		pool := &base.DexPool[isecta_v3_pool.ISectaV3PoolSwap, *isecta_v3_pool.ISectaV3PoolSwapIterator]{
 			Contract:   poolContract,
 			Address:    poolAddress,
 			BaseToken:  baseToken,
@@ -157,9 +158,9 @@ func (s *sectaV3) getPool(ctx context.Context, market quotes_common.Market) ([]*
 
 func (s *sectaV3) parseSwap(
 	swap *isecta_v3_pool.ISectaV3PoolSwap,
-	pool *dexPool[isecta_v3_pool.ISectaV3PoolSwap, *isecta_v3_pool.ISectaV3PoolSwapIterator],
+	pool *base.DexPool[isecta_v3_pool.ISectaV3PoolSwap, *isecta_v3_pool.ISectaV3PoolSwapIterator],
 ) (trade quotes_common.TradeEvent, err error) {
-	opts := v3TradeOpts[isecta_v3_pool.ISectaV3PoolSwap, *isecta_v3_pool.ISectaV3PoolSwapIterator]{
+	opts := base.V3TradeOpts[isecta_v3_pool.ISectaV3PoolSwap, *isecta_v3_pool.ISectaV3PoolSwapIterator]{
 		Driver:          quotes_common.DriverSectaV3,
 		RawAmount0:      swap.Amount0,
 		RawAmount1:      swap.Amount1,
@@ -168,7 +169,7 @@ func (s *sectaV3) parseSwap(
 		Swap:            swap,
 		Logger:          loggerSectaV3,
 	}
-	return buildV3Trade(opts)
+	return base.BuildV3Trade(opts)
 }
 
 func (s *sectaV3) derefIter(

@@ -13,6 +13,7 @@ import (
 	"github.com/layer-3/clearsync/pkg/abi/ilynex_v3_pool"
 	"github.com/layer-3/clearsync/pkg/debounce"
 	quotes_common "github.com/layer-3/clearsync/pkg/quotes/common"
+	"github.com/layer-3/clearsync/pkg/quotes/driver/base"
 	"github.com/layer-3/clearsync/pkg/safe"
 )
 
@@ -22,16 +23,16 @@ type lynexV3 struct {
 	factoryAddress common.Address
 	factory        *ilynex_v3_factory.ILynexV3Factory
 
-	assets *safe.Map[string, poolToken]
+	assets *safe.Map[string, base.DexPoolToken]
 	client *ethclient.Client
 }
 
-func newLynexV3(rpcUrl string, config LynexV3Config, outbox chan<- quotes_common.TradeEvent, history HistoricalDataDriver) (Driver, error) {
+func newLynexV3(rpcUrl string, config LynexV3Config, outbox chan<- quotes_common.TradeEvent, history base.HistoricalDataDriver) (base.Driver, error) {
 	hooks := &lynexV3{
 		factoryAddress: common.HexToAddress(config.FactoryAddress),
 	}
 
-	params := baseDexConfig[
+	params := base.DexConfig[
 		ilynex_v3_pool.ILynexV3PoolSwap,
 		ilynex_v3_pool.ILynexV3Pool,
 		*ilynex_v3_pool.ILynexV3PoolSwapIterator,
@@ -54,10 +55,10 @@ func newLynexV3(rpcUrl string, config LynexV3Config, outbox chan<- quotes_common
 		Filter:  config.Filter,
 		History: history,
 	}
-	return newBaseDEX(params)
+	return base.NewDEX(params)
 }
 
-func (l *lynexV3) postStart(driver *baseDEX[
+func (l *lynexV3) postStart(driver *base.DEX[
 	ilynex_v3_pool.ILynexV3PoolSwap,
 	ilynex_v3_pool.ILynexV3Pool,
 	*ilynex_v3_pool.ILynexV3PoolSwapIterator,
@@ -74,8 +75,8 @@ func (l *lynexV3) postStart(driver *baseDEX[
 	return nil
 }
 
-func (l *lynexV3) getPool(ctx context.Context, market quotes_common.Market) ([]*dexPool[ilynex_v3_pool.ILynexV3PoolSwap, *ilynex_v3_pool.ILynexV3PoolSwapIterator], error) {
-	baseToken, quoteToken, err := getTokens(l.assets, market, loggerLynexV3)
+func (l *lynexV3) getPool(ctx context.Context, market quotes_common.Market) ([]*base.DexPool[ilynex_v3_pool.ILynexV3PoolSwap, *ilynex_v3_pool.ILynexV3PoolSwapIterator], error) {
+	baseToken, quoteToken, err := base.GetTokens(l.assets, market, loggerLynexV3)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tokens: %w", err)
 	}
@@ -122,7 +123,7 @@ func (l *lynexV3) getPool(ctx context.Context, market quotes_common.Market) ([]*
 	}
 
 	isReversed := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
-	pools := []*dexPool[ilynex_v3_pool.ILynexV3PoolSwap, *ilynex_v3_pool.ILynexV3PoolSwapIterator]{{
+	pools := []*base.DexPool[ilynex_v3_pool.ILynexV3PoolSwap, *ilynex_v3_pool.ILynexV3PoolSwapIterator]{{
 		Contract:   poolContract,
 		Address:    poolAddress,
 		BaseToken:  baseToken,
@@ -140,9 +141,9 @@ func (l *lynexV3) getPool(ctx context.Context, market quotes_common.Market) ([]*
 
 func (l *lynexV3) parseSwap(
 	swap *ilynex_v3_pool.ILynexV3PoolSwap,
-	pool *dexPool[ilynex_v3_pool.ILynexV3PoolSwap, *ilynex_v3_pool.ILynexV3PoolSwapIterator],
+	pool *base.DexPool[ilynex_v3_pool.ILynexV3PoolSwap, *ilynex_v3_pool.ILynexV3PoolSwapIterator],
 ) (trade quotes_common.TradeEvent, err error) {
-	opts := v3TradeOpts[ilynex_v3_pool.ILynexV3PoolSwap, *ilynex_v3_pool.ILynexV3PoolSwapIterator]{
+	opts := base.V3TradeOpts[ilynex_v3_pool.ILynexV3PoolSwap, *ilynex_v3_pool.ILynexV3PoolSwapIterator]{
 		Driver:          quotes_common.DriverLynexV3,
 		RawAmount0:      swap.Amount0,
 		RawAmount1:      swap.Amount1,
@@ -151,7 +152,7 @@ func (l *lynexV3) parseSwap(
 		Swap:            swap,
 		Logger:          loggerLynexV3,
 	}
-	return buildV3Trade(opts)
+	return base.BuildV3Trade(opts)
 }
 
 func (l *lynexV3) derefIter(

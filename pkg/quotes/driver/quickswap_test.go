@@ -13,6 +13,7 @@ import (
 
 	"github.com/layer-3/clearsync/pkg/artifacts/quickswap_v3_pool"
 	quotes_common "github.com/layer-3/clearsync/pkg/quotes/common"
+	"github.com/layer-3/clearsync/pkg/quotes/driver/base"
 )
 
 func newBigInt(s string) *big.Int {
@@ -28,7 +29,7 @@ func Test_quickswap_parseSwap(t *testing.T) {
 
 	type args struct {
 		swap *quickswap_v3_pool.IQuickswapV3PoolSwap
-		pool *dexPool[quickswap_v3_pool.IQuickswapV3PoolSwap, *quickswap_v3_pool.IQuickswapV3PoolSwapIterator]
+		pool *base.DexPool[quickswap_v3_pool.IQuickswapV3PoolSwap, *quickswap_v3_pool.IQuickswapV3PoolSwapIterator]
 	}
 
 	tests := []struct {
@@ -65,13 +66,13 @@ func Test_quickswap_parseSwap(t *testing.T) {
 						Removed:     false,
 					},
 				},
-				pool: &dexPool[quickswap_v3_pool.IQuickswapV3PoolSwap, *quickswap_v3_pool.IQuickswapV3PoolSwapIterator]{
-					BaseToken: poolToken{
+				pool: &base.DexPool[quickswap_v3_pool.IQuickswapV3PoolSwap, *quickswap_v3_pool.IQuickswapV3PoolSwapIterator]{
+					BaseToken: base.DexPoolToken{
 						Address:  common.HexToAddress("0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270"),
 						Symbol:   "wmatic",
 						Decimals: decimal.NewFromInt(18),
 					},
-					QuoteToken: poolToken{
+					QuoteToken: base.DexPoolToken{
 						Address:  common.HexToAddress("0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619"),
 						Symbol:   "weth",
 						Decimals: decimal.NewFromInt(18),
@@ -119,14 +120,14 @@ func Test_quickswap_parseSwap(t *testing.T) {
 						Removed:     false,
 					},
 				},
-				pool: &dexPool[quickswap_v3_pool.IQuickswapV3PoolSwap, *quickswap_v3_pool.IQuickswapV3PoolSwapIterator]{
+				pool: &base.DexPool[quickswap_v3_pool.IQuickswapV3PoolSwap, *quickswap_v3_pool.IQuickswapV3PoolSwapIterator]{
 					Address: common.HexToAddress("0x9ceff2f5138fc59eb925d270b8a7a9c02a1810f2"),
-					BaseToken: poolToken{
+					BaseToken: base.DexPoolToken{
 						Address:  common.HexToAddress("0x7ceb23fd6bc0add59e62ac25578270cff1b9f619"),
 						Symbol:   "weth",
 						Decimals: decimal.NewFromInt(18),
 					},
-					QuoteToken: poolToken{
+					QuoteToken: base.DexPoolToken{
 						Address:  common.HexToAddress("0xc2132d05d31c914a87c6611c10748aeb04b58e8f"),
 						Symbol:   "usdt",
 						Decimals: decimal.NewFromInt(6),

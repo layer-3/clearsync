@@ -15,6 +15,7 @@ import (
 	"github.com/shopspring/decimal"
 
 	"github.com/layer-3/clearsync/pkg/quotes/common"
+	"github.com/layer-3/clearsync/pkg/quotes/driver/base"
 	"github.com/layer-3/clearsync/pkg/quotes/filter"
 	"github.com/layer-3/clearsync/pkg/safe"
 )
@@ -28,7 +29,7 @@ type mexc struct {
 	idlePeriod         time.Duration
 	exchangeInfo       *mexcExchangeInfoService
 	filter             filter.Filter
-	history            HistoricalDataDriver
+	history            base.HistoricalDataDriver
 	batcherInbox       chan<- common.TradeEvent
 	outbox             chan<- common.TradeEvent
 	streams            safe.Map[common.Market, chan struct{}]
@@ -108,7 +109,7 @@ func (c *mexcClient) get(ctx context.Context, url string) ([]byte, error) {
 	return io.ReadAll(resp.Body)
 }
 
-func newMexc(config MexcConfig, outbox chan<- common.TradeEvent, history HistoricalDataDriver) Driver {
+func newMexc(config MexcConfig, outbox chan<- common.TradeEvent, history base.HistoricalDataDriver) base.Driver {
 	batcherInbox := make(chan common.TradeEvent, 1024)
 	go batchMexc(config.BatchPeriod, batcherInbox, outbox)
 
@@ -146,7 +147,7 @@ func (b *mexc) Type() (common.DriverType, common.ExchangeType) {
 
 func (b *mexc) Start() error {
 	started := b.once.Start(func() {
-		cexConfigured.CompareAndSwap(false, true)
+		base.CexConfigured.CompareAndSwap(false, true)
 	})
 	if !started {
 		return common.ErrAlreadyStarted
@@ -162,7 +163,7 @@ func (b *mexc) Stop() error {
 		})
 
 		b.streams = safe.NewMap[common.Market, chan struct{}]()
-		cexConfigured.CompareAndSwap(true, false)
+		base.CexConfigured.CompareAndSwap(true, false)
 	})
 
 	if !stopped {
@@ -203,7 +204,7 @@ func (b *mexc) Subscribe(market common.Market) error {
 
 	go b.watchTrades(symbol, stopCh)
 
-	recordSubscribed(common.DriverMexc, market)
+	base.RecordSubscribed(common.DriverMexc, market)
 	loggerMexc.Infow("subscribed", "market", market)
 	return nil
 }
@@ -303,7 +304,7 @@ func (b *mexc) Unsubscribe(market common.Market) error {
 	close(stopCh)
 
 	b.streams.Delete(market)
-	recordUnsubscribed(common.DriverMexc, market)
+	base.RecordUnsubscribed(common.DriverMexc, market)
 	return nil
 }
 
@@ -324,7 +325,7 @@ type mexcAggregatedTradesError struct {
 }
 
 func (b *mexc) HistoricalData(ctx context.Context, market common.Market, window time.Duration, limit uint64) ([]common.TradeEvent, error) {
-	trades, err := FetchHistoryDataFromExternalSource(ctx, b.history, market, window, limit, loggerMexc)
+	trades, err := base.FetchHistoryDataFromExternalSource(ctx, b.history, market, window, limit, loggerMexc)
 	if err == nil && len(trades) > 0 {
 		return trades, nil
 	}

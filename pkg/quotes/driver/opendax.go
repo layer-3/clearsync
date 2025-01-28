@@ -12,6 +12,7 @@ import (
 	"github.com/ipfs/go-log/v2"
 
 	"github.com/layer-3/clearsync/pkg/quotes/common"
+	"github.com/layer-3/clearsync/pkg/quotes/driver/base"
 	"github.com/layer-3/clearsync/pkg/quotes/filter"
 	protocol "github.com/layer-3/clearsync/pkg/quotes/opendax_protocol"
 	"github.com/layer-3/clearsync/pkg/safe"
@@ -27,14 +28,14 @@ type opendax struct {
 
 	outbox         chan<- common.TradeEvent
 	filter         filter.Filter
-	history        HistoricalDataDriver
+	history        base.HistoricalDataDriver
 	period         time.Duration
 	reqID          atomic.Uint64
 	streams        safe.Map[common.Market, struct{}]
 	symbolToMarket safe.Map[string, common.Market]
 }
 
-func newOpendax(config OpendaxConfig, outbox chan<- common.TradeEvent, history HistoricalDataDriver) (Driver, error) {
+func newOpendax(config OpendaxConfig, outbox chan<- common.TradeEvent, history base.HistoricalDataDriver) (base.Driver, error) {
 	if !(strings.HasPrefix(config.URL, "ws://") || strings.HasPrefix(config.URL, "wss://")) {
 		return nil, fmt.Errorf("%s (got '%s')", common.ErrInvalidWsUrl, config.URL)
 	}
@@ -63,7 +64,7 @@ func (o *opendax) Start() error {
 		o.connect()
 		go o.listen()
 
-		cexConfigured.CompareAndSwap(false, true)
+		base.CexConfigured.CompareAndSwap(false, true)
 	})
 
 	if !started {
@@ -83,7 +84,7 @@ func (o *opendax) Stop() error {
 		}
 
 		stopErr = conn.Close()
-		cexConfigured.CompareAndSwap(true, false)
+		base.CexConfigured.CompareAndSwap(true, false)
 	})
 
 	if !stopped {

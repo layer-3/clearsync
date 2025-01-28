@@ -17,6 +17,7 @@ import (
 	"github.com/shopspring/decimal"
 
 	"github.com/layer-3/clearsync/pkg/quotes/common"
+	"github.com/layer-3/clearsync/pkg/quotes/driver/base"
 	"github.com/layer-3/clearsync/pkg/quotes/filter"
 	"github.com/layer-3/clearsync/pkg/safe"
 )
@@ -35,11 +36,11 @@ type kraken struct {
 	availablePairs safe.Map[string, krakenPair]
 	streams        safe.Map[common.Market, struct{}]
 	filter         filter.Filter
-	history        HistoricalDataDriver
+	history        base.HistoricalDataDriver
 	outbox         chan<- common.TradeEvent
 }
 
-func newKraken(config KrakenConfig, outbox chan<- common.TradeEvent, history HistoricalDataDriver) (Driver, error) {
+func newKraken(config KrakenConfig, outbox chan<- common.TradeEvent, history base.HistoricalDataDriver) (base.Driver, error) {
 	limiter := &common.WsDialWrapper{}
 
 	// Set rate limit to 1 req/sec
@@ -84,7 +85,7 @@ func (k *kraken) Start() error {
 
 		go k.listen()
 
-		cexConfigured.CompareAndSwap(false, true)
+		base.CexConfigured.CompareAndSwap(false, true)
 	})
 
 	if !started {
@@ -106,7 +107,7 @@ func (k *kraken) Stop() error {
 		k.availablePairs = safe.Map[string, krakenPair]{}
 		k.streams = safe.Map[common.Market, struct{}]{} // delete all stopped streams
 		stopErr = conn.Close()
-		cexConfigured.CompareAndSwap(true, false)
+		base.CexConfigured.CompareAndSwap(true, false)
 	})
 
 	if !stopped {

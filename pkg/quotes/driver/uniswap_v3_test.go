@@ -12,6 +12,7 @@ import (
 
 	"github.com/layer-3/clearsync/pkg/abi/iuniswap_v3_pool"
 	quotes_common "github.com/layer-3/clearsync/pkg/quotes/common"
+	"github.com/layer-3/clearsync/pkg/quotes/driver/base"
 )
 
 func Test_uniswapV3_parseSwap(t *testing.T) {
@@ -19,7 +20,7 @@ func Test_uniswapV3_parseSwap(t *testing.T) {
 
 	type args struct {
 		swap *iuniswap_v3_pool.IUniswapV3PoolSwap
-		pool *dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator]
+		pool *base.DexPool[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator]
 	}
 
 	tests := []struct {
@@ -57,13 +58,13 @@ func Test_uniswapV3_parseSwap(t *testing.T) {
 						Removed:     false,
 					},
 				},
-				pool: &dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator]{
-					BaseToken: poolToken{
+				pool: &base.DexPool[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator]{
+					BaseToken: base.DexPoolToken{
 						Address:  common.HexToAddress("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
 						Symbol:   "weth",
 						Decimals: decimal.NewFromInt(18),
 					},
-					QuoteToken: poolToken{
+					QuoteToken: base.DexPoolToken{
 						Address:  common.HexToAddress("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"),
 						Symbol:   "usdc",
 						Decimals: decimal.NewFromInt(6),
@@ -111,13 +112,13 @@ func Test_uniswapV3_parseSwap(t *testing.T) {
 						Removed:     false,
 					},
 				},
-				pool: &dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator]{
-					BaseToken: poolToken{
+				pool: &base.DexPool[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator]{
+					BaseToken: base.DexPoolToken{
 						Address:  common.HexToAddress("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
 						Symbol:   "weth",
 						Decimals: decimal.NewFromInt(18),
 					},
-					QuoteToken: poolToken{
+					QuoteToken: base.DexPoolToken{
 						Address:  common.HexToAddress("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"),
 						Symbol:   "usdc",
 						Decimals: decimal.NewFromInt(6),
@@ -165,13 +166,13 @@ func Test_uniswapV3_parseSwap(t *testing.T) {
 						Removed:     false,
 					},
 				},
-				pool: &dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator]{
-					BaseToken: poolToken{
+				pool: &base.DexPool[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator]{
+					BaseToken: base.DexPoolToken{
 						Address:  common.HexToAddress("0x0"), // native token
 						Symbol:   "eth",
 						Decimals: decimal.NewFromInt(18),
 					},
-					QuoteToken: poolToken{
+					QuoteToken: base.DexPoolToken{
 						Address:  common.HexToAddress("0xdAC17F958D2ee523a2206206994597C13D831ec7"),
 						Symbol:   "usdt",
 						Decimals: decimal.NewFromInt(6),
@@ -219,14 +220,14 @@ func Test_uniswapV3_parseSwap(t *testing.T) {
 						Removed:     false,
 					},
 				},
-				pool: &dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator]{
+				pool: &base.DexPool[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator]{
 					Address: common.HexToAddress("0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640"),
-					BaseToken: poolToken{
+					BaseToken: base.DexPoolToken{
 						Address:  common.HexToAddress("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"),
 						Symbol:   "eth",
 						Decimals: decimal.NewFromInt(18),
 					},
-					QuoteToken: poolToken{
+					QuoteToken: base.DexPoolToken{
 						Address:  common.HexToAddress("0xdAC17F958D2ee523a2206206994597C13D831ec7"),
 						Symbol:   "usdt",
 						Decimals: decimal.NewFromInt(6),

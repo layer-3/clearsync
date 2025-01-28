@@ -15,6 +15,7 @@ import (
 	"github.com/layer-3/clearsync/pkg/abi/iuniswap_v3_pool"
 	"github.com/layer-3/clearsync/pkg/debounce"
 	quotes_common "github.com/layer-3/clearsync/pkg/quotes/common"
+	"github.com/layer-3/clearsync/pkg/quotes/driver/base"
 	"github.com/layer-3/clearsync/pkg/safe"
 )
 
@@ -29,16 +30,16 @@ type uniswapV3 struct {
 	factoryAddress common.Address
 	factory        *iuniswap_v3_factory.IUniswapV3Factory
 
-	assets *safe.Map[string, poolToken]
+	assets *safe.Map[string, base.DexPoolToken]
 	client *ethclient.Client
 }
 
-func newUniswapV3(rpcUrl string, config UniswapV3Config, outbox chan<- quotes_common.TradeEvent, history HistoricalDataDriver) (Driver, error) {
+func newUniswapV3(rpcUrl string, config UniswapV3Config, outbox chan<- quotes_common.TradeEvent, history base.HistoricalDataDriver) (base.Driver, error) {
 	hooks := &uniswapV3{
 		factoryAddress: common.HexToAddress(config.FactoryAddress),
 	}
 
-	params := baseDexConfig[
+	params := base.DexConfig[
 		iuniswap_v3_pool.IUniswapV3PoolSwap,
 		iuniswap_v3_pool.IUniswapV3Pool,
 		*iuniswap_v3_pool.IUniswapV3PoolSwapIterator,
@@ -61,10 +62,10 @@ func newUniswapV3(rpcUrl string, config UniswapV3Config, outbox chan<- quotes_co
 		Filter:  config.Filter,
 		History: history,
 	}
-	return newBaseDEX(params)
+	return base.NewDEX(params)
 }
 
-func (u *uniswapV3) postStart(driver *baseDEX[
+func (u *uniswapV3) postStart(driver *base.DEX[
 	iuniswap_v3_pool.IUniswapV3PoolSwap,
 	iuniswap_v3_pool.IUniswapV3Pool,
 	*iuniswap_v3_pool.IUniswapV3PoolSwapIterator,
@@ -80,8 +81,8 @@ func (u *uniswapV3) postStart(driver *baseDEX[
 	return nil
 }
 
-func (u *uniswapV3) getPool(ctx context.Context, market quotes_common.Market) ([]*dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator], error) {
-	baseToken, quoteToken, err := getTokens(u.assets, market, loggerUniswapV3)
+func (u *uniswapV3) getPool(ctx context.Context, market quotes_common.Market) ([]*base.DexPool[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator], error) {
+	baseToken, quoteToken, err := base.GetTokens(u.assets, market, loggerUniswapV3)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +112,7 @@ func (u *uniswapV3) getPool(ctx context.Context, market quotes_common.Market) ([
 		}
 	}
 
-	pools := make([]*dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator], 0, len(poolAddresses))
+	pools := make([]*base.DexPool[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator], 0, len(poolAddresses))
 	for _, poolAddress := range poolAddresses {
 		poolContract, err := iuniswap_v3_pool.NewIUniswapV3Pool(poolAddress, u.client)
 		if err != nil {
@@ -137,7 +138,7 @@ func (u *uniswapV3) getPool(ctx context.Context, market quotes_common.Market) ([
 		}
 
 		isReversed := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
-		pool := &dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator]{
+		pool := &base.DexPool[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator]{
 			Contract:   poolContract,
 			Address:    poolAddress,
 			BaseToken:  baseToken,
@@ -157,9 +158,9 @@ func (u *uniswapV3) getPool(ctx context.Context, market quotes_common.Market) ([
 
 func (u *uniswapV3) parseSwap(
 	swap *iuniswap_v3_pool.IUniswapV3PoolSwap,
-	pool *dexPool[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator],
+	pool *base.DexPool[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator],
 ) (trade quotes_common.TradeEvent, err error) {
-	opts := v3TradeOpts[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator]{
+	opts := base.V3TradeOpts[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator]{
 		Driver:          quotes_common.DriverUniswapV3,
 		RawAmount0:      swap.Amount0,
 		RawAmount1:      swap.Amount1,
@@ -168,17 +169,7 @@ func (u *uniswapV3) parseSwap(
 		Swap:            swap,
 		Logger:          loggerUniswapV3,
 	}
-	return buildV3Trade(opts)
-}
-
-type v3TradeOpts[Event any, EventIterator dexEventIterator] struct {
-	Driver          quotes_common.DriverType
-	RawAmount0      *big.Int
-	RawAmount1      *big.Int
-	RawSqrtPriceX96 *big.Int
-	Pool            *dexPool[Event, EventIterator]
-	Swap            *Event
-	Logger          *log.ZapEventLogger
+	return base.BuildV3Trade(opts)
 }
 
 func (u *uniswapV3) derefIter(

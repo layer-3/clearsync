@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	gobinance "github.com/adshao/go-binance/v2"
@@ -12,14 +11,12 @@ import (
 	"github.com/shopspring/decimal"
 
 	"github.com/layer-3/clearsync/pkg/quotes/common"
+	"github.com/layer-3/clearsync/pkg/quotes/driver/base"
 	"github.com/layer-3/clearsync/pkg/quotes/filter"
 	"github.com/layer-3/clearsync/pkg/safe"
 )
 
-var (
-	loggerBinance = log.Logger("binance")
-	cexConfigured = atomic.Bool{}
-)
+var loggerBinance = log.Logger("binance")
 
 type binance struct {
 	once               *common.Once
@@ -28,7 +25,7 @@ type binance struct {
 	idlePeriod         time.Duration
 	binanceClient      *gobinance.Client
 	filter             filter.Filter
-	history            HistoricalDataDriver
+	history            base.HistoricalDataDriver
 	batcherInbox       chan<- common.TradeEvent
 	outbox             chan<- common.TradeEvent
 	streams            safe.Map[common.Market, chan struct{}]
@@ -36,7 +33,7 @@ type binance struct {
 	assets             safe.Map[common.Market, gobinance.Symbol]
 }
 
-func newBinance(config BinanceConfig, outbox chan<- common.TradeEvent, history HistoricalDataDriver) (Driver, error) {
+func newBinance(config BinanceConfig, outbox chan<- common.TradeEvent, history base.HistoricalDataDriver) (base.Driver, error) {
 	batcherInbox := make(chan common.TradeEvent, 1024)
 	go batch(config.BatchPeriod, batcherInbox, outbox)
 
@@ -74,7 +71,7 @@ func (b *binance) Type() (common.DriverType, common.ExchangeType) {
 
 func (b *binance) Start() error {
 	started := b.once.Start(func() {
-		cexConfigured.CompareAndSwap(false, true)
+		base.CexConfigured.CompareAndSwap(false, true)
 	})
 	if !started {
 		return common.ErrAlreadyStarted
@@ -90,7 +87,7 @@ func (b *binance) Stop() error {
 		})
 
 		b.streams = safe.NewMap[common.Market, chan struct{}]()
-		cexConfigured.CompareAndSwap(true, false)
+		base.CexConfigured.CompareAndSwap(true, false)
 	})
 
 	if !stopped {
@@ -163,7 +160,7 @@ func (b *binance) Subscribe(market common.Market) error {
 		}
 	}()
 
-	recordSubscribed(common.DriverBinance, market)
+	base.RecordSubscribed(common.DriverBinance, market)
 	loggerBinance.Infow("subscribed", "market", market)
 	return nil
 }
@@ -182,7 +179,7 @@ func (b *binance) Unsubscribe(market common.Market) error {
 	close(stopCh)
 
 	b.streams.Delete(market)
-	recordUnsubscribed(common.DriverBinance, market)
+	base.RecordUnsubscribed(common.DriverBinance, market)
 	return nil
 }
 
@@ -288,7 +285,7 @@ func (b *binance) buildEvent(tr *gobinance.WsTradeEvent, market common.Market) (
 }
 
 func (b *binance) HistoricalData(ctx context.Context, market common.Market, window time.Duration, limit uint64) ([]common.TradeEvent, error) {
-	trades, err := FetchHistoryDataFromExternalSource(ctx, b.history, market, window, limit, loggerBinance)
+	trades, err := base.FetchHistoryDataFromExternalSource(ctx, b.history, market, window, limit, loggerBinance)
 	if err == nil && len(trades) > 0 {
 		return trades, nil
 	}

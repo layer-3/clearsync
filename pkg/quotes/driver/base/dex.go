@@ -1,4 +1,4 @@
-package driver
+package base
 
 import (
 	"context"
@@ -24,7 +24,7 @@ import (
 	"github.com/layer-3/clearsync/pkg/safe"
 )
 
-type baseDEX[Event any, Contract any, EventIterator dexEventIterator] struct {
+type DEX[Event any, Contract any, EventIterator dexEventIterator] struct {
 	// Params
 	driverType quotes_common.DriverType
 	rpc        string
@@ -34,9 +34,9 @@ type baseDEX[Event any, Contract any, EventIterator dexEventIterator] struct {
 	idlePeriod time.Duration
 
 	// Hooks
-	postStart func(*baseDEX[Event, Contract, EventIterator]) error
-	getPool   func(context.Context, quotes_common.Market) ([]*dexPool[Event, EventIterator], error)
-	parse     func(*Event, *dexPool[Event, EventIterator]) (quotes_common.TradeEvent, error)
+	postStart func(*DEX[Event, Contract, EventIterator]) error
+	getPool   func(context.Context, quotes_common.Market) ([]*DexPool[Event, EventIterator], error)
+	parse     func(*Event, *DexPool[Event, EventIterator]) (quotes_common.TradeEvent, error)
 	derefIter func(EventIterator) *Event
 
 	// State
@@ -49,7 +49,7 @@ type baseDEX[Event any, Contract any, EventIterator dexEventIterator] struct {
 	// streams maps market to a map of DEX pools.
 	// The value of the map is a pointer to disallow copying of the underlying mutex
 	streams safe.Map[quotes_common.Market, *safe.Map[common.Address, dexStream[Event]]]
-	assets  safe.Map[string, poolToken]
+	assets  safe.Map[string, DexPoolToken]
 	// disabledMarkets is a set of markets that are enabled for DEXes.
 	// The map is assumed to be read-only,
 	// so there's no need for extra thread safety.
@@ -62,7 +62,7 @@ type dexStream[Event any] struct {
 	sink chan *Event
 }
 
-type baseDexConfig[Event any, Contract any, EventIterator dexEventIterator] struct {
+type DexConfig[Event any, Contract any, EventIterator dexEventIterator] struct {
 	// Params
 	DriverType quotes_common.DriverType
 	RPC        string
@@ -72,9 +72,9 @@ type baseDexConfig[Event any, Contract any, EventIterator dexEventIterator] stru
 	IdlePeriod time.Duration
 
 	// Hooks
-	PostStartHook func(*baseDEX[Event, Contract, EventIterator]) error
-	PoolGetter    func(context.Context, quotes_common.Market) ([]*dexPool[Event, EventIterator], error)
-	EventParser   func(*Event, *dexPool[Event, EventIterator]) (quotes_common.TradeEvent, error)
+	PostStartHook func(*DEX[Event, Contract, EventIterator]) error
+	PoolGetter    func(context.Context, quotes_common.Market) ([]*DexPool[Event, EventIterator], error)
+	EventParser   func(*Event, *DexPool[Event, EventIterator]) (quotes_common.TradeEvent, error)
 	IterDeref     func(EventIterator) *Event
 
 	// State
@@ -84,14 +84,14 @@ type baseDexConfig[Event any, Contract any, EventIterator dexEventIterator] stru
 	History HistoricalDataDriver
 }
 
-func newBaseDEX[Event any, Contract any, EventIterator dexEventIterator](
-	config baseDexConfig[Event, Contract, EventIterator],
-) (*baseDEX[Event, Contract, EventIterator], error) {
+func NewDEX[Event any, Contract any, EventIterator dexEventIterator](
+	config DexConfig[Event, Contract, EventIterator],
+) (*DEX[Event, Contract, EventIterator], error) {
 	if !(strings.HasPrefix(config.RPC, "ws://") || strings.HasPrefix(config.RPC, "wss://")) {
 		return nil, fmt.Errorf("%s (got '%s')", quotes_common.ErrInvalidWsUrl, config.RPC)
 	}
 
-	return &baseDEX[Event, Contract, EventIterator]{
+	return &DEX[Event, Contract, EventIterator]{
 		// Params
 		driverType: config.DriverType,
 		rpc:        config.RPC,
@@ -114,25 +114,25 @@ func newBaseDEX[Event any, Contract any, EventIterator dexEventIterator](
 		filter:          filter.New(config.Filter),
 		history:         config.History,
 		streams:         safe.NewMap[quotes_common.Market, *safe.Map[common.Address, dexStream[Event]]](),
-		assets:          safe.NewMap[string, poolToken](),
+		assets:          safe.NewMap[string, DexPoolToken](),
 		disabledMarkets: make(map[string]struct{}),
 		mapping:         safe.NewMap[string, []string](),
 	}, nil
 }
 
-func (b *baseDEX[Event, Contract, EventIterator]) Client() *ethclient.Client {
+func (b *DEX[Event, Contract, EventIterator]) Client() *ethclient.Client {
 	return b.client
 }
 
-func (b *baseDEX[Event, Contract, EventIterator]) Assets() *safe.Map[string, poolToken] {
+func (b *DEX[Event, Contract, EventIterator]) Assets() *safe.Map[string, DexPoolToken] {
 	return &b.assets
 }
 
-func (b *baseDEX[Event, Contract, EventIterator]) Type() (quotes_common.DriverType, quotes_common.ExchangeType) {
+func (b *DEX[Event, Contract, EventIterator]) Type() (quotes_common.DriverType, quotes_common.ExchangeType) {
 	return b.driverType, quotes_common.ExchangeTypeDEX
 }
 
-func (b *baseDEX[Event, Contract, EventIterator]) Start() error {
+func (b *DEX[Event, Contract, EventIterator]) Start() error {
 	var startErr error
 	started := b.once.Start(func() {
 		// Connect to the RPC provider
@@ -146,7 +146,7 @@ func (b *baseDEX[Event, Contract, EventIterator]) Start() error {
 
 		// Fetch assets
 
-		allAssets, err := fetch[map[string][]poolToken](b.assetsURL)
+		allAssets, err := fetch[map[string][]DexPoolToken](b.assetsURL)
 		if err != nil {
 			startErr = fmt.Errorf("failed to fetch assets: %w", err)
 			return
@@ -219,7 +219,7 @@ func (b *baseDEX[Event, Contract, EventIterator]) Start() error {
 	return startErr
 }
 
-func (b *baseDEX[Event, Contract, EventIterator]) Stop() error {
+func (b *DEX[Event, Contract, EventIterator]) Stop() error {
 	var stopErr error
 	stopped := b.once.Stop(func() {
 		b.streams.Range(func(market quotes_common.Market, _ *safe.Map[common.Address, dexStream[Event]]) bool {
@@ -236,7 +236,7 @@ func (b *baseDEX[Event, Contract, EventIterator]) Stop() error {
 	return stopErr
 }
 
-func (b *baseDEX[Event, Contract, EventIterator]) Subscribe(market quotes_common.Market) error {
+func (b *DEX[Event, Contract, EventIterator]) Subscribe(market quotes_common.Market) error {
 	ctx := context.TODO()
 
 	if !b.once.Subscribe() {
@@ -273,7 +273,7 @@ func (b *baseDEX[Event, Contract, EventIterator]) Subscribe(market quotes_common
 	}
 
 	// Check if market is enabled for DEXes
-	if _, ok := b.disabledMarkets[market.String()]; ok && cexConfigured.Load() {
+	if _, ok := b.disabledMarkets[market.String()]; ok && CexConfigured.Load() {
 		return fmt.Errorf("%w: %s", quotes_common.ErrMarketDisabled, market)
 	}
 
@@ -298,7 +298,7 @@ func (b *baseDEX[Event, Contract, EventIterator]) Subscribe(market quotes_common
 	return nil
 }
 
-func (b *baseDEX[Event, Contract, EventIterator]) subscribePool(pool *dexPool[Event, EventIterator]) error {
+func (b *DEX[Event, Contract, EventIterator]) subscribePool(pool *DexPool[Event, EventIterator]) error {
 	watchCtx, cancel := context.WithCancel(context.TODO())
 	sink := make(chan *Event, 128)
 
@@ -319,12 +319,12 @@ func (b *baseDEX[Event, Contract, EventIterator]) subscribePool(pool *dexPool[Ev
 	stream, _ := b.streams.LoadOrStore(pool.Market, &pools)
 	stream.Store(pool.Address, dexStream[Event]{sub: sub, sink: sink})
 
-	recordSubscribed(b.driverType, pool.Market)
+	RecordSubscribed(b.driverType, pool.Market)
 	go b.watchSwap(cancel, pool, sink, sub)
 	return nil
 }
 
-func (b *baseDEX[Event, Contract, EventIterator]) Unsubscribe(market quotes_common.Market) error {
+func (b *DEX[Event, Contract, EventIterator]) Unsubscribe(market quotes_common.Market) error {
 	if !b.once.Unsubscribe() {
 		return quotes_common.ErrNotStarted
 	}
@@ -341,11 +341,11 @@ func (b *baseDEX[Event, Contract, EventIterator]) Unsubscribe(market quotes_comm
 		}
 	})
 
-	recordUnsubscribed(b.driverType, market)
+	RecordUnsubscribed(b.driverType, market)
 	return nil
 }
 
-func (b *baseDEX[Event, Contract, EventIterator]) HistoricalData(ctx context.Context, market quotes_common.Market, window time.Duration, limit uint64) ([]quotes_common.TradeEvent, error) {
+func (b *DEX[Event, Contract, EventIterator]) HistoricalData(ctx context.Context, market quotes_common.Market, window time.Duration, limit uint64) ([]quotes_common.TradeEvent, error) {
 	trades, err := FetchHistoryDataFromExternalSource(ctx, b.history, market, window, limit, b.logger)
 	if err == nil && len(trades) > 0 {
 		return trades, nil
@@ -414,7 +414,7 @@ func (b *baseDEX[Event, Contract, EventIterator]) HistoricalData(ctx context.Con
 // findBlockByTimestamp performs a binary search over the range of block numbers
 // to find the block whose timestamp is closest to but not greater than the given timestamp.
 // It returns a block number at or immediately before the given timestamp.
-func (b *baseDEX[Event, Contract, EventIterator]) findBlockByTimestamp(
+func (b *DEX[Event, Contract, EventIterator]) findBlockByTimestamp(
 	ctx context.Context,
 	client *ethclient.Client,
 	target time.Time,
@@ -464,9 +464,9 @@ func (b *baseDEX[Event, Contract, EventIterator]) findBlockByTimestamp(
 	return high, nil // The closest block number to the desired timestamp
 }
 
-func (b *baseDEX[Event, Contract, EventIterator]) watchSwap(
+func (b *DEX[Event, Contract, EventIterator]) watchSwap(
 	cancel context.CancelFunc,
-	pool *dexPool[Event, EventIterator],
+	pool *DexPool[Event, EventIterator],
 	sink chan *Event,
 	sub event.Subscription,
 ) {
@@ -537,7 +537,7 @@ func (b *baseDEX[Event, Contract, EventIterator]) watchSwap(
 	}
 }
 
-func (b *baseDEX[Event, Contract, EventIterator]) resubscribe(pool *dexPool[Event, EventIterator]) error {
+func (b *DEX[Event, Contract, EventIterator]) resubscribe(pool *DexPool[Event, EventIterator]) error {
 	if _, ok := b.streams.Load(pool.Market); !ok {
 		return nil // market was unsubscribed earlier
 	}
@@ -594,11 +594,11 @@ func (s *marketSymbol) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type dexPool[Event any, EventIterator dexEventIterator] struct {
+type DexPool[Event any, EventIterator dexEventIterator] struct {
 	Contract   dexEvent[Event, EventIterator]
 	Address    common.Address // not used in code but is useful for logging
-	BaseToken  poolToken
-	QuoteToken poolToken
+	BaseToken  DexPoolToken
+	QuoteToken DexPoolToken
 	Market     quotes_common.Market
 	Reversed   bool
 }
@@ -637,7 +637,7 @@ type dexEventIterator interface {
 	io.Closer
 }
 
-type poolToken struct {
+type DexPoolToken struct {
 	Name     string
 	Address  common.Address
 	Symbol   string
@@ -646,11 +646,11 @@ type poolToken struct {
 	LogoURI  string
 }
 
-func getTokens(
-	assets *safe.Map[string, poolToken],
+func GetTokens(
+	assets *safe.Map[string, DexPoolToken],
 	market quotes_common.Market,
 	logger *log.ZapEventLogger,
-) (baseToken poolToken, quoteToken poolToken, err error) {
+) (baseToken DexPoolToken, quoteToken DexPoolToken, err error) {
 	baseToken, ok := assets.Load(strings.ToUpper(market.Base()))
 	if !ok {
 		return baseToken, quoteToken, fmt.Errorf("base token does not exist for market %s", market.StringWithoutMain())
@@ -666,10 +666,10 @@ func getTokens(
 	return baseToken, quoteToken, nil
 }
 
-func buildV2Trade[Event any, EventIterator dexEventIterator](
+func BuildV2Trade[Event any, EventIterator dexEventIterator](
 	driver quotes_common.DriverType,
 	rawAmount0In, rawAmount0Out, rawAmount1In, rawAmount1Out *big.Int,
-	pool *dexPool[Event, EventIterator],
+	pool *DexPool[Event, EventIterator],
 
 	swap *Event,
 	logger *log.ZapEventLogger,
@@ -730,7 +730,17 @@ func buildV2Trade[Event any, EventIterator dexEventIterator](
 	return trade, nil
 }
 
-func buildV3Trade[Event any, EventIterator dexEventIterator](o v3TradeOpts[Event, EventIterator]) (trade quotes_common.TradeEvent, err error) {
+type V3TradeOpts[Event any, EventIterator dexEventIterator] struct {
+	Driver          quotes_common.DriverType
+	RawAmount0      *big.Int
+	RawAmount1      *big.Int
+	RawSqrtPriceX96 *big.Int
+	Pool            *DexPool[Event, EventIterator]
+	Swap            *Event
+	Logger          *log.ZapEventLogger
+}
+
+func BuildV3Trade[Event any, EventIterator dexEventIterator](o V3TradeOpts[Event, EventIterator]) (trade quotes_common.TradeEvent, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			o.Logger.Errorw(quotes_common.ErrSwapParsing.Error(), "swap", o.Swap, "pool", o.Pool)

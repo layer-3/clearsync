@@ -12,7 +12,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/layer-3/clearsync/pkg/quotes/common"
-	"github.com/layer-3/clearsync/pkg/quotes/driver"
+	"github.com/layer-3/clearsync/pkg/quotes/driver/base"
 )
 
 var (
@@ -24,7 +24,7 @@ var (
 )
 
 type Index interface {
-	driver.Driver
+	base.Driver
 }
 
 type Config struct {
@@ -47,11 +47,11 @@ type Config struct {
 //   - external: an optional adapter to fetch historical data from instead of querying RPC provider,
 //     If you don't { have / need } a historical data adapter, pass `nil` here.
 func New(
-	drivers []driver.Driver,
+	drivers []base.Driver,
 	config Config,
 	outbox chan<- common.TradeEvent,
 	inbox <-chan common.TradeEvent,
-	external driver.HistoricalDataDriver,
+	external base.HistoricalDataDriver,
 ) (Index, error) {
 	marketsMapping := config.MarketsMapping
 	if marketsMapping == nil {
@@ -77,13 +77,13 @@ func New(
 }
 
 type indexAggregator struct {
-	drivers        []driver.Driver
+	drivers        []base.Driver
 	marketsMapping map[string][]string
 	maxPriceDiff   decimal.Decimal
 	strategy       priceCalculator
 	aggregator     chan common.TradeEvent
 	outbox         chan<- common.TradeEvent
-	history        driver.HistoricalDataDriver
+	history        base.HistoricalDataDriver
 }
 
 type priceCalculator interface {
@@ -94,13 +94,13 @@ type priceCalculator interface {
 
 // newIndexAggregator creates a new instance of IndexAggregator.
 func newIndexAggregator(
-	drivers []driver.Driver,
+	drivers []base.Driver,
 	config Config,
 	marketsMapping map[string][]string,
 	strategy priceCalculator,
 	outbox chan<- common.TradeEvent,
 	inbox <-chan common.TradeEvent,
-	history driver.HistoricalDataDriver,
+	history base.HistoricalDataDriver,
 ) (Index, error) {
 	aggregator := make(chan common.TradeEvent, 128)
 	if inbox != nil {
@@ -291,14 +291,13 @@ func (a *indexAggregator) Stop() error {
 }
 
 func (a *indexAggregator) HistoricalData(ctx context.Context, market common.Market, window time.Duration, limit uint64) ([]common.TradeEvent, error) {
-	base := market.Base()
 	quote := market.Quote()
 	if quote == "usd" {
 		quote += "t" // to be USDT
 	}
-	m := common.NewMarket(base, quote)
+	m := common.NewMarket(market.Base(), quote)
 
-	trades, err := driver.FetchHistoryDataFromExternalSource(ctx, a.history, m, window, limit, logger)
+	trades, err := base.FetchHistoryDataFromExternalSource(ctx, a.history, m, window, limit, logger)
 	if err == nil && len(trades) > 0 {
 		return trades, nil
 	}
