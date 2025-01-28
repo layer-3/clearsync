@@ -160,7 +160,17 @@ func (s *sectaV3) parseSwap(
 	swap *isecta_v3_pool.ISectaV3PoolSwap,
 	pool *base.DexPool[isecta_v3_pool.ISectaV3PoolSwap, *isecta_v3_pool.ISectaV3PoolSwapIterator],
 ) (trade quotes_common.TradeEvent, err error) {
-	opts := base.V3TradeOpts[isecta_v3_pool.ISectaV3PoolSwap, *isecta_v3_pool.ISectaV3PoolSwapIterator]{
+	defer func() {
+		if r := recover(); r != nil {
+			loggerSectaV3.Errorw(quotes_common.ErrSwapParsing.Error(), "swap", swap, "pool", pool)
+			err = fmt.Errorf("%s: %s", quotes_common.ErrSwapParsing, r)
+		}
+	}()
+
+	opts := base.V3TradeOpts[
+		isecta_v3_pool.ISectaV3PoolSwap,
+		*isecta_v3_pool.ISectaV3PoolSwapIterator,
+	]{
 		Driver:          quotes_common.DriverSectaV3,
 		RawAmount0:      swap.Amount0,
 		RawAmount1:      swap.Amount1,

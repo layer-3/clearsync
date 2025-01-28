@@ -141,7 +141,17 @@ func (s *quickswap) parseSwap(
 	swap *quickswap_v3_pool.IQuickswapV3PoolSwap,
 	pool *base.DexPool[quickswap_v3_pool.IQuickswapV3PoolSwap, *quickswap_v3_pool.IQuickswapV3PoolSwapIterator],
 ) (trade quotes_common.TradeEvent, err error) {
-	opts := base.V3TradeOpts[quickswap_v3_pool.IQuickswapV3PoolSwap, *quickswap_v3_pool.IQuickswapV3PoolSwapIterator]{
+	defer func() {
+		if r := recover(); r != nil {
+			loggerQuickswap.Errorw(quotes_common.ErrSwapParsing.Error(), "swap", swap, "pool", pool)
+			err = fmt.Errorf("%s: %s", quotes_common.ErrSwapParsing, r)
+		}
+	}()
+
+	opts := base.V3TradeOpts[
+		quickswap_v3_pool.IQuickswapV3PoolSwap,
+		*quickswap_v3_pool.IQuickswapV3PoolSwapIterator,
+	]{
 		Driver:          quotes_common.DriverQuickswap,
 		RawAmount0:      swap.Amount0,
 		RawAmount1:      swap.Amount1,

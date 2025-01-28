@@ -143,7 +143,17 @@ func (l *lynexV3) parseSwap(
 	swap *ilynex_v3_pool.ILynexV3PoolSwap,
 	pool *base.DexPool[ilynex_v3_pool.ILynexV3PoolSwap, *ilynex_v3_pool.ILynexV3PoolSwapIterator],
 ) (trade quotes_common.TradeEvent, err error) {
-	opts := base.V3TradeOpts[ilynex_v3_pool.ILynexV3PoolSwap, *ilynex_v3_pool.ILynexV3PoolSwapIterator]{
+	defer func() {
+		if r := recover(); r != nil {
+			loggerLynexV3.Errorw(quotes_common.ErrSwapParsing.Error(), "swap", swap, "pool", pool)
+			err = fmt.Errorf("%s: %s", quotes_common.ErrSwapParsing, r)
+		}
+	}()
+
+	opts := base.V3TradeOpts[
+		ilynex_v3_pool.ILynexV3PoolSwap,
+		*ilynex_v3_pool.ILynexV3PoolSwapIterator,
+	]{
 		Driver:          quotes_common.DriverLynexV3,
 		RawAmount0:      swap.Amount0,
 		RawAmount1:      swap.Amount1,
