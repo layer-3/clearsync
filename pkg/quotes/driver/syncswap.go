@@ -6,7 +6,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ipfs/go-log/v2"
 
 	"github.com/layer-3/clearsync/pkg/abi/isyncswap_factory"
@@ -14,7 +13,6 @@ import (
 	"github.com/layer-3/clearsync/pkg/debounce"
 	quotes_common "github.com/layer-3/clearsync/pkg/quotes/common"
 	"github.com/layer-3/clearsync/pkg/quotes/driver/base"
-	"github.com/layer-3/clearsync/pkg/safe"
 )
 
 var loggerSyncswap = log.Logger("syncswap")
@@ -26,8 +24,11 @@ type syncswap struct {
 	classicFactory            *isyncswap_factory.ISyncSwapFactory
 	stableFactory             *isyncswap_factory.ISyncSwapFactory
 
-	assets *safe.Map[string, base.DexPoolToken]
-	client *ethclient.Client
+	driver *base.DEX[
+		isyncswap_pool.ISyncSwapPoolSwap,
+		isyncswap_pool.ISyncSwapPool,
+		*isyncswap_pool.ISyncSwapPoolSwapIterator,
+	]
 }
 
 func newSyncswap(rpcUrl string, config SyncswapConfig, outbox chan<- quotes_common.TradeEvent, history base.HistoricalDataDriver) (base.Driver, error) {
@@ -81,16 +82,15 @@ func (s *syncswap) postStart(driver *base.DEX[
 	isyncswap_pool.ISyncSwapPool,
 	*isyncswap_pool.ISyncSwapPoolSwapIterator,
 ]) (err error) {
-	s.client = driver.Client()
-	s.assets = driver.Assets()
+	s.driver = driver
 
 	// Check addresses here: https://syncswap.gitbook.io/syncswap/smart-contracts/smart-contracts
-	s.classicFactory, err = isyncswap_factory.NewISyncSwapFactory(s.classicPoolFactoryAddress, s.client)
+	s.classicFactory, err = isyncswap_factory.NewISyncSwapFactory(s.classicPoolFactoryAddress, s.driver.Client())
 	if err != nil {
 		return fmt.Errorf("failed to instantiate a Quickswap classic pool factory contract: %w", err)
 	}
 
-	s.stableFactory, err = isyncswap_factory.NewISyncSwapFactory(s.stablePoolFactoryAddress, s.client)
+	s.stableFactory, err = isyncswap_factory.NewISyncSwapFactory(s.stablePoolFactoryAddress, s.driver.Client())
 	if err != nil {
 		return fmt.Errorf("failed to instantiate a Quickswap stable pool factory contract: %w", err)
 	}
@@ -98,7 +98,7 @@ func (s *syncswap) postStart(driver *base.DEX[
 }
 
 func (s *syncswap) getPool(ctx context.Context, market quotes_common.Market) ([]*base.DexPool[isyncswap_pool.ISyncSwapPoolSwap, *isyncswap_pool.ISyncSwapPoolSwapIterator], error) {
-	baseToken, quoteToken, err := base.GetTokens(s.assets, market, loggerSyncswap)
+	baseToken, quoteToken, err := base.GetTokens(s.driver.Assets(), market, loggerSyncswap)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tokens: %w", err)
 	}
@@ -129,7 +129,7 @@ func (s *syncswap) getPool(ctx context.Context, market quotes_common.Market) ([]
 	}
 	loggerSyncswap.Infow("pool found", "market", market, "address", poolAddress)
 
-	poolContract, err := isyncswap_pool.NewISyncSwapPool(poolAddress, s.client)
+	poolContract, err := isyncswap_pool.NewISyncSwapPool(poolAddress, s.driver.Client())
 	if err != nil {
 		return nil, fmt.Errorf("failed to build Syncswap pool contract: %w", err)
 	}
@@ -173,27 +173,18 @@ func (s *syncswap) parseSwap(
 	swap *isyncswap_pool.ISyncSwapPoolSwap,
 	pool *base.DexPool[isyncswap_pool.ISyncSwapPoolSwap, *isyncswap_pool.ISyncSwapPoolSwapIterator],
 ) (trade quotes_common.TradeEvent, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			loggerSyncswap.Errorw(quotes_common.ErrSwapParsing.Error(), "swap", swap, "pool", pool)
-			err = fmt.Errorf("%s: %s", quotes_common.ErrSwapParsing, r)
-		}
-	}()
-
 	opts := base.V2TradeOpts[
 		isyncswap_pool.ISyncSwapPoolSwap,
 		*isyncswap_pool.ISyncSwapPoolSwapIterator,
 	]{
-		Driver:        quotes_common.DriverSyncswap,
 		RawAmount0In:  swap.Amount0In,
 		RawAmount0Out: swap.Amount0Out,
 		RawAmount1In:  swap.Amount1In,
 		RawAmount1Out: swap.Amount1Out,
 		Pool:          pool,
 		Swap:          swap,
-		Logger:        loggerSyncswap,
 	}
-	return base.BuildV2Trade(opts)
+	return s.driver.BuildV2Trade(opts)
 }
 
 func (s *syncswap) derefIter(

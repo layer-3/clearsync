@@ -6,7 +6,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ipfs/go-log/v2"
 
 	"github.com/layer-3/clearsync/pkg/abi/ilynex_v2_factory"
@@ -14,7 +13,6 @@ import (
 	"github.com/layer-3/clearsync/pkg/debounce"
 	quotes_common "github.com/layer-3/clearsync/pkg/quotes/common"
 	"github.com/layer-3/clearsync/pkg/quotes/driver/base"
-	"github.com/layer-3/clearsync/pkg/safe"
 )
 
 var loggerLynexV2 = log.Logger("lynex_v2")
@@ -24,8 +22,11 @@ type lynexV2 struct {
 	factoryAddress    common.Address
 	factory           *ilynex_v2_factory.ILynexFactory
 
-	assets *safe.Map[string, base.DexPoolToken]
-	client *ethclient.Client
+	driver *base.DEX[
+		ilynex_v2_pair.ILynexPairSwap,
+		ilynex_v2_pair.ILynexPair,
+		*ilynex_v2_pair.ILynexPairSwapIterator,
+	]
 }
 
 func newLynexV2(rpcUrl string, config LynexV2Config, outbox chan<- quotes_common.TradeEvent, history base.HistoricalDataDriver) (base.Driver, error) {
@@ -77,11 +78,10 @@ func (l *lynexV2) postStart(driver *base.DEX[
 	ilynex_v2_pair.ILynexPair,
 	*ilynex_v2_pair.ILynexPairSwapIterator,
 ]) (err error) {
-	l.client = driver.Client()
-	l.assets = driver.Assets()
+	l.driver = driver
 
 	// Check addresses here: https://lynex.gitbook.io/lynex-docs/security/contracts
-	l.factory, err = ilynex_v2_factory.NewILynexFactory(l.factoryAddress, l.client)
+	l.factory, err = ilynex_v2_factory.NewILynexFactory(l.factoryAddress, l.driver.Client())
 	if err != nil {
 		return fmt.Errorf("failed to instantiate a Lynex v2 pool factory contract: %w", err)
 	}
@@ -90,7 +90,7 @@ func (l *lynexV2) postStart(driver *base.DEX[
 }
 
 func (l *lynexV2) getPool(ctx context.Context, market quotes_common.Market) ([]*base.DexPool[ilynex_v2_pair.ILynexPairSwap, *ilynex_v2_pair.ILynexPairSwapIterator], error) {
-	baseToken, quoteToken, err := base.GetTokens(l.assets, market, loggerLynexV2)
+	baseToken, quoteToken, err := base.GetTokens(l.driver.Assets(), market, loggerLynexV2)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tokens: %w", err)
 	}
@@ -116,7 +116,7 @@ func (l *lynexV2) getPool(ctx context.Context, market quotes_common.Market) ([]*
 		"address", poolAddress,
 		"is_stable", isStablePool)
 
-	poolContract, err := ilynex_v2_pair.NewILynexPair(poolAddress, l.client)
+	poolContract, err := ilynex_v2_pair.NewILynexPair(poolAddress, l.driver.Client())
 	if err != nil {
 		return nil, fmt.Errorf("failed to build Lynex v2 pool contract: %w", err)
 	}
@@ -160,27 +160,18 @@ func (l *lynexV2) parseSwap(
 	swap *ilynex_v2_pair.ILynexPairSwap,
 	pool *base.DexPool[ilynex_v2_pair.ILynexPairSwap, *ilynex_v2_pair.ILynexPairSwapIterator],
 ) (trade quotes_common.TradeEvent, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			loggerLynexV2.Errorw(quotes_common.ErrSwapParsing.Error(), "swap", swap, "pool", pool)
-			err = fmt.Errorf("%s: %s", quotes_common.ErrSwapParsing, r)
-		}
-	}()
-
 	opts := base.V2TradeOpts[
 		ilynex_v2_pair.ILynexPairSwap,
 		*ilynex_v2_pair.ILynexPairSwapIterator,
 	]{
-		Driver:        quotes_common.DriverLynexV2,
 		RawAmount0In:  swap.Amount0In,
 		RawAmount0Out: swap.Amount0Out,
 		RawAmount1In:  swap.Amount1In,
 		RawAmount1Out: swap.Amount1Out,
 		Pool:          pool,
 		Swap:          swap,
-		Logger:        loggerLynexV2,
 	}
-	return base.BuildV2Trade(opts)
+	return l.driver.BuildV2Trade(opts)
 }
 
 func (l *lynexV2) derefIter(

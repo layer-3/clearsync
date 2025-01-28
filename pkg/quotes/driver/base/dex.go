@@ -667,22 +667,19 @@ func GetTokens(
 }
 
 type V2TradeOpts[Event any, EventIterator dexEventIterator] struct {
-	Driver        quotes_common.DriverType
 	RawAmount0In  *big.Int
 	RawAmount0Out *big.Int
 	RawAmount1In  *big.Int
 	RawAmount1Out *big.Int
 	Pool          *DexPool[Event, EventIterator]
 	Swap          *Event
-	Logger        *log.ZapEventLogger
 }
 
-func BuildV2Trade[Event any, EventIterator dexEventIterator](o V2TradeOpts[Event, EventIterator]) (trade quotes_common.TradeEvent, err error) {
+func (b *DEX[Event, Contract, EventIterator]) BuildV2Trade(o V2TradeOpts[Event, EventIterator]) (trade quotes_common.TradeEvent, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			msg := "recovered in from panic during swap parsing"
-			o.Logger.Errorw(msg, "swap", o.Swap)
-			err = fmt.Errorf("%s: %v (swap: %#v)", msg, r, o.Swap)
+			b.logger.Errorw(quotes_common.ErrSwapParsing.Error(), "swap", o.Swap)
+			err = fmt.Errorf("%s: %v (swap: %#v)", quotes_common.ErrSwapParsing, r, o.Swap)
 		}
 	}()
 
@@ -723,7 +720,7 @@ func BuildV2Trade[Event any, EventIterator dexEventIterator](o V2TradeOpts[Event
 	}
 
 	trade = quotes_common.TradeEvent{
-		Source:    o.Driver,
+		Source:    b.driverType,
 		Market:    o.Pool.Market,
 		Price:     price,
 		Amount:    amount.Abs(),
@@ -735,19 +732,17 @@ func BuildV2Trade[Event any, EventIterator dexEventIterator](o V2TradeOpts[Event
 }
 
 type V3TradeOpts[Event any, EventIterator dexEventIterator] struct {
-	Driver          quotes_common.DriverType
 	RawAmount0      *big.Int
 	RawAmount1      *big.Int
 	RawSqrtPriceX96 *big.Int
 	Pool            *DexPool[Event, EventIterator]
 	Swap            *Event
-	Logger          *log.ZapEventLogger
 }
 
-func BuildV3Trade[Event any, EventIterator dexEventIterator](o V3TradeOpts[Event, EventIterator]) (trade quotes_common.TradeEvent, err error) {
+func (b *DEX[Event, Contract, EventIterator]) BuildV3Trade(o V3TradeOpts[Event, EventIterator]) (trade quotes_common.TradeEvent, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			o.Logger.Errorw(quotes_common.ErrSwapParsing.Error(), "swap", o.Swap, "pool", o.Pool)
+			b.logger.Errorw(quotes_common.ErrSwapParsing.Error(), "swap", o.Swap, "pool", o.Pool)
 			err = fmt.Errorf("%s: %s", quotes_common.ErrSwapParsing, r)
 		}
 	}()
@@ -792,7 +787,7 @@ func BuildV3Trade[Event any, EventIterator dexEventIterator](o V3TradeOpts[Event
 	}
 
 	tr := quotes_common.TradeEvent{
-		Source:    o.Driver,
+		Source:    b.driverType,
 		Market:    o.Pool.Market,
 		Price:     price,
 		Amount:    amount, // amount of BASE token received

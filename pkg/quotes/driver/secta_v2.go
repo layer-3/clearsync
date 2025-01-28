@@ -6,7 +6,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ipfs/go-log/v2"
 
 	"github.com/layer-3/clearsync/pkg/abi/isecta_v2_factory"
@@ -14,7 +13,6 @@ import (
 	"github.com/layer-3/clearsync/pkg/debounce"
 	quotes_common "github.com/layer-3/clearsync/pkg/quotes/common"
 	"github.com/layer-3/clearsync/pkg/quotes/driver/base"
-	"github.com/layer-3/clearsync/pkg/safe"
 )
 
 var loggerSectaV2 = log.Logger("secta_v2")
@@ -23,8 +21,11 @@ type sectaV2 struct {
 	factoryAddress common.Address
 	factory        *isecta_v2_factory.ISectaV2Factory
 
-	assets *safe.Map[string, base.DexPoolToken]
-	client *ethclient.Client
+	driver *base.DEX[
+		isecta_v2_pair.ISectaV2PairSwap,
+		isecta_v2_pair.ISectaV2Pair,
+		*isecta_v2_pair.ISectaV2PairSwapIterator,
+	]
 }
 
 func newSectaV2(rpcUrl string, config SectaV2Config, outbox chan<- quotes_common.TradeEvent, history base.HistoricalDataDriver) (base.Driver, error) {
@@ -63,10 +64,9 @@ func (s *sectaV2) postStart(driver *base.DEX[
 	isecta_v2_pair.ISectaV2Pair,
 	*isecta_v2_pair.ISectaV2PairSwapIterator,
 ]) (err error) {
-	s.client = driver.Client()
-	s.assets = driver.Assets()
+	s.driver = driver
 
-	s.factory, err = isecta_v2_factory.NewISectaV2Factory(s.factoryAddress, s.client)
+	s.factory, err = isecta_v2_factory.NewISectaV2Factory(s.factoryAddress, s.driver.Client())
 	if err != nil {
 		return fmt.Errorf("failed to instantiate a Secta v2 pool factory contract: %w", err)
 	}
@@ -74,7 +74,7 @@ func (s *sectaV2) postStart(driver *base.DEX[
 }
 
 func (s *sectaV2) getPool(ctx context.Context, market quotes_common.Market) ([]*base.DexPool[isecta_v2_pair.ISectaV2PairSwap, *isecta_v2_pair.ISectaV2PairSwapIterator], error) {
-	baseToken, quoteToken, err := base.GetTokens(s.assets, market, loggerSectaV2)
+	baseToken, quoteToken, err := base.GetTokens(s.driver.Assets(), market, loggerSectaV2)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tokens: %w", err)
 	}
@@ -94,7 +94,7 @@ func (s *sectaV2) getPool(ctx context.Context, market quotes_common.Market) ([]*
 	}
 	loggerSectaV2.Infow("pool found", "market", market.StringWithoutMain(), "address", poolAddress)
 
-	poolContract, err := isecta_v2_pair.NewISectaV2Pair(poolAddress, s.client)
+	poolContract, err := isecta_v2_pair.NewISectaV2Pair(poolAddress, s.driver.Client())
 	if err != nil {
 		return nil, fmt.Errorf("failed to instantiate a Secta v2 pool contract: %w", err)
 	}
@@ -139,27 +139,18 @@ func (s *sectaV2) parseSwap(
 	swap *isecta_v2_pair.ISectaV2PairSwap,
 	pool *base.DexPool[isecta_v2_pair.ISectaV2PairSwap, *isecta_v2_pair.ISectaV2PairSwapIterator],
 ) (trade quotes_common.TradeEvent, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			loggerSectaV2.Errorw(quotes_common.ErrSwapParsing.Error(), "swap", swap, "pool", pool)
-			err = fmt.Errorf("%s: %s", quotes_common.ErrSwapParsing, r)
-		}
-	}()
-
 	opts := base.V2TradeOpts[
 		isecta_v2_pair.ISectaV2PairSwap,
 		*isecta_v2_pair.ISectaV2PairSwapIterator,
 	]{
-		Driver:        quotes_common.DriverSectaV2,
 		RawAmount0In:  swap.Amount0In,
 		RawAmount0Out: swap.Amount0Out,
 		RawAmount1In:  swap.Amount1In,
 		RawAmount1Out: swap.Amount1Out,
 		Pool:          pool,
 		Swap:          swap,
-		Logger:        loggerSectaV2,
 	}
-	return base.BuildV2Trade(opts)
+	return s.driver.BuildV2Trade(opts)
 }
 
 func (s *sectaV2) derefIter(

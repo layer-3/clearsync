@@ -8,7 +8,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ipfs/go-log/v2"
 
 	"github.com/layer-3/clearsync/pkg/abi/iuniswap_v3_factory"
@@ -16,7 +15,6 @@ import (
 	"github.com/layer-3/clearsync/pkg/debounce"
 	quotes_common "github.com/layer-3/clearsync/pkg/quotes/common"
 	"github.com/layer-3/clearsync/pkg/quotes/driver/base"
-	"github.com/layer-3/clearsync/pkg/safe"
 )
 
 var (
@@ -30,8 +28,11 @@ type uniswapV3 struct {
 	factoryAddress common.Address
 	factory        *iuniswap_v3_factory.IUniswapV3Factory
 
-	assets *safe.Map[string, base.DexPoolToken]
-	client *ethclient.Client
+	driver *base.DEX[
+		iuniswap_v3_pool.IUniswapV3PoolSwap,
+		iuniswap_v3_pool.IUniswapV3Pool,
+		*iuniswap_v3_pool.IUniswapV3PoolSwapIterator,
+	]
 }
 
 func newUniswapV3(rpcUrl string, config UniswapV3Config, outbox chan<- quotes_common.TradeEvent, history base.HistoricalDataDriver) (base.Driver, error) {
@@ -70,11 +71,10 @@ func (u *uniswapV3) postStart(driver *base.DEX[
 	iuniswap_v3_pool.IUniswapV3Pool,
 	*iuniswap_v3_pool.IUniswapV3PoolSwapIterator,
 ]) (err error) {
-	u.client = driver.Client()
-	u.assets = driver.Assets()
+	u.driver = driver
 
 	// Check addresses here: https://docs.uniswap.org/contracts/v3/reference/deployments
-	u.factory, err = iuniswap_v3_factory.NewIUniswapV3Factory(u.factoryAddress, u.client)
+	u.factory, err = iuniswap_v3_factory.NewIUniswapV3Factory(u.factoryAddress, u.driver.Client())
 	if err != nil {
 		return fmt.Errorf("failed to build Uniswap v3 factory: %w", err)
 	}
@@ -82,7 +82,7 @@ func (u *uniswapV3) postStart(driver *base.DEX[
 }
 
 func (u *uniswapV3) getPool(ctx context.Context, market quotes_common.Market) ([]*base.DexPool[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator], error) {
-	baseToken, quoteToken, err := base.GetTokens(u.assets, market, loggerUniswapV3)
+	baseToken, quoteToken, err := base.GetTokens(u.driver.Assets(), market, loggerUniswapV3)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +114,7 @@ func (u *uniswapV3) getPool(ctx context.Context, market quotes_common.Market) ([
 
 	pools := make([]*base.DexPool[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator], 0, len(poolAddresses))
 	for _, poolAddress := range poolAddresses {
-		poolContract, err := iuniswap_v3_pool.NewIUniswapV3Pool(poolAddress, u.client)
+		poolContract, err := iuniswap_v3_pool.NewIUniswapV3Pool(poolAddress, u.driver.Client())
 		if err != nil {
 			return nil, fmt.Errorf("failed to build Uniswap v3 pool contract: %w", err)
 		}
@@ -160,26 +160,17 @@ func (u *uniswapV3) parseSwap(
 	swap *iuniswap_v3_pool.IUniswapV3PoolSwap,
 	pool *base.DexPool[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator],
 ) (trade quotes_common.TradeEvent, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			loggerUniswapV3.Errorw(quotes_common.ErrSwapParsing.Error(), "swap", swap, "pool", pool)
-			err = fmt.Errorf("%s: %s", quotes_common.ErrSwapParsing, r)
-		}
-	}()
-
 	opts := base.V3TradeOpts[
 		iuniswap_v3_pool.IUniswapV3PoolSwap,
 		*iuniswap_v3_pool.IUniswapV3PoolSwapIterator,
 	]{
-		Driver:          quotes_common.DriverUniswapV3,
 		RawAmount0:      swap.Amount0,
 		RawAmount1:      swap.Amount1,
 		RawSqrtPriceX96: swap.SqrtPriceX96,
 		Pool:            pool,
 		Swap:            swap,
-		Logger:          loggerUniswapV3,
 	}
-	return base.BuildV3Trade(opts)
+	return u.driver.BuildV3Trade(opts)
 }
 
 func (u *uniswapV3) derefIter(
