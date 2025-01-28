@@ -146,17 +146,14 @@ func (b *mexc) Type() (common.DriverType, common.ExchangeType) {
 }
 
 func (b *mexc) Start() error {
-	started := b.once.Start(func() {
+	return b.once.Start(func() error {
 		base.CexConfigured.CompareAndSwap(false, true)
+		return nil
 	})
-	if !started {
-		return common.ErrAlreadyStarted
-	}
-	return nil
 }
 
 func (b *mexc) Stop() error {
-	stopped := b.once.Stop(func() {
+	return b.once.Stop(func() error {
 		b.streams.Range(func(market common.Market, _ chan struct{}) bool {
 			err := b.Unsubscribe(market)
 			return err == nil
@@ -164,16 +161,12 @@ func (b *mexc) Stop() error {
 
 		b.streams = safe.NewMap[common.Market, chan struct{}]()
 		base.CexConfigured.CompareAndSwap(true, false)
+		return nil
 	})
-
-	if !stopped {
-		return common.ErrAlreadyStopped
-	}
-	return nil
 }
 
 func (b *mexc) Subscribe(market common.Market) error {
-	if !b.once.Subscribe() {
+	if !b.once.IsStarted() {
 		return common.ErrNotStarted
 	}
 
@@ -291,7 +284,7 @@ func (b *mexc) watchTrades(symbol string, stopCh chan struct{}) {
 }
 
 func (b *mexc) Unsubscribe(market common.Market) error {
-	if !b.once.Unsubscribe() {
+	if !b.once.IsStarted() {
 		return common.ErrNotStarted
 	}
 

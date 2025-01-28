@@ -133,14 +133,12 @@ func (b *DEX[Event, Contract, EventIterator]) Type() (quotes_common.DriverType, 
 }
 
 func (b *DEX[Event, Contract, EventIterator]) Start() error {
-	var startErr error
-	started := b.once.Start(func() {
+	return b.once.Start(func() error {
 		// Connect to the RPC provider
 
 		client, err := ethclient.Dial(b.rpc)
 		if err != nil {
-			startErr = fmt.Errorf("failed to connect to the Ethereum client: %w", err)
-			return
+			return fmt.Errorf("failed to connect to the Ethereum client: %w", err)
 		}
 		b.client = client
 
@@ -148,13 +146,11 @@ func (b *DEX[Event, Contract, EventIterator]) Start() error {
 
 		allAssets, err := fetch[map[string][]DexPoolToken](b.assetsURL)
 		if err != nil {
-			startErr = fmt.Errorf("failed to fetch assets: %w", err)
-			return
+			return fmt.Errorf("failed to fetch assets: %w", err)
 		}
 		tokens, ok := allAssets["tokens"]
 		if !ok {
-			startErr = fmt.Errorf("failed to fetch assets: `tokens` key not found")
-			return
+			return fmt.Errorf("failed to fetch assets: `tokens` key not found")
 		}
 		for _, asset := range tokens {
 			b.assets.Store(strings.ToUpper(asset.Symbol), asset)
@@ -164,13 +160,11 @@ func (b *DEX[Event, Contract, EventIterator]) Start() error {
 
 		mappings, err := fetch[map[string]map[string][]string](b.mappingURL)
 		if err != nil {
-			startErr = fmt.Errorf("failed to fetch mapping: %w", err)
-			return
+			return fmt.Errorf("failed to fetch mapping: %w", err)
 		}
 		mapping, ok := mappings["tokens"]
 		if !ok {
-			startErr = fmt.Errorf("failed to fetch mappings: `tokens` key not found")
-			return
+			return fmt.Errorf("failed to fetch mappings: `tokens` key not found")
 		}
 		for key, mapItem := range mapping {
 			b.mapping.Store(key, mapItem)
@@ -180,8 +174,7 @@ func (b *DEX[Event, Contract, EventIterator]) Start() error {
 
 		markets, err := fetch[[]marketSymbol](b.marketsURL)
 		if err != nil {
-			startErr = fmt.Errorf("failed to fetch markets: %w", err)
-			return
+			return fmt.Errorf("failed to fetch markets: %w", err)
 		}
 		for _, market := range markets {
 			if market.Quotes.Dexs {
@@ -192,54 +185,38 @@ func (b *DEX[Event, Contract, EventIterator]) Start() error {
 			// Market is assumed to be in the following format:
 			// `<type>://<base>/<quote>`, like `spot://btc/usd`.
 			if !strings.HasPrefix(market.Symbol, "spot://") {
-				startErr = fmt.Errorf("invalid market symbol in markets config: %s", market.Symbol)
-				return
+				return fmt.Errorf("invalid market symbol in markets config: %s", market.Symbol)
 			}
 			baseQuote := strings.Split(market.Symbol, "spot://")[1]
 			tokens := strings.Split(baseQuote, "/")
 			if len(tokens) != 2 {
-				startErr = fmt.Errorf("invalid market symbol in markets config: %s", market.Symbol)
-				return
+				return fmt.Errorf("invalid market symbol in markets config: %s", market.Symbol)
 			}
 			market := quotes_common.NewMarket(tokens[0], tokens[1])
 			b.disabledMarkets[market.String()] = struct{}{}
 		}
 
 		// Run post-start hook
-
-		if err := b.postStart(b); err != nil {
-			startErr = err
-			return
-		}
+		return b.postStart(b)
 	})
-
-	if !started {
-		return quotes_common.ErrAlreadyStarted
-	}
-	return startErr
 }
 
 func (b *DEX[Event, Contract, EventIterator]) Stop() error {
-	var stopErr error
-	stopped := b.once.Stop(func() {
+	return b.once.Stop(func() (stopErr error) {
 		b.streams.Range(func(market quotes_common.Market, _ *safe.Map[common.Address, dexStream[Event]]) bool {
 			if err := b.Unsubscribe(market); err != nil {
 				stopErr = err
 			}
 			return true
 		})
+		return stopErr
 	})
-
-	if !stopped {
-		return quotes_common.ErrAlreadyStopped
-	}
-	return stopErr
 }
 
 func (b *DEX[Event, Contract, EventIterator]) Subscribe(market quotes_common.Market) error {
 	ctx := context.TODO()
 
-	if !b.once.Subscribe() {
+	if !b.once.IsStarted() {
 		return quotes_common.ErrNotStarted
 	}
 
@@ -325,7 +302,7 @@ func (b *DEX[Event, Contract, EventIterator]) subscribePool(pool *DexPool[Event,
 }
 
 func (b *DEX[Event, Contract, EventIterator]) Unsubscribe(market quotes_common.Market) error {
-	if !b.once.Unsubscribe() {
+	if !b.once.IsStarted() {
 		return quotes_common.ErrNotStarted
 	}
 

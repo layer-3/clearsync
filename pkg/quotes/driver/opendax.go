@@ -59,42 +59,32 @@ func (o *opendax) Type() (common.DriverType, common.ExchangeType) {
 }
 
 func (o *opendax) Start() error {
-	var startErr error
-	started := o.once.Start(func() {
+	return o.once.Start(func() error {
 		o.connect()
 		go o.listen()
 
 		base.CexConfigured.CompareAndSwap(false, true)
+		return nil
 	})
-
-	if !started {
-		return common.ErrAlreadyStarted
-	}
-	return startErr
 }
 
 func (o *opendax) Stop() error {
-	var stopErr error
-	stopped := o.once.Stop(func() {
+	return o.once.Stop(func() error {
 		conn := o.conn
 		o.conn = nil
 
 		if conn == nil {
-			return
+			return nil
 		}
 
-		stopErr = conn.Close()
+		err := conn.Close()
 		base.CexConfigured.CompareAndSwap(true, false)
+		return err
 	})
-
-	if !stopped {
-		return common.ErrAlreadyStopped
-	}
-	return stopErr
 }
 
 func (o *opendax) Subscribe(market common.Market) error {
-	if !o.once.Subscribe() {
+	if !o.once.IsStarted() {
 		return common.ErrNotStarted
 	}
 
@@ -126,7 +116,7 @@ func (o *opendax) subscribeUnchecked(market common.Market) error {
 }
 
 func (o *opendax) Unsubscribe(market common.Market) error {
-	if !o.once.Unsubscribe() {
+	if !o.once.IsStarted() {
 		return common.ErrNotStarted
 	}
 

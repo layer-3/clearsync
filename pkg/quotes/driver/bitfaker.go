@@ -51,15 +51,11 @@ func (b *bitfaker) Type() (common.DriverType, common.ExchangeType) {
 }
 
 func (b *bitfaker) Start() error {
-	started := b.once.Start(func() {})
-	if !started {
-		return common.ErrAlreadyStarted
-	}
-	return nil
+	return b.once.Start(func() error { return nil })
 }
 
 func (b *bitfaker) Stop() error {
-	stopped := b.once.Stop(func() {
+	return b.once.Stop(func() error {
 		b.mu.Lock()
 		defer b.mu.Unlock()
 
@@ -68,12 +64,8 @@ func (b *bitfaker) Stop() error {
 			delete(b.streams, market)
 		}
 		close(b.stopCh)
+		return nil
 	})
-
-	if !stopped {
-		return common.ErrAlreadyStopped
-	}
-	return nil
 }
 
 func initializeMarket(startValue, volatility float64) func() float64 {
@@ -129,7 +121,7 @@ func (b *bitfaker) startStream(market common.Market, period time.Duration, stopC
 }
 
 func (b *bitfaker) Subscribe(market common.Market) error {
-	if !b.once.Subscribe() {
+	if !b.once.IsStarted() {
 		return common.ErrNotStarted
 	}
 
@@ -156,7 +148,7 @@ func (b *bitfaker) Subscribe(market common.Market) error {
 }
 
 func (b *bitfaker) Unsubscribe(market common.Market) error {
-	if !b.once.Unsubscribe() {
+	if !b.once.IsStarted() {
 		return common.ErrNotStarted
 	}
 

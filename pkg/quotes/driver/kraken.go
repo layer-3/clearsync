@@ -71,49 +71,37 @@ func (k *kraken) Type() (common.DriverType, common.ExchangeType) {
 }
 
 func (k *kraken) Start() error {
-	var startErr error
-	started := k.once.Start(func() {
+	return k.once.Start(func() error {
 		if err := k.getPairs(); err != nil {
-			startErr = err
-			return
+			return err
 		}
 
 		if err := k.connect(); err != nil {
-			startErr = err
-			return
+			return err
 		}
 
 		go k.listen()
 
 		base.CexConfigured.CompareAndSwap(false, true)
+		return nil
 	})
-
-	if !started {
-		return common.ErrAlreadyStarted
-	}
-	return startErr
 }
 
 func (k *kraken) Stop() error {
-	var stopErr error
-	stopped := k.once.Stop(func() {
+	return k.once.Stop(func() error {
 		conn := k.conn
 		k.conn = nil
 
 		if conn == nil {
-			return // connection is already closed
+			return nil // connection is already closed
 		}
 
 		k.availablePairs = safe.Map[string, krakenPair]{}
 		k.streams = safe.Map[common.Market, struct{}]{} // delete all stopped streams
-		stopErr = conn.Close()
+		err := conn.Close()
 		base.CexConfigured.CompareAndSwap(true, false)
+		return err
 	})
-
-	if !stopped {
-		return common.ErrAlreadyStopped
-	}
-	return stopErr
 }
 
 type krakenSubscriptionMessage struct {
@@ -133,7 +121,7 @@ type krakenSubscriptionParams struct {
 }
 
 func (k *kraken) Subscribe(market common.Market) error {
-	if !k.once.Subscribe() {
+	if !k.once.IsStarted() {
 		return common.ErrNotStarted
 	}
 
@@ -169,7 +157,7 @@ func (k *kraken) subscribeUnchecked(market common.Market) error {
 }
 
 func (k *kraken) Unsubscribe(market common.Market) error {
-	if !k.once.Unsubscribe() {
+	if !k.once.IsStarted() {
 		return common.ErrNotStarted
 	}
 

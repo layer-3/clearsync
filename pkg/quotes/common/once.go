@@ -21,48 +21,42 @@ type Once struct {
 
 func NewOnce() *Once {
 	o := &Once{}
-	o.Stop(func() {}) // calling Stop to initialize the stop sync.Once
+	// Calling Stop upfront to reset the state.
+	if err := o.Stop(func() error { return nil }); err != nil {
+		panic(err) // this should never happen if implementation is correct
+	}
 	return o
 }
 
 // Start starts the process and calls the passed function.
 // It returns true if the process was started successfully.
-func (o *Once) Start(f func()) bool {
-	// The value is not loaded from atomic storage here,
-	// since there may be subsequent calls to Start
-	// but sync.Once guarantees that the passed function is executed only once,
-	var started bool
+func (o *Once) Start(f func() error) error {
+	// If error value won't be changed, then Do method was not called
+	// therefore the process is already running.
+	err := ErrAlreadyStarted
 	o.start.Do(func() {
-		f()
-		started = true
-		o.started.Store(true)
+		err = f() // overriding the error value
+		o.started.CompareAndSwap(false, true)
 		o.stop = sync.Once{} // allow a new stop
 	})
-	return started
+	return err
 }
 
 // Stop stops the process and calls the passed function.
 // It returns true if the process was stopped successfully.
-func (o *Once) Stop(f func()) bool {
-	// The value is not loaded from atomic storage here,
-	// since there may be subsequent calls to Stop
-	// but sync.Once guarantees that the passed function is executed only once,
-	var stopped bool
+func (o *Once) Stop(f func() error) error {
+	// If error value won't be changed, then Do method was not called
+	// therefore the process is already running.
+	err := ErrAlreadyStopped
 	o.stop.Do(func() {
-		f()
-		stopped = true
-		o.started.Store(false)
+		err = f() // overriding the error value
+		o.started.CompareAndSwap(true, false)
 		o.start = sync.Once{} // allow a new start
 	})
-	return stopped
+	return err
 }
 
-// Subscribe checks if Start has been called before allowing subscription.
-func (o *Once) Subscribe() bool {
-	return o.started.Load()
-}
-
-// Unsubscribe checks if Start has been called before allowing unsubscription.
-func (o *Once) Unsubscribe() bool {
+// IsStarted checks if the process has been started.
+func (o *Once) IsStarted() bool {
 	return o.started.Load()
 }

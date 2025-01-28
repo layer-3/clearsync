@@ -70,17 +70,14 @@ func (b *binance) Type() (common.DriverType, common.ExchangeType) {
 }
 
 func (b *binance) Start() error {
-	started := b.once.Start(func() {
+	return b.once.Start(func() error {
 		base.CexConfigured.CompareAndSwap(false, true)
+		return nil
 	})
-	if !started {
-		return common.ErrAlreadyStarted
-	}
-	return nil
 }
 
 func (b *binance) Stop() error {
-	stopped := b.once.Stop(func() {
+	return b.once.Stop(func() error {
 		b.streams.Range(func(market common.Market, _ chan struct{}) bool {
 			err := b.Unsubscribe(market)
 			return err == nil
@@ -88,16 +85,12 @@ func (b *binance) Stop() error {
 
 		b.streams = safe.NewMap[common.Market, chan struct{}]()
 		base.CexConfigured.CompareAndSwap(true, false)
+		return nil
 	})
-
-	if !stopped {
-		return common.ErrAlreadyStopped
-	}
-	return nil
 }
 
 func (b *binance) Subscribe(market common.Market) error {
-	if !b.once.Subscribe() {
+	if !b.once.IsStarted() {
 		return common.ErrNotStarted
 	}
 
@@ -166,7 +159,7 @@ func (b *binance) Subscribe(market common.Market) error {
 }
 
 func (b *binance) Unsubscribe(market common.Market) error {
-	if !b.once.Unsubscribe() {
+	if !b.once.IsStarted() {
 		return common.ErrNotStarted
 	}
 
