@@ -143,6 +143,7 @@ func (s *syncswap) getPool(ctx context.Context, market quotes_common.Market) ([]
 		return nil, fmt.Errorf("failed to get quote token address for Syncswap pool: %w", err)
 	}
 
+	isDirect := baseToken.Address == basePoolToken && quoteToken.Address == quotePoolToken
 	isReversed := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
 	pools := []*base.DexPool[syncswapEvent, syncswapIterator]{{
 		Contract:   poolContract,
@@ -154,7 +155,7 @@ func (s *syncswap) getPool(ctx context.Context, market quotes_common.Market) ([]
 	}}
 
 	// Return pools if the token addresses match direct or reversed configurations
-	if (baseToken.Address == basePoolToken && quoteToken.Address == quotePoolToken) || isReversed {
+	if isDirect || isReversed {
 		return pools, nil
 	}
 	return nil, fmt.Errorf("failed to build Syncswap pool for market %s: %w", market, err)

@@ -89,7 +89,7 @@ func (l *lynexV2) getPool(ctx context.Context, market quotes_common.Market) ([]*
 	_, isStablePool := l.stablePoolMarkets[market]
 
 	loggerLynexV2.Infow("searching for pool", "market", market)
-	err = debounce.Debounce(context.TODO(), loggerLynexV2, func(ctx context.Context) error {
+	err = debounce.Debounce(ctx, loggerLynexV2, func(ctx context.Context) error {
 		poolAddress, err = l.factory.GetPair(&bind.CallOpts{Context: ctx}, baseToken.Address, quoteToken.Address, isStablePool)
 		return err
 	})
@@ -129,6 +129,7 @@ func (l *lynexV2) getPool(ctx context.Context, market quotes_common.Market) ([]*
 		return nil, fmt.Errorf("failed to get quote token address for Lynex v2 pool: %w", err)
 	}
 
+	isDirect := baseToken.Address == basePoolToken && quoteToken.Address == quotePoolToken
 	isReversed := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
 	pools := []*base.DexPool[lynexV2Event, lynexV2Iterator]{{
 		Contract:   poolContract,
@@ -140,7 +141,7 @@ func (l *lynexV2) getPool(ctx context.Context, market quotes_common.Market) ([]*
 	}}
 
 	// Return pools if the token addresses match direct or reversed configurations
-	if (baseToken.Address == basePoolToken && quoteToken.Address == quotePoolToken) || isReversed {
+	if isDirect || isReversed {
 		return pools, nil
 	}
 	return nil, fmt.Errorf("failed to build Lynex v2 pool for market %s: %w", market, err)

@@ -114,6 +114,7 @@ func (l *lynexV3) getPool(ctx context.Context, market quotes_common.Market) ([]*
 		return nil, fmt.Errorf("failed to get quote token address for Lynex v3 pool: %w", err)
 	}
 
+	isDirect := baseToken.Address == basePoolToken && quoteToken.Address == quotePoolToken
 	isReversed := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
 	pools := []*base.DexPool[lynexV3Event, lynexV3Iterator]{{
 		Contract:   poolContract,
@@ -125,7 +126,7 @@ func (l *lynexV3) getPool(ctx context.Context, market quotes_common.Market) ([]*
 	}}
 
 	// Return pools if the token addresses match direct or reversed configurations
-	if (baseToken.Address == basePoolToken && quoteToken.Address == quotePoolToken) || isReversed {
+	if isDirect || isReversed {
 		return pools, nil
 	}
 	return nil, fmt.Errorf("failed to build Lynex v3 pool for market %s: %w", market, err)

@@ -103,8 +103,8 @@ func NewDEX[Event any, Iterator dexEventIterator](
 
 	// Connect to the Ethereum client. This is done here and not in Start method to
 	// avoid returning nil from Client method right after the driver constructor
-	// returns: the client may be used before driver starts to initialize smart
-	// contract bindings.
+	// returns: the client may be used to initialize smart contract bindings before
+	// driver starts.
 	client, err := ethclient.Dial(config.Params.RPC)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to connect to the Ethereum client")

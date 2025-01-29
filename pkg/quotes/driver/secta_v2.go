@@ -62,12 +62,6 @@ func newSectaV2(rpcUrl string, config SectaV2Config, outbox chan<- quotes_common
 	return driver, nil
 }
 
-func (s *sectaV2) postStart(driver *base.DEX[sectaV2Event, sectaV2Iterator]) (err error) {
-	s.driver = driver
-
-	return nil
-}
-
 func (s *sectaV2) getPool(ctx context.Context, market quotes_common.Market) ([]*base.DexPool[sectaV2Event, sectaV2Iterator], error) {
 	baseToken, quoteToken, err := base.GetTokens(s.driver.Assets(), market, loggerSectaV2)
 	if err != nil {
