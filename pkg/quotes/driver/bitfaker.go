@@ -177,7 +177,6 @@ func (b *bitfaker) createTradeEvent(market common.Market, nextPriceFunc, nextAmo
 	takerType := common.TakerTypeBuy
 
 	tr := common.TradeEvent{
-		Source:    common.DriverBitfaker,
 		Market:    market,
 		Price:     price,
 		Amount:    amount,

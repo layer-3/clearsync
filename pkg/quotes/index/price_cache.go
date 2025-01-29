@@ -100,7 +100,7 @@ func (p *PriceCache) getLastPrice(market common.Market) decimal.Decimal {
 	return record
 }
 
-func (p *PriceCache) GetIndexPrice(event *common.TradeEvent) (decimal.Decimal, bool) {
+func (p *PriceCache) GetIndexPrice(event *TradeEvent) (decimal.Decimal, bool) {
 	trades, ok := p.market.Load(marketKey{baseUnit: event.Market.BaseUnit, quoteUnit: event.Market.QuoteUnit})
 	if !ok || len(trades) == 0 {
 		return event.Price, false

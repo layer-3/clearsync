@@ -15,7 +15,7 @@ import (
 // exchanges (DEXs). Implementations of this interface extract/compute trade
 // details from raw swap events.
 type SwapParser interface {
-	ParseSwap(source common.DriverType, logger *zap.SugaredLogger) (common.TradeEvent, error)
+	ParseSwap(logger *zap.SugaredLogger) (common.TradeEvent, error)
 }
 
 // SwapV2 represents a generic swap parser
@@ -28,7 +28,7 @@ type SwapV2[Event any, EventIterator dexEventIterator] struct {
 	Pool          *DexPool[Event, EventIterator]
 }
 
-func (o *SwapV2[Event, EventIterator]) ParseSwap(source common.DriverType, logger *zap.SugaredLogger) (trade common.TradeEvent, err error) {
+func (o *SwapV2[Event, EventIterator]) ParseSwap(logger *zap.SugaredLogger) (trade common.TradeEvent, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			logger.Errorw(common.ErrSwapParsing.Error())
@@ -73,7 +73,6 @@ func (o *SwapV2[Event, EventIterator]) ParseSwap(source common.DriverType, logge
 	}
 
 	trade = common.TradeEvent{
-		Source:    source,
 		Market:    o.Pool.Market,
 		Price:     price,
 		Amount:    amount.Abs(),
@@ -93,7 +92,7 @@ type SwapV3[Event any, EventIterator dexEventIterator] struct {
 	Pool            *DexPool[Event, EventIterator]
 }
 
-func (o *SwapV3[Event, EventIterator]) ParseSwap(source common.DriverType, logger *zap.SugaredLogger) (trade common.TradeEvent, err error) {
+func (o *SwapV3[Event, EventIterator]) ParseSwap(logger *zap.SugaredLogger) (trade common.TradeEvent, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			logger.Errorw(common.ErrSwapParsing.Error(), "pool", o.Pool)
@@ -141,7 +140,6 @@ func (o *SwapV3[Event, EventIterator]) ParseSwap(source common.DriverType, logge
 	}
 
 	trade = common.TradeEvent{
-		Source:    source,
 		Market:    o.Pool.Market,
 		Price:     price,
 		Amount:    amount, // amount of BASE token received

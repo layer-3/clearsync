@@ -331,7 +331,12 @@ func (b *DEX[Event, Contract, EventIterator]) Unsubscribe(market quotes_common.M
 	return nil
 }
 
-func (b *DEX[Event, Contract, EventIterator]) HistoricalData(ctx context.Context, market quotes_common.Market, window time.Duration, limit uint64) ([]quotes_common.TradeEvent, error) {
+func (b *DEX[Event, Contract, EventIterator]) HistoricalData(
+	ctx context.Context,
+	market quotes_common.Market,
+	window time.Duration,
+	limit uint64,
+) ([]quotes_common.TradeEvent, error) {
 	trades, err := FetchHistoryDataFromExternalSource(ctx, b.history, market, window, limit, b.logger)
 	if err == nil && len(trades) > 0 {
 		return trades, nil
@@ -379,7 +384,7 @@ func (b *DEX[Event, Contract, EventIterator]) HistoricalData(ctx context.Context
 
 			parser := b.buildParser(swap, pools[i])
 			logger := b.logger.With("swap", swap)
-			trade, err := parser.ParseSwap(b.driverType, logger)
+			trade, err := parser.ParseSwap(logger)
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse historical swap: %s (`%+v`)", err, swap)
 			}
@@ -487,7 +492,7 @@ func (b *DEX[Event, Contract, EventIterator]) watchSwap(
 
 			parser := b.buildParser(swap, pool)
 			logger := b.logger.With("swap", swap)
-			trade, err := parser.ParseSwap(b.driverType, logger)
+			trade, err := parser.ParseSwap(logger)
 			if err != nil {
 				b.logger.Errorw("failed to parse swap event",
 					"error", err,

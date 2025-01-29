@@ -112,7 +112,6 @@ func (m *Market) UnmarshalJSON(raw []byte) error {
 // TradeEvent is a generic container
 // for trades received from providers.
 type TradeEvent struct {
-	Source    DriverType
 	Market    Market // e.g. `btc/usdt`
 	Price     decimal.Decimal
 	Amount    decimal.Decimal

@@ -23,6 +23,11 @@ var (
 	minAllowedAmount = decimal.NewFromFloat(1e-18)
 )
 
+type TradeEvent struct {
+	Source common.DriverType
+	common.TradeEvent
+}
+
 type Index interface {
 	base.Driver
 }
@@ -81,13 +86,13 @@ type indexAggregator struct {
 	marketsMapping map[string][]string
 	maxPriceDiff   decimal.Decimal
 	strategy       priceCalculator
-	aggregator     chan common.TradeEvent
+	aggregator     chan TradeEvent
 	outbox         chan<- common.TradeEvent
 	history        base.HistoricalDataDriver
 }
 
 type priceCalculator interface {
-	calculateIndexPrice(trade common.TradeEvent) (decimal.Decimal, bool)
+	calculateIndexPrice(trade TradeEvent) (decimal.Decimal, bool)
 	getLastPrice(market common.Market) decimal.Decimal
 	setLastPrice(market common.Market, price decimal.Decimal)
 }
@@ -102,11 +107,14 @@ func newIndexAggregator(
 	inbox <-chan common.TradeEvent,
 	history base.HistoricalDataDriver,
 ) (Index, error) {
-	aggregator := make(chan common.TradeEvent, 128)
+	aggregator := make(chan TradeEvent, 128)
 	if inbox != nil {
 		go func() {
 			for tradeEvent := range inbox {
-				aggregator <- tradeEvent
+				aggregator <- TradeEvent{
+					Source:     common.DriverInternal,
+					TradeEvent: tradeEvent,
+				}
 			}
 		}()
 	}
@@ -185,7 +193,7 @@ func (a *indexAggregator) computeAggregatePrice() {
 			logger.Warnw("skipping zeroed trade", "event", event)
 			continue
 		}
-		a.outbox <- event
+		a.outbox <- event.TradeEvent
 	}
 }
 

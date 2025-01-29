@@ -74,7 +74,6 @@ func Test_uniswapV3_parseSwap(t *testing.T) {
 				},
 			},
 			want: quotes_common.TradeEvent{
-				Source:    quotes_common.DriverUniswapV3,
 				Market:    quotes_common.NewMarket("weth", "usdc"),
 				Price:     decimal.RequireFromString("3115.9631616951436041"),
 				Amount:    decimal.RequireFromString("0.0000000009632658"),
@@ -128,7 +127,6 @@ func Test_uniswapV3_parseSwap(t *testing.T) {
 				},
 			},
 			want: quotes_common.TradeEvent{
-				Source:    quotes_common.DriverUniswapV3,
 				Market:    quotes_common.NewMarket("weth", "usdc"),
 				Price:     decimal.RequireFromString("3115.963161695177629"),
 				Amount:    decimal.RequireFromString("0.000000000001"),
@@ -182,7 +180,6 @@ func Test_uniswapV3_parseSwap(t *testing.T) {
 				},
 			},
 			want: quotes_common.TradeEvent{
-				Source:    quotes_common.DriverUniswapV3,
 				Market:    quotes_common.NewMarket("eth", "usdt"),
 				Price:     decimal.RequireFromString("3099.939041820825402"),
 				Amount:    decimal.RequireFromString("0.9985882028695255"),
@@ -237,7 +234,6 @@ func Test_uniswapV3_parseSwap(t *testing.T) {
 				},
 			},
 			want: quotes_common.TradeEvent{
-				Source:    quotes_common.DriverUniswapV3,
 				Market:    quotes_common.NewMarket("eth", "usdt"),
 				Price:     decimal.RequireFromString("3098.6720911015389941"),
 				Amount:    decimal.RequireFromString("3.1891175379470141"),
@@ -256,13 +252,12 @@ func Test_uniswapV3_parseSwap(t *testing.T) {
 			driver := uniswapV3{}
 			parser := driver.buildParser(test.args.swap, test.args.pool)
 			logger := loggerUniswapV3.With("swap", test.args.swap)
-			got, err := parser.ParseSwap(quotes_common.DriverUniswapV3, logger)
+			got, err := parser.ParseSwap(logger)
 
 			if test.wantErr {
 				require.True(t, err != nil)
 				return
 			}
-			assert.Equal(t, test.want.Source, got.Source, fmt.Sprintf("want Source: `%s`, got `%s`", test.want.Source, got.Source))
 			assert.Equal(t, test.want.Market, got.Market, fmt.Sprintf("want Market: `%s`, got `%s`", test.want.Market, got.Market))
 			assert.True(t, test.want.Price.Equal(got.Price), fmt.Sprintf("want Price: `%s`, got `%s`", test.want.Price, got.Price))
 			assert.True(t, test.want.Amount.Equal(got.Amount), fmt.Sprintf("want Amount: `%s`, got `%s`", test.want.Amount, got.Amount))

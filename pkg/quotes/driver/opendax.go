@@ -276,7 +276,6 @@ func (o *opendax) convertToTrade(args []any) (*common.TradeEvent, error) {
 	}
 
 	return &common.TradeEvent{
-		Source:    common.DriverOpendax,
 		Market:    market,
 		Price:     price,
 		Amount:    amount,

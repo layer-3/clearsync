@@ -267,7 +267,6 @@ func (b *binance) buildEvent(tr *gobinance.WsTradeEvent, market common.Market) (
 	}
 
 	return common.TradeEvent{
-		Source:    common.DriverBinance,
 		Market:    market,
 		Price:     price,
 		Amount:    amount,
@@ -396,7 +395,6 @@ func combineTrades(trades []common.TradeEvent) *common.TradeEvent {
 	}
 
 	return &common.TradeEvent{
-		Source:    trades[0].Source,
 		Market:    trades[0].Market,
 		Price:     avgPrice,
 		Amount:    totalAmount,

@@ -82,7 +82,6 @@ func Test_quickswap_parseSwap(t *testing.T) {
 				},
 			},
 			want: quotes_common.TradeEvent{
-				Source:    quotes_common.DriverQuickswap,
 				Market:    quotes_common.NewMarket("wmatic", "weth"),
 				Price:     decimal.RequireFromString("3421.5756126711160865"),
 				Amount:    decimal.RequireFromString("1.7607605890778538"),
@@ -137,7 +136,6 @@ func Test_quickswap_parseSwap(t *testing.T) {
 				},
 			},
 			want: quotes_common.TradeEvent{
-				Source:    quotes_common.DriverQuickswap,
 				Market:    quotes_common.NewMarket("weth", "usdt"),
 				Price:     decimal.RequireFromString("2894.0819654229875328"),
 				Amount:    decimal.RequireFromString("0.3664133509714869"),
@@ -157,13 +155,12 @@ func Test_quickswap_parseSwap(t *testing.T) {
 			parser := driver.buildParser(test.args.swap, test.args.pool)
 
 			logger := loggerQuickswap.With("swap", test.args.swap)
-			got, err := parser.ParseSwap(quotes_common.DriverQuickswap, logger)
+			got, err := parser.ParseSwap(logger)
 
 			if test.wantErr {
 				require.True(t, err != nil)
 				return
 			}
-			assert.Equal(t, test.want.Source, got.Source, fmt.Sprintf("want Source: `%s`, got `%s`", test.want.Source, got.Source))
 			assert.Equal(t, test.want.Market, got.Market, fmt.Sprintf("want Market: `%s`, got `%s`", test.want.Market, got.Market))
 			assert.True(t, test.want.Price.Equal(got.Price), fmt.Sprintf("want Price: `%s`, got `%s`", test.want.Price, got.Price))
 			assert.True(t, test.want.Amount.Equal(got.Amount), fmt.Sprintf("want Amount: `%s`, got `%s`", test.want.Amount, got.Amount))

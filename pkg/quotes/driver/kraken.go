@@ -422,7 +422,6 @@ func (*kraken) buildEvents(trades krakenTrade) ([]common.TradeEvent, error) {
 		}
 
 		events = append(events, common.TradeEvent{
-			Source:    common.DriverKraken,
 			Market:    market,
 			Price:     price,
 			Amount:    amount,

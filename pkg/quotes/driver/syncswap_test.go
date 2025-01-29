@@ -37,7 +37,7 @@ func TestParseSwapSellETHUSDC(t *testing.T) {
 	s := syncswap{} // Assuming s is correctly initialized for the test
 	parser := s.buildParser(swap, &pool)
 	logger := loggerSyncswap.With("swap", swap)
-	tradeEvent, err := parser.ParseSwap(common.DriverSyncswap, logger)
+	tradeEvent, err := parser.ParseSwap(logger)
 
 	assert.Nil(t, err)
 	assert.Equal(t, common.TakerTypeSell, tradeEvent.TakerType)
@@ -60,7 +60,7 @@ func TestParseSwapBuyETHUSDC(t *testing.T) {
 	s := syncswap{} // Assuming s is correctly initialized for the test
 	parser := s.buildParser(swap, &pool)
 	logger := loggerSyncswap.With("swap", swap)
-	tradeEvent, err := parser.ParseSwap(common.DriverSyncswap, logger)
+	tradeEvent, err := parser.ParseSwap(logger)
 
 	assert.Nil(t, err)
 	assert.Equal(t, common.TakerTypeBuy, tradeEvent.TakerType)
@@ -92,7 +92,7 @@ func TestParseSwapBuyLINDAWETH(t *testing.T) {
 	s := syncswap{} // Assuming s is correctly initialized for the test
 	parser := s.buildParser(swap, &pool)
 	logger := loggerSyncswap.With("swap", swap)
-	tradeEvent, err := parser.ParseSwap(common.DriverSyncswap, logger)
+	tradeEvent, err := parser.ParseSwap(logger)
 
 	assert.Nil(t, err)
 	assert.Equal(t, common.TakerTypeBuy, tradeEvent.TakerType)
@@ -124,7 +124,7 @@ func TestParseSwapSellLINDAWETH(t *testing.T) {
 	s := syncswap{} // Assuming s is correctly initialized for the test
 	parser := s.buildParser(swap, &pool)
 	logger := loggerSyncswap.With("swap", swap)
-	tradeEvent, err := parser.ParseSwap(common.DriverSyncswap, logger)
+	tradeEvent, err := parser.ParseSwap(logger)
 
 	assert.Nil(t, err)
 	assert.Equal(t, common.TakerTypeSell, tradeEvent.TakerType)

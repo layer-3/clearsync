@@ -99,7 +99,6 @@ func TestOpendax_parse(t *testing.T) {
 			Total:     number,
 			TakerType: common.TakerTypeBuy,
 			CreatedAt: time.Unix(1, 0),
-			Source:    common.DriverOpendax,
 		}
 		assert.Equal(t, expVal, tradeEvent)
 	})

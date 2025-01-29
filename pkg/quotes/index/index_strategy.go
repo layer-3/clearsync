@@ -56,7 +56,7 @@ func withCustomPriceCache(priceCache *PriceCache) ConfFunc {
 }
 
 // calculateIndexPrice returns indexPrice based on Volume Weighted Average Price of last 20 trades.
-func (a indexStrategy) calculateIndexPrice(event common.TradeEvent) (decimal.Decimal, bool) {
+func (a indexStrategy) calculateIndexPrice(event TradeEvent) (decimal.Decimal, bool) {
 	sourceWeight := a.weights[event.Source]
 	if event.Market.IsEmpty() || event.Price.IsZero() || event.Amount.IsZero() || sourceWeight.IsZero() {
 		return decimal.Zero, false

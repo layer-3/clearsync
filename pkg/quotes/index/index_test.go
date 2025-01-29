@@ -43,8 +43,8 @@ func Test_IndexAggregatorStrategies(t *testing.T) {
 			common.DriverUniswapV3: decimal.NewFromInt(0),
 		}
 
-		trade := common.TradeEvent{Source: common.DriverBinance, Market: btcusdt}
-		var inputTrades []common.TradeEvent
+		trade := TradeEvent{Source: common.DriverBinance, TradeEvent: common.TradeEvent{Market: btcusdt}}
+		var inputTrades []TradeEvent
 		for i, p := range prices {
 			decimalPrice := decimal.NewFromInt32(p)
 			decimalAmount := decimal.NewFromFloat32(amounts[i])
@@ -65,12 +65,12 @@ func Test_IndexAggregatorStrategies(t *testing.T) {
 	})
 
 	t.Run("Skip trades with zero price or amount", func(t *testing.T) {
-		inputTrades := []common.TradeEvent{
-			{Source: common.DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(40000), Amount: decimal.NewFromFloat(1.0)},
-			{Source: common.DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(42000), Amount: decimal.NewFromFloat(1.0)},
-			{Source: common.DriverBinance, Market: btcusdt, Price: decimal.Zero, Amount: decimal.NewFromFloat(1.0)},
-			{Source: common.DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(44000), Amount: decimal.Zero},
-			{Source: common.DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(44000), Amount: decimal.NewFromFloat(1)},
+		inputTrades := []TradeEvent{
+			{Source: common.DriverBinance, TradeEvent: common.TradeEvent{Market: btcusdt, Price: decimal.NewFromInt(40000), Amount: decimal.NewFromFloat(1.0)}},
+			{Source: common.DriverBinance, TradeEvent: common.TradeEvent{Market: btcusdt, Price: decimal.NewFromInt(42000), Amount: decimal.NewFromFloat(1.0)}},
+			{Source: common.DriverBinance, TradeEvent: common.TradeEvent{Market: btcusdt, Price: decimal.Zero, Amount: decimal.NewFromFloat(1.0)}},
+			{Source: common.DriverBinance, TradeEvent: common.TradeEvent{Market: btcusdt, Price: decimal.NewFromInt(44000), Amount: decimal.Zero}},
+			{Source: common.DriverBinance, TradeEvent: common.TradeEvent{Market: btcusdt, Price: decimal.NewFromInt(44000), Amount: decimal.NewFromFloat(1)}},
 		}
 
 		results := testStrategies(inputTrades, newIndexStrategy(WithCustomWeights(defaultWeights)))
@@ -80,12 +80,12 @@ func Test_IndexAggregatorStrategies(t *testing.T) {
 		require.Equal(t, exp, results[0])
 	})
 
-	inputTrades := []common.TradeEvent{
-		{Source: common.DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(41000), Amount: decimal.NewFromFloat(0.3)},
-		{Source: common.DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(42500), Amount: decimal.NewFromFloat(0.5)},
-		{Source: common.DriverUniswapV3, Market: btcusdt, Price: decimal.NewFromInt(55000), Amount: decimal.NewFromFloat(0.6)},
-		{Source: common.DriverUniswapV3, Market: btcusdt, Price: decimal.NewFromInt(50000), Amount: decimal.NewFromFloat(0.4)},
-		{Source: common.DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(40000), Amount: decimal.NewFromFloat(1)},
+	inputTrades := []TradeEvent{
+		{Source: common.DriverBinance, TradeEvent: common.TradeEvent{Market: btcusdt, Price: decimal.NewFromInt(41000), Amount: decimal.NewFromFloat(0.3)}},
+		{Source: common.DriverBinance, TradeEvent: common.TradeEvent{Market: btcusdt, Price: decimal.NewFromInt(42500), Amount: decimal.NewFromFloat(0.5)}},
+		{Source: common.DriverUniswapV3, TradeEvent: common.TradeEvent{Market: btcusdt, Price: decimal.NewFromInt(55000), Amount: decimal.NewFromFloat(0.6)}},
+		{Source: common.DriverUniswapV3, TradeEvent: common.TradeEvent{Market: btcusdt, Price: decimal.NewFromInt(50000), Amount: decimal.NewFromFloat(0.4)}},
+		{Source: common.DriverBinance, TradeEvent: common.TradeEvent{Market: btcusdt, Price: decimal.NewFromInt(40000), Amount: decimal.NewFromFloat(1)}},
 	}
 
 	t.Run("README example 1: equal driver weight", func(t *testing.T) {
@@ -111,16 +111,16 @@ func Test_IndexAggregatorStrategies(t *testing.T) {
 
 	t.Run("README example 4: drivers volatility", func(t *testing.T) {
 		// Initial price: 41000
-		inputTrades := []common.TradeEvent{{Source: common.DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(41000), Amount: decimal.NewFromInt(1.0)}}
+		inputTrades := []TradeEvent{{Source: common.DriverBinance, TradeEvent: common.TradeEvent{Market: btcusdt, Price: decimal.NewFromInt(41000), Amount: decimal.NewFromInt(1.0)}}}
 		// Two equal drivers are sending: 42000 and 40000 prices sequentially.
-		inputTrades = append(inputTrades, generateTrades([]common.TradeEvent{
-			{Source: common.DriverUniswapV3, Market: btcusdt, Price: decimal.NewFromInt(42000), Amount: decimal.NewFromFloat(1.0)},
-			{Source: common.DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(40000), Amount: decimal.NewFromFloat(1.0)},
+		inputTrades = append(inputTrades, generateTrades([]TradeEvent{
+			{Source: common.DriverUniswapV3, TradeEvent: common.TradeEvent{Market: btcusdt, Price: decimal.NewFromInt(42000), Amount: decimal.NewFromFloat(1.0)}},
+			{Source: common.DriverBinance, TradeEvent: common.TradeEvent{Market: btcusdt, Price: decimal.NewFromInt(40000), Amount: decimal.NewFromFloat(1.0)}},
 		}, 25)...)
 		// The drivers start sending the same price: 41000.
-		inputTrades = append(inputTrades, generateTrades([]common.TradeEvent{
-			{Source: common.DriverUniswapV3, Market: btcusdt, Price: decimal.NewFromInt(41000), Amount: decimal.NewFromFloat(1.0)},
-			{Source: common.DriverBinance, Market: btcusdt, Price: decimal.NewFromInt(41000), Amount: decimal.NewFromFloat(1.0)},
+		inputTrades = append(inputTrades, generateTrades([]TradeEvent{
+			{Source: common.DriverUniswapV3, TradeEvent: common.TradeEvent{Market: btcusdt, Price: decimal.NewFromInt(41000), Amount: decimal.NewFromFloat(1.0)}},
+			{Source: common.DriverBinance, TradeEvent: common.TradeEvent{Market: btcusdt, Price: decimal.NewFromInt(41000), Amount: decimal.NewFromFloat(1.0)}},
 		}, 25)...)
 
 		testPriceCache := newPriceCache(defaultWeights, 20, time.Minute)
@@ -133,15 +133,15 @@ func Test_IndexAggregatorStrategies(t *testing.T) {
 	})
 }
 
-func generateTrades(tr []common.TradeEvent, n int) []common.TradeEvent {
-	trades := make([]common.TradeEvent, 0, len(tr)*n)
+func generateTrades(tr []TradeEvent, n int) []TradeEvent {
+	trades := make([]TradeEvent, 0, len(tr)*n)
 	for i := 0; i < n; i++ {
 		trades = append(trades, tr...)
 	}
 	return trades
 }
 
-func testStrategies(inputTrades []common.TradeEvent, priceCalculators ...priceCalculator) [][]float64 {
+func testStrategies(inputTrades []TradeEvent, priceCalculators ...priceCalculator) [][]float64 {
 	results := make([][]float64, len(priceCalculators))
 
 	for i, pc := range priceCalculators {

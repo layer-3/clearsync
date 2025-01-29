@@ -194,5 +194,4 @@ func TestCreateTradeEvent(t *testing.T) {
 	event := <-outbox
 	assert.NotEmpty(t, event)
 	assert.Equal(t, "btc/usd", event.Market.String())
-	assert.Equal(t, common.DriverBitfaker, event.Source)
 }
