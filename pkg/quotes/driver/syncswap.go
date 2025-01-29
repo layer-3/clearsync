@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ipfs/go-log/v2"
+	"github.com/pkg/errors"
 
 	"github.com/layer-3/clearsync/pkg/abi/isyncswap_factory"
 	"github.com/layer-3/clearsync/pkg/abi/isyncswap_pool"
@@ -21,13 +22,10 @@ type syncswapEvent = isyncswap_pool.ISyncSwapPoolSwap
 type syncswapIterator = *isyncswap_pool.ISyncSwapPoolSwapIterator
 
 type syncswap struct {
-	stablePoolMarkets         map[quotes_common.Market]struct{}
-	classicPoolFactoryAddress common.Address
-	stablePoolFactoryAddress  common.Address
-	classicFactory            *isyncswap_factory.ISyncSwapFactory
-	stableFactory             *isyncswap_factory.ISyncSwapFactory
-
-	driver base.DexReader
+	stablePoolMarkets map[quotes_common.Market]struct{}
+	classicFactory    *isyncswap_factory.ISyncSwapFactory
+	stableFactory     *isyncswap_factory.ISyncSwapFactory
+	driver            base.DexReader
 }
 
 func newSyncswap(rpcUrl string, config SyncswapConfig, outbox chan<- quotes_common.TradeEvent, history quotes_common.HistoricalDataDriver) (quotes_common.Driver, error) {
@@ -45,9 +43,7 @@ func newSyncswap(rpcUrl string, config SyncswapConfig, outbox chan<- quotes_comm
 	loggerSyncswap.Debugw("configured stable pool markets", "markets", logStablePoolMarkets)
 
 	hooks := &syncswap{
-		stablePoolMarkets:         stablePoolMarkets,
-		classicPoolFactoryAddress: common.HexToAddress(config.ClassicPoolFactoryAddress),
-		stablePoolFactoryAddress:  common.HexToAddress(config.StablePoolFactoryAddress),
+		stablePoolMarkets: stablePoolMarkets,
 	}
 
 	params := base.DexConfig[syncswapEvent, syncswapIterator]{
@@ -60,7 +56,6 @@ func newSyncswap(rpcUrl string, config SyncswapConfig, outbox chan<- quotes_comm
 			IdlePeriod: config.IdlePeriod,
 		},
 		Hooks: base.DexHooks[syncswapEvent, syncswapIterator]{
-			PostStart:   hooks.postStart,
 			GetPool:     hooks.getPool,
 			BuildParser: hooks.buildParser,
 			DerefIter:   hooks.derefIter,
@@ -71,23 +66,26 @@ func newSyncswap(rpcUrl string, config SyncswapConfig, outbox chan<- quotes_comm
 		Filter:  config.Filter,
 		History: history,
 	}
-	return base.NewDEX(params)
-}
-
-func (s *syncswap) postStart(driver *base.DEX[syncswapEvent, syncswapIterator]) (err error) {
-	s.driver = driver
+	driver, err := base.NewDEX(params)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create Syncswap driver")
+	}
+	hooks.driver = driver // wire up the driver
 
 	// Check addresses here: https://syncswap.gitbook.io/syncswap/smart-contracts/smart-contracts
-	s.classicFactory, err = isyncswap_factory.NewISyncSwapFactory(s.classicPoolFactoryAddress, s.driver.Client())
+	classicFactory, err := isyncswap_factory.NewISyncSwapFactory(common.HexToAddress(config.ClassicPoolFactoryAddress), driver.Client())
 	if err != nil {
-		return fmt.Errorf("failed to instantiate a Quickswap classic pool factory contract: %w", err)
+		return nil, errors.Wrap(err, "failed to instantiate a Syncswap classic pool factory contract")
 	}
+	hooks.classicFactory = classicFactory
 
-	s.stableFactory, err = isyncswap_factory.NewISyncSwapFactory(s.stablePoolFactoryAddress, s.driver.Client())
+	stableFactory, err := isyncswap_factory.NewISyncSwapFactory(common.HexToAddress(config.StablePoolFactoryAddress), driver.Client())
 	if err != nil {
-		return fmt.Errorf("failed to instantiate a Quickswap stable pool factory contract: %w", err)
+		return nil, errors.Wrap(err, "failed to instantiate a Syncswap stable pool factory contract")
 	}
-	return nil
+	hooks.stableFactory = stableFactory
+
+	return driver, nil
 }
 
 func (s *syncswap) getPool(ctx context.Context, market quotes_common.Market) ([]*base.DexPool[syncswapEvent, syncswapIterator], error) {

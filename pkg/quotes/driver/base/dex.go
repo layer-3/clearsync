@@ -16,6 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ipfs/go-log/v2"
+	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
 
 	"github.com/layer-3/clearsync/pkg/debounce"
@@ -43,7 +44,6 @@ type DexParams struct {
 }
 
 type DexHooks[Event any, Iterator dexEventIterator] struct {
-	PostStart   func(*DEX[Event, Iterator]) error
 	GetPool     func(context.Context, quotes_common.Market) ([]*DexPool[Event, Iterator], error)
 	BuildParser func(*Event, *DexPool[Event, Iterator]) SwapParser
 	DerefIter   func(Iterator) *Event
@@ -101,12 +101,21 @@ func NewDEX[Event any, Iterator dexEventIterator](
 		return nil, fmt.Errorf("failed to create filter: %w", err)
 	}
 
+	// Connect to the Ethereum client. This is done here and not in Start method to
+	// avoid returning nil from Client method right after the driver constructor
+	// returns: the client may be used before driver starts to initialize smart
+	// contract bindings.
+	client, err := ethclient.Dial(config.Params.RPC)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to connect to the Ethereum client")
+	}
+
 	return &DEX[Event, Iterator]{
 		params: config.Params,
 		hooks:  config.Hooks,
 		state: dexState[Event]{
 			once:            quotes_common.NewOnce(),
-			client:          nil,
+			client:          client,
 			outbox:          config.Outbox,
 			logger:          config.Logger,
 			filter:          tradesFilter,
@@ -133,14 +142,6 @@ func (b *DEX[Event, Iterator]) Type() (quotes_common.DriverType, quotes_common.E
 
 func (b *DEX[Event, Iterator]) Start() error {
 	return b.state.once.Start(func() error {
-		// Connect to the RPC provider
-
-		client, err := ethclient.Dial(b.params.RPC)
-		if err != nil {
-			return fmt.Errorf("failed to connect to the Ethereum client: %w", err)
-		}
-		b.state.client = client
-
 		// Fetch assets
 
 		allAssets, err := fetch[map[string][]DexPoolToken](b.params.AssetsURL)
@@ -195,8 +196,7 @@ func (b *DEX[Event, Iterator]) Start() error {
 			b.state.disabledMarkets[market.String()] = struct{}{}
 		}
 
-		// Run post-start hook
-		return b.hooks.PostStart(b)
+		return nil
 	})
 }
 

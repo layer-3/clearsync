@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ipfs/go-log/v2"
+	"github.com/pkg/errors"
 
 	"github.com/layer-3/clearsync/pkg/abi/isecta_v3_factory"
 	"github.com/layer-3/clearsync/pkg/abi/isecta_v3_pool"
@@ -27,17 +28,12 @@ type sectaV3Event = isecta_v3_pool.ISectaV3PoolSwap
 type sectaV3Iterator = *isecta_v3_pool.ISectaV3PoolSwapIterator
 
 type sectaV3 struct {
-	factoryAddress common.Address
-	factory        *isecta_v3_factory.ISectaV3Factory
-
-	driver base.DexReader
+	factory *isecta_v3_factory.ISectaV3Factory
+	driver  base.DexReader
 }
 
 func newSectaV3(rpcUrl string, config SectaV3Config, outbox chan<- quotes_common.TradeEvent, history quotes_common.HistoricalDataDriver) (quotes_common.Driver, error) {
-	hooks := &sectaV3{
-		factoryAddress: common.HexToAddress(config.FactoryAddress),
-	}
-
+	var hooks sectaV3
 	params := base.DexConfig[sectaV3Event, sectaV3Iterator]{
 		Params: base.DexParams{
 			Type:       quotes_common.DriverSectaV3,
@@ -47,7 +43,6 @@ func newSectaV3(rpcUrl string, config SectaV3Config, outbox chan<- quotes_common
 			MarketsURL: config.MarketsURL,
 			IdlePeriod: config.IdlePeriod},
 		Hooks: base.DexHooks[sectaV3Event, sectaV3Iterator]{
-			PostStart:   hooks.postStart,
 			GetPool:     hooks.getPool,
 			BuildParser: hooks.buildParser,
 			DerefIter:   hooks.derefIter,
@@ -58,17 +53,19 @@ func newSectaV3(rpcUrl string, config SectaV3Config, outbox chan<- quotes_common
 		Filter:  config.Filter,
 		History: history,
 	}
-	return base.NewDEX(params)
-}
-
-func (s *sectaV3) postStart(driver *base.DEX[sectaV3Event, sectaV3Iterator]) (err error) {
-	s.driver = driver
-
-	s.factory, err = isecta_v3_factory.NewISectaV3Factory(s.factoryAddress, s.driver.Client())
+	driver, err := base.NewDEX(params)
 	if err != nil {
-		return fmt.Errorf("failed to instantiate a Secta v3 pool factory contract: %w", err)
+		return nil, errors.Wrap(err, "failed to create Secta v3 driver")
 	}
-	return nil
+	hooks.driver = driver // wire up the driver
+
+	factory, err := isecta_v3_factory.NewISectaV3Factory(common.HexToAddress(config.FactoryAddress), driver.Client())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to instantiate a Secta v3 pool factory contract")
+	}
+	hooks.factory = factory
+
+	return driver, nil
 }
 
 func (s *sectaV3) getPool(ctx context.Context, market quotes_common.Market) ([]*base.DexPool[sectaV3Event, sectaV3Iterator], error) {

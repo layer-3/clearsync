@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ipfs/go-log/v2"
+	"github.com/pkg/errors"
 
 	"github.com/layer-3/clearsync/pkg/abi/ilynex_v3_factory"
 	"github.com/layer-3/clearsync/pkg/abi/ilynex_v3_pool"
@@ -21,17 +22,12 @@ type lynexV3Event = ilynex_v3_pool.ILynexV3PoolSwap
 type lynexV3Iterator = *ilynex_v3_pool.ILynexV3PoolSwapIterator
 
 type lynexV3 struct {
-	factoryAddress common.Address
-	factory        *ilynex_v3_factory.ILynexV3Factory
-
-	driver base.DexReader
+	factory *ilynex_v3_factory.ILynexV3Factory
+	driver  base.DexReader
 }
 
 func newLynexV3(rpcUrl string, config LynexV3Config, outbox chan<- quotes_common.TradeEvent, history quotes_common.HistoricalDataDriver) (quotes_common.Driver, error) {
-	hooks := &lynexV3{
-		factoryAddress: common.HexToAddress(config.FactoryAddress),
-	}
-
+	var hooks lynexV3
 	params := base.DexConfig[lynexV3Event, lynexV3Iterator]{
 		Params: base.DexParams{
 			Type:       quotes_common.DriverLynexV3,
@@ -45,7 +41,6 @@ func newLynexV3(rpcUrl string, config LynexV3Config, outbox chan<- quotes_common
 			lynexV3Event,
 			lynexV3Iterator,
 		]{
-			PostStart:   hooks.postStart,
 			GetPool:     hooks.getPool,
 			BuildParser: hooks.buildParser,
 			DerefIter:   hooks.derefIter,
@@ -56,19 +51,20 @@ func newLynexV3(rpcUrl string, config LynexV3Config, outbox chan<- quotes_common
 		Filter:  config.Filter,
 		History: history,
 	}
-	return base.NewDEX(params)
-}
-
-func (l *lynexV3) postStart(driver *base.DEX[lynexV3Event, lynexV3Iterator]) (err error) {
-	l.driver = driver
+	driver, err := base.NewDEX(params)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create Lynex v3 driver")
+	}
+	hooks.driver = driver // wire up the driver
 
 	// Check addresses here: https://lynex.gitbook.io/lynex-docs/security/contracts
-	l.factory, err = ilynex_v3_factory.NewILynexV3Factory(l.factoryAddress, l.driver.Client())
+	factory, err := ilynex_v3_factory.NewILynexV3Factory(common.HexToAddress(config.FactoryAddress), driver.Client())
 	if err != nil {
-		return fmt.Errorf("failed to instantiate a Lynex v3 pool factory contract: %w", err)
+		return nil, errors.Wrap(err, "failed to instantiate a Lynex v3 pool factory contract")
 	}
+	hooks.factory = factory
 
-	return nil
+	return driver, nil
 }
 
 func (l *lynexV3) getPool(ctx context.Context, market quotes_common.Market) ([]*base.DexPool[lynexV3Event, lynexV3Iterator], error) {

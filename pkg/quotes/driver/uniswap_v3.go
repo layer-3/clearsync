@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ipfs/go-log/v2"
+	"github.com/pkg/errors"
 
 	"github.com/layer-3/clearsync/pkg/abi/iuniswap_v3_factory"
 	"github.com/layer-3/clearsync/pkg/abi/iuniswap_v3_pool"
@@ -28,17 +29,12 @@ type uniswapV3Event = iuniswap_v3_pool.IUniswapV3PoolSwap
 type uniswapV3Iterator = *iuniswap_v3_pool.IUniswapV3PoolSwapIterator
 
 type uniswapV3 struct {
-	factoryAddress common.Address
-	factory        *iuniswap_v3_factory.IUniswapV3Factory
-
-	driver base.DexReader
+	factory *iuniswap_v3_factory.IUniswapV3Factory
+	driver  base.DexReader
 }
 
 func newUniswapV3(rpcUrl string, config UniswapV3Config, outbox chan<- quotes_common.TradeEvent, history quotes_common.HistoricalDataDriver) (quotes_common.Driver, error) {
-	hooks := &uniswapV3{
-		factoryAddress: common.HexToAddress(config.FactoryAddress),
-	}
-
+	var hooks uniswapV3
 	params := base.DexConfig[uniswapV3Event, uniswapV3Iterator]{
 		Params: base.DexParams{
 			Type:       quotes_common.DriverUniswapV3,
@@ -49,7 +45,6 @@ func newUniswapV3(rpcUrl string, config UniswapV3Config, outbox chan<- quotes_co
 			IdlePeriod: config.IdlePeriod,
 		},
 		Hooks: base.DexHooks[uniswapV3Event, uniswapV3Iterator]{
-			PostStart:   hooks.postStart,
 			GetPool:     hooks.getPool,
 			BuildParser: hooks.buildParser,
 			DerefIter:   hooks.derefIter,
@@ -60,18 +55,20 @@ func newUniswapV3(rpcUrl string, config UniswapV3Config, outbox chan<- quotes_co
 		Filter:  config.Filter,
 		History: history,
 	}
-	return base.NewDEX(params)
-}
-
-func (u *uniswapV3) postStart(driver *base.DEX[uniswapV3Event, uniswapV3Iterator]) (err error) {
-	u.driver = driver
+	driver, err := base.NewDEX(params)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create Uniswap v3 driver")
+	}
+	hooks.driver = driver // wire up the driver
 
 	// Check addresses here: https://docs.uniswap.org/contracts/v3/reference/deployments
-	u.factory, err = iuniswap_v3_factory.NewIUniswapV3Factory(u.factoryAddress, u.driver.Client())
+	factory, err := iuniswap_v3_factory.NewIUniswapV3Factory(common.HexToAddress(config.FactoryAddress), driver.Client())
 	if err != nil {
-		return fmt.Errorf("failed to build Uniswap v3 factory: %w", err)
+		return nil, errors.Wrap(err, "failed to instantiate a Uniswap v3 pool factory contract")
 	}
-	return nil
+	hooks.factory = factory
+
+	return driver, nil
 }
 
 func (u *uniswapV3) getPool(ctx context.Context, market quotes_common.Market) ([]*base.DexPool[uniswapV3Event, uniswapV3Iterator], error) {

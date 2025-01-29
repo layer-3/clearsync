@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ipfs/go-log/v2"
+	"github.com/pkg/errors"
 
 	"github.com/layer-3/clearsync/pkg/abi/ilynex_v2_factory"
 	"github.com/layer-3/clearsync/pkg/abi/ilynex_v2_pair"
@@ -22,10 +23,8 @@ type lynexV2Iterator = *ilynex_v2_pair.ILynexPairSwapIterator
 
 type lynexV2 struct {
 	stablePoolMarkets map[quotes_common.Market]struct{}
-	factoryAddress    common.Address
 	factory           *ilynex_v2_factory.ILynexFactory
-
-	driver base.DexReader
+	driver            base.DexReader
 }
 
 func newLynexV2(rpcUrl string, config LynexV2Config, outbox chan<- quotes_common.TradeEvent, history quotes_common.HistoricalDataDriver) (quotes_common.Driver, error) {
@@ -40,9 +39,8 @@ func newLynexV2(rpcUrl string, config LynexV2Config, outbox chan<- quotes_common
 	}
 	loggerLynexV2.Debugw("configured stable pool markets", "markets", stablePoolMarkets)
 
-	hooks := &lynexV2{
+	hooks := lynexV2{
 		stablePoolMarkets: stablePoolMarkets,
-		factoryAddress:    common.HexToAddress(config.FactoryAddress),
 	}
 
 	params := base.DexConfig[lynexV2Event, lynexV2Iterator]{
@@ -55,7 +53,6 @@ func newLynexV2(rpcUrl string, config LynexV2Config, outbox chan<- quotes_common
 			IdlePeriod: config.IdlePeriod,
 		},
 		Hooks: base.DexHooks[lynexV2Event, lynexV2Iterator]{
-			PostStart:   hooks.postStart,
 			GetPool:     hooks.getPool,
 			BuildParser: hooks.buildParser,
 			DerefIter:   hooks.derefIter,
@@ -66,19 +63,20 @@ func newLynexV2(rpcUrl string, config LynexV2Config, outbox chan<- quotes_common
 		Filter:  config.Filter,
 		History: history,
 	}
-	return base.NewDEX(params)
-}
-
-func (l *lynexV2) postStart(driver *base.DEX[lynexV2Event, lynexV2Iterator]) (err error) {
-	l.driver = driver
+	driver, err := base.NewDEX(params)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create Lynex v2 driver")
+	}
+	hooks.driver = driver // wire up the driver
 
 	// Check addresses here: https://lynex.gitbook.io/lynex-docs/security/contracts
-	l.factory, err = ilynex_v2_factory.NewILynexFactory(l.factoryAddress, l.driver.Client())
+	factory, err := ilynex_v2_factory.NewILynexFactory(common.HexToAddress(config.FactoryAddress), driver.Client())
 	if err != nil {
-		return fmt.Errorf("failed to instantiate a Lynex v2 pool factory contract: %w", err)
+		return nil, errors.Wrap(err, "failed to instantiate a Lynex v2 pool factory contract")
 	}
+	hooks.factory = factory
 
-	return nil
+	return driver, nil
 }
 
 func (l *lynexV2) getPool(ctx context.Context, market quotes_common.Market) ([]*base.DexPool[lynexV2Event, lynexV2Iterator], error) {

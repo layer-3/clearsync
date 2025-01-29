@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ipfs/go-log/v2"
+	"github.com/pkg/errors"
 
 	"github.com/layer-3/clearsync/pkg/artifacts/quickswap_v3_factory"
 	"github.com/layer-3/clearsync/pkg/artifacts/quickswap_v3_pool"
@@ -21,17 +22,12 @@ type quickswapV3Event = quickswap_v3_pool.IQuickswapV3PoolSwap
 type quickswapV3Iterator = *quickswap_v3_pool.IQuickswapV3PoolSwapIterator
 
 type quickswap struct {
-	poolFactoryAddress common.Address
-	factory            *quickswap_v3_factory.IQuickswapV3Factory
-
-	driver base.DexReader
+	factory *quickswap_v3_factory.IQuickswapV3Factory
+	driver  base.DexReader
 }
 
 func newQuickswap(rpcUrl string, config QuickswapConfig, outbox chan<- quotes_common.TradeEvent, history quotes_common.HistoricalDataDriver) (quotes_common.Driver, error) {
-	hooks := &quickswap{
-		poolFactoryAddress: common.HexToAddress(config.PoolFactoryAddress),
-	}
-
+	var hooks quickswap
 	params := base.DexConfig[quickswapV3Event, quickswapV3Iterator]{
 		Params: base.DexParams{
 			Type:       quotes_common.DriverQuickswap,
@@ -42,7 +38,6 @@ func newQuickswap(rpcUrl string, config QuickswapConfig, outbox chan<- quotes_co
 			IdlePeriod: config.IdlePeriod,
 		},
 		Hooks: base.DexHooks[quickswapV3Event, quickswapV3Iterator]{
-			PostStart:   hooks.postStart,
 			GetPool:     hooks.getPool,
 			BuildParser: hooks.buildParser,
 			DerefIter:   hooks.derefIter,
@@ -53,18 +48,20 @@ func newQuickswap(rpcUrl string, config QuickswapConfig, outbox chan<- quotes_co
 		Filter:  config.Filter,
 		History: history,
 	}
-	return base.NewDEX(params)
-}
-
-func (s *quickswap) postStart(driver *base.DEX[quickswapV3Event, quickswapV3Iterator]) (err error) {
-	s.driver = driver
+	driver, err := base.NewDEX(params)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create Quickswap driver")
+	}
+	hooks.driver = driver // wire up the driver
 
 	// Check addresses here: https://quickswap.gitbook.io/quickswap/smart-contracts/smart-contracts
-	s.factory, err = quickswap_v3_factory.NewIQuickswapV3Factory(s.poolFactoryAddress, s.driver.Client())
+	factory, err := quickswap_v3_factory.NewIQuickswapV3Factory(common.HexToAddress(config.PoolFactoryAddress), driver.Client())
 	if err != nil {
-		return fmt.Errorf("failed to instantiate a Quickwap Factory contract: %w", err)
+		return nil, errors.Wrap(err, "failed to instantiate a Quickswap factory contract")
 	}
-	return nil
+	hooks.factory = factory
+
+	return driver, nil
 }
 
 func (s *quickswap) getPool(ctx context.Context, market quotes_common.Market) ([]*base.DexPool[quickswapV3Event, quickswapV3Iterator], error) {
