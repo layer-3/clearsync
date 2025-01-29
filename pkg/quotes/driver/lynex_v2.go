@@ -17,6 +17,9 @@ import (
 
 var loggerLynexV2 = log.Logger("lynex_v2")
 
+type lynexV2Event = ilynex_v2_pair.ILynexPairSwap
+type lynexV2Iterator = *ilynex_v2_pair.ILynexPairSwapIterator
+
 type lynexV2 struct {
 	stablePoolMarkets map[quotes_common.Market]struct{}
 	factoryAddress    common.Address
@@ -42,10 +45,7 @@ func newLynexV2(rpcUrl string, config LynexV2Config, outbox chan<- quotes_common
 		factoryAddress:    common.HexToAddress(config.FactoryAddress),
 	}
 
-	params := base.DexConfig[
-		ilynex_v2_pair.ILynexPairSwap,
-		*ilynex_v2_pair.ILynexPairSwapIterator,
-	]{
+	params := base.DexConfig[lynexV2Event, lynexV2Iterator]{
 		Params: base.DexParams{
 			Type:       quotes_common.DriverLynexV2,
 			RPC:        rpcUrl,
@@ -54,7 +54,7 @@ func newLynexV2(rpcUrl string, config LynexV2Config, outbox chan<- quotes_common
 			MarketsURL: config.MarketsURL,
 			IdlePeriod: config.IdlePeriod,
 		},
-		Hooks: base.DexHooks[ilynex_v2_pair.ILynexPairSwap, *ilynex_v2_pair.ILynexPairSwapIterator]{
+		Hooks: base.DexHooks[lynexV2Event, lynexV2Iterator]{
 			PostStart:   hooks.postStart,
 			GetPool:     hooks.getPool,
 			BuildParser: hooks.buildParser,
@@ -69,10 +69,7 @@ func newLynexV2(rpcUrl string, config LynexV2Config, outbox chan<- quotes_common
 	return base.NewDEX(params)
 }
 
-func (l *lynexV2) postStart(driver *base.DEX[
-	ilynex_v2_pair.ILynexPairSwap,
-	*ilynex_v2_pair.ILynexPairSwapIterator,
-]) (err error) {
+func (l *lynexV2) postStart(driver *base.DEX[lynexV2Event, lynexV2Iterator]) (err error) {
 	l.driver = driver
 
 	// Check addresses here: https://lynex.gitbook.io/lynex-docs/security/contracts
@@ -84,7 +81,7 @@ func (l *lynexV2) postStart(driver *base.DEX[
 	return nil
 }
 
-func (l *lynexV2) getPool(ctx context.Context, market quotes_common.Market) ([]*base.DexPool[ilynex_v2_pair.ILynexPairSwap, *ilynex_v2_pair.ILynexPairSwapIterator], error) {
+func (l *lynexV2) getPool(ctx context.Context, market quotes_common.Market) ([]*base.DexPool[lynexV2Event, lynexV2Iterator], error) {
 	baseToken, quoteToken, err := base.GetTokens(l.driver.Assets(), market, loggerLynexV2)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tokens: %w", err)
@@ -135,7 +132,7 @@ func (l *lynexV2) getPool(ctx context.Context, market quotes_common.Market) ([]*
 	}
 
 	isReversed := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
-	pools := []*base.DexPool[ilynex_v2_pair.ILynexPairSwap, *ilynex_v2_pair.ILynexPairSwapIterator]{{
+	pools := []*base.DexPool[lynexV2Event, lynexV2Iterator]{{
 		Contract:   poolContract,
 		Address:    poolAddress,
 		BaseToken:  baseToken,
@@ -152,13 +149,10 @@ func (l *lynexV2) getPool(ctx context.Context, market quotes_common.Market) ([]*
 }
 
 func (l *lynexV2) buildParser(
-	swap *ilynex_v2_pair.ILynexPairSwap,
-	pool *base.DexPool[ilynex_v2_pair.ILynexPairSwap, *ilynex_v2_pair.ILynexPairSwapIterator],
+	swap *lynexV2Event,
+	pool *base.DexPool[lynexV2Event, lynexV2Iterator],
 ) base.SwapParser {
-	return &base.SwapV2[
-		ilynex_v2_pair.ILynexPairSwap,
-		*ilynex_v2_pair.ILynexPairSwapIterator,
-	]{
+	return &base.SwapV2[lynexV2Event, lynexV2Iterator]{
 		RawAmount0In:  swap.Amount0In,
 		RawAmount0Out: swap.Amount0Out,
 		RawAmount1In:  swap.Amount1In,
@@ -167,8 +161,6 @@ func (l *lynexV2) buildParser(
 	}
 }
 
-func (l *lynexV2) derefIter(
-	iter *ilynex_v2_pair.ILynexPairSwapIterator,
-) *ilynex_v2_pair.ILynexPairSwap {
+func (l *lynexV2) derefIter(iter lynexV2Iterator) *ilynex_v2_pair.ILynexPairSwap {
 	return iter.Event
 }

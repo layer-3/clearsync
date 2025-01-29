@@ -23,6 +23,9 @@ var (
 	sectaV3FeeTiers = []uint{100, 500, 2500, 10000}
 )
 
+type sectaV3Event = isecta_v3_pool.ISectaV3PoolSwap
+type sectaV3Iterator = *isecta_v3_pool.ISectaV3PoolSwapIterator
+
 type sectaV3 struct {
 	factoryAddress common.Address
 	factory        *isecta_v3_factory.ISectaV3Factory
@@ -35,10 +38,7 @@ func newSectaV3(rpcUrl string, config SectaV3Config, outbox chan<- quotes_common
 		factoryAddress: common.HexToAddress(config.FactoryAddress),
 	}
 
-	params := base.DexConfig[
-		isecta_v3_pool.ISectaV3PoolSwap,
-		*isecta_v3_pool.ISectaV3PoolSwapIterator,
-	]{
+	params := base.DexConfig[sectaV3Event, sectaV3Iterator]{
 		Params: base.DexParams{
 			Type:       quotes_common.DriverSectaV3,
 			RPC:        rpcUrl,
@@ -46,10 +46,7 @@ func newSectaV3(rpcUrl string, config SectaV3Config, outbox chan<- quotes_common
 			MappingURL: config.MappingURL,
 			MarketsURL: config.MarketsURL,
 			IdlePeriod: config.IdlePeriod},
-		Hooks: base.DexHooks[
-			isecta_v3_pool.ISectaV3PoolSwap,
-			*isecta_v3_pool.ISectaV3PoolSwapIterator,
-		]{
+		Hooks: base.DexHooks[sectaV3Event, sectaV3Iterator]{
 			PostStart:   hooks.postStart,
 			GetPool:     hooks.getPool,
 			BuildParser: hooks.buildParser,
@@ -64,10 +61,7 @@ func newSectaV3(rpcUrl string, config SectaV3Config, outbox chan<- quotes_common
 	return base.NewDEX(params)
 }
 
-func (s *sectaV3) postStart(driver *base.DEX[
-	isecta_v3_pool.ISectaV3PoolSwap,
-	*isecta_v3_pool.ISectaV3PoolSwapIterator,
-]) (err error) {
+func (s *sectaV3) postStart(driver *base.DEX[sectaV3Event, sectaV3Iterator]) (err error) {
 	s.driver = driver
 
 	s.factory, err = isecta_v3_factory.NewISectaV3Factory(s.factoryAddress, s.driver.Client())
@@ -77,7 +71,7 @@ func (s *sectaV3) postStart(driver *base.DEX[
 	return nil
 }
 
-func (s *sectaV3) getPool(ctx context.Context, market quotes_common.Market) ([]*base.DexPool[isecta_v3_pool.ISectaV3PoolSwap, *isecta_v3_pool.ISectaV3PoolSwapIterator], error) {
+func (s *sectaV3) getPool(ctx context.Context, market quotes_common.Market) ([]*base.DexPool[sectaV3Event, sectaV3Iterator], error) {
 	baseToken, quoteToken, err := base.GetTokens(s.driver.Assets(), market, loggerSectaV3)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tokens: %w", err)
@@ -108,7 +102,7 @@ func (s *sectaV3) getPool(ctx context.Context, market quotes_common.Market) ([]*
 		}
 	}
 
-	pools := make([]*base.DexPool[isecta_v3_pool.ISectaV3PoolSwap, *isecta_v3_pool.ISectaV3PoolSwapIterator], 0, len(poolAddresses))
+	pools := make([]*base.DexPool[sectaV3Event, sectaV3Iterator], 0, len(poolAddresses))
 	for _, poolAddress := range poolAddresses {
 		poolContract, err := isecta_v3_pool.NewISectaV3Pool(poolAddress, s.driver.Client())
 		if err != nil {
@@ -135,7 +129,7 @@ func (s *sectaV3) getPool(ctx context.Context, market quotes_common.Market) ([]*
 
 		isDirect := baseToken.Address == basePoolToken && quoteToken.Address == quotePoolToken
 		isReversed := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
-		pool := &base.DexPool[isecta_v3_pool.ISectaV3PoolSwap, *isecta_v3_pool.ISectaV3PoolSwapIterator]{
+		pool := &base.DexPool[sectaV3Event, sectaV3Iterator]{
 			Contract:   poolContract,
 			Address:    poolAddress,
 			BaseToken:  baseToken,
@@ -155,13 +149,10 @@ func (s *sectaV3) getPool(ctx context.Context, market quotes_common.Market) ([]*
 }
 
 func (s *sectaV3) buildParser(
-	swap *isecta_v3_pool.ISectaV3PoolSwap,
-	pool *base.DexPool[isecta_v3_pool.ISectaV3PoolSwap, *isecta_v3_pool.ISectaV3PoolSwapIterator],
+	swap *sectaV3Event,
+	pool *base.DexPool[sectaV3Event, sectaV3Iterator],
 ) base.SwapParser {
-	return &base.SwapV3[
-		isecta_v3_pool.ISectaV3PoolSwap,
-		*isecta_v3_pool.ISectaV3PoolSwapIterator,
-	]{
+	return &base.SwapV3[sectaV3Event, sectaV3Iterator]{
 		RawAmount0:      swap.Amount0,
 		RawAmount1:      swap.Amount1,
 		RawSqrtPriceX96: swap.SqrtPriceX96,
@@ -169,8 +160,6 @@ func (s *sectaV3) buildParser(
 	}
 }
 
-func (s *sectaV3) derefIter(
-	iter *isecta_v3_pool.ISectaV3PoolSwapIterator,
-) *isecta_v3_pool.ISectaV3PoolSwap {
+func (s *sectaV3) derefIter(iter sectaV3Iterator) *sectaV3Event {
 	return iter.Event
 }

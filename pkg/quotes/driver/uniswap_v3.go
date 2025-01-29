@@ -24,6 +24,9 @@ var (
 	wethContract      = common.HexToAddress("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2")
 )
 
+type uniswapV3Event = iuniswap_v3_pool.IUniswapV3PoolSwap
+type uniswapV3Iterator = *iuniswap_v3_pool.IUniswapV3PoolSwapIterator
+
 type uniswapV3 struct {
 	factoryAddress common.Address
 	factory        *iuniswap_v3_factory.IUniswapV3Factory
@@ -36,10 +39,7 @@ func newUniswapV3(rpcUrl string, config UniswapV3Config, outbox chan<- quotes_co
 		factoryAddress: common.HexToAddress(config.FactoryAddress),
 	}
 
-	params := base.DexConfig[
-		iuniswap_v3_pool.IUniswapV3PoolSwap,
-		*iuniswap_v3_pool.IUniswapV3PoolSwapIterator,
-	]{
+	params := base.DexConfig[uniswapV3Event, uniswapV3Iterator]{
 		Params: base.DexParams{
 			Type:       quotes_common.DriverUniswapV3,
 			RPC:        rpcUrl,
@@ -48,10 +48,7 @@ func newUniswapV3(rpcUrl string, config UniswapV3Config, outbox chan<- quotes_co
 			MarketsURL: config.MarketsURL,
 			IdlePeriod: config.IdlePeriod,
 		},
-		Hooks: base.DexHooks[
-			iuniswap_v3_pool.IUniswapV3PoolSwap,
-			*iuniswap_v3_pool.IUniswapV3PoolSwapIterator,
-		]{
+		Hooks: base.DexHooks[uniswapV3Event, uniswapV3Iterator]{
 			PostStart:   hooks.postStart,
 			GetPool:     hooks.getPool,
 			BuildParser: hooks.buildParser,
@@ -66,10 +63,7 @@ func newUniswapV3(rpcUrl string, config UniswapV3Config, outbox chan<- quotes_co
 	return base.NewDEX(params)
 }
 
-func (u *uniswapV3) postStart(driver *base.DEX[
-	iuniswap_v3_pool.IUniswapV3PoolSwap,
-	*iuniswap_v3_pool.IUniswapV3PoolSwapIterator,
-]) (err error) {
+func (u *uniswapV3) postStart(driver *base.DEX[uniswapV3Event, uniswapV3Iterator]) (err error) {
 	u.driver = driver
 
 	// Check addresses here: https://docs.uniswap.org/contracts/v3/reference/deployments
@@ -80,7 +74,7 @@ func (u *uniswapV3) postStart(driver *base.DEX[
 	return nil
 }
 
-func (u *uniswapV3) getPool(ctx context.Context, market quotes_common.Market) ([]*base.DexPool[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator], error) {
+func (u *uniswapV3) getPool(ctx context.Context, market quotes_common.Market) ([]*base.DexPool[uniswapV3Event, uniswapV3Iterator], error) {
 	baseToken, quoteToken, err := base.GetTokens(u.driver.Assets(), market, loggerUniswapV3)
 	if err != nil {
 		return nil, err
@@ -111,7 +105,7 @@ func (u *uniswapV3) getPool(ctx context.Context, market quotes_common.Market) ([
 		}
 	}
 
-	pools := make([]*base.DexPool[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator], 0, len(poolAddresses))
+	pools := make([]*base.DexPool[uniswapV3Event, uniswapV3Iterator], 0, len(poolAddresses))
 	for _, poolAddress := range poolAddresses {
 		poolContract, err := iuniswap_v3_pool.NewIUniswapV3Pool(poolAddress, u.driver.Client())
 		if err != nil {
@@ -137,7 +131,7 @@ func (u *uniswapV3) getPool(ctx context.Context, market quotes_common.Market) ([
 		}
 
 		isReversed := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
-		pool := &base.DexPool[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator]{
+		pool := &base.DexPool[uniswapV3Event, uniswapV3Iterator]{
 			Contract:   poolContract,
 			Address:    poolAddress,
 			BaseToken:  baseToken,
@@ -156,13 +150,10 @@ func (u *uniswapV3) getPool(ctx context.Context, market quotes_common.Market) ([
 }
 
 func (u *uniswapV3) buildParser(
-	swap *iuniswap_v3_pool.IUniswapV3PoolSwap,
-	pool *base.DexPool[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator],
+	swap *uniswapV3Event,
+	pool *base.DexPool[uniswapV3Event, uniswapV3Iterator],
 ) base.SwapParser {
-	return &base.SwapV3[
-		iuniswap_v3_pool.IUniswapV3PoolSwap,
-		*iuniswap_v3_pool.IUniswapV3PoolSwapIterator,
-	]{
+	return &base.SwapV3[uniswapV3Event, uniswapV3Iterator]{
 		RawAmount0:      swap.Amount0,
 		RawAmount1:      swap.Amount1,
 		RawSqrtPriceX96: swap.SqrtPriceX96,
@@ -170,8 +161,6 @@ func (u *uniswapV3) buildParser(
 	}
 }
 
-func (u *uniswapV3) derefIter(
-	iter *iuniswap_v3_pool.IUniswapV3PoolSwapIterator,
-) *iuniswap_v3_pool.IUniswapV3PoolSwap {
+func (u *uniswapV3) derefIter(iter uniswapV3Iterator) *uniswapV3Event {
 	return iter.Event
 }

@@ -17,6 +17,9 @@ import (
 
 var loggerSyncswap = log.Logger("syncswap")
 
+type syncswapEvent = isyncswap_pool.ISyncSwapPoolSwap
+type syncswapIterator = *isyncswap_pool.ISyncSwapPoolSwapIterator
+
 type syncswap struct {
 	stablePoolMarkets         map[quotes_common.Market]struct{}
 	classicPoolFactoryAddress common.Address
@@ -47,10 +50,7 @@ func newSyncswap(rpcUrl string, config SyncswapConfig, outbox chan<- quotes_comm
 		stablePoolFactoryAddress:  common.HexToAddress(config.StablePoolFactoryAddress),
 	}
 
-	params := base.DexConfig[
-		isyncswap_pool.ISyncSwapPoolSwap,
-		*isyncswap_pool.ISyncSwapPoolSwapIterator,
-	]{
+	params := base.DexConfig[syncswapEvent, syncswapIterator]{
 		Params: base.DexParams{
 			Type:       quotes_common.DriverSyncswap,
 			RPC:        rpcUrl,
@@ -59,10 +59,7 @@ func newSyncswap(rpcUrl string, config SyncswapConfig, outbox chan<- quotes_comm
 			MarketsURL: config.MarketsURL,
 			IdlePeriod: config.IdlePeriod,
 		},
-		Hooks: base.DexHooks[
-			isyncswap_pool.ISyncSwapPoolSwap,
-			*isyncswap_pool.ISyncSwapPoolSwapIterator,
-		]{
+		Hooks: base.DexHooks[syncswapEvent, syncswapIterator]{
 			PostStart:   hooks.postStart,
 			GetPool:     hooks.getPool,
 			BuildParser: hooks.buildParser,
@@ -77,10 +74,7 @@ func newSyncswap(rpcUrl string, config SyncswapConfig, outbox chan<- quotes_comm
 	return base.NewDEX(params)
 }
 
-func (s *syncswap) postStart(driver *base.DEX[
-	isyncswap_pool.ISyncSwapPoolSwap,
-	*isyncswap_pool.ISyncSwapPoolSwapIterator,
-]) (err error) {
+func (s *syncswap) postStart(driver *base.DEX[syncswapEvent, syncswapIterator]) (err error) {
 	s.driver = driver
 
 	// Check addresses here: https://syncswap.gitbook.io/syncswap/smart-contracts/smart-contracts
@@ -96,7 +90,7 @@ func (s *syncswap) postStart(driver *base.DEX[
 	return nil
 }
 
-func (s *syncswap) getPool(ctx context.Context, market quotes_common.Market) ([]*base.DexPool[isyncswap_pool.ISyncSwapPoolSwap, *isyncswap_pool.ISyncSwapPoolSwapIterator], error) {
+func (s *syncswap) getPool(ctx context.Context, market quotes_common.Market) ([]*base.DexPool[syncswapEvent, syncswapIterator], error) {
 	baseToken, quoteToken, err := base.GetTokens(s.driver.Assets(), market, loggerSyncswap)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tokens: %w", err)
@@ -152,7 +146,7 @@ func (s *syncswap) getPool(ctx context.Context, market quotes_common.Market) ([]
 	}
 
 	isReversed := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
-	pools := []*base.DexPool[isyncswap_pool.ISyncSwapPoolSwap, *isyncswap_pool.ISyncSwapPoolSwapIterator]{{
+	pools := []*base.DexPool[syncswapEvent, syncswapIterator]{{
 		Contract:   poolContract,
 		Address:    poolAddress,
 		BaseToken:  baseToken,
@@ -169,13 +163,10 @@ func (s *syncswap) getPool(ctx context.Context, market quotes_common.Market) ([]
 }
 
 func (s *syncswap) buildParser(
-	swap *isyncswap_pool.ISyncSwapPoolSwap,
-	pool *base.DexPool[isyncswap_pool.ISyncSwapPoolSwap, *isyncswap_pool.ISyncSwapPoolSwapIterator],
+	swap *syncswapEvent,
+	pool *base.DexPool[syncswapEvent, syncswapIterator],
 ) base.SwapParser {
-	return &base.SwapV2[
-		isyncswap_pool.ISyncSwapPoolSwap,
-		*isyncswap_pool.ISyncSwapPoolSwapIterator,
-	]{
+	return &base.SwapV2[syncswapEvent, syncswapIterator]{
 		RawAmount0In:  swap.Amount0In,
 		RawAmount0Out: swap.Amount0Out,
 		RawAmount1In:  swap.Amount1In,
@@ -184,8 +175,6 @@ func (s *syncswap) buildParser(
 	}
 }
 
-func (s *syncswap) derefIter(
-	iter *isyncswap_pool.ISyncSwapPoolSwapIterator,
-) *isyncswap_pool.ISyncSwapPoolSwap {
+func (s *syncswap) derefIter(iter syncswapIterator) *syncswapEvent {
 	return iter.Event
 }
