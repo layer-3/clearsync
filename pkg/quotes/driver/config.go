@@ -10,21 +10,21 @@ import (
 )
 
 type Config struct {
-	Drivers []common.DriverType `yaml:"drivers" env:"QUOTES_DRIVERS" env-default:"binance,syncswap"`
-	Rpc     RpcConfig           `yaml:"rpc" env-prefix:"QUOTES_RPC_"`
+	Drivers []common.DriverType `yaml:"drivers" env:"DRIVERS" env-default:"binance,syncswap"`
+	Rpc     RpcConfig           `yaml:"rpc" env-prefix:"RPC_"`
 
-	Binance   BinanceConfig   `yaml:"binance" env-prefix:"QUOTES_BINANCE_"`
-	Kraken    KrakenConfig    `yaml:"kraken" env-prefix:"QUOTES_KRAKEN_"`
-	Mexc      MexcConfig      `yaml:"mexc" env-prefix:"QUOTES_MEXC_"`
-	Opendax   OpendaxConfig   `yaml:"opendax" env-prefix:"QUOTES_OPENDAX_"`
-	Bitfaker  BitfakerConfig  `yaml:"bitfaker" env-prefix:"QUOTES_BITFAKER_"`
-	UniswapV3 UniswapV3Config `yaml:"uniswap_v3" env-prefix:"QUOTES_UNISWAP_V3_"`
-	Syncswap  SyncswapConfig  `yaml:"syncswap" env-prefix:"QUOTES_SYNCSWAP_"`
-	Quickswap QuickswapConfig `yaml:"quickswap" env-prefix:"QUOTES_QUICKSWAP_"`
-	SectaV2   SectaV2Config   `yaml:"secta_v2" env-prefix:"QUOTES_SECTA_V2_"`
-	SectaV3   SectaV3Config   `yaml:"secta_v3" env-prefix:"QUOTES_SECTA_V3_"`
-	LynexV2   LynexV2Config   `yaml:"lynex_v2" env-prefix:"QUOTES_LYNEX_V2_"`
-	LynexV3   LynexV3Config   `yaml:"lynex_v3" env-prefix:"QUOTES_LYNEX_V3_"`
+	Binance   BinanceConfig   `yaml:"binance" env-prefix:"BINANCE_"`
+	Kraken    KrakenConfig    `yaml:"kraken" env-prefix:"KRAKEN_"`
+	Mexc      MexcConfig      `yaml:"mexc" env-prefix:"MEXC_"`
+	Opendax   OpendaxConfig   `yaml:"opendax" env-prefix:"OPENDAX_"`
+	Bitfaker  BitfakerConfig  `yaml:"bitfaker" env-prefix:"BITFAKER_"`
+	UniswapV3 UniswapV3Config `yaml:"uniswap_v3" env-prefix:"UNISWAP_V3_"`
+	Syncswap  SyncswapConfig  `yaml:"syncswap" env-prefix:"SYNCSWAP_"`
+	Quickswap QuickswapConfig `yaml:"quickswap" env-prefix:"QUICKSWAP_"`
+	SectaV2   SectaV2Config   `yaml:"secta_v2" env-prefix:"SECTA_V2_"`
+	SectaV3   SectaV3Config   `yaml:"secta_v3" env-prefix:"SECTA_V3_"`
+	LynexV2   LynexV2Config   `yaml:"lynex_v2" env-prefix:"LYNEX_V2_"`
+	LynexV3   LynexV3Config   `yaml:"lynex_v3" env-prefix:"LYNEX_V3_"`
 }
 
 func NewConfigFromFile(path string) (config Config, err error) {
