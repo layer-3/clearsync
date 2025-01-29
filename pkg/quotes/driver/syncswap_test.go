@@ -35,7 +35,9 @@ func TestParseSwapSellETHUSDC(t *testing.T) {
 	expectedTotal := decimal.NewFromFloat(103.073083)
 
 	s := syncswap{} // Assuming s is correctly initialized for the test
-	tradeEvent, err := s.parseSwap(swap, &pool)
+	parser := s.buildParser(swap, &pool)
+	logger := loggerSyncswap.With("swap", swap)
+	tradeEvent, err := parser.ParseSwap(common.DriverSyncswap, logger)
 
 	assert.Nil(t, err)
 	assert.Equal(t, common.TakerTypeSell, tradeEvent.TakerType)
@@ -56,7 +58,9 @@ func TestParseSwapBuyETHUSDC(t *testing.T) {
 	expectedTotal := decimal.NewFromInt(85)
 
 	s := syncswap{} // Assuming s is correctly initialized for the test
-	tradeEvent, err := s.parseSwap(swap, &pool)
+	parser := s.buildParser(swap, &pool)
+	logger := loggerSyncswap.With("swap", swap)
+	tradeEvent, err := parser.ParseSwap(common.DriverSyncswap, logger)
 
 	assert.Nil(t, err)
 	assert.Equal(t, common.TakerTypeBuy, tradeEvent.TakerType)
@@ -86,7 +90,9 @@ func TestParseSwapBuyLINDAWETH(t *testing.T) {
 	expectedTotal := decimal.NewFromFloat(0.041092)
 
 	s := syncswap{} // Assuming s is correctly initialized for the test
-	tradeEvent, err := s.parseSwap(swap, &pool)
+	parser := s.buildParser(swap, &pool)
+	logger := loggerSyncswap.With("swap", swap)
+	tradeEvent, err := parser.ParseSwap(common.DriverSyncswap, logger)
 
 	assert.Nil(t, err)
 	assert.Equal(t, common.TakerTypeBuy, tradeEvent.TakerType)
@@ -116,7 +122,9 @@ func TestParseSwapSellLINDAWETH(t *testing.T) {
 	expectedTotal := decimal.NewFromFloat(0.193601651777829)
 
 	s := syncswap{} // Assuming s is correctly initialized for the test
-	tradeEvent, err := s.parseSwap(swap, &pool)
+	parser := s.buildParser(swap, &pool)
+	logger := loggerSyncswap.With("swap", swap)
+	tradeEvent, err := parser.ParseSwap(common.DriverSyncswap, logger)
 
 	assert.Nil(t, err)
 	assert.Equal(t, common.TakerTypeSell, tradeEvent.TakerType)

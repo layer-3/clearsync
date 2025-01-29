@@ -254,7 +254,9 @@ func Test_uniswapV3_parseSwap(t *testing.T) {
 			t.Parallel()
 
 			driver := uniswapV3{}
-			got, err := driver.parseSwap(test.args.swap, test.args.pool)
+			parser := driver.buildParser(test.args.swap, test.args.pool)
+			logger := loggerUniswapV3.With("swap", test.args.swap)
+			got, err := parser.ParseSwap(quotes_common.DriverUniswapV3, logger)
 
 			if test.wantErr {
 				require.True(t, err != nil)

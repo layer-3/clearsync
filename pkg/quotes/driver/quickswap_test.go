@@ -154,7 +154,10 @@ func Test_quickswap_parseSwap(t *testing.T) {
 			t.Parallel()
 
 			driver := quickswap{}
-			got, err := driver.parseSwap(test.args.swap, test.args.pool)
+			parser := driver.buildParser(test.args.swap, test.args.pool)
+
+			logger := loggerQuickswap.With("swap", test.args.swap)
+			got, err := parser.ParseSwap(quotes_common.DriverQuickswap, logger)
 
 			if test.wantErr {
 				require.True(t, err != nil)

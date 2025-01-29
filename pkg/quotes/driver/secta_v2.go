@@ -48,7 +48,7 @@ func newSectaV2(rpcUrl string, config SectaV2Config, outbox chan<- quotes_common
 		// Hooks
 		PostStartHook: hooks.postStart,
 		PoolGetter:    hooks.getPool,
-		EventParser:   hooks.parseSwap,
+		ParserFactory: hooks.buildParser,
 		IterDeref:     hooks.derefIter,
 		// State
 		Outbox:  outbox,
@@ -135,11 +135,11 @@ func (s *sectaV2) getPool(ctx context.Context, market quotes_common.Market) ([]*
 	return nil, fmt.Errorf("failed to build Secta v2 pool for market %s: %w", market, err)
 }
 
-func (s *sectaV2) parseSwap(
+func (s *sectaV2) buildParser(
 	swap *isecta_v2_pair.ISectaV2PairSwap,
 	pool *base.DexPool[isecta_v2_pair.ISectaV2PairSwap, *isecta_v2_pair.ISectaV2PairSwapIterator],
-) (trade quotes_common.TradeEvent, err error) {
-	opts := base.V2TradeOpts[
+) base.SwapParser {
+	return &base.SwapV2[
 		isecta_v2_pair.ISectaV2PairSwap,
 		*isecta_v2_pair.ISectaV2PairSwapIterator,
 	]{
@@ -148,9 +148,7 @@ func (s *sectaV2) parseSwap(
 		RawAmount1In:  swap.Amount1In,
 		RawAmount1Out: swap.Amount1Out,
 		Pool:          pool,
-		Swap:          swap,
 	}
-	return s.driver.BuildV2Trade(opts)
 }
 
 func (s *sectaV2) derefIter(

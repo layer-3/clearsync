@@ -48,7 +48,7 @@ func newQuickswap(rpcUrl string, config QuickswapConfig, outbox chan<- quotes_co
 		// Hooks
 		PostStartHook: hooks.postStart,
 		PoolGetter:    hooks.getPool,
-		EventParser:   hooks.parseSwap,
+		ParserFactory: hooks.buildParser,
 		IterDeref:     hooks.derefIter,
 		// State
 		Outbox:  outbox,
@@ -137,11 +137,11 @@ func (s *quickswap) getPool(ctx context.Context, market quotes_common.Market) ([
 	return nil, fmt.Errorf("failed to build Quickswap pool for market %s: %w", market, err)
 }
 
-func (s *quickswap) parseSwap(
+func (s *quickswap) buildParser(
 	swap *quickswap_v3_pool.IQuickswapV3PoolSwap,
 	pool *base.DexPool[quickswap_v3_pool.IQuickswapV3PoolSwap, *quickswap_v3_pool.IQuickswapV3PoolSwapIterator],
-) (trade quotes_common.TradeEvent, err error) {
-	opts := base.V3TradeOpts[
+) base.SwapParser {
+	return &base.SwapV3[
 		quickswap_v3_pool.IQuickswapV3PoolSwap,
 		*quickswap_v3_pool.IQuickswapV3PoolSwapIterator,
 	]{
@@ -149,9 +149,7 @@ func (s *quickswap) parseSwap(
 		RawAmount1:      swap.Amount1,
 		RawSqrtPriceX96: swap.Price,
 		Pool:            pool,
-		Swap:            swap,
 	}
-	return s.driver.BuildV3Trade(opts)
 }
 
 func (s *quickswap) derefIter(

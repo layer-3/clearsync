@@ -24,6 +24,15 @@ import (
 	"github.com/layer-3/clearsync/pkg/safe"
 )
 
+// DexReader defines a set of methods that DEX hooks may use to interact with
+// the DEX driver. It's important to limit the methods to read-only operations,
+// since by design hooks are not allowed to impede the driver's operations and
+// modify its state, thus the absence of methods like `Subscribe`, `Stop`, etc.
+type DexReader interface {
+	Client() *ethclient.Client
+	Assets() *safe.Map[string, DexPoolToken]
+}
+
 type DEX[Event any, Contract any, EventIterator dexEventIterator] struct {
 	// Params
 	driverType quotes_common.DriverType
@@ -34,10 +43,10 @@ type DEX[Event any, Contract any, EventIterator dexEventIterator] struct {
 	idlePeriod time.Duration
 
 	// Hooks
-	postStart func(*DEX[Event, Contract, EventIterator]) error
-	getPool   func(context.Context, quotes_common.Market) ([]*DexPool[Event, EventIterator], error)
-	parse     func(*Event, *DexPool[Event, EventIterator]) (quotes_common.TradeEvent, error)
-	derefIter func(EventIterator) *Event
+	postStart   func(*DEX[Event, Contract, EventIterator]) error
+	getPool     func(context.Context, quotes_common.Market) ([]*DexPool[Event, EventIterator], error)
+	buildParser func(*Event, *DexPool[Event, EventIterator]) SwapParser
+	derefIter   func(EventIterator) *Event
 
 	// State
 	once    *quotes_common.Once
@@ -74,7 +83,7 @@ type DexConfig[Event any, Contract any, EventIterator dexEventIterator] struct {
 	// Hooks
 	PostStartHook func(*DEX[Event, Contract, EventIterator]) error
 	PoolGetter    func(context.Context, quotes_common.Market) ([]*DexPool[Event, EventIterator], error)
-	EventParser   func(*Event, *DexPool[Event, EventIterator]) (quotes_common.TradeEvent, error)
+	ParserFactory func(*Event, *DexPool[Event, EventIterator]) SwapParser
 	IterDeref     func(EventIterator) *Event
 
 	// State
@@ -101,10 +110,10 @@ func NewDEX[Event any, Contract any, EventIterator dexEventIterator](
 		idlePeriod: config.IdlePeriod,
 
 		// Hooks
-		postStart: config.PostStartHook,
-		getPool:   config.PoolGetter,
-		parse:     config.EventParser,
-		derefIter: config.IterDeref,
+		postStart:   config.PostStartHook,
+		getPool:     config.PoolGetter,
+		buildParser: config.ParserFactory,
+		derefIter:   config.IterDeref,
 
 		// State
 		once:            quotes_common.NewOnce(),
@@ -368,7 +377,9 @@ func (b *DEX[Event, Contract, EventIterator]) HistoricalData(ctx context.Context
 				continue
 			}
 
-			trade, err := b.parse(swap, pools[i])
+			parser := b.buildParser(swap, pools[i])
+			logger := b.logger.With("swap", swap)
+			trade, err := parser.ParseSwap(b.driverType, logger)
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse historical swap: %s (`%+v`)", err, swap)
 			}
@@ -473,7 +484,10 @@ func (b *DEX[Event, Contract, EventIterator]) watchSwap(
 
 		case swap := <-sink:
 			timer.Reset(b.idlePeriod)
-			trade, err := b.parse(swap, pool)
+
+			parser := b.buildParser(swap, pool)
+			logger := b.logger.With("swap", swap)
+			trade, err := parser.ParseSwap(b.driverType, logger)
 			if err != nil {
 				b.logger.Errorw("failed to parse swap event",
 					"error", err,
@@ -641,175 +655,6 @@ func GetTokens(
 	logger.Infow("found quote token", "address", quoteToken.Address, "market", market.StringWithoutMain())
 
 	return baseToken, quoteToken, nil
-}
-
-type V2TradeOpts[Event any, EventIterator dexEventIterator] struct {
-	RawAmount0In  *big.Int
-	RawAmount0Out *big.Int
-	RawAmount1In  *big.Int
-	RawAmount1Out *big.Int
-	Pool          *DexPool[Event, EventIterator]
-	Swap          *Event
-}
-
-func (b *DEX[Event, Contract, EventIterator]) BuildV2Trade(o V2TradeOpts[Event, EventIterator]) (trade quotes_common.TradeEvent, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			b.logger.Errorw(quotes_common.ErrSwapParsing.Error(), "swap", o.Swap)
-			err = fmt.Errorf("%s: %v (swap: %#v)", quotes_common.ErrSwapParsing, r, o.Swap)
-		}
-	}()
-
-	if o.Pool.Reversed {
-		copyAmount0In, copyAmount0Out := o.RawAmount0In, o.RawAmount0Out
-		o.RawAmount0In, o.RawAmount0Out = o.RawAmount1In, o.RawAmount1Out
-		o.RawAmount1In, o.RawAmount1Out = copyAmount0In, copyAmount0Out
-	}
-
-	var takerType quotes_common.TakerType
-	var price decimal.Decimal
-	var amount decimal.Decimal
-	var total decimal.Decimal
-
-	baseDecimals := o.Pool.BaseToken.Decimals
-	quoteDecimals := o.Pool.QuoteToken.Decimals
-
-	switch {
-	case isValidNonZero(o.RawAmount0In) && isValidNonZero(o.RawAmount1Out):
-		amount1Out := decimal.NewFromBigInt(o.RawAmount1Out, 0).Div(ten.Pow(quoteDecimals))
-		amount0In := decimal.NewFromBigInt(o.RawAmount0In, 0).Div(ten.Pow(baseDecimals))
-
-		takerType = quotes_common.TakerTypeSell
-		price = amount1Out.Div(amount0In) // NOTE: may panic here if `amount0In` is zero
-		total = amount1Out
-		amount = amount0In
-
-	case isValidNonZero(o.RawAmount0Out) && isValidNonZero(o.RawAmount1In):
-		amount0Out := decimal.NewFromBigInt(o.RawAmount0Out, 0).Div(ten.Pow(baseDecimals))
-		amount1In := decimal.NewFromBigInt(o.RawAmount1In, 0).Div(ten.Pow(quoteDecimals))
-
-		takerType = quotes_common.TakerTypeBuy
-		price = amount1In.Div(amount0Out) // NOTE: may panic here if `amount0Out` is zero
-		total = amount1In
-		amount = amount0Out
-	default:
-		return quotes_common.TradeEvent{}, fmt.Errorf("market %s: unknown swap type", o.Pool.Market)
-	}
-
-	trade = quotes_common.TradeEvent{
-		Source:    b.driverType,
-		Market:    o.Pool.Market,
-		Price:     price,
-		Amount:    amount.Abs(),
-		Total:     total,
-		TakerType: takerType,
-		CreatedAt: time.Now(),
-	}
-	return trade, nil
-}
-
-type V3TradeOpts[Event any, EventIterator dexEventIterator] struct {
-	RawAmount0      *big.Int
-	RawAmount1      *big.Int
-	RawSqrtPriceX96 *big.Int
-	Pool            *DexPool[Event, EventIterator]
-	Swap            *Event
-}
-
-func (b *DEX[Event, Contract, EventIterator]) BuildV3Trade(o V3TradeOpts[Event, EventIterator]) (trade quotes_common.TradeEvent, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			b.logger.Errorw(quotes_common.ErrSwapParsing.Error(), "swap", o.Swap, "pool", o.Pool)
-			err = fmt.Errorf("%s: %s", quotes_common.ErrSwapParsing, r)
-		}
-	}()
-
-	if !isValidNonZero(o.RawAmount0) {
-		return quotes_common.TradeEvent{}, fmt.Errorf("raw amount0 (%s) is not a valid non-zero number", o.RawAmount0)
-	}
-	amount0 := decimal.NewFromBigInt(o.RawAmount0, 0)
-
-	if !isValidNonZero(o.RawAmount1) {
-		return quotes_common.TradeEvent{}, fmt.Errorf("raw amount1 (%s) is not a valid non-zero number", o.RawAmount0)
-	}
-	amount1 := decimal.NewFromBigInt(o.RawAmount1, 0)
-
-	if !isValidNonZero(o.RawSqrtPriceX96) {
-		return quotes_common.TradeEvent{}, fmt.Errorf("raw sqrtPriceX96 (%s) is not a valid non-zero number", o.RawSqrtPriceX96)
-	}
-	sqrtPriceX96 := decimal.NewFromBigInt(o.RawSqrtPriceX96, 0)
-
-	if o.Pool.Reversed {
-		amount0, amount1 = amount1, amount0
-	}
-
-	// Normalize swap amounts.
-	baseDecimals, quoteDecimals := o.Pool.BaseToken.Decimals, o.Pool.QuoteToken.Decimals
-	amount0Normalized := amount0.Div(ten.Pow(baseDecimals)).Abs()
-	amount1Normalized := amount1.Div(ten.Pow(quoteDecimals)).Abs()
-
-	// Calculate swap price.
-	price := calculatePrice(sqrtPriceX96, baseDecimals, quoteDecimals, o.Pool.Reversed)
-	// Apply a fallback strategy in case the primary one fails.
-	// This should never happen, but just in case.
-	if price.IsZero() {
-		price = amount1Normalized.Div(amount0Normalized)
-	}
-
-	// Calculate trade side, amount and total.
-	takerType := quotes_common.TakerTypeBuy
-	amount, total := amount0Normalized, amount1Normalized
-	if (!o.Pool.Reversed && amount0.Sign() < 0) || (o.Pool.Reversed && amount1.Sign() < 0) {
-		takerType = quotes_common.TakerTypeSell
-	}
-
-	tr := quotes_common.TradeEvent{
-		Source:    b.driverType,
-		Market:    o.Pool.Market,
-		Price:     price,
-		Amount:    amount, // amount of BASE token received
-		Total:     total,  // total cost in QUOTE token
-		TakerType: takerType,
-		CreatedAt: time.Now(),
-	}
-	return tr, nil
-}
-
-var (
-	two      = decimal.NewFromInt(2)
-	ten      = decimal.NewFromInt(10)
-	priceX96 = two.Pow(decimal.NewFromInt(96))
-)
-
-// calculatePrice method calculates the price per token at which the swap was performed
-// using the sqrtPriceX96 value supplied with every on-chain swap event.
-//
-// General formula is as follows:
-// price = ((sqrtPriceX96 / 2**96)**2) / (10**decimal1 / 10**decimal0)
-//
-// See the math explained at https://blog.uniswap.org/uniswap-v3-math-primer
-func calculatePrice(sqrtPriceX96, baseDecimals, quoteDecimals decimal.Decimal, reversedPool bool) decimal.Decimal {
-	if reversedPool {
-		baseDecimals, quoteDecimals = quoteDecimals, baseDecimals
-	}
-
-	// Simplification for denominator calculations:
-	// 10**decimal1 / 10**decimal0 -> 10**(decimal1 - decimal0)
-	decimals := quoteDecimals.Sub(baseDecimals)
-
-	numerator := sqrtPriceX96.Div(priceX96).Pow(two)
-	denominator := ten.Pow(decimals)
-
-	if reversedPool {
-		return denominator.Div(numerator)
-	}
-	return numerator.Div(denominator)
-}
-
-func isValidNonZero(x *big.Int) bool {
-	// Note that negative values are allowed
-	// as they represent a reduction in the balance of the pool.
-	return x != nil && x.Sign() != 0
 }
 
 func FetchHistoryDataFromExternalSource(

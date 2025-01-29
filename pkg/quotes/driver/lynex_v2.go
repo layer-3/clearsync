@@ -22,11 +22,7 @@ type lynexV2 struct {
 	factoryAddress    common.Address
 	factory           *ilynex_v2_factory.ILynexFactory
 
-	driver *base.DEX[
-		ilynex_v2_pair.ILynexPairSwap,
-		ilynex_v2_pair.ILynexPair,
-		*ilynex_v2_pair.ILynexPairSwapIterator,
-	]
+	driver base.DexReader
 }
 
 func newLynexV2(rpcUrl string, config LynexV2Config, outbox chan<- quotes_common.TradeEvent, history base.HistoricalDataDriver) (base.Driver, error) {
@@ -61,7 +57,7 @@ func newLynexV2(rpcUrl string, config LynexV2Config, outbox chan<- quotes_common
 		// Hooks
 		PostStartHook: hooks.postStart,
 		PoolGetter:    hooks.getPool,
-		EventParser:   hooks.parseSwap,
+		ParserFactory: hooks.buildParser,
 		IterDeref:     hooks.derefIter,
 
 		// State
@@ -156,11 +152,11 @@ func (l *lynexV2) getPool(ctx context.Context, market quotes_common.Market) ([]*
 	return nil, fmt.Errorf("failed to build Lynex v2 pool for market %s: %w", market, err)
 }
 
-func (l *lynexV2) parseSwap(
+func (l *lynexV2) buildParser(
 	swap *ilynex_v2_pair.ILynexPairSwap,
 	pool *base.DexPool[ilynex_v2_pair.ILynexPairSwap, *ilynex_v2_pair.ILynexPairSwapIterator],
-) (trade quotes_common.TradeEvent, err error) {
-	opts := base.V2TradeOpts[
+) base.SwapParser {
+	return &base.SwapV2[
 		ilynex_v2_pair.ILynexPairSwap,
 		*ilynex_v2_pair.ILynexPairSwapIterator,
 	]{
@@ -169,9 +165,7 @@ func (l *lynexV2) parseSwap(
 		RawAmount1In:  swap.Amount1In,
 		RawAmount1Out: swap.Amount1Out,
 		Pool:          pool,
-		Swap:          swap,
 	}
-	return l.driver.BuildV2Trade(opts)
 }
 
 func (l *lynexV2) derefIter(

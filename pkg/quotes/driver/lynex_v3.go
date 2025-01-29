@@ -48,7 +48,7 @@ func newLynexV3(rpcUrl string, config LynexV3Config, outbox chan<- quotes_common
 		// Hooks
 		PostStartHook: hooks.postStart,
 		PoolGetter:    hooks.getPool,
-		EventParser:   hooks.parseSwap,
+		ParserFactory: hooks.buildParser,
 		IterDeref:     hooks.derefIter,
 		// State
 		Outbox:  outbox,
@@ -139,11 +139,11 @@ func (l *lynexV3) getPool(ctx context.Context, market quotes_common.Market) ([]*
 	return nil, fmt.Errorf("failed to build Lynex v3 pool for market %s: %w", market, err)
 }
 
-func (l *lynexV3) parseSwap(
+func (l *lynexV3) buildParser(
 	swap *ilynex_v3_pool.ILynexV3PoolSwap,
 	pool *base.DexPool[ilynex_v3_pool.ILynexV3PoolSwap, *ilynex_v3_pool.ILynexV3PoolSwapIterator],
-) (trade quotes_common.TradeEvent, err error) {
-	opts := base.V3TradeOpts[
+) base.SwapParser {
+	return &base.SwapV3[
 		ilynex_v3_pool.ILynexV3PoolSwap,
 		*ilynex_v3_pool.ILynexV3PoolSwapIterator,
 	]{
@@ -151,9 +151,7 @@ func (l *lynexV3) parseSwap(
 		RawAmount1:      swap.Amount1,
 		RawSqrtPriceX96: swap.Price,
 		Pool:            pool,
-		Swap:            swap,
 	}
-	return l.driver.BuildV3Trade(opts)
 }
 
 func (l *lynexV3) derefIter(

@@ -66,7 +66,7 @@ func newSyncswap(rpcUrl string, config SyncswapConfig, outbox chan<- quotes_comm
 		// Hooks
 		PostStartHook: hooks.postStart,
 		PoolGetter:    hooks.getPool,
-		EventParser:   hooks.parseSwap,
+		ParserFactory: hooks.buildParser,
 		IterDeref:     hooks.derefIter,
 		// State
 		Outbox:  outbox,
@@ -169,11 +169,11 @@ func (s *syncswap) getPool(ctx context.Context, market quotes_common.Market) ([]
 	return nil, fmt.Errorf("failed to build Syncswap pool for market %s: %w", market, err)
 }
 
-func (s *syncswap) parseSwap(
+func (s *syncswap) buildParser(
 	swap *isyncswap_pool.ISyncSwapPoolSwap,
 	pool *base.DexPool[isyncswap_pool.ISyncSwapPoolSwap, *isyncswap_pool.ISyncSwapPoolSwapIterator],
-) (trade quotes_common.TradeEvent, err error) {
-	opts := base.V2TradeOpts[
+) base.SwapParser {
+	return &base.SwapV2[
 		isyncswap_pool.ISyncSwapPoolSwap,
 		*isyncswap_pool.ISyncSwapPoolSwapIterator,
 	]{
@@ -182,9 +182,7 @@ func (s *syncswap) parseSwap(
 		RawAmount1In:  swap.Amount1In,
 		RawAmount1Out: swap.Amount1Out,
 		Pool:          pool,
-		Swap:          swap,
 	}
-	return s.driver.BuildV2Trade(opts)
 }
 
 func (s *syncswap) derefIter(

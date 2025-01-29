@@ -55,7 +55,7 @@ func newUniswapV3(rpcUrl string, config UniswapV3Config, outbox chan<- quotes_co
 		// Hooks
 		PostStartHook: hooks.postStart,
 		PoolGetter:    hooks.getPool,
-		EventParser:   hooks.parseSwap,
+		ParserFactory: hooks.buildParser,
 		IterDeref:     hooks.derefIter,
 		// State
 		Outbox:  outbox,
@@ -156,11 +156,11 @@ func (u *uniswapV3) getPool(ctx context.Context, market quotes_common.Market) ([
 	return pools, nil
 }
 
-func (u *uniswapV3) parseSwap(
+func (u *uniswapV3) buildParser(
 	swap *iuniswap_v3_pool.IUniswapV3PoolSwap,
 	pool *base.DexPool[iuniswap_v3_pool.IUniswapV3PoolSwap, *iuniswap_v3_pool.IUniswapV3PoolSwapIterator],
-) (trade quotes_common.TradeEvent, err error) {
-	opts := base.V3TradeOpts[
+) base.SwapParser {
+	return &base.SwapV3[
 		iuniswap_v3_pool.IUniswapV3PoolSwap,
 		*iuniswap_v3_pool.IUniswapV3PoolSwapIterator,
 	]{
@@ -168,9 +168,7 @@ func (u *uniswapV3) parseSwap(
 		RawAmount1:      swap.Amount1,
 		RawSqrtPriceX96: swap.SqrtPriceX96,
 		Pool:            pool,
-		Swap:            swap,
 	}
-	return u.driver.BuildV3Trade(opts)
 }
 
 func (u *uniswapV3) derefIter(
