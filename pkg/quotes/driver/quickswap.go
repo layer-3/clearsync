@@ -33,18 +33,23 @@ func newQuickswap(rpcUrl string, config QuickswapConfig, outbox chan<- quotes_co
 		quickswap_v3_pool.IQuickswapV3PoolSwap,
 		*quickswap_v3_pool.IQuickswapV3PoolSwapIterator,
 	]{
-		// Params
-		DriverType: quotes_common.DriverQuickswap,
-		RPC:        rpcUrl,
-		AssetsURL:  config.AssetsURL,
-		MappingURL: config.MappingURL,
-		MarketsURL: config.MarketsURL,
-		IdlePeriod: config.IdlePeriod,
-		// Hooks
-		PostStartHook: hooks.postStart,
-		PoolGetter:    hooks.getPool,
-		ParserFactory: hooks.buildParser,
-		IterDeref:     hooks.derefIter,
+		Params: base.DexParams{
+			Type:       quotes_common.DriverQuickswap,
+			RPC:        rpcUrl,
+			AssetsURL:  config.AssetsURL,
+			MappingURL: config.MappingURL,
+			MarketsURL: config.MarketsURL,
+			IdlePeriod: config.IdlePeriod,
+		},
+		Hooks: base.DexHooks[
+			quickswap_v3_pool.IQuickswapV3PoolSwap,
+			*quickswap_v3_pool.IQuickswapV3PoolSwapIterator,
+		]{
+			PostStart:   hooks.postStart,
+			GetPool:     hooks.getPool,
+			BuildParser: hooks.buildParser,
+			DerefIter:   hooks.derefIter,
+		},
 		// State
 		Outbox:  outbox,
 		Logger:  loggerQuickswap,

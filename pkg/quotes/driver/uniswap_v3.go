@@ -40,18 +40,23 @@ func newUniswapV3(rpcUrl string, config UniswapV3Config, outbox chan<- quotes_co
 		iuniswap_v3_pool.IUniswapV3PoolSwap,
 		*iuniswap_v3_pool.IUniswapV3PoolSwapIterator,
 	]{
-		// Params
-		DriverType: quotes_common.DriverUniswapV3,
-		RPC:        rpcUrl,
-		AssetsURL:  config.AssetsURL,
-		MappingURL: config.MappingURL,
-		MarketsURL: config.MarketsURL,
-		IdlePeriod: config.IdlePeriod,
-		// Hooks
-		PostStartHook: hooks.postStart,
-		PoolGetter:    hooks.getPool,
-		ParserFactory: hooks.buildParser,
-		IterDeref:     hooks.derefIter,
+		Params: base.DexParams{
+			Type:       quotes_common.DriverUniswapV3,
+			RPC:        rpcUrl,
+			AssetsURL:  config.AssetsURL,
+			MappingURL: config.MappingURL,
+			MarketsURL: config.MarketsURL,
+			IdlePeriod: config.IdlePeriod,
+		},
+		Hooks: base.DexHooks[
+			iuniswap_v3_pool.IUniswapV3PoolSwap,
+			*iuniswap_v3_pool.IUniswapV3PoolSwapIterator,
+		]{
+			PostStart:   hooks.postStart,
+			GetPool:     hooks.getPool,
+			BuildParser: hooks.buildParser,
+			DerefIter:   hooks.derefIter,
+		},
 		// State
 		Outbox:  outbox,
 		Logger:  loggerUniswapV3,

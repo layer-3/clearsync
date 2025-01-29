@@ -39,18 +39,22 @@ func newSectaV3(rpcUrl string, config SectaV3Config, outbox chan<- quotes_common
 		isecta_v3_pool.ISectaV3PoolSwap,
 		*isecta_v3_pool.ISectaV3PoolSwapIterator,
 	]{
-		// Params
-		DriverType: quotes_common.DriverSectaV3,
-		RPC:        rpcUrl,
-		AssetsURL:  config.AssetsURL,
-		MappingURL: config.MappingURL,
-		MarketsURL: config.MarketsURL,
-		IdlePeriod: config.IdlePeriod,
-		// Hooks
-		PostStartHook: hooks.postStart,
-		PoolGetter:    hooks.getPool,
-		ParserFactory: hooks.buildParser,
-		IterDeref:     hooks.derefIter,
+		Params: base.DexParams{
+			Type:       quotes_common.DriverSectaV3,
+			RPC:        rpcUrl,
+			AssetsURL:  config.AssetsURL,
+			MappingURL: config.MappingURL,
+			MarketsURL: config.MarketsURL,
+			IdlePeriod: config.IdlePeriod},
+		Hooks: base.DexHooks[
+			isecta_v3_pool.ISectaV3PoolSwap,
+			*isecta_v3_pool.ISectaV3PoolSwapIterator,
+		]{
+			PostStart:   hooks.postStart,
+			GetPool:     hooks.getPool,
+			BuildParser: hooks.buildParser,
+			DerefIter:   hooks.derefIter,
+		},
 		// State
 		Outbox:  outbox,
 		Logger:  loggerSectaV3,

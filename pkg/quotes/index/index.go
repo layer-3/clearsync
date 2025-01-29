@@ -179,7 +179,6 @@ func (a *indexAggregator) computeAggregatePrice() {
 			event.Market.QuoteUnit = event.Market.ConvertTo
 		}
 		event.Price = indexPrice
-		// event.Source = common.DriverType{"index/" + event.Source.String()} // TODO: refactor Market type to drop Source field
 
 		a.strategy.setLastPrice(event.Market, event.Price)
 

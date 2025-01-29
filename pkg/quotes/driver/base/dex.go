@@ -33,22 +33,23 @@ type DexReader interface {
 	Assets() *safe.Map[string, DexPoolToken]
 }
 
-type DEX[Event any, Iterator dexEventIterator] struct {
-	// Params
-	driverType quotes_common.DriverType
-	rpc        string
-	assetsURL  string
-	mappingURL string
-	marketsURL string
-	idlePeriod time.Duration
+type DexParams struct {
+	Type       quotes_common.DriverType
+	RPC        string
+	AssetsURL  string
+	MappingURL string
+	MarketsURL string
+	IdlePeriod time.Duration
+}
 
-	// Hooks
-	postStart   func(*DEX[Event, Iterator]) error
-	getPool     func(context.Context, quotes_common.Market) ([]*DexPool[Event, Iterator], error)
-	buildParser func(*Event, *DexPool[Event, Iterator]) SwapParser
-	derefIter   func(Iterator) *Event
+type DexHooks[Event any, Iterator dexEventIterator] struct {
+	PostStart   func(*DEX[Event, Iterator]) error
+	GetPool     func(context.Context, quotes_common.Market) ([]*DexPool[Event, Iterator], error)
+	BuildParser func(*Event, *DexPool[Event, Iterator]) SwapParser
+	DerefIter   func(Iterator) *Event
+}
 
-	// State
+type dexState[Event any] struct {
 	once    *quotes_common.Once
 	client  *ethclient.Client
 	outbox  chan<- quotes_common.TradeEvent
@@ -66,25 +67,20 @@ type DEX[Event any, Iterator dexEventIterator] struct {
 	mapping         safe.Map[string, []string]
 }
 
+type DEX[Event any, Iterator dexEventIterator] struct {
+	params DexParams
+	hooks  DexHooks[Event, Iterator]
+	state  dexState[Event]
+}
+
 type dexStream[Event any] struct {
 	sub  event.Subscription
 	sink chan *Event
 }
 
 type DexConfig[Event any, Iterator dexEventIterator] struct {
-	// Params
-	DriverType quotes_common.DriverType
-	RPC        string
-	AssetsURL  string
-	MappingURL string
-	MarketsURL string
-	IdlePeriod time.Duration
-
-	// Hooks
-	PostStartHook func(*DEX[Event, Iterator]) error
-	PoolGetter    func(context.Context, quotes_common.Market) ([]*DexPool[Event, Iterator], error)
-	ParserFactory func(*Event, *DexPool[Event, Iterator]) SwapParser
-	IterDeref     func(Iterator) *Event
+	Params DexParams
+	Hooks  DexHooks[Event, Iterator]
 
 	// State
 	Outbox  chan<- quotes_common.TradeEvent
@@ -96,8 +92,8 @@ type DexConfig[Event any, Iterator dexEventIterator] struct {
 func NewDEX[Event any, Iterator dexEventIterator](
 	config DexConfig[Event, Iterator],
 ) (*DEX[Event, Iterator], error) {
-	if !(strings.HasPrefix(config.RPC, "ws://") || strings.HasPrefix(config.RPC, "wss://")) {
-		return nil, fmt.Errorf("%s (got '%s')", quotes_common.ErrInvalidWsUrl, config.RPC)
+	if !(strings.HasPrefix(config.Params.RPC, "ws://") || strings.HasPrefix(config.Params.RPC, "wss://")) {
+		return nil, fmt.Errorf("%s (got '%s')", quotes_common.ErrInvalidWsUrl, config.Params.RPC)
 	}
 
 	tradesFilter, err := filter.New(config.Filter, nil)
@@ -106,59 +102,48 @@ func NewDEX[Event any, Iterator dexEventIterator](
 	}
 
 	return &DEX[Event, Iterator]{
-		// Params
-		driverType: config.DriverType,
-		rpc:        config.RPC,
-		assetsURL:  config.AssetsURL,
-		mappingURL: config.MappingURL,
-		marketsURL: config.MarketsURL,
-		idlePeriod: config.IdlePeriod,
-
-		// Hooks
-		postStart:   config.PostStartHook,
-		getPool:     config.PoolGetter,
-		buildParser: config.ParserFactory,
-		derefIter:   config.IterDeref,
-
-		// State
-		once:            quotes_common.NewOnce(),
-		client:          nil,
-		outbox:          config.Outbox,
-		logger:          config.Logger,
-		filter:          tradesFilter,
-		history:         config.History,
-		streams:         safe.NewMap[quotes_common.Market, *safe.Map[common.Address, dexStream[Event]]](),
-		assets:          safe.NewMap[string, DexPoolToken](),
-		disabledMarkets: make(map[string]struct{}),
-		mapping:         safe.NewMap[string, []string](),
+		params: config.Params,
+		hooks:  config.Hooks,
+		state: dexState[Event]{
+			once:            quotes_common.NewOnce(),
+			client:          nil,
+			outbox:          config.Outbox,
+			logger:          config.Logger,
+			filter:          tradesFilter,
+			history:         config.History,
+			streams:         safe.NewMap[quotes_common.Market, *safe.Map[common.Address, dexStream[Event]]](),
+			assets:          safe.NewMap[string, DexPoolToken](),
+			disabledMarkets: make(map[string]struct{}),
+			mapping:         safe.NewMap[string, []string](),
+		},
 	}, nil
 }
 
 func (b *DEX[Event, Iterator]) Client() *ethclient.Client {
-	return b.client
+	return b.state.client
 }
 
 func (b *DEX[Event, Iterator]) Assets() *safe.Map[string, DexPoolToken] {
-	return &b.assets
+	return &b.state.assets
 }
 
 func (b *DEX[Event, Iterator]) Type() (quotes_common.DriverType, quotes_common.ExchangeType) {
-	return b.driverType, quotes_common.ExchangeTypeDEX
+	return b.params.Type, quotes_common.ExchangeTypeDEX
 }
 
 func (b *DEX[Event, Iterator]) Start() error {
-	return b.once.Start(func() error {
+	return b.state.once.Start(func() error {
 		// Connect to the RPC provider
 
-		client, err := ethclient.Dial(b.rpc)
+		client, err := ethclient.Dial(b.params.RPC)
 		if err != nil {
 			return fmt.Errorf("failed to connect to the Ethereum client: %w", err)
 		}
-		b.client = client
+		b.state.client = client
 
 		// Fetch assets
 
-		allAssets, err := fetch[map[string][]DexPoolToken](b.assetsURL)
+		allAssets, err := fetch[map[string][]DexPoolToken](b.params.AssetsURL)
 		if err != nil {
 			return fmt.Errorf("failed to fetch assets: %w", err)
 		}
@@ -167,12 +152,12 @@ func (b *DEX[Event, Iterator]) Start() error {
 			return fmt.Errorf("failed to fetch assets: `tokens` key not found")
 		}
 		for _, asset := range tokens {
-			b.assets.Store(strings.ToUpper(asset.Symbol), asset)
+			b.state.assets.Store(strings.ToUpper(asset.Symbol), asset)
 		}
 
 		// Fetch mappings
 
-		mappings, err := fetch[map[string]map[string][]string](b.mappingURL)
+		mappings, err := fetch[map[string]map[string][]string](b.params.MappingURL)
 		if err != nil {
 			return fmt.Errorf("failed to fetch mapping: %w", err)
 		}
@@ -181,12 +166,12 @@ func (b *DEX[Event, Iterator]) Start() error {
 			return fmt.Errorf("failed to fetch mappings: `tokens` key not found")
 		}
 		for key, mapItem := range mapping {
-			b.mapping.Store(key, mapItem)
+			b.state.mapping.Store(key, mapItem)
 		}
 
 		// Fetch markets
 
-		markets, err := fetch[[]marketSymbol](b.marketsURL)
+		markets, err := fetch[[]marketSymbol](b.params.MarketsURL)
 		if err != nil {
 			return fmt.Errorf("failed to fetch markets: %w", err)
 		}
@@ -207,17 +192,17 @@ func (b *DEX[Event, Iterator]) Start() error {
 				return fmt.Errorf("invalid market symbol in markets config: %s", market.Symbol)
 			}
 			market := quotes_common.NewMarket(tokens[0], tokens[1])
-			b.disabledMarkets[market.String()] = struct{}{}
+			b.state.disabledMarkets[market.String()] = struct{}{}
 		}
 
 		// Run post-start hook
-		return b.postStart(b)
+		return b.hooks.PostStart(b)
 	})
 }
 
 func (b *DEX[Event, Iterator]) Stop() error {
-	return b.once.Stop(func() (stopErr error) {
-		b.streams.Range(func(market quotes_common.Market, _ *safe.Map[common.Address, dexStream[Event]]) bool {
+	return b.state.once.Stop(func() (stopErr error) {
+		b.state.streams.Range(func(market quotes_common.Market, _ *safe.Map[common.Address, dexStream[Event]]) bool {
 			if err := b.Unsubscribe(market); err != nil {
 				stopErr = err
 			}
@@ -230,22 +215,22 @@ func (b *DEX[Event, Iterator]) Stop() error {
 func (b *DEX[Event, Iterator]) Subscribe(market quotes_common.Market) error {
 	ctx := context.TODO()
 
-	if !b.once.IsStarted() {
+	if !b.state.once.IsStarted() {
 		return quotes_common.ErrNotStarted
 	}
 
 	// Subscribe to associated markets
 	// mapping map[BTC:[WBTC] ETH:[WETH] USD:[USDT USDC TUSD]]
 	var mappingErr error
-	b.mapping.Range(func(token string, mappings []string) bool {
+	b.state.mapping.Range(func(token string, mappings []string) bool {
 		if token != strings.ToUpper(market.Quote()) {
 			return true
 		}
 
 		for _, mappedToken := range mappings {
 			market := quotes_common.NewMarketWithMainQuote(market.Base(), mappedToken, market.Quote())
-			if err := debounce.Debounce(ctx, b.logger, func(_ context.Context) error { return b.Subscribe(market) }); err != nil {
-				b.logger.Errorf("failed to subscribe to market %s: %s", market, err)
+			if err := debounce.Debounce(ctx, b.state.logger, func(_ context.Context) error { return b.Subscribe(market) }); err != nil {
+				b.state.logger.Errorf("failed to subscribe to market %s: %s", market, err)
 				mappingErr = err
 			}
 		}
@@ -258,17 +243,17 @@ func (b *DEX[Event, Iterator]) Subscribe(market quotes_common.Market) error {
 
 	// Verify the market is available
 
-	if _, ok := b.streams.Load(market); ok {
+	if _, ok := b.state.streams.Load(market); ok {
 		fmt.Println("Market already subscribed", market)
 		return fmt.Errorf("%s: %w", market, quotes_common.ErrAlreadySubbed)
 	}
 
 	// Check if market is enabled for DEXes
-	if _, ok := b.disabledMarkets[market.String()]; ok && CexConfigured.Load() {
+	if _, ok := b.state.disabledMarkets[market.String()]; ok && CexConfigured.Load() {
 		return fmt.Errorf("%w: %s", quotes_common.ErrMarketDisabled, market)
 	}
 
-	pools, err := b.getPool(ctx, market)
+	pools, err := b.hooks.GetPool(ctx, market)
 	if err != nil {
 		return fmt.Errorf("failed to get pool for market %s: %s", market.StringWithoutMain(), err)
 	}
@@ -276,7 +261,7 @@ func (b *DEX[Event, Iterator]) Subscribe(market quotes_common.Market) error {
 	// Publish the last trade for a given pool using historical data
 	// since it may take too long to receive the first swap with DEXes.
 	if trades, err := b.HistoricalData(context.TODO(), market, 12*time.Hour, 1); err == nil && len(trades) > 0 {
-		b.outbox <- trades[0]
+		b.state.outbox <- trades[0]
 	}
 
 	// Subscribe to all pools
@@ -295,7 +280,7 @@ func (b *DEX[Event, Iterator]) subscribePool(pool *DexPool[Event, Iterator]) err
 
 	var sub event.Subscription
 	var err error
-	err = debounce.Debounce(watchCtx, b.logger, func(ctx context.Context) error {
+	err = debounce.Debounce(watchCtx, b.state.logger, func(ctx context.Context) error {
 		opts := &bind.WatchOpts{Context: ctx}
 		sub, err = pool.Contract.WatchSwap(opts, sink, []common.Address{}, []common.Address{})
 		return err
@@ -307,20 +292,20 @@ func (b *DEX[Event, Iterator]) subscribePool(pool *DexPool[Event, Iterator]) err
 	}
 
 	pools := safe.NewMap[common.Address, dexStream[Event]]()
-	stream, _ := b.streams.LoadOrStore(pool.Market, &pools)
+	stream, _ := b.state.streams.LoadOrStore(pool.Market, &pools)
 	stream.Store(pool.Address, dexStream[Event]{sub: sub, sink: sink})
 
-	RecordSubscribed(b.driverType, pool.Market)
+	RecordSubscribed(b.params.Type, pool.Market)
 	go b.watchSwap(cancel, pool, sink, sub)
 	return nil
 }
 
 func (b *DEX[Event, Iterator]) Unsubscribe(market quotes_common.Market) error {
-	if !b.once.IsStarted() {
+	if !b.state.once.IsStarted() {
 		return quotes_common.ErrNotStarted
 	}
 
-	stream, ok := b.streams.Load(market)
+	stream, ok := b.state.streams.Load(market)
 	if !ok {
 		return fmt.Errorf("%s: %w", market, quotes_common.ErrNotSubbed)
 	}
@@ -332,7 +317,7 @@ func (b *DEX[Event, Iterator]) Unsubscribe(market quotes_common.Market) error {
 		}
 	})
 
-	RecordUnsubscribed(b.driverType, market)
+	RecordUnsubscribed(b.params.Type, market)
 	return nil
 }
 
@@ -342,7 +327,7 @@ func (b *DEX[Event, Iterator]) HistoricalData(
 	window time.Duration,
 	limit uint64,
 ) ([]quotes_common.TradeEvent, error) {
-	trades, err := FetchHistoryDataFromExternalSource(ctx, b.history, market, window, limit, b.logger)
+	trades, err := FetchHistoryDataFromExternalSource(ctx, b.state.history, market, window, limit, b.state.logger)
 	if err == nil && len(trades) > 0 {
 		return trades, nil
 	}
@@ -353,14 +338,14 @@ func (b *DEX[Event, Iterator]) HistoricalData(
 	if strings.ToLower(market.Quote()) == "usd" {
 		m = quotes_common.NewMarket(market.Base(), market.Quote()+"t") // convert USD quote to USDT
 	}
-	pools, err := b.getPool(ctx, m)
+	pools, err := b.hooks.GetPool(ctx, m)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pool for market %s: %w", m, err)
 	}
 
 	now := time.Now()
 	from := now.Add(-window)
-	block, err := b.findBlockByTimestamp(ctx, b.client, from)
+	block, err := b.findBlockByTimestamp(ctx, b.state.client, from)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find block by timestamp %d: %w", from.Unix(), err)
 	}
@@ -369,7 +354,7 @@ func (b *DEX[Event, Iterator]) HistoricalData(
 	for i, pool := range pools {
 		var iter Iterator
 
-		err = debounce.Debounce(ctx, b.logger, func(ctx context.Context) error {
+		err = debounce.Debounce(ctx, b.state.logger, func(ctx context.Context) error {
 			opts := &bind.FilterOpts{Start: block.Uint64(), Context: ctx}
 			iter, err = pool.Contract.FilterSwap(opts, nil, nil)
 			return err
@@ -381,14 +366,14 @@ func (b *DEX[Event, Iterator]) HistoricalData(
 
 		// Convert swaps into trade events
 		for iter.Next() {
-			swap := b.derefIter(iter)
+			swap := b.hooks.DerefIter(iter)
 			if swap == nil {
-				b.logger.Debugw("failed to deref iter", "iter", iter, "market", m)
+				b.state.logger.Debugw("failed to deref iter", "iter", iter, "market", m)
 				continue
 			}
 
-			parser := b.buildParser(swap, pools[i])
-			logger := b.logger.With("swap", swap)
+			parser := b.hooks.BuildParser(swap, pools[i])
+			logger := b.state.logger.With("swap", swap)
 			trade, err := parser.ParseSwap(logger)
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse historical swap: %s (`%+v`)", err, swap)
@@ -424,7 +409,7 @@ func (b *DEX[Event, Iterator]) findBlockByTimestamp(
 
 	var header *types.Header
 	var err error
-	err = debounce.Debounce(ctx, b.logger, func(ctx context.Context) error {
+	err = debounce.Debounce(ctx, b.state.logger, func(ctx context.Context) error {
 		header, err = client.HeaderByNumber(ctx, nil)
 		return err
 	})
@@ -440,7 +425,7 @@ func (b *DEX[Event, Iterator]) findBlockByTimestamp(
 		mid := new(big.Int).Add(low, high)
 		mid.Div(mid, big.NewInt(2))
 
-		err = debounce.Debounce(ctx, b.logger, func(ctx context.Context) error {
+		err = debounce.Debounce(ctx, b.state.logger, func(ctx context.Context) error {
 			header, err = client.HeaderByNumber(ctx, mid)
 			return err
 		})
@@ -468,7 +453,7 @@ func (b *DEX[Event, Iterator]) watchSwap(
 	sink chan *Event,
 	sub event.Subscription,
 ) {
-	timer := time.NewTimer(b.idlePeriod)
+	timer := time.NewTimer(b.params.IdlePeriod)
 	defer timer.Stop()
 
 	for {
@@ -476,12 +461,12 @@ func (b *DEX[Event, Iterator]) watchSwap(
 		case err := <-sub.Err():
 			if err == nil {
 				// A nil error indicates intentional unsubscribe
-				b.logger.Infow("intentional unsubscribe received, stopping watch", "market", pool.Market)
+				b.state.logger.Infow("intentional unsubscribe received, stopping watch", "market", pool.Market)
 				return
 			}
 
-			b.logger.Warnw("connection failed, resubscribing", "market", pool.Market, "err", err)
-			if _, ok := b.streams.Load(pool.Market); !ok {
+			b.state.logger.Warnw("connection failed, resubscribing", "market", pool.Market, "err", err)
+			if _, ok := b.state.streams.Load(pool.Market); !ok {
 				return // market was unsubscribed earlier
 			}
 
@@ -493,13 +478,13 @@ func (b *DEX[Event, Iterator]) watchSwap(
 			}
 
 		case swap := <-sink:
-			timer.Reset(b.idlePeriod)
+			timer.Reset(b.params.IdlePeriod)
 
-			parser := b.buildParser(swap, pool)
-			logger := b.logger.With("swap", swap)
+			parser := b.hooks.BuildParser(swap, pool)
+			logger := b.state.logger.With("swap", swap)
 			trade, err := parser.ParseSwap(logger)
 			if err != nil {
-				b.logger.Errorw("failed to parse swap event",
+				b.state.logger.Errorw("failed to parse swap event",
 					"error", err,
 					"market", pool.Market,
 					"swap", swap,
@@ -509,8 +494,8 @@ func (b *DEX[Event, Iterator]) watchSwap(
 				continue
 			}
 
-			skip := !b.filter.Allow(trade)
-			b.logger.Infow("parsed trade",
+			skip := !b.state.filter.Allow(trade)
+			b.state.logger.Infow("parsed trade",
 				"skip", skip,
 				"trade", trade,
 				"swap", swap,
@@ -519,10 +504,10 @@ func (b *DEX[Event, Iterator]) watchSwap(
 			if skip {
 				continue
 			}
-			b.outbox <- trade
+			b.state.outbox <- trade
 
 		case <-timer.C:
-			b.logger.Warnw("market inactivity detected",
+			b.state.logger.Warnw("market inactivity detected",
 				"market", pool.Market,
 				"pool_address", pool.Address,
 				"base_token", pool.BaseToken.Symbol,
@@ -539,16 +524,16 @@ func (b *DEX[Event, Iterator]) watchSwap(
 }
 
 func (b *DEX[Event, Iterator]) resubscribe(pool *DexPool[Event, Iterator]) error {
-	if _, ok := b.streams.Load(pool.Market); !ok {
+	if _, ok := b.state.streams.Load(pool.Market); !ok {
 		return nil // market was unsubscribed earlier
 	}
 
 	if err := b.subscribePool(pool); err != nil {
-		b.logger.Errorw("failed to resubscribe", "market", pool.Market, "error", err)
+		b.state.logger.Errorw("failed to resubscribe", "market", pool.Market, "error", err)
 		return err
 	}
 
-	b.logger.Infow("resubscribed", "market", pool.Market)
+	b.state.logger.Infow("resubscribed", "market", pool.Market)
 	return nil
 }
 

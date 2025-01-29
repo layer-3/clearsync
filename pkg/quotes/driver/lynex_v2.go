@@ -46,19 +46,20 @@ func newLynexV2(rpcUrl string, config LynexV2Config, outbox chan<- quotes_common
 		ilynex_v2_pair.ILynexPairSwap,
 		*ilynex_v2_pair.ILynexPairSwapIterator,
 	]{
-		// Params
-		DriverType: quotes_common.DriverLynexV2,
-		RPC:        rpcUrl,
-		AssetsURL:  config.AssetsURL,
-		MappingURL: config.MappingURL,
-		MarketsURL: config.MarketsURL,
-		IdlePeriod: config.IdlePeriod,
-		// Hooks
-		PostStartHook: hooks.postStart,
-		PoolGetter:    hooks.getPool,
-		ParserFactory: hooks.buildParser,
-		IterDeref:     hooks.derefIter,
-
+		Params: base.DexParams{
+			Type:       quotes_common.DriverLynexV2,
+			RPC:        rpcUrl,
+			AssetsURL:  config.AssetsURL,
+			MappingURL: config.MappingURL,
+			MarketsURL: config.MarketsURL,
+			IdlePeriod: config.IdlePeriod,
+		},
+		Hooks: base.DexHooks[ilynex_v2_pair.ILynexPairSwap, *ilynex_v2_pair.ILynexPairSwapIterator]{
+			PostStart:   hooks.postStart,
+			GetPool:     hooks.getPool,
+			BuildParser: hooks.buildParser,
+			DerefIter:   hooks.derefIter,
+		},
 		// State
 		Outbox:  outbox,
 		Logger:  loggerLynexV2,

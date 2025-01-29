@@ -33,18 +33,23 @@ func newLynexV3(rpcUrl string, config LynexV3Config, outbox chan<- quotes_common
 		ilynex_v3_pool.ILynexV3PoolSwap,
 		*ilynex_v3_pool.ILynexV3PoolSwapIterator,
 	]{
-		// Params
-		DriverType: quotes_common.DriverLynexV3,
-		RPC:        rpcUrl,
-		AssetsURL:  config.AssetsURL,
-		MappingURL: config.MappingURL,
-		MarketsURL: config.MarketsURL,
-		IdlePeriod: config.IdlePeriod,
-		// Hooks
-		PostStartHook: hooks.postStart,
-		PoolGetter:    hooks.getPool,
-		ParserFactory: hooks.buildParser,
-		IterDeref:     hooks.derefIter,
+		Params: base.DexParams{
+			Type:       quotes_common.DriverLynexV3,
+			RPC:        rpcUrl,
+			AssetsURL:  config.AssetsURL,
+			MappingURL: config.MappingURL,
+			MarketsURL: config.MarketsURL,
+			IdlePeriod: config.IdlePeriod,
+		},
+		Hooks: base.DexHooks[
+			ilynex_v3_pool.ILynexV3PoolSwap,
+			*ilynex_v3_pool.ILynexV3PoolSwapIterator,
+		]{
+			PostStart:   hooks.postStart,
+			GetPool:     hooks.getPool,
+			BuildParser: hooks.buildParser,
+			DerefIter:   hooks.derefIter,
+		},
 		// State
 		Outbox:  outbox,
 		Logger:  loggerLynexV3,
