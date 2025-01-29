@@ -28,7 +28,7 @@ type quickswap struct {
 	]
 }
 
-func newQuickswap(rpcUrl string, config QuickswapConfig, outbox chan<- quotes_common.TradeEvent, history base.HistoricalDataDriver) (base.Driver, error) {
+func newQuickswap(rpcUrl string, config QuickswapConfig, outbox chan<- quotes_common.TradeEvent, history quotes_common.HistoricalDataDriver) (quotes_common.Driver, error) {
 	hooks := &quickswap{
 		poolFactoryAddress: common.HexToAddress(config.PoolFactoryAddress),
 	}

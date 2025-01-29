@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/layer-3/clearsync/pkg/quotes/common"
-	"github.com/layer-3/clearsync/pkg/quotes/driver/base"
 )
 
 // New creates an instance of trades streaming driver.
@@ -18,7 +17,7 @@ import (
 //   - outbox: a channel where the driver sends aggregated trades
 //   - external: an optional adapter to fetch historical data from instead of querying RPC provider,
 //     If you don't { have / need } a historical data adapter, pass `nil` here.
-func New(config Config, outbox chan<- common.TradeEvent, external base.HistoricalDataDriver) (base.Driver, error) {
+func New(config Config, outbox chan<- common.TradeEvent, external common.HistoricalDataDriver) (common.Driver, error) {
 	// Remove duplicate drivers
 	seen := make(map[common.DriverType]struct{})
 	var unique []common.DriverType
@@ -40,7 +39,7 @@ func New(config Config, outbox chan<- common.TradeEvent, external base.Historica
 	case common.DriverKraken:
 		return newKraken(config.Kraken, outbox, external)
 	case common.DriverMexc:
-		return newMexc(config.Mexc, outbox, external), nil
+		return newMexc(config.Mexc, outbox, external)
 	case common.DriverOpendax:
 		return newOpendax(config.Opendax, outbox, external)
 	case common.DriverBitfaker:

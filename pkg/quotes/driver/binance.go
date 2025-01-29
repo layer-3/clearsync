@@ -25,7 +25,7 @@ type binance struct {
 	idlePeriod         time.Duration
 	binanceClient      *gobinance.Client
 	filter             filter.Filter
-	history            base.HistoricalDataDriver
+	history            common.HistoricalDataDriver
 	batcherInbox       chan<- common.TradeEvent
 	outbox             chan<- common.TradeEvent
 	streams            safe.Map[common.Market, chan struct{}]
@@ -33,7 +33,12 @@ type binance struct {
 	assets             safe.Map[common.Market, gobinance.Symbol]
 }
 
-func newBinance(config BinanceConfig, outbox chan<- common.TradeEvent, history base.HistoricalDataDriver) (base.Driver, error) {
+func newBinance(config BinanceConfig, outbox chan<- common.TradeEvent, history common.HistoricalDataDriver) (common.Driver, error) {
+	traderFilter, err := filter.New(config.Filter, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create filter: %w", err)
+	}
+
 	batcherInbox := make(chan common.TradeEvent, 1024)
 	go batch(config.BatchPeriod, batcherInbox, outbox)
 
@@ -43,7 +48,7 @@ func newBinance(config BinanceConfig, outbox chan<- common.TradeEvent, history b
 		assetsUpdatePeriod: config.AssetsUpdatePeriod,
 		idlePeriod:         config.IdlePeriod,
 		binanceClient:      gobinance.NewClient("", ""),
-		filter:             filter.New(config.Filter),
+		filter:             traderFilter,
 		history:            history,
 		batcherInbox:       batcherInbox,
 		outbox:             outbox,

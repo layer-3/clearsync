@@ -36,11 +36,11 @@ type kraken struct {
 	availablePairs safe.Map[string, krakenPair]
 	streams        safe.Map[common.Market, struct{}]
 	filter         filter.Filter
-	history        base.HistoricalDataDriver
+	history        common.HistoricalDataDriver
 	outbox         chan<- common.TradeEvent
 }
 
-func newKraken(config KrakenConfig, outbox chan<- common.TradeEvent, history base.HistoricalDataDriver) (base.Driver, error) {
+func newKraken(config KrakenConfig, outbox chan<- common.TradeEvent, history common.HistoricalDataDriver) (common.Driver, error) {
 	limiter := &common.WsDialWrapper{}
 
 	// Set rate limit to 1 req/sec
@@ -52,6 +52,11 @@ func newKraken(config KrakenConfig, outbox chan<- common.TradeEvent, history bas
 		return nil, fmt.Errorf("%s (got '%s')", common.ErrInvalidWsUrl, config.URL)
 	}
 
+	tradesFilter, err := filter.New(config.Filter, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create filter: %w", err)
+	}
+
 	return &kraken{
 		once:           common.NewOnce(),
 		url:            config.URL,
@@ -60,7 +65,7 @@ func newKraken(config KrakenConfig, outbox chan<- common.TradeEvent, history bas
 		availablePairs: safe.NewMap[string, krakenPair](),
 		streams:        safe.NewMap[common.Market, struct{}](),
 
-		filter:  filter.New(config.Filter),
+		filter:  tradesFilter,
 		history: history,
 		outbox:  outbox,
 	}, nil

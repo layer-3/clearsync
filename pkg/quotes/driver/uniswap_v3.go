@@ -35,7 +35,7 @@ type uniswapV3 struct {
 	]
 }
 
-func newUniswapV3(rpcUrl string, config UniswapV3Config, outbox chan<- quotes_common.TradeEvent, history base.HistoricalDataDriver) (base.Driver, error) {
+func newUniswapV3(rpcUrl string, config UniswapV3Config, outbox chan<- quotes_common.TradeEvent, history quotes_common.HistoricalDataDriver) (quotes_common.Driver, error) {
 	hooks := &uniswapV3{
 		factoryAddress: common.HexToAddress(config.FactoryAddress),
 	}

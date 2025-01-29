@@ -25,7 +25,7 @@ type lynexV2 struct {
 	driver base.DexReader
 }
 
-func newLynexV2(rpcUrl string, config LynexV2Config, outbox chan<- quotes_common.TradeEvent, history base.HistoricalDataDriver) (base.Driver, error) {
+func newLynexV2(rpcUrl string, config LynexV2Config, outbox chan<- quotes_common.TradeEvent, history quotes_common.HistoricalDataDriver) (quotes_common.Driver, error) {
 	stablePoolMarkets := make(map[quotes_common.Market]struct{})
 	for _, rawMarket := range config.StablePoolMarkets {
 		market, ok := quotes_common.NewMarketFromString(rawMarket)

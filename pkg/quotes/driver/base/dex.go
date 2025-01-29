@@ -54,7 +54,7 @@ type DEX[Event any, Contract any, EventIterator dexEventIterator] struct {
 	outbox  chan<- quotes_common.TradeEvent
 	logger  *log.ZapEventLogger
 	filter  filter.Filter
-	history HistoricalDataDriver
+	history quotes_common.HistoricalDataDriver
 	// streams maps market to a map of DEX pools.
 	// The value of the map is a pointer to disallow copying of the underlying mutex
 	streams safe.Map[quotes_common.Market, *safe.Map[common.Address, dexStream[Event]]]
@@ -90,7 +90,7 @@ type DexConfig[Event any, Contract any, EventIterator dexEventIterator] struct {
 	Outbox  chan<- quotes_common.TradeEvent
 	Logger  *log.ZapEventLogger
 	Filter  filter.Config
-	History HistoricalDataDriver
+	History quotes_common.HistoricalDataDriver
 }
 
 func NewDEX[Event any, Contract any, EventIterator dexEventIterator](
@@ -98,6 +98,11 @@ func NewDEX[Event any, Contract any, EventIterator dexEventIterator](
 ) (*DEX[Event, Contract, EventIterator], error) {
 	if !(strings.HasPrefix(config.RPC, "ws://") || strings.HasPrefix(config.RPC, "wss://")) {
 		return nil, fmt.Errorf("%s (got '%s')", quotes_common.ErrInvalidWsUrl, config.RPC)
+	}
+
+	tradesFilter, err := filter.New(config.Filter, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create filter: %w", err)
 	}
 
 	return &DEX[Event, Contract, EventIterator]{
@@ -120,7 +125,7 @@ func NewDEX[Event any, Contract any, EventIterator dexEventIterator](
 		client:          nil,
 		outbox:          config.Outbox,
 		logger:          config.Logger,
-		filter:          filter.New(config.Filter),
+		filter:          tradesFilter,
 		history:         config.History,
 		streams:         safe.NewMap[quotes_common.Market, *safe.Map[common.Address, dexStream[Event]]](),
 		assets:          safe.NewMap[string, DexPoolToken](),
@@ -664,7 +669,7 @@ func GetTokens(
 
 func FetchHistoryDataFromExternalSource(
 	ctx context.Context,
-	source HistoricalDataDriver,
+	source quotes_common.HistoricalDataDriver,
 	market quotes_common.Market,
 	window time.Duration,
 	limit uint64,

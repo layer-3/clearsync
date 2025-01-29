@@ -29,7 +29,7 @@ type mexc struct {
 	idlePeriod         time.Duration
 	exchangeInfo       *mexcExchangeInfoService
 	filter             filter.Filter
-	history            base.HistoricalDataDriver
+	history            common.HistoricalDataDriver
 	batcherInbox       chan<- common.TradeEvent
 	outbox             chan<- common.TradeEvent
 	streams            safe.Map[common.Market, chan struct{}]
@@ -109,7 +109,12 @@ func (c *mexcClient) get(ctx context.Context, url string) ([]byte, error) {
 	return io.ReadAll(resp.Body)
 }
 
-func newMexc(config MexcConfig, outbox chan<- common.TradeEvent, history base.HistoricalDataDriver) base.Driver {
+func newMexc(config MexcConfig, outbox chan<- common.TradeEvent, history common.HistoricalDataDriver) (common.Driver, error) {
+	tradesFilter, err := filter.New(config.Filter, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create filter: %w", err)
+	}
+
 	batcherInbox := make(chan common.TradeEvent, 1024)
 	go batchMexc(config.BatchPeriod, batcherInbox, outbox)
 
@@ -118,7 +123,7 @@ func newMexc(config MexcConfig, outbox chan<- common.TradeEvent, history base.Hi
 		usdcToUSDT:         config.USDCtoUSDT,
 		assetsUpdatePeriod: config.AssetsUpdatePeriod,
 		exchangeInfo:       &mexcExchangeInfoService{client: newMexcClient("https://api.mexc.com")},
-		filter:             filter.New(config.Filter),
+		filter:             tradesFilter,
 		history:            history,
 		batcherInbox:       batcherInbox,
 		outbox:             outbox,
@@ -138,7 +143,7 @@ func newMexc(config MexcConfig, outbox chan<- common.TradeEvent, history base.Hi
 		}
 	}()
 
-	return driver
+	return driver, nil
 }
 
 func (b *mexc) Type() (common.DriverType, common.ExchangeType) {

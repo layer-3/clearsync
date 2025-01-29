@@ -28,23 +28,28 @@ type opendax struct {
 
 	outbox         chan<- common.TradeEvent
 	filter         filter.Filter
-	history        base.HistoricalDataDriver
+	history        common.HistoricalDataDriver
 	period         time.Duration
 	reqID          atomic.Uint64
 	streams        safe.Map[common.Market, struct{}]
 	symbolToMarket safe.Map[string, common.Market]
 }
 
-func newOpendax(config OpendaxConfig, outbox chan<- common.TradeEvent, history base.HistoricalDataDriver) (base.Driver, error) {
+func newOpendax(config OpendaxConfig, outbox chan<- common.TradeEvent, history common.HistoricalDataDriver) (common.Driver, error) {
 	if !(strings.HasPrefix(config.URL, "ws://") || strings.HasPrefix(config.URL, "wss://")) {
 		return nil, fmt.Errorf("%s (got '%s')", common.ErrInvalidWsUrl, config.URL)
+	}
+
+	tradesFilter, err := filter.New(config.Filter, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create filter: %w", err)
 	}
 
 	return &opendax{
 		once:           common.NewOnce(),
 		url:            config.URL,
 		outbox:         outbox,
-		filter:         filter.New(config.Filter),
+		filter:         tradesFilter,
 		history:        history,
 		period:         config.ReconnectPeriod * time.Second,
 		reqID:          atomic.Uint64{},

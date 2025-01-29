@@ -28,7 +28,7 @@ type lynexV3 struct {
 	]
 }
 
-func newLynexV3(rpcUrl string, config LynexV3Config, outbox chan<- quotes_common.TradeEvent, history base.HistoricalDataDriver) (base.Driver, error) {
+func newLynexV3(rpcUrl string, config LynexV3Config, outbox chan<- quotes_common.TradeEvent, history quotes_common.HistoricalDataDriver) (quotes_common.Driver, error) {
 	hooks := &lynexV3{
 		factoryAddress: common.HexToAddress(config.FactoryAddress),
 	}

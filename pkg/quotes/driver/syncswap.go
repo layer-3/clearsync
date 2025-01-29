@@ -31,7 +31,7 @@ type syncswap struct {
 	]
 }
 
-func newSyncswap(rpcUrl string, config SyncswapConfig, outbox chan<- quotes_common.TradeEvent, history base.HistoricalDataDriver) (base.Driver, error) {
+func newSyncswap(rpcUrl string, config SyncswapConfig, outbox chan<- quotes_common.TradeEvent, history quotes_common.HistoricalDataDriver) (quotes_common.Driver, error) {
 	stablePoolMarkets := make(map[quotes_common.Market]struct{})
 	logStablePoolMarkets := make([]quotes_common.Market, 0, len(config.StablePoolMarkets))
 	for _, rawMarket := range config.StablePoolMarkets {

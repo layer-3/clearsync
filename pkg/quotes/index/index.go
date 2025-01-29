@@ -29,7 +29,7 @@ type TradeEvent struct {
 }
 
 type Index interface {
-	base.Driver
+	common.Driver
 }
 
 type Config struct {
@@ -52,11 +52,11 @@ type Config struct {
 //   - external: an optional adapter to fetch historical data from instead of querying RPC provider,
 //     If you don't { have / need } a historical data adapter, pass `nil` here.
 func New(
-	drivers []base.Driver,
+	drivers []common.Driver,
 	config Config,
 	outbox chan<- common.TradeEvent,
 	inbox <-chan common.TradeEvent,
-	external base.HistoricalDataDriver,
+	external common.HistoricalDataDriver,
 ) (Index, error) {
 	marketsMapping := config.MarketsMapping
 	if marketsMapping == nil {
@@ -82,13 +82,13 @@ func New(
 }
 
 type indexAggregator struct {
-	drivers        []base.Driver
+	drivers        []common.Driver
 	marketsMapping map[string][]string
 	maxPriceDiff   decimal.Decimal
 	strategy       priceCalculator
 	aggregator     chan TradeEvent
 	outbox         chan<- common.TradeEvent
-	history        base.HistoricalDataDriver
+	history        common.HistoricalDataDriver
 }
 
 type priceCalculator interface {
@@ -99,13 +99,13 @@ type priceCalculator interface {
 
 // newIndexAggregator creates a new instance of IndexAggregator.
 func newIndexAggregator(
-	drivers []base.Driver,
+	drivers []common.Driver,
 	config Config,
 	marketsMapping map[string][]string,
 	strategy priceCalculator,
 	outbox chan<- common.TradeEvent,
 	inbox <-chan common.TradeEvent,
-	history base.HistoricalDataDriver,
+	history common.HistoricalDataDriver,
 ) (Index, error) {
 	aggregator := make(chan TradeEvent, 128)
 	if inbox != nil {

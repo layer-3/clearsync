@@ -1,10 +1,8 @@
-package base
+package common
 
 import (
 	"context"
 	"time"
-
-	"github.com/layer-3/clearsync/pkg/quotes/common"
 )
 
 // Driver is an interface that represents trades adapter.
@@ -13,7 +11,7 @@ import (
 type Driver interface {
 	// Type returns the type of the configured data provider
 	// and the type of the exchange it represents.
-	Type() (common.DriverType, common.ExchangeType)
+	Type() (DriverType, ExchangeType)
 	// Start handles the initialization of the driver.
 	// It should be called before any other method.
 	Start() error
@@ -25,11 +23,11 @@ type Driver interface {
 	// Subscribe establishes a streaming connection to fetch trades for the given market.
 	// The driver sends trades to the outbox channel configured in the constructor function.
 	// If the market is already subscribed, this method returns an error.
-	Subscribe(market common.Market) error
+	Subscribe(market Market) error
 	// Unsubscribe closes the streaming connection for the given market.
 	// After calling this method, the driver won't send any more trades for the given market.
 	// If the market is not subscribed yet, this method returns an error.
-	Unsubscribe(market common.Market) error
+	Unsubscribe(market Market) error
 	HistoricalDataDriver
 }
 
@@ -39,5 +37,5 @@ type HistoricalDataDriver interface {
 	// HistoricalData returns historical trade data for the given market.
 	// The returned data is ordered from oldest to newest.
 	// The window parameter defines the time range to fetch data for starting from now.
-	HistoricalData(ctx context.Context, market common.Market, window time.Duration, limit uint64) ([]common.TradeEvent, error)
+	HistoricalData(ctx context.Context, market Market, window time.Duration, limit uint64) ([]TradeEvent, error)
 }

@@ -11,7 +11,6 @@ import (
 	"github.com/shopspring/decimal"
 
 	"github.com/layer-3/clearsync/pkg/quotes/common"
-	"github.com/layer-3/clearsync/pkg/quotes/driver/base"
 	"github.com/layer-3/clearsync/pkg/quotes/filter"
 )
 
@@ -34,14 +33,19 @@ type bitfaker struct {
 // 	"duckies/usdc": {StartPrice: 0.000004, PriceVolatility: 0.000003, Period: 500 * time.Millisecond},
 // }
 
-func newBitfaker(config BitfakerConfig, outbox chan<- common.TradeEvent) (base.Driver, error) {
+func newBitfaker(config BitfakerConfig, outbox chan<- common.TradeEvent) (common.Driver, error) {
+	tradesFilter, err := filter.New(config.Filter, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create filter: %w", err)
+	}
+
 	return &bitfaker{
 		once:          common.NewOnce(),
 		streamPeriods: make(map[common.Market]time.Duration),
 		streams:       make(map[common.Market]chan struct{}),
 		stopCh:        make(chan struct{}),
 		outbox:        outbox,
-		filter:        filter.New(config.Filter),
+		filter:        tradesFilter,
 		marketConfigs: config.Markets,
 	}, nil
 }

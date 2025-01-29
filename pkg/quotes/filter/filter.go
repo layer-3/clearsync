@@ -9,6 +9,7 @@ type Filter interface {
 type Type string
 
 const (
+	TypeMAD       Type = "mad"
 	TypeSampler   Type = "sampler"
 	TypePriceDiff Type = "price_diff"
 	TypeDisabled  Type = "disabled"
@@ -17,18 +18,26 @@ const (
 type Config struct {
 	Type Type `yaml:"filter_type" env:"TYPE" env-default:"disabled"`
 
-	SamplerFilter   SamplerConfig   `yaml:"sampler" env-prefix:"SAMPLER_"`
-	PriceDiffFilter PriceDiffConfig `yaml:"price_diff" env-prefix:"PRICE_DIFF_"`
+	Sampler   SamplerConfig   `yaml:"sampler" env-prefix:"SAMPLER_"`
+	PriceDiff PriceDiffConfig `yaml:"price_diff" env-prefix:"PRICE_DIFF_"`
+	MAD       MADConfig       `yaml:"mad" env-prefix:"MAD_"`
 }
 
-func New(conf Config) Filter {
+// New creates a new filter based on the provided configuration.
+//
+// Params:
+// - conf: the configuration for the filter
+// - history: the historical data driver. Required for MAD filter, not used for other filters.
+func New(conf Config, history common.HistoricalDataDriver) (Filter, error) {
 	switch conf.Type {
+	case TypeMAD:
+		return newMADFilter(conf.MAD, history)
 	case TypeSampler:
-		return newSamplerFilter(conf.SamplerFilter)
+		return newSamplerFilter(conf.Sampler), nil
 	case TypePriceDiff:
-		return newPriceDiffFilter(conf.PriceDiffFilter)
+		return newPriceDiffFilter(conf.PriceDiff), nil
 	default:
-		return newDisabledFilter()
+		return newDisabledFilter(), nil
 	}
 }
 

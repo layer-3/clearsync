@@ -206,7 +206,8 @@ func TestOpendax_connect(t *testing.T) {
 func TestOpendax_listen(t *testing.T) {
 	t.Parallel()
 
-	disabledFilter := filter.New(filter.Config{Type: filter.TypeDisabled})
+	disabledFilter, err := filter.New(filter.Config{Type: filter.TypeDisabled}, nil)
+	require.NoError(t, err)
 
 	t.Run("Error reading from connection", func(t *testing.T) {
 		t.Parallel()

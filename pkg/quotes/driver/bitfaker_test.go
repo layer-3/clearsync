@@ -14,7 +14,8 @@ import (
 func TestBitfaker_Subscribe(t *testing.T) {
 	t.Parallel()
 
-	disabledFilter := filter.New(filter.Config{Type: filter.TypeDisabled})
+	disabledFilter, err := filter.New(filter.Config{Type: filter.TypeDisabled}, nil)
+	require.NoError(t, err)
 
 	t.Run("Single market", func(t *testing.T) {
 		t.Parallel()
@@ -95,7 +96,8 @@ func TestBitfaker_Subscribe(t *testing.T) {
 func TestBitfaker_Unsubscribe(t *testing.T) {
 	t.Parallel()
 
-	disabledFilter := filter.New(filter.Config{Type: filter.TypeDisabled})
+	disabledFilter, err := filter.New(filter.Config{Type: filter.TypeDisabled}, nil)
+	require.NoError(t, err)
 
 	t.Run("Unsubscribe from multiple markets", func(t *testing.T) {
 		t.Parallel()
@@ -169,7 +171,8 @@ func TestBitfaker_Unsubscribe(t *testing.T) {
 func TestCreateTradeEvent(t *testing.T) {
 	t.Parallel()
 
-	disabledFilter := filter.New(filter.Config{Type: filter.TypeDisabled})
+	disabledFilter, err := filter.New(filter.Config{Type: filter.TypeDisabled}, nil)
+	require.NoError(t, err)
 
 	outbox := make(chan common.TradeEvent)
 	client := bitfaker{
