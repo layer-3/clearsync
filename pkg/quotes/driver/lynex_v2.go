@@ -44,7 +44,6 @@ func newLynexV2(rpcUrl string, config LynexV2Config, outbox chan<- quotes_common
 
 	params := base.DexConfig[
 		ilynex_v2_pair.ILynexPairSwap,
-		ilynex_v2_pair.ILynexPair,
 		*ilynex_v2_pair.ILynexPairSwapIterator,
 	]{
 		// Params
@@ -71,7 +70,6 @@ func newLynexV2(rpcUrl string, config LynexV2Config, outbox chan<- quotes_common
 
 func (l *lynexV2) postStart(driver *base.DEX[
 	ilynex_v2_pair.ILynexPairSwap,
-	ilynex_v2_pair.ILynexPair,
 	*ilynex_v2_pair.ILynexPairSwapIterator,
 ]) (err error) {
 	l.driver = driver

@@ -21,11 +21,7 @@ type sectaV2 struct {
 	factoryAddress common.Address
 	factory        *isecta_v2_factory.ISectaV2Factory
 
-	driver *base.DEX[
-		isecta_v2_pair.ISectaV2PairSwap,
-		isecta_v2_pair.ISectaV2Pair,
-		*isecta_v2_pair.ISectaV2PairSwapIterator,
-	]
+	driver base.DexReader
 }
 
 func newSectaV2(rpcUrl string, config SectaV2Config, outbox chan<- quotes_common.TradeEvent, history quotes_common.HistoricalDataDriver) (quotes_common.Driver, error) {
@@ -35,7 +31,6 @@ func newSectaV2(rpcUrl string, config SectaV2Config, outbox chan<- quotes_common
 
 	params := base.DexConfig[
 		isecta_v2_pair.ISectaV2PairSwap,
-		isecta_v2_pair.ISectaV2Pair,
 		*isecta_v2_pair.ISectaV2PairSwapIterator,
 	]{
 		// Params
@@ -61,7 +56,6 @@ func newSectaV2(rpcUrl string, config SectaV2Config, outbox chan<- quotes_common
 
 func (s *sectaV2) postStart(driver *base.DEX[
 	isecta_v2_pair.ISectaV2PairSwap,
-	isecta_v2_pair.ISectaV2Pair,
 	*isecta_v2_pair.ISectaV2PairSwapIterator,
 ]) (err error) {
 	s.driver = driver

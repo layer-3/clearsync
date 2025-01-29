@@ -21,11 +21,7 @@ type lynexV3 struct {
 	factoryAddress common.Address
 	factory        *ilynex_v3_factory.ILynexV3Factory
 
-	driver *base.DEX[
-		ilynex_v3_pool.ILynexV3PoolSwap,
-		ilynex_v3_pool.ILynexV3Pool,
-		*ilynex_v3_pool.ILynexV3PoolSwapIterator,
-	]
+	driver base.DexReader
 }
 
 func newLynexV3(rpcUrl string, config LynexV3Config, outbox chan<- quotes_common.TradeEvent, history quotes_common.HistoricalDataDriver) (quotes_common.Driver, error) {
@@ -35,7 +31,6 @@ func newLynexV3(rpcUrl string, config LynexV3Config, outbox chan<- quotes_common
 
 	params := base.DexConfig[
 		ilynex_v3_pool.ILynexV3PoolSwap,
-		ilynex_v3_pool.ILynexV3Pool,
 		*ilynex_v3_pool.ILynexV3PoolSwapIterator,
 	]{
 		// Params
@@ -61,7 +56,6 @@ func newLynexV3(rpcUrl string, config LynexV3Config, outbox chan<- quotes_common
 
 func (l *lynexV3) postStart(driver *base.DEX[
 	ilynex_v3_pool.ILynexV3PoolSwap,
-	ilynex_v3_pool.ILynexV3Pool,
 	*ilynex_v3_pool.ILynexV3PoolSwapIterator,
 ]) (err error) {
 	l.driver = driver

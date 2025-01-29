@@ -33,7 +33,7 @@ type DexReader interface {
 	Assets() *safe.Map[string, DexPoolToken]
 }
 
-type DEX[Event any, Contract any, EventIterator dexEventIterator] struct {
+type DEX[Event any, Iterator dexEventIterator] struct {
 	// Params
 	driverType quotes_common.DriverType
 	rpc        string
@@ -43,10 +43,10 @@ type DEX[Event any, Contract any, EventIterator dexEventIterator] struct {
 	idlePeriod time.Duration
 
 	// Hooks
-	postStart   func(*DEX[Event, Contract, EventIterator]) error
-	getPool     func(context.Context, quotes_common.Market) ([]*DexPool[Event, EventIterator], error)
-	buildParser func(*Event, *DexPool[Event, EventIterator]) SwapParser
-	derefIter   func(EventIterator) *Event
+	postStart   func(*DEX[Event, Iterator]) error
+	getPool     func(context.Context, quotes_common.Market) ([]*DexPool[Event, Iterator], error)
+	buildParser func(*Event, *DexPool[Event, Iterator]) SwapParser
+	derefIter   func(Iterator) *Event
 
 	// State
 	once    *quotes_common.Once
@@ -71,7 +71,7 @@ type dexStream[Event any] struct {
 	sink chan *Event
 }
 
-type DexConfig[Event any, Contract any, EventIterator dexEventIterator] struct {
+type DexConfig[Event any, Iterator dexEventIterator] struct {
 	// Params
 	DriverType quotes_common.DriverType
 	RPC        string
@@ -81,10 +81,10 @@ type DexConfig[Event any, Contract any, EventIterator dexEventIterator] struct {
 	IdlePeriod time.Duration
 
 	// Hooks
-	PostStartHook func(*DEX[Event, Contract, EventIterator]) error
-	PoolGetter    func(context.Context, quotes_common.Market) ([]*DexPool[Event, EventIterator], error)
-	ParserFactory func(*Event, *DexPool[Event, EventIterator]) SwapParser
-	IterDeref     func(EventIterator) *Event
+	PostStartHook func(*DEX[Event, Iterator]) error
+	PoolGetter    func(context.Context, quotes_common.Market) ([]*DexPool[Event, Iterator], error)
+	ParserFactory func(*Event, *DexPool[Event, Iterator]) SwapParser
+	IterDeref     func(Iterator) *Event
 
 	// State
 	Outbox  chan<- quotes_common.TradeEvent
@@ -93,9 +93,9 @@ type DexConfig[Event any, Contract any, EventIterator dexEventIterator] struct {
 	History quotes_common.HistoricalDataDriver
 }
 
-func NewDEX[Event any, Contract any, EventIterator dexEventIterator](
-	config DexConfig[Event, Contract, EventIterator],
-) (*DEX[Event, Contract, EventIterator], error) {
+func NewDEX[Event any, Iterator dexEventIterator](
+	config DexConfig[Event, Iterator],
+) (*DEX[Event, Iterator], error) {
 	if !(strings.HasPrefix(config.RPC, "ws://") || strings.HasPrefix(config.RPC, "wss://")) {
 		return nil, fmt.Errorf("%s (got '%s')", quotes_common.ErrInvalidWsUrl, config.RPC)
 	}
@@ -105,7 +105,7 @@ func NewDEX[Event any, Contract any, EventIterator dexEventIterator](
 		return nil, fmt.Errorf("failed to create filter: %w", err)
 	}
 
-	return &DEX[Event, Contract, EventIterator]{
+	return &DEX[Event, Iterator]{
 		// Params
 		driverType: config.DriverType,
 		rpc:        config.RPC,
@@ -134,19 +134,19 @@ func NewDEX[Event any, Contract any, EventIterator dexEventIterator](
 	}, nil
 }
 
-func (b *DEX[Event, Contract, EventIterator]) Client() *ethclient.Client {
+func (b *DEX[Event, Iterator]) Client() *ethclient.Client {
 	return b.client
 }
 
-func (b *DEX[Event, Contract, EventIterator]) Assets() *safe.Map[string, DexPoolToken] {
+func (b *DEX[Event, Iterator]) Assets() *safe.Map[string, DexPoolToken] {
 	return &b.assets
 }
 
-func (b *DEX[Event, Contract, EventIterator]) Type() (quotes_common.DriverType, quotes_common.ExchangeType) {
+func (b *DEX[Event, Iterator]) Type() (quotes_common.DriverType, quotes_common.ExchangeType) {
 	return b.driverType, quotes_common.ExchangeTypeDEX
 }
 
-func (b *DEX[Event, Contract, EventIterator]) Start() error {
+func (b *DEX[Event, Iterator]) Start() error {
 	return b.once.Start(func() error {
 		// Connect to the RPC provider
 
@@ -215,7 +215,7 @@ func (b *DEX[Event, Contract, EventIterator]) Start() error {
 	})
 }
 
-func (b *DEX[Event, Contract, EventIterator]) Stop() error {
+func (b *DEX[Event, Iterator]) Stop() error {
 	return b.once.Stop(func() (stopErr error) {
 		b.streams.Range(func(market quotes_common.Market, _ *safe.Map[common.Address, dexStream[Event]]) bool {
 			if err := b.Unsubscribe(market); err != nil {
@@ -227,7 +227,7 @@ func (b *DEX[Event, Contract, EventIterator]) Stop() error {
 	})
 }
 
-func (b *DEX[Event, Contract, EventIterator]) Subscribe(market quotes_common.Market) error {
+func (b *DEX[Event, Iterator]) Subscribe(market quotes_common.Market) error {
 	ctx := context.TODO()
 
 	if !b.once.IsStarted() {
@@ -289,7 +289,7 @@ func (b *DEX[Event, Contract, EventIterator]) Subscribe(market quotes_common.Mar
 	return nil
 }
 
-func (b *DEX[Event, Contract, EventIterator]) subscribePool(pool *DexPool[Event, EventIterator]) error {
+func (b *DEX[Event, Iterator]) subscribePool(pool *DexPool[Event, Iterator]) error {
 	watchCtx, cancel := context.WithCancel(context.TODO())
 	sink := make(chan *Event, 128)
 
@@ -301,8 +301,8 @@ func (b *DEX[Event, Contract, EventIterator]) subscribePool(pool *DexPool[Event,
 		return err
 	})
 	if err != nil {
-		close(sink)
 		cancel()
+		close(sink)
 		return fmt.Errorf("failed to subscribe to swaps for market %s: %w", pool.Market, err)
 	}
 
@@ -315,7 +315,7 @@ func (b *DEX[Event, Contract, EventIterator]) subscribePool(pool *DexPool[Event,
 	return nil
 }
 
-func (b *DEX[Event, Contract, EventIterator]) Unsubscribe(market quotes_common.Market) error {
+func (b *DEX[Event, Iterator]) Unsubscribe(market quotes_common.Market) error {
 	if !b.once.IsStarted() {
 		return quotes_common.ErrNotStarted
 	}
@@ -336,7 +336,7 @@ func (b *DEX[Event, Contract, EventIterator]) Unsubscribe(market quotes_common.M
 	return nil
 }
 
-func (b *DEX[Event, Contract, EventIterator]) HistoricalData(
+func (b *DEX[Event, Iterator]) HistoricalData(
 	ctx context.Context,
 	market quotes_common.Market,
 	window time.Duration,
@@ -367,7 +367,7 @@ func (b *DEX[Event, Contract, EventIterator]) HistoricalData(
 
 	// Fetch all swaps in the block range
 	for i, pool := range pools {
-		var iter EventIterator
+		var iter Iterator
 
 		err = debounce.Debounce(ctx, b.logger, func(ctx context.Context) error {
 			opts := &bind.FilterOpts{Start: block.Uint64(), Context: ctx}
@@ -412,7 +412,7 @@ func (b *DEX[Event, Contract, EventIterator]) HistoricalData(
 // findBlockByTimestamp performs a binary search over the range of block numbers
 // to find the block whose timestamp is closest to but not greater than the given timestamp.
 // It returns a block number at or immediately before the given timestamp.
-func (b *DEX[Event, Contract, EventIterator]) findBlockByTimestamp(
+func (b *DEX[Event, Iterator]) findBlockByTimestamp(
 	ctx context.Context,
 	client *ethclient.Client,
 	target time.Time,
@@ -462,9 +462,9 @@ func (b *DEX[Event, Contract, EventIterator]) findBlockByTimestamp(
 	return high, nil // The closest block number to the desired timestamp
 }
 
-func (b *DEX[Event, Contract, EventIterator]) watchSwap(
+func (b *DEX[Event, Iterator]) watchSwap(
 	cancel context.CancelFunc,
-	pool *DexPool[Event, EventIterator],
+	pool *DexPool[Event, Iterator],
 	sink chan *Event,
 	sub event.Subscription,
 ) {
@@ -538,7 +538,7 @@ func (b *DEX[Event, Contract, EventIterator]) watchSwap(
 	}
 }
 
-func (b *DEX[Event, Contract, EventIterator]) resubscribe(pool *DexPool[Event, EventIterator]) error {
+func (b *DEX[Event, Iterator]) resubscribe(pool *DexPool[Event, Iterator]) error {
 	if _, ok := b.streams.Load(pool.Market); !ok {
 		return nil // market was unsubscribed earlier
 	}
@@ -595,8 +595,8 @@ func (s *marketSymbol) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type DexPool[Event any, EventIterator dexEventIterator] struct {
-	Contract   dexEvent[Event, EventIterator]
+type DexPool[Event any, Iterator dexEventIterator] struct {
+	Contract   dexEvent[Event, Iterator]
 	Address    common.Address // not used in code but is useful for logging
 	BaseToken  DexPoolToken
 	QuoteToken DexPoolToken
@@ -611,7 +611,7 @@ type DexPool[Event any, EventIterator dexEventIterator] struct {
 //
 // Event: A generic type representing the specific event structure.
 // EventIterator: A generic type representing the iterator for filtering events.
-type dexEvent[Event any, EventIterator dexEventIterator] interface {
+type dexEvent[Event any, Iterator dexEventIterator] interface {
 	// WatchSwap subscribes to the "Swap" event, streaming events to the provided sink channel.
 	// Parameters:
 	// - opts: Options for configuring the subscription, such as context and block start/end.
@@ -629,7 +629,7 @@ type dexEvent[Event any, EventIterator dexEventIterator] interface {
 	// Returns:
 	// - An iterator for accessing the matching events.
 	// - An error, if the filtering fails.
-	FilterSwap(opts *bind.FilterOpts, sender, to []common.Address) (EventIterator, error)
+	FilterSwap(opts *bind.FilterOpts, sender, to []common.Address) (Iterator, error)
 }
 
 type dexEventIterator interface {

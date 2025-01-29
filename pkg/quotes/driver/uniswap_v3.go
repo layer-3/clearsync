@@ -28,11 +28,7 @@ type uniswapV3 struct {
 	factoryAddress common.Address
 	factory        *iuniswap_v3_factory.IUniswapV3Factory
 
-	driver *base.DEX[
-		iuniswap_v3_pool.IUniswapV3PoolSwap,
-		iuniswap_v3_pool.IUniswapV3Pool,
-		*iuniswap_v3_pool.IUniswapV3PoolSwapIterator,
-	]
+	driver base.DexReader
 }
 
 func newUniswapV3(rpcUrl string, config UniswapV3Config, outbox chan<- quotes_common.TradeEvent, history quotes_common.HistoricalDataDriver) (quotes_common.Driver, error) {
@@ -42,7 +38,6 @@ func newUniswapV3(rpcUrl string, config UniswapV3Config, outbox chan<- quotes_co
 
 	params := base.DexConfig[
 		iuniswap_v3_pool.IUniswapV3PoolSwap,
-		iuniswap_v3_pool.IUniswapV3Pool,
 		*iuniswap_v3_pool.IUniswapV3PoolSwapIterator,
 	]{
 		// Params
@@ -68,7 +63,6 @@ func newUniswapV3(rpcUrl string, config UniswapV3Config, outbox chan<- quotes_co
 
 func (u *uniswapV3) postStart(driver *base.DEX[
 	iuniswap_v3_pool.IUniswapV3PoolSwap,
-	iuniswap_v3_pool.IUniswapV3Pool,
 	*iuniswap_v3_pool.IUniswapV3PoolSwapIterator,
 ]) (err error) {
 	u.driver = driver

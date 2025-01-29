@@ -24,11 +24,7 @@ type syncswap struct {
 	classicFactory            *isyncswap_factory.ISyncSwapFactory
 	stableFactory             *isyncswap_factory.ISyncSwapFactory
 
-	driver *base.DEX[
-		isyncswap_pool.ISyncSwapPoolSwap,
-		isyncswap_pool.ISyncSwapPool,
-		*isyncswap_pool.ISyncSwapPoolSwapIterator,
-	]
+	driver base.DexReader
 }
 
 func newSyncswap(rpcUrl string, config SyncswapConfig, outbox chan<- quotes_common.TradeEvent, history quotes_common.HistoricalDataDriver) (quotes_common.Driver, error) {
@@ -53,7 +49,6 @@ func newSyncswap(rpcUrl string, config SyncswapConfig, outbox chan<- quotes_comm
 
 	params := base.DexConfig[
 		isyncswap_pool.ISyncSwapPoolSwap,
-		isyncswap_pool.ISyncSwapPool,
 		*isyncswap_pool.ISyncSwapPoolSwapIterator,
 	]{
 		// Params
@@ -79,7 +74,6 @@ func newSyncswap(rpcUrl string, config SyncswapConfig, outbox chan<- quotes_comm
 
 func (s *syncswap) postStart(driver *base.DEX[
 	isyncswap_pool.ISyncSwapPoolSwap,
-	isyncswap_pool.ISyncSwapPool,
 	*isyncswap_pool.ISyncSwapPoolSwapIterator,
 ]) (err error) {
 	s.driver = driver

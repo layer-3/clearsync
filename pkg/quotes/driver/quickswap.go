@@ -21,11 +21,7 @@ type quickswap struct {
 	poolFactoryAddress common.Address
 	factory            *quickswap_v3_factory.IQuickswapV3Factory
 
-	driver *base.DEX[
-		quickswap_v3_pool.IQuickswapV3PoolSwap,
-		quickswap_v3_pool.IQuickswapV3Pool,
-		*quickswap_v3_pool.IQuickswapV3PoolSwapIterator,
-	]
+	driver base.DexReader
 }
 
 func newQuickswap(rpcUrl string, config QuickswapConfig, outbox chan<- quotes_common.TradeEvent, history quotes_common.HistoricalDataDriver) (quotes_common.Driver, error) {
@@ -35,7 +31,6 @@ func newQuickswap(rpcUrl string, config QuickswapConfig, outbox chan<- quotes_co
 
 	params := base.DexConfig[
 		quickswap_v3_pool.IQuickswapV3PoolSwap,
-		quickswap_v3_pool.IQuickswapV3Pool,
 		*quickswap_v3_pool.IQuickswapV3PoolSwapIterator,
 	]{
 		// Params
@@ -61,7 +56,6 @@ func newQuickswap(rpcUrl string, config QuickswapConfig, outbox chan<- quotes_co
 
 func (s *quickswap) postStart(driver *base.DEX[
 	quickswap_v3_pool.IQuickswapV3PoolSwap,
-	quickswap_v3_pool.IQuickswapV3Pool,
 	*quickswap_v3_pool.IQuickswapV3PoolSwapIterator,
 ]) (err error) {
 	s.driver = driver
