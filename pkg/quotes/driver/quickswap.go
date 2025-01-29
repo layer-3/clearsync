@@ -38,9 +38,9 @@ func newQuickswap(rpcUrl string, config QuickswapConfig, outbox chan<- quotes_co
 			IdlePeriod: config.IdlePeriod,
 		},
 		Hooks: base.DexHooks[quickswapV3Event, quickswapV3Iterator]{
-			GetPool:     hooks.getPool,
-			BuildParser: hooks.buildParser,
-			DerefIter:   hooks.derefIter,
+			BuildPoolContracts: hooks.buildPoolContracts,
+			BuildParser:        hooks.buildParser,
+			DerefIter:          hooks.derefIter,
 		},
 		// State
 		Outbox:  outbox,
@@ -64,10 +64,10 @@ func newQuickswap(rpcUrl string, config QuickswapConfig, outbox chan<- quotes_co
 	return driver, nil
 }
 
-func (s *quickswap) getPool(ctx context.Context, market quotes_common.Market) ([]*base.DexPool[quickswapV3Event, quickswapV3Iterator], error) {
+func (s *quickswap) buildPoolContracts(ctx context.Context, market quotes_common.Market) ([]common.Address, []base.DexEventWatcher[quickswapV3Event, quickswapV3Iterator], error) {
 	baseToken, quoteToken, err := base.GetTokens(s.driver.Assets(), market, loggerQuickswap)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get tokens: %w", err)
+		return nil, nil, fmt.Errorf("failed to get tokens: %w", err)
 	}
 
 	var poolAddress common.Address
@@ -76,55 +76,21 @@ func (s *quickswap) getPool(ctx context.Context, market quotes_common.Market) ([
 		return err
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to get pool address: %w", err)
+		return nil, nil, fmt.Errorf("failed to get pool address: %w", err)
 	}
 
 	zeroAddress := common.HexToAddress("0x0")
 	if poolAddress == zeroAddress {
-		return nil, fmt.Errorf("pool for market %s does not exist", market)
+		return nil, nil, fmt.Errorf("pool for market %s does not exist", market)
 	}
 	loggerQuickswap.Infow("found pool", "market", market, "address", poolAddress)
 
 	poolContract, err := quickswap_v3_pool.NewIQuickswapV3Pool(poolAddress, s.driver.Client())
 	if err != nil {
-		return nil, fmt.Errorf("failed to build Quickswap pool contract: %w", err)
+		return nil, nil, fmt.Errorf("failed to build Quickswap pool contract: %w", err)
 	}
 
-	var basePoolToken common.Address
-	err = debounce.Debounce(ctx, loggerQuickswap, func(ctx context.Context) error {
-		basePoolToken, err = poolContract.Token0(&bind.CallOpts{Context: ctx})
-		return err
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get base token address for Quickswap pool: %w", err)
-	}
-
-	var quotePoolToken common.Address
-	err = debounce.Debounce(ctx, loggerQuickswap, func(ctx context.Context) error {
-		quotePoolToken, err = poolContract.Token1(&bind.CallOpts{Context: ctx})
-		return err
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get quote token address for Quickswap pool: %w", err)
-	}
-
-	isDirect := baseToken.Address == basePoolToken && quoteToken.Address == quotePoolToken
-	isReversed := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
-
-	pools := []*base.DexPool[quickswapV3Event, quickswapV3Iterator]{{
-		Contract:   poolContract,
-		Address:    poolAddress,
-		BaseToken:  baseToken,
-		QuoteToken: quoteToken,
-		Market:     market,
-		Reversed:   isReversed,
-	}}
-
-	// Return pools if the token addresses match direct or reversed configurations
-	if isDirect || isReversed {
-		return pools, nil
-	}
-	return nil, fmt.Errorf("failed to build Quickswap pool for market %s: %w", market, err)
+	return []common.Address{poolAddress}, []base.DexEventWatcher[quickswapV3Event, quickswapV3Iterator]{poolContract}, nil
 }
 
 func (s *quickswap) buildParser(

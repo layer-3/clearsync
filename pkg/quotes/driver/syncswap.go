@@ -56,9 +56,9 @@ func newSyncswap(rpcUrl string, config SyncswapConfig, outbox chan<- quotes_comm
 			IdlePeriod: config.IdlePeriod,
 		},
 		Hooks: base.DexHooks[syncswapEvent, syncswapIterator]{
-			GetPool:     hooks.getPool,
-			BuildParser: hooks.buildParser,
-			DerefIter:   hooks.derefIter,
+			BuildPoolContracts: hooks.buildPoolContracts,
+			BuildParser:        hooks.buildParser,
+			DerefIter:          hooks.derefIter,
 		},
 		// State
 		Outbox:  outbox,
@@ -88,10 +88,10 @@ func newSyncswap(rpcUrl string, config SyncswapConfig, outbox chan<- quotes_comm
 	return driver, nil
 }
 
-func (s *syncswap) getPool(ctx context.Context, market quotes_common.Market) ([]*base.DexPool[syncswapEvent, syncswapIterator], error) {
+func (s *syncswap) buildPoolContracts(ctx context.Context, market quotes_common.Market) ([]common.Address, []base.DexEventWatcher[syncswapEvent, syncswapIterator], error) {
 	baseToken, quoteToken, err := base.GetTokens(s.driver.Assets(), market, loggerSyncswap)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get tokens: %w", err)
+		return nil, nil, fmt.Errorf("failed to get tokens: %w", err)
 	}
 
 	var poolAddress common.Address
@@ -111,54 +111,21 @@ func (s *syncswap) getPool(ctx context.Context, market quotes_common.Market) ([]
 		loggerSyncswap.Infow("found classic pool", "market", market, "address", poolAddress)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("failed to get classic pool address: %w", err)
+		return nil, nil, fmt.Errorf("failed to get classic pool address: %w", err)
 	}
 
 	zeroAddress := common.HexToAddress("0x0")
 	if poolAddress == zeroAddress {
-		return nil, fmt.Errorf("classic pool for market %s does not exist", market)
+		return nil, nil, fmt.Errorf("classic pool for market %s does not exist", market)
 	}
 	loggerSyncswap.Infow("pool found", "market", market, "address", poolAddress)
 
 	poolContract, err := isyncswap_pool.NewISyncSwapPool(poolAddress, s.driver.Client())
 	if err != nil {
-		return nil, fmt.Errorf("failed to build Syncswap pool contract: %w", err)
+		return nil, nil, fmt.Errorf("failed to build Syncswap pool contract: %w", err)
 	}
 
-	var basePoolToken common.Address
-	err = debounce.Debounce(ctx, loggerSyncswap, func(ctx context.Context) error {
-		basePoolToken, err = poolContract.Token0(&bind.CallOpts{Context: ctx})
-		return err
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get base token address for Syncswap pool: %w", err)
-	}
-
-	var quotePoolToken common.Address
-	err = debounce.Debounce(ctx, loggerSyncswap, func(ctx context.Context) error {
-		quotePoolToken, err = poolContract.Token1(&bind.CallOpts{Context: ctx})
-		return err
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get quote token address for Syncswap pool: %w", err)
-	}
-
-	isDirect := baseToken.Address == basePoolToken && quoteToken.Address == quotePoolToken
-	isReversed := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
-	pools := []*base.DexPool[syncswapEvent, syncswapIterator]{{
-		Contract:   poolContract,
-		Address:    poolAddress,
-		BaseToken:  baseToken,
-		QuoteToken: quoteToken,
-		Market:     market,
-		Reversed:   isReversed,
-	}}
-
-	// Return pools if the token addresses match direct or reversed configurations
-	if isDirect || isReversed {
-		return pools, nil
-	}
-	return nil, fmt.Errorf("failed to build Syncswap pool for market %s: %w", market, err)
+	return []common.Address{poolAddress}, []base.DexEventWatcher[syncswapEvent, syncswapIterator]{poolContract}, nil
 }
 
 func (s *syncswap) buildParser(

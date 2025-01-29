@@ -41,9 +41,9 @@ func newLynexV3(rpcUrl string, config LynexV3Config, outbox chan<- quotes_common
 			lynexV3Event,
 			lynexV3Iterator,
 		]{
-			GetPool:     hooks.getPool,
-			BuildParser: hooks.buildParser,
-			DerefIter:   hooks.derefIter,
+			BuildPoolContracts: hooks.buildPoolContracts,
+			BuildParser:        hooks.buildParser,
+			DerefIter:          hooks.derefIter,
 		},
 		// State
 		Outbox:  outbox,
@@ -67,10 +67,10 @@ func newLynexV3(rpcUrl string, config LynexV3Config, outbox chan<- quotes_common
 	return driver, nil
 }
 
-func (l *lynexV3) getPool(ctx context.Context, market quotes_common.Market) ([]*base.DexPool[lynexV3Event, lynexV3Iterator], error) {
+func (l *lynexV3) buildPoolContracts(ctx context.Context, market quotes_common.Market) ([]common.Address, []base.DexEventWatcher[lynexV3Event, lynexV3Iterator], error) {
 	baseToken, quoteToken, err := base.GetTokens(l.driver.Assets(), market, loggerLynexV3)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get tokens: %w", err)
+		return nil, nil, fmt.Errorf("failed to get tokens: %w", err)
 	}
 
 	var poolAddress common.Address
@@ -80,12 +80,12 @@ func (l *lynexV3) getPool(ctx context.Context, market quotes_common.Market) ([]*
 		return err
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to get pool address: %w", err)
+		return nil, nil, fmt.Errorf("failed to get pool address: %w", err)
 	}
 
 	zeroAddress := common.HexToAddress("0x0")
 	if poolAddress == zeroAddress {
-		return nil, fmt.Errorf("pool for market %s does not exist", market)
+		return nil, nil, fmt.Errorf("pool for market %s does not exist", market)
 	}
 	loggerLynexV3.Infow("found pool",
 		"market", market,
@@ -93,43 +93,10 @@ func (l *lynexV3) getPool(ctx context.Context, market quotes_common.Market) ([]*
 
 	poolContract, err := ilynex_v3_pool.NewILynexV3Pool(poolAddress, l.driver.Client())
 	if err != nil {
-		return nil, fmt.Errorf("failed to build Lynex v3 pool contract: %w", err)
+		return nil, nil, fmt.Errorf("failed to build Lynex v3 pool contract: %w", err)
 	}
 
-	var basePoolToken common.Address
-	err = debounce.Debounce(ctx, loggerLynexV3, func(ctx context.Context) error {
-		basePoolToken, err = poolContract.Token0(&bind.CallOpts{Context: ctx})
-		return err
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get base token address for Lynex v3 pool: %w", err)
-	}
-
-	var quotePoolToken common.Address
-	err = debounce.Debounce(ctx, loggerLynexV3, func(ctx context.Context) error {
-		quotePoolToken, err = poolContract.Token1(&bind.CallOpts{Context: ctx})
-		return err
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get quote token address for Lynex v3 pool: %w", err)
-	}
-
-	isDirect := baseToken.Address == basePoolToken && quoteToken.Address == quotePoolToken
-	isReversed := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
-	pools := []*base.DexPool[lynexV3Event, lynexV3Iterator]{{
-		Contract:   poolContract,
-		Address:    poolAddress,
-		BaseToken:  baseToken,
-		QuoteToken: quoteToken,
-		Market:     market,
-		Reversed:   isReversed,
-	}}
-
-	// Return pools if the token addresses match direct or reversed configurations
-	if isDirect || isReversed {
-		return pools, nil
-	}
-	return nil, fmt.Errorf("failed to build Lynex v3 pool for market %s: %w", market, err)
+	return []common.Address{poolAddress}, []base.DexEventWatcher[lynexV3Event, lynexV3Iterator]{poolContract}, nil
 }
 
 func (l *lynexV3) buildParser(

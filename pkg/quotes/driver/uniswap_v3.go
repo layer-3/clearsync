@@ -45,9 +45,9 @@ func newUniswapV3(rpcUrl string, config UniswapV3Config, outbox chan<- quotes_co
 			IdlePeriod: config.IdlePeriod,
 		},
 		Hooks: base.DexHooks[uniswapV3Event, uniswapV3Iterator]{
-			GetPool:     hooks.getPool,
-			BuildParser: hooks.buildParser,
-			DerefIter:   hooks.derefIter,
+			BuildPoolContracts: hooks.buildPoolContracts,
+			BuildParser:        hooks.buildParser,
+			DerefIter:          hooks.derefIter,
 		},
 		// State
 		Outbox:  outbox,
@@ -71,10 +71,10 @@ func newUniswapV3(rpcUrl string, config UniswapV3Config, outbox chan<- quotes_co
 	return driver, nil
 }
 
-func (u *uniswapV3) getPool(ctx context.Context, market quotes_common.Market) ([]*base.DexPool[uniswapV3Event, uniswapV3Iterator], error) {
+func (u *uniswapV3) buildPoolContracts(ctx context.Context, market quotes_common.Market) ([]common.Address, []base.DexEventWatcher[uniswapV3Event, uniswapV3Iterator], error) {
 	baseToken, quoteToken, err := base.GetTokens(u.driver.Assets(), market, loggerUniswapV3)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if strings.ToLower(baseToken.Symbol) == "eth" {
@@ -90,7 +90,7 @@ func (u *uniswapV3) getPool(ctx context.Context, market quotes_common.Market) ([
 			return err
 		})
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		if poolAddress != zeroAddress {
@@ -102,48 +102,16 @@ func (u *uniswapV3) getPool(ctx context.Context, market quotes_common.Market) ([
 		}
 	}
 
-	pools := make([]*base.DexPool[uniswapV3Event, uniswapV3Iterator], 0, len(poolAddresses))
+	poolContracts := make([]base.DexEventWatcher[uniswapV3Event, uniswapV3Iterator], 0, len(poolAddresses))
 	for _, poolAddress := range poolAddresses {
 		poolContract, err := iuniswap_v3_pool.NewIUniswapV3Pool(poolAddress, u.driver.Client())
 		if err != nil {
-			return nil, fmt.Errorf("failed to build Uniswap v3 pool contract: %w", err)
+			return nil, nil, fmt.Errorf("failed to build Uniswap v3 pool contract: %w", err)
 		}
-
-		var basePoolToken common.Address
-		err = debounce.Debounce(ctx, loggerUniswapV3, func(ctx context.Context) error {
-			basePoolToken, err = poolContract.Token0(&bind.CallOpts{Context: ctx})
-			return err
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to get base token address for Uniswap v3 pool: %w", err)
-		}
-
-		var quotePoolToken common.Address
-		err = debounce.Debounce(ctx, loggerUniswapV3, func(ctx context.Context) error {
-			quotePoolToken, err = poolContract.Token1(&bind.CallOpts{Context: ctx})
-			return err
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to get quote token address for Uniswap v3 pool: %w", err)
-		}
-
-		isReversed := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
-		pool := &base.DexPool[uniswapV3Event, uniswapV3Iterator]{
-			Contract:   poolContract,
-			Address:    poolAddress,
-			BaseToken:  baseToken,
-			QuoteToken: quoteToken,
-			Market:     market,
-			Reversed:   isReversed,
-		}
-
-		// Append pool if the token addresses match direct or reversed configurations
-		if (baseToken.Address == basePoolToken && quoteToken.Address == quotePoolToken) || isReversed {
-			pools = append(pools, pool)
-		}
+		poolContracts = append(poolContracts, poolContract)
 	}
 
-	return pools, nil
+	return poolAddresses, poolContracts, nil
 }
 
 func (u *uniswapV3) buildParser(

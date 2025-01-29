@@ -37,9 +37,9 @@ func newSectaV2(rpcUrl string, config SectaV2Config, outbox chan<- quotes_common
 			MarketsURL: config.MarketsURL,
 			IdlePeriod: config.IdlePeriod},
 		Hooks: base.DexHooks[sectaV2Event, sectaV2Iterator]{
-			GetPool:     hooks.getPool,
-			BuildParser: hooks.buildParser,
-			DerefIter:   hooks.derefIter,
+			BuildPoolContracts: hooks.buildPoolContracts,
+			BuildParser:        hooks.buildParser,
+			DerefIter:          hooks.derefIter,
 		},
 		// State
 		Outbox:  outbox,
@@ -62,10 +62,10 @@ func newSectaV2(rpcUrl string, config SectaV2Config, outbox chan<- quotes_common
 	return driver, nil
 }
 
-func (s *sectaV2) getPool(ctx context.Context, market quotes_common.Market) ([]*base.DexPool[sectaV2Event, sectaV2Iterator], error) {
+func (s *sectaV2) buildPoolContracts(ctx context.Context, market quotes_common.Market) ([]common.Address, []base.DexEventWatcher[sectaV2Event, sectaV2Iterator], error) {
 	baseToken, quoteToken, err := base.GetTokens(s.driver.Assets(), market, loggerSectaV2)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get tokens: %w", err)
+		return nil, nil, fmt.Errorf("failed to get tokens: %w", err)
 	}
 
 	var poolAddress common.Address
@@ -74,54 +74,21 @@ func (s *sectaV2) getPool(ctx context.Context, market quotes_common.Market) ([]*
 		return err
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to get pool address: %w", err)
+		return nil, nil, fmt.Errorf("failed to get pool address: %w", err)
 	}
 
 	zeroAddress := common.HexToAddress("0x0")
 	if poolAddress == zeroAddress {
-		return nil, fmt.Errorf("pool for market %s does not exist", market.StringWithoutMain())
+		return nil, nil, fmt.Errorf("pool for market %s does not exist", market.StringWithoutMain())
 	}
 	loggerSectaV2.Infow("pool found", "market", market.StringWithoutMain(), "address", poolAddress)
 
 	poolContract, err := isecta_v2_pair.NewISectaV2Pair(poolAddress, s.driver.Client())
 	if err != nil {
-		return nil, fmt.Errorf("failed to instantiate a Secta v2 pool contract: %w", err)
+		return nil, nil, fmt.Errorf("failed to instantiate a Secta v2 pool contract: %w", err)
 	}
 
-	var basePoolToken common.Address
-	err = debounce.Debounce(ctx, loggerSectaV2, func(ctx context.Context) error {
-		basePoolToken, err = poolContract.Token0(&bind.CallOpts{Context: ctx})
-		return err
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get base token address for Secta v2 pool: %w", err)
-	}
-
-	var quotePoolToken common.Address
-	err = debounce.Debounce(ctx, loggerSectaV2, func(ctx context.Context) error {
-		quotePoolToken, err = poolContract.Token1(nil)
-		return err
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get quote token address for Secta v2 pool: %w", err)
-	}
-
-	isDirect := baseToken.Address == basePoolToken && quoteToken.Address == quotePoolToken
-	isReversed := quoteToken.Address == basePoolToken && baseToken.Address == quotePoolToken
-	pools := []*base.DexPool[sectaV2Event, sectaV2Iterator]{{
-		Contract:   poolContract,
-		Address:    poolAddress,
-		BaseToken:  baseToken,
-		QuoteToken: quoteToken,
-		Market:     market,
-		Reversed:   isReversed,
-	}}
-
-	// Return pools if the token addresses match direct or reversed configurations
-	if isDirect || isReversed {
-		return pools, nil
-	}
-	return nil, fmt.Errorf("failed to build Secta v2 pool for market %s: %w", market, err)
+	return []common.Address{poolAddress}, []base.DexEventWatcher[sectaV2Event, sectaV2Iterator]{poolContract}, nil
 }
 
 func (s *sectaV2) buildParser(
