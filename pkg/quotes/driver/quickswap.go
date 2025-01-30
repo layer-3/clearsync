@@ -1,0 +1,110 @@
+package driver
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ipfs/go-log/v2"
+	"github.com/pkg/errors"
+
+	"github.com/layer-3/clearsync/pkg/artifacts/quickswap_v3_factory"
+	"github.com/layer-3/clearsync/pkg/artifacts/quickswap_v3_pool"
+	"github.com/layer-3/clearsync/pkg/debounce"
+	quotes_common "github.com/layer-3/clearsync/pkg/quotes/common"
+	"github.com/layer-3/clearsync/pkg/quotes/driver/base"
+)
+
+var loggerQuickswap = log.Logger("quickswap")
+
+type quickswapV3Event = quickswap_v3_pool.IQuickswapV3PoolSwap
+type quickswapV3Iterator = *quickswap_v3_pool.IQuickswapV3PoolSwapIterator
+
+type quickswap struct {
+	factory *quickswap_v3_factory.IQuickswapV3Factory
+	driver  base.DexReader
+}
+
+func newQuickswap(rpcUrl string, config QuickswapConfig, outbox chan<- quotes_common.TradeEvent, history quotes_common.HistoricalDataDriver) (quotes_common.Driver, error) {
+	var hooks quickswap
+	params := base.DexConfig[quickswapV3Event, quickswapV3Iterator]{
+		Params: base.DexParams{
+			Type:       quotes_common.DriverQuickswap,
+			RPC:        rpcUrl,
+			AssetsURL:  config.AssetsURL,
+			MappingURL: config.MappingURL,
+			MarketsURL: config.MarketsURL,
+			IdlePeriod: config.IdlePeriod,
+		},
+		Hooks: base.DexHooks[quickswapV3Event, quickswapV3Iterator]{
+			BuildPoolContracts: hooks.buildPoolContracts,
+			BuildParser:        hooks.buildParser,
+			DerefIter:          hooks.derefIter,
+		},
+		// State
+		Outbox:  outbox,
+		Logger:  loggerQuickswap,
+		Filter:  config.Filter,
+		History: history,
+	}
+	driver, err := base.NewDEX(params)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create Quickswap driver")
+	}
+	hooks.driver = driver // wire up the driver
+
+	// Check addresses here: https://quickswap.gitbook.io/quickswap/smart-contracts/smart-contracts
+	factory, err := quickswap_v3_factory.NewIQuickswapV3Factory(common.HexToAddress(config.PoolFactoryAddress), driver.Client())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to instantiate a Quickswap factory contract")
+	}
+	hooks.factory = factory
+
+	return driver, nil
+}
+
+func (s *quickswap) buildPoolContracts(ctx context.Context, market quotes_common.Market) ([]common.Address, []base.DexEventWatcher[quickswapV3Event, quickswapV3Iterator], error) {
+	baseToken, quoteToken, err := base.GetTokens(s.driver.Assets(), market, loggerQuickswap)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get tokens: %w", err)
+	}
+
+	var poolAddress common.Address
+	err = debounce.Debounce(ctx, loggerQuickswap, func(ctx context.Context) error {
+		poolAddress, err = s.factory.PoolByPair(&bind.CallOpts{Context: ctx}, baseToken.Address, quoteToken.Address)
+		return err
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get pool address: %w", err)
+	}
+
+	zeroAddress := common.HexToAddress("0x0")
+	if poolAddress == zeroAddress {
+		return nil, nil, fmt.Errorf("pool for market %s does not exist", market)
+	}
+	loggerQuickswap.Infow("found pool", "market", market, "address", poolAddress)
+
+	poolContract, err := quickswap_v3_pool.NewIQuickswapV3Pool(poolAddress, s.driver.Client())
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to build Quickswap pool contract: %w", err)
+	}
+
+	return []common.Address{poolAddress}, []base.DexEventWatcher[quickswapV3Event, quickswapV3Iterator]{poolContract}, nil
+}
+
+func (s *quickswap) buildParser(
+	swap *quickswapV3Event,
+	pool *base.DexPool[quickswapV3Event, quickswapV3Iterator],
+) base.SwapParser {
+	return &base.SwapV3[quickswapV3Event, quickswapV3Iterator]{
+		RawAmount0:      swap.Amount0,
+		RawAmount1:      swap.Amount1,
+		RawSqrtPriceX96: swap.Price,
+		Pool:            pool,
+	}
+}
+
+func (s *quickswap) derefIter(iter quickswapV3Iterator) *quickswap_v3_pool.IQuickswapV3PoolSwap {
+	return iter.Event
+}
