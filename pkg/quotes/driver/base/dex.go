@@ -635,6 +635,7 @@ func (s *marketSymbol) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// DexPool represents everything you need to know about a DEX pool.
 type DexPool[Event any, EventIterator dexEventIterator] struct {
 	Contract   DexEventWatcher[Event, EventIterator]
 	Address    common.Address // not used in code but is useful for logging
