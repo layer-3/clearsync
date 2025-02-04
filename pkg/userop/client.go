@@ -40,7 +40,7 @@ type Client interface {
 	//   - error - if failed to calculate it.
 	GetAccountAddress(ctx context.Context, owner common.Address, index decimal.Decimal) (common.Address, error)
 
-	// NewUserOp builds a new UserOperation and fills all the fields.
+	// NewUserOp builds and signs a new UserOperation and fills all the fields.
 	//
 	// NOTE: only `executeBatch` is supported for now.
 	//
@@ -53,12 +53,36 @@ type Client interface {
 	// 	 - overrides - are the overrides for the middleware during the user operation creation. Can be nil.
 	//
 	// Returns:
-	//   - UserOperation - user operation with all fields filled in.
+	//   - UserOperation - signed user operation with all fields filled in.
 	//   - error - if failed to build the user operation.
+	// TODO: rename to NewSignedUserOp when this pkg is extracted.
 	NewUserOp(
 		ctx context.Context,
 		sender common.Address,
 		signer Signer,
+		calls smart_wallet.Calls,
+		walletDeploymentOpts *WalletDeploymentOpts,
+		overrides *Overrides,
+	) (UserOperation, error)
+
+	// NewUserOp builds a new UserOperation and fills all the fields.
+	//
+	// NOTE: only `executeBatch` is supported for now.
+	//
+	// Parameters:
+	//   - ctx - is the context of the operation.
+	//   - smartWallet - is the address of the smart wallet that will execute the user operation.
+	//   - calls - is the list of calls to be executed in the user operation. Must not be empty.
+	//   - walletDeploymentOpts - are the options for the smart wallet deployment. Can be nil if the smart wallet is already deployed.
+	// 	 - overrides - are the overrides for the middleware during the user operation creation. Can be nil.
+	//
+	// Returns:
+	//   - UserOperation - user operation with all fields filled in.
+	//   - error - if failed to build the user operation.
+	// TODO: rename to NewUserOp when this pkg is extracted.
+	NewUnsignedUserOp(
+		ctx context.Context,
+		sender common.Address,
 		calls smart_wallet.Calls,
 		walletDeploymentOpts *WalletDeploymentOpts,
 		overrides *Overrides,
@@ -328,13 +352,13 @@ func (c *backend) NewUserOp(
 		return UserOperation{}, err
 	}
 
-	// sign before estimating gas limits, so that signature is well-formed.
-	// If signature is corrupted, this can cause SmartWallet estimation to fail,
-	// and the bundler will return an error.
-	err = c.sign(ctx, &op)
+	// Use stub signature before estimating gas limits. If signature is corrupted,
+	// this can cause SmartWallet estimation to fail, and the bundler will return an error.
+	stubSig, err := smart_wallet.GetStubSignature(*c.smartWallet.Type)
 	if err != nil {
 		return UserOperation{}, err
 	}
+	op.Signature = stubSig
 
 	// getGasLimits
 	if overridesPresent && overrides.GasLimits != nil {
@@ -355,6 +379,113 @@ func (c *backend) NewUserOp(
 
 	// sign
 	err = c.sign(ctx, &op)
+	if err != nil {
+		return UserOperation{}, err
+	}
+
+	b, err := op.MarshalJSON()
+	if err != nil {
+		logger.Error("failed to marshal user operation", "error", err)
+	} else {
+		logger.Debug("middlewares applied successfully", "userop", string(b))
+	}
+	return op, nil
+}
+
+func (c *backend) NewUnsignedUserOp(
+	ctx context.Context,
+	smartWallet common.Address,
+	calls smart_wallet.Calls,
+	walletDeploymentOpts *WalletDeploymentOpts,
+	overrides *Overrides,
+) (UserOperation, error) {
+
+	if len(calls) == 0 {
+		return UserOperation{}, ErrNoCalls
+	}
+
+	callData, err := smart_wallet.BuildCallData(*c.smartWallet.Type, calls)
+	if err != nil {
+		return UserOperation{}, fmt.Errorf("failed to build call data: %w", err)
+	}
+
+	op := UserOperation{Sender: smartWallet, CallData: callData}
+
+	logger.Debug("applying middlewares to user operation")
+
+	overridesPresent := overrides != nil
+
+	// getNonce
+	if overridesPresent && overrides.Nonce != nil {
+		op.Nonce = decimal.NewFromBigInt(overrides.Nonce, 0)
+	} else {
+		if err := c.getNonce(ctx, &op); err != nil {
+			return UserOperation{}, err
+		}
+	}
+
+	// getInitCode
+	if overridesPresent && overrides.InitCode != nil {
+		op.InitCode = overrides.InitCode
+	} else {
+		isDeployed, err := smart_wallet.IsAccountDeployed(ctx, c.provider, smartWallet)
+		if err != nil {
+			return UserOperation{}, fmt.Errorf("failed to check if smart account is already deployed: %w", err)
+		}
+
+		if !isDeployed {
+			if walletDeploymentOpts == nil {
+				return UserOperation{}, ErrNoWalletDeploymentOpts
+			}
+
+			if walletDeploymentOpts.Owner == (common.Address{}) {
+				return UserOperation{}, ErrNoWalletOwnerInWDO
+			}
+
+			ctx = context.WithValue(ctx, ctxKeyOwner, walletDeploymentOpts.Owner)
+			ctx = context.WithValue(ctx, ctxKeyIndex, walletDeploymentOpts.Index)
+
+			if err := c.getInitCode(ctx, &op); err != nil {
+				return UserOperation{}, err
+			}
+		}
+	}
+
+	// getGasPrices
+	if overridesPresent && overrides.GasPrices != nil {
+		if overrides.GasPrices.MaxFeePerGas != nil {
+			op.MaxFeePerGas = decimal.NewFromBigInt(overrides.GasPrices.MaxFeePerGas, 0)
+		}
+		if overrides.GasPrices.MaxPriorityFeePerGas != nil {
+			op.MaxPriorityFeePerGas = decimal.NewFromBigInt(overrides.GasPrices.MaxPriorityFeePerGas, 0)
+		}
+	}
+	err = c.getGasPrices(ctx, &op)
+	if err != nil {
+		return UserOperation{}, err
+	}
+
+	// Use stub signature before estimating gas limits. If signature is corrupted,
+	// this can cause SmartWallet estimation to fail, and the bundler will return an error.
+	stubSig, err := smart_wallet.GetStubSignature(*c.smartWallet.Type)
+	if err != nil {
+		return UserOperation{}, err
+	}
+	op.Signature = stubSig
+
+	// getGasLimits
+	if overridesPresent && overrides.GasLimits != nil {
+		if overrides.GasLimits.CallGasLimit != nil {
+			op.CallGasLimit = decimal.NewFromBigInt(overrides.GasLimits.CallGasLimit, 0)
+		}
+		if overrides.GasLimits.VerificationGasLimit != nil {
+			op.VerificationGasLimit = decimal.NewFromBigInt(overrides.GasLimits.VerificationGasLimit, 0)
+		}
+		if overrides.GasLimits.PreVerificationGas != nil {
+			op.PreVerificationGas = decimal.NewFromBigInt(overrides.GasLimits.PreVerificationGas, 0)
+		}
+	}
+	err = c.getGasLimits(ctx, &op)
 	if err != nil {
 		return UserOperation{}, err
 	}
