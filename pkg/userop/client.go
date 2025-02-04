@@ -285,94 +285,9 @@ func (c *backend) NewUserOp(
 		return UserOperation{}, ErrNoSigner
 	}
 
-	if len(calls) == 0 {
-		return UserOperation{}, ErrNoCalls
-	}
-
 	ctx = context.WithValue(ctx, ctxKeySigner, signer)
 
-	callData, err := smart_wallet.BuildCallData(*c.smartWallet.Type, calls)
-	if err != nil {
-		return UserOperation{}, fmt.Errorf("failed to build call data: %w", err)
-	}
-
-	op := UserOperation{Sender: smartWallet, CallData: callData}
-
-	logger.Debug("applying middlewares to user operation")
-
-	overridesPresent := overrides != nil
-
-	// getNonce
-	if overridesPresent && overrides.Nonce != nil {
-		op.Nonce = decimal.NewFromBigInt(overrides.Nonce, 0)
-	} else {
-		if err := c.getNonce(ctx, &op); err != nil {
-			return UserOperation{}, err
-		}
-	}
-
-	// getInitCode
-	if overridesPresent && overrides.InitCode != nil {
-		op.InitCode = overrides.InitCode
-	} else {
-		isDeployed, err := smart_wallet.IsAccountDeployed(ctx, c.provider, smartWallet)
-		if err != nil {
-			return UserOperation{}, fmt.Errorf("failed to check if smart account is already deployed: %w", err)
-		}
-
-		if !isDeployed {
-			if walletDeploymentOpts == nil {
-				return UserOperation{}, ErrNoWalletDeploymentOpts
-			}
-
-			if walletDeploymentOpts.Owner == (common.Address{}) {
-				return UserOperation{}, ErrNoWalletOwnerInWDO
-			}
-
-			ctx = context.WithValue(ctx, ctxKeyOwner, walletDeploymentOpts.Owner)
-			ctx = context.WithValue(ctx, ctxKeyIndex, walletDeploymentOpts.Index)
-
-			if err := c.getInitCode(ctx, &op); err != nil {
-				return UserOperation{}, err
-			}
-		}
-	}
-
-	// getGasPrices
-	if overridesPresent && overrides.GasPrices != nil {
-		if overrides.GasPrices.MaxFeePerGas != nil {
-			op.MaxFeePerGas = decimal.NewFromBigInt(overrides.GasPrices.MaxFeePerGas, 0)
-		}
-		if overrides.GasPrices.MaxPriorityFeePerGas != nil {
-			op.MaxPriorityFeePerGas = decimal.NewFromBigInt(overrides.GasPrices.MaxPriorityFeePerGas, 0)
-		}
-	}
-	err = c.getGasPrices(ctx, &op)
-	if err != nil {
-		return UserOperation{}, err
-	}
-
-	// Use stub signature before estimating gas limits. If signature is corrupted,
-	// this can cause SmartWallet estimation to fail, and the bundler will return an error.
-	stubSig, err := smart_wallet.GetStubSignature(*c.smartWallet.Type)
-	if err != nil {
-		return UserOperation{}, err
-	}
-	op.Signature = stubSig
-
-	// getGasLimits
-	if overridesPresent && overrides.GasLimits != nil {
-		if overrides.GasLimits.CallGasLimit != nil {
-			op.CallGasLimit = decimal.NewFromBigInt(overrides.GasLimits.CallGasLimit, 0)
-		}
-		if overrides.GasLimits.VerificationGasLimit != nil {
-			op.VerificationGasLimit = decimal.NewFromBigInt(overrides.GasLimits.VerificationGasLimit, 0)
-		}
-		if overrides.GasLimits.PreVerificationGas != nil {
-			op.PreVerificationGas = decimal.NewFromBigInt(overrides.GasLimits.PreVerificationGas, 0)
-		}
-	}
-	err = c.getGasLimits(ctx, &op)
+	op, err := c.NewUnsignedUserOp(ctx, smartWallet, calls, walletDeploymentOpts, overrides)
 	if err != nil {
 		return UserOperation{}, err
 	}
@@ -387,7 +302,7 @@ func (c *backend) NewUserOp(
 	if err != nil {
 		logger.Error("failed to marshal user operation", "error", err)
 	} else {
-		logger.Debug("middlewares applied successfully", "userop", string(b))
+		logger.Debug("signed successfully", "userop", string(b))
 	}
 	return op, nil
 }
@@ -399,7 +314,6 @@ func (c *backend) NewUnsignedUserOp(
 	walletDeploymentOpts *WalletDeploymentOpts,
 	overrides *Overrides,
 ) (UserOperation, error) {
-
 	if len(calls) == 0 {
 		return UserOperation{}, ErrNoCalls
 	}
