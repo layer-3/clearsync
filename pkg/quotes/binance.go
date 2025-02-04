@@ -129,7 +129,7 @@ func (b *binance) Subscribe(market Market) error {
 	}
 
 	idle := time.NewTimer(b.idlePeriod)
-	doneCh, stopCh, err := gobinance.WsTradeServe(symbol, b.handleTrade(market, idle), b.handleErr(market))
+	doneCh, stopCh, err := gobinance.WsAggTradeServe(symbol, b.handleTrade(market, idle), b.handleErr(market))
 	if err != nil {
 		return fmt.Errorf("%s: %w: %w", market, ErrFailedSub, err)
 	}
@@ -216,8 +216,8 @@ func (b *binance) updateAssets() {
 func (b *binance) handleTrade(
 	market Market,
 	idle *time.Timer,
-) func(*gobinance.WsTradeEvent) {
-	return func(event *gobinance.WsTradeEvent) {
+) func(*gobinance.WsAggTradeEvent) {
+	return func(event *gobinance.WsAggTradeEvent) {
 		idle.Reset(b.idlePeriod)
 
 		tradeEvent, err := b.buildEvent(event, market)
@@ -256,7 +256,7 @@ func (b *binance) handleErr(market Market) func(error) {
 	}
 }
 
-func (b *binance) buildEvent(tr *gobinance.WsTradeEvent, market Market) (TradeEvent, error) {
+func (b *binance) buildEvent(tr *gobinance.WsAggTradeEvent, market Market) (TradeEvent, error) {
 	price, err := decimal.NewFromString(tr.Price)
 	if err != nil {
 		return TradeEvent{}, fmt.Errorf("failed to parse price: %+v", tr.Price)
@@ -328,7 +328,7 @@ func (b *binance) HistoricalData(ctx context.Context, market Market, window time
 	// Convert aggregated trades to a trade events
 	trades = make([]TradeEvent, 0, limit)
 	for _, aggTrade := range aggTrades {
-		trade, err := b.buildEvent(&gobinance.WsTradeEvent{
+		trade, err := b.buildEvent(&gobinance.WsAggTradeEvent{
 			Price:        aggTrade.Price,
 			Quantity:     aggTrade.Quantity,
 			TradeTime:    aggTrade.Timestamp,
