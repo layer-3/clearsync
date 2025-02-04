@@ -6,6 +6,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+// TODO: rewrite using interface and implement it for each type
+
 // SmartWalletConfig represents the configuration
 // for the smart wallet to be used with the client.
 type Config struct {
