@@ -40,7 +40,7 @@ type Client interface {
 	//   - error - if failed to calculate it.
 	GetAccountAddress(ctx context.Context, owner common.Address, index decimal.Decimal) (common.Address, error)
 
-	// NewUserOp builds a new UserOperation and fills all the fields.
+	// NewUserOp builds and signs a new UserOperation and fills all the fields.
 	//
 	// NOTE: only `executeBatch` is supported for now.
 	//
@@ -53,12 +53,36 @@ type Client interface {
 	// 	 - overrides - are the overrides for the middleware during the user operation creation. Can be nil.
 	//
 	// Returns:
-	//   - UserOperation - user operation with all fields filled in.
+	//   - UserOperation - signed user operation with all fields filled in.
 	//   - error - if failed to build the user operation.
+	// TODO: rename to NewSignedUserOp when this pkg is extracted.
 	NewUserOp(
 		ctx context.Context,
 		sender common.Address,
 		signer Signer,
+		calls smart_wallet.Calls,
+		walletDeploymentOpts *WalletDeploymentOpts,
+		overrides *Overrides,
+	) (UserOperation, error)
+
+	// NewUserOp builds a new UserOperation and fills all the fields.
+	//
+	// NOTE: only `executeBatch` is supported for now.
+	//
+	// Parameters:
+	//   - ctx - is the context of the operation.
+	//   - smartWallet - is the address of the smart wallet that will execute the user operation.
+	//   - calls - is the list of calls to be executed in the user operation. Must not be empty.
+	//   - walletDeploymentOpts - are the options for the smart wallet deployment. Can be nil if the smart wallet is already deployed.
+	// 	 - overrides - are the overrides for the middleware during the user operation creation. Can be nil.
+	//
+	// Returns:
+	//   - UserOperation - user operation with all fields filled in.
+	//   - error - if failed to build the user operation.
+	// TODO: rename to NewUserOp when this pkg is extracted.
+	NewUnsignedUserOp(
+		ctx context.Context,
+		sender common.Address,
 		calls smart_wallet.Calls,
 		walletDeploymentOpts *WalletDeploymentOpts,
 		overrides *Overrides,
@@ -261,11 +285,38 @@ func (c *backend) NewUserOp(
 		return UserOperation{}, ErrNoSigner
 	}
 
+	ctx = context.WithValue(ctx, ctxKeySigner, signer)
+
+	op, err := c.NewUnsignedUserOp(ctx, smartWallet, calls, walletDeploymentOpts, overrides)
+	if err != nil {
+		return UserOperation{}, err
+	}
+
+	// sign
+	err = c.sign(ctx, &op)
+	if err != nil {
+		return UserOperation{}, err
+	}
+
+	b, err := op.MarshalJSON()
+	if err != nil {
+		logger.Error("failed to marshal user operation", "error", err)
+	} else {
+		logger.Debug("signed successfully", "userop", string(b))
+	}
+	return op, nil
+}
+
+func (c *backend) NewUnsignedUserOp(
+	ctx context.Context,
+	smartWallet common.Address,
+	calls smart_wallet.Calls,
+	walletDeploymentOpts *WalletDeploymentOpts,
+	overrides *Overrides,
+) (UserOperation, error) {
 	if len(calls) == 0 {
 		return UserOperation{}, ErrNoCalls
 	}
-
-	ctx = context.WithValue(ctx, ctxKeySigner, signer)
 
 	callData, err := smart_wallet.BuildCallData(*c.smartWallet.Type, calls)
 	if err != nil {
@@ -328,13 +379,13 @@ func (c *backend) NewUserOp(
 		return UserOperation{}, err
 	}
 
-	// sign before estimating gas limits, so that signature is well-formed.
-	// If signature is corrupted, this can cause SmartWallet estimation to fail,
-	// and the bundler will return an error.
-	err = c.sign(ctx, &op)
+	// Use stub signature before estimating gas limits. If signature is corrupted,
+	// this can cause SmartWallet estimation to fail, and the bundler will return an error.
+	stubSig, err := smart_wallet.GetStubSignature(*c.smartWallet.Type)
 	if err != nil {
 		return UserOperation{}, err
 	}
+	op.Signature = stubSig
 
 	// getGasLimits
 	if overridesPresent && overrides.GasLimits != nil {
@@ -349,12 +400,6 @@ func (c *backend) NewUserOp(
 		}
 	}
 	err = c.getGasLimits(ctx, &op)
-	if err != nil {
-		return UserOperation{}, err
-	}
-
-	// sign
-	err = c.sign(ctx, &op)
 	if err != nil {
 		return UserOperation{}, err
 	}
