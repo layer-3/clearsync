@@ -8,6 +8,7 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"os"
+	"time"
 
 	"github.com/ipfs/go-log/v2"
 
@@ -62,7 +63,9 @@ func main() {
 				"market", e.Market,
 				"side", e.TakerType.String(),
 				"price", e.Price.String(),
-				"amount", e.Amount.String())
+				"amount", e.Amount.String(),
+				"created_received_diff", time.Now().Sub(e.CreatedAt).String(),
+			)
 		}
 		outboxStop <- struct{}{}
 	}()
