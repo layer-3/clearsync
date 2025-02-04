@@ -15,7 +15,7 @@ export const NITRO_MAX_GAS = 6_000_000; // should be below the block gas limit, 
 // mainnet  12505858
 // ropsten:  8000029
 // rinkeby: 10000000
-// ganache:  6721975 (hardcoded but can be overriden via config)
+// ganache:  6721975 (hardcoded but can be overridden via config)
 
 /**
  * Marshalls the supplied signedStates into an ethereum transaction for the challenge method. Automatically computes signedVariableParts, etc.
