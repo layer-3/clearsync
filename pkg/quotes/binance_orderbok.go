@@ -16,6 +16,8 @@ import (
 
 // gapThreshold is the maximum number of missing updates before a full reset is
 // triggered. This is used to prevent the order book from getting out of sync.
+// The value is random, but should be large enough to prevent unnecessary resets
+// yet small enough to prevent the order book from getting too far out of sync.
 const gapThreshold = 25
 
 var ErrInvalidSnapshot = errors.New("invalid snapshot")
