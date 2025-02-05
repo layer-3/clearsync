@@ -268,7 +268,6 @@ func (ob *BinanceOrderBook) connectWebSocket(ctx context.Context, market Market)
 	loggerBinance.Debug("Connected to WebSocket")
 
 	// Fetch & apply orderbook snapshot
-	var eventBuffer []BinanceDepthEvent
 	snapshot, err := ob.fetchSnapshot(ctx, market)
 	if err != nil {
 		return fmt.Errorf("failed to fetch snapshot: %w", err)
@@ -282,6 +281,7 @@ func (ob *BinanceOrderBook) connectWebSocket(ctx context.Context, market Market)
 	loggerBinance.Infow("Snapshot applied", "LastUpdateID", snapshot.LastUpdateID)
 
 	// Process orderbook updates
+	nextExpectedID := snapshot.LastUpdateID + 1
 	for {
 		select {
 		case <-ctx.Done():
@@ -302,24 +302,45 @@ func (ob *BinanceOrderBook) connectWebSocket(ctx context.Context, market Market)
 		}
 		loggerBinance.Debugw("Event parsed", "LastUpdateID", event.LastUpdateID)
 
-		if event.LastUpdateID <= snapshot.LastUpdateID {
-			loggerBinance.Infow("Ignoring event",
+		// Ignore already-applied events
+		if event.LastUpdateID < nextExpectedID {
+			loggerBinance.Debugw("Ignoring outdated event",
 				"EventLastUpdateID", event.LastUpdateID,
-				"SnapshotLastUpdateID", snapshot.LastUpdateID)
+				"ExpectedLastUpdateID", nextExpectedID)
 			continue
 		}
 
-		eventBuffer = append(eventBuffer, event)
+		// Detect and handle gaps
+		if event.FirstUpdateID > nextExpectedID {
+			loggerBinance.Warnw("Gap detected, checking if a reset is needed",
+				"ExpectedFirstUpdateID", nextExpectedID,
+				"ReceivedFirstUpdateID", event.FirstUpdateID)
 
-		if eventBuffer[0].FirstUpdateID <= snapshot.LastUpdateID && eventBuffer[0].LastUpdateID >= snapshot.LastUpdateID {
-			for _, evt := range eventBuffer {
-				loggerBinance.Debug("Applying update")
-				ob.applyUpdate(ctx, evt)
-				loggerBinance.Infow("Order book updated", "LastUpdateID", evt.LastUpdateID)
-				ob.notifyUpdate(ctx)
-				loggerBinance.Debug("Update notified")
+			// If gap is too large, fetch a new snapshot
+			if event.FirstUpdateID-nextExpectedID > gapThreshold {
+				loggerBinance.Warnw("Large gap detected, refetching snapshot",
+					"GapSize", event.FirstUpdateID-nextExpectedID,
+					"Threshold", gapThreshold)
+				snapshot, err := ob.fetchSnapshot(ctx, market)
+				if err != nil {
+					return fmt.Errorf("failed to fetch snapshot: %w", err)
+				}
+				ob.applySnapshot(snapshot)
+				nextExpectedID = snapshot.LastUpdateID + 1
+				continue
 			}
-			eventBuffer = nil // clear buffer
+
+			continue // otherwise, just buffer missing events
 		}
+
+		// Apply update immediately
+		loggerBinance.Debug("Applying update")
+		ob.applyUpdate(ctx, event)
+		loggerBinance.Infow("Order book updated", "LastUpdateID", event.LastUpdateID)
+		ob.notifyUpdate(ctx)
+		loggerBinance.Debug("Update notified")
+
+		// Update next expected ID
+		nextExpectedID = event.LastUpdateID + 1
 	}
 }
