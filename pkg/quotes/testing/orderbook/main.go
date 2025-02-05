@@ -10,10 +10,11 @@ import (
 )
 
 func main() {
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	market := quotes.NewMarket("bnb", "btc")
-	const topLevels = 2 // Configurable number of top levels to track
+
+	market := quotes.NewMarket("btc", "usdt")
+	const topLevels = 1 // Configurable number of top levels to track
 	outbox := make(chan quotes.BinanceOrderBookOutboxEvent, 128)
 
 	_, err := quotes.NewBinanceOrderBook(ctx, market, topLevels, outbox)
@@ -21,7 +22,14 @@ func main() {
 		log.Fatal(err)
 	}
 
-	for update := range outbox {
-		log.Println("Top levels updated:", update)
-	}
+	go func() {
+		for update := range outbox {
+			log.Println("Top levels updated:", update.Asks[0], update.Bids[0])
+		}
+	}()
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	<-c
+	cancel()
 }
