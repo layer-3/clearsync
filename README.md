@@ -20,7 +20,7 @@ ClearSync is licensed under the GNU General Public License v3.0
 
 ## Deployments
 
-You can find more information about depoyed smart contracts in [deployments.md](docs/deployments.md).
+You can find more information about deployed smart contracts in [deployments.md](docs/deployments.md).
 
 ### Test Network
 

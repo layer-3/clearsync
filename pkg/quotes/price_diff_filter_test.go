@@ -10,7 +10,7 @@ import (
 func TestNewPriceDiffFilter(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Correct treshold", func(t *testing.T) {
+	t.Run("Correct threshold", func(t *testing.T) {
 		t.Parallel()
 
 		conf := PriceDiffFilterConfig{
@@ -21,7 +21,7 @@ func TestNewPriceDiffFilter(t *testing.T) {
 		require.Equal(t, priceDiffFilter.threshold.String(), decimal.NewFromFloat(0.1).String())
 	})
 
-	t.Run("Incorrect treshold, that should be set to default", func(t *testing.T) {
+	t.Run("Incorrect threshold, that should be set to default", func(t *testing.T) {
 		t.Parallel()
 
 		conf := PriceDiffFilterConfig{
