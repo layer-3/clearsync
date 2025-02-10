@@ -9,7 +9,7 @@
       "logoURI": "https://assets.coingecko.com/coins/images/12559/standard/Avalanche_Circle_RedWhite_Trans.png",
       "extensions": {
         "allow_locking": true,
-        "coingecko_api_id": "avalanche"
+        "coingecko_api_id": "avalanche-2"
       }
     },
     {
@@ -46,7 +46,7 @@
       "logoURI": "https://assets.coingecko.com/coins/images/12559/standard/Avalanche_Circle_RedWhite_Trans.png",
       "extensions": {
         "allow_locking": true,
-        "coingecko_api_id": "avalanche"
+        "coingecko_api_id": "avalanche-2"
       }
     },
     {
