@@ -1,6 +1,6 @@
 {
   "erc20Paymasters": {},
-  "liteVaultAddress": "0xb5F3a9dD92270f55e55B7Ac7247639953538A261",
+  "liteVaultAddress": "0x1c4f55FbB4c6d3Fb4Fbc0f933c6478c9564994c9",
   "callTypes": {
     "approve": {
       "allowedFeeTypes": [
