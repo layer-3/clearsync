@@ -1,6 +1,18 @@
 {
   "tokens": [
     {
+      "address": "0x0000000000000000000000000000000000000000",
+      "name": "Avax",
+      "symbol": "AVAX",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://assets.coingecko.com/coins/images/12559/standard/Avalanche_Circle_RedWhite_Trans.png",
+      "extensions": {
+        "allow_locking": true,
+        "coingecko_api_id": "avalanche"
+      }
+    },
+    {
       "address": "0x9702230A8Ea53601f5cD2dc00fDBc13d4dF4A8c7",
       "name": "USD Tether",
       "symbol": "USDT",
@@ -26,6 +38,18 @@
       }
     },
     {
+      "address": "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7",
+      "name": "Wrapped AVAX",
+      "symbol": "WAVAX",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://assets.coingecko.com/coins/images/12559/standard/Avalanche_Circle_RedWhite_Trans.png",
+      "extensions": {
+        "allow_locking": true,
+        "coingecko_api_id": "avalanche"
+      }
+    },
+    {
       "address": "0x152b9d0FdC40C096757F570A51E494bd4b943E50",
       "name": "Bitcoin Avalanche Bridged",
       "symbol": "WBTC",
@@ -38,32 +62,8 @@
       }
     },
     {
-      "address": "0x0000000000000000000000000000000000000000",
-      "name": "Avax",
-      "symbol": "AVAX",
-      "decimals": 18,
-      "precision": 6,
-      "logoURI": "https://assets.coingecko.com/coins/images/12559/standard/Avalanche_Circle_RedWhite_Trans.png",
-      "extensions": {
-        "allow_locking": true,
-        "coingecko_api_id": "avalanche"
-      }
-    },
-    {
-      "address": "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7",
-      "name": "Wrapped AVAX",
-      "symbol": "WAVAX",
-      "decimals": 18,
-      "precision": 6,
-      "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png?1696501628",
-      "extensions": {
-        "allow_locking": true,
-        "coingecko_api_id": "avalanche"
-      }
-    },
-    {
       "address": "0x49D5c2BdFfac6CE2BFdB6640F4F80f226bc10bAB",
-      "name": "The Avalanche Bridge Wrapped Wrapped Ether",
+      "name": "The Avalanche Bridge Wrapped Ether",
       "symbol": "WETH",
       "decimals": 18,
       "precision": 6,
