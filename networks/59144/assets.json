@@ -6,7 +6,12 @@
       "symbol": "DUCKIES",
       "decimals": 8,
       "precision": 0,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/duckies-200x200.png"
+      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/duckies-200x200.png",
+      "extensions":
+      {
+        "allow_locking": false,
+        "coingecko_api_id": "duckies"
+      }
     },
     {
       "address": "0xC9B1A0d6cec7F31a8548295D134a0468f636B85D",
@@ -67,7 +72,12 @@
       "symbol": "SHIB",
       "decimals": 18,
       "precision": 0,
-      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/sibainu-64x64.png"
+      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/sibainu-64x64.png",
+      "extensions":
+      {
+        "allow_locking": false,
+        "coingecko_api_id": "shiba-inu"
+      }
     },
     {
       "address": "0x3aAB2285ddcDdaD8edf438C1bAB47e1a9D05a9b4",
@@ -129,7 +139,11 @@
       "decimals": 18,
       "precision": 6,
       "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/linda-64x64.png",
-      "extensions": {}
+      "extensions":
+      {
+        "allow_locking": false,
+        "coingecko_api_id": "linda-2"
+      }
     },
     {
       "address": "0x1be3735dd0c0eb229fb11094b6c277192349ebbf",
@@ -138,7 +152,11 @@
       "decimals": 18,
       "precision": 6,
       "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/lube-64x64.png",
-      "extensions": {}
+      "extensions":
+      {
+        "allow_locking": false,
+        "coingecko_api_id": "lube"
+      }
     },
     {
       "address": "0xf5C6825015280CdfD0b56903F9F8B5A2233476F5",
@@ -147,7 +165,11 @@
       "decimals": 18,
       "precision": 6,
       "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/bnb-64x64.png",
-      "extensions": {}
+      "extensions":
+      {
+        "allow_locking": false,
+        "coingecko_api_id": "binancecoin"
+      }
     },
     {
       "address": "0x7da14988E4f390C2E34ed41DF1814467D3aDe0c3",
@@ -156,7 +178,11 @@
       "decimals": 18,
       "precision": 6,
       "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/pepe-64x64.png",
-      "extensions": {}
+      "extensions":
+      {
+        "allow_locking": false,
+        "coingecko_api_id": "pepe"
+      }
     },
     {
       "address": "0x92CcE828c4eF31C3762baAc29724dEa03e503e3F",
@@ -165,7 +191,11 @@
       "decimals": 18,
       "precision": 6,
       "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/badger-64x64.png",
-      "extensions": {}
+      "extensions":
+      {
+        "allow_locking": false,
+        "coingecko_api_id": "badger-dao"
+      }
     },
     {
       "address": "0xbf6761aD8C9cB253d026C96327160240Fc2Ce3A6",
@@ -174,7 +204,11 @@
       "decimals": 9,
       "precision": 6,
       "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/floki-64x64.png",
-      "extensions": {}
+      "extensions":
+      {
+        "allow_locking": false,
+        "coingecko_api_id": "floki"
+      }
     }
   ]
 }
