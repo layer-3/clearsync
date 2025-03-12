@@ -1,6 +1,18 @@
 {
   "tokens": [
     {
+      "address": "0x0000000000000000000000000000000000000000",
+      "name": "BNB",
+      "symbol": "BNB",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://assets.coingecko.com/coins/images/12591/standard/binance-coin-logo.png",
+      "extensions":{
+        "allow_locking": true,
+        "coingecko_api_id": "bnb"
+      }
+    },
+    {
       "address": "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
       "name": "Binance-Peg Ethereum Token",
       "symbol": "ETH",
