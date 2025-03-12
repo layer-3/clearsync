@@ -1,23 +1,22 @@
 {
   "tokens": [
     {
-      "address": "",
-      "name": "",
-      "symbol": "",
+      "address": "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+      "name": "Binance-Peg Ethereum Token",
+      "symbol": "ETH",
       "decimals": 18,
       "precision": 6,
-      "logoURI": "",
+      "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png",
       "extensions": {
         "allow_locking": true,
-        "coingecko_api_id": "",
-        "locking_multiplier": 1.5
+        "coingecko_api_id": "ethereum"
       }
     },
     {
-      "address": "",
-      "name": "USD Tether",
+      "address": "0x55d398326f99059fF775485246999027B3197955",
+      "name": "USDT",
       "symbol": "USDT",
-      "decimals": 6,
+      "decimals": 18,
       "precision": 4,
       "logoURI": "https://cryptologos.cc/logos/tether-usdt-logo.png",
       "extensions": {
@@ -26,20 +25,32 @@
       }
     },
     {
-      "address": "",
+      "address": "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
       "name": "USD Coin",
       "symbol": "USDC",
       "alias": "USD",
-      "decimals": 6,
+      "decimals": 18,
       "precision": 4,
-      "logoURI": "https://assets.coingecko.com/coins/images/6319/large/usdc.png?1696506694",
+      "logoURI": "https://assets.coingecko.com/coins/images/6319/large/usdc.png",
       "extensions": {
         "allow_locking": true,
         "coingecko_api_id": "usd-coin"
       }
     },
     {
-      "address": "",
+      "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+      "name": "Wrapped BNB",
+      "symbol": "WBNB",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://assets.coingecko.com/coins/images/12591/standard/binance-coin-logo.png",
+      "extensions": {
+        "allow_locking": true,
+        "coingecko_api_id": "wbnb"
+      }
+    },
+    {
+      "address": "0x0555E30da8f98308EdB960aa94C0Db47230d2B9c",
       "name": "Wrapped Bitcoin",
       "symbol": "WBTC",
       "decimals": 8,
@@ -51,45 +62,7 @@
       }
     },
     {
-      "address": "",
-      "name": "Wrapped Ether",
-      "symbol": "WETH",
-      "decimals": 18,
-      "precision": 6,
-      "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png?1696501628",
-      "extensions": {
-        "allow_locking": true,
-        "coingecko_api_id": "weth"
-      }
-    },
-    {
-      "address": "",
-      "name": "Wrapped Liquid Staked Ether 2.0",
-      "symbol": "wstETH",
-      "decimals": 18,
-      "precision": 6,
-      "logoURI": "https://assets.coingecko.com/coins/images/18834/standard/wstETH.png",
-      "extensions": {
-        "allow_locking": true,
-        "coingecko_api_id": "wrapped-steth",
-        "locking_multiplier": 1.5
-      }
-    },
-    {
-      "address": "",
-      "name": "TokenRocket Pool ETH",
-      "symbol": "rETH",
-      "decimals": 18,
-      "precision": 6,
-      "logoURI": "https://assets.coingecko.com/coins/images/20764/standard/reth.png",
-      "extensions": {
-        "allow_locking": true,
-        "coingecko_api_id": "ethereum",
-        "locking_multiplier": 1.5
-      }
-    },
-    {
-      "address": "",
+      "address": "0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3",
       "name": "Dai Stablecoin",
       "symbol": "DAI",
       "decimals": 18,
@@ -98,6 +71,66 @@
       "extensions": {
         "allow_locking": true,
         "coingecko_api_id": "dai"
+      }
+    },
+    {
+      "address": "0x1D2F0da169ceB9fC7B3144628dB156f3F6c60dBE",
+      "name": "XRP Token",
+      "symbol": "XRP",
+      "decimals": 18,
+      "precision": 4,
+      "logoURI": "https://assets.coingecko.com/coins/images/44/standard/xrp-symbol-white-128.png",
+      "extensions": {
+        "allow_locking": true,
+        "coingecko_api_id": "ripple"
+      }
+    },
+    {
+      "address": "0x3EE2200Efb3400fAbB9AacF31297cBdD1d435D47",
+      "name": "Cardano Token",
+      "symbol": "ADA",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://assets.coingecko.com/coins/images/975/standard/cardano.png",
+      "extensions": {
+        "allow_locking": false,
+        "coingecko_api_id": "cardano"
+      }
+    },
+    {
+      "address": "0xbA2aE424d960c26247Dd6c32edC70B295c744C43",
+      "name": "Dogecoin Token",
+      "symbol": "DOGE",
+      "decimals": 8,
+      "precision": 6,
+      "logoURI": "https://assets.coingecko.com/coins/images/5/standard/dogecoin.png",
+      "extensions": {
+        "allow_locking": false,
+        "coingecko_api_id": "dogecoin"
+      }
+    },
+    {
+      "address": "0xCE7de646e7208a4Ef112cb6ed5038FA6cC6b12e3",
+      "name": "TRON",
+      "symbol": "TRX",
+      "decimals": 6,
+      "precision": 4,
+      "logoURI": "https://assets.coingecko.com/coins/images/1094/standard/tron-logo.png",
+      "extensions": {
+        "allow_locking": false,
+        "coingecko_api_id": "tron"
+      }
+    },
+    {
+      "address": "0xF8A0BF9cF54Bb92F17374d9e9A321E6a111a51bD",
+      "name": "ChainLink Token",
+      "symbol": "LINK",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://assets.coingecko.com/coins/images/877/standard/chainlink-new-logo.png",
+      "extensions": {
+        "allow_locking": false,
+        "coingecko_api_id": "chainlink"
       }
     }
   ]
