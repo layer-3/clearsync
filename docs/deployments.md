@@ -21,16 +21,31 @@ Last updated: September 19, 2024.
 | Outside range authorizer       | TimeRangeAuthorizer | `0x8eA6E2B6eCC884c2b6a3dE5BE67b233c6B5D3438`[↗](https://etherscan.io/address/0x8eA6E2B6eCC884c2b6a3dE5BE67b233c6B5D3438) | `dc84b5e`[↗](https://github.com/layer-3/broker-contracts/blob/dc84b5e1a30db420ff3b881a74fca6f4556fbc36/src/vault/TimeRangeAuthorizer.sol) | Time range is set to Nov 14th 00:00:00 - Jan 13th 23:59:59 UTC   |
 | Outside range authorizer       | TimeRangeAuthorizer | `0xf1457e0f3DF8cda5f1f3766AD7bD174fD9fB5937`[↗](https://etherscan.io/address/0xf1457e0f3DF8cda5f1f3766AD7bD174fD9fB5937) | `dc84b5e`[↗](https://github.com/layer-3/broker-contracts/blob/dc84b5e1a30db420ff3b881a74fca6f4556fbc36/src/vault/TimeRangeAuthorizer.sol) | Time range is set to Jan 17th 12:00:00 - March 17th 11:59:59 UTC |
 
+### OP Mainnet
+
+Chain id: 10.
+
+Last updated: March 12, 2025.
+
+| Description                    | Contract Name       | Address                                                                                                                             | Git SHA and Repository                                                                                                                          | Notes                                                            |
+| ------------------------------ | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Outside range authorizer       | TimeRangeAuthorizer | `0x547d613C2f613c9bC78d49051093F092924aaD1c`[↗](https://optimistic.etherscan.io/address/0x547d613C2f613c9bC78d49051093F092924aaD1c) | `dc84b5e`[↗](https://github.com/layer-3/broker-contracts/blob/dc84b5e1a30db420ff3b881a74fca6f4556fbc36/src/vault/TimeRangeAuthorizer.sol)       | Time range is set to Jan 17th 12:00:00 - March 17th 11:59:59 UTC |
+| Yellow Vault                   | LiteVault           | `0xb5F3a9dD92270f55e55B7Ac7247639953538A261`[↗](https://optimistic.etherscan.io/address/0xb5F3a9dD92270f55e55B7Ac7247639953538A261) | `dc84b5e`[↗](https://github.com/layer-3/broker-contracts/blob/dc84b5e1a30db420ff3b881a74fca6f4556fbc36/src/vault/LiteVault.sol)                 |                                                                  |
+| Yellow Voucher Router          | VoucherRouter       | `0x852b6eF2fBF26f25d1096CDd24bD6f5F9D62B301`[↗](https://optimistic.etherscan.io/address/0x852b6eF2fBF26f25d1096CDd24bD6f5F9D62B301) | `dc84b5e`[↗](https://github.com/layer-3/broker-contracts/blob/dc84b5e1a30db420ff3b881a74fca6f4556fbc36/src/voucher/VoucherRouter.sol)           |                                                                  |
+| Points claimer for Leaderboard | ClaimExecutor       | `0x5df971419a39CC846B801b22D56Af59234b86238`[↗](https://optimistic.etherscan.io/address/0x5df971419a39CC846B801b22D56Af59234b86238) | `dc84b5e`[↗](https://github.com/layer-3/broker-contracts/blob/dc84b5e1a30db420ff3b881a74fca6f4556fbc36/src/voucher/executors/ClaimExecutor.sol) |                                                                  |
+
 ### BSC
 
 Chain id: 56.
 
-Last updated: September 19, 2024.
+Last updated: March 12, 2025.
 
-| Description                    | Contract Name | Address                                                                                                                 | Git SHA and Repository                                                                                                                    | Notes |
-| ------------------------------ | ------------- | ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ----- |
-| Yellow Voucher Router          | VoucherRouter | `0x2A8B51821884CF9A7ea1A24C72E46Ff52dCb4F16`[↗](https://bscscan.com/address/0x2A8B51821884CF9A7ea1A24C72E46Ff52dCb4F16) | `88fe036`[↗](https://github.com/layer-3/dailyclaim/blob/88fe03638a4936bf4a719ab156158b43a2d0af0b/src/voucher/VoucherRouter.sol)           |       |
-| Points claimer for Leaderboard | ClaimExecutor | `0x4844c01b783Ddc5F1c5917Dcbe71F9993C920A26`[↗](https://bscscan.com/address/0x4844c01b783Ddc5F1c5917Dcbe71F9993C920A26) | `cadfd37`[↗](https://github.com/layer-3/dailyclaim/blob/cadfd378c76f3ce777cd59e1d5d261b9c4d6fd1d/src/voucher/executors/ClaimExecutor.sol) |       |
+| Description                    | Contract Name       | Address                                                                                                                 | Git SHA and Repository                                                                                                                    | Notes                                                            |
+| ------------------------------ | ------------------- | ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Yellow Voucher Router          | VoucherRouter       | `0x2A8B51821884CF9A7ea1A24C72E46Ff52dCb4F16`[↗](https://bscscan.com/address/0x2A8B51821884CF9A7ea1A24C72E46Ff52dCb4F16) | `88fe036`[↗](https://github.com/layer-3/dailyclaim/blob/88fe03638a4936bf4a719ab156158b43a2d0af0b/src/voucher/VoucherRouter.sol)           |                                                                  |
+| Points claimer for Leaderboard | ClaimExecutor       | `0x4844c01b783Ddc5F1c5917Dcbe71F9993C920A26`[↗](https://bscscan.com/address/0x4844c01b783Ddc5F1c5917Dcbe71F9993C920A26) | `cadfd37`[↗](https://github.com/layer-3/dailyclaim/blob/cadfd378c76f3ce777cd59e1d5d261b9c4d6fd1d/src/voucher/executors/ClaimExecutor.sol) |                                                                  |
+| Outside range authorizer       | TimeRangeAuthorizer | `0x547d613C2f613c9bC78d49051093F092924aaD1c`[↗](https://bscscan.com/address/0x547d613C2f613c9bC78d49051093F092924aaD1c) | `dc84b5e`[↗](https://github.com/layer-3/broker-contracts/blob/dc84b5e1a30db420ff3b881a74fca6f4556fbc36/src/vault/TimeRangeAuthorizer.sol) | Time range is set to Jan 17th 12:00:00 - March 17th 11:59:59 UTC |
+| Yellow Vault                   | LiteVault           | `0xb5F3a9dD92270f55e55B7Ac7247639953538A261`[↗](https://bscscan.com/address/0xb5F3a9dD92270f55e55B7Ac7247639953538A261) | `dc84b5e`[↗](https://github.com/layer-3/broker-contracts/blob/dc84b5e1a30db420ff3b881a74fca6f4556fbc36/src/vault/LiteVault.sol)           |                                                                  |
 
 ### Polygon
 
@@ -62,23 +77,27 @@ Last updated: November 8, 2024.
 
 Chain id: 8453.
 
-Last updated: September 19, 2024.
+Last updated: March 12, 2025.
 
-| Description                    | Contract Name | Address                                                                                                                  | Git SHA and Repository                                                                                                                    | Notes |
-| ------------------------------ | ------------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- | ----- |
-| Yellow Voucher Router          | VoucherRouter | `0x2A8B51821884CF9A7ea1A24C72E46Ff52dCb4F16`[↗](https://basescan.org/address/0x2A8B51821884CF9A7ea1A24C72E46Ff52dCb4F16) | `88fe036`[↗](https://github.com/layer-3/dailyclaim/blob/88fe03638a4936bf4a719ab156158b43a2d0af0b/src/voucher/VoucherRouter.sol)           |       |
-| Points claimer for Leaderboard | ClaimExecutor | `0x4844c01b783Ddc5F1c5917Dcbe71F9993C920A26`[↗](https://basescan.org/address/0x4844c01b783Ddc5F1c5917Dcbe71F9993C920A26) | `cadfd37`[↗](https://github.com/layer-3/dailyclaim/blob/cadfd378c76f3ce777cd59e1d5d261b9c4d6fd1d/src/voucher/executors/ClaimExecutor.sol) |       |
+| Description                    | Contract Name       | Address                                                                                                                  | Git SHA and Repository                                                                                                                    | Notes                                                            |
+| ------------------------------ | ------------------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Yellow Voucher Router          | VoucherRouter       | `0x2A8B51821884CF9A7ea1A24C72E46Ff52dCb4F16`[↗](https://basescan.org/address/0x2A8B51821884CF9A7ea1A24C72E46Ff52dCb4F16) | `88fe036`[↗](https://github.com/layer-3/dailyclaim/blob/88fe03638a4936bf4a719ab156158b43a2d0af0b/src/voucher/VoucherRouter.sol)           |                                                                  |
+| Points claimer for Leaderboard | ClaimExecutor       | `0x4844c01b783Ddc5F1c5917Dcbe71F9993C920A26`[↗](https://basescan.org/address/0x4844c01b783Ddc5F1c5917Dcbe71F9993C920A26) | `cadfd37`[↗](https://github.com/layer-3/dailyclaim/blob/cadfd378c76f3ce777cd59e1d5d261b9c4d6fd1d/src/voucher/executors/ClaimExecutor.sol) |                                                                  |
+| Outside range authorizer       | TimeRangeAuthorizer | `0x547d613C2f613c9bC78d49051093F092924aaD1c`[↗](https://basescan.org/address/0x547d613C2f613c9bC78d49051093F092924aaD1c) | `dc84b5e`[↗](https://github.com/layer-3/broker-contracts/blob/dc84b5e1a30db420ff3b881a74fca6f4556fbc36/src/vault/TimeRangeAuthorizer.sol) | Time range is set to Jan 17th 12:00:00 - March 17th 11:59:59 UTC |
+| Yellow Vault                   | LiteVault           | `0xb5F3a9dD92270f55e55B7Ac7247639953538A261`[↗](https://basescan.org/address/0xb5F3a9dD92270f55e55B7Ac7247639953538A261) | `dc84b5e`[↗](https://github.com/layer-3/broker-contracts/blob/dc84b5e1a30db420ff3b881a74fca6f4556fbc36/src/vault/LiteVault.sol)           |                                                                  |
 
 ### Arbitrum
 
 Chain id: 42161.
 
-Last updated: September 19, 2024.
+Last updated: March 12, 2025.
 
-| Description                    | Contract Name | Address                                                                                                                 | Git SHA and Repository                                                                                                                    | Notes |
-| ------------------------------ | ------------- | ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ----- |
-| Yellow Voucher Router          | VoucherRouter | `0x2A8B51821884CF9A7ea1A24C72E46Ff52dCb4F16`[↗](https://arbiscan.io/address/0x2A8B51821884CF9A7ea1A24C72E46Ff52dCb4F16) | `88fe036`[↗](https://github.com/layer-3/dailyclaim/blob/88fe03638a4936bf4a719ab156158b43a2d0af0b/src/voucher/VoucherRouter.sol)           |       |
-| Points claimer for Leaderboard | ClaimExecutor | `0x4844c01b783Ddc5F1c5917Dcbe71F9993C920A26`[↗](https://arbiscan.io/address/0x4844c01b783Ddc5F1c5917Dcbe71F9993C920A26) | `cadfd37`[↗](https://github.com/layer-3/dailyclaim/blob/cadfd378c76f3ce777cd59e1d5d261b9c4d6fd1d/src/voucher/executors/ClaimExecutor.sol) |       |
+| Description                    | Contract Name       | Address                                                                                                                 | Git SHA and Repository                                                                                                                    | Notes                                                            |
+| ------------------------------ | ------------------- | ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Yellow Voucher Router          | VoucherRouter       | `0x2A8B51821884CF9A7ea1A24C72E46Ff52dCb4F16`[↗](https://arbiscan.io/address/0x2A8B51821884CF9A7ea1A24C72E46Ff52dCb4F16) | `88fe036`[↗](https://github.com/layer-3/dailyclaim/blob/88fe03638a4936bf4a719ab156158b43a2d0af0b/src/voucher/VoucherRouter.sol)           |                                                                  |
+| Points claimer for Leaderboard | ClaimExecutor       | `0x4844c01b783Ddc5F1c5917Dcbe71F9993C920A26`[↗](https://arbiscan.io/address/0x4844c01b783Ddc5F1c5917Dcbe71F9993C920A26) | `cadfd37`[↗](https://github.com/layer-3/dailyclaim/blob/cadfd378c76f3ce777cd59e1d5d261b9c4d6fd1d/src/voucher/executors/ClaimExecutor.sol) |                                                                  |
+| Outside range authorizer       | TimeRangeAuthorizer | `0x547d613C2f613c9bC78d49051093F092924aaD1c`[↗](https://arbiscan.io/address/0x547d613C2f613c9bC78d49051093F092924aaD1c) | `dc84b5e`[↗](https://github.com/layer-3/broker-contracts/blob/dc84b5e1a30db420ff3b881a74fca6f4556fbc36/src/vault/TimeRangeAuthorizer.sol) | Time range is set to Jan 17th 12:00:00 - March 17th 11:59:59 UTC |
+| Yellow Vault                   | LiteVault           | `0xb5F3a9dD92270f55e55B7Ac7247639953538A261`[↗](https://arbiscan.io/address/0xb5F3a9dD92270f55e55B7Ac7247639953538A261) | `dc84b5e`[↗](https://github.com/layer-3/broker-contracts/blob/dc84b5e1a30db420ff3b881a74fca6f4556fbc36/src/vault/LiteVault.sol)           |                                                                  |
 
 ### Avalanche C-chain
 
