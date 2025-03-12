@@ -1,0 +1,46 @@
+{
+  "erc20Paymasters": {},
+  "liteVaultAddress": "",
+  "callTypes": {
+    "approve": {
+      "allowedFeeTypes": [
+        "native"
+      ]
+    },
+    "withdrawal": {
+      "allowedFeeTypes": [
+        "native"
+      ]
+    },
+    "swap": {
+      "allowedFeeTypes": [
+        "native"
+      ]
+    },
+    "lock": {
+      "allowedFeeTypes": [
+        "native",
+        "sponsored"
+      ]
+    },
+    "unlock": {
+      "allowedFeeTypes": [
+        "native"
+      ]
+    },
+    "daily_claim": {
+      "allowedFeeTypes": [
+        "native"
+      ]
+    },
+    "other": {
+      "allowedFeeTypes": [
+        "native"
+      ]
+    }
+  },
+  "trustedAddresses": [
+    "",
+    ""
+  ]
+}
