@@ -1,6 +1,18 @@
 {
   "tokens": [
     {
+      "address": "0x0000000000000000000000000000000000000000",
+      "name": "Ether",
+      "symbol": "ETH",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/ethereum-64x64.png",
+      "extensions":{
+        "allow_locking": true,
+        "coingecko_api_id": "ethereum"
+      }
+    },
+    {
       "address": "0x4200000000000000000000000000000000000042",
       "name": "Optimism",
       "symbol": "OP",
