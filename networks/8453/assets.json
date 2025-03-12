@@ -7,8 +7,7 @@
       "decimals": 18,
       "precision": 6,
       "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/ethereum-64x64.png",
-      "extensions":
-      {
+      "extensions":{
         "allow_locking": true,
         "coingecko_api_id": "ethereum"
       }
@@ -122,18 +121,6 @@
       "extensions": {
         "allow_locking": false,
         "coingecko_api_id": "aave"
-      }
-    },
-    {
-      "address": "0xc27468b12ffA6d714B1b5fBC87eF403F38b82AD4",
-      "name": "OFFICIAL TRUMP",
-      "symbol": "TRUMP",
-      "decimals": 18,
-      "precision": 6,
-      "logoURI": "https://assets.coingecko.com/coins/images/53746/standard/trump.png?1737171561",
-      "extensions": {
-        "allow_locking": false,
-        "coingecko_api_id": "official-trump"
       }
     }
   ]
