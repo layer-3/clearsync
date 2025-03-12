@@ -3,10 +3,10 @@
     {
         "name": "Polygon Matic",
         "address": "0x0000000000000000000000000000000000000000",
-        "symbol": "MATIC",
+        "symbol": "POL",
         "decimals": 18,
         "precision": 8,
-        "logoURI": "https://polygonscan.com/token/images/polygonmatic_new_32.png"
+        "logoURI": "https://assets.coingecko.com/coins/images/32440/standard/polygon.png"
     },
     {
         "address": "0x38871D722689f6d799B2A1FE93bE096E98e00986",
@@ -27,7 +27,7 @@
         "symbol": "USDT",
         "decimals": 6,
         "precision": 6,
-        "logoURI": "https://lineascan.build/token/images/usdtlogo_32.png",
+        "logoURI": "https://assets.coingecko.com/coins/images/325/standard/Tether.png",
         "extensions":
         {
           "allow_locking": true,
@@ -41,7 +41,7 @@
         "alias": "USD",
         "decimals": 6,
         "precision": 6,
-        "logoURI": "https://lineascan.build/token/images/centre-usdc_28.png",
+        "logoURI": "https://assets.coingecko.com/coins/images/6319/large/usdc.png",
         "extensions":
         {
           "allow_locking": true,
@@ -54,7 +54,7 @@
         "symbol": "LUBE",
         "decimals": 18,
         "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/33070/standard/200x200.png?1700536826",
+        "logoURI": "https://assets.coingecko.com/coins/images/33070/standard/200x200.png",
         "extensions": {}
     },
     {
@@ -63,7 +63,7 @@
         "symbol": "WBTC",
         "decimals": 18,
         "precision": 6,
-        "logoURI": "https://lineascan.build/token/images/wbtc_28.png",
+        "logoURI": "https://assets.coingecko.com/coins/images/7598/standard/wrapped_bitcoin_wbtc.png",
         "extensions":
         {
           "allow_locking": true,
@@ -76,7 +76,7 @@
         "symbol": "WETH",
         "decimals": 18,
         "precision": 6,
-        "logoURI": "https://token-repository.dappradar.com/tokens?protocol=ethereum&contract=0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2&file=logo.png",
+        "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png",
         "extensions":
         {
           "allow_locking": true,
@@ -89,7 +89,7 @@
         "symbol": "LINDA",
         "decimals": 18,
         "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/33699/standard/linda-logo-200.png?1705166731",
+        "logoURI": "https://assets.coingecko.com/coins/images/33699/standard/linda-logo-200.png",
         "extensions": {}
     }
   ]

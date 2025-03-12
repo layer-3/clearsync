@@ -6,7 +6,7 @@
         "symbol": "ETH",
         "decimals": 18,
         "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png?1696501628",
+        "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png",
         "extensions":
         {
           "allow_locking": true,
@@ -28,7 +28,7 @@
         "symbol": "USDT",
         "decimals": 6,
         "precision": 6,
-        "logoURI": "https://lineascan.build/token/images/usdtlogo_32.png",
+        "logoURI": "assets.coingecko.com/coins/images/325/standard/Tether.png",
         "extensions":
         {
           "allow_locking": true,
@@ -42,7 +42,7 @@
         "alias": "USD",
         "decimals": 6,
         "precision": 6,
-        "logoURI": "https://lineascan.build/token/images/centre-usdc_28.png",
+        "logoURI": "https://assets.coingecko.com/coins/images/6319/large/usdc.png",
         "extensions":
         {
           "allow_locking": true,
@@ -55,7 +55,7 @@
         "symbol": "LUBE",
         "decimals": 18,
         "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/33070/standard/200x200.png?1700536826",
+        "logoURI": "https://assets.coingecko.com/coins/images/33070/standard/200x200.png",
         "extensions": {}
     },
     {
@@ -64,7 +64,7 @@
         "symbol": "WBTC",
         "decimals": 18,
         "precision": 6,
-        "logoURI": "https://lineascan.build/token/images/wbtc_28.png",
+        "logoURI": "https://assets.coingecko.com/coins/images/7598/standard/wrapped_bitcoin_wbtc.png",
         "extensions":
         {
           "allow_locking": true,
@@ -77,7 +77,7 @@
         "symbol": "LINDA",
         "decimals": 18,
         "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/33699/standard/linda-logo-200.png?1705166731",
+        "logoURI": "https://assets.coingecko.com/coins/images/33699/standard/linda-logo-200.png",
         "extensions": {}
     },
     {

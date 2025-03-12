@@ -14,7 +14,7 @@
         "symbol": "USDT",
         "decimals": 6,
         "precision": 4,
-        "logoURI": "https://cryptologos.cc/logos/tether-usdt-logo.png",
+        "logoURI": "https://assets.coingecko.com/coins/images/325/standard/Tether.png",
         "extensions":
         {
           "allow_locking": true,
@@ -42,7 +42,7 @@
         "alias": "USD",
         "decimals": 6,
         "precision": 4,
-        "logoURI": "https://assets.coingecko.com/coins/images/6319/large/usdc.png?1696506694",
+        "logoURI": "https://assets.coingecko.com/coins/images/6319/large/usdc.png",
         "extensions":
         {
           "allow_locking": true,
@@ -55,7 +55,7 @@
         "symbol": "SHIB",
         "decimals": 18,
         "precision": 0,
-        "logoURI": "https://s2.coinmarketcap.com/static/img/coins/64x64/5994.png"
+        "logoURI": "https://assets.coingecko.com/coins/images/11939/standard/shiba.png"
       },
       {
         "address": "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
@@ -63,7 +63,7 @@
         "symbol": "WBTC",
         "decimals": 8,
         "precision": 6,
-        "logoURI": "https://s2.coinmarketcap.com/static/img/coins/64x64/3717.png",
+        "logoURI": "https://assets.coingecko.com/coins/images/7598/standard/wrapped_bitcoin_wbtc.png",
         "extensions":
         {
           "allow_locking": true,
@@ -76,7 +76,7 @@
         "symbol": "ETH",
         "decimals": 18,
         "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png?1696501628",
+        "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png",
         "extensions":
         {
           "allow_locking": true,
@@ -89,7 +89,7 @@
         "symbol": "WETH",
         "decimals": 18,
         "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png?1696501628",
+        "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png",
         "extensions":
         {
           "allow_locking": true,
@@ -116,7 +116,7 @@
         "symbol": "WSOL",
         "decimals": 9,
         "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/4128/standard/solana.png?1696504756",
+        "logoURI": "https://assets.coingecko.com/coins/images/4128/standard/solana.png",
         "extensions": {}
       },
       {
@@ -125,7 +125,7 @@
         "symbol": "BNB",
         "decimals": 18,
         "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/825/standard/bnb-icon2_2x.png?1696501970",
+        "logoURI": "https://assets.coingecko.com/coins/images/825/standard/bnb-icon2_2x.png",
         "extensions": {}
       },
       {
@@ -147,7 +147,7 @@
         "symbol": "PEPE",
         "decimals": 18,
         "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/29850/standard/pepe-token.jpeg?1696528776",
+        "logoURI": "https://assets.coingecko.com/coins/images/29850/standard/pepe-token.jpeg",
         "extensions": {}
       },
       {
@@ -156,7 +156,7 @@
         "symbol": "BADGER",
         "decimals": 18,
         "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/13287/standard/badger_dao_logo.jpg?1696513059",
+        "logoURI": "https://assets.coingecko.com/coins/images/13287/standard/badger_dao_logo.jpg",
         "extensions": {}
       },
       {
@@ -165,7 +165,7 @@
         "symbol": "FLOKI",
         "decimals": 9,
         "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/16746/standard/PNG_image.png?1696516318",
+        "logoURI": "https://assets.coingecko.com/coins/images/16746/standard/PNG_image.png",
         "extensions": {}
       },
       {
@@ -174,7 +174,7 @@
         "symbol": "MEME",
         "decimals": 18,
         "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/32528/standard/memecoin_%282%29.png?1698912168",
+        "logoURI": "https://assets.coingecko.com/coins/images/32528/standard/memecoin_%282%29.png",
         "extensions": {}
       },
       {
@@ -183,7 +183,7 @@
         "symbol": "UNI",
         "decimals": 18,
         "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/12504/standard/uni.jpg?1696512319",
+        "logoURI": "https://assets.coingecko.com/coins/images/12504/standard/uni.jpg",
         "extensions": {}
       },
       {
@@ -192,7 +192,7 @@
         "symbol": "SUSHI",
         "decimals": 18,
         "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/12271/standard/512x512_Logo_no_chop.png?1696512101",
+        "logoURI": "https://assets.coingecko.com/coins/images/12271/standard/512x512_Logo_no_chop.png",
         "extensions": {}
       },
       {
@@ -201,7 +201,7 @@
         "symbol": "DODO",
         "decimals": 18,
         "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/12651/standard/dodo_logo.png?1696512458",
+        "logoURI": "https://assets.coingecko.com/coins/images/12651/standard/dodo_logo.png",
         "extensions": {}
       },
       {
@@ -210,7 +210,7 @@
         "symbol": "BEAM",
         "decimals": 18,
         "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/32417/standard/chain-logo.png?1698114384",
+        "logoURI": "https://assets.coingecko.com/coins/images/32417/standard/chain-logo.png",
         "extensions": {}
       },
       {
@@ -219,7 +219,7 @@
         "symbol": "CHZ",
         "decimals": 18,
         "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/8834/standard/CHZ_Token_updated.png?1696508986",
+        "logoURI": "https://assets.coingecko.com/coins/images/8834/standard/CHZ_Token_updated.png",
         "extensions": {}
       },
       {
@@ -228,7 +228,7 @@
         "symbol": "FOX",
         "decimals": 18,
         "precision": 6,
-        "logoURI": "https://s2.coinmarketcap.com/static/img/coins/64x64/8200.png",
+        "logoURI": "https://assets.coingecko.com/coins/images/9988/standard/fox_token.png",
         "extensions": {}
       },
       {
@@ -237,7 +237,7 @@
         "symbol": "WTON",
         "decimals": 9,
         "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/17980/standard/ton_symbol.png?1696517498",
+        "logoURI": "https://assets.coingecko.com/coins/images/17980/standard/ton_symbol.png",
         "extensions": {}
       },
       {
@@ -246,7 +246,7 @@
         "symbol": "BabyDoge",
         "decimals": 9,
         "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/16125/standard/babydoge.jpg?1696515731",
+        "logoURI": "https://assets.coingecko.com/coins/images/16125/standard/babydoge.jpg",
         "extensions": {}
       },
       {
@@ -255,7 +255,7 @@
         "symbol": "BANANA",
         "decimals": 18,
         "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/17521/standard/banana-token-cg.png?1696517059",
+        "logoURI": "https://assets.coingecko.com/coins/images/17521/standard/banana-token-cg.png",
         "extensions": {}
       },
       {
@@ -264,7 +264,7 @@
         "symbol": "ELON",
         "decimals": 18,
         "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/14962/standard/6GxcPRo3_400x400.jpg?1696514622",
+        "logoURI": "https://assets.coingecko.com/coins/images/14962/standard/6GxcPRo3_400x400.jpg",
         "extensions": {}
       },
       {
@@ -273,7 +273,7 @@
         "symbol": "GROK",
         "decimals": 9,
         "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/32788/standard/GROK.png?1707579427",
+        "logoURI": "https://assets.coingecko.com/coins/images/32788/standard/GROK.png",
         "extensions": {}
       },
       {

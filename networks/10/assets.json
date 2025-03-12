@@ -1,20 +1,19 @@
 {
   "tokens": [
     {
-      "address": "0xd29687c813D741E2F938F4aC377128810E217b1b",
-      "name": "Scroll",
-      "symbol": "SCR",
+      "address": "0x4200000000000000000000000000000000000042",
+      "name": "Optimism",
+      "symbol": "OP",
       "decimals": 18,
       "precision": 6,
-      "logoURI": "https://assets.coingecko.com/coins/images/50571/standard/scroll.jpg",
+      "logoURI": "https://assets.coingecko.com/coins/images/25244/standard/Optimism.png",
       "extensions": {
-        "allow_locking": true,
-        "coingecko_api_id": "scroll",
-        "locking_multiplier": 1.5
+        "allow_locking": false,
+        "coingecko_api_id": "optimism"
       }
     },
     {
-      "address": "0xf55BEC9cafDbE8730f096Aa55dad6D22d44099Df",
+      "address": "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58",
       "name": "USD Tether",
       "symbol": "USDT",
       "decimals": 6,
@@ -26,7 +25,7 @@
       }
     },
     {
-      "address": "0x06eFdBFf2a14a7c8E15944D1F4A48F9F95F663A4",
+      "address": "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
       "name": "USD Coin",
       "symbol": "USDC",
       "alias": "USD",
@@ -39,7 +38,7 @@
       }
     },
     {
-      "address": "0x3C1BCa5a656e69edCD0D4E36BEbb3FcDAcA60Cf1",
+      "address": "0x68f180fcCe6836688e9084f035309E29Bf0A2095",
       "name": "Wrapped Bitcoin",
       "symbol": "WBTC",
       "decimals": 8,
@@ -51,19 +50,7 @@
       }
     },
     {
-      "address": "0x0000000000000000000000000000000000000000",
-      "name": "Ether",
-      "symbol": "ETH",
-      "decimals": 18,
-      "precision": 6,
-      "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png",
-      "extensions": {
-        "allow_locking": true,
-        "coingecko_api_id": "ethereum"
-      }
-    },
-    {
-      "address": "0x5300000000000000000000000000000000000004",
+      "address": "0x4200000000000000000000000000000000000006",
       "name": "Wrapped Ether",
       "symbol": "WETH",
       "decimals": 18,
@@ -75,7 +62,19 @@
       }
     },
     {
-      "address": "0xf610A9dfB7C89644979b4A0f27063E9e7d7Cda32",
+      "address": "0xdC6fF44d5d932Cbd77B52E5612Ba0529DC6226F1",
+      "name": "Worldcoin",
+      "symbol": "WLD",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://assets.coingecko.com/coins/images/31069/standard/worldcoin.jpeg",
+      "extensions": {
+        "allow_locking": false,
+        "coingecko_api_id": "worldcoin-wld"
+      }
+    },
+    {
+      "address": "0x1F32b1c2345538c0c6f582fCB022739c4A194Ebb",
       "name": "Wrapped Liquid Staked Ether 2.0",
       "symbol": "wstETH",
       "decimals": 18,
@@ -83,12 +82,12 @@
       "logoURI": "https://assets.coingecko.com/coins/images/18834/standard/wstETH.png",
       "extensions": {
         "allow_locking": true,
-        "coingecko_api_id": "polygon-bridged-wsteth-polygon",
+        "coingecko_api_id": "wrapped-steth",
         "locking_multiplier": 1.5
       }
     },
     {
-      "address": "0x53878B874283351D26d206FA512aEcE1Bef6C0dD",
+      "address": "0x9Bcef72be871e61ED4fBbc7630889beE758eb81D",
       "name": "TokenRocket Pool ETH",
       "symbol": "rETH",
       "decimals": 18,
@@ -101,7 +100,7 @@
       }
     },
     {
-      "address": "0xcA77eB3fEFe3725Dc33bccB54eDEFc3D9f764f97",
+      "address": "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
       "name": "Dai Stablecoin",
       "symbol": "DAI",
       "decimals": 18,
