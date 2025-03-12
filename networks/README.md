@@ -74,6 +74,7 @@ When adding a new network, you need to:
 3. Make sure Kernel (v2.4 as for March 2025) supports the network. See [Kernel Deployment Website](https://kernel-deployments-status.onrender.com/) for the respective network. Kernel, KernelFactory and ECDSAValidator have to be deployed on the network.
    Also, in the "FactoryInfo" tab, a Factory with respective version has to have an `approved` status near it. Also, EntryPoint v0.6 has to have enough ether staked. If these conditions are not met, contact ZeroDev team.
 4. Deploy respective SC infra on each network: [LiteVault](https://github.com/layer-3/broker-contracts/blob/master/src/vault/LiteVault.sol) (with a respective [Authorizer](https://github.com/layer-3/broker-contracts/blob/master/src/vault/TimeRangeAuthorizer.sol)), [DailyClaim](https://github.com/layer-3/broker-contracts/blob/master/src/voucher/executors/ClaimExecutor.sol) (with [VoucherRouter](https://github.com/layer-3/broker-contracts/blob/master/src/voucher/VoucherRouter.sol)).
-5. Configure the network is supported by the Pathfinder (see its `Adding Newtork` docs)
-6. Configure the network is supported by Yellow.com (Yellow Vault) (see its `Adding Newtork` docs)
-7. Update the env on Yellow.com (Yellow Vault) that points to networks config (use a link that points to a commit, not branch)
+5. Remember that for Sponsoring UserOps to work, the Bundler must have sponsorship spending limits to be setup in place.
+6. Configure the network is supported by the Pathfinder (see its `Adding Newtork` docs)
+7. Configure the network is supported by Yellow.com (Yellow Vault) (see its `Adding Newtork` docs)
+8. Update the env on Yellow.com (Yellow Vault) that points to networks config (use a link that points to a commit, not branch)
