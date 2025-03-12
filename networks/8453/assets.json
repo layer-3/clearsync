@@ -1,32 +1,32 @@
 {
   "tokens": [
     {
-      "address": "",
-      "name": "",
-      "symbol": "",
+      "address": "0x0000000000000000000000000000000000000000",
+      "name": "Ether",
+      "symbol": "ETH",
       "decimals": 18,
       "precision": 6,
-      "logoURI": "",
-      "extensions": {
+      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/ethereum-64x64.png",
+      "extensions":
+      {
         "allow_locking": true,
-        "coingecko_api_id": "",
-        "locking_multiplier": 1.5
+        "coingecko_api_id": "ethereum"
       }
     },
     {
-      "address": "",
-      "name": "USD Tether",
-      "symbol": "USDT",
-      "decimals": 6,
+      "address": "0x820C137fa70C8691f0e44Dc420a5e53c168921Dc",
+      "name": "USDS Stablecoin",
+      "symbol": "USDS",
+      "decimals": 18,
       "precision": 4,
-      "logoURI": "https://cryptologos.cc/logos/tether-usdt-logo.png",
+      "logoURI": "https://assets.coingecko.com/coins/images/39926/standard/usds.webp?1726666683",
       "extensions": {
-        "allow_locking": true,
-        "coingecko_api_id": "tether"
+        "allow_locking": false,
+        "coingecko_api_id": "usds"
       }
     },
     {
-      "address": "",
+      "address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
       "name": "USD Coin",
       "symbol": "USDC",
       "alias": "USD",
@@ -34,70 +34,106 @@
       "precision": 4,
       "logoURI": "https://assets.coingecko.com/coins/images/6319/large/usdc.png?1696506694",
       "extensions": {
-        "allow_locking": true,
+        "allow_locking": false,
         "coingecko_api_id": "usd-coin"
       }
     },
     {
-      "address": "",
+      "address": "0x0555E30da8f98308EdB960aa94C0Db47230d2B9c",
       "name": "Wrapped Bitcoin",
       "symbol": "WBTC",
       "decimals": 8,
       "precision": 6,
       "logoURI": "https://s2.coinmarketcap.com/static/img/coins/64x64/3717.png",
       "extensions": {
-        "allow_locking": true,
+        "allow_locking": false,
         "coingecko_api_id": "wrapped-bitcoin"
       }
     },
     {
-      "address": "",
+      "address": "0x4200000000000000000000000000000000000006",
       "name": "Wrapped Ether",
       "symbol": "WETH",
       "decimals": 18,
       "precision": 6,
       "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png?1696501628",
       "extensions": {
-        "allow_locking": true,
+        "allow_locking": false,
         "coingecko_api_id": "weth"
       }
     },
     {
-      "address": "",
+      "address": "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452",
       "name": "Wrapped Liquid Staked Ether 2.0",
       "symbol": "wstETH",
       "decimals": 18,
       "precision": 6,
       "logoURI": "https://assets.coingecko.com/coins/images/18834/standard/wstETH.png",
       "extensions": {
-        "allow_locking": true,
+        "allow_locking": false,
         "coingecko_api_id": "wrapped-steth",
         "locking_multiplier": 1.5
       }
     },
     {
-      "address": "",
+      "address": "0xB6fe221Fe9EeF5aBa221c348bA20A1Bf5e73624c",
       "name": "TokenRocket Pool ETH",
       "symbol": "rETH",
       "decimals": 18,
       "precision": 6,
       "logoURI": "https://assets.coingecko.com/coins/images/20764/standard/reth.png",
       "extensions": {
-        "allow_locking": true,
+        "allow_locking": false,
         "coingecko_api_id": "ethereum",
         "locking_multiplier": 1.5
       }
     },
     {
-      "address": "",
+      "address": "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb",
       "name": "Dai Stablecoin",
       "symbol": "DAI",
       "decimals": 18,
       "precision": 6,
       "logoURI": "https://lineascan.build/token/images/daistablecoin_32.png",
       "extensions": {
-        "allow_locking": true,
+        "allow_locking": false,
         "coingecko_api_id": "dai"
+      }
+    },
+    {
+      "address": "0x3992B27dA26848C2b19CeA6Fd25ad5568B68AB98",
+      "name": "MANTRA",
+      "symbol": "OM",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://assets.coingecko.com/coins/images/12151/standard/OM_Token.png?1696511991",
+      "extensions": {
+        "allow_locking": false,
+        "coingecko_api_id": "mantra"
+      }
+    },
+    {
+      "address": "0x63706e401c06ac8513145b7687A14804d17f814b",
+      "name": "Aave",
+      "symbol": "AAVE",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://assets.coingecko.com/coins/images/12645/standard/aave-token-round.png?1720472354",
+      "extensions": {
+        "allow_locking": false,
+        "coingecko_api_id": "aave"
+      }
+    },
+    {
+      "address": "0xc27468b12ffA6d714B1b5fBC87eF403F38b82AD4",
+      "name": "OFFICIAL TRUMP",
+      "symbol": "TRUMP",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://assets.coingecko.com/coins/images/53746/standard/trump.png?1737171561",
+      "extensions": {
+        "allow_locking": false,
+        "coingecko_api_id": "official-trump"
       }
     }
   ]
