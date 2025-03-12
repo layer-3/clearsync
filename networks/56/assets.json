@@ -18,7 +18,7 @@
       "symbol": "USDT",
       "decimals": 18,
       "precision": 4,
-      "logoURI": "https://cryptologos.cc/logos/tether-usdt-logo.png",
+      "logoURI": "assets.coingecko.com/coins/images/325/standard/Tether.png",
       "extensions": {
         "allow_locking": true,
         "coingecko_api_id": "tether"
@@ -55,7 +55,7 @@
       "symbol": "WBTC",
       "decimals": 8,
       "precision": 6,
-      "logoURI": "https://s2.coinmarketcap.com/static/img/coins/64x64/3717.png",
+      "logoURI": "https://assets.coingecko.com/coins/images/7598/standard/wrapped_bitcoin_wbtc.png",
       "extensions": {
         "allow_locking": true,
         "coingecko_api_id": "wrapped-bitcoin"
@@ -67,7 +67,7 @@
       "symbol": "DAI",
       "decimals": 18,
       "precision": 6,
-      "logoURI": "https://lineascan.build/token/images/daistablecoin_32.png",
+      "logoURI": "https://assets.coingecko.com/coins/images/32320/standard/dai.png",
       "extensions": {
         "allow_locking": true,
         "coingecko_api_id": "dai"
