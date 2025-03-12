@@ -18,7 +18,7 @@
       "symbol": "USDS",
       "decimals": 18,
       "precision": 4,
-      "logoURI": "https://assets.coingecko.com/coins/images/39926/standard/usds.webp?1726666683",
+      "logoURI": "https://assets.coingecko.com/coins/images/39926/standard/usds.webp",
       "extensions": {
         "allow_locking": false,
         "coingecko_api_id": "usds"
@@ -31,7 +31,7 @@
       "alias": "USD",
       "decimals": 6,
       "precision": 4,
-      "logoURI": "https://assets.coingecko.com/coins/images/6319/large/usdc.png?1696506694",
+      "logoURI": "https://assets.coingecko.com/coins/images/6319/large/usdc.png",
       "extensions": {
         "allow_locking": false,
         "coingecko_api_id": "usd-coin"
@@ -43,7 +43,7 @@
       "symbol": "WBTC",
       "decimals": 8,
       "precision": 6,
-      "logoURI": "https://s2.coinmarketcap.com/static/img/coins/64x64/3717.png",
+      "logoURI": "https://assets.coingecko.com/coins/images/7598/standard/wrapped_bitcoin_wbtc.png",
       "extensions": {
         "allow_locking": false,
         "coingecko_api_id": "wrapped-bitcoin"
@@ -55,7 +55,7 @@
       "symbol": "WETH",
       "decimals": 18,
       "precision": 6,
-      "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png?1696501628",
+      "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png",
       "extensions": {
         "allow_locking": false,
         "coingecko_api_id": "weth"
@@ -93,7 +93,7 @@
       "symbol": "DAI",
       "decimals": 18,
       "precision": 6,
-      "logoURI": "https://lineascan.build/token/images/daistablecoin_32.png",
+      "logoURI": "https://assets.coingecko.com/coins/images/32320/standard/dai.png",
       "extensions": {
         "allow_locking": false,
         "coingecko_api_id": "dai"
@@ -105,7 +105,7 @@
       "symbol": "OM",
       "decimals": 18,
       "precision": 6,
-      "logoURI": "https://assets.coingecko.com/coins/images/12151/standard/OM_Token.png?1696511991",
+      "logoURI": "https://assets.coingecko.com/coins/images/12151/standard/OM_Token.png",
       "extensions": {
         "allow_locking": false,
         "coingecko_api_id": "mantra"
@@ -117,7 +117,7 @@
       "symbol": "AAVE",
       "decimals": 18,
       "precision": 6,
-      "logoURI": "https://assets.coingecko.com/coins/images/12645/standard/aave-token-round.png?1720472354",
+      "logoURI": "https://assets.coingecko.com/coins/images/12645/standard/aave-token-round.png",
       "extensions": {
         "allow_locking": false,
         "coingecko_api_id": "aave"
