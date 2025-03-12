@@ -18,7 +18,7 @@
       "symbol": "USDT",
       "decimals": 18,
       "precision": 4,
-      "logoURI": "assets.coingecko.com/coins/images/325/standard/Tether.png",
+      "logoURI": "https://assets.coingecko.com/coins/images/325/standard/Tether.png",
       "extensions": {
         "allow_locking": true,
         "coingecko_api_id": "tether"
