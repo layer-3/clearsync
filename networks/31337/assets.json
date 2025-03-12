@@ -22,7 +22,7 @@
         "symbol": "USDC",
         "decimals": 6,
         "precision": 4,
-        "logoURI": "https://assets.coingecko.com/coins/images/6319/large/usdc.png?1696506694",
+        "logoURI": "https://assets.coingecko.com/coins/images/6319/large/usdc.png",
         "extensions":
         {
           "allow_locking": true,
@@ -35,7 +35,7 @@
         "symbol": "BTC",
         "decimals": 18,
         "precision": 6,
-        "logoURI": "https://s2.coinmarketcap.com/static/img/coins/64x64/3717.png"
+        "logoURI": "https://assets.coingecko.com/coins/images/1/standard/bitcoin.png"
       },
       {
         "address": "0x0000000000000000000000000000000000000000",
@@ -43,7 +43,7 @@
         "symbol": "ETH",
         "decimals": 18,
         "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png?1696501628",
+        "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png",
         "extensions":
         {
           "allow_locking": true,
@@ -56,7 +56,7 @@
         "symbol": "WETH",
         "decimals": 18,
         "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png?1696501628",
+        "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png",
         "extensions":
         {
           "allow_locking": true,

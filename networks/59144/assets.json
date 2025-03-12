@@ -32,7 +32,7 @@
       "symbol": "USDT",
       "decimals": 6,
       "precision": 4,
-      "logoURI": "https://cryptologos.cc/logos/tether-usdt-logo.png",
+      "logoURI": "https://assets.coingecko.com/coins/images/325/standard/Tether.png",
       "extensions":
       {
         "allow_locking": true,

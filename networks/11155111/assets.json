@@ -6,7 +6,7 @@
         "symbol": "ETH",
         "decimals": 18,
         "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png?1696501628",
+        "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png",
         "extensions":
         {
           "allow_locking": true,
@@ -20,7 +20,7 @@
         "alias": "USD",
         "decimals": 6,
         "precision": 6,
-        "logoURI": "https://lineascan.build/token/images/centre-usdc_28.png",
+        "logoURI": "https://assets.coingecko.com/coins/images/6319/large/usdc.png",
         "extensions":
         {
           "allow_locking": true,

@@ -105,7 +105,7 @@
       "symbol": "DAI",
       "decimals": 18,
       "precision": 6,
-      "logoURI": "https://lineascan.build/token/images/daistablecoin_32.png",
+      "logoURI": "https://assets.coingecko.com/coins/images/32320/standard/dai.png",
       "extensions": {
         "allow_locking": true,
         "coingecko_api_id": "dai"
