@@ -19,7 +19,7 @@ This way, the behavior after an error handler failed is consistent across the pr
 
 ### Handler impact
 
-Error handling chain should start with the a handler with the biggest impact on a system in case of successful handling, e.g. `recovery` handler should be run first as it can potentially recover the system from the error.
+Error handling chain should start with a handler with the biggest impact on a system in case of successful handling, e.g. `recovery` handler should be run first as it can potentially recover the system from the error.
 
 Next handler in the chain should be have the next biggest impact on the system, but smaller than the previous one, e.g. `rollback` handler should be run after `recovery` handler has failed as it can potentially rollback the system to the previous state.
 
