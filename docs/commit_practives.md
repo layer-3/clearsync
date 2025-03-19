@@ -91,7 +91,7 @@ If the description is too long, it should be split into the body.
 
 **BREAKING CHANGE**: a commit that has a footer BREAKING CHANGE:, or appends a ! after the type/scope, introduces a breaking API change (correlating with [MAJOR](https://semver.org/#summary) in Semantic Versioning). A BREAKING CHANGE can be part of commits of any type.
 
-### Optinal body
+### Optional body
 
 The body provides additional information about the changes made in the commit. It is optional and can be omitted if the description is sufficient.
 
