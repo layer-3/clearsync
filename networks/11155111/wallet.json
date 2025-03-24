@@ -1,4 +1,6 @@
 {
+  "liteVaultAddress": "0xdAD067C90af43948f2A389DFC93d94481A72705c",
+  "currentAuthorizerAddress": "0x16ba5a9b04e0b9A9218Ca14B14673E405B5A519b",
   "erc20Paymasters": {
     "0x63FD175d3215779deBA7532fC660fA0E10c18676": {
       "paymasterAddress": "0xBD8D351356a222b934a7B0315F69B0037871F1c6",
@@ -6,7 +8,6 @@
       "feeTokenAllowanceSlot": 1
     }
   },
-  "liteVaultAddress": "0xdAD067C90af43948f2A389DFC93d94481A72705c",
   "callTypes": {
     "approve": {
       "allowedFeeTypes": [
