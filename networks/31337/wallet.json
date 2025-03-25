@@ -1,4 +1,5 @@
 {
+  "currentAuthorizerAddress": "",
   "erc20Paymasters": {},
   "callTypes": {
     "approve": {
