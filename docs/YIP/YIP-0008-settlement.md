@@ -166,7 +166,7 @@ This means that Clearpost should be able to identify the zone of the post-settle
 
 During the settlement participants can perform margin calls, which can lead to transition to a different margin zone.
 Therefore, if a post-settlement margin calculation transitions to the yellow zone during the settlement process, the users are notified that the current settlement should be accelerated and a new one should be prepared soon after the current is completed.
-If the a margin call transitions to the red zone, the settlement is interrupted and a new Forced-one is created.
+If a margin call transitions to the red zone, the settlement is interrupted and a new Forced-one is created.
 
 ### Settlement flow
 
