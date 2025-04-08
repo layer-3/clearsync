@@ -33,7 +33,8 @@
       "logoURI": "https://assets.coingecko.com/coins/images/325/standard/Tether.png",
       "extensions": {
         "allow_locking": true,
-        "coingecko_api_id": "tether"
+        "coingecko_api_id": "tether",
+        "locking_multiplier": 1.5
       }
     },
     {
@@ -46,7 +47,8 @@
       "logoURI": "https://assets.coingecko.com/coins/images/6319/large/usdc.png",
       "extensions": {
         "allow_locking": true,
-        "coingecko_api_id": "usd-coin"
+        "coingecko_api_id": "usd-coin",
+        "locking_multiplier": 1.5
       }
     },
     {
