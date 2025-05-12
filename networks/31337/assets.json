@@ -1,7 +1,7 @@
 {
     "tokens": [
       {
-        "address": "0xe006c485e6559ff7616f2c6891e3a09be00c24e4",
+        "address": "0xCE7449f07e32263556ac12cD9DBC1f8bDdFFb28d",
         "name": "Yellow Token",
         "symbol": "YELLOW",
         "decimals": 8,
@@ -9,15 +9,7 @@
         "logoURI": "https://www.yellow.org/images/duckies_200x200.png"
       },
       {
-        "address": "0x4ee6d916cce9ccfa79c5884c6e157e533f2842a1",
-        "name": "Yellow Duckies",
-        "symbol": "DUCKIES",
-        "decimals": 8,
-        "precision": 0,
-        "logoURI": "https://www.yellow.org/images/duckies_200x200.png"
-      },
-      {
-        "address": "0x022ef7eef745c2737847afe41645bee92ffe0bf7",
+        "address": "0xbD24c53072b9693A35642412227043Ffa5fac382",
         "name": "USD Coin",
         "symbol": "USDC",
         "decimals": 6,
@@ -28,14 +20,6 @@
           "allow_locking": true,
           "coingecko_api_id": "usd-coin"
         }
-      },
-      {
-        "address": "0x7964e43d2d2aea8d528a2a6d7b004d22ca5657a7",
-        "name": "Bitcoin",
-        "symbol": "BTC",
-        "decimals": 18,
-        "precision": 6,
-        "logoURI": "https://s2.coinmarketcap.com/static/img/coins/64x64/3717.png"
       },
       {
         "address": "0x0000000000000000000000000000000000000000",
@@ -51,7 +35,7 @@
         }
       },
       {
-        "address": "0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f",
+        "address": "0x9698aCFEd8a303404F01abAaE50C643eFE210eC8",
         "name": "Wrapped Ether",
         "symbol": "WETH",
         "decimals": 18,
