@@ -1,0 +1,27 @@
+{
+  "tokens": [
+    {
+      "address": "0x0000000000000000000000000000000000000000",
+      "name": "Rootstock BTC",
+      "symbol": "RBSC",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://s2.coinmarketcap.com/static/img/coins/64x64/3626.png",
+      "extensions":{
+        "allow_locking": false
+      }
+    },
+    {
+      "address": "0x2aaBea2058b5aC2D339b163C6Ab6f2b6d53aabED",
+      "name": "RIF US Dollar",
+      "symbol": "USDRIF",
+      "alias": "USD",
+      "decimals": 18,
+      "precision": 4,
+      "logoURI": "https://assets.coingecko.com/coins/images/39869/large/USDRIF.webp",
+      "extensions": {
+        "allow_locking": false
+      }
+    }
+  ]
+}
