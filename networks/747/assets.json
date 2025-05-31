@@ -1,0 +1,29 @@
+{
+  "tokens": [
+    {
+      "address": "0x0000000000000000000000000000000000000000",
+      "name": "FLOW",
+      "symbol": "FLOW",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/ethereum-64x64.png",
+      "extensions":{
+        "allow_locking": false,
+        "coingecko_api_id": "ethereum"
+      }
+    },
+    {
+      "address": "0x2aaBea2058b5aC2D339b163C6Ab6f2b6d53aabED",
+      "name": "USD Flow",
+      "symbol": "USDC",
+      "alias": "USD",
+      "decimals": 6,
+      "precision": 4,
+      "logoURI": "https://assets.coingecko.com/coins/images/6319/large/usdc.png",
+      "extensions": {
+        "allow_locking": false,
+        "coingecko_api_id": "usd-coin"
+      }
+    }
+  ]
+}
