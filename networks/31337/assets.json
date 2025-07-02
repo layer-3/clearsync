@@ -1,14 +1,6 @@
 {
     "tokens": [
       {
-        "address": "0xCE7449f07e32263556ac12cD9DBC1f8bDdFFb28d",
-        "name": "Yellow Token",
-        "symbol": "YELLOW",
-        "decimals": 8,
-        "precision": 0,
-        "logoURI": "https://www.yellow.org/images/duckies_200x200.png"
-      },
-      {
         "address": "0xbD24c53072b9693A35642412227043Ffa5fac382",
         "name": "USD Coin",
         "symbol": "USDC",
@@ -32,19 +24,6 @@
         {
           "allow_locking": true,
           "coingecko_api_id": "ethereum"
-        }
-      },
-      {
-        "address": "0x9698aCFEd8a303404F01abAaE50C643eFE210eC8",
-        "name": "Wrapped Ether",
-        "symbol": "WETH",
-        "decimals": 18,
-        "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png?1696501628",
-        "extensions":
-        {
-          "allow_locking": true,
-          "coingecko_api_id": "weth"
         }
       }
     ]
