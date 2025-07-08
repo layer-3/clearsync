@@ -54,7 +54,7 @@ Last updated: March 12, 2025.
 
 Chain id: 137.
 
-Last updated: November 8, 2024.
+Last updated: July 8, 2025.
 
 | Description                          | Contract Name             | Address                                                                                                                     | Git SHA and Repository                                                                                                                          | Notes                                                            |
 | ------------------------------------ | ------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
@@ -76,6 +76,10 @@ Last updated: November 8, 2024.
 | Outside range authorizer             | TimeRangeAuthorizer       | `0xa6c9B137fddd907d2bCb1CE2bcafFA2075125D6c`[↗](https://polygonscan.com/address/0xa6c9B137fddd907d2bCb1CE2bcafFA2075125D6c) | `dc84b5e`[↗](https://github.com/layer-3/broker-contracts/blob/dc84b5e1a30db420ff3b881a74fca6f4556fbc36/src/vault/TimeRangeAuthorizer.sol)       | Time range is set to Nov 14th 00:00:00 - Jan 13th 23:59:59 UTC   |
 | Outside range authorizer             | TimeRangeAuthorizer       | `0x420162e517e0F417fE3d6F31A47eFBC97eDFd978`[↗](https://polygonscan.com/address/0x420162e517e0F417fE3d6F31A47eFBC97eDFd978) | `dc84b5e`[↗](https://github.com/layer-3/broker-contracts/blob/dc84b5e1a30db420ff3b881a74fca6f4556fbc36/src/vault/TimeRangeAuthorizer.sol)       | Time range is set to Jan 17th 12:00:00 - March 17th 11:59:59 UTC |
 | Unbonding Period Authorizer Season 4 | UnbondingPeriodAuthorizer | `0x3e7Ba2e09055Ca0ad697018069e0388A46388Ce0`[↗](https://polygonscan.com/address/0xaFbA1A80b4f9A6F15D84Ce5515c70c724cc10da1) | `b24a350`[↗](https://github.com/layer-3/broker-contracts/blob/b24a350646e68f62f0c46e4dd19445101b1f8d10/src/vault/UnbondingPeriodAuthorizer.sol) |                                                                  |
+| UAT Unbonding Period Authorizer      | UnbondingPeriodAuthorizer | `0x31AeebdAF97bC2F9B4e5cA0F59A64919cdD69385`[↗](https://polygonscan.com/address/0x31AeebdAF97bC2F9B4e5cA0F59A64919cdD69385) | `03df22d`[↗](https://github.com/layer-3/broker-contracts/blob/03df22d638a5106abe3f616a876deac6a0c8930e/src/vault/UnbondingPeriodAuthorizer.sol) |                                                                  |
+| UAT Yellow Vault                     | LiteVault                 | `0xFd308728E3de3a0aCcC6fC86Fbd25d37E4Dbf3C5`[↗](https://polygonscan.com/address/0xFd308728E3de3a0aCcC6fC86Fbd25d37E4Dbf3C5) | `03df22d`[↗](https://github.com/layer-3/broker-contracts/blob/03df22d638a5106abe3f616a876deac6a0c8930e/src/vault/LiteVault.sol)                 |                                                                  |
+| UAT Yellow Voucher Router            | VoucherRouter             | `0xC82913819B39259e3bc1f3a23eEC60f7F310221A`[↗](https://polygonscan.com/address/0xC82913819B39259e3bc1f3a23eEC60f7F310221A) | `03df22d`[↗](https://github.com/layer-3/broker-contracts/blob/03df22d638a5106abe3f616a876deac6a0c8930e/src/voucher/VoucherRouter.sol)           |                                                                  |
+| UAT Points claimer for Leaderboard   | ClaimExecutor             | `0x8E33FAC6b1591b95573E7c0aF06F57c1B5712181`[↗](https://polygonscan.com/address/0x8E33FAC6b1591b95573E7c0aF06F57c1B5712181) | `03df22d`[↗](https://github.com/layer-3/broker-contracts/blob/03df22d638a5106abe3f616a876deac6a0c8930e/src/voucher/executors/ClaimExecutor.sol) |                                                                  |
 
 ### Base
 
@@ -95,7 +99,7 @@ Last updated: March 12, 2025.
 
 Chain id: 42161.
 
-Last updated: March 12, 2025.
+Last updated: July 8, 2025.
 
 | Description                          | Contract Name             | Address                                                                                                                 | Git SHA and Repository                                                                                                                          | Notes                                                            |
 | ------------------------------------ | ------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
@@ -104,6 +108,10 @@ Last updated: March 12, 2025.
 | Outside range authorizer             | TimeRangeAuthorizer       | `0x547d613C2f613c9bC78d49051093F092924aaD1c`[↗](https://arbiscan.io/address/0x547d613C2f613c9bC78d49051093F092924aaD1c) | `dc84b5e`[↗](https://github.com/layer-3/broker-contracts/blob/dc84b5e1a30db420ff3b881a74fca6f4556fbc36/src/vault/TimeRangeAuthorizer.sol)       | Time range is set to Jan 17th 12:00:00 - March 17th 11:59:59 UTC |
 | Yellow Vault                         | LiteVault                 | `0xb5F3a9dD92270f55e55B7Ac7247639953538A261`[↗](https://arbiscan.io/address/0xb5F3a9dD92270f55e55B7Ac7247639953538A261) | `dc84b5e`[↗](https://github.com/layer-3/broker-contracts/blob/dc84b5e1a30db420ff3b881a74fca6f4556fbc36/src/vault/LiteVault.sol)                 |                                                                  |
 | Unbonding Period Authorizer Season 4 | UnbondingPeriodAuthorizer | `0x8eA6E2B6eCC884c2b6a3dE5BE67b233c6B5D3438`[↗](https://arbiscan.io/address/0x8eA6E2B6eCC884c2b6a3dE5BE67b233c6B5D3438) | `b24a350`[↗](https://github.com/layer-3/broker-contracts/blob/b24a350646e68f62f0c46e4dd19445101b1f8d10/src/vault/UnbondingPeriodAuthorizer.sol) |                                                                  |
+| UAT Unbonding Period Authorizer      | UnbondingPeriodAuthorizer | `0x31AeebdAF97bC2F9B4e5cA0F59A64919cdD69385`[↗](https://arbiscan.io/address/0x31AeebdAF97bC2F9B4e5cA0F59A64919cdD69385) | `03df22d`[↗](https://github.com/layer-3/broker-contracts/blob/03df22d638a5106abe3f616a876deac6a0c8930e/src/vault/UnbondingPeriodAuthorizer.sol) |                                                                  |
+| UAT Yellow Vault                     | LiteVault                 | `0xFd308728E3de3a0aCcC6fC86Fbd25d37E4Dbf3C5`[↗](https://arbiscan.io/address/0xFd308728E3de3a0aCcC6fC86Fbd25d37E4Dbf3C5) | `03df22d`[↗](https://github.com/layer-3/broker-contracts/blob/03df22d638a5106abe3f616a876deac6a0c8930e/src/vault/LiteVault.sol)                 |                                                                  |
+| Yellow Voucher Router                | VoucherRouter             | `0xC82913819B39259e3bc1f3a23eEC60f7F310221A`[↗](https://arbiscan.io/address/0xC82913819B39259e3bc1f3a23eEC60f7F310221A) | `03df22d`[↗](https://github.com/layer-3/broker-contracts/blob/03df22d638a5106abe3f616a876deac6a0c8930e/src/voucher/VoucherRouter.sol)           |                                                                  |
+| Points claimer for Leaderboard       | ClaimExecutor             | `0x8E33FAC6b1591b95573E7c0aF06F57c1B5712181`[↗](https://arbiscan.io/address/0x8E33FAC6b1591b95573E7c0aF06F57c1B5712181) | `03df22d`[↗](https://github.com/layer-3/broker-contracts/blob/03df22d638a5106abe3f616a876deac6a0c8930e/src/voucher/executors/ClaimExecutor.sol) |                                                                  |
 
 ### Avalanche C-chain
 
