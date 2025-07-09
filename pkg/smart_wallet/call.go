@@ -93,7 +93,7 @@ type callStructKernel struct {
 	Data  []byte         `json:"data"`
 }
 
-// handleCallKernel packs calldata for Zerodev Kernel smart wallet.
+// PackForKernel packs calldata for Zerodev Kernel smart wallet.
 func (calls Calls) PackForKernel() ([]byte, error) {
 	params := make([]callStructKernel, len(calls))
 	for i, call := range calls {
