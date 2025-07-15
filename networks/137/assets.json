@@ -121,6 +121,14 @@
         "allow_locking": false,
         "coingecko_api_id": "wmatic"
       }
+    },
+    {
+      "address": "0x45268ba6c9A0459Eda6F6fAb4E5083c61730F375",
+      "name": "BEATWAV",
+      "symbol": "BEATWAV",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/placeholder-64x64.png"
     }
   ]
 }

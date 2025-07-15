@@ -293,6 +293,14 @@
         "precision": 3,
         "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/kayen-64x64.png",
         "extensions": {}
+      },
+      {
+        "address": "0xDB33fEC4e2994a675133320867a6439Da4A5acD8",
+        "name": "BEATWAV",
+        "symbol": "BEATWAV",
+        "decimals": 18,
+        "precision": 6,
+        "logoURI": "https://raw.githubusercontent.com/layer-3/clearsync/master/networks/icons/placeholder-64x64.png"
       }
     ]
 }
