@@ -11,7 +11,7 @@ require (
 	github.com/ipfs/go-log/v2 v2.5.1
 	github.com/layer-3/go-merkletree v0.2.3
 	github.com/prometheus/client_golang v1.14.0
-	github.com/shopspring/decimal v1.3.1
+	github.com/shopspring/decimal v1.4.0
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.28.0
 	google.golang.org/grpc v1.59.0
