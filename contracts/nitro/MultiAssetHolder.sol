@@ -470,7 +470,7 @@ contract MultiAssetHolder is IMultiAssetHolder, StatusManager {
 		bytes32 outcomeHash,
 		bytes32 channelId
 	) internal view {
-		(, , uint160 fingerprint) = _unpackStatus(channelId);
+		(, , uint160 fingerprint) = unpackStatus(channelId);
 		require(
 			fingerprint == _generateFingerprint(stateHash, outcomeHash),
 			'incorrect fingerprint'
@@ -491,7 +491,7 @@ contract MultiAssetHolder is IMultiAssetHolder, StatusManager {
 		bytes32 stateHash,
 		bytes32 outcomeHash
 	) internal {
-		(uint48 turnNumRecord, uint48 finalizesAt, ) = _unpackStatus(channelId);
+		(uint48 turnNumRecord, uint48 finalizesAt, ) = unpackStatus(channelId);
 
 		bytes32 newStatus = _generateStatus(
 			ChannelData(turnNumRecord, finalizesAt, stateHash, outcomeHash)
