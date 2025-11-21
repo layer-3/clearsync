@@ -23,7 +23,7 @@ func (t PaymasterType) String() string {
 }
 
 // UnmarshalYAML unmarshalls the YAML representation of a PaymasterType.
-func (t *PaymasterType) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (t *PaymasterType) UnmarshalYAML(unmarshal func(any) error) error {
 	var rawValue string
 	err := unmarshal(&rawValue)
 	if err != nil {
