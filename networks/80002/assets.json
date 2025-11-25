@@ -1,96 +1,100 @@
 {
   "tokens": [
     {
-        "name": "Polygon Matic",
-        "address": "0x0000000000000000000000000000000000000000",
-        "symbol": "POL",
-        "decimals": 18,
-        "precision": 8,
-        "logoURI": "https://assets.coingecko.com/coins/images/32440/standard/polygon.png"
+      "name": "Polygon Matic",
+      "address": "0x0000000000000000000000000000000000000000",
+      "symbol": "POL",
+      "decimals": 18,
+      "precision": 8,
+      "logoURI": "https://assets.coingecko.com/coins/images/32440/standard/polygon.png"
     },
     {
-        "address": "0x38871D722689f6d799B2A1FE93bE096E98e00986",
-        "name": "Yellow Duckies",
-        "symbol": "DUCKIES",
-        "decimals": 8,
-        "precision": 6,
-        "logoURI": "https://www.yellow.org/images/duckies_200x200.png",
-        "extensions":
-        {
-          "allow_locking": true,
-          "coingecko_api_id": "duckies"
-        }
+      "address": "0x38871D722689f6d799B2A1FE93bE096E98e00986",
+      "name": "Yellow Duckies",
+      "symbol": "DUCKIES",
+      "decimals": 8,
+      "precision": 6,
+      "logoURI": "https://www.yellow.org/images/duckies_200x200.png",
+      "extensions": {
+        "allow_locking": true,
+        "coingecko_api_id": "duckies"
+      }
     },
     {
-        "address": "0xE22e3af98FdF9d6a429150D92d446fcEeEA967fF",
-        "name": "USD Tether",
-        "symbol": "USDT",
-        "decimals": 6,
-        "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/325/standard/Tether.png",
-        "extensions":
-        {
-          "allow_locking": true,
-          "coingecko_api_id": "tether"
-        }
+      "address": "0xE22e3af98FdF9d6a429150D92d446fcEeEA967fF",
+      "name": "USD Tether",
+      "symbol": "USDT",
+      "decimals": 6,
+      "precision": 6,
+      "logoURI": "https://assets.coingecko.com/coins/images/325/standard/Tether.png",
+      "extensions": {
+        "allow_locking": true,
+        "coingecko_api_id": "tether"
+      }
     },
     {
-        "address": "0x8d48ba6D6ABD283E672B917cdfBd6222DD1b80dB",
-        "name": "USD Coin",
-        "symbol": "USDC",
-        "alias": "USD",
-        "decimals": 6,
-        "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/6319/large/usdc.png",
-        "extensions":
-        {
-          "allow_locking": true,
-          "coingecko_api_id": "usd-coin"
-        }
+      "address": "0x8d48ba6D6ABD283E672B917cdfBd6222DD1b80dB",
+      "name": "USD Coin",
+      "symbol": "USDC",
+      "alias": "USD",
+      "decimals": 6,
+      "precision": 6,
+      "logoURI": "https://assets.coingecko.com/coins/images/6319/large/usdc.png",
+      "extensions": {
+        "allow_locking": true,
+        "coingecko_api_id": "usd-coin"
+      }
     },
     {
-        "address": "0x57634f3202E291e37801C426408b86a1eD0dB23d",
-        "name": "LUBE",
-        "symbol": "LUBE",
-        "decimals": 18,
-        "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/33070/standard/200x200.png",
-        "extensions": {}
+      "address": "0x57634f3202E291e37801C426408b86a1eD0dB23d",
+      "name": "LUBE",
+      "symbol": "LUBE",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://assets.coingecko.com/coins/images/33070/standard/200x200.png",
+      "extensions": {}
     },
     {
-        "address": "0xE11E73Ce5f7c45580e6B4A63069C18b0A5d70CA2",
-        "name": "Wrapped Bitcoin",
-        "symbol": "WBTC",
-        "decimals": 18,
-        "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/7598/standard/wrapped_bitcoin_wbtc.png",
-        "extensions":
-        {
-          "allow_locking": true,
-          "coingecko_api_id": "wrapped-bitcoin"
-        }
+      "address": "0xE11E73Ce5f7c45580e6B4A63069C18b0A5d70CA2",
+      "name": "Wrapped Bitcoin",
+      "symbol": "WBTC",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://assets.coingecko.com/coins/images/7598/standard/wrapped_bitcoin_wbtc.png",
+      "extensions": {
+        "allow_locking": true,
+        "coingecko_api_id": "wrapped-bitcoin"
+      }
     },
     {
-        "address": "0xEB31ce20F5c72C568e82D0183aa8Da3B9e5e177f",
-        "name": "Wrapped Ether",
-        "symbol": "WETH",
-        "decimals": 18,
-        "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png",
-        "extensions":
-        {
-          "allow_locking": true,
-          "coingecko_api_id": "weth"
-        }
+      "address": "0xEB31ce20F5c72C568e82D0183aa8Da3B9e5e177f",
+      "name": "Wrapped Ether",
+      "symbol": "WETH",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://assets.coingecko.com/coins/images/279/standard/ethereum.png",
+      "extensions": {
+        "allow_locking": true,
+        "coingecko_api_id": "weth"
+      }
     },
     {
-        "address": "0xd15833D5184Ca08a8a26b923754EaA654F5Bb85F",
-        "name": "Linda",
-        "symbol": "LINDA",
-        "decimals": 18,
-        "precision": 6,
-        "logoURI": "https://assets.coingecko.com/coins/images/33699/standard/linda-logo-200.png",
-        "extensions": {}
+      "address": "0xd15833D5184Ca08a8a26b923754EaA654F5Bb85F",
+      "name": "Linda",
+      "symbol": "LINDA",
+      "decimals": 18,
+      "precision": 6,
+      "logoURI": "https://assets.coingecko.com/coins/images/33699/standard/linda-logo-200.png",
+      "extensions": {}
+    },
+    {
+      "address": "0xDB9F293e3898c9E5536A3be1b0C56c89d2b32DEb",
+      "name": "YTest USD",
+      "symbol": "ytest.usd",
+      "decimals": 6,
+      "precision": 6,
+      "logoURI": "https://www.yellow.com/images/defaultCryptoIcon.webp",
+      "extensions": {}
     }
   ]
 }
