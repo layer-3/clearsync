@@ -5,7 +5,8 @@
     "0x63FD175d3215779deBA7532fC660fA0E10c18676": {
       "paymasterAddress": "0xBD8D351356a222b934a7B0315F69B0037871F1c6",
       "feeTokenBalanceSlot": 0,
-      "feeTokenAllowanceSlot": 1
+      "feeTokenAllowanceSlot": 1,
+      "guarantorAddress": "0xC37F852cbEdA26153B08eFd41ba9Dc086f59Ce30"
     }
   },
   "callTypes": {
@@ -49,6 +50,8 @@
     "0x47871f064d0b2ABf9190275C4D69f466C98fBD77",
     "0xdAD067C90af43948f2A389DFC93d94481A72705c",
     "0x3a9941C3D7B2b02304dBFC7FC33809f77e2d2ef4",
-    "0xA67C2dfa3697E1b87bbBb6257a5B8FeAccBD201b"
+    "0xA67C2dfa3697E1b87bbBb6257a5B8FeAccBD201b",
+    "0x61b9E0767f2ECA7e33802E82f9c64b1eBE72bA31",
+    "0xd8617d31F93cfB98e9520d3b85D4B8c45eb4089e"
   ]
 }
