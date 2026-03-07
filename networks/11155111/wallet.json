@@ -6,7 +6,7 @@
       "paymasterAddress": "0xBD8D351356a222b934a7B0315F69B0037871F1c6",
       "feeTokenBalanceSlot": 0,
       "feeTokenAllowanceSlot": 1,
-      "guarantorAddress": "0xC37F852cbEdA26153B08eFd41ba9Dc086f59Ce30"
+      "guarantorAddress": "0x5876bD2A7D8D54eFd394F36Fed72135fF6669e46"
     }
   },
   "callTypes": {
