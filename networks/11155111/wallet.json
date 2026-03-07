@@ -21,8 +21,7 @@
     "withdrawal": {
       "allowedFeeTypes": [
         "native",
-        "paymaster",
-        "paymaster_with_guarantor"
+        "paymaster"
       ]
     },
     "swap": {
@@ -34,22 +33,19 @@
     "lock": {
       "allowedFeeTypes": [
         "native",
-        "paymaster",
-        "paymaster_with_guarantor"
+        "paymaster"
       ]
     },
     "unlock": {
       "allowedFeeTypes": [
         "native",
-        "paymaster",
-        "paymaster_with_guarantor"
+        "paymaster"
       ]
     },
     "daily_claim": {
       "allowedFeeTypes": [
         "native",
-        "paymaster",
-        "paymaster_with_guarantor"
+        "paymaster"
       ]
     },
     "other": {
