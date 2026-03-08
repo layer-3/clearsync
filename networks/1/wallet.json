@@ -1,41 +1,57 @@
 {
-  "erc20Paymasters": {},
   "liteVaultAddress": "0xb5F3a9dD92270f55e55B7Ac7247639953538A261",
   "currentAuthorizerAddress": "0x69E848d9EBFda9F713cdE5fB92116DFE2c4B2c8F",
+  "erc20Paymasters": {
+    "0xdAC17F958D2ee523a2206206994597C13D831ec7": {
+      "paymasterAddress": "0xeb56f0C6E1BF202559fdd5278CcedCd32D3d8f31",
+      "feeTokenBalanceSlot": 2,
+      "feeTokenAllowanceSlot": 5,
+      "guarantorTokenLimitRaw": 2000000
+    }
+  },
   "callTypes": {
     "approve": {
       "allowedFeeTypes": [
-        "native"
+        "native",
+        "paymaster",
+        "paymaster_with_guarantor"
       ]
     },
     "withdrawal": {
       "allowedFeeTypes": [
-        "native"
+        "native",
+        "paymaster"
       ]
     },
     "swap": {
       "allowedFeeTypes": [
-        "native"
+        "native",
+        "paymaster"
       ]
     },
     "lock": {
       "allowedFeeTypes": [
-        "native"
+        "native",
+        "paymaster"
       ]
     },
     "unlock": {
       "allowedFeeTypes": [
-        "native"
+        "native",
+        "paymaster"
       ]
     },
     "daily_claim": {
       "allowedFeeTypes": [
-        "native"
+        "native",
+        "paymaster"
       ]
     },
     "other": {
       "allowedFeeTypes": [
-        "native"
+        "native",
+        "paymaster",
+        "paymaster_with_guarantor"
       ]
     }
   },
