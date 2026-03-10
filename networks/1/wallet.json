@@ -9,6 +9,17 @@
       "guarantorTokenLimitRaw": 2000000
     }
   },
+  "sponsorship": {
+    "yellowProDeposit": {
+      "minDepositAmountsStr": {
+        "0xdAC17F958D2ee523a2206206994597C13D831ec7": "2000000",
+        "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599": "3000",
+        "0x0000000000000000000000000000000000000000": "1000000000000000",
+        "0xD31a59c85aE9D8edEFeC411D448f90841571b89c": "25000000",
+        "0x236eB848C95b231299B4AA9f56c73D6893462720": "100000000000000000000"
+      }
+    }
+  },
   "callTypes": {
     "approve": {
       "allowedFeeTypes": [
@@ -55,7 +66,7 @@
         "paymaster_with_guarantor"
       ]
     },
-    "neodax_deposit": {
+    "yellow_pro_deposit": {
       "allowedFeeTypes": [
         "native",
         "paymaster",
