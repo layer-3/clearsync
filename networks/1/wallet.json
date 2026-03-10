@@ -14,7 +14,8 @@
       "allowedFeeTypes": [
         "native",
         "paymaster",
-        "paymaster_with_guarantor"
+        "paymaster_with_guarantor",
+        "sponsored"
       ]
     },
     "withdrawal": {
@@ -52,6 +53,14 @@
         "native",
         "paymaster",
         "paymaster_with_guarantor"
+      ]
+    },
+    "neodax_deposit": {
+      "allowedFeeTypes": [
+        "native",
+        "paymaster",
+        "paymaster_with_guarantor",
+        "sponsored"
       ]
     }
   },
