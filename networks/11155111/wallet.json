@@ -10,6 +10,15 @@
       "guarantorAddress": "0xC37F852cbEdA26153B08eFd41ba9Dc086f59Ce30"
     }
   },
+  "sponsorship": {
+    "yellowProDeposit": {
+      "minDepositAmountsStr": {
+        "0x63FD175d3215779deBA7532fC660fA0E10c18676": "200",
+        "0xDB9F293e3898c9E5536A3be1b0C56c89d2b32DEb": "2000000",
+        "0x0000000000000000000000000000000000000000": "1000000000000000"
+      }
+    }
+  },
   "callTypes": {
     "approve": {
       "allowedFeeTypes": [
