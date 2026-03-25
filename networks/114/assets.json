@@ -1,0 +1,12 @@
+{
+  "tokens": [
+    {
+      "address": "0x0000000000000000000000000000000000000000",
+      "name": "Coston2 Flare",
+      "symbol": "C2FLR",
+      "decimals": 18,
+      "precision": 18,
+      "logoURI": "https://coin-images.coingecko.com/coins/images/33117/thumb/Frame_27513839.png"
+    }
+  ]
+}

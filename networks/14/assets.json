@@ -1,0 +1,60 @@
+{
+  "tokens": [
+    {
+      "address": "0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d",
+      "name": "Wrapped Flare",
+      "symbol": "WFLR",
+      "decimals": 18,
+      "precision": 18,
+      "logoURI": "https://coin-images.coingecko.com/coins/images/33117/thumb/Frame_27513839.png"
+    },
+    {
+      "address": "0x0B38e83B86d491735fEaa0a791F65c2B99535396",
+      "name": "USDT",
+      "symbol": "USDT",
+      "decimals": 6,
+      "precision": 6,
+      "logoURI": "https://assets.coingecko.com/coins/images/325/standard/Tether.png"
+    },
+    {
+      "address": "0xAd552A648C74D49E10027AB8a618A3ad4901c5bE",
+      "name": "Flare Bridged XRP",
+      "symbol": "FXRP",
+      "decimals": 6,
+      "precision": 6,
+      "logoURI": "https://coin-images.coingecko.com/coins/images/69731/large/fxrp.png?1759406752"
+    },
+    {
+      "address": "0x4C18Ff3C89632c3Dd62E796c0aFA5c07c4c1B2b3",
+      "name": "Firelight Staked XRP",
+      "symbol": "STXRP",
+      "decimals": 6,
+      "precision": 6,
+      "logoURI": "https://coin-images.coingecko.com/coins/images/44/large/xrp-symbol-white-128.png?1696501442"
+    },
+    {
+      "address": "0xFbDA5F676cB37624f28265A144A48B0D6e87D3B6",
+      "name": "Stargate Bridged USDC",
+      "symbol": "USDC.E",
+      "decimals": 6,
+      "precision": 6,
+      "logoURI": "https://coin-images.coingecko.com/coins/images/6319/large/usdc.png?1696506694"
+    },
+    {
+      "address": "0x1502FA4Be69d526124D453619276FacCab275d3D",
+      "name": "Stargate Bridged WETH",
+      "symbol": "WETH",
+      "decimals": 18,
+      "precision": 18,
+      "logoURI": "https://coin-images.coingecko.com/coins/images/2518/large/weth.png?1696503332"
+    },
+    {
+      "address": "0x12E605bc104E93B45e1AD99f9E555f659051c2Bb",
+      "name": "Sceptre Staked FLR",
+      "symbol": "SFLR",
+      "decimals": 18,
+      "precision": 18,
+      "logoURI": "https://coin-images.coingecko.com/coins/images/33117/thumb/Frame_27513839.png"
+    }
+  ]
+}
