@@ -1,0 +1,66 @@
+{
+  "liteVaultAddress": "",
+  "currentAuthorizerAddress": "",
+  "erc20Paymasters": {},
+  "sponsorship": {
+    "yellowProDeposit": {
+      "minDepositAmountsStr": {}
+    }
+  },
+  "callTypes": {
+    "approve": {
+      "allowedFeeTypes": [
+        "native",
+        "paymaster",
+        "paymaster_with_guarantor",
+        "sponsored"
+      ]
+    },
+    "withdrawal": {
+      "allowedFeeTypes": [
+        "native",
+        "paymaster"
+      ]
+    },
+    "swap": {
+      "allowedFeeTypes": [
+        "native",
+        "paymaster"
+      ]
+    },
+    "lock": {
+      "allowedFeeTypes": [
+        "native",
+        "paymaster"
+      ]
+    },
+    "unlock": {
+      "allowedFeeTypes": [
+        "native",
+        "paymaster"
+      ]
+    },
+    "daily_claim": {
+      "allowedFeeTypes": [
+        "native",
+        "paymaster"
+      ]
+    },
+    "other": {
+      "allowedFeeTypes": [
+        "native",
+        "paymaster",
+        "paymaster_with_guarantor"
+      ]
+    },
+    "yellow_pro_deposit": {
+      "allowedFeeTypes": [
+        "native",
+        "paymaster",
+        "paymaster_with_guarantor",
+        "sponsored"
+      ]
+    }
+  },
+  "trustedAddresses": []
+}
