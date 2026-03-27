@@ -107,7 +107,7 @@ func TestGasLimitOverrides(t *testing.T) {
 					PreVerificationGas:   responseLimit,
 					PaymasterAndData:     "0xdeadbeef",
 				}
-				jsonResponse := map[string]interface{}{
+				jsonResponse := map[string]any{
 					"jsonrpc": "2.0",
 					"result":  response,
 					"id":      1,

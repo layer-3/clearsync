@@ -71,7 +71,7 @@ func (b *backend) Verify(ctx context.Context, signer common.Address, messageHash
 	calldata := packIsValidSigCall(signer, messageHash, signature)
 
 	var res string
-	err := b.provider.Client().CallContext(ctx, &res, "eth_call", map[string]interface{}{
+	err := b.provider.Client().CallContext(ctx, &res, "eth_call", map[string]any{
 		"data": hexutil.Encode(calldata),
 	},
 		"latest")
