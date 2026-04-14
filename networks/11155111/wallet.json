@@ -32,7 +32,8 @@
     "withdrawal": {
       "allowedFeeTypes": [
         "native",
-        "paymaster"
+        "paymaster",
+        "paymaster_with_guarantor"
       ]
     },
     "swap": {
