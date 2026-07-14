@@ -248,7 +248,7 @@ func (k *kraken) connect() error {
 
 	// Check if Kraken API is online
 
-	var initResp map[string]interface{}
+	var initResp map[string]any
 	if err := json.Unmarshal(msg, &initResp); err != nil {
 		return err
 	}
@@ -315,8 +315,8 @@ func (k *kraken) parseMessage(rawMsg []byte) ([]TradeEvent, error) {
 	// TODO: handle unsubscribe response
 	// TODO: handle error response
 
-	var tradeData []interface{}
-	var eventData map[string]interface{}
+	var tradeData []any
+	var eventData map[string]any
 	eventErr := json.Unmarshal(rawMsg, &eventData)
 	tradeErr := json.Unmarshal(rawMsg, &tradeData)
 
@@ -335,7 +335,7 @@ func (k *kraken) parseMessage(rawMsg []byte) ([]TradeEvent, error) {
 	return k.buildEvents(events)
 }
 
-func (k *kraken) parseEvent(eventData map[string]interface{}) error {
+func (k *kraken) parseEvent(eventData map[string]any) error {
 	if eventData["event"] == "heartbeat" {
 		return nil
 	}
@@ -370,20 +370,20 @@ type krakenTradeDetail struct {
 	Misc      string `json:"misc"`
 }
 
-func (k *kraken) parseTrade(data []interface{}) (trade krakenTrade, err error) {
+func (k *kraken) parseTrade(data []any) (trade krakenTrade, err error) {
 	trade.ChannelID = int(data[0].(float64))
 	trade.ChannelName = data[2].(string)
 	trade.Pair = data[3].(string)
 
 	// Extract trade details
 
-	tradeDetails, ok := data[1].([]interface{})
+	tradeDetails, ok := data[1].([]any)
 	if !ok {
 		return trade, fmt.Errorf("error in type assertion for trade details")
 	}
 
 	for _, item := range tradeDetails {
-		itemDetails, ok := item.([]interface{})
+		itemDetails, ok := item.([]any)
 		if !ok {
 			return trade, fmt.Errorf("error in type assertion for an item in trade details")
 		}

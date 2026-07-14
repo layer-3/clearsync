@@ -224,7 +224,7 @@ func (b *mexc) watchTrades(symbol string, stopCh chan struct{}) {
 	}
 	defer conn.Close()
 
-	subMsg := map[string]interface{}{
+	subMsg := map[string]any{
 		"id":     b.requestID.Load(),
 		"method": "SUBSCRIPTION",
 		"params": []string{"spot@public.deals.v3.api@" + strings.ToUpper(symbol)},
@@ -238,7 +238,7 @@ func (b *mexc) watchTrades(symbol string, stopCh chan struct{}) {
 	for {
 		select {
 		case <-stopCh:
-			unsubMsg := map[string]interface{}{
+			unsubMsg := map[string]any{
 				"id":     b.requestID.Load(),
 				"method": "UNSUBSCRIPTION",
 				"params": []string{"spot@public.deals.v3.api@" + strings.ToUpper(symbol)},
@@ -256,7 +256,7 @@ func (b *mexc) watchTrades(symbol string, stopCh chan struct{}) {
 					loggerMexc.Infow("attempting to reconnect", "attempt", i+1)
 					conn, _, err = websocket.DefaultDialer.Dial("wss://wbs.mexc.com/ws", nil)
 					if err == nil {
-						subMsg := map[string]interface{}{
+						subMsg := map[string]any{
 							"id":     b.requestID.Load(),
 							"method": "SUBSCRIPTION",
 							"params": []string{"spot@public.deals.v3.api@" + strings.ToUpper(symbol)},

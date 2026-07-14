@@ -80,7 +80,7 @@ func TestOpendax_parse(t *testing.T) {
 			ReqID:  1,
 			Type:   3,
 			Method: "trade",
-			Args:   []interface{}{"btc/usd", 1, 1, 1, 1, 1, "buy", "Opendax"},
+			Args:   []any{"btc/usd", 1, 1, 1, 1, 1, "buy", "Opendax"},
 		}
 		byteMsg, err := message.Encode()
 		require.NoError(t, err)
@@ -121,7 +121,7 @@ func TestOpendax_parse(t *testing.T) {
 			ReqID:  1,
 			Type:   3,
 			Method: "trade",
-			Args:   []interface{}{""},
+			Args:   []any{""},
 		}
 		byteMsg, err := trade.Encode()
 		require.NoError(t, err)
@@ -245,7 +245,7 @@ func TestOpendax_listen(t *testing.T) {
 			ReqID:  1,
 			Type:   3,
 			Method: "trade",
-			Args:   []interface{}{"btc/usd", 1, 1, 1, 1, 1, "buy", "Opendax"},
+			Args:   []any{"btc/usd", 1, 1, 1, 1, 1, "buy", "Opendax"},
 		}
 
 		rawMsg, err := update.Encode()

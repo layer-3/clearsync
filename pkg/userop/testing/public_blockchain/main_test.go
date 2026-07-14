@@ -139,7 +139,7 @@ func newTransferERC20Call(t *testing.T, token, receiver common.Address, amount d
 }
 
 // Encodes a call to the `contract` with the given `value`, `method` and `args`.
-func newCallFromABI(t *testing.T, contract common.Address, stringABI string, value *big.Int, method string, args ...interface{}) (smart_wallet.Call, error) {
+func newCallFromABI(t *testing.T, contract common.Address, stringABI string, value *big.Int, method string, args ...any) (smart_wallet.Call, error) {
 	ABI, err := abi.JSON(strings.NewReader(stringABI))
 	require.NoError(t, err, "failed to parse ABI")
 

@@ -42,7 +42,7 @@ func (t Type) String() string {
 }
 
 // UnmarshalYAML unmarshals the YAML representation of a SmartWalletType.
-func (t *Type) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (t *Type) UnmarshalYAML(unmarshal func(any) error) error {
 	var rawValue string
 	err := unmarshal(&rawValue)
 	if err != nil {

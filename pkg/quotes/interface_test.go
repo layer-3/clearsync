@@ -22,7 +22,7 @@ func TestNewDriver(t *testing.T) {
 	testCases := []struct {
 		name       string
 		driverType DriverType
-		expected   interface{}
+		expected   any
 	}{
 		// Centralized exchanges
 		{DriverBinance.String(), DriverBinance, (*binance)(nil)},
