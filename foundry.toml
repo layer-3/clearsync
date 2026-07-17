@@ -2,7 +2,6 @@
 src = "contracts"
 out = "artifacts"
 test = 'test'
-solc = "0.8.22"
 optimizer = true
 optimizer_runs = 100000
 gas_price = 1000000000
