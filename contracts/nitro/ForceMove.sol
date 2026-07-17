@@ -15,20 +15,6 @@ contract ForceMove is IForceMove, StatusManager {
 	// *****************
 
 	/**
-	 * @notice Unpacks turnNumRecord, finalizesAt and fingerprint from the status of a particular channel.
-	 * @dev Unpacks turnNumRecord, finalizesAt and fingerprint from the status of a particular channel.
-	 * @param channelId Unique identifier for a state channel.
-	 * @return turnNumRecord A turnNum that (the adjudicator knows) is supported by a signature from each participant.
-	 * @return finalizesAt The unix timestamp when `channelId` will finalize.
-	 * @return fingerprint The last 160 bits of keccak256(stateHash, outcomeHash)
-	 */
-	function unpackStatus(
-		bytes32 channelId
-	) external view returns (uint48 turnNumRecord, uint48 finalizesAt, uint160 fingerprint) {
-		(turnNumRecord, finalizesAt, fingerprint) = _unpackStatus(channelId);
-	}
-
-	/**
 	 * @notice Registers a challenge against a state channel. A challenge will either prompt another participant into clearing the challenge (via one of the other methods), or cause the channel to finalize at a specific time.
 	 * @dev Registers a challenge against a state channel. A challenge will either prompt another participant into clearing the challenge (via one of the other methods), or cause the channel to finalize at a specific time.
 	 * @param fixedPart Data describing properties of the state channel that do not change with state updates.
@@ -290,7 +276,7 @@ contract ForceMove is IForceMove, StatusManager {
 	 * @param newTurnNumRecord New turnNumRecord intended to overwrite existing value
 	 */
 	function _requireIncreasedTurnNumber(bytes32 channelId, uint48 newTurnNumRecord) internal view {
-		(uint48 turnNumRecord, , ) = _unpackStatus(channelId);
+		(uint48 turnNumRecord, , ) = unpackStatus(channelId);
 		require(newTurnNumRecord > turnNumRecord, 'turnNumRecord not increased.');
 	}
 
@@ -304,7 +290,7 @@ contract ForceMove is IForceMove, StatusManager {
 		bytes32 channelId,
 		uint48 newTurnNumRecord
 	) internal view {
-		(uint48 turnNumRecord, , ) = _unpackStatus(channelId);
+		(uint48 turnNumRecord, , ) = unpackStatus(channelId);
 		require(newTurnNumRecord >= turnNumRecord, 'turnNumRecord decreased.');
 	}
 
