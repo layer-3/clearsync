@@ -81,8 +81,8 @@ func RecoverEthMessageSignerAddress(signature Signature, message []byte) (common
 // "\x19Ethereum Signed Message:\n" + len(message).
 func ComputeEthereumSignedMessageHash(message []byte) []byte {
 	return ecrypto.Keccak256(
-		[]byte(
-			fmt.Sprintf("\x19Ethereum Signed Message:\n%d%s", len(message), string(message)),
-		),
+		
+			fmt.Appendf(nil, "\x19Ethereum Signed Message:\n%d%s", len(message), string(message)),
+		,
 	)
 }
