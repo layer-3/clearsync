@@ -64,11 +64,18 @@
       "allowedFeeTypes": [
         "native",
         "paymaster",
+        "paymaster_with_guarantor"
+      ]
+    },
+    "yellow_pro_deposit": {
+      "allowedFeeTypes": [
+        "native",
+        "paymaster",
         "paymaster_with_guarantor",
         "sponsored"
       ]
     },
-    "yellow_pro_deposit": {
+    "yellow_pro_deposit_v2": {
       "allowedFeeTypes": [
         "native",
         "paymaster",
